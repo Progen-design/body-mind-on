@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
+/** Server-side Supabase client (service role) */
 function getServerSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -9,12 +10,12 @@ function getServerSupabase() {
   return createClient(url, serviceKey, { auth: { persistSession: false } });
 }
 
-// jednoduchý výpočet TDEE (Harris–Benedict)
+/** Harris–Benedict TDEE (rychlé MVP) */
 function calcTDEE({ weight_kg, height_cm, age, gender = 'male', activity_level = 'moderately_active' }) {
   const w = Number(weight_kg || 0);
   const h = Number(height_cm || 0);
   const a = Number(age || 0);
-  const g = (gender || 'male').toLowerCase();
+  const g = String(gender || 'male').toLowerCase();
 
   let bmr = g === 'male'
     ? 88.362 + 13.397 * w + 4.799 * h - 5.677 * a
@@ -27,15 +28,12 @@ function calcTDEE({ weight_kg, height_cm, age, gender = 'male', activity_level =
     very_active: 1.725,
     extremely_active: 1.9
   };
-
   const m = mults[activity_level] || mults.moderately_active;
   return Math.round(bmr * m);
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).send('Method Not Allowed');
-  }
+  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
   try {
     const {
@@ -52,12 +50,34 @@ export default async function handler(req, res) {
 
     if (!email) return res.status(400).send('Chybí email');
 
-    const tdee = calcTDEE({ weight_kg, height_cm, age, gender, activity_level });
     const supabase = getServerSupabase();
 
-    const { data, error } = await supabase
+    // 1) Najdi uživatele podle emailu, případně vytvoř
+    let { data: user, error: selErr } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+    if (selErr) throw selErr;
+
+    if (!user) {
+      const { data: created, error: insUserErr } = await supabase
+        .from('users')
+        .insert([{ email, name: name || null, gender: gender || null }])
+        .select('id')
+        .single();
+      if (insUserErr) throw insUserErr;
+      user = created;
+    }
+
+    // 2) Spočítej TDEE (BMI spočítá DB trigger)
+    const tdee = calcTDEE({ weight_kg, height_cm, age, gender, activity_level });
+
+    // 3) Ulož záznam do body_metrics včetně user_id
+    const { data: metric, error: metErr } = await supabase
       .from('body_metrics')
       .insert([{
+        user_id: user.id,
         email,
         name: name || null,
         gender: gender || null,
@@ -67,14 +87,14 @@ export default async function handler(req, res) {
         body_fat_percentage: body_fat_percentage ? Number(body_fat_percentage) : null,
         water_percentage: water_percentage ? Number(water_percentage) : null,
         tdee
-        // BMI se dopočítá tvým triggerem calculate_bmi() v DB
+        // bmi se dopočítá triggerem calculate_bmi() v DB
       }])
       .select()
       .single();
 
-    if (error) throw error;
+    if (metErr) throw metErr;
 
-    return res.status(200).json({ ok: true, data });
+    return res.status(200).json({ ok: true, data: metric });
   } catch (err) {
     return res.status(400).send(typeof err?.message === 'string' ? err.message : 'Server error');
   }

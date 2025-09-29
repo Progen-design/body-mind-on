@@ -52,7 +52,7 @@ export default async function handler(req, res) {
 
     const supabase = getServerSupabase();
 
-    // 1) Najdi uživatele podle emailu, případně vytvoř
+    // 1) Najdi nebo vytvoř uživatele podle e-mailu (s bezpečnými defaulty)
     let { data: user, error: selErr } = await supabase
       .from('users')
       .select('id')
@@ -63,17 +63,23 @@ export default async function handler(req, res) {
     if (!user) {
       const { data: created, error: insUserErr } = await supabase
         .from('users')
-        .insert([{ email, name: name || null, gender: gender || null }])
+        .insert([{
+          email,
+          name: name || null,
+          surname: '',                  // fallback, i když už máš NULL povolené
+          gender: gender || null,
+          password_hash: 'external_signup' // fallback, kdyby byl NOT NULL
+        }])
         .select('id')
         .single();
       if (insUserErr) throw insUserErr;
       user = created;
     }
 
-    // 2) Spočítej TDEE (BMI spočítá DB trigger)
+    // 2) Spočti TDEE (BMI spočítá DB trigger)
     const tdee = calcTDEE({ weight_kg, height_cm, age, gender, activity_level });
 
-    // 3) Ulož záznam do body_metrics včetně user_id
+    // 3) Ulož měření včetně user_id
     const { data: metric, error: metErr } = await supabase
       .from('body_metrics')
       .insert([{

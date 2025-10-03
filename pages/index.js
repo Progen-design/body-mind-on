@@ -1,116 +1,167 @@
 // pages/index.js
-import { useState } from 'react';
+import { useState } from 'react'
 
-const occupations = [
-  { value: 'office_it', label: 'Kancelář / IT' },
-  { value: 'driver', label: 'Řidič' },
-  { value: 'warehouse', label: 'Sklad' },
-  { value: 'manual', label: 'Manuální práce' },
-  { value: 'healthcare', label: 'Zdravotnictví' },
-  { value: 'teacher_sales', label: 'Učitel / Obchod' },
-  { value: 'gastronomy', label: 'Gastronomie' },
-];
+export default function Home(){
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState(null)
 
-const activities = [
-  { value: 'sedavy', label: 'Sedavý' },
-  { value: 'lehce', label: 'Lehce aktivní' },
-  { value: 'stredne', label: 'Středně aktivní' },
-  { value: 'velmi', label: 'Velmi aktivní' },
-  { value: 'extra', label: 'Extra aktivní' },
-];
+  async function onSubmit(e){
+    e.preventDefault()
+    setLoading(true); setMessage(null)
 
-export default function Home() {
-  const [form, setForm] = useState({
-    email: '',
-    name: '',
-    gender: 'male',        // může být i 'muz/žena' – DB to normalizuje
-    age: '',
-    height_cm: '',
-    weight_kg: '',
-    activity: 'stredne',
-    stress_level: 'medium',       // low | medium | high
-    occupation: 'office_it',
-    goal: 'redukce',              // redukce | udrzovani | nabirani_svaly
-    freq_choice: '2-3',           // 0-1 | 2-3 | 4plus
-  });
-  const [status, setStatus] = useState(null);
-
-  const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    setStatus('Odesílám…');
+    const form = new FormData(e.currentTarget)
+    const payload = {
+      email: form.get('email') || '',
+      name: form.get('name') || '',
+      gender: form.get('gender') || 'Muž',
+      age: Number(form.get('age') || 0),
+      height_cm: Number(form.get('height_cm') || 0),
+      weight_kg: Number(form.get('weight_kg') || 0),
+      activity: form.get('activity') || 'Středně aktivní',
+      stress: form.get('stress') || 'Střední',
+      job: form.get('job') || 'Kancelář / IT',
+      goal: form.get('goal') || 'Redukce hmotnosti',
+      weekly_sessions: form.get('weekly_sessions') || '2–3× týdně'
+    }
 
     try {
-      const res = await fetch('/api/body-metrics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
+      // TODO: TADY vlož tvůj existující kód, který ukládá do Supabase:
+      // např. const { error } = await supabase.from('body_metrics').insert(payload)
 
-      if (!res.ok) throw new Error(await res.text());
-
-      setStatus('Uloženo ✅ – plán přijde e-mailem');
-      setForm((s) => ({ ...s, weight_kg: '' })); // drobný reset
-    } catch (err) {
-      setStatus('Chyba: ' + (err?.message || 'Neznámá chyba'));
+      // Demo: simuluji OK
+      await new Promise(r=>setTimeout(r,800))
+      setMessage({type:'ok', text:'Uloženo. Mrkni do aplikace – čeká tě plán!'})
+      e.currentTarget.reset()
+    } catch (err){
+      setMessage({type:'err', text:'Něco se nepovedlo. Zkus to znovu.'})
+    } finally {
+      setLoading(false)
     }
-  };
+  }
 
   return (
-    <div style={{ padding: 24, fontFamily: 'system-ui, sans-serif', maxWidth: 760, margin: '0 auto' }}>
-      <h1>Body & Mind ON</h1>
-      <p>Formulář uloží data do tabulky <code>body_metrics</code> v Supabase.</p>
+    <>
+      {/* HERO */}
+      <section className="hero">
+        <div>
+          <h1>Body & Mind ON</h1>
+          <p>Kompletní systém pro <strong>silné tělo</strong>, více energie a pevné sebevědomí.
+            Nejde jen o trénink nebo jídelníček – <strong>AI asistent</strong> ti spojí jídlo, pohyb a mindset
+            do <strong>jednoduchých kroků</strong>.</p>
+          <div className="cta">
+            <a className="btn" href="/#start">Začít zdarma</a>
+            <a className="ghost" href="https://bodyandmindon.cz">Zpět na web</a>
+          </div>
+        </div>
+        <div className="card">
+          <h2>Co získáš</h2>
+          <ul style={{margin:'8px 0 0 18px',color:'var(--muted)'}}>
+            <li>Osobní kalorický cíl a makra</li>
+            <li>Týdenní plán jídla i tréninku</li>
+            <li>Jednoduché úkoly pro návyk</li>
+          </ul>
+        </div>
+      </section>
 
-      <form onSubmit={onSubmit} style={{ display: 'grid', gap: 10, marginTop: 16 }}>
-        <input name="email" placeholder="Email (povinný)" value={form.email} onChange={onChange} required />
-        <input name="name" placeholder="Jméno a příjmení" value={form.name} onChange={onChange} />
+      {/* FORM */}
+      <section id="start" className="card" style={{marginTop:18}}>
+        <h2>Rychlý start</h2>
+        <p className="note">Formulář uloží data do tabulky <code>body_metrics</code> v Supabase.</p>
 
-        <label>Pohlaví:</label>
-        <select name="gender" value={form.gender} onChange={onChange}>
-          <option value="male">Muž</option>
-          <option value="female">Žena</option>
-        </select>
+        <form onSubmit={onSubmit} className="form">
+          <div className="row">
+            <div>
+              <label className="label">Email (povinný)</label>
+              <input className="input" name="email" type="email" placeholder="např. jan@domena.cz" required />
+            </div>
+            <div>
+              <label className="label">Jméno a příjmení</label>
+              <input className="input" name="name" type="text" placeholder="Jan Novák" />
+            </div>
+          </div>
 
-        <input name="age" placeholder="Věk (roky)" type="number" value={form.age} onChange={onChange} />
-        <input name="height_cm" placeholder="Výška (cm)" type="number" value={form.height_cm} onChange={onChange} />
-        <input name="weight_kg" placeholder="Váha (kg)" type="number" step="0.1" value={form.weight_kg} onChange={onChange} />
+          <div className="row">
+            <div>
+              <label className="label">Pohlaví</label>
+              <select className="select" name="gender" defaultValue="Muž">
+                <option>Muž</option>
+                <option>Žena</option>
+              </select>
+            </div>
+            <div>
+              <label className="label">Věk (roky)</label>
+              <input className="input" name="age" type="number" min="10" max="100" placeholder="30" />
+            </div>
+          </div>
 
-        <label>Aktivita:</label>
-        <select name="activity" value={form.activity} onChange={onChange}>
-          {activities.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
-        </select>
+          <div className="row">
+            <div>
+              <label className="label">Výška (cm)</label>
+              <input className="input" name="height_cm" type="number" min="120" max="230" placeholder="180" />
+            </div>
+            <div>
+              <label className="label">Váha (kg)</label>
+              <input className="input" name="weight_kg" type="number" min="35" max="250" placeholder="80" />
+            </div>
+          </div>
 
-        <label>Míra stresu:</label>
-        <select name="stress_level" value={form.stress_level} onChange={onChange}>
-          <option value="low">Nízká</option>
-          <option value="medium">Střední</option>
-          <option value="high">Vysoká</option>
-        </select>
+          <div className="row">
+            <div>
+              <label className="label">Aktivita</label>
+              <select className="select" name="activity" defaultValue="Středně aktivní">
+                <option>Mírně aktivní</option>
+                <option>Středně aktivní</option>
+                <option>Vysoce aktivní</option>
+              </select>
+            </div>
+            <div>
+              <label className="label">Míra stresu</label>
+              <select className="select" name="stress" defaultValue="Střední">
+                <option>Nízká</option>
+                <option>Střední</option>
+                <option>Vysoká</option>
+              </select>
+            </div>
+          </div>
 
-        <label>Typ práce:</label>
-        <select name="occupation" value={form.occupation} onChange={onChange}>
-          {occupations.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+          <div className="row">
+            <div>
+              <label className="label">Typ práce</label>
+              <select className="select" name="job" defaultValue="Kancelář / IT">
+                <option>Kancelář / IT</option>
+                <option>Manuální</option>
+                <option>Směnný provoz</option>
+              </select>
+            </div>
+            <div>
+              <label className="label">Cíl</label>
+              <select className="select" name="goal" defaultValue="Redukce hmotnosti">
+                <option>Redukce hmotnosti</option>
+                <option>Nárůst svalů</option>
+                <option>Udržení</option>
+              </select>
+            </div>
+          </div>
 
-        <label>Cíl:</label>
-        <select name="goal" value={form.goal} onChange={onChange}>
-          <option value="redukce">Redukce hmotnosti</option>
-          <option value="udrzovani">Udržování hmotnosti</option>
-          <option value="nabirani_svaly">Nabírání svalové hmoty</option>
-        </select>
+          <div>
+            <label className="label">Frekvence cvičení</label>
+            <select className="select" name="weekly_sessions" defaultValue="2–3× týdně">
+              <option>1× týdně</option>
+              <option>2–3× týdně</option>
+              <option>4–5× týdně</option>
+            </select>
+          </div>
 
-        <label>Frekvence cvičení:</label>
-        <select name="freq_choice" value={form.freq_choice} onChange={onChange}>
-          <option value="0-1">0–1× týdně</option>
-          <option value="2-3">2–3× týdně</option>
-          <option value="4plus">4× a více</option>
-        </select>
-
-        <button type="submit">Uložit vstup</button>
-      </form>
-
-      {status && <p style={{ marginTop: 12 }}>{status}</p>}
-    </div>
-  );
+          <button className="submit" type="submit" disabled={loading}>
+            {loading ? 'Ukládám…' : 'Začít moji cestu'}
+          </button>
+          {message && (
+            <p className="note" style={{color: message.type==='ok'?'var(--success)':'var(--error)'}}>
+              {message.text}
+            </p>
+          )}
+        </form>
+      </section>
+    </>
+  )
 }

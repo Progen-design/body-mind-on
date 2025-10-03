@@ -4,84 +4,71 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 export default function RegisterDetails() {
-  // zkusím doplnit name/email/gender z URL nebo localStorage (pokud existují z předchozího kroku)
+  // z 1. kroku (URL / localStorage)
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [gender, setGender] = useState(''); // male|female (volitelné – pokud není, insert projde, schema to nevyžaduje)
+  const [gender, setGender] = useState(''); // male|female (nepovinné)
 
-  // výpočetní vstupy
+  // 1:1 vstupy do DB
   const [age, setAge] = useState('');
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
-  const [activity, setActivity] = useState('stredne');       // sedavy|lehce|stredne|velmi|extra
-  const [stressLevel, setStressLevel] = useState('medium');  // low|medium|high
-  const [occupation, setOccupation] = useState('office_it'); // office_it|driver|warehouse|manual|healthcare|teacher_sales|gastronomy
-  const [goal, setGoal] = useState('redukce');               // redukce|udrzovani|nabirani_svaly
-  const [freqChoice, setFreqChoice] = useState('2-3');       // 0-1|2-3|4plus
+  const [activity, setActivity] = useState('stredne');
+  const [stressLevel, setStressLevel] = useState('medium');
+  const [occupation, setOccupation] = useState('office_it');
+  const [goal, setGoal] = useState('redukce');
+  const [freqChoice, setFreqChoice] = useState('2-3');
+  const [weeklySessionsUser, setWeeklySessionsUser] = useState(''); // volitelné číslo
   const [notes, setNotes] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
 
-  // načti z URL / localStorage
   useEffect(() => {
     try {
-      const params = new URLSearchParams(window.location.search);
-      const n = params.get('name') || localStorage.getItem('bmo_name') || '';
-      const e = params.get('email') || localStorage.getItem('bmo_email') || '';
-      const g = params.get('gender') || localStorage.getItem('bmo_gender') || '';
+      const p = new URLSearchParams(window.location.search);
+      const n = p.get('name') || localStorage.getItem('bmo_name') || '';
+      const e = p.get('email') || localStorage.getItem('bmo_email') || '';
+      const g = p.get('gender') || localStorage.getItem('bmo_gender') || '';
       if (n) setName(n);
       if (e) setEmail(e);
       if (g) setGender(g);
-    } catch (_) {}
+    } catch {}
   }, []);
 
   const onSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true); setMsg(null);
-
+    e.preventDefault(); setLoading(true); setMsg(null);
     try {
       const payload = {
-        // identifikace z předchozího kroku (pokud byla k dispozici)
-        name: name || null,
+        user_id: null,
         email: email || null,
-        gender: gender || null,       // očekává se 'male' nebo 'female' (trigger zvládne i 'muz'/'žena')
-        // výpočetní vstupy
-        age,
-        height_cm: height,
-        weight_kg: weight,
-        activity,
-        stress_level: stressLevel,
-        occupation,
-        goal,
-        freq_choice: freqChoice,
+        name: name || null,
+        gender: gender || null,
+        age, height_cm: height, weight_kg: weight,
+        activity, stress_level: stressLevel, occupation, goal, freq_choice: freqChoice,
+        weekly_sessions_user: weeklySessionsUser, // může zůstat null
         notes
       };
 
       const res = await fetch('/api/body-metrics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify(payload)
       });
-      const json = await res.json().catch(() => ({}));
+      const json = await res.json().catch(()=>({}));
       if (!res.ok) throw new Error(json.error || 'Unknown error');
 
       setMsg('Úspěšně odesláno ✅');
     } catch (err) {
-      console.error('[register-details] submit error:', err);
-      setMsg('Chyba – zkus to znovu ❌: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
+      setMsg('Chyba – ' + err.message);
+    } finally { setLoading(false); }
   };
 
   return (
     <>
       <Header />
-      <main className="container" style={{maxWidth: 860, margin: '40px auto', padding: '0 16px'}}>
-        <h1 style={{marginBottom: 12}}>Detaily pro „Start“</h1>
+      <main className="container" style={{maxWidth:860, margin:'40px auto', padding:'0 16px'}}>
+        <h1 style={{marginBottom:12}}>Detaily pro „Start“</h1>
 
-        {/* Info: pokud máme name/email z předchozího kroku, ukážeme je jen pro kontrolu */}
         {(name || email) && (
           <div className="info">
             {name && <span>👤 {name}</span>}
@@ -94,18 +81,18 @@ export default function RegisterDetails() {
           <div className="row">
             <div>
               <label>Výška (cm)</label>
-              <input type="number" min="100" max="240" placeholder="180" value={height} onChange={e=>setHeight(e.target.value)} required />
+              <input type="number" min="100" max="240" value={height} onChange={e=>setHeight(e.target.value)} required />
             </div>
             <div>
               <label>Váha (kg)</label>
-              <input type="number" min="30" max="250" placeholder="82" value={weight} onChange={e=>setWeight(e.target.value)} required />
+              <input type="number" min="30" max="250" value={weight} onChange={e=>setWeight(e.target.value)} required />
             </div>
           </div>
 
           <div className="row">
             <div>
               <label>Věk (roky)</label>
-              <input type="number" min="10" max="100" placeholder="35" value={age} onChange={e=>setAge(e.target.value)} required />
+              <input type="number" min="10" max="100" value={age} onChange={e=>setAge(e.target.value)} required />
             </div>
             <div>
               <label>Aktivita</label>
@@ -161,36 +148,38 @@ export default function RegisterDetails() {
             </div>
           </div>
 
-          <div className="row single">
+          <div className="row">
+            <div>
+              <label>Preferovaná frekvence od uživatele (volitelné)</label>
+              <input type="number" min="1" max="7" placeholder="např. 3" value={weeklySessionsUser}
+                     onChange={e=>setWeeklySessionsUser(e.target.value)} />
+            </div>
             <div>
               <label>Poznámky (volitelné)</label>
-              <textarea rows={4} placeholder="Zdravotní omezení, preference jídel, vybavení doma…" value={notes} onChange={e=>setNotes(e.target.value)} />
+              <input type="text" placeholder="omezení, preference jídel, vybavení…" value={notes}
+                     onChange={e=>setNotes(e.target.value)} />
             </div>
           </div>
 
           <button type="submit" className="btn" disabled={loading}>
             {loading ? 'Odesílám…' : 'Dokončit registraci'}
           </button>
-
-          {msg && <p className={`msg ${msg.includes('✅') ? 'ok' : 'err'}`}>{msg}</p>}
+          {msg && <p className={`msg ${msg.includes('✅') ? 'ok':'err'}`}>{msg}</p>}
         </form>
       </main>
       <Footer />
-
       <style jsx>{`
         .grid { display:grid; gap:16px; }
-        .row { display:grid; grid-template-columns: 1fr 1fr; gap:16px; 
-        .row.single { grid-template-columns: 1fr; }
+        .row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
         label { display:block; color:#bbb; font-size:14px; margin-bottom:6px; }
-        input, select, textarea {
+        input, select {
           width:100%; padding:10px 12px; background:#121212; border:1px solid #2a2a2a;
           color:#fff; border-radius:8px; outline:none;
         }
         .btn { padding:12px 18px; background:#1e90ff; color:#fff; border:0; border-radius:10px; font-weight:600; cursor:pointer; }
         .btn:disabled { opacity:.7; cursor:default; }
         .msg { margin-top:8px; }
-        .ok { color:#2ecc71; }
-        .err { color:#e74c3c; }
+        .ok { color:#2ecc71; } .err { color:#e74c3c; }
         .info { display:flex; gap:12px; margin:8px 0 16px; color:#9ad; font-size:14px; }
       `}</style>
     </>

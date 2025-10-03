@@ -9,11 +9,9 @@ export default function Header() {
           <span>Body & Mind ON</span>
         </Link>
         <nav className="menu">
-          <Link href="/dashboard">Dashboard</Link>
           <Link href="/plans">Plány</Link>
           <Link href="/challenge">Challenge</Link>
-          <Link href="/pricing">Ceník</Link>
-          <a href="https://bodyandmindon.cz" className="ghost">Zpět na web</a>
+          <Link href="/" className="ghost">Zpět na web</Link>
           <Link href="/auth" className="btn">Přihlásit</Link>
         </nav>
       </div>

@@ -1,3 +1,4 @@
+// /components/Header.js
 import Link from 'next/link'
 
 export default function Header() {
@@ -12,7 +13,7 @@ export default function Header() {
           <Link href="/pricing">Ceník</Link>
           <Link href="/challenge">Challenge</Link>
           <a className="ghost" href="https://bodyandmindon.cz">Zpět na web</a>
-          <Link href="/auth" className="btn">Přihlásit</Link>
+          <Link className="btn" href="/auth">Přihlásit</Link>
         </nav>
       </div>
     </header>

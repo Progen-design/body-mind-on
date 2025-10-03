@@ -4,14 +4,14 @@ import Footer from '../components/Footer'
 
 const plans = [
   { id: 'start', title: 'Start', price: 'ZDARMA', perks: ['1× ukázkový jídelníček + 1× trénink', 'Evidence váhy a měření', 'Základní tipy e-mailem'] },
-  { id: 'individual', title: 'Individuální', price: '1 490 Kč / měsíc', perks: ['Plán na míru bez trenéra', 'AI jídelníček + trénink každý týden', 'Automatické úpravy', 'Tipy pro spánek, stres, regeneraci'], recommended: true },
-  { id: 'group', title: 'Skupina', price: '2 490 Kč / měsíc', perks: ['Vše z Individuálního', '1× skupinový trénink měsíčně', 'Přístup do komunity', 'Q&A s koučem 1× měsíčně'] },
+  { id: 'individual', title: 'Individuální', price: '1 490 Kč / měsíc', perks: ['Plán na míru bez trenéra', 'AI jídelníček + trénink každý týden', 'Automatické úpravy podle výsledků', 'Tipy pro spánek, stres, regeneraci'], recommended: true },
+  { id: 'group', title: 'Skupina', price: '2 490 Kč / měsíc', perks: ['Vše z balíčku Individuální', '1× skupinový trénink měsíčně', 'Přístup do komunity', 'Q&A s koučem 1× za měsíc'] },
   { id: 'addon', title: 'Add-on: Osobní lekce', price: '60 min = 1 190 Kč / 90 min = 1 690 Kč', perks: ['Doobjednej kdykoliv', 'Balíčky (5×, 10×) – sleva', 'Storno do 24 h zdarma'] }
 ]
 
 export default function Home() {
   const [selected, setSelected] = useState(null)
-  const [step, setStep] = useState('choosePlan')  
+  const [step, setStep] = useState('choosePlan')
   const [regData, setRegData] = useState({ name: '', email: '' })
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState(null)
@@ -44,7 +44,6 @@ export default function Home() {
       name: regData.name,
       email: regData.email,
       plan: selected,
-      // Pokud plan není „addon“, očekávej více polí
       ...(selected !== 'addon' && {
         gender: form.get('gender'),
         age: Number(form.get('age') || 0),
@@ -57,22 +56,20 @@ export default function Home() {
         weekly_sessions: form.get('weekly_sessions'),
       }),
       ...(selected === 'addon' && {
-        // u add-onu jenom např. typ lekce (můžeš přidat pole „lekce_typ“)
         lesson_type: form.get('lesson_type'),
-        duration: form.get('duration')  // 60 nebo 90
+        duration: form.get('duration'),
       })
     }
 
     try {
-      // TODO: supabase insert
-      // const { error } = await supabase.from('body_metrics').insert(payload)
+      // TODO: supabase insert payload
       await new Promise(r => setTimeout(r, 600))
-      setMessage({ type: 'ok', text: 'Registrace úspěšná!' })
+      setMessage({ type: 'ok', text: 'Registrace dokončena!' })
       e.currentTarget.reset()
       setSelected(null)
       setStep('choosePlan')
     } catch (err) {
-      setMessage({ type: 'err', text: 'Chyba, zkus znovu.' })
+      setMessage({ type: 'err', text: 'Chyba – zkus to znovu.' })
     } finally {
       setLoading(false)
     }
@@ -91,7 +88,7 @@ export default function Home() {
 
         <section className="pricing-section">
           <h2>Ceník</h2>
-          <p className="subtext">Vyber plán, který ti vyhovuje. Add-ony můžeš dokoupit později.</p>
+          <p className="subtext">Vyber plán, který ti vyhovuje. Add-ony lze dokoupit později.</p>
           <div className="pricing-grid">
             {plans.map(plan => (
               <div
@@ -102,9 +99,7 @@ export default function Home() {
                 {plan.recommended && <div className="badge">Doporučeno</div>}
                 <h3>{plan.title}</h3>
                 <p className="price">{plan.price}</p>
-                <ul className="perks">
-                  {plan.perks.map((p,i) => <li key={i}>{p}</li>)}
-                </ul>
+                <ul className="perks">{plan.perks.map((p,i) => <li key={i}>{p}</li>)}</ul>
                 <button className="submit" disabled={selected === plan.id && step === 'register'}>
                   {selected === plan.id ? 'Vybráno' : 'Zvolit'}
                 </button>

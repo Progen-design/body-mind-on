@@ -1,63 +1,47 @@
-// pages/api/body-metrics.js
-import { createClient } from '@supabase/supabase-js';
-
-function getServerSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) {
-    throw new Error('Chybí env NEXT_PUBLIC_SUPABASE_URL a SUPABASE_SERVICE_ROLE_KEY/ANON_KEY');
-  }
-  return createClient(url, key, { auth: { persistSession: false } });
-}
+// /pages/api/body-metrics.js
+import { supabaseServer } from '../../lib/supabaseServer';
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const {
-      email,
-      name,
-      gender,        // 'male' | 'female' | 'muz' | 'žena' – DB si to normalizuje
-      age,
-      height_cm,
-      weight_kg,
-      activity,      // 'sedavy' | 'lehce' | 'stredne' | 'velmi' | 'extra'
-      stress_level,  // 'low' | 'medium' | 'high'
-      occupation,    // 'office_it' | 'driver' | ...
-      goal,          // 'redukce' | 'udrzovani' | 'nabirani_svaly'
-      freq_choice,   // '0-1' | '2-3' | '4plus'
-    } = req.body || {};
+    const b = req.body || {};
 
-    if (!email) return res.status(400).send('Chybí email');
-
-    const supabase = getServerSupabase();
+    // jednoduchá sanitizace/typy
+    const toNum = (v) => (v === '' || v === null || typeof v === 'undefined' ? null : Number(v));
 
     const payload = {
-      email,
-      name: name || null,
-      gender: gender || null,
-      age: age ? Number(age) : null,
-      height_cm: height_cm ? Number(height_cm) : null,
-      weight_kg: weight_kg ? Number(weight_kg) : null,
-      activity: activity || null,
-      stress_level: stress_level || null,
-      occupation: occupation || null,
-      goal: goal || null,
-      freq_choice: freq_choice || null,
-      // weekly_sessions_user umíme odvodit z freq_choice, ale necháme to na triggeru
+      user_id: b.user_id || null,
+      email: b.email || null,
+      name: b.name || null,
+      gender: b.gender || null,                // 'muz'/'žena'/'male'/'female' (trigger to znormalizuje)
+      age: toNum(b.age),
+      height_cm: toNum(b.height_cm),
+      weight_kg: toNum(b.weight_kg),
+      activity: b.activity || null,            // 'sedavy'|'lehce'|'stredne'|'velmi'|'extra'
+      stress_level: b.stress_level || null,    // 'low'|'medium'|'high'
+      occupation: b.occupation || null,        // 'office_it'|...
+      goal: b.goal || null,                    // 'redukce'|'udrzovani'|'nabirani_svaly'
+      freq_choice: b.freq_choice || null,      // '0-1'|'2-3'|'4plus'
+      notes: b.notes || null
     };
 
-    const { data, error } = await supabase
-      .from('body_metrics')
-      .insert([payload])
-      .select()
-      .single();
+    // 1) insert do body_metrics (trigger dopočítá BMI/TDEE/…)
+    const { error: dbErr } = await supabaseServer.from('body_metrics').insert([payload]);
+    if (dbErr) throw dbErr;
 
-    if (error) throw error;
+    // 2) forward do Make (server env, ne NEXT_PUBLIC)
+    if (!process.env.MAKE_WEBHOOK_URL) throw new Error('Chybí MAKE_WEBHOOK_URL');
+    const r = await fetch(process.env.MAKE_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) throw new Error(`Make webhook failed: ${r.status} ${await r.text()}`);
 
-    return res.status(200).json({ ok: true, data });
-  } catch (err) {
-    return res.status(400).send(typeof err?.message === 'string' ? err.message : 'Server error');
+    return res.status(200).json({ ok: true });
+  } catch (e) {
+    console.error('[body-metrics] ERROR:', e);
+    return res.status(500).json({ error: e.message || String(e) });
   }
 }

@@ -33,3 +33,14 @@ main{padding:40px 0}
 .site-footer{border-top:1px solid var(--border);margin-top:48px}
 .foot{display:flex;align-items:center;justify-content:space-between;color:#a1a1aa;font-size:14px;padding:24px 0}
 .links{display:flex;gap:16px;flex-wrap:wrap}
+
+.pricing-grid .card {
+  background: var(--panel);
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+}
+
+.pricing-grid .card.selected {
+  background: rgba(10, 10, 10, 0.85);
+}

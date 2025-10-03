@@ -3,13 +3,14 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
-import { supabase } from '../lib/supabaseClient'
+
+const WEBHOOK_URL = process.env.NEXT_PUBLIC_MAKE_WEBHOOK_URL
 
 export default function Register() {
   const router = useRouter()
   const { plan } = router.query
 
-  const [name, setName] = useState('')
+  const [name, setName]   = useState('')
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState(null)
@@ -21,23 +22,38 @@ export default function Register() {
   async function onSubmit(e) {
     e.preventDefault()
     setLoading(true); setMsg(null)
+
     try {
-      const { error } = await supabase
-        .from('body_metrics')
-        .insert([{
-          name,
-          email,
-          plan,
-          lead_source: 'app_pricing'
-        }])
+      if (!WEBHOOK_URL) {
+        throw new Error('Chybí env NEXT_PUBLIC_MAKE_WEBHOOK_URL')
+      }
 
-      if (error) throw error
+      const payload = {
+        name,
+        email,
+        plan,
+        lead_source: 'app_pricing',
+        ts: new Date().toISOString(),
+        ua: typeof navigator !== 'undefined' ? navigator.userAgent : ''
+      }
 
-      setMsg({ type: 'ok', text: 'Díky! Zkontroluj e-mail pro další kroky.' })
+      const res = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(`Webhook HTTP ${res.status} ${text}`)
+      }
+
+      setMsg({ type: 'ok', text: 'Díky! Máš to odeslané – mrkni do e-mailu.' })
       setName(''); setEmail('')
       // případně: router.push('/thankyou')
     } catch (err) {
-      setMsg({ type: 'err', text: 'Chyba – zkus to znovu.' })
+      console.error('MAKE WEBHOOK ERROR:', err)
+      setMsg({ type: 'err', text: 'Chyba při odesílání – zkus to znovu.' })
     } finally {
       setLoading(false)
     }

@@ -6,7 +6,6 @@ export default function Header() {
     <header className="site-header">
       <div className="container nav">
         <Link href="/" className="brand">
-          <img src="/logo.svg" alt="Body & Mind ON" />
           <span>Body & Mind ON</span>
         </Link>
         <nav className="menu">

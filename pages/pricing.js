@@ -1,3 +1,4 @@
+// pages/pricing.js
 import { useRouter } from 'next/router'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
@@ -22,15 +23,15 @@ export default function Pricing() {
       <Header />
       <main className="container">
         <h1>Ceník</h1>
-        <p>Vyber plán. Add-ony můžeš dokoupit později.</p>
+        <p>Vyber plán, který ti vyhovuje. Add-ony můžeš dokoupit později.</p>
 
         <div className="pricing-grid">
-          {plans.map(plan => (
-            <div key={plan.id} className="card" onClick={() => choosePlan(plan.id)}>
-              {plan.recommended && <div className="badge">Doporučeno</div>}
-              <h3>{plan.title}</h3>
-              <p className="price">{plan.price}</p>
-              <ul className="perks">{plan.perks.map((p,i)=><li key={i}>{p}</li>)}</ul>
+          {plans.map(p => (
+            <div key={p.id} className="card" onClick={() => choosePlan(p.id)}>
+              {p.recommended && <div className="badge">Doporučeno</div>}
+              <h3>{p.title}</h3>
+              <p className="price">{p.price}</p>
+              <ul className="perks">{p.perks.map((x,i)=><li key={i}>{x}</li>)}</ul>
               <button className="submit">Zvolit</button>
             </div>
           ))}

@@ -2,49 +2,40 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
-// import supabase klient např. from '../lib/supabaseClient'
+import { supabase } from '../lib/supabaseClient'
 
 export default function Register() {
   const router = useRouter()
   const { plan } = router.query
-  const [formData, setFormData] = useState({ name: '', email: '' })
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState(null)
+  const [msg, setMsg] = useState(null)
 
   useEffect(() => {
-    if (!plan) {
-      router.push('/pricing')
-    }
-  }, [plan])
+    if (!plan) router.replace('/pricing')
+  }, [plan, router])
 
-  function handleChange(e) {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
-  }
-
-  async function handleSubmit(e) {
+  async function onSubmit(e) {
     e.preventDefault()
-    setLoading(true)
-    setMessage(null)
-    const { name, email } = formData
-    if (!name || !email) {
-      setMessage({ type: 'err', text: 'Vyplň jméno a e-mail.' })
-      setLoading(false)
-      return
-    }
+    setLoading(true); setMsg(null)
 
-    const payload = { name, email, plan }
     try {
-      // nahraď svým kódem pro supabase insert
-      // const { data, error } = await supabase
-      //   .from('body_metrics')
-      //   .insert([payload])
-      // if (error) throw error
-      await new Promise(r => setTimeout(r, 600))
-      setMessage({ type: 'ok', text: 'Díky! Zkontroluj e-mail.' })
-      // případně přesměrování na další krok nebo stránku
-      // router.push('/thankyou')
+      // === MVP: vlož záznam bez přihlášení
+      const { error } = await supabase.from('body_metrics').insert([{
+        name, email, plan, lead_source: 'app_pricing'
+      }])
+      if (error) throw error
+
+      // === SCALE (volitelně): e-mailový magic link
+      // const { data: signRes, error: signErr } = await supabase.auth.signInWithOtp({ email })
+      // if (signErr) throw signErr
+
+      setMsg({ type:'ok', text:'Díky! Zkontroluj e-mail pro další kroky.' })
+      setName(''); setEmail('')
+      // router.push('/thankyou') // pokud chceš vlastní “Děkujeme” stránku
     } catch (err) {
-      setMessage({ type: 'err', text: 'Chyba, zkuste znovu.' })
+      setMsg({ type:'err', text: 'Došlo k chybě – zkus to znovu.' })
     } finally {
       setLoading(false)
     }
@@ -54,27 +45,21 @@ export default function Register() {
     <>
       <Header />
       <main className="container">
-        <h1>Registrovat pro plán <strong>{plan}</strong></h1>
-        <form className="form" onSubmit={handleSubmit}>
+        <h1>Registrace pro plán <strong>{plan || ''}</strong></h1>
+        <form className="form" onSubmit={onSubmit}>
           <div className="row">
             <div>
               <label className="label">Jméno a příjmení</label>
-              <input className="input" name="name" type="text" value={formData.name} onChange={handleChange} required />
+              <input className="input" value={name} onChange={e=>setName(e.target.value)} required />
             </div>
             <div>
-              <label className="label">Email</label>
-              <input className="input" name="email" type="email" value={formData.email} onChange={handleChange} required />
+              <label className="label">E-mail</label>
+              <input className="input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required />
             </div>
           </div>
-          <button className="submit" type="submit" disabled={loading}>
-            {loading ? 'Odesílám…' : 'Registrovat'}
-          </button>
+          <button className="submit" disabled={loading}>{loading ? 'Odesílám…' : 'Registrovat'}</button>
+          {msg && <p className="note" style={{color: msg.type==='ok' ? 'var(--success)' : 'var(--error)'}}>{msg.text}</p>}
         </form>
-        {message && (
-          <p className="note" style={{ color: message.type === 'ok' ? 'var(--success)' : 'var(--error)' }}>
-            {message.text}
-          </p>
-        )}
       </main>
       <Footer />
     </>

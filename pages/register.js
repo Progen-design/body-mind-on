@@ -1,3 +1,4 @@
+// /pages/register.js
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import Header from '../components/Header'
@@ -7,6 +8,7 @@ import { supabase } from '../lib/supabaseClient'
 export default function Register() {
   const router = useRouter()
   const { plan } = router.query
+
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -19,23 +21,23 @@ export default function Register() {
   async function onSubmit(e) {
     e.preventDefault()
     setLoading(true); setMsg(null)
-
     try {
-      // === MVP: vlož záznam bez přihlášení
-      const { error } = await supabase.from('body_metrics').insert([{
-        name, email, plan, lead_source: 'app_pricing'
-      }])
+      const { error } = await supabase
+        .from('body_metrics')
+        .insert([{
+          name,
+          email,
+          plan,
+          lead_source: 'app_pricing'
+        }])
+
       if (error) throw error
 
-      // === SCALE (volitelně): e-mailový magic link
-      // const { data: signRes, error: signErr } = await supabase.auth.signInWithOtp({ email })
-      // if (signErr) throw signErr
-
-      setMsg({ type:'ok', text:'Díky! Zkontroluj e-mail pro další kroky.' })
+      setMsg({ type: 'ok', text: 'Díky! Zkontroluj e-mail pro další kroky.' })
       setName(''); setEmail('')
-      // router.push('/thankyou') // pokud chceš vlastní “Děkujeme” stránku
+      // případně: router.push('/thankyou')
     } catch (err) {
-      setMsg({ type:'err', text: 'Došlo k chybě – zkus to znovu.' })
+      setMsg({ type: 'err', text: 'Chyba – zkus to znovu.' })
     } finally {
       setLoading(false)
     }
@@ -50,15 +52,21 @@ export default function Register() {
           <div className="row">
             <div>
               <label className="label">Jméno a příjmení</label>
-              <input className="input" value={name} onChange={e=>setName(e.target.value)} required />
+              <input className="input" value={name} onChange={(e)=>setName(e.target.value)} required />
             </div>
             <div>
               <label className="label">E-mail</label>
-              <input className="input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required />
+              <input className="input" type="email" value={email} onChange={(e)=>setEmail(e.target.value)} required />
             </div>
           </div>
-          <button className="submit" disabled={loading}>{loading ? 'Odesílám…' : 'Registrovat'}</button>
-          {msg && <p className="note" style={{color: msg.type==='ok' ? 'var(--success)' : 'var(--error)'}}>{msg.text}</p>}
+          <button className="submit" disabled={loading}>
+            {loading ? 'Odesílám…' : 'Registrovat'}
+          </button>
+          {msg && (
+            <p className="note" style={{ color: msg.type === 'ok' ? 'var(--success)' : 'var(--error)' }}>
+              {msg.text}
+            </p>
+          )}
         </form>
       </main>
       <Footer />

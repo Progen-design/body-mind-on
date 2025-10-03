@@ -179,7 +179,7 @@ export default function RegisterDetails() {
 
       <style jsx>{`
         .grid { display:grid; gap:16px; }
-        .row { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+        .row { display:grid; grid-template-columns: 1fr 1fr; gap:16px; 
         .row.single { grid-template-columns: 1fr; }
         label { display:block; color:#bbb; font-size:14px; margin-bottom:6px; }
         input, select, textarea {

@@ -1,21 +1,108 @@
-/* --- Responzivní + vylepšené styly pro karty ceniků --- */
+:root{
+  --bg: #0a0a0a;
+  --panel: #121212;
+  --border: #222;
+  --text: #eaeaea;
+  --muted: #a1a1aa;
+  --accent: #0EA5E9;
+  --accent-600: #0284C7;
+  --success: #22c55e;
+  --error: #ef4444;
+}
 
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+a { color: inherit; text-decoration: none; }
+a:hover { opacity: .9; }
+
+.container { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+main { padding: 40px 0; }
+
+/* Header */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(10,10,10,.7);
+  backdrop-filter: saturate(160%) blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.nav {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  letter-spacing: .2px;
+}
+.brand img {
+  height: 28px;
+}
+.menu {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-600));
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+.ghost {
+  border: 1px solid var(--border);
+  padding: 10px 16px;
+  border-radius: 12px;
+}
+
+/* Hero */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  align-items: center;
+  margin: 28px 0 18px;
+}
+.hero h1 {
+  font-size: 32px;
+  line-height: 1.2;
+  margin: 0 0 12px;
+}
+.hero p {
+  color: var(--muted);
+  font-size: 16px;
+}
+.cta {
+  margin-top: 18px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Pricing grid */
 .pricing-grid {
   display: grid;
-  /* na desktopu více sloupců */
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 24px;
-  margin-top: 32px;
 }
 
-/* Při menších obrazovkách jedna kolona */
-@media (max-width: 768px) {
-  .pricing-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Karta (card) styl */
+/* Card */
 .card {
   background: var(--panel);
   border-radius: 16px;
@@ -24,20 +111,12 @@
   position: relative;
   transition: transform 0.2s, border-color 0.2s;
 }
-
-/* Hover efekt */
 .card:hover {
   transform: translateY(-4px);
-  border-color: var(--accent);
 }
-
-/* Karta pokud je vybrána */
 .card.selected {
   border-color: var(--accent);
-  background: rgba(10, 10, 10, 0.85);
 }
-
-/* Badge pro „Doporučeno“ */
 .badge {
   position: absolute;
   top: -10px;
@@ -48,41 +127,82 @@
   border-radius: 8px;
   font-size: 12px;
 }
-
-/* Styl nadpisu ceny uvnitř karty */
 .price {
   font-size: 1.2rem;
   font-weight: 600;
   margin: 12px 0;
 }
-
-/* Výčet výhod (perks) v kartě */
 .perks {
-  margin: 12px 0 0 16px;
   color: var(--muted);
+  margin: 12px 0 0 16px;
 }
 
-/* Tlačítko uvnitř karty */
-.card button.submit {
-  margin-top: 18px;
-  width: 100%;
-}
-
-/* Sekce s formulářem, pokud je zobrazená */
+/* Form */
 .form-section {
   margin-top: 48px;
 }
-
-/* Hero responsivita */
-@media (max-width: 820px) {
-  .hero {
-    display: block;
-  }
+.form {
+  display: grid;
+  gap: 14px;
 }
-
-/* Řádky formuláře responsivně */
+.label {
+  font-size: 14px;
+  color: #cfcfcf;
+}
+.input, .select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #0f0f0f;
+  color: var(--text);
+  outline: none;
+}
+.input::placeholder {
+  color: #8a8a91;
+}
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
 @media (max-width: 768px) {
   .row {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr;
   }
+}
+.submit {
+  margin-top: 6px;
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  color: #fff;
+  border: none;
+  background: linear-gradient(90deg, var(--accent), var(--accent-600));
+  cursor: pointer;
+}
+.note {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+/* Footer */
+.site-footer {
+  border-top: 1px solid var(--border);
+  margin-top: 48px;
+}
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #a1a1aa;
+  font-size: 14px;
+  padding: 24px 0;
+}
+.links {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
 }

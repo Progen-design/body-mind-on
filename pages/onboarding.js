@@ -5,7 +5,7 @@ import Header from '../components/Header'
 import Footer from '../components/Footer'
 import { supabase } from '../lib/supabaseClient'
 
-// CZ → DB kódy (odpovídá tvým CHECK constraintům)
+// CZ → DB kódy
 const MAPS = {
   activity: {
     'Sedavý':'sedavy','Mírně aktivní':'lehce','Středně aktivní':'stredne','Velmi aktivní':'velmi','Extra aktivní':'extra'
@@ -21,23 +21,23 @@ const MAPS = {
 
 export default function Onboarding() {
   const router = useRouter()
-  const { plan='' } = router.query
+  const { plan = '' } = router.query
 
   const [height, setHeight] = useState('180')
   const [weight, setWeight] = useState('80')
-  const [age, setAge] = useState('30')
+  const [age, setAge]       = useState('30')
   const [activity, setActivity] = useState('Středně aktivní')
-  const [stress, setStress] = useState('Střední')
-  const [job, setJob] = useState('Kancelář / IT')
-  const [goal, setGoal] = useState('Redukce hmotnosti')
-  const [freq, setFreq] = useState('2–3× týdně')
+  const [stress, setStress]     = useState('Střední')
+  const [job, setJob]           = useState('Kancelář / IT')
+  const [goal, setGoal]         = useState('Redukce hmotnosti')
+  const [freq, setFreq]         = useState('2–3× týdně')
 
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState(null)
 
-  useEffect(()=>{ if (!plan) router.replace('/pricing') },[plan,router])
+  useEffect(() => { if (!plan) router.replace('/pricing') }, [plan, router])
 
-  async function onSubmit(e){
+  async function onSubmit(e) {
     e.preventDefault()
     setLoading(true); setMsg(null)
 
@@ -51,19 +51,31 @@ export default function Onboarding() {
       goal:         MAPS.goal[goal] ?? 'redukce',
       freq_choice:  MAPS.freq[freq] ?? '2-3',
       plan,
-      lead_source: 'onboarding'
+      lead_source: 'onboarding',
     }
 
     try {
       console.log('INSERT payload ->', payload)
-      const { data, error } = await supabase.from('body_metrics').insert([payload]).select('*')
-      if (error) throw error
+
+      const { data, error } = await supabase
+        .from('body_metrics')
+        .insert([payload])
+        .select('*')
+
+      if (error) {
+        const msg = [error.message, error.details, error.hint, error.code].filter(Boolean).join(' | ')
+        throw new Error(msg)
+      }
+
       console.log('INSERT ok ->', data)
-      setMsg({ type:'ok', text:'Hotovo! Data uložena.' })
+      setMsg({ type: 'ok', text: 'Hotovo! Data uložena.' })
       // router.push('/thankyou')
     } catch (err) {
       console.error('SUPABASE ERROR:', err)
-      setMsg({ type:'err', text: err?.message || 'Chyba – zkus to znovu.' })
+      const text = err?.message || JSON.stringify(err, null, 2)
+      setMsg({ type: 'err', text })
+      // pro jistotu i alert (dočasně)
+      alert(text)
     } finally {
       setLoading(false)
     }
@@ -79,18 +91,21 @@ export default function Onboarding() {
           <div className="row">
             <div>
               <label className="label">Výška (cm)</label>
-              <input className="input" type="number" min="120" max="230" value={height} onChange={e=>setHeight(e.target.value)} />
+              <input className="input" type="number" min="120" max="230"
+                     value={height} onChange={e=>setHeight(e.target.value)} />
             </div>
             <div>
               <label className="label">Váha (kg)</label>
-              <input className="input" type="number" min="35" max="250" value={weight} onChange={e=>setWeight(e.target.value)} />
+              <input className="input" type="number" min="35" max="250"
+                     value={weight} onChange={e=>setWeight(e.target.value)} />
             </div>
           </div>
 
           <div className="row">
             <div>
               <label className="label">Věk (roky)</label>
-              <input className="input" type="number" min="10" max="100" value={age} onChange={e=>setAge(e.target.value)} />
+              <input className="input" type="number" min="10" max="100"
+                     value={age} onChange={e=>setAge(e.target.value)} />
             </div>
             <div>
               <label className="label">Aktivita</label>
@@ -132,8 +147,15 @@ export default function Onboarding() {
             </div>
           </div>
 
-          <button className="submit" type="submit" disabled={loading}>{loading ? 'Ukládám…' : 'Dokončit registraci'}</button>
-          {msg && <p className="note" style={{ color: msg.type==='ok'?'var(--success)':'var(--error)' }}>{msg.text}</p>}
+          <button className="submit" type="submit" disabled={loading}>
+            {loading ? 'Ukládám…' : 'Dokončit registraci'}
+          </button>
+
+          {msg && (
+            <p className="note" style={{ color: msg.type === 'ok' ? 'var(--success)' : 'var(--error)' }}>
+              {msg.text}
+            </p>
+          )}
         </form>
       </main>
       <Footer />

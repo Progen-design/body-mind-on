@@ -1,214 +1,108 @@
-// /pages/register.js
-import { useEffect, useState } from 'react';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+// /pages/api/body-metrics.js
+import { supabaseServer } from '../../lib/supabaseServer';
 
-export default function RegisterAll() {
-  // Identifikace (můžeš předvyplnit z URL/localStorage, ale jsou i v UI)
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [gender, setGender] = useState('male'); // male|female
+const MAPS = {
+  gender: {
+    'muž':'male','muz':'male','m':'male','male':'male',
+    'žena':'female','zena':'female','f':'female','female':'female'
+  },
+  activity: {
+    'sedavý':'sedavy','sedavy':'sedavy',
+    'lehce aktivní':'lehce','lehce':'lehce',
+    'středně aktivní':'stredne','stredně':'stredne','stredne':'stredne',
+    'velmi aktivní':'velmi','velmi':'velmi',
+    'extra aktivní':'extra','extra':'extra'
+  },
+  stress_level: {
+    'nízká':'low','nizka':'low','low':'low',
+    'střední':'medium','stredni':'medium','medium':'medium',
+    'vysoká':'high','vysoka':'high','high':'high'
+  },
+  occupation: {
+    'kancelář / it':'office_it','kancelar / it':'office_it','office_it':'office_it',
+    'řidič':'driver','ridic':'driver','driver':'driver',
+    'sklad / logistika':'warehouse','warehouse':'warehouse',
+    'manuální práce':'manual','manual':'manual',
+    'zdravotnictví':'healthcare','healthcare':'healthcare',
+    'učitel / obchod':'teacher_sales','ucitel / obchod':'teacher_sales','teacher_sales':'teacher_sales',
+    'gastronomie':'gastronomy','gastronomy':'gastronomy'
+  },
+  goal: {
+    'redukce hmotnosti':'redukce','redukce':'redukce',
+    'udržování':'udrzovani','udrzovani':'udrzovani',
+    'nabírání svalové hmoty':'nabirani_svaly','nabirani svalove hmoty':'nabirani_svaly','nabirani_svaly':'nabirani_svaly'
+  },
+  freq_choice: {
+    '0–1× týdně':'0-1','0-1x tydne':'0-1','0-1':'0-1',
+    '2–3× týdně':'2-3','2-3x tydne':'2-3','2-3':'2-3',
+    '4+ týdně':'4plus','4+ tydne':'4plus','4plus':'4plus'
+  }
+};
 
-  // Výpočetní vstupy (1:1 s DB)
-  const [age, setAge] = useState('');
-  const [height, setHeight] = useState('');
-  const [weight, setWeight] = useState('');
-  const [activity, setActivity] = useState('stredne');         // sedavy|lehce|stredne|velmi|extra
-  const [stressLevel, setStressLevel] = useState('medium');    // low|medium|high
-  const [occupation, setOccupation] = useState('office_it');   // office_it|driver|warehouse|manual|healthcare|teacher_sales|gastronomy
-  const [goal, setGoal] = useState('redukce');                 // redukce|udrzovani|nabirani_svaly
-  const [freqChoice, setFreqChoice] = useState('2-3');         // 0-1|2-3|4plus
-  const [weeklySessionsUser, setWeeklySessionsUser] = useState(''); // volitelné číslo 1–7
-  const [notes, setNotes] = useState('');
+const norm = (group, v) =>
+  v == null ? null : (MAPS[group][String(v).trim().toLowerCase()] || v);
+const toNum = (v) =>
+  v === '' || v == null || typeof v === 'undefined' ? null : Number(v);
 
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState(null);
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Předvyplnění z URL/localStorage (nepovinné)
-  useEffect(() => {
-    try {
-      const p = new URLSearchParams(window.location.search);
-      const n = p.get('name') || localStorage.getItem('bmo_name');
-      const e = p.get('email') || localStorage.getItem('bmo_email');
-      const g = p.get('gender') || localStorage.getItem('bmo_gender');
-      if (n) setName(n);
-      if (e) setEmail(e);
-      if (g) setGender(g);
-    } catch {}
-  }, []);
+  try {
+    const b = req.body || {};
 
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true); setMsg(null);
+    // 1:1 vstupy dle schématu (počítané hodnoty dělá trigger)
+    const payload = {
+      user_id: b.user_id || null,
+      email: b.email || null,
+      name: b.name || null,
+      gender: norm('gender', b.gender),
+      age: toNum(b.age),
+      height_cm: toNum(b.height_cm),
+      weight_kg: toNum(b.weight_kg),
+      activity: norm('activity', b.activity),
+      stress_level: norm('stress_level', b.stress_level),
+      occupation: norm('occupation', b.occupation),
+      goal: norm('goal', b.goal),
+      freq_choice: norm('freq_choice', b.freq_choice),
+      weekly_sessions_user: toNum(b.weekly_sessions_user),
+      notes: b.notes || null
+    };
 
-    try {
-      const payload = {
-        user_id: null,
-        email: email || null,
-        name: name || null,
-        gender: gender || null,            // server případně normalizuje
-        age, height_cm: height, weight_kg: weight,
-        activity, stress_level: stressLevel, occupation, goal,
-        freq_choice: freqChoice,
-        weekly_sessions_user: weeklySessionsUser,
-        notes
-      };
+    // Základní sanity check pro čísla (přátelská hláška)
+    if (payload.age !== null && Number.isNaN(payload.age)) throw new Error('Věk musí být číslo');
+    if (payload.height_cm !== null && Number.isNaN(payload.height_cm)) throw new Error('Výška musí být číslo');
+    if (payload.weight_kg !== null && Number.isNaN(payload.weight_kg)) throw new Error('Váha musí být číslo');
 
-      const res = await fetch('/api/body-metrics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const json = await res.json().catch(() => ({}));
+    // DB INSERT
+    const { error: dbErr } = await supabaseServer.from('body_metrics').insert([payload]);
+    if (dbErr) throw new Error(`DB insert failed: ${dbErr.message}`);
 
-      if (!res.ok) throw new Error(json.error || 'Neznámá chyba');
-
-      setMsg('Úspěšně odesláno ✅');
-    } catch (err) {
-      setMsg(`Chyba ❌: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <>
-      <Header />
-      <main className="container" style={{maxWidth: 900, margin: '40px auto', padding: '0 16px'}}>
-        <h1 style={{marginBottom: 12}}>Detaily pro „Start“</h1>
-
-        <form onSubmit={onSubmit} className="grid">
-          {/* Identifikace */}
-          <div className="row">
-            <div>
-              <label>Jméno</label>
-              <input type="text" placeholder="Jan Novák" value={name} onChange={e=>setName(e.target.value)} required />
-            </div>
-            <div>
-              <label>E-mail</label>
-              <input type="email" placeholder="jan@example.com" value={email} onChange={e=>setEmail(e.target.value)} required />
-            </div>
-          </div>
-
-          <div className="row">
-            <div>
-              <label>Pohlaví</label>
-              <select value={gender} onChange={e=>setGender(e.target.value)}>
-                <option value="male">Muž</option>
-                <option value="female">Žena</option>
-              </select>
-            </div>
-            <div>
-              <label>Věk (roky)</label>
-              <input type="number" min="10" max="100" placeholder="35" value={age} onChange={e=>setAge(e.target.value)} required />
-            </div>
-          </div>
-
-          {/* Tělesná měření */}
-          <div className="row">
-            <div>
-              <label>Výška (cm)</label>
-              <input type="number" min="100" max="240" placeholder="180" value={height} onChange={e=>setHeight(e.target.value)} required />
-            </div>
-            <div>
-              <label>Váha (kg)</label>
-              <input type="number" min="30" max="250" placeholder="82" value={weight} onChange={e=>setWeight(e.target.value)} required />
-            </div>
-          </div>
-
-          {/* Životní styl */}
-          <div className="row">
-            <div>
-              <label>Aktivita</label>
-              <select value={activity} onChange={e=>setActivity(e.target.value)}>
-                <option value="sedavy">Sedavý režim</option>
-                <option value="lehce">Lehce aktivní</option>
-                <option value="stredne">Středně aktivní</option>
-                <option value="velmi">Velmi aktivní</option>
-                <option value="extra">Extra aktivní</option>
-              </select>
-            </div>
-            <div>
-              <label>Míra stresu</label>
-              <select value={stressLevel} onChange={e=>setStressLevel(e.target.value)}>
-                <option value="low">Nízká</option>
-                <option value="medium">Střední</option>
-                <option value="high">Vysoká</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="row">
-            <div>
-              <label>Typ práce</label>
-              <select value={occupation} onChange={e=>setOccupation(e.target.value)}>
-                <option value="office_it">Kancelář / IT</option>
-                <option value="driver">Řidič</option>
-                <option value="warehouse">Sklad / logistika</option>
-                <option value="manual">Manuální práce</option>
-                <option value="healthcare">Zdravotnictví</option>
-                <option value="teacher_sales">Učitel / Obchod</option>
-                <option value="gastronomy">Gastronomie</option>
-              </select>
-            </div>
-            <div>
-              <label>Cíl</label>
-              <select value={goal} onChange={e=>setGoal(e.target.value)}>
-                <option value="redukce">Redukce hmotnosti</option>
-                <option value="udrzovani">Udržování</option>
-                <option value="nabirani_svaly">Nabírání svalové hmoty</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="row">
-            <div>
-              <label>Frekvence cvičení</label>
-              <select value={freqChoice} onChange={e=>setFreqChoice(e.target.value)}>
-                <option value="0-1">0–1× týdně</option>
-                <option value="2-3">2–3× týdně</option>
-                <option value="4plus">4+ týdně</option>
-              </select>
-            </div>
-            <div>
-              <label>Preferovaná frekvence (volitelně)</label>
-              <input type="number" min="1" max="7" placeholder="např. 3"
-                     value={weeklySessionsUser} onChange={e=>setWeeklySessionsUser(e.target.value)} />
-            </div>
-          </div>
-
-          <div className="row single">
-            <div>
-              <label>Poznámky (volitelné)</label>
-              <textarea rows={4} placeholder="Zdravotní omezení, preference jídel, vybavení doma…"
-                        value={notes} onChange={e=>setNotes(e.target.value)} />
-            </div>
-          </div>
-
-          <button type="submit" className="btn" disabled={loading}>
-            {loading ? 'Odesílám…' : 'Dokončit registraci'}
-          </button>
-
-          {msg && <p className={`msg ${msg.includes('✅') ? 'ok' : 'err'}`}>{msg}</p>}
-        </form>
-      </main>
-      <Footer />
-
-      <style jsx>{`
-        .grid { display:grid; gap:16px; }
-        .row { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
-        .row.single { grid-template-columns: 1fr; }
-        label { display:block; color:#bbb; font-size:14px; margin-bottom:6px; }
-        input, select, textarea {
-          width:100%; padding:10px 12px; background:#121212; border:1px solid #2a2a2a;
-          color:#fff; border-radius:8px; outline:none;
+    // SAFE forward do Make – případná chyba uživatele neblokuje
+    const MAKE_URL = process.env.MAKE_WEBHOOK_URL || process.env.NEXT_PUBLIC_MAKE_WEBHOOK_URL;
+    (async () => {
+      if (!MAKE_URL) {
+        console.error('[body-metrics] WARN: MAKE_WEBHOOK_URL není nastaveno');
+        return;
+      }
+      try {
+        const r = await fetch(MAKE_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!r.ok) {
+          const txt = await r.text();
+          console.error('[body-metrics] Make webhook failed:', r.status, txt);
         }
-        .btn { padding:12px 18px; background:#1e90ff; color:#fff; border:0; border-radius:10px; font-weight:600; cursor:pointer; }
-        .btn:disabled { opacity:.7; cursor:default; }
-        .msg { margin-top:8px; }
-        .ok { color:#2ecc71; }
-        .err { color:#e74c3c; }
-      `}</style>
-    </>
-  );
+      } catch (err) {
+        console.error('[body-metrics] Make webhook error:', err);
+      }
+    })();
+
+    // Hotovo
+    return res.status(200).json({ ok: true });
+  } catch (e) {
+    console.error('[body-metrics] ERROR:', e);
+    return res.status(400).json({ error: e.message || String(e) });
+  }
 }

@@ -1,59 +1,51 @@
-import { useRouter } from "next/router";
-import { useState, useEffect } from "react";
-import supabase from "@/lib/supabaseClient";
+// /pages/signup.js
+import { useState } from 'react';
+import { supabase } from '../lib/supabaseClient';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 export default function Signup() {
-  const router = useRouter();
-  const [plan, setPlan] = useState(null);
-  const [status, setStatus] = useState("idle");
+  const [email, setEmail] = useState('');
+  const [pwd, setPwd] = useState('');
+  const [msg, setMsg] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const selected = router.query.plan;
-    if (selected) {
-      setPlan(selected);
-      localStorage.setItem("preferred_plan", selected);
-    }
-  }, [router.query.plan]);
-
-  async function handleSave() {
+  async function onSubmit(e) {
+    e.preventDefault();
+    setLoading(true); setMsg(null);
     try {
-      setStatus("saving");
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push("/login");
-        return;
-      }
-
-      const { error } = await supabase
-        .from("users")
-        .update({ plan })
-        .eq("id", user.id);
-
+      const { error } = await supabase.auth.signUp({
+        email,
+        password: pwd
+      });
       if (error) throw error;
-
-      setStatus("done");
-      router.push("/dashboard");
+      setMsg('✅ Zkontroluj e-mail a potvrď registraci.');
     } catch (err) {
-      console.error(err);
-      setStatus("error");
+      setMsg(`❌ ${err.message || 'Chyba registrace'}`);
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <main className="max-w-xl mx-auto py-16 px-4 text-white">
-      <h1 className="text-3xl font-bold">Založit účet</h1>
-      <p className="mt-2 text-neutral-400">
-        Vybraný plán: <strong>{plan || "neuveden"}</strong>
-      </p>
-      <button
-        onClick={handleSave}
-        className="mt-6 w-full rounded-xl bg-[#2ECC71] px-4 py-3 font-medium text-black"
-      >
-        {status === "saving" ? "Ukládám..." : "Pokračovat"}
-      </button>
-      {status === "error" && (
-        <p className="text-red-400 mt-3 text-sm">Uložení selhalo. Zkuste znovu.</p>
-      )}
-    </main>
+    <>
+      <Header />
+      <main className="container" style={{maxWidth: 520, margin: '32px auto', padding: '0 16px'}}>
+        <h1>Vytvořit účet</h1>
+        <form onSubmit={onSubmit} className="grid" style={{gap: 12}}>
+          <div>
+            <label>Email</label>
+            <input type="email" value={email} onChange={e=>setEmail(e.target.value)} required />
+          </div>
+          <div>
+            <label>Heslo</label>
+            <input type="password" value={pwd} onChange={e=>setPwd(e.target.value)} required />
+          </div>
+          <button className="btn" disabled={loading}>{loading ? 'Odesílám…' : 'Registrovat'}</button>
+          {msg && <p style={{marginTop:8}}>{msg}</p>}
+        </form>
+      </main>
+      <Footer />
+    </>
   );
 }

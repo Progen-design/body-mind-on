@@ -1,7 +1,7 @@
 // /pages/api/generate-plan.js
-import { supabaseServer } from '@/lib/supabaseServer';
-import { openai } from '@/lib/openai';
-import { sendPlanEmail } from '@/lib/mail';
+import { supabaseServer } from '../../lib/supabaseServer';
+import { openai } from '../../lib/openai';
+import { sendPlanEmail } from '../../lib/mail';
 
 const SYS = `Jsi nutriční a fitness kouč Body & Mind ON. Piš česky, stručně, přehledně.
 VÝSTUP: Jeden validní HTML blok (bez <html>/<body>), struktura:
@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     const { email } = req.body || {};
     if (!email) return res.status(400).json({ error: 'Missing email' });
 
-    // 1) Vezmi poslední metriky
+    // 1) poslední metriky
     const { data: rows, error } = await supabaseServer
       .from('body_metrics')
       .select('*')
@@ -31,11 +31,11 @@ export default async function handler(req, res) {
       .limit(1);
 
     if (error) throw error;
-    if (!rows || !rows.length) return res.status(404).json({ error: 'No metrics for email' });
+    if (!rows?.length) return res.status(404).json({ error: 'No metrics for email' });
 
     const bm = rows[0];
 
-    // 2) Sestav instrukce pro model
+    // 2) prompt
     const user = `
 Klient:
 - Jméno: ${bm.name || '—'}
@@ -55,7 +55,7 @@ Výpočty:
 Poznámky: ${bm.notes || '—'}
 Požadavek: Připrav týdenní plán dle výše, dodrž strukturu HTML a buď stručný, ale konkrétní (gramáže).`;
 
-    // 3) Volání OpenAI
+    // 3) OpenAI
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       temperature: 0.6,
@@ -68,13 +68,17 @@ Požadavek: Připrav týdenní plán dle výše, dodrž strukturu HTML a buď st
     const planHtml = completion.choices?.[0]?.message?.content?.trim();
     if (!planHtml) throw new Error('Empty plan');
 
-    // 4) Ulož do ai_generated_plans
-    const macros = bm.calories_target ? {
-      protein_g: Math.round((asNum(bm.weight_kg) || 70) * 1.8),
-      fat_g: Math.round((asNum(bm.calories_target) || 2200) * 0.25 / 9),
-      carbs_g: Math.round(((asNum(bm.calories_target) || 2200) - (macros?.protein_g||0)*4 - (macros?.fat_g||0)*9)/4)
-    } : null;
+    // 4) makra (správný výpočet bez self-referencí)
+    let macros = null;
+    if (bm.calories_target) {
+      const protein_g = Math.round((asNum(bm.weight_kg) || 70) * 1.8);
+      const kc = asNum(bm.calories_target) || 2200;
+      const fat_g = Math.round(kc * 0.25 / 9);
+      const carbs_g = Math.round((kc - protein_g * 4 - fat_g * 9) / 4);
+      macros = { protein_g, fat_g, carbs_g };
+    }
 
+    // 5) ulož plán do DB
     const { error: insErr } = await supabaseServer
       .from('ai_generated_plans')
       .insert({
@@ -87,8 +91,8 @@ Požadavek: Připrav týdenní plán dle výše, dodrž strukturu HTML a buď st
       });
     if (insErr) throw insErr;
 
-    // 5) (volitelné) e-mail
-    try { await sendPlanEmail({ to: email, html: planHtml }); } catch (_) {}
+    // 6) (volitelné) e-mail
+    try { await sendPlanEmail(email, planHtml); } catch (_) {}
 
     res.status(200).json({ ok: true });
   } catch (e) {

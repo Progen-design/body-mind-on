@@ -1,6 +1,6 @@
 // /pages/api/body-metrics.js
 import { supabaseServer } from '../../lib/supabaseServer';
-import { generatePlanForEmail } from '../../lib/generatePlan'; // ← NOVÉ
+import { generatePlanForEmail } from '../../lib/generatePlan';
 
 const MAPS = {
   gender: {
@@ -8,11 +8,15 @@ const MAPS = {
     'žena':'female','zena':'female','f':'female','female':'female'
   },
   activity: {
+    // původní
     'sedavý':'sedavy','sedavy':'sedavy',
     'lehce aktivní':'lehce','lehce':'lehce',
     'středně aktivní':'stredne','stredně':'stredne','stredne':'stredne',
     'velmi aktivní':'velmi','velmi':'velmi',
-    'extra aktivní':'extra','extra':'extra'
+    'extra aktivní':'extra','extra':'extra',
+    // NOVÉ aliasy z UI
+    'mírně aktivní':'lehce','mirne aktivni':'lehce',
+    'vysoce aktivní':'velmi','vysoce aktivni':'velmi'
   },
   stress_level: {
     'nízká':'low','nizka':'low','low':'low',
@@ -51,7 +55,6 @@ export default async function handler(req, res) {
   try {
     const b = req.body || {};
 
-    // 1:1 vstupy dle schématu (počítané hodnoty dělá trigger)
     const payload = {
       user_id: b.user_id || null,
       email: b.email || null,
@@ -69,42 +72,48 @@ export default async function handler(req, res) {
       notes: b.notes || null
     };
 
-    // Sanity check
+    // přívětivé validace
     if (payload.age !== null && Number.isNaN(payload.age)) throw new Error('Věk musí být číslo');
     if (payload.height_cm !== null && Number.isNaN(payload.height_cm)) throw new Error('Výška musí být číslo');
     if (payload.weight_kg !== null && Number.isNaN(payload.weight_kg)) throw new Error('Váha musí být číslo');
 
-    // INSERT do DB
     const { error: dbErr } = await supabaseServer.from('body_metrics').insert([payload]);
-    if (dbErr) throw new Error(`DB insert failed: ${dbErr.message}`);
+    if (dbErr) {
+      // hezké hlášky na nejčastější constrainty
+      if (dbErr.message?.includes('chk_activity')) {
+        throw new Error('Aktivita má neplatnou hodnotu. Zvol prosím některou z možností v nabídce.');
+      }
+      if (dbErr.message?.includes('chk_stress_level')) {
+        throw new Error('Míra stresu má neplatnou hodnotu.');
+      }
+      if (dbErr.message?.includes('chk_occupation')) {
+        throw new Error('Typ práce má neplatnou hodnotu.');
+      }
+      if (dbErr.message?.includes('chk_goal')) {
+        throw new Error('Cíl má neplatnou hodnotu.');
+      }
+      if (dbErr.message?.includes('chk_freq_choice')) {
+        throw new Error('Frekvence cvičení má neplatnou hodnotu.');
+      }
+      throw new Error(`DB insert failed: ${dbErr.message}`);
+    }
 
-    // ① Asynchronní ping do Make (neblokuje uživatele)
+    // asynchronně: Make webhook + generovat plán
     const MAKE_URL = process.env.MAKE_WEBHOOK_URL || process.env.NEXT_PUBLIC_MAKE_WEBHOOK_URL;
     (async () => {
-      if (!MAKE_URL) return;
       try {
-        const r = await fetch(MAKE_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (!r.ok) console.error('[body-metrics] Make webhook failed:', r.status, await r.text());
-      } catch (err) {
-        console.error('[body-metrics] Make webhook error:', err);
-      }
-    })();
+        if (MAKE_URL) {
+          await fetch(MAKE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+      } catch (e) { console.error('[make]', e); }
 
-    // ② Asynchronní GENEROVÁNÍ PLÁNU (OpenAI → uloží do ai_generated_plans)
-    (async () => {
-      if (!payload.email) {
-        console.warn('[plan-gen] skip: missing email');
-        return;
-      }
       try {
-        await generatePlanForEmail(payload.email);
-      } catch (err) {
-        console.error('[plan-gen] error:', err);
-      }
+        if (payload.email) await generatePlanForEmail(payload.email);
+      } catch (e) { console.error('[plan-gen]', e); }
     })();
 
     return res.status(200).json({ ok: true });

@@ -1,161 +1,164 @@
 // /pages/register.js
-import { useState, useEffect } from 'react';
-import Head from 'next/head';
-
-const ACTIVITIES = [
-  { value: 'sedavy', label: 'Sedavý' },
-  { value: 'lehce', label: 'Mírně aktivní' },      // mapuje se na 'lehce'
-  { value: 'stredne', label: 'Středně aktivní' },
-  { value: 'velmi', label: 'Vysoce aktivní' },     // mapuje se na 'velmi'
-  { value: 'extra', label: 'Extra aktivní' }
-];
-
-const STRESS = [
-  { value: 'low', label: 'Nízká' },
-  { value: 'medium', label: 'Střední' },
-  { value: 'high', label: 'Vysoká' }
-];
-
-const OCCUPATIONS = [
-  { value: 'office_it', label: 'Kancelář / IT' },
-  { value: 'driver', label: 'Řidič' },
-  { value: 'warehouse', label: 'Sklad / logistika' },
-  { value: 'manual', label: 'Manuální práce' },
-  { value: 'healthcare', label: 'Zdravotnictví' },
-  { value: 'teacher_sales', label: 'Učitel / obchod' },
-  { value: 'gastronomy', label: 'Gastronomie' }
-];
-
-const GOALS = [
-  { value: 'redukce', label: 'Redukce hmotnosti' },
-  { value: 'udrzovani', label: 'Udržování' },
-  { value: 'nabirani_svaly', label: 'Nabírání svalové hmoty' }
-];
-
-const FREQ = [
-  { value: '0-1', label: '0–1× týdně' },
-  { value: '2-3', label: '2–3× týdně' },
-  { value: '4plus', label: '4+ týdně' }
-];
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
+import Header from '../components/Header'
+import Footer from '../components/Footer'
 
 export default function Register() {
-  // Můžeš si sem načíst name/email z předchozího kroku (localStorage, query, apod.)
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const router = useRouter()
+  const { plan } = router.query
 
-  const [height_cm, setHeight] = useState(180);
-  const [weight_kg, setWeight] = useState(80);
-  const [age, setAge] = useState(30);
-  const [activity, setActivity] = useState('stredne');
-  const [stress_level, setStress] = useState('medium');
-  const [occupation, setOccupation] = useState('office_it');
-  const [goal, setGoal] = useState('redukce');
-  const [freq_choice, setFreq] = useState('2-3');
-  const [notes, setNotes] = useState('');
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [height, setHeight] = useState('')
+  const [weight, setWeight] = useState('')
+  const [age, setAge] = useState('')
+  const [activity, setActivity] = useState('stredne')
+  const [stress, setStress] = useState('medium')
+  const [occupation, setOccupation] = useState('office_it')
+  const [goal, setGoal] = useState('redukce')
+  const [freq, setFreq] = useState('2-3')
+  const [notes, setNotes] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [msg, setMsg] = useState(null)
 
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState(null);
+  useEffect(() => {
+    // pokud někdo přijde rovnou sem bez výběru plánu
+    if (!plan) router.replace('/pricing')
+  }, [plan, router])
 
   async function onSubmit(e) {
-    e.preventDefault();
-    setLoading(true);
-    setMsg(null);
+    e.preventDefault()
+    setLoading(true); setMsg(null)
 
     try {
-      const r = await fetch('/api/body-metrics', {
+      const res = await fetch('/api/body-metrics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name, email,
-          height_cm, weight_kg, age,
-          activity, stress_level, occupation, goal, freq_choice,
+          name,
+          email,
+          age: age ? Number(age) : null,
+          height_cm: height ? Number(height) : null,
+          weight_kg: weight ? Number(weight) : null,
+          activity,               // ← kódy
+          stress_level: stress,   // ← kódy
+          occupation,             // ← kódy
+          goal,                   // ← kódy
+          freq_choice: freq,      // ← kódy
           notes
         })
-      });
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || 'Neznámá chyba')
 
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(data?.error || 'Neznámá chyba');
-
-      setMsg('Hotovo! Plán ti pošleme e-mailem a zobrazí se i v appce.');
+      setMsg('Hotovo! Uloženo. Plán ti za chvíli pošleme na e-mail.')
+      // volitelně redirect na onboarding
+      // router.push('/onboarding')
     } catch (err) {
-      setMsg(String(err.message || err));
+      setMsg(`Chyba: ${err.message}`)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
   return (
     <>
-      <Head><title>Registrace – Body & Mind ON</title></Head>
+      <Header />
       <main className="container">
-        <h2>Detaily pro „Start“</h2>
+        <h1>Detaily pro „Start“</h1>
+
         <form onSubmit={onSubmit}>
           <div className="grid">
-            <label>
-              Výška (cm)
-              <input type="number" value={height_cm} onChange={e=>setHeight(Number(e.target.value))} />
-            </label>
-            <label>
-              Váha (kg)
-              <input type="number" value={weight_kg} onChange={e=>setWeight(Number(e.target.value))} />
-            </label>
-            <label>
-              Věk (roky)
-              <input type="number" value={age} onChange={e=>setAge(Number(e.target.value))} />
-            </label>
-            <label>
-              Aktivita
+            <div>
+              <label>Výška (cm)</label>
+              <input type="number" value={height} onChange={e=>setHeight(e.target.value)} placeholder="180" />
+            </div>
+            <div>
+              <label>Váha (kg)</label>
+              <input type="number" value={weight} onChange={e=>setWeight(e.target.value)} placeholder="80" />
+            </div>
+            <div>
+              <label>Věk (roky)</label>
+              <input type="number" value={age} onChange={e=>setAge(e.target.value)} placeholder="30" />
+            </div>
+            <div>
+              <label>Aktivita</label>
               <select value={activity} onChange={e=>setActivity(e.target.value)}>
-                {ACTIVITIES.map(o=> <option key={o.value} value={o.value}>{o.label}</option>)}
+                <option value="sedavy">Sedavý</option>
+                <option value="lehce">Mírně aktivní</option>
+                <option value="stredne">Středně aktivní</option>
+                <option value="velmi">Vysoce aktivní</option>
+                <option value="extra">Extra aktivní</option>
               </select>
-            </label>
-            <label>
-              Míra stresu
-              <select value={stress_level} onChange={e=>setStress(e.target.value)}>
-                {STRESS.map(o=> <option key={o.value} value={o.value}>{o.label}</option>)}
+            </div>
+            <div>
+              <label>Míra stresu</label>
+              <select value={stress} onChange={e=>setStress(e.target.value)}>
+                <option value="low">Nízká</option>
+                <option value="medium">Střední</option>
+                <option value="high">Vysoká</option>
               </select>
-            </label>
-            <label>
-              Typ práce
+            </div>
+            <div>
+              <label>Typ práce</label>
               <select value={occupation} onChange={e=>setOccupation(e.target.value)}>
-                {OCCUPATIONS.map(o=> <option key={o.value} value={o.value}>{o.label}</option>)}
+                <option value="office_it">Kancelář / IT</option>
+                <option value="driver">Řidič / Kurýr</option>
+                <option value="warehouse">Sklad / Logistika (směnný provoz)</option>
+                <option value="manual">Manuální</option>
+                <option value="healthcare">Zdravotnictví</option>
+                <option value="teacher_sales">Učitel / Obchod</option>
+                <option value="gastronomy">Gastronomie</option>
               </select>
-            </label>
-            <label>
-              Cíl
+            </div>
+            <div>
+              <label>Cíl</label>
               <select value={goal} onChange={e=>setGoal(e.target.value)}>
-                {GOALS.map(o=> <option key={o.value} value={o.value}>{o.label}</option>)}
+                <option value="redukce">Redukce hmotnosti</option>
+                <option value="udrzovani">Udržování</option>
+                <option value="nabirani_svaly">Nabírání svalové hmoty</option>
               </select>
-            </label>
-            <label>
-              Frekvence cvičení
-              <select value={freq_choice} onChange={e=>setFreq(e.target.value)}>
-                {FREQ.map(o=> <option key={o.value} value={o.value}>{o.label}</option>)}
+            </div>
+            <div>
+              <label>Frekvence cvičení</label>
+              <select value={freq} onChange={e=>setFreq(e.target.value)}>
+                <option value="0-1">0–1× týdně</option>
+                <option value="2-3">2–3× týdně</option>
+                <option value="4plus">4+ týdně</option>
               </select>
-            </label>
-            <label className="col-span-2">
-              Poznámky (volitelné)
-              <textarea rows={3} value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Zranění, omezení, preference…"/>
-            </label>
+            </div>
+            <div className="row single">
+              <div>
+                <label>Poznámky (volitelné)</label>
+                <textarea rows={3} value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Zdravotní omezení, preference jídel apod."></textarea>
+              </div>
+            </div>
           </div>
 
-          <button type="submit" disabled={loading}>
+          <button type="submit" className="btn" disabled={loading}>
             {loading ? 'Odesílám…' : 'Dokončit registraci'}
           </button>
-
-          {msg && <p style={{marginTop:12, color: msg.startsWith('Hotovo') ? '#22c55e' : '#ef4444'}}>{msg}</p>}
+          {msg && <p style={{marginTop:12}}>{msg}</p>}
         </form>
-
-        <style jsx>{`
-          .container{max-width:960px;margin:0 auto;padding:24px}
-          .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-          label{display:flex;flex-direction:column;gap:8px}
-          .col-span-2{grid-column:span 2}
-          input,select,textarea{background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:10px}
-          button{margin-top:16px;width:100%;padding:14px;border-radius:10px;background:linear-gradient(90deg,#0ea5e9,#0284c7);color:#fff;font-weight:600}
-          button:disabled{opacity:.6}
-        `}</style>
       </main>
+      <Footer />
+
+      <style jsx>{`
+        .container { max-width: 980px; margin: 0 auto; padding: 24px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .row.single { grid-column: 1 / -1; }
+        label { display:block; margin-bottom:6px; color:#bbb; }
+        input, select, textarea {
+          width: 100%; padding: 10px 12px; background:#111; color:#fff;
+          border:1px solid #2a2a2a; border-radius:8px; outline: none;
+        }
+        .btn {
+          width: 100%; margin-top: 16px; background: linear-gradient(90deg,#0ea5e9,#0284c7);
+          color:#fff; padding: 14px 16px; border-radius:10px; border:none; cursor:pointer; font-weight:600;
+        }
+        .btn:disabled { opacity:.6; cursor:not-allowed; }
+      `}</style>
     </>
-  );
+  )
 }

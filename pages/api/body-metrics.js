@@ -1,5 +1,6 @@
 // /pages/api/body-metrics.js
 import { supabaseServer } from '../../lib/supabaseServer';
+import { generatePlanForEmail } from '../../lib/generatePlan'; // ← NOVÉ
 
 const MAPS = {
   gender: {
@@ -68,38 +69,44 @@ export default async function handler(req, res) {
       notes: b.notes || null
     };
 
-    // Základní sanity check pro čísla (přátelská hláška)
+    // Sanity check
     if (payload.age !== null && Number.isNaN(payload.age)) throw new Error('Věk musí být číslo');
     if (payload.height_cm !== null && Number.isNaN(payload.height_cm)) throw new Error('Výška musí být číslo');
     if (payload.weight_kg !== null && Number.isNaN(payload.weight_kg)) throw new Error('Váha musí být číslo');
 
-    // DB INSERT
+    // INSERT do DB
     const { error: dbErr } = await supabaseServer.from('body_metrics').insert([payload]);
     if (dbErr) throw new Error(`DB insert failed: ${dbErr.message}`);
 
-    // SAFE forward do Make – případná chyba uživatele neblokuje
+    // ① Asynchronní ping do Make (neblokuje uživatele)
     const MAKE_URL = process.env.MAKE_WEBHOOK_URL || process.env.NEXT_PUBLIC_MAKE_WEBHOOK_URL;
     (async () => {
-      if (!MAKE_URL) {
-        console.error('[body-metrics] WARN: MAKE_WEBHOOK_URL není nastaveno');
-        return;
-      }
+      if (!MAKE_URL) return;
       try {
         const r = await fetch(MAKE_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        if (!r.ok) {
-          const txt = await r.text();
-          console.error('[body-metrics] Make webhook failed:', r.status, txt);
-        }
+        if (!r.ok) console.error('[body-metrics] Make webhook failed:', r.status, await r.text());
       } catch (err) {
         console.error('[body-metrics] Make webhook error:', err);
       }
     })();
 
-    // Hotovo
+    // ② Asynchronní GENEROVÁNÍ PLÁNU (OpenAI → uloží do ai_generated_plans)
+    (async () => {
+      if (!payload.email) {
+        console.warn('[plan-gen] skip: missing email');
+        return;
+      }
+      try {
+        await generatePlanForEmail(payload.email);
+      } catch (err) {
+        console.error('[plan-gen] error:', err);
+      }
+    })();
+
     return res.status(200).json({ ok: true });
   } catch (e) {
     console.error('[body-metrics] ERROR:', e);

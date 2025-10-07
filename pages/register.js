@@ -22,10 +22,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState(null)
 
-  useEffect(() => {
-    // pokud někdo přijde rovnou sem bez výběru plánu
-    if (!plan) router.replace('/pricing')
-  }, [plan, router])
+  useEffect(() => { if (!plan) router.replace('/pricing') }, [plan, router])
 
   async function onSubmit(e) {
     e.preventDefault()
@@ -41,11 +38,11 @@ export default function Register() {
           age: age ? Number(age) : null,
           height_cm: height ? Number(height) : null,
           weight_kg: weight ? Number(weight) : null,
-          activity,               // ← kódy
-          stress_level: stress,   // ← kódy
-          occupation,             // ← kódy
-          goal,                   // ← kódy
-          freq_choice: freq,      // ← kódy
+          activity,               // ← posíláme kód
+          stress_level: stress,   // ← posíláme kód
+          occupation,             // ← posíláme kód
+          goal,                   // ← posíláme kód
+          freq_choice: freq,      // ← posíláme kód
           notes
         })
       })
@@ -53,8 +50,7 @@ export default function Register() {
       if (!res.ok) throw new Error(data?.error || 'Neznámá chyba')
 
       setMsg('Hotovo! Uloženo. Plán ti za chvíli pošleme na e-mail.')
-      // volitelně redirect na onboarding
-      // router.push('/onboarding')
+      // případně router.push('/onboarding')
     } catch (err) {
       setMsg(`Chyba: ${err.message}`)
     } finally {
@@ -71,6 +67,15 @@ export default function Register() {
         <form onSubmit={onSubmit}>
           <div className="grid">
             <div>
+              <label>Jméno a příjmení</label>
+              <input value={name} onChange={e=>setName(e.target.value)} placeholder="Jan Novák" />
+            </div>
+            <div>
+              <label>E-mail</label>
+              <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="jan@domena.cz" />
+            </div>
+
+            <div>
               <label>Výška (cm)</label>
               <input type="number" value={height} onChange={e=>setHeight(e.target.value)} placeholder="180" />
             </div>
@@ -78,6 +83,7 @@ export default function Register() {
               <label>Váha (kg)</label>
               <input type="number" value={weight} onChange={e=>setWeight(e.target.value)} placeholder="80" />
             </div>
+
             <div>
               <label>Věk (roky)</label>
               <input type="number" value={age} onChange={e=>setAge(e.target.value)} placeholder="30" />
@@ -92,6 +98,7 @@ export default function Register() {
                 <option value="extra">Extra aktivní</option>
               </select>
             </div>
+
             <div>
               <label>Míra stresu</label>
               <select value={stress} onChange={e=>setStress(e.target.value)}>
@@ -112,6 +119,7 @@ export default function Register() {
                 <option value="gastronomy">Gastronomie</option>
               </select>
             </div>
+
             <div>
               <label>Cíl</label>
               <select value={goal} onChange={e=>setGoal(e.target.value)}>
@@ -128,10 +136,11 @@ export default function Register() {
                 <option value="4plus">4+ týdně</option>
               </select>
             </div>
+
             <div className="row single">
               <div>
                 <label>Poznámky (volitelné)</label>
-                <textarea rows={3} value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Zdravotní omezení, preference jídel apod."></textarea>
+                <textarea rows={3} value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Zdravotní omezení, preference jídel apod." />
               </div>
             </div>
           </div>

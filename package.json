@@ -14,3 +14,8 @@
     "react-dom": "18.2.0"
   }
 }
+"dependencies": {
+  "openai": "^4.57.0",
+  "resend": "^2.0.0",
+  ...
+}

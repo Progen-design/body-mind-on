@@ -3,7 +3,10 @@ import { supabaseServer } from '../../lib/supabaseServer';
 import { openai } from '../../lib/openai';
 import { sendPlanEmail } from '../../lib/mail';
 
-const SYS = `Jsi nutriční a fitness kouč Body & Mind ON. Piš česky, stručně, přehledně.
+// ===============================
+// SYSTÉMOVÝ PROMPT
+// ===============================
+const SYS = `Jsi nutriční a fitness kouč Body & Mind ON. Piš česky, stručně a přehledně.
 VÝSTUP: Jeden validní HTML blok (bez <html>/<body>), struktura:
 <h2>Týdenní plán</h2>
 <section id="kalorie">Denní kalorický cíl + makra</section>
@@ -17,12 +20,16 @@ function asNum(x) {
 }
 
 export default async function handler(req, res) {
+  // 🧱 Povolené pouze POST požadavky
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
-    if (req.method !== 'POST') return res.status(405).send('Method not allowed');
     const { email } = req.body || {};
     if (!email) return res.status(400).json({ error: 'Missing email' });
 
-    // 1) poslední metriky
+    // 1️⃣ Získání posledních metrik z databáze
     const { data: rows, error } = await supabaseServer
       .from('body_metrics')
       .select('*')
@@ -31,12 +38,14 @@ export default async function handler(req, res) {
       .limit(1);
 
     if (error) throw error;
-    if (!rows?.length) return res.status(404).json({ error: 'No metrics for email' });
+    if (!rows?.length) {
+      return res.status(404).json({ error: 'No metrics found for this email' });
+    }
 
     const bm = rows[0];
 
-    // 2) prompt
-    const user = `
+    // 2️⃣ Příprava promptu
+    const userPrompt = `
 Klient:
 - Jméno: ${bm.name || '—'}
 - Pohlaví: ${bm.gender || '—'}
@@ -53,22 +62,22 @@ Výpočty:
 - TDEE: ${bm.tdee ?? '—'}
 - Kalorický cíl: ${bm.calories_target ?? '—'}
 Poznámky: ${bm.notes || '—'}
-Požadavek: Připrav týdenní plán dle výše, dodrž strukturu HTML a buď stručný, ale konkrétní (gramáže).`;
+Požadavek: Připrav týdenní plán dle výše uvedeného, dodrž strukturu HTML a buď stručný, ale konkrétní (gramáže).`;
 
-    // 3) OpenAI
+    // 3️⃣ Volání OpenAI API
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       temperature: 0.6,
       messages: [
         { role: 'system', content: SYS },
-        { role: 'user', content: user }
+        { role: 'user', content: userPrompt }
       ]
     });
 
     const planHtml = completion.choices?.[0]?.message?.content?.trim();
-    if (!planHtml) throw new Error('Empty plan');
+    if (!planHtml) throw new Error('Empty plan generated from OpenAI');
 
-    // 4) makra (správný výpočet bez self-referencí)
+    // 4️⃣ Výpočet makroživin
     let macros = null;
     if (bm.calories_target) {
       const protein_g = Math.round((asNum(bm.weight_kg) || 70) * 1.8);
@@ -78,7 +87,7 @@ Požadavek: Připrav týdenní plán dle výše, dodrž strukturu HTML a buď st
       macros = { protein_g, fat_g, carbs_g };
     }
 
-    // 5) ulož plán do DB
+    // 5️⃣ Uložení plánu do databáze
     const { error: insErr } = await supabaseServer
       .from('ai_generated_plans')
       .insert({
@@ -89,14 +98,24 @@ Požadavek: Připrav týdenní plán dle výše, dodrž strukturu HTML a buď st
         generated_by: 'gpt-4o-mini',
         is_active: true
       });
+
     if (insErr) throw insErr;
 
-    // 6) (volitelné) e-mail
-    try { await sendPlanEmail(email, planHtml); } catch (_) {}
+    // 6️⃣ Odeslání e-mailu (bez blokace)
+    (async () => {
+      try {
+        await sendPlanEmail(email, planHtml);
+        console.log(`[EMAIL] Plan sent to ${email}`);
+      } catch (mailErr) {
+        console.error('[EMAIL ERROR]', mailErr);
+      }
+    })();
 
-    res.status(200).json({ ok: true });
-  } catch (e) {
-    console.error('[generate-plan]', e);
-    res.status(500).json({ error: e.message || 'Plan generation failed' });
+    // ✅ Hotovo
+    return res.status(200).json({ ok: true, message: 'Plan generated successfully' });
+
+  } catch (err) {
+    console.error('[generate-plan] ERROR:', err);
+    return res.status(500).json({ error: err.message || 'Plan generation failed' });
   }
 }

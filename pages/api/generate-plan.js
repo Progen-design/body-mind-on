@@ -3,10 +3,7 @@ import { supabaseServer } from '../../lib/supabaseServer';
 import { openai } from '../../lib/openai';
 import { sendPlanEmail } from '../../lib/mail';
 
-// ===============================
-// SYSTÉMOVÝ PROMPT
-// ===============================
-const SYS = `Jsi nutriční a fitness kouč Body & Mind ON. Piš česky, stručně a přehledně.
+const SYS = `Jsi nutriční a fitness kouč Body & Mind ON. Piš česky, stručně, přehledně.
 VÝSTUP: Jeden validní HTML blok (bez <html>/<body>), struktura:
 <h2>Týdenní plán</h2>
 <section id="kalorie">Denní kalorický cíl + makra</section>
@@ -20,16 +17,12 @@ function asNum(x) {
 }
 
 export default async function handler(req, res) {
-  // 🧱 Povolené pouze POST požadavky
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
+    if (req.method !== 'POST') return res.status(405).send('Method not allowed');
     const { email } = req.body || {};
     if (!email) return res.status(400).json({ error: 'Missing email' });
 
-    // 1️⃣ Získání posledních metrik z databáze
+    // 1) poslední metriky pro daný e-mail
     const { data: rows, error } = await supabaseServer
       .from('body_metrics')
       .select('*')
@@ -38,14 +31,12 @@ export default async function handler(req, res) {
       .limit(1);
 
     if (error) throw error;
-    if (!rows?.length) {
-      return res.status(404).json({ error: 'No metrics found for this email' });
-    }
+    if (!rows?.length) return res.status(404).json({ error: 'No metrics for email' });
 
     const bm = rows[0];
 
-    // 2️⃣ Příprava promptu
-    const userPrompt = `
+    // 2) prompt do modelu
+    const user = `
 Klient:
 - Jméno: ${bm.name || '—'}
 - Pohlaví: ${bm.gender || '—'}
@@ -62,22 +53,21 @@ Výpočty:
 - TDEE: ${bm.tdee ?? '—'}
 - Kalorický cíl: ${bm.calories_target ?? '—'}
 Poznámky: ${bm.notes || '—'}
-Požadavek: Připrav týdenní plán dle výše uvedeného, dodrž strukturu HTML a buď stručný, ale konkrétní (gramáže).`;
+Požadavek: Připrav týdenní plán dle výše, dodrž strukturu HTML a buď stručný, ale konkrétní (gramáže).`;
 
-    // 3️⃣ Volání OpenAI API
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       temperature: 0.6,
       messages: [
         { role: 'system', content: SYS },
-        { role: 'user', content: userPrompt }
+        { role: 'user', content: user }
       ]
     });
 
     const planHtml = completion.choices?.[0]?.message?.content?.trim();
-    if (!planHtml) throw new Error('Empty plan generated from OpenAI');
+    if (!planHtml) throw new Error('Empty plan');
 
-    // 4️⃣ Výpočet makroživin
+    // 3) výpočet maker (bez self-referencí)
     let macros = null;
     if (bm.calories_target) {
       const protein_g = Math.round((asNum(bm.weight_kg) || 70) * 1.8);
@@ -87,11 +77,16 @@ Požadavek: Připrav týdenní plán dle výše uvedeného, dodrž strukturu HTM
       macros = { protein_g, fat_g, carbs_g };
     }
 
-    // 5️⃣ Uložení plánu do databáze
+    // 4) Bezpečná hodnota plan_type (VŽDY pošleme nějakou hodnotu)
+    // Použijeme cíl z body_metrics, jinak 'general'.
+    const plan_type = bm.goal || 'general'; // např. 'redukce' | 'udrzovani' | 'nabirani_svaly' | 'general'
+
+    // 5) ulož plán do DB (všimni si plan_type)
     const { error: insErr } = await supabaseServer
       .from('ai_generated_plans')
       .insert({
         email,
+        plan_type,                     // <— TADY JE KLÍČOVÉ
         plan_html: planHtml,
         daily_calories: bm.calories_target || null,
         macros,
@@ -101,21 +96,12 @@ Požadavek: Připrav týdenní plán dle výše uvedeného, dodrž strukturu HTM
 
     if (insErr) throw insErr;
 
-    // 6️⃣ Odeslání e-mailu (bez blokace)
-    (async () => {
-      try {
-        await sendPlanEmail(email, planHtml);
-        console.log(`[EMAIL] Plan sent to ${email}`);
-      } catch (mailErr) {
-        console.error('[EMAIL ERROR]', mailErr);
-      }
-    })();
+    // 6) e-mail (best-effort)
+    try { await sendPlanEmail(email, planHtml); } catch (_) {}
 
-    // ✅ Hotovo
-    return res.status(200).json({ ok: true, message: 'Plan generated successfully' });
-
-  } catch (err) {
-    console.error('[generate-plan] ERROR:', err);
-    return res.status(500).json({ error: err.message || 'Plan generation failed' });
+    res.status(200).json({ ok: true });
+  } catch (e) {
+    console.error('[generate-plan]', e);
+    res.status(500).json({ error: e.message || 'Plan generation failed' });
   }
 }

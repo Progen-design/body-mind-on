@@ -1,44 +1,94 @@
 import React from "react";
+import { motion } from "framer-motion";
 import PricingForm from "./pricing";
 
 export default function StartPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0b0121] via-[#1b0640] to-[#2a0a6e] text-white flex flex-col items-center justify-center px-6 py-16">
-      {/* HERO sekce */}
-      <div className="text-center max-w-3xl mb-12">
-        <h1 className="text-5xl md:text-6xl font-extrabold mb-6 bg-gradient-to-r from-[#9b5cff] to-[#2ECC71] text-transparent bg-clip-text">
-          Začni zdarma s Body & Mind ON
-        </h1>
-        <p className="text-lg md:text-xl text-gray-300 leading-relaxed">
-          Aktivuj svůj osobní AI plán tréninku, jídelníčku a regenerace během
-          <span className="text-[#2ECC71] font-semibold"> 2 minut</span>.  
-          První týden je zcela <span className="text-[#9b5cff] font-semibold">zdarma</span> — bez závazků.
-        </p>
-      </div>
-
-      {/* Karta s formulářem */}
-      <div className="bg-[#100627]/70 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-4xl p-8 md:p-12 border border-[#2ECC71]/20">
-        <h2 className="text-3xl font-bold text-center mb-8 text-[#9b5cff]">
-          Vyplň své údaje
-        </h2>
-        <PricingForm />
-      </div>
-
-      {/* CTA pod formulářem */}
-      <div className="text-center mt-12">
-        <p className="text-gray-400 text-sm">
-          Tvůj plán bude připraven a doručen e-mailem během pár minut.  
-        </p>
-        <button
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="mt-4 bg-[#2ECC71] hover:bg-[#27AE60] text-black font-semibold px-10 py-4 rounded-full text-lg transition-transform hover:scale-105"
+    <div className="min-h-screen bg-gradient-to-b from-[#0b0121] via-[#1b0640] to-[#2a0a6e] text-white">
+      {/* Hero Section */}
+      <section className="flex flex-col md:flex-row items-center justify-center text-center md:text-left px-6 md:px-16 py-20 max-w-7xl mx-auto gap-10">
+        {/* Text */}
+        <motion.div
+          className="flex-1"
+          initial={{ opacity: 0, x: -60 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1 }}
         >
-          🔥 Aktivovat zdarma
-        </button>
-      </div>
+          <h1 className="text-5xl md:text-6xl font-extrabold mb-6 leading-tight">
+            <span className="bg-gradient-to-r from-[#9b5cff] to-[#2ECC71] text-transparent bg-clip-text">
+              Body & Mind ON
+            </span>{" "}
+            – Start program
+          </h1>
+          <p className="text-lg text-gray-300 mb-8 leading-relaxed max-w-lg">
+            Získej svůj osobní <span className="text-[#2ECC71] font-semibold">AI plán</span> tréninku, jídelníčku a regenerace během pár minut.  
+            Vše přizpůsobené tvým cílům – a první týden <span className="text-[#9b5cff] font-semibold">zcela zdarma.</span>
+          </p>
 
-      {/* Footer */}
-      <footer className="text-center mt-20 text-gray-500 text-sm">
+          <a
+            href="#formular"
+            className="inline-block bg-[#2ECC71] text-black font-semibold text-lg px-10 py-4 rounded-full hover:bg-[#27AE60] transition-all transform hover:scale-105 shadow-lg"
+          >
+            💪 Začít zdarma
+          </a>
+
+          <p className="text-sm text-gray-400 mt-3">
+            Bez závazků – první plán získáš okamžitě po vyplnění.
+          </p>
+        </motion.div>
+
+        {/* Ilustrace / AI vizual */}
+        <motion.div
+          className="flex-1 flex justify-center"
+          initial={{ opacity: 0, x: 60 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1 }}
+        >
+          <img
+            src="https://cdn.jsdelivr.net/gh/janprikopa/assets/ai-fitness-dashboard.png"
+            alt="AI dashboard illustration"
+            className="w-[90%] md:w-[80%] drop-shadow-[0_0_30px_rgba(155,92,255,0.4)] rounded-3xl"
+          />
+        </motion.div>
+      </section>
+
+      {/* Form Card */}
+      <motion.section
+        id="formular"
+        className="max-w-5xl mx-auto bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-10 md:p-16 my-10"
+        initial={{ opacity: 0, y: 60 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1 }}
+      >
+        <h2 className="text-4xl font-bold text-center mb-8 bg-gradient-to-r from-[#9b5cff] to-[#2ECC71] text-transparent bg-clip-text">
+          Aktivuj svůj plán zdarma
+        </h2>
+        <p className="text-center text-gray-300 mb-10 max-w-2xl mx-auto">
+          Vyplň jen pár údajů a naše AI ti během <span className="text-[#2ECC71]">2 minut</span> vytvoří osobní plán.  
+          Plán ti přijde e-mailem a uloží se do tvého profilu.
+        </p>
+        <PricingForm />
+      </motion.section>
+
+      {/* CTA + Footer */}
+      <motion.div
+        className="text-center mt-12 mb-10"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.6 }}
+      >
+        <a
+          href="#formular"
+          className="bg-[#9b5cff] hover:bg-[#8a49e0] text-white font-semibold px-10 py-4 rounded-full transition-all transform hover:scale-105"
+        >
+          🚀 Spustit zdarma teď
+        </a>
+        <p className="text-gray-400 text-sm mt-4">
+          Tvůj plán je připraven do 2 minut. Bez registrace, bez stresu.
+        </p>
+      </motion.div>
+
+      <footer className="text-center py-6 text-gray-500 text-sm border-t border-white/10">
         © {new Date().getFullYear()} Body & Mind ON — Zapni své tělo i mysl.
       </footer>
     </div>

@@ -1,96 +1,139 @@
-import React from "react";
 import { motion } from "framer-motion";
-import PricingForm from "./pricing";
 
 export default function StartPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0b0121] via-[#1b0640] to-[#2a0a6e] text-white">
-      {/* Hero Section */}
-      <section className="flex flex-col md:flex-row items-center justify-center text-center md:text-left px-6 md:px-16 py-20 max-w-7xl mx-auto gap-10">
-        {/* Text */}
-        <motion.div
-          className="flex-1"
-          initial={{ opacity: 0, x: -60 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 1 }}
-        >
-          <h1 className="text-5xl md:text-6xl font-extrabold mb-6 leading-tight">
-            <span className="bg-gradient-to-r from-[#9b5cff] to-[#2ECC71] text-transparent bg-clip-text">
-              Body & Mind ON
-            </span>{" "}
-            – Start program
-          </h1>
-          <p className="text-lg text-gray-300 mb-8 leading-relaxed max-w-lg">
-            Získej svůj osobní <span className="text-[#2ECC71] font-semibold">AI plán</span> tréninku, jídelníčku a regenerace během pár minut.  
-            Vše přizpůsobené tvým cílům – a první týden <span className="text-[#9b5cff] font-semibold">zcela zdarma.</span>
-          </p>
-
-          <a
-            href="#formular"
-            className="inline-block bg-[#2ECC71] text-black font-semibold text-lg px-10 py-4 rounded-full hover:bg-[#27AE60] transition-all transform hover:scale-105 shadow-lg"
-          >
-            💪 Začít zdarma
-          </a>
-
-          <p className="text-sm text-gray-400 mt-3">
-            Bez závazků – první plán získáš okamžitě po vyplnění.
-          </p>
-        </motion.div>
-
-        {/* Ilustrace / AI vizual */}
-        <motion.div
-          className="flex-1 flex justify-center"
-          initial={{ opacity: 0, x: 60 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 1 }}
-        >
-          <img
-            src="https://cdn.jsdelivr.net/gh/janprikopa/assets/ai-fitness-dashboard.png"
-            alt="AI dashboard illustration"
-            className="w-[90%] md:w-[80%] drop-shadow-[0_0_30px_rgba(155,92,255,0.4)] rounded-3xl"
-          />
-        </motion.div>
-      </section>
-
-      {/* Form Card */}
-      <motion.section
-        id="formular"
-        className="max-w-5xl mx-auto bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-10 md:p-16 my-10"
-        initial={{ opacity: 0, y: 60 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1 }}
-      >
-        <h2 className="text-4xl font-bold text-center mb-8 bg-gradient-to-r from-[#9b5cff] to-[#2ECC71] text-transparent bg-clip-text">
-          Aktivuj svůj plán zdarma
-        </h2>
-        <p className="text-center text-gray-300 mb-10 max-w-2xl mx-auto">
-          Vyplň jen pár údajů a naše AI ti během <span className="text-[#2ECC71]">2 minut</span> vytvoří osobní plán.  
-          Plán ti přijde e-mailem a uloží se do tvého profilu.
-        </p>
-        <PricingForm />
-      </motion.section>
-
-      {/* CTA + Footer */}
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#1c0040] to-[#090016] text-white flex flex-col items-center px-4 py-16">
+      
+      {/* HERO SEKCE */}
       <motion.div
-        className="text-center mt-12 mb-10"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        className="max-w-5xl text-center mb-16"
       >
-        <a
+        <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-[#2ECC71] to-[#00BFFF] bg-clip-text text-transparent drop-shadow-lg">
+          Body & Mind ON – Start program
+        </h1>
+        <p className="text-lg md:text-xl text-gray-300 leading-relaxed mb-8">
+          Získej svůj osobní AI plán tréninku, jídelníčku a regenerace během pár minut.  
+          Vše přizpůsobené tvým cílům – první týden zcela zdarma, bez závazků.
+        </p>
+
+        <motion.a
           href="#formular"
-          className="bg-[#9b5cff] hover:bg-[#8a49e0] text-white font-semibold px-10 py-4 rounded-full transition-all transform hover:scale-105"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.97 }}
+          className="inline-block bg-[#2ECC71] text-black font-semibold px-10 py-4 rounded-full shadow-xl hover:bg-[#27ae60] transition-all duration-300"
         >
-          🚀 Spustit zdarma teď
-        </a>
-        <p className="text-gray-400 text-sm mt-4">
-          Tvůj plán je připraven do 2 minut. Bez registrace, bez stresu.
+          🚀 Začít zdarma
+        </motion.a>
+        <p className="mt-4 text-sm text-gray-400">
+          Tvůj osobní plán bude připraven během 2 minut.
         </p>
       </motion.div>
 
-      <footer className="text-center py-6 text-gray-500 text-sm border-t border-white/10">
-        © {new Date().getFullYear()} Body & Mind ON — Zapni své tělo i mysl.
-      </footer>
+      {/* BENEFITY */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3, duration: 0.8 }}
+        className="grid md:grid-cols-3 gap-8 text-center mb-24 max-w-6xl"
+      >
+        {[
+          { icon: "🧠", title: "AI plánování", text: "Každý plán sestavuje AI trenér na základě tvých údajů." },
+          { icon: "💪", title: "Komplexní přístup", text: "Trénink, jídelníček, regenerace i mindset v jednom systému." },
+          { icon: "⚡", title: "Okamžitý výsledek", text: "Plán ti dorazí během několika minut na e-mail." },
+        ].map((b, i) => (
+          <motion.div
+            key={i}
+            whileHover={{ scale: 1.05, y: -5 }}
+            className="p-6 bg-[#110020]/60 backdrop-blur-md rounded-2xl border border-[#2ECC71]/20 shadow-lg"
+          >
+            <div className="text-4xl mb-4">{b.icon}</div>
+            <h3 className="text-xl font-semibold mb-2 text-[#2ECC71]">{b.title}</h3>
+            <p className="text-gray-300 text-sm leading-relaxed">{b.text}</p>
+          </motion.div>
+        ))}
+      </motion.div>
+
+      {/* FORMULÁŘ */}
+      <motion.div
+        id="formular"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4, duration: 0.8 }}
+        className="bg-[#0f0f12]/90 p-10 rounded-3xl shadow-2xl max-w-5xl w-full border border-[#2ECC71]/10"
+      >
+        <h2 className="text-3xl font-bold text-center mb-10 bg-gradient-to-r from-[#00BFFF] to-[#2ECC71] bg-clip-text text-transparent">
+          📝 Aktivuj svůj plán zdarma
+        </h2>
+        <p className="text-center text-gray-400 mb-10">
+          Vyplň pár údajů a naše AI ti během 2 minut připraví osobní plán.  
+          Po dokončení ti přijde e-mailem i do tvého profilu.
+        </p>
+
+        <form className="grid md:grid-cols-2 gap-6 text-gray-300">
+          <Input label="Jméno a příjmení" type="text" />
+          <Input label="E-mail" type="email" />
+          <Input label="Věk (roky)" type="number" />
+          <Input label="Váha (kg)" type="number" />
+          <Input label="Výška (cm)" type="number" />
+          
+          <Select label="Aktivita" options={["Lehká", "Střední", "Vysoká"]} />
+          <Select label="Typ práce" options={["Kancelář / IT", "Fyzická", "Smíšená"]} />
+          <Select label="Cíl" options={["Redukce hmotnosti", "Udržování", "Nabírání svalů"]} />
+
+          <div className="md:col-span-2">
+            <label className="block mb-2 text-sm text-gray-400">Poznámky (volitelné)</label>
+            <textarea
+              className="w-full p-3 rounded-lg bg-[#1a1a1d] border border-gray-700 focus:border-[#2ECC71] focus:ring-2 focus:ring-[#2ECC71]/30 transition-all h-28"
+              placeholder="Zdravotní omezení, preference jídel..."
+            />
+          </div>
+        </form>
+
+        <div className="text-center mt-10">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.97 }}
+            className="bg-[#2ECC71] text-black font-semibold px-12 py-4 rounded-full shadow-xl hover:bg-[#27ae60] transition-all duration-300"
+          >
+            Odeslat a získat plán
+          </motion.button>
+        </div>
+      </motion.div>
+
+      {/* SCHOVÁNÍ FOOTERU */}
+      <style jsx global>{`
+        footer {
+          display: none !important;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function Input({ label, type }) {
+  return (
+    <div>
+      <label className="block mb-2 text-sm text-gray-400">{label}</label>
+      <input
+        type={type}
+        className="w-full p-3 rounded-lg bg-[#1a1a1d] border border-gray-700 focus:border-[#00BFFF] focus:ring-2 focus:ring-[#00BFFF]/30 transition-all"
+      />
+    </div>
+  );
+}
+
+function Select({ label, options }) {
+  return (
+    <div>
+      <label className="block mb-2 text-sm text-gray-400">{label}</label>
+      <select className="w-full p-3 rounded-lg bg-[#1a1a1d] border border-gray-700 focus:border-[#2ECC71] focus:ring-2 focus:ring-[#2ECC71]/30 transition-all">
+        {options.map((opt, i) => (
+          <option key={i}>{opt}</option>
+        ))}
+      </select>
     </div>
   );
 }

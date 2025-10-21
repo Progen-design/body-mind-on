@@ -1,7 +1,6 @@
 import React from "react";
 import Link from "next/link";
 import PricingForm from "./pricing"; // používáme stávající formulář
-import "@/styles/globals.css";
 
 export default function StartPage() {
   return (

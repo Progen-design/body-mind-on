@@ -1,99 +1,159 @@
-import ProgramForm from "../components/ProgramForm";
+import { useState } from "react";
 
 export default function StartPage() {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    gender: "Muž",
+    age: "",
+    height: "",
+    weight: "",
+    notes: "",
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/start-form", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error("Server error");
+      alert("Formulář byl úspěšně odeslán!");
+      setFormData({ name: "", email: "", gender: "Muž", age: "", height: "", weight: "", notes: "" });
+    } catch (err) {
+      alert("Nastala chyba při odesílání: " + err.message);
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#0c0c24] via-[#111133] to-[#000010] text-white font-sans">
-      {/* Hero */}
-      <section className="flex flex-col justify-center items-center text-center py-32 px-6 bg-cover bg-center"
-        style={{ backgroundImage: "url('/images/hero-bg.jpg')" }}>
-        <h1 className="text-5xl md:text-6xl font-extrabold mb-6 bg-gradient-to-r from-[#8ab4ff] to-[#b388ff] bg-clip-text text-transparent drop-shadow-lg">
-          Body and Mind ON – Zapni své tělo i mysl
+    <main>
+      {/* Hero sekce */}
+      <section className="container center" style={{ paddingTop: "60px" }}>
+        <h1 className="text-5xl font-bold bg-gradient-to-r from-[#8bc7ff] to-[#c2a6ff] bg-clip-text text-transparent mb-4">
+          START Program – Začni zdarma
         </h1>
-        <p className="text-gray-300 text-lg md:text-xl max-w-2xl mb-8 leading-relaxed">
-          Získej osobní plán tréninku, jídelníčku a regenerace v kombinaci AI systému a kouče ve
-          prémiových plánech. Začni 7denní START zdarma a objev svůj nový potenciál.
-          <br />
-          <span className="text-[#7DF9FF]">Tvůj osobní plán bude připraven během 2 minut.</span>
+        <p className="muted text-lg max-w-2xl mx-auto">
+          Vyzkoušej systém bez rizika — během pár minut získáš osobní plán tréninku, jídelníčku i regenerace zdarma.
+          <br /> První týden zcela zdarma, bez závazků.
         </p>
-        <a
-          href="#formular"
-          className="inline-block px-10 py-4 bg-gradient-to-r from-[#7DF9FF] to-[#9A7DFF] text-black font-semibold rounded-xl text-lg shadow-lg hover:scale-105 transition"
-        >
-          ⚡ Začni 7denní START zdarma
-        </a>
-        <p className="text-gray-400 text-sm mt-4">Bez rizika, bez karty, jen výsledek.</p>
+        <button className="btn" style={{ marginTop: "24px" }}>Začít zdarma 🚀</button>
       </section>
 
-      {/* Jak to funguje */}
-      <section className="max-w-6xl mx-auto px-6 py-20 grid md:grid-cols-2 gap-12 items-center">
-        <div>
-          <h2 className="text-4xl font-bold mb-8 text-[#9ebaff]">Jak to funguje</h2>
-          <p className="text-gray-300 mb-8">
-            S Body & Mind ON funguje všechno rychle, přehledně a bez stresu.
-          </p>
-          <div className="space-y-6">
-            {[
-              {
-                icon: "📝",
-                title: "Vyplníš krátký kvíz",
-                text: "Sdílíš své cíle, možnosti a zdravotní stav v jednoduchém dotazníku.",
-              },
-              {
-                icon: "🤖",
-                title: "AI vytvoří tvůj plán",
-                text: "Systém během 2 minut připraví osobní tréninkový a jídelní plán přesně pro tebe.",
-              },
-              {
-                icon: "📈",
-                title: "Sleduješ pokroky",
-                text: "V aplikaci vidíš výsledky a každý týden dostáváš doporučení od AI trenéra.",
-              },
-            ].map((item, i) => (
-              <div key={i} className="flex items-start space-x-4">
-                <div className="text-3xl">{item.icon}</div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-1 text-[#8ab4ff]">
-                    {item.title}
-                  </h3>
-                  <p className="text-gray-400">{item.text}</p>
-                </div>
-              </div>
-            ))}
+      {/* Výhody */}
+      <section className="container" style={{ marginTop: "80px" }}>
+        <h2 className="text-3xl font-semibold mb-8 center">Co získáš v programu START</h2>
+        <div className="pricing-grid">
+          <div className="card">
+            <h3>💪 Tréninkový plán</h3>
+            <p className="muted">AI trenér ti sestaví cvičební plán přesně podle tvých cílů a možností.</p>
           </div>
-          <a
-            href="#formular"
-            className="inline-block mt-10 px-8 py-3 bg-gradient-to-r from-[#7DF9FF] to-[#9A7DFF] text-black font-semibold rounded-xl shadow-lg hover:scale-105 transition"
-          >
-            ⚡ Získat svůj plán zdarma
-          </a>
-        </div>
-
-        <div className="hidden md:block">
-          <img
-            src="/images/phone-preview.png"
-            alt="Ukázka aplikace"
-            className="rounded-3xl shadow-2xl w-full"
-          />
+          <div className="card">
+            <h3>🥗 Jídelníček</h3>
+            <p className="muted">Každý týden dostaneš personalizovaný plán stravy z běžně dostupných surovin.</p>
+          </div>
+          <div className="card">
+            <h3>🧘 Regenerace</h3>
+            <p className="muted">Získáš doporučení pro spánek, regeneraci a mentální pohodu.</p>
+          </div>
         </div>
       </section>
 
       {/* Formulář */}
-      <section
-        id="formular"
-        className="py-24 bg-[#0b0b1d] border-t border-[#1a1a3a] text-center"
-      >
-        <h2 className="text-4xl font-bold mb-10 text-[#9ebaff]">
-          Aktivuj svůj osobní plán START
-        </h2>
-        <div className="max-w-3xl mx-auto">
-          <ProgramForm planType="START" />
-        </div>
-      </section>
+      <section className="container" style={{ marginTop: "100px" }}>
+        <h2 className="text-3xl font-semibold mb-6 center">Aktivuj svůj osobní plán START</h2>
+        <form className="form" onSubmit={handleSubmit}>
+          <div className="row">
+            <div>
+              <label className="label">Jméno a příjmení</label>
+              <input
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                className="input"
+                placeholder="Jan Novák"
+              />
+            </div>
+            <div>
+              <label className="label">E-mail</label>
+              <input
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="input"
+                placeholder="jan@example.com"
+              />
+            </div>
+          </div>
 
-      {/* Footer */}
-      <footer className="text-center text-gray-500 py-10 border-t border-[#1a1a3a] text-sm">
-        © 2025 Body & Mind ON • Všechna práva vyhrazena
-      </footer>
+          <div className="row">
+            <div>
+              <label className="label">Pohlaví</label>
+              <select name="gender" value={formData.gender} onChange={handleChange} className="select">
+                <option>Muž</option>
+                <option>Žena</option>
+              </select>
+            </div>
+            <div>
+              <label className="label">Věk</label>
+              <input
+                name="age"
+                type="number"
+                value={formData.age}
+                onChange={handleChange}
+                className="input"
+                placeholder="např. 35"
+              />
+            </div>
+          </div>
+
+          <div className="row">
+            <div>
+              <label className="label">Výška (cm)</label>
+              <input
+                name="height"
+                type="number"
+                value={formData.height}
+                onChange={handleChange}
+                className="input"
+                placeholder="180"
+              />
+            </div>
+            <div>
+              <label className="label">Váha (kg)</label>
+              <input
+                name="weight"
+                type="number"
+                value={formData.weight}
+                onChange={handleChange}
+                className="input"
+                placeholder="75"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="label">Poznámky (volitelné)</label>
+            <textarea
+              name="notes"
+              value={formData.notes}
+              onChange={handleChange}
+              className="input"
+              placeholder="Zdravotní omezení, preference jídel..."
+            />
+          </div>
+
+          <button type="submit" className="submit">Dokončit registraci</button>
+          <p className="note center">Tvůj osobní plán ti přijde e-mailem během 2 minut po odeslání.</p>
+        </form>
+      </section>
     </main>
   );
 }

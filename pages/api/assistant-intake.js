@@ -4,19 +4,24 @@ export default async function handler(req, res) {
   }
 
   try {
+    // ✅ 1. Načti JSON z těla požadavku
     const data = req.body;
 
-    console.log("📩 Přijatá data:", data);
+    // ✅ 2. Ověř, že všechna data existují
+    if (!data || Object.keys(data).length === 0) {
+      return res.status(400).json({ success: false, message: "Empty request body" });
+    }
 
-    // Tady můžeš volat tvého AI asistenta, nebo logiku Supabase / e-mailu
-    // ...
+    console.log("✅ Přijatá data z formuláře:", data);
 
-    // Úspěšná odpověď:
-    return res.status(200).json({ success: true, message: "Formulář přijat" });
+    // ✅ 3. Tady můžeš připojit AI asistenta / Supabase / email logiku
+    // Například: uložit data do Supabase, nebo poslat e-mailem
+    // await supabase.from("form_submissions").insert([{ ...data }]);
+
+    // ✅ 4. Vrátit odpověď zpět klientovi
+    return res.status(200).json({ success: true, message: "Formulář úspěšně přijat", received: data });
   } catch (error) {
     console.error("❌ Chyba serveru:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Server error: " + error.message });
+    return res.status(500).json({ success: false, message: "Server error: " + error.message });
   }
 }

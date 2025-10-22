@@ -105,3 +105,17 @@ main { padding: 40px 0; }
 
 /* ---- Motion preference ---- */
 @media (prefers-reduced-motion: reduce){ * { animation: none !important; transition: none !important; } }
+:root {
+  --color-primary: #8bc7ff;
+  --color-secondary: #c2a6ff;
+  --color-accent: #7df9ff;
+  --color-dark-bg: #0a021f;
+  --color-text-light: #f5f5f5;
+  --color-text-gray: #bdbdbd;
+}
+body {
+  background: radial-gradient(circle at top right, #0b0325 0%, #000 100%);
+  color: var(--color-text-light);
+  font-family: 'Inter', sans-serif;
+}
+

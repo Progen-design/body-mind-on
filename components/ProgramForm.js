@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function ProgramForm({ planType = "START" }) {
+export default function ProgramForm({ planType }) {
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -15,13 +15,12 @@ export default function ProgramForm({ planType = "START" }) {
     freq_choice: "2–3× týdně",
     notes: "",
   });
+
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-  };
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,37 +32,31 @@ export default function ProgramForm({ planType = "START" }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, planType }),
       });
-
       const data = await res.json();
-      if (data.success) {
-        setSuccess(true);
-      } else {
-        alert("Nastala chyba při odeslání formuláře.");
-      }
+      if (data.success) setSuccess(true);
+      else alert("Nastala chyba při odeslání formuláře.");
     } catch (err) {
-      alert("Chyba při odesílání: " + err.message);
+      alert("Chyba připojení: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  if (success) {
+  if (success)
     return (
       <div className="text-center text-green-400 mt-10">
-        <h3 className="text-2xl font-bold mb-2">✅ Plán úspěšně odeslán!</h3>
-        <p>Tvůj osobní plán ti přijde e-mailem během pár minut.</p>
+        <h3 className="text-2xl font-bold mb-2">✅ Plán odeslán!</h3>
+        <p>Tvůj osobní plán ti dorazí e-mailem během pár minut.</p>
       </div>
     );
-  }
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="max-w-3xl mx-auto mt-8 p-8 bg-neutral-900/80 rounded-2xl shadow-lg backdrop-blur border border-gray-800 text-white"
+      className="max-w-3xl mx-auto mt-10 p-8 bg-neutral-900/90 rounded-2xl shadow-lg backdrop-blur border border-gray-800 text-white"
     >
       <h2 className="text-2xl font-bold text-center mb-6">
-        Aktivuj svůj plán{" "}
-        <span className="text-blue-400 font-semibold">{planType}</span>
+        Detaily pro <span className="text-blue-400">{planType}</span>
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -130,7 +123,7 @@ export default function ProgramForm({ planType = "START" }) {
       <button
         type="submit"
         disabled={loading}
-        className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition"
+        className="mt-6 w-full bg-[#00A8FF] hover:bg-[#0090DD] text-white font-semibold py-3 rounded-lg transition"
       >
         {loading ? "Odesílám..." : "Dokončit registraci"}
       </button>

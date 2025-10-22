@@ -1,66 +1,66 @@
 import ProgramForm from "../components/ProgramForm";
+import LayoutSection from "../components/LayoutSection";
 
 export default function StartPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#0b0b0b] via-[#121212] to-black text-white font-sans">
+    <main className="min-h-screen bg-gradient-to-b from-[#0a0221] via-[#0b0325] to-[#000000] text-white font-sans">
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-6 pt-24 pb-12 text-center">
-        <h1 className="text-5xl md:text-6xl font-extrabold mb-6 bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent drop-shadow-lg">
-          START Program – Začni zdarma
+      <section className="max-w-6xl mx-auto px-6 pt-32 pb-20 text-center">
+        <h1 className="text-6xl md:text-7xl font-extrabold mb-6 bg-gradient-to-r from-[#00FF87] via-[#00F5C0] to-[#7DF9FF] bg-clip-text text-transparent">
+          START Program
         </h1>
-        <p className="text-gray-300 text-lg md:text-xl leading-relaxed max-w-3xl mx-auto">
-          Vyzkoušej systém bez rizika — během pár minut získáš osobní plán
-          tréninku, jídelníčku i regenerace zdarma.  
+        <p className="text-gray-300 text-xl leading-relaxed max-w-3xl mx-auto">
+          Získej svůj osobní plán tréninku, jídelníčku a regenerace během pár minut.
           <br />
-          <span className="text-green-400 font-semibold">
-            První týden zcela zdarma, bez závazků.
-          </span>
+          <span className="text-[#00FF87] font-semibold">První týden zcela zdarma – bez závazků.</span>
         </p>
         <a
           href="#formular"
-          className="mt-10 inline-block px-10 py-4 bg-green-500 hover:bg-green-600 text-black font-semibold rounded-xl text-lg transition-all shadow-lg shadow-green-800/30"
+          className="inline-block mt-10 px-10 py-4 bg-[#00FF87] hover:bg-[#00F5C0] text-black font-semibold rounded-2xl text-lg shadow-lg shadow-green-500/30 transition-transform hover:scale-105"
         >
           Začít zdarma 🚀
         </a>
       </section>
 
       {/* Výhody */}
-      <section className="max-w-6xl mx-auto px-6 py-16 grid md:grid-cols-3 gap-8 text-center">
-        <div className="bg-neutral-900 rounded-2xl p-8 shadow-lg border border-neutral-800 hover:border-green-500 transition">
-          <h3 className="text-green-400 text-xl font-bold mb-3">💪 Tréninkový plán</h3>
-          <p className="text-gray-400">
-            AI trenér ti sestaví cvičební plán přesně podle tvých cílů a možností.
-          </p>
+      <LayoutSection title="Co získáš se START programem">
+        <div className="grid md:grid-cols-3 gap-8 mt-10">
+          {[
+            {
+              icon: "💪",
+              title: "AI Tréninkový plán",
+              text: "Plán vytvořený přesně podle tvých cílů, úrovně a možností.",
+            },
+            {
+              icon: "🥗",
+              title: "Personalizovaný jídelníček",
+              text: "Z českých surovin s přehledem makroživin a doporučeními.",
+            },
+            {
+              icon: "🧘",
+              title: "Regenerace a mindset",
+              text: "Doporučení pro spánek, regeneraci a mentální rovnováhu.",
+            },
+          ].map((item, i) => (
+            <div
+              key={i}
+              className="bg-[#101020]/80 rounded-2xl p-8 border border-[#1f1f2e] hover:border-[#00FF87] transition shadow-lg"
+            >
+              <div className="text-4xl mb-4">{item.icon}</div>
+              <h3 className="text-xl font-semibold text-white mb-3">{item.title}</h3>
+              <p className="text-gray-400">{item.text}</p>
+            </div>
+          ))}
         </div>
-        <div className="bg-neutral-900 rounded-2xl p-8 shadow-lg border border-neutral-800 hover:border-green-500 transition">
-          <h3 className="text-green-400 text-xl font-bold mb-3">🥗 Jídelníček</h3>
-          <p className="text-gray-400">
-            Každý týden dostaneš nový personalizovaný jídelníček z běžně dostupných surovin.
-          </p>
-        </div>
-        <div className="bg-neutral-900 rounded-2xl p-8 shadow-lg border border-neutral-800 hover:border-green-500 transition">
-          <h3 className="text-green-400 text-xl font-bold mb-3">🧘 Regenerace</h3>
-          <p className="text-gray-400">
-            Tipy na spánek, regeneraci a mindset na základě tvého životního stylu.
-          </p>
-        </div>
-      </section>
+      </LayoutSection>
 
       {/* Formulář */}
-      <section
-        id="formular"
-        className="bg-neutral-950 border-t border-neutral-800 py-20 px-6"
-      >
-        <div className="max-w-5xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-10 bg-gradient-to-r from-green-400 to-teal-400 bg-clip-text text-transparent">
-            Aktivuj svůj osobní plán START
-          </h2>
-          <ProgramForm planType="START" />
-        </div>
-      </section>
+      <LayoutSection title="Aktivuj svůj osobní plán START">
+        <ProgramForm planType="START" />
+      </LayoutSection>
 
       {/* Footer */}
-      <footer className="text-center text-gray-500 py-10 border-t border-neutral-800 text-sm">
+      <footer className="text-center text-gray-500 py-10 border-t border-[#202030] text-sm">
         © 2025 Body & Mind ON • Všechna práva vyhrazena
       </footer>
     </main>

@@ -4,91 +4,88 @@ export default function StartPage() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    gender: "Muž",
+    gender: "",
     age: "",
     height: "",
     weight: "",
+    activity: "",
+    workType: "",
+    goal: "",
     notes: "",
   });
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
-      const res = await fetch("/api/start-form", {
+      const res = await fetch("/api/assistant-intake", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-      if (!res.ok) throw new Error("Server error");
-      alert("Formulář byl úspěšně odeslán!");
-      setFormData({ name: "", email: "", gender: "Muž", age: "", height: "", weight: "", notes: "" });
-    } catch (err) {
-      alert("Nastala chyba při odesílání: " + err.message);
+
+      const result = await res.json();
+
+      if (result.success) {
+        alert("✅ Formulář úspěšně odeslán!");
+        setFormData({
+          name: "",
+          email: "",
+          gender: "",
+          age: "",
+          height: "",
+          weight: "",
+          activity: "",
+          workType: "",
+          goal: "",
+          notes: "",
+        });
+      } else {
+        alert("⚠️ Chyba: " + result.message);
+      }
+    } catch (error) {
+      alert("❌ Chyba serveru: " + error.message);
     }
   };
 
   return (
-    <main>
-      {/* Hero sekce */}
-      <section className="container center" style={{ paddingTop: "60px" }}>
-        <h1 className="text-5xl font-bold bg-gradient-to-r from-[#8bc7ff] to-[#c2a6ff] bg-clip-text text-transparent mb-4">
-          START Program – Začni zdarma
-        </h1>
-        <p className="muted text-lg max-w-2xl mx-auto">
-          Vyzkoušej systém bez rizika — během pár minut získáš osobní plán tréninku, jídelníčku i regenerace zdarma.
-          <br /> První týden zcela zdarma, bez závazků.
-        </p>
-        <button className="btn" style={{ marginTop: "24px" }}>Začít zdarma 🚀</button>
-      </section>
+    <main className="container" style={{ padding: "60px 0" }}>
+      <h1 style={{ textAlign: "center" }}>START Program – Začni zdarma</h1>
+      <p style={{ textAlign: "center", color: "#aaa" }}>
+        Vyzkoušej systém bez rizika — AI ti připraví osobní plán tréninku,
+        jídelníček i regeneraci zdarma.
+      </p>
 
-      {/* Výhody */}
-      <section className="container" style={{ marginTop: "80px" }}>
-        <h2 className="text-3xl font-semibold mb-8 center">Co získáš v programu START</h2>
-        <div className="pricing-grid">
-          <div className="card">
-            <h3>💪 Tréninkový plán</h3>
-            <p className="muted">AI trenér ti sestaví cvičební plán přesně podle tvých cílů a možností.</p>
-          </div>
-          <div className="card">
-            <h3>🥗 Jídelníček</h3>
-            <p className="muted">Každý týden dostaneš personalizovaný plán stravy z běžně dostupných surovin.</p>
-          </div>
-          <div className="card">
-            <h3>🧘 Regenerace</h3>
-            <p className="muted">Získáš doporučení pro spánek, regeneraci a mentální pohodu.</p>
-          </div>
-        </div>
-      </section>
+      <div className="card" style={{ marginTop: "40px", padding: "40px" }}>
+        <h2>Aktivuj svůj osobní plán START</h2>
 
-      {/* Formulář */}
-      <section className="container" style={{ marginTop: "100px" }}>
-        <h2 className="text-3xl font-semibold mb-6 center">Aktivuj svůj osobní plán START</h2>
         <form className="form" onSubmit={handleSubmit}>
           <div className="row">
             <div>
               <label className="label">Jméno a příjmení</label>
               <input
+                type="text"
                 name="name"
+                className="input"
                 value={formData.name}
                 onChange={handleChange}
-                className="input"
-                placeholder="Jan Novák"
+                required
               />
             </div>
+
             <div>
               <label className="label">E-mail</label>
               <input
-                name="email"
                 type="email"
+                name="email"
+                className="input"
                 value={formData.email}
                 onChange={handleChange}
-                className="input"
-                placeholder="jan@example.com"
+                required
               />
             </div>
           </div>
@@ -96,20 +93,27 @@ export default function StartPage() {
           <div className="row">
             <div>
               <label className="label">Pohlaví</label>
-              <select name="gender" value={formData.gender} onChange={handleChange} className="select">
-                <option>Muž</option>
-                <option>Žena</option>
+              <select
+                name="gender"
+                className="select"
+                value={formData.gender}
+                onChange={handleChange}
+              >
+                <option value="">Vyber</option>
+                <option value="Muž">Muž</option>
+                <option value="Žena">Žena</option>
               </select>
             </div>
+
             <div>
               <label className="label">Věk</label>
               <input
-                name="age"
                 type="number"
-                value={formData.age}
-                onChange={handleChange}
+                name="age"
                 className="input"
                 placeholder="např. 35"
+                value={formData.age}
+                onChange={handleChange}
               />
             </div>
           </div>
@@ -118,23 +122,22 @@ export default function StartPage() {
             <div>
               <label className="label">Výška (cm)</label>
               <input
-                name="height"
                 type="number"
+                name="height"
+                className="input"
                 value={formData.height}
                 onChange={handleChange}
-                className="input"
-                placeholder="180"
               />
             </div>
+
             <div>
               <label className="label">Váha (kg)</label>
               <input
-                name="weight"
                 type="number"
+                name="weight"
+                className="input"
                 value={formData.weight}
                 onChange={handleChange}
-                className="input"
-                placeholder="75"
               />
             </div>
           </div>
@@ -143,17 +146,19 @@ export default function StartPage() {
             <label className="label">Poznámky (volitelné)</label>
             <textarea
               name="notes"
+              className="input"
+              rows="3"
+              placeholder="Zdravotní omezení, preference jídel..."
               value={formData.notes}
               onChange={handleChange}
-              className="input"
-              placeholder="Zdravotní omezení, preference jídel..."
             />
           </div>
 
-          <button type="submit" className="submit">Dokončit registraci</button>
-          <p className="note center">Tvůj osobní plán ti přijde e-mailem během 2 minut po odeslání.</p>
+          <button type="submit" className="submit">
+            Dokončit registraci
+          </button>
         </form>
-      </section>
+      </div>
     </main>
   );
 }

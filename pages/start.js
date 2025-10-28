@@ -10,7 +10,7 @@ export default function Start() {
     weight: "",
     activity: "",
     stress: "",
-    workType: "",
+    worktype: "", // změněno z workType
     goal: "",
     frequency: "",
     notes: "",
@@ -27,32 +27,37 @@ export default function Start() {
     e.preventDefault();
     setStatus("Odesílám...");
 
-    const res = await fetch("/api/assistant-intake", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
-
-    const result = await res.json();
-    if (res.ok) {
-      setStatus("✅ Formulář úspěšně odeslán!");
-      setFormData({
-        name: "",
-        email: "",
-        gender: "",
-        age: "",
-        height: "",
-        weight: "",
-        activity: "",
-        stress: "",
-        workType: "",
-        goal: "",
-        frequency: "",
-        notes: "",
-        program: "START",
+    try {
+      const res = await fetch("/api/assistant-intake", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
-    } else {
-      setStatus("❌ " + result.message);
+
+      const result = await res.json();
+
+      if (res.ok) {
+        setStatus("✅ Formulář úspěšně odeslán!");
+        setFormData({
+          name: "",
+          email: "",
+          gender: "",
+          age: "",
+          height: "",
+          weight: "",
+          activity: "",
+          stress: "",
+          worktype: "",
+          goal: "",
+          frequency: "",
+          notes: "",
+          program: "START",
+        });
+      } else {
+        setStatus("❌ Chyba serveru: " + (result.message || "Nepodařilo se odeslat"));
+      }
+    } catch (err) {
+      setStatus("❌ Chyba připojení: " + err.message);
     }
   };
 
@@ -63,15 +68,32 @@ export default function Start() {
         Vyzkoušej systém bez rizika – AI ti připraví osobní plán tréninku, jídelníček i regeneraci zdarma.
       </p>
 
-      <form onSubmit={handleSubmit} className="form max-w-3xl mx-auto bg-[#121212] p-8 rounded-xl shadow-lg border border-[#222]">
+      <form
+        onSubmit={handleSubmit}
+        className="form max-w-3xl mx-auto bg-[#121212] p-8 rounded-xl shadow-lg border border-[#222]"
+      >
         <div className="row">
           <div>
             <label className="label">Jméno a příjmení</label>
-            <input name="name" className="input" value={formData.name} onChange={handleChange} placeholder="Jan Novák" />
+            <input
+              name="name"
+              className="input"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="Jan Novák"
+            />
           </div>
           <div>
             <label className="label">E-mail</label>
-            <input name="email" className="input" value={formData.email} onChange={handleChange} placeholder="jan@example.com" required />
+            <input
+              name="email"
+              type="email"
+              className="input"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="jan@example.com"
+              required
+            />
           </div>
         </div>
 
@@ -86,18 +108,36 @@ export default function Start() {
           </div>
           <div>
             <label className="label">Věk (roky)</label>
-            <input name="age" type="number" className="input" value={formData.age} onChange={handleChange} />
+            <input
+              name="age"
+              type="number"
+              className="input"
+              value={formData.age}
+              onChange={handleChange}
+            />
           </div>
         </div>
 
         <div className="row">
           <div>
             <label className="label">Výška (cm)</label>
-            <input name="height" type="number" className="input" value={formData.height} onChange={handleChange} />
+            <input
+              name="height"
+              type="number"
+              className="input"
+              value={formData.height}
+              onChange={handleChange}
+            />
           </div>
           <div>
             <label className="label">Váha (kg)</label>
-            <input name="weight" type="number" className="input" value={formData.weight} onChange={handleChange} />
+            <input
+              name="weight"
+              type="number"
+              className="input"
+              value={formData.weight}
+              onChange={handleChange}
+            />
           </div>
         </div>
 
@@ -125,7 +165,7 @@ export default function Start() {
         <div className="row">
           <div>
             <label className="label">Typ práce</label>
-            <select name="workType" className="select" value={formData.workType} onChange={handleChange}>
+            <select name="worktype" className="select" value={formData.worktype} onChange={handleChange}>
               <option value="">Vyber</option>
               <option value="Kancelář / IT">Kancelář / IT</option>
               <option value="Manuální">Manuální</option>
@@ -157,14 +197,21 @@ export default function Start() {
 
         <div>
           <label className="label">Poznámky (volitelné)</label>
-          <textarea name="notes" className="input" rows="3" value={formData.notes} onChange={handleChange} placeholder="Zdravotní omezení, preference jídel..." />
+          <textarea
+            name="notes"
+            className="input"
+            rows="3"
+            value={formData.notes}
+            onChange={handleChange}
+            placeholder="Zdravotní omezení, preference jídel..."
+          />
         </div>
 
-        <button type="submit" className="submit">Dokončit registraci</button>
+        <button type="submit" className="submit">
+          Dokončit registraci
+        </button>
 
-        {status && (
-          <p className="center mt-4">{status}</p>
-        )}
+        {status && <p className="center mt-4">{status}</p>}
       </form>
     </main>
   );

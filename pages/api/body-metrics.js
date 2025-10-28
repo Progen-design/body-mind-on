@@ -1,10 +1,10 @@
-// /pages/api/body-metrics.js
+// /pages/api/assistant-intake.js
 import { supabaseServer } from '../../lib/supabaseServer';
 import { generatePlanForEmail } from '../../lib/generatePlan';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Pouze POST metoda je povolena.' });
   }
 
   try {
@@ -13,43 +13,47 @@ export default async function handler(req, res) {
     const toNum = (v) => (v === '' || v == null ? null : Number(v));
     const norm = (v) => (v ? String(v).trim().toLowerCase() : null);
 
+    // 🔹 Normalizovaná data
     const payload = {
-      user_id: b.user_id || null,
-      email: b.email || null,
       name: b.name || null,
+      email: b.email || null,
       gender: norm(b.gender),
       age: toNum(b.age),
-      height_cm: toNum(b.height_cm),
-      weight_kg: toNum(b.weight_kg),
+      height: toNum(b.height),
+      weight: toNum(b.weight),
       activity: norm(b.activity),
-      stress_level: norm(b.stress_level),
-      occupation: norm(b.occupation),
+      stress: norm(b.stress),
+      worktype: norm(b.worktype), // ⬅️ pozor – malé písmeno (musí odpovídat tabulce)
       goal: norm(b.goal),
-      freq_choice: norm(b.freq_choice),
-      weekly_sessions_user: toNum(b.weekly_sessions_user),
-      notes: b.notes || null
+      frequency: norm(b.frequency),
+      notes: b.notes || null,
+      program: b.program || 'START', // 🔹 přidáno pro označení programu
+      created_at: new Date().toISOString()
     };
 
     // ✅ Uložení do DB
     const { error: dbErr } = await supabaseServer
-      .from('body_metrics')
+      .from('registrations')
       .insert([payload]);
 
-    if (dbErr) throw new Error(`DB insert failed: ${dbErr.message}`);
+    if (dbErr) {
+      throw new Error(`Chyba při zápisu do databáze: ${dbErr.message}`);
+    }
 
-    // ✅ Generování plánu – čeká synchronně
+    // ✅ Spuštění generování AI plánu (napojení na tvého asistenta)
     if (payload.email) {
       console.log(`🧠 Spouštím generatePlanForEmail(${payload.email})`);
       await generatePlanForEmail(payload.email);
-      console.log(`✅ Plán pro ${payload.email} úspěšně vytvořen`);
+      console.log(`✅ Plán pro ${payload.email} úspěšně vytvořen.`);
     }
 
+    // ✅ Úspěšná odpověď
     return res
       .status(200)
-      .json({ ok: true, message: 'Údaje uloženy a plán byl vygenerován.' });
+      .json({ ok: true, message: 'Registrace uložena a AI plán byl vygenerován.' });
 
   } catch (e) {
-    console.error('[body-metrics] ERROR:', e);
-    return res.status(400).json({ error: e.message || String(e) });
+    console.error('[assistant-intake] ERROR:', e);
+    return res.status(500).json({ error: e.message || String(e) });
   }
 }

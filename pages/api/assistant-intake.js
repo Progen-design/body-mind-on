@@ -1,33 +1,33 @@
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 
-export const config = { api: { bodyParser: true } };
+// ✅ Inicializace Supabase klienta
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
+// ✅ Handler API endpointu
 export default async function handler(req, res) {
+  // Povolená je pouze metoda POST
   if (req.method !== "POST") {
-    return res.status(405).json({
-      success: false,
-      message: "Pouze POST metoda je povolena",
-    });
+    return res
+      .status(405)
+      .json({ success: false, message: "Pouze metoda POST je povolena." });
   }
 
   try {
     const data = req.body;
-    console.log("📨 Přijatá data:", data);
 
-    // Kontrola
+    // Kontrola povinných polí
     if (!data.email) {
-      return res.status(400).json({ success: false, message: "Chybí e-mail" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Chybí povinný e-mail." });
     }
 
-    // Připojení k Supabase
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
-
-    // Uložení dat
-    const { error: dbError } = await supabase.from("registrations").insert([
+    // ✅ Zápis do Supabase
+    const { error } = await supabase.from("registrations").insert([
       {
         name: data.name || "",
         email: data.email,
@@ -37,49 +37,71 @@ export default async function handler(req, res) {
         weight: data.weight || "",
         activity: data.activity || "",
         stress: data.stress || "",
-        workType: data.workType || "",
+        worktype: data.worktype || "", // ✅ správně lowercase
         goal: data.goal || "",
         frequency: data.frequency || "",
         notes: data.notes || "",
         program: data.program || "START",
-        created_at: new Date(),
+        created_at: new Date().toISOString(),
       },
     ]);
 
-    if (dbError) throw dbError;
+    if (error) {
+      console.error("❌ Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Chyba při zápisu do databáze: " + error.message,
+      });
+    }
 
-    // Odeslání potvrzovacího e-mailu
+    // ✅ Odeslání potvrzovacího e-mailu
     const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
+      service: "gmail",
       auth: {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_APP_PASSWORD,
       },
     });
 
-    await transporter.sendMail({
-      from: `"Body & Mind ON" <${process.env.GMAIL_USER}>`,
+    const mailOptions = {
+      from: process.env.EMAIL_FROM,
       to: data.email,
-      subject: `Registrace potvrzena – ${data.program || "START"} program`,
+      subject: "✅ Registrace – Body & Mind ON",
       html: `
-        <h2>Ahoj ${data.name || "sportovče"}!</h2>
-        <p>Děkujeme za registraci do programu <strong>${data.program || "START"}</strong>.</p>
-        <p>Tvůj osobní plán je nyní ve zpracování a brzy ti dorazí e-mailem.</p>
-        <p>— Tým Body & Mind ON</p>
+        <div style="font-family:Arial,sans-serif;line-height:1.5;color:#333;">
+          <h2>Vítej v programu <strong>${data.program}</strong> 👋</h2>
+          <p>Děkujeme za registraci! Tvoje osobní AI asistentka už připravuje tvůj plán.</p>
+          <h3>Rekapitulace údajů:</h3>
+          <ul>
+            <li><strong>Jméno:</strong> ${data.name || "Neuvedeno"}</li>
+            <li><strong>Pohlaví:</strong> ${data.gender || "Neuvedeno"}</li>
+            <li><strong>Věk:</strong> ${data.age || "Neuvedeno"}</li>
+            <li><strong>Výška:</strong> ${data.height || "Neuvedeno"} cm</li>
+            <li><strong>Váha:</strong> ${data.weight || "Neuvedeno"} kg</li>
+            <li><strong>Aktivita:</strong> ${data.activity || "Neuvedeno"}</li>
+            <li><strong>Stres:</strong> ${data.stress || "Neuvedeno"}</li>
+            <li><strong>Typ práce:</strong> ${data.worktype || "Neuvedeno"}</li>
+            <li><strong>Cíl:</strong> ${data.goal || "Neuvedeno"}</li>
+            <li><strong>Frekvence cvičení:</strong> ${data.frequency || "Neuvedeno"}</li>
+          </ul>
+          <p><em>Zdravotní poznámky:</em> ${data.notes || "—"}</p>
+          <br>
+          <p>Tým Body & Mind ON 💙</p>
+        </div>
       `,
-    });
+    };
 
-    return res.status(200).json({
-      success: true,
-      message: "Formulář úspěšně odeslán",
-    });
+    await transporter.sendMail(mailOptions);
+
+    // ✅ Úspěch
+    return res
+      .status(200)
+      .json({ success: true, message: "Formulář přijat a e-mail odeslán." });
+
   } catch (error) {
-    console.error("❌ Server error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Chyba serveru: " + error.message,
-    });
+    console.error("❌ Server chyba:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Chyba serveru: " + error.message });
   }
 }

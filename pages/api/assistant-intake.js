@@ -2,37 +2,32 @@ import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 
 export const config = {
-  api: {
-    bodyParser: true, // <-- nutné pro čtení JSON dat
-  },
+  api: { bodyParser: true },
 };
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
-
 export default async function handler(req, res) {
+  // ✅ 1. Povolení pouze POST
   if (req.method !== "POST") {
-    return res
-      .status(405)
-      .json({ success: false, message: "Pouze metoda POST je povolena" });
+    return res.status(405).json({ success: false, message: "Pouze POST metoda je povolena" });
   }
 
   try {
-    // ✅ Bezpečné načtení těla požadavku
+    // ✅ 2. Získání dat z těla
     const data = req.body;
+    console.log("📨 Přijatá data:", data);
 
-    console.log("📩 Přijatá data:", data);
-
-    if (!data || !data.email) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Chybí povinné údaje (např. e-mail)" });
+    if (!data.email || !data.name) {
+      return res.status(400).json({ success: false, message: "Chybí jméno nebo e-mail" });
     }
 
-    // ✅ 1. Uložení do Supabase
-    const { error: insertError } = await supabase.from("registrations").insert([
+    // ✅ 3. Připojení k Supabase
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
+    // ✅ 4. Uložení dat do tabulky
+    const { error: dbError } = await supabase.from("registrations").insert([
       {
         name: data.name,
         email: data.email,
@@ -50,28 +45,28 @@ export default async function handler(req, res) {
       },
     ]);
 
-    if (insertError) {
-      console.error("❌ Supabase error:", insertError);
+    if (dbError) {
+      console.error("❌ Supabase error:", dbError);
       throw new Error("Nepodařilo se uložit data do databáze.");
     }
 
-    // ✅ 2. Odeslání potvrzovacího e-mailu
+    // ✅ 5. Odeslání e-mailu přes Gmail
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 465,
       secure: true,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
       },
     });
 
     await transporter.sendMail({
-      from: `"Body & Mind ON" <${process.env.SMTP_USER}>`,
+      from: `"Body & Mind ON" <${process.env.GMAIL_USER}>`,
       to: data.email,
       subject: `Potvrzení registrace – ${data.program || "START"} program`,
       html: `
-        <h2>Ahoj ${data.name || "člene"},</h2>
+        <h2>Ahoj ${data.name},</h2>
         <p>Děkujeme za registraci do programu <b>${data.program || "START"}</b>.</p>
         <p>Tvůj osobní AI trenér právě připravuje tvůj první plán tréninku a jídelníček.</p>
         <p>Očekávej e-mail s přehledem do několika minut.</p>
@@ -82,13 +77,13 @@ export default async function handler(req, res) {
 
     console.log("✅ E-mail odeslán na:", data.email);
 
-    // ✅ 3. Úspěšná odpověď
-    return res
-      .status(200)
-      .json({ success: true, message: "Formulář byl přijat a e-mail odeslán." });
+    // ✅ 6. Úspěch
+    return res.status(200).json({
+      success: true,
+      message: "Formulář byl úspěšně přijat a e-mail odeslán.",
+    });
   } catch (error) {
     console.error("💥 Server error:", error);
-    // vždy vrať platný JSON, aby se neobjevila JSON.parse chyba
     return res.status(500).json({
       success: false,
       message: "Chyba serveru: " + (error.message || "Neznámá chyba"),

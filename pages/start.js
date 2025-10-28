@@ -10,7 +10,7 @@ export default function Start() {
     weight: "",
     activity: "",
     stress: "",
-    worktype: "", // změněno z workType
+    worktype: "", // správně lowercase podle Supabase
     goal: "",
     frequency: "",
     notes: "",
@@ -54,7 +54,7 @@ export default function Start() {
           program: "START",
         });
       } else {
-        setStatus("❌ Chyba serveru: " + (result.message || "Nepodařilo se odeslat"));
+        setStatus("❌ Chyba serveru: " + (result.message || "Nepodařilo se odeslat."));
       }
     } catch (err) {
       setStatus("❌ Chyba připojení: " + err.message);
@@ -62,16 +62,21 @@ export default function Start() {
   };
 
   return (
-    <main className="container">
-      <h1 className="center text-3xl font-bold mb-4">START Program – Začni zdarma</h1>
-      <p className="center text-lg mb-8">
-        Vyzkoušej systém bez rizika – AI ti připraví osobní plán tréninku, jídelníček i regeneraci zdarma.
-      </p>
+    <main className="container py-12">
+      <section className="text-center mb-10">
+        <h1 className="text-4xl font-extrabold mb-3 text-white">
+          START Program – Začni zdarma
+        </h1>
+        <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+          Vyzkoušej systém bez rizika – AI ti zdarma připraví osobní plán tréninku, jídelníček i regeneraci.
+        </p>
+      </section>
 
       <form
         onSubmit={handleSubmit}
-        className="form max-w-3xl mx-auto bg-[#121212] p-8 rounded-xl shadow-lg border border-[#222]"
+        className="form max-w-3xl mx-auto bg-[#121212] p-8 rounded-2xl shadow-lg border border-[#222] space-y-6"
       >
+        {/* Základní informace */}
         <div className="row">
           <div>
             <label className="label">Jméno a příjmení</label>
@@ -81,6 +86,7 @@ export default function Start() {
               value={formData.name}
               onChange={handleChange}
               placeholder="Jan Novák"
+              required
             />
           </div>
           <div>
@@ -97,10 +103,16 @@ export default function Start() {
           </div>
         </div>
 
+        {/* Demografie */}
         <div className="row">
           <div>
             <label className="label">Pohlaví</label>
-            <select name="gender" className="select" value={formData.gender} onChange={handleChange}>
+            <select
+              name="gender"
+              className="select"
+              value={formData.gender}
+              onChange={handleChange}
+            >
               <option value="">-- Vyber --</option>
               <option value="Muž">Muž</option>
               <option value="Žena">Žena</option>
@@ -114,10 +126,13 @@ export default function Start() {
               className="input"
               value={formData.age}
               onChange={handleChange}
+              placeholder="30"
+              required
             />
           </div>
         </div>
 
+        {/* Tělesné parametry */}
         <div className="row">
           <div>
             <label className="label">Výška (cm)</label>
@@ -127,6 +142,8 @@ export default function Start() {
               className="input"
               value={formData.height}
               onChange={handleChange}
+              placeholder="180"
+              required
             />
           </div>
           <div>
@@ -137,14 +154,23 @@ export default function Start() {
               className="input"
               value={formData.weight}
               onChange={handleChange}
+              placeholder="80"
+              required
             />
           </div>
         </div>
 
+        {/* Aktivita a stres */}
         <div className="row">
           <div>
-            <label className="label">Aktivita</label>
-            <select name="activity" className="select" value={formData.activity} onChange={handleChange}>
+            <label className="label">Úroveň aktivity</label>
+            <select
+              name="activity"
+              className="select"
+              value={formData.activity}
+              onChange={handleChange}
+              required
+            >
               <option value="">Vyber</option>
               <option value="Nízká">Nízká</option>
               <option value="Střední">Střední</option>
@@ -153,7 +179,13 @@ export default function Start() {
           </div>
           <div>
             <label className="label">Míra stresu</label>
-            <select name="stress" className="select" value={formData.stress} onChange={handleChange}>
+            <select
+              name="stress"
+              className="select"
+              value={formData.stress}
+              onChange={handleChange}
+              required
+            >
               <option value="">Vyber</option>
               <option value="Nízká">Nízká</option>
               <option value="Střední">Střední</option>
@@ -162,10 +194,17 @@ export default function Start() {
           </div>
         </div>
 
+        {/* Práce a cíl */}
         <div className="row">
           <div>
             <label className="label">Typ práce</label>
-            <select name="worktype" className="select" value={formData.worktype} onChange={handleChange}>
+            <select
+              name="worktype"
+              className="select"
+              value={formData.worktype}
+              onChange={handleChange}
+              required
+            >
               <option value="">Vyber</option>
               <option value="Kancelář / IT">Kancelář / IT</option>
               <option value="Manuální">Manuální</option>
@@ -174,7 +213,13 @@ export default function Start() {
           </div>
           <div>
             <label className="label">Cíl</label>
-            <select name="goal" className="select" value={formData.goal} onChange={handleChange}>
+            <select
+              name="goal"
+              className="select"
+              value={formData.goal}
+              onChange={handleChange}
+              required
+            >
               <option value="">Vyber</option>
               <option value="Redukce hmotnosti">Redukce hmotnosti</option>
               <option value="Nárůst svalů">Nárůst svalů</option>
@@ -183,18 +228,24 @@ export default function Start() {
           </div>
         </div>
 
-        <div className="row">
-          <div>
-            <label className="label">Frekvence cvičení</label>
-            <select name="frequency" className="select" value={formData.frequency} onChange={handleChange}>
-              <option value="">Vyber</option>
-              <option value="1-2x týdně">1–2x týdně</option>
-              <option value="2-3x týdně">2–3x týdně</option>
-              <option value="4-5x týdně">4–5x týdně</option>
-            </select>
-          </div>
+        {/* Frekvence */}
+        <div>
+          <label className="label">Frekvence cvičení</label>
+          <select
+            name="frequency"
+            className="select"
+            value={formData.frequency}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Vyber</option>
+            <option value="1-2x týdně">1–2x týdně</option>
+            <option value="2-3x týdně">2–3x týdně</option>
+            <option value="4-5x týdně">4–5x týdně</option>
+          </select>
         </div>
 
+        {/* Poznámky */}
         <div>
           <label className="label">Poznámky (volitelné)</label>
           <textarea
@@ -207,11 +258,17 @@ export default function Start() {
           />
         </div>
 
-        <button type="submit" className="submit">
+        {/* Tlačítko */}
+        <button
+          type="submit"
+          className="submit text-white bg-gradient-to-r from-sky-500 to-sky-700 hover:opacity-90 transition font-semibold text-lg py-3"
+        >
           Dokončit registraci
         </button>
 
-        {status && <p className="center mt-4">{status}</p>}
+        {status && (
+          <p className="center mt-4 text-lg text-gray-300">{status}</p>
+        )}
       </form>
     </main>
   );

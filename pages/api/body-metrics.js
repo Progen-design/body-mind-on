@@ -1,59 +1,59 @@
-// /pages/api/assistant-intake.js
-import { supabaseServer } from '../../lib/supabaseServer';
-import { generatePlanForEmail } from '../../lib/generatePlan';
+// /pages/api/body-metrics.js
+import { supabaseServer } from "../../lib/supabaseServer";
+import { generatePlanForEmail } from "../../lib/generatePlan";
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Pouze POST metoda je povolena.' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Pouze POST metoda je povolena" });
   }
 
   try {
     const b = req.body || {};
 
-    const toNum = (v) => (v === '' || v == null ? null : Number(v));
-    const norm = (v) => (v ? String(v).trim().toLowerCase() : null);
+    // ✅ Základní validace vstupu
+    if (!b.email || !b.email.includes("@")) {
+      throw new Error("Chybí platný e-mail");
+    }
 
-    // 🔹 Normalizovaná data
+    // Normalizace dat
+    const toNum = (v) => (v === "" || v == null ? null : Number(v));
+    const norm = (v) => (v ? String(v).trim() : null);
+
     const payload = {
-      name: b.name || null,
-      email: b.email || null,
+      email: norm(b.email),
+      name: norm(b.name),
       gender: norm(b.gender),
       age: toNum(b.age),
-      height: toNum(b.height),
-      weight: toNum(b.weight),
+      height_cm: toNum(b.height),
+      weight_kg: toNum(b.weight),
       activity: norm(b.activity),
-      stress: norm(b.stress),
-      worktype: norm(b.worktype), // ⬅️ pozor – malé písmeno (musí odpovídat tabulce)
+      stress_level: norm(b.stress),
+      occupation: norm(b.workType),
       goal: norm(b.goal),
-      frequency: norm(b.frequency),
-      notes: b.notes || null,
-      program: b.program || 'START', // 🔹 přidáno pro označení programu
-      created_at: new Date().toISOString()
+      freq_choice: norm(b.frequency),
+      notes: norm(b.notes),
+      created_at: new Date().toISOString(),
     };
 
-    // ✅ Uložení do DB
+    // ✅ Uložení do DB (Supabase)
     const { error: dbErr } = await supabaseServer
-      .from('registrations')
+      .from("body_metrics")
       .insert([payload]);
 
-    if (dbErr) {
-      throw new Error(`Chyba při zápisu do databáze: ${dbErr.message}`);
-    }
+    if (dbErr) throw new Error(`DB insert failed: ${dbErr.message}`);
 
-    // ✅ Spuštění generování AI plánu (napojení na tvého asistenta)
-    if (payload.email) {
-      console.log(`🧠 Spouštím generatePlanForEmail(${payload.email})`);
-      await generatePlanForEmail(payload.email);
-      console.log(`✅ Plán pro ${payload.email} úspěšně vytvořen.`);
-    }
+    // ✅ Spuštění AI asistenta (generování + e-mail)
+    await generatePlanForEmail(payload.email, payload);
 
-    // ✅ Úspěšná odpověď
     return res
       .status(200)
-      .json({ ok: true, message: 'Registrace uložena a AI plán byl vygenerován.' });
+      .json({ ok: true, message: "Údaje uloženy a plán vygenerován." });
 
   } catch (e) {
-    console.error('[assistant-intake] ERROR:', e);
-    return res.status(500).json({ error: e.message || String(e) });
+    console.error("❌ body-metrics error:", e);
+    return res.status(400).json({
+      ok: false,
+      error: e.message || "Neočekávaná chyba při odesílání formuláře",
+    });
   }
 }

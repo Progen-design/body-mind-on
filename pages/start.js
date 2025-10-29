@@ -27,12 +27,12 @@ export default function Start() {
     e.preventDefault();
     setStatus("Odesílám...");
 
-    try {
-      const res = await fetch("/api/assistant-intake", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+  const res = await fetch("/api/body-metrics", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(formData),
+});
+
 
       const result = await res.json();
 

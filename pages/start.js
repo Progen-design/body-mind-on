@@ -1,3 +1,4 @@
+// /pages/start.js
 import { useState } from "react";
 
 export default function Start() {
@@ -10,7 +11,7 @@ export default function Start() {
     weight: "",
     activity: "",
     stress: "",
-    worktype: "", // správně lowercase podle Supabase
+    workType: "", // ✅ upraveno na správné jméno (camelCase)
     goal: "",
     frequency: "",
     notes: "",
@@ -18,26 +19,33 @@ export default function Start() {
   });
 
   const [status, setStatus] = useState("");
+  const [loading, setLoading] = useState(false); // indikátor odesílání
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setStatus("Odesílám...");
 
-  const res = await fetch("/api/body-metrics", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(formData),
-});
+    if (loading) return; // ochrana proti dvojímu kliknutí
+    setLoading(true);
+    setStatus("⏳ Odesílám formulář...");
 
+    try {
+      const res = await fetch("/api/body-metrics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
       const result = await res.json();
 
       if (res.ok) {
-        setStatus("✅ Formulář úspěšně odeslán!");
+        setStatus("✅ Formulář úspěšně odeslán! Tvůj plán se připravuje...");
         setFormData({
           name: "",
           email: "",
@@ -47,17 +55,20 @@ export default function Start() {
           weight: "",
           activity: "",
           stress: "",
-          worktype: "",
+          workType: "",
           goal: "",
           frequency: "",
           notes: "",
           program: "START",
         });
       } else {
-        setStatus("❌ Chyba serveru: " + (result.message || "Nepodařilo se odeslat."));
+        setStatus("❌ Chyba serveru: " + (result.error || result.message || "Nepodařilo se odeslat."));
       }
     } catch (err) {
+      console.error("Fetch error:", err);
       setStatus("❌ Chyba připojení: " + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -76,7 +87,7 @@ export default function Start() {
         onSubmit={handleSubmit}
         className="form max-w-3xl mx-auto bg-[#121212] p-8 rounded-2xl shadow-lg border border-[#222] space-y-6"
       >
-        {/* Základní informace */}
+        {/* 🔹 Základní informace */}
         <div className="row">
           <div>
             <label className="label">Jméno a příjmení</label>
@@ -103,7 +114,7 @@ export default function Start() {
           </div>
         </div>
 
-        {/* Demografie */}
+        {/* 🔹 Demografie */}
         <div className="row">
           <div>
             <label className="label">Pohlaví</label>
@@ -112,6 +123,7 @@ export default function Start() {
               className="select"
               value={formData.gender}
               onChange={handleChange}
+              required
             >
               <option value="">-- Vyber --</option>
               <option value="Muž">Muž</option>
@@ -132,7 +144,7 @@ export default function Start() {
           </div>
         </div>
 
-        {/* Tělesné parametry */}
+        {/* 🔹 Tělesné parametry */}
         <div className="row">
           <div>
             <label className="label">Výška (cm)</label>
@@ -160,7 +172,7 @@ export default function Start() {
           </div>
         </div>
 
-        {/* Aktivita a stres */}
+        {/* 🔹 Aktivita a stres */}
         <div className="row">
           <div>
             <label className="label">Úroveň aktivity</label>
@@ -194,14 +206,14 @@ export default function Start() {
           </div>
         </div>
 
-        {/* Práce a cíl */}
+        {/* 🔹 Práce a cíl */}
         <div className="row">
           <div>
             <label className="label">Typ práce</label>
             <select
-              name="worktype"
+              name="workType"
               className="select"
-              value={formData.worktype}
+              value={formData.workType}
               onChange={handleChange}
               required
             >
@@ -228,7 +240,7 @@ export default function Start() {
           </div>
         </div>
 
-        {/* Frekvence */}
+        {/* 🔹 Frekvence cvičení */}
         <div>
           <label className="label">Frekvence cvičení</label>
           <select
@@ -245,7 +257,7 @@ export default function Start() {
           </select>
         </div>
 
-        {/* Poznámky */}
+        {/* 🔹 Poznámky */}
         <div>
           <label className="label">Poznámky (volitelné)</label>
           <textarea
@@ -258,16 +270,30 @@ export default function Start() {
           />
         </div>
 
-        {/* Tlačítko */}
+        {/* 🔹 Tlačítko */}
         <button
           type="submit"
-          className="submit text-white bg-gradient-to-r from-sky-500 to-sky-700 hover:opacity-90 transition font-semibold text-lg py-3"
+          disabled={loading}
+          className={`submit text-white bg-gradient-to-r from-sky-500 to-sky-700 hover:opacity-90 transition font-semibold text-lg py-3 rounded-xl w-full ${
+            loading ? "opacity-60 cursor-not-allowed" : ""
+          }`}
         >
-          Dokončit registraci
+          {loading ? "⏳ Odesílám..." : "Dokončit registraci"}
         </button>
 
+        {/* 🔹 Stav */}
         {status && (
-          <p className="center mt-4 text-lg text-gray-300">{status}</p>
+          <p
+            className={`center mt-4 text-lg ${
+              status.startsWith("✅")
+                ? "text-green-400"
+                : status.startsWith("❌")
+                ? "text-red-400"
+                : "text-gray-300"
+            }`}
+          >
+            {status}
+          </p>
         )}
       </form>
     </main>

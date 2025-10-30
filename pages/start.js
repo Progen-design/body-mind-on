@@ -11,7 +11,7 @@ export default function Start() {
     weight: "",
     activity: "",
     stress: "",
-    workType: "", // ✅ upraveno na správné jméno (camelCase)
+    workType: "",
     goal: "",
     frequency: "",
     notes: "",
@@ -19,7 +19,7 @@ export default function Start() {
   });
 
   const [status, setStatus] = useState("");
-  const [loading, setLoading] = useState(false); // indikátor odesílání
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -30,8 +30,8 @@ export default function Start() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
 
-    if (loading) return; // ochrana proti dvojímu kliknutí
     setLoading(true);
     setStatus("⏳ Odesílám formulář...");
 
@@ -45,7 +45,7 @@ export default function Start() {
       const result = await res.json();
 
       if (res.ok) {
-        setStatus("✅ Formulář úspěšně odeslán! Tvůj plán se připravuje...");
+        setStatus("✅ Formulář úspěšně odeslán! Tvůj plán se právě připravuje...");
         setFormData({
           name: "",
           email: "",
@@ -73,7 +73,8 @@ export default function Start() {
   };
 
   return (
-    <main className="container py-12">
+    <main className="container py-12 text-white">
+      {/* Úvod */}
       <section className="text-center mb-10">
         <h1 className="text-4xl font-extrabold mb-3 text-white">
           START Program – Začni zdarma
@@ -83,11 +84,22 @@ export default function Start() {
         </p>
       </section>
 
+      {/* Overlay při načítání */}
+      {loading && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="text-center animate-pulse">
+            <div className="text-2xl font-semibold mb-3">⏳ Tvůj plán se připravuje...</div>
+            <p className="text-gray-400">AI trenér analyzuje tvoje údaje a generuje personalizovaný plán...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Formulář */}
       <form
         onSubmit={handleSubmit}
         className="form max-w-3xl mx-auto bg-[#121212] p-8 rounded-2xl shadow-lg border border-[#222] space-y-6"
       >
-        {/* 🔹 Základní informace */}
+        {/* Základní informace */}
         <div className="row">
           <div>
             <label className="label">Jméno a příjmení</label>
@@ -114,7 +126,7 @@ export default function Start() {
           </div>
         </div>
 
-        {/* 🔹 Demografie */}
+        {/* Demografie */}
         <div className="row">
           <div>
             <label className="label">Pohlaví</label>
@@ -144,7 +156,7 @@ export default function Start() {
           </div>
         </div>
 
-        {/* 🔹 Tělesné parametry */}
+        {/* Tělesné parametry */}
         <div className="row">
           <div>
             <label className="label">Výška (cm)</label>
@@ -172,7 +184,7 @@ export default function Start() {
           </div>
         </div>
 
-        {/* 🔹 Aktivita a stres */}
+        {/* Aktivita a stres */}
         <div className="row">
           <div>
             <label className="label">Úroveň aktivity</label>
@@ -206,7 +218,7 @@ export default function Start() {
           </div>
         </div>
 
-        {/* 🔹 Práce a cíl */}
+        {/* Typ práce a cíl */}
         <div className="row">
           <div>
             <label className="label">Typ práce</label>
@@ -240,7 +252,7 @@ export default function Start() {
           </div>
         </div>
 
-        {/* 🔹 Frekvence cvičení */}
+        {/* ✅ Frekvence cvičení (opravena podle DB constraintu) */}
         <div>
           <label className="label">Frekvence cvičení</label>
           <select
@@ -251,13 +263,15 @@ export default function Start() {
             required
           >
             <option value="">Vyber</option>
-            <option value="1-2x týdně">1–2x týdně</option>
-            <option value="2-3x týdně">2–3x týdně</option>
-            <option value="4-5x týdně">4–5x týdně</option>
+            <option value="1x týdně">1× týdně</option>
+            <option value="2x týdně">2× týdně</option>
+            <option value="3x týdně">3× týdně</option>
+            <option value="4x týdně">4× týdně</option>
+            <option value="5x týdně">5× týdně</option>
           </select>
         </div>
 
-        {/* 🔹 Poznámky */}
+        {/* Poznámky */}
         <div>
           <label className="label">Poznámky (volitelné)</label>
           <textarea
@@ -270,7 +284,7 @@ export default function Start() {
           />
         </div>
 
-        {/* 🔹 Tlačítko */}
+        {/* Tlačítko */}
         <button
           type="submit"
           disabled={loading}
@@ -281,7 +295,7 @@ export default function Start() {
           {loading ? "⏳ Odesílám..." : "Dokončit registraci"}
         </button>
 
-        {/* 🔹 Stav */}
+        {/* Stav */}
         {status && (
           <p
             className={`center mt-4 text-lg ${

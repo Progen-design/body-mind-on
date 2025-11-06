@@ -1,59 +1,80 @@
 // /pages/api/body-metrics.js
-import { supabaseServer } from "../../lib/supabaseServer";
-import { generatePlanForEmail } from "../../lib/generatePlan";
+import { supabaseServer } from '../../lib/supabaseServer';
+import { generatePlanForEmail } from '../../lib/generatePlan';
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Pouze POST metoda je povolena" });
+  // ✅ Povolené jen POST požadavky
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Pouze metoda POST je povolena' });
   }
 
   try {
     const b = req.body || {};
+    console.log("📩 Přijatá data z formuláře:", b);
 
-    // ✅ Základní validace vstupu
-    if (!b.email || !b.email.includes("@")) {
-      throw new Error("Chybí platný e-mail");
-    }
+    // ✅ Pomocné funkce
+    const toNum = (v) => (v === '' || v == null ? null : Number(v));
+    const norm = (v) =>
+      v ? String(v).trim().toLowerCase().replace(/\s+/g, ' ') : null;
 
-    // Normalizace dat
-    const toNum = (v) => (v === "" || v == null ? null : Number(v));
-    const norm = (v) => (v ? String(v).trim() : null);
-
+    // ✅ Mapování dat z frontendu (start.js → body_metrics)
     const payload = {
-      email: norm(b.email),
-      name: norm(b.name),
+      user_id: b.user_id || null,
+      email: b.email || null,
+      name: b.name || null,
       gender: norm(b.gender),
       age: toNum(b.age),
       height_cm: toNum(b.height),
       weight_kg: toNum(b.weight),
       activity: norm(b.activity),
       stress_level: norm(b.stress),
-      occupation: norm(b.workType),
+      occupation: norm(b.workType || b.occupation),
       goal: norm(b.goal),
-      freq_choice: norm(b.frequency),
-      notes: norm(b.notes),
+      freq_choice: norm(b.frequency || b.freq_choice), // 💪 sjednoceno
+      notes: b.notes || null,
+      program: b.program || "START",
       created_at: new Date().toISOString(),
     };
 
-    // ✅ Uložení do DB (Supabase)
+    // ✅ Validace základních polí
+    if (!payload.email || !payload.gender || !payload.goal) {
+      return res.status(400).json({
+        error:
+          "Chybí povinné údaje: e-mail, pohlaví nebo cíl. Zkontroluj formulář.",
+      });
+    }
+
+    // ✅ Uložení do Supabase
     const { error: dbErr } = await supabaseServer
-      .from("body_metrics")
+      .from('body_metrics')
       .insert([payload]);
 
-    if (dbErr) throw new Error(`DB insert failed: ${dbErr.message}`);
+    if (dbErr) {
+      console.error('❌ DB chyba při vkládání:', dbErr);
+      throw new Error(dbErr.message || "Chyba při zápisu do databáze");
+    }
 
-    // ✅ Spuštění AI asistenta (generování + e-mail)
-    await generatePlanForEmail(payload.email, payload);
+    // ✅ Generování AI plánu
+    if (payload.email) {
+      console.log(`🧠 Spouštím AI plán pro: ${payload.email}`);
+      try {
+        await generatePlanForEmail(payload.email);
+        console.log(`✅ AI plán pro ${payload.email} byl úspěšně vygenerován.`);
+      } catch (genErr) {
+        console.error("⚠️ Nepodařilo se vytvořit AI plán:", genErr);
+      }
+    }
 
-    return res
-      .status(200)
-      .json({ ok: true, message: "Údaje uloženy a plán vygenerován." });
+    // ✅ Odpověď klientovi
+    return res.status(200).json({
+      ok: true,
+      message: "Údaje byly uloženy a AI plán se generuje.",
+    });
 
   } catch (e) {
-    console.error("❌ body-metrics error:", e);
+    console.error('[body-metrics] ERROR:', e);
     return res.status(400).json({
-      ok: false,
-      error: e.message || "Neočekávaná chyba při odesílání formuláře",
+      error: e.message || "Neočekávaná chyba při zpracování formuláře",
     });
   }
 }

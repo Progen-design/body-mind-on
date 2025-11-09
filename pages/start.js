@@ -1,4 +1,3 @@
-// /pages/start.js
 import { useState } from "react";
 
 export default function Start() {
@@ -11,7 +10,7 @@ export default function Start() {
     weight: "",
     activity: "",
     stress: "",
-    workType: "",
+    worktype: "",
     goal: "",
     frequency: "",
     notes: "",
@@ -19,33 +18,39 @@ export default function Start() {
   });
 
   const [status, setStatus] = useState("");
-  const [loading, setLoading] = useState(false);
+
+  // 🔹 Pomocná funkce – sjednocení pomlček a formátování
+  const normalizeData = (data) => {
+    const cleaned = { ...data };
+    cleaned.frequency = cleaned.frequency?.replace("–", "-") || "";
+    cleaned.activity = cleaned.activity?.toLowerCase().trim();
+    cleaned.stress = cleaned.stress?.toLowerCase().trim();
+    cleaned.goal = cleaned.goal?.toLowerCase().trim();
+    return cleaned;
+  };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (loading) return;
-
-    setLoading(true);
-    setStatus("⏳ Odesílám formulář...");
+    setStatus("⏳ Odesílám...");
 
     try {
+      const cleanedData = normalizeData(formData);
+
       const res = await fetch("/api/body-metrics", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(cleanedData),
       });
 
       const result = await res.json();
 
       if (res.ok) {
-        setStatus("✅ Formulář úspěšně odeslán! Tvůj plán se právě připravuje...");
+        setStatus("✅ Formulář úspěšně odeslán! Tvůj plán se připravuje...");
         setFormData({
           name: "",
           email: "",
@@ -55,28 +60,25 @@ export default function Start() {
           weight: "",
           activity: "",
           stress: "",
-          workType: "",
+          worktype: "",
           goal: "",
           frequency: "",
           notes: "",
           program: "START",
         });
       } else {
-        setStatus("❌ Chyba serveru: " + (result.error || result.message || "Nepodařilo se odeslat."));
+        setStatus("❌ Chyba: " + (result.error || result.message || "Nepodařilo se odeslat."));
       }
     } catch (err) {
-      console.error("Fetch error:", err);
       setStatus("❌ Chyba připojení: " + err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
     <main className="container py-12 text-white">
-      {/* Úvod */}
+      {/* HERO */}
       <section className="text-center mb-10">
-        <h1 className="text-4xl font-extrabold mb-3 text-white">
+        <h1 className="text-4xl font-extrabold mb-3 text-sky-400">
           START Program – Začni zdarma
         </h1>
         <p className="text-lg text-gray-300 max-w-2xl mx-auto">
@@ -84,28 +86,18 @@ export default function Start() {
         </p>
       </section>
 
-      {/* Overlay při načítání */}
-      {loading && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="text-center animate-pulse">
-            <div className="text-2xl font-semibold mb-3">⏳ Tvůj plán se připravuje...</div>
-            <p className="text-gray-400">AI trenér analyzuje tvoje údaje a generuje personalizovaný plán...</p>
-          </div>
-        </div>
-      )}
-
-      {/* Formulář */}
+      {/* FORM */}
       <form
         onSubmit={handleSubmit}
-        className="form max-w-3xl mx-auto bg-[#121212] p-8 rounded-2xl shadow-lg border border-[#222] space-y-6"
+        className="max-w-3xl mx-auto bg-[#121212] p-8 rounded-2xl shadow-lg border border-[#222] space-y-6"
       >
-        {/* Základní informace */}
-        <div className="row">
+        {/* OSOBNÍ ÚDAJE */}
+        <div className="row grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="label">Jméno a příjmení</label>
+            <label className="label block mb-2 text-gray-400">Jméno a příjmení</label>
             <input
               name="name"
-              className="input"
+              className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
               value={formData.name}
               onChange={handleChange}
               placeholder="Jan Novák"
@@ -113,11 +105,11 @@ export default function Start() {
             />
           </div>
           <div>
-            <label className="label">E-mail</label>
+            <label className="label block mb-2 text-gray-400">E-mail</label>
             <input
               name="email"
               type="email"
-              className="input"
+              className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
               value={formData.email}
               onChange={handleChange}
               placeholder="jan@example.com"
@@ -126,28 +118,28 @@ export default function Start() {
           </div>
         </div>
 
-        {/* Demografie */}
-        <div className="row">
+        {/* GENDER + AGE */}
+        <div className="row grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="label">Pohlaví</label>
+            <label className="label block mb-2 text-gray-400">Pohlaví</label>
             <select
               name="gender"
-              className="select"
+              className="select w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
               value={formData.gender}
               onChange={handleChange}
               required
             >
-              <option value="">-- Vyber --</option>
-              <option value="Muž">Muž</option>
-              <option value="Žena">Žena</option>
+              <option value="">Vyber</option>
+              <option value="male">Muž</option>
+              <option value="female">Žena</option>
             </select>
           </div>
           <div>
-            <label className="label">Věk (roky)</label>
+            <label className="label block mb-2 text-gray-400">Věk</label>
             <input
               name="age"
               type="number"
-              className="input"
+              className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
               value={formData.age}
               onChange={handleChange}
               placeholder="30"
@@ -156,14 +148,14 @@ export default function Start() {
           </div>
         </div>
 
-        {/* Tělesné parametry */}
-        <div className="row">
+        {/* BODY DATA */}
+        <div className="row grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="label">Výška (cm)</label>
+            <label className="label block mb-2 text-gray-400">Výška (cm)</label>
             <input
               name="height"
               type="number"
-              className="input"
+              className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
               value={formData.height}
               onChange={handleChange}
               placeholder="180"
@@ -171,11 +163,11 @@ export default function Start() {
             />
           </div>
           <div>
-            <label className="label">Váha (kg)</label>
+            <label className="label block mb-2 text-gray-400">Váha (kg)</label>
             <input
               name="weight"
               type="number"
-              className="input"
+              className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
               value={formData.weight}
               onChange={handleChange}
               placeholder="80"
@@ -184,99 +176,100 @@ export default function Start() {
           </div>
         </div>
 
-        {/* Aktivita a stres */}
-        <div className="row">
+        {/* AKTIVITA + STRES */}
+        <div className="row grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="label">Úroveň aktivity</label>
+            <label className="label block mb-2 text-gray-400">Úroveň aktivity</label>
             <select
               name="activity"
-              className="select"
+              className="select w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
               value={formData.activity}
               onChange={handleChange}
               required
             >
               <option value="">Vyber</option>
-              <option value="Nízká">Nízká</option>
-              <option value="Střední">Střední</option>
-              <option value="Vysoká">Vysoká</option>
+              <option value="sedavy">Nízká</option>
+              <option value="stredne">Střední</option>
+              <option value="velmi">Vysoká</option>
             </select>
           </div>
           <div>
-            <label className="label">Míra stresu</label>
+            <label className="label block mb-2 text-gray-400">Míra stresu</label>
             <select
               name="stress"
-              className="select"
+              className="select w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
               value={formData.stress}
               onChange={handleChange}
               required
             >
               <option value="">Vyber</option>
-              <option value="Nízká">Nízká</option>
-              <option value="Střední">Střední</option>
-              <option value="Vysoká">Vysoká</option>
+              <option value="low">Nízká</option>
+              <option value="medium">Střední</option>
+              <option value="high">Vysoká</option>
             </select>
           </div>
         </div>
 
-        {/* Typ práce a cíl */}
-        <div className="row">
+        {/* JOB + GOAL */}
+        <div className="row grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="label">Typ práce</label>
+            <label className="label block mb-2 text-gray-400">Typ práce</label>
             <select
-              name="workType"
-              className="select"
-              value={formData.workType}
+              name="worktype"
+              className="select w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
+              value={formData.worktype}
               onChange={handleChange}
               required
             >
               <option value="">Vyber</option>
-              <option value="Kancelář / IT">Kancelář / IT</option>
-              <option value="Manuální">Manuální</option>
-              <option value="Kombinovaná">Kombinovaná</option>
+              <option value="office_it">Kancelář / IT</option>
+              <option value="manual">Manuální</option>
+              <option value="kombinovana">Kombinovaná</option>
             </select>
           </div>
           <div>
-            <label className="label">Cíl</label>
+            <label className="label block mb-2 text-gray-400">Cíl</label>
             <select
               name="goal"
-              className="select"
+              className="select w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
               value={formData.goal}
               onChange={handleChange}
               required
             >
               <option value="">Vyber</option>
-              <option value="Redukce hmotnosti">Redukce hmotnosti</option>
-              <option value="Nárůst svalů">Nárůst svalů</option>
-              <option value="Zdravý životní styl">Zdravý životní styl</option>
+              <option value="redukce">Redukce hmotnosti</option>
+              <option value="nabirani_svaly">Nárůst svalů</option>
+              <option value="udrzovani">Zdravý životní styl</option>
             </select>
           </div>
         </div>
 
-        {/* ✅ Frekvence cvičení (opravena podle DB constraintu) */}
+        {/* FREKVENCE */}
         <div>
-          <label className="label">Frekvence cvičení</label>
+          <label className="label block mb-2 text-gray-400">Frekvence cvičení</label>
           <select
             name="frequency"
-            className="select"
+            className="select w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
             value={formData.frequency}
-            onChange={handleChange}
+            onChange={(e) => {
+              const cleanValue = e.target.value.replace("–", "-");
+              setFormData({ ...formData, frequency: cleanValue });
+            }}
             required
           >
             <option value="">Vyber</option>
-            <option value="1x týdně">1× týdně</option>
-            <option value="2x týdně">2× týdně</option>
-            <option value="3x týdně">3× týdně</option>
-            <option value="4x týdně">4× týdně</option>
-            <option value="5x týdně">5× týdně</option>
+            <option value="1-2x týdně">1–2x týdně</option>
+            <option value="2-3x týdně">2–3x týdně</option>
+            <option value="4-5x týdně">4–5x týdně</option>
           </select>
         </div>
 
-        {/* Poznámky */}
+        {/* POZNÁMKY */}
         <div>
-          <label className="label">Poznámky (volitelné)</label>
+          <label className="label block mb-2 text-gray-400">Poznámky (volitelné)</label>
           <textarea
             name="notes"
-            className="input"
+            className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
             rows="3"
             value={formData.notes}
             onChange={handleChange}
@@ -284,31 +277,15 @@ export default function Start() {
           />
         </div>
 
-        {/* Tlačítko */}
+        {/* SUBMIT */}
         <button
           type="submit"
-          disabled={loading}
-          className={`submit text-white bg-gradient-to-r from-sky-500 to-sky-700 hover:opacity-90 transition font-semibold text-lg py-3 rounded-xl w-full ${
-            loading ? "opacity-60 cursor-not-allowed" : ""
-          }`}
+          className="submit w-full py-3 rounded-lg font-semibold text-lg text-white bg-gradient-to-r from-sky-500 to-sky-700 hover:opacity-90 transition"
         >
-          {loading ? "⏳ Odesílám..." : "Dokončit registraci"}
+          Dokončit registraci
         </button>
 
-        {/* Stav */}
-        {status && (
-          <p
-            className={`center mt-4 text-lg ${
-              status.startsWith("✅")
-                ? "text-green-400"
-                : status.startsWith("❌")
-                ? "text-red-400"
-                : "text-gray-300"
-            }`}
-          >
-            {status}
-          </p>
-        )}
+        {status && <p className="center mt-4 text-lg text-gray-300">{status}</p>}
       </form>
     </main>
   );

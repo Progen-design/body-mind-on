@@ -59,4 +59,84 @@ export default async function handler(req, res) {
     }
 
     // 📩 5️⃣ Odpověď frontendu
-    return res.status(200).json
+    return res.status(200).json({
+      ok: true,
+      message: 'Údaje byly úspěšně uloženy a plán byl odeslán na e-mail.'
+    });
+
+  } catch (e) {
+    console.error('[body-metrics] ERROR:', e);
+    return res.status(400).json({
+      error: e.message || 'Neočekávaná chyba při zpracování požadavku.'
+    });
+  }
+}
+
+/* ==============================
+   Pomocné funkce
+============================== */
+
+function toNum(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function normalizeGender(v) {
+  if (!v) return null;
+  v = v.toString().toLowerCase();
+  if (v.includes('muž') || v === 'm') return 'male';
+  if (v.includes('žena') || v === 'f') return 'female';
+  return null;
+}
+
+function normalizeActivity(v) {
+  if (!v) return null;
+  const t = v.toLowerCase();
+  if (t.includes('nízk')) return 'lehce';
+  if (t.includes('střed')) return 'stredne';
+  if (t.includes('vysok')) return 'velmi';
+  return 'stredne';
+}
+
+function normalizeStress(v) {
+  if (!v) return null;
+  const t = v.toLowerCase();
+  if (t.includes('nízk')) return 'low';
+  if (t.includes('střed')) return 'medium';
+  if (t.includes('vysok')) return 'high';
+  return 'medium';
+}
+
+function normalizeOccupation(v) {
+  if (!v) return null;
+  const t = v.toLowerCase();
+  if (t.includes('it') || t.includes('kancel')) return 'office_it';
+  if (t.includes('manu')) return 'manual';
+  if (t.includes('kombin')) return 'teacher_sales';
+  return 'other';
+}
+
+function normalizeGoal(v) {
+  if (!v) return null;
+  const t = v.toLowerCase();
+  if (t.includes('reduk')) return 'redukce';
+  if (t.includes('sval')) return 'nabirani_svaly';
+  return 'udrzovani';
+}
+
+function normalizeFrequency(v) {
+  if (!v) return null;
+  const t = v.toLowerCase();
+  if (t.includes('1') || t.includes('0')) return '1–2x týdně';
+  if (t.includes('2') && t.includes('3')) return '2–3x týdně';
+  if (t.includes('4') || t.includes('5')) return '4–5x týdně';
+  return '2–3x týdně';
+}
+
+function getWeeklySessions(v) {
+  if (!v) return 3;
+  if (v.includes('1')) return 1;
+  if (v.includes('2')) return 3;
+  if (v.includes('4')) return 5;
+  return 3;
+}

@@ -3,78 +3,60 @@ import { supabaseServer } from '../../lib/supabaseServer';
 import { generatePlanForEmail } from '../../lib/generatePlan';
 
 export default async function handler(req, res) {
-  // ✅ Povolené jen POST požadavky
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Pouze metoda POST je povolena' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     const b = req.body || {};
-    console.log("📩 Přijatá data z formuláře:", b);
 
-    // ✅ Pomocné funkce
-    const toNum = (v) => (v === '' || v == null ? null : Number(v));
-    const norm = (v) =>
-      v ? String(v).trim().toLowerCase().replace(/\s+/g, ' ') : null;
-
-    // ✅ Mapování dat z frontendu (start.js → body_metrics)
+    // 🔧 1️⃣ Přemapování starých názvů z frontendu na názvy používané v DB
     const payload = {
-      user_id: b.user_id || null,
-      email: b.email || null,
-      name: b.name || null,
-      gender: norm(b.gender),
+      email: b.email?.trim() || null,
+      name: b.name?.trim() || null,
+      gender: normalizeGender(b.gender),
       age: toNum(b.age),
-      height_cm: toNum(b.height),
-      weight_kg: toNum(b.weight),
-      activity: norm(b.activity),
-      stress_level: norm(b.stress),
-      occupation: norm(b.workType || b.occupation),
-      goal: norm(b.goal),
-      freq_choice: norm(b.frequency || b.freq_choice), // 💪 sjednoceno
-      notes: b.notes || null,
-      program: b.program || "START",
-      created_at: new Date().toISOString(),
+      height_cm: toNum(b.height || b.height_cm),
+      weight_kg: toNum(b.weight || b.weight_kg),
+      activity: normalizeActivity(b.activity),
+      stress_level: normalizeStress(b.stress || b.stress_level),
+      occupation: normalizeOccupation(b.worktype || b.occupation),
+      goal: normalizeGoal(b.goal),
+      freq_choice: normalizeFrequency(b.frequency || b.freq_choice),
+      weekly_sessions_user: getWeeklySessions(b.frequency || b.freq_choice),
+      notes: b.notes?.trim() || null,
+      program: b.program || 'START',
+      created_at: new Date().toISOString()
     };
 
-    // ✅ Validace základních polí
-    if (!payload.email || !payload.gender || !payload.goal) {
-      return res.status(400).json({
-        error:
-          "Chybí povinné údaje: e-mail, pohlaví nebo cíl. Zkontroluj formulář.",
-      });
+    // 🧠 2️⃣ Validace klíčových hodnot (musí být alespoň email + výška + váha)
+    if (!payload.email) {
+      return res.status(400).json({ error: 'E-mail je povinný.' });
     }
 
-    // ✅ Uložení do Supabase
+    if (!payload.height_cm || !payload.weight_kg) {
+      return res.status(400).json({ error: 'Chybí výška nebo váha.' });
+    }
+
+    // 💾 3️⃣ Uložení do Supabase
     const { error: dbErr } = await supabaseServer
       .from('body_metrics')
       .insert([payload]);
 
     if (dbErr) {
-      console.error('❌ DB chyba při vkládání:', dbErr);
-      throw new Error(dbErr.message || "Chyba při zápisu do databáze");
+      console.error('❌ Chyba při zápisu do DB:', dbErr);
+      throw new Error(dbErr.message);
     }
 
-    // ✅ Generování AI plánu
-    if (payload.email) {
-      console.log(`🧠 Spouštím AI plán pro: ${payload.email}`);
-      try {
-        await generatePlanForEmail(payload.email);
-        console.log(`✅ AI plán pro ${payload.email} byl úspěšně vygenerován.`);
-      } catch (genErr) {
-        console.error("⚠️ Nepodařilo se vytvořit AI plán:", genErr);
-      }
+    console.log(`✅ Data uložena do body_metrics pro ${payload.email}`);
+
+    // 🤖 4️⃣ Generování AI plánu
+    try {
+      await generatePlanForEmail(payload.email);
+      console.log(`🤖 AI plán úspěšně vytvořen pro ${payload.email}`);
+    } catch (e) {
+      console.error('⚠️ Chyba při generování AI plánu:', e);
     }
 
-    // ✅ Odpověď klientovi
-    return res.status(200).json({
-      ok: true,
-      message: "Údaje byly uloženy a AI plán se generuje.",
-    });
-
-  } catch (e) {
-    console.error('[body-metrics] ERROR:', e);
-    return res.status(400).json({
-      error: e.message || "Neočekávaná chyba při zpracování formuláře",
-    });
-  }
-}
+    // 📩 5️⃣ Odpověď frontendu
+    return res.status(200).json

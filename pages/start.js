@@ -36,7 +36,7 @@ export default function Start() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setStatus("⏳ Odesílám...");
+    setStatus("⏳ Odesílám... (může trvat až minutu – generuje se plán a e-mail)");
 
     try {
       const cleanedData = normalizeData(formData);
@@ -47,7 +47,13 @@ export default function Start() {
         body: JSON.stringify(cleanedData),
       });
 
-      const result = await res.json();
+      let result;
+      try {
+        const text = await res.text();
+        result = text ? JSON.parse(text) : {};
+      } catch (_) {
+        result = { error: res.ok ? "Neplatná odpověď serveru." : `Chyba ${res.status}` };
+      }
 
       if (res.ok) {
         setStatus("✅ Formulář úspěšně odeslán! Tvůj plán se připravuje...");
@@ -70,7 +76,7 @@ export default function Start() {
         setStatus("❌ Chyba: " + (result.error || result.message || "Nepodařilo se odeslat."));
       }
     } catch (err) {
-      setStatus("❌ Chyba připojení: " + err.message);
+      setStatus("❌ Chyba připojení: " + (err.message || "Zkuste to znovu za chvíli."));
     }
   };
 

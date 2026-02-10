@@ -1,209 +1,91 @@
-// /pages/pricing.js
-import { useEffect, useState } from 'react'
-import Header from '../components/Header'
-import Footer from '../components/Footer'
+// /pages/pricing.js – Ceník plánů, registrace jen přes /start
+import Link from 'next/link';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import Pricing from '../components/Pricing';
 
 export default function PricingPage() {
-  // verze pro rychlé ověření, že běží tento nový kód
-  useEffect(() => { window.__BMON_FORM_V2 = true }, [])
-
-  // Required / optional fields tak, jak je máme v DB
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-
-  const [gender, setGender] = useState('male')            // 'male' | 'female'
-  const [age, setAge] = useState('')
-  const [height, setHeight] = useState('')
-  const [weight, setWeight] = useState('')
-
-  const [activity, setActivity] = useState('stredne')     // 'sedavy' | 'lehce' | 'stredne' | 'velmi' | 'extra'
-  const [stress, setStress] = useState('medium')          // 'low' | 'medium' | 'high'
-  const [occupation, setOccupation] = useState('office_it') // 'office_it'|'driver'|'warehouse'|'manual'|'healthcare'|'teacher_sales'|'gastronomy'
-  const [goal, setGoal] = useState('redukce')             // 'redukce' | 'udrzovani' | 'nabirani_svaly'
-  const [freq, setFreq] = useState('2-3')                 // '0-1' | '2-3' | '4plus'
-  const [weeklyUser, setWeeklyUser] = useState('')        // číslo 1/3/5 (volitelné)
-
-  const [notes, setNotes] = useState('')
-
-  const [loading, setLoading] = useState(false)
-  const [msg, setMsg] = useState(null)
-
-  async function onSubmit(e) {
-    e.preventDefault()
-    setLoading(true)
-    setMsg(null)
-
-    try {
-      const payload = {
-        user_id: null,
-        email: email || null,
-        name: name || null,
-
-        gender,                                 // 'male' | 'female'
-        age: age !== '' && age != null ? Number(age) : null,
-        height_cm: height !== '' && height != null ? Number(height) : null,
-        weight_kg: weight !== '' && weight != null ? Number(weight) : null,
-
-        activity,                               // 'sedavy'|'lehce'|'stredne'|'velmi'|'extra'
-        stress_level: stress,                   // 'low'|'medium'|'high'
-        occupation,                             // viz DB enum
-        goal,                                   // 'redukce'|'udrzovani'|'nabirani_svaly'
-        freq_choice: freq,                      // '0-1'|'2-3'|'4plus'
-        weekly_sessions_user: weeklyUser ? Number(weeklyUser) : null,
-        notes: notes || null
-      }
-
-      // 🔍 Logování pro kontrolu
-      console.log("📦 Odesílaný payload:", payload)
-
-      const res = await fetch('/api/body-metrics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`)
-
-      setMsg('Hotovo! Údaje jsou uložené. Pokud je e-mail vyplněn, plán se začne generovat.')
-    } catch (err) {
-      setMsg(`Chyba: ${err.message}`)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
     <>
       <Header />
 
-      <section className="container">
-        <h2>Detaily pro „Start“</h2>
+      <section className="pricing-page">
+        <h1>Ceník</h1>
+        <p className="intro">
+          Vyber si plán. Program <strong>Start</strong> je zdarma – vyplníš krátký dotazník a na e-mail ti přijde osobní plán.
+        </p>
 
-        <form onSubmit={onSubmit}>
+        <Pricing />
 
-          <div className="grid">
-
-            <div className="full">
-              <label>Jméno a příjmení (volitelné)</label>
-              <input value={name} onChange={e=>setName(e.target.value)} placeholder="Jan Test" />
-            </div>
-
-            <div className="full">
-              <label>E-mail (doporučeno pro doručení plánu)</label>
-              <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="jan@example.com" />
-            </div>
-
-            <div>
-              <label>Pohlaví</label>
-              <select value={gender} onChange={e=>setGender(e.target.value)}>
-                <option value="male">Muž</option>
-                <option value="female">Žena</option>
-              </select>
-            </div>
-
-            <div>
-              <label>Věk (roky)</label>
-              <input type="number" value={age} onChange={e=>setAge(e.target.value)} placeholder="35" />
-            </div>
-
-            <div>
-              <label>Výška (cm)</label>
-              <input type="number" value={height} onChange={e=>setHeight(e.target.value)} placeholder="180" />
-            </div>
-
-            <div>
-              <label>Váha (kg)</label>
-              <input type="number" value={weight} onChange={e=>setWeight(e.target.value)} placeholder="80" />
-            </div>
-
-            <div>
-              <label>Aktivita</label>
-              <select value={activity} onChange={e=>setActivity(e.target.value)}>
-                <option value="sedavy">Sedavý</option>
-                <option value="lehce">Mírně aktivní</option>
-                <option value="stredne">Středně aktivní</option>
-                <option value="velmi">Vysoce aktivní</option>
-                <option value="extra">Extra aktivní</option>
-              </select>
-            </div>
-
-            <div>
-              <label>Míra stresu</label>
-              <select value={stress} onChange={e=>setStress(e.target.value)}>
-                <option value="low">Nízká</option>
-                <option value="medium">Střední</option>
-                <option value="high">Vysoká</option>
-              </select>
-            </div>
-
-            <div>
-              <label>Typ práce</label>
-              <select value={occupation} onChange={e=>setOccupation(e.target.value)}>
-                <option value="office_it">Kancelář / IT</option>
-                <option value="driver">Řidič / Kurýr</option>
-                <option value="warehouse">Sklad / Logistika (směnný provoz)</option>
-                <option value="manual">Manuální</option>
-                <option value="healthcare">Zdravotnictví</option>
-                <option value="teacher_sales">Učitel / Obchod</option>
-                <option value="gastronomy">Gastronomie</option>
-              </select>
-            </div>
-
-            <div>
-              <label>Cíl</label>
-              <select value={goal} onChange={e=>setGoal(e.target.value)}>
-                <option value="redukce">Redukce hmotnosti</option>
-                <option value="udrzovani">Udržování</option>
-                <option value="nabirani_svaly">Nabírání svalů</option>
-              </select>
-            </div>
-
-            <div>
-              <label>Frekvence cvičení</label>
-              <select value={freq} onChange={e=>setFreq(e.target.value)}>
-                <option value="0-1">0–1× týdně</option>
-                <option value="2-3">2–3× týdně</option>
-                <option value="4plus">4+ týdně</option>
-              </select>
-            </div>
-
-            <div>
-              <label>Tvoje volba frekvence (1 / 3 / 5 – volitelné)</label>
-              <input type="number" value={weeklyUser} onChange={e=>setWeeklyUser(e.target.value)} placeholder="3" />
-            </div>
-
-            <div className="full">
-              <label>Poznámky (volitelné)</label>
-              <textarea rows={3} value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Zdravotní omezení, preference jídel…" />
-            </div>
-
-          </div>
-
-          <button type="submit" className="btn" disabled={loading}>
-            {loading ? 'Odesílám…' : 'Dokončit registraci'}
-          </button>
-          {msg && <p style={{marginTop:10}}>{msg}</p>}
-        </form>
+        <p className="single-cta">
+            Jediná registrace pro Start: <Link href="/start">Začít 7denní START zdarma →</Link>
+        </p>
       </section>
 
       <Footer />
 
       <style jsx>{`
-        .container { max-width: 980px; margin: 32px auto; padding: 0 16px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .full { grid-column: 1 / -1; }
-        label { display:block; margin-bottom:6px; color:#bbb; }
-        input, select, textarea {
-          width:100%; padding:10px 12px; background:#111; color:#fff;
-          border:1px solid #2a2a2a; border-radius:8px; outline:none;
+        .pricing-page {
+          max-width: 980px;
+          margin: 0 auto;
+          padding: 32px 16px 48px;
         }
-        .btn {
-          width:100%; margin-top:16px;
-          background:linear-gradient(90deg,#0ea5e9,#0284c7);
-          color:#fff; padding:14px 16px; border-radius:10px; border:none; font-weight:600;
+        h1 {
+          font-size: 2rem;
+          margin-bottom: 8px;
+          color: #fff;
+        }
+        .intro {
+          color: #a1a1aa;
+          margin-bottom: 32px;
+          line-height: 1.6;
+        }
+        .pricing-page :global(.pricing) {
+          margin-bottom: 32px;
+        }
+        .pricing-page :global(.pricing .grid) {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          gap: 24px;
+        }
+        .pricing-page :global(.pricing .card) {
+          background: var(--panel, #121212);
+          border-radius: 16px;
+          padding: 24px;
+          border: 1px solid var(--border, #222);
+          display: flex;
+          flex-direction: column;
+        }
+        .pricing-page :global(.pricing .card .btn) {
+          margin-top: auto;
+          width: 100%;
+          text-align: center;
+          padding: 12px 16px;
+          border-radius: 12px;
+          font-weight: 600;
+          text-decoration: none;
+          background: linear-gradient(90deg, #0ea5e9, #0284c7);
+          color: #fff;
+          border: none;
+          cursor: pointer;
+          display: block;
+        }
+        .pricing-page :global(.pricing .card .btn:hover) {
+          opacity: 0.95;
+        }
+        .single-cta {
+          text-align: center;
+          color: #a1a1aa;
+          font-size: 0.95rem;
+        }
+        .single-cta a {
+          color: #0ea5e9;
+          text-decoration: none;
+        }
+        .single-cta a:hover {
+          text-decoration: underline;
         }
       `}</style>
     </>
-  )
+  );
 }

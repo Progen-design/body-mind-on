@@ -9,7 +9,7 @@ export const PRICING = [
       'Evidence váhy a základních měření',
       'Základní tipy e-mailem',
     ],
-    cta: { label: 'Začít zdarma', href: '/signup?plan=start' },
+    cta: { label: 'Začít zdarma', href: '/start' },
   },
   {
     id: 'individual',

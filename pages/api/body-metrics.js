@@ -83,15 +83,18 @@ function toNum(v) {
 
 function normalizeGender(v) {
   if (!v) return null;
-  v = v.toString().toLowerCase();
-  if (v.includes('muž') || v === 'm') return 'male';
-  if (v.includes('žena') || v === 'f') return 'female';
+  const t = v.toString().toLowerCase().trim();
+  if (t === 'male' || t === 'female') return t;
+  if (t.includes('muž') || t === 'm') return 'male';
+  if (t.includes('žena') || t === 'f') return 'female';
   return null;
 }
 
 function normalizeActivity(v) {
   if (!v) return null;
-  const t = v.toLowerCase();
+  const t = v.toString().toLowerCase().trim();
+  const known = ['sedavy', 'lehce', 'stredne', 'velmi', 'extra'];
+  if (known.includes(t)) return t;
   if (t.includes('nízk')) return 'lehce';
   if (t.includes('střed')) return 'stredne';
   if (t.includes('vysok')) return 'velmi';
@@ -100,7 +103,8 @@ function normalizeActivity(v) {
 
 function normalizeStress(v) {
   if (!v) return null;
-  const t = v.toLowerCase();
+  const t = v.toString().toLowerCase().trim();
+  if (t === 'low' || t === 'medium' || t === 'high') return t;
   if (t.includes('nízk')) return 'low';
   if (t.includes('střed')) return 'medium';
   if (t.includes('vysok')) return 'high';
@@ -109,7 +113,9 @@ function normalizeStress(v) {
 
 function normalizeOccupation(v) {
   if (!v) return null;
-  const t = v.toLowerCase();
+  const t = v.toString().toLowerCase().trim();
+  const known = ['office_it', 'manual', 'driver', 'warehouse', 'healthcare', 'teacher_sales', 'gastronomy', 'other', 'kombinovana'];
+  if (known.includes(t)) return t;
   if (t.includes('it') || t.includes('kancel')) return 'office_it';
   if (t.includes('manu')) return 'manual';
   if (t.includes('kombin')) return 'teacher_sales';
@@ -118,7 +124,8 @@ function normalizeOccupation(v) {
 
 function normalizeGoal(v) {
   if (!v) return null;
-  const t = v.toLowerCase();
+  const t = v.toString().toLowerCase().trim();
+  if (t === 'redukce' || t === 'nabirani_svaly' || t === 'udrzovani') return t;
   if (t.includes('reduk')) return 'redukce';
   if (t.includes('sval')) return 'nabirani_svaly';
   return 'udrzovani';

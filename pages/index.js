@@ -10,7 +10,7 @@ export default function Home() {
 
       <main className="hero">
         <div className="hero-content">
-          <h1>Body and Mind ON</h1>
+        <h1>Body and Mind ON – LIVE TEST</h1>
           <p className="subtitle">Zapni své tělo i mysl</p>
           <p className="text">
             Získej osobní plán tréninku, jídelníčku a regenerace. AI společně s

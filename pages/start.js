@@ -1,4 +1,6 @@
 import { useState } from "react";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 export default function Start() {
   const [formData, setFormData] = useState({
@@ -81,6 +83,8 @@ export default function Start() {
   };
 
   return (
+    <>
+      <Header />
     <main className="container py-12 text-white">
       {/* HERO */}
       <section className="text-center mb-10">
@@ -294,5 +298,7 @@ export default function Start() {
         {status && <p className="center mt-4 text-lg text-gray-300">{status}</p>}
       </form>
     </main>
+      <Footer />
+    </>
   );
 }

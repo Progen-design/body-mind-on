@@ -33,9 +33,22 @@ export default async function handler(req, res) {
     if (!payload.email) {
       return res.status(400).json({ error: 'E-mail je povinný.' });
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(payload.email)) {
+      return res.status(400).json({ error: 'Zadej platnou e-mailovou adresu.' });
+    }
 
     if (!payload.height_cm || !payload.weight_kg) {
       return res.status(400).json({ error: 'Chybí výška nebo váha.' });
+    }
+    if (payload.height_cm < 100 || payload.height_cm > 250) {
+      return res.status(400).json({ error: 'Výška musí být mezi 100 a 250 cm.' });
+    }
+    if (payload.weight_kg < 30 || payload.weight_kg > 300) {
+      return res.status(400).json({ error: 'Váha musí být mezi 30 a 300 kg.' });
+    }
+    if (payload.age != null && (payload.age < 15 || payload.age > 120)) {
+      return res.status(400).json({ error: 'Věk musí být mezi 15 a 120.' });
     }
 
     // 💾 3️⃣ Uložení do Supabase

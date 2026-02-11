@@ -2,14 +2,14 @@
 // API endpoint – Body & Mind ON AI Assistant
 // POST → vrátí personalizovaný plán jako HTML blok
 
+import { generatePlan } from '../../lib/generatePlan'
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'Použij POST' })
   }
 
   try {
-    const { generatePlan } = await import('../../lib/generatePlan')
-
     const {
       name,
       gender,

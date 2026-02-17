@@ -58,7 +58,10 @@ export default function Start() {
       }
 
       if (res.ok) {
-        setStatus("✅ Formulář úspěšně odeslán! Tvůj plán se připravuje...");
+        const message = result.planSent === false
+          ? (result.message || "Údaje uloženy, ale e-mail s plánem se nepodařilo odeslat. Zkontroluj spam nebo napiš na info@bodyandmindon.cz.")
+          : (result.message || "✅ Formulář úspěšně odeslán! Tvůj plán se připravuje...");
+        setStatus(result.planSent === false ? "⚠️ " + message : "✅ " + message);
         setFormData({
           name: "",
           email: "",

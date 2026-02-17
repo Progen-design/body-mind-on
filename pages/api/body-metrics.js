@@ -63,18 +63,32 @@ export default async function handler(req, res) {
 
     console.log(`✅ Data uložena do body_metrics pro ${payload.email}`);
 
-    // 🤖 4️⃣ Generování AI plánu
+    // 🤖 4️⃣ Generování AI plánu a odeslání e-mailu
+    let planResult;
     try {
-      await generatePlanForEmail(payload.email);
-      console.log(`🤖 AI plán úspěšně vytvořen pro ${payload.email}`);
+      planResult = await generatePlanForEmail(payload.email);
     } catch (e) {
       console.error('⚠️ Chyba při generování AI plánu:', e);
+      return res.status(200).json({
+        ok: true,
+        message: 'Údaje byly uloženy. Odeslání plánu na e-mail se nepodařilo – zkontroluj prosím spam nebo nás kontaktuj na info@bodyandmindon.cz.',
+        planSent: false,
+      });
     }
 
-    // 📩 5️⃣ Odpověď frontendu
+    if (!planResult?.ok) {
+      console.error('⚠️ generatePlanForEmail vrátil chybu:', planResult?.message);
+      return res.status(200).json({
+        ok: true,
+        message: 'Údaje byly uloženy. E-mail s plánem se nepodařilo odeslat – zkontroluj spam nebo napiš na info@bodyandmindon.cz.',
+        planSent: false,
+      });
+    }
+
     return res.status(200).json({
       ok: true,
-      message: 'Údaje byly úspěšně uloženy a plán byl odeslán na e-mail.'
+      message: 'Údaje byly úspěšně uloženy a plán byl odeslán na e-mail.',
+      planSent: true,
     });
 
   } catch (e) {

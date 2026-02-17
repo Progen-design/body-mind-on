@@ -1,6 +1,7 @@
 // /pages/api/body-metrics.js
 import { supabaseServer } from '../../lib/supabaseServer';
 import { generatePlanForEmail } from '../../lib/generatePlan';
+import { createAuthUserIfNew } from '../../lib/authHelpers';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -26,7 +27,8 @@ export default async function handler(req, res) {
       weekly_sessions_user: getWeeklySessions(b.frequency || b.freq_choice),
       notes: b.notes?.trim() || null,
       program: b.program || 'START',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      user_id: null,
     };
 
     // 🧠 2️⃣ Validace klíčových hodnot (musí být alespoň email + výška + váha)
@@ -51,7 +53,20 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Věk musí být mezi 15 a 120.' });
     }
 
-    // 💾 3️⃣ Uložení do Supabase
+    // 👤 3️⃣ Vytvoření účtu (Supabase Auth) a propojení user_id
+    const authResult = await createAuthUserIfNew(payload.email, payload.name);
+    if (authResult.error) {
+      console.error('❌ createAuthUserIfNew:', authResult.error);
+      return res.status(400).json({
+        error: authResult.error.includes('already')
+          ? 'S tímto e-mailem už máš účet. Přihlas se nebo obnov heslo na app.bodyandmindon.cz.'
+          : authResult.error,
+      });
+    }
+    payload.user_id = authResult.userId;
+    const loginPassword = authResult.existing ? null : authResult.password;
+
+    // 💾 4️⃣ Uložení do Supabase
     const { error: dbErr } = await supabaseServer
       .from('body_metrics')
       .insert([payload]);
@@ -61,12 +76,16 @@ export default async function handler(req, res) {
       throw new Error(dbErr.message);
     }
 
-    console.log(`✅ Data uložena do body_metrics pro ${payload.email}`);
+    console.log(`✅ Data uložena do body_metrics pro ${payload.email}, user_id: ${payload.user_id}`);
 
-    // 🤖 4️⃣ Generování AI plánu a odeslání e-mailu
+    // 🤖 5️⃣ Generování AI plánu a odeslání e-mailu (včetně přihlašovacích údajů)
     let planResult;
     try {
-      planResult = await generatePlanForEmail(payload.email);
+      planResult = await generatePlanForEmail(payload.email, {
+        loginPassword,
+        loginUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz',
+        existingAccount: authResult.existing === true,
+      });
     } catch (e) {
       console.error('⚠️ Chyba při generování AI plánu:', e);
       return res.status(200).json({

@@ -12,7 +12,7 @@ export default function Header() {
           <Link href="/#jak-to-funguje">Jak to funguje</Link>
           <Link href="/pricing">Ceník</Link>
           <Link href="/start">Registrace</Link>
-          <a href="https://app.bodyandmindon.cz">Přihlášení</a>
+          <Link href="/login">Přihlášení</Link>
         </nav>
       </div>
 

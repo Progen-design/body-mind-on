@@ -58,10 +58,11 @@ export default function Start() {
       }
 
       if (res.ok) {
-        const message = result.planSent === false
-          ? (result.message || "Údaje uloženy, ale e-mail s plánem se nepodařilo odeslat. Zkontroluj spam nebo napiš na info@bodyandmindon.cz.")
-          : (result.message || "✅ Formulář úspěšně odeslán! Tvůj plán se připravuje...");
-        setStatus(result.planSent === false ? "⚠️ " + message : "✅ " + message);
+        if (result.planSent === false) {
+          setStatus("⚠️ " + (result.message || "Údaje uloženy, ale e-mail s plánem se nepodařilo odeslat. Zkontroluj spam nebo napiš na info@bodyandmindon.cz."));
+        } else {
+          setStatus("✅ " + (result.message || "Údaje byly uloženy a plán byl odeslán na e-mail.") + " Do e-mailu ti přijde plán a přihlašovací údaje – s nimi se můžeš přihlásit a vidět svůj profil.");
+        }
         setFormData({
           name: "",
           email: "",

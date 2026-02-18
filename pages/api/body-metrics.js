@@ -55,16 +55,24 @@ export default async function handler(req, res) {
 
     // 👤 3️⃣ Vytvoření účtu (Supabase Auth) a propojení user_id
     const authResult = await createAuthUserIfNew(payload.email, payload.name);
+    let loginPassword = null;
+    let existingAccount = false;
+
     if (authResult.error) {
       console.error('❌ createAuthUserIfNew:', authResult.error);
-      return res.status(400).json({
-        error: authResult.error.includes('already')
-          ? 'S tímto e-mailem už máš účet. Přihlas se nebo obnov heslo na app.bodyandmindon.cz.'
-          : authResult.error,
-      });
+      const isAlready = authResult.error.toLowerCase().includes('already') || authResult.error.toLowerCase().includes('registered');
+      if (isAlready) {
+        return res.status(400).json({
+          error: 'S tímto e-mailem už máš účet. Přihlas se nebo obnov heslo na app.bodyandmindon.cz.',
+        });
+      }
+      // Při jiné chybě (např. "Database error creating new user") uložíme data a odešleme plán bez účtu
+      payload.user_id = null;
+    } else {
+      payload.user_id = authResult.userId;
+      loginPassword = authResult.existing ? null : authResult.password;
+      existingAccount = authResult.existing === true;
     }
-    payload.user_id = authResult.userId;
-    const loginPassword = authResult.existing ? null : authResult.password;
 
     // 💾 4️⃣ Uložení do Supabase
     const { error: dbErr } = await supabaseServer
@@ -84,7 +92,8 @@ export default async function handler(req, res) {
       planResult = await generatePlanForEmail(payload.email, {
         loginPassword,
         loginUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz',
-        existingAccount: authResult.existing === true,
+        existingAccount,
+        loginUnavailable: payload.user_id == null,
       });
     } catch (e) {
       console.error('⚠️ Chyba při generování AI plánu:', e);
@@ -104,9 +113,12 @@ export default async function handler(req, res) {
       });
     }
 
+    const loginUnavailable = payload.user_id == null;
     return res.status(200).json({
       ok: true,
-      message: 'Údaje byly úspěšně uloženy a plán byl odeslán na e-mail.',
+      message: loginUnavailable
+        ? 'Údaje byly uloženy a plán byl odeslán na e-mail. Přihlášení do profilu je dočasně nedostupné – zkus to později nebo nás kontaktuj na info@bodyandmindon.cz.'
+        : 'Údaje byly úspěšně uloženy a plán byl odeslán na e-mail.',
       planSent: true,
     });
 

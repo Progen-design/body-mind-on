@@ -1,10 +1,13 @@
 // /pages/login.js
 import { useState } from 'react';
+import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 export default function Login() {
+  const router = useRouter();
+  const redirectTo = Array.isArray(router.query.redirect) ? router.query.redirect[0] : (router.query.redirect || '/dashboard');
   const [email, setEmail] = useState('');
   const [msg, setMsg] = useState(null);
   const [msgType, setMsgType] = useState('info');
@@ -26,7 +29,7 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim().toLowerCase(),
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`
+          emailRedirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}${redirectTo}`
         }
       });
 

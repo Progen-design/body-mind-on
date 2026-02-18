@@ -50,15 +50,9 @@ export default function BodyMetricsForm({ onSubmitSuccess, submitLabel = 'Dokon�
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
 
-      let successMsg;
-      if (data.planSent === false) {
-        successMsg = data.message || 'Údaje uloženy, ale e-mail s plánem se nepodařilo odeslat. Zkontroluj spam nebo napiš na info@bodyandmindon.cz.';
-      } else {
-        successMsg = data.message || 'Údaje byly uloženy a plán byl odeslán na e-mail.';
-        if (!data.loginUnavailable) {
-          successMsg += ' Do e-mailu ti přijde plán a přihlašovací údaje – s nimi se můžeš přihlásit a vidět svůj profil.';
-        }
-      }
+      const successMsg = data.planSent === false
+        ? (data.message || 'Údaje uloženy, ale e-mail s plánem se nepodařilo odeslat. Zkontroluj spam nebo napiš na info@bodyandmindon.cz.')
+        : (data.message || 'Údaje byly uloženy a plán byl odeslán na e-mail.');
       setMsg(successMsg);
       onSubmitSuccess?.(data);
     } catch (err) {

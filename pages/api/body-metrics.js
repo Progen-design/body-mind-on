@@ -107,14 +107,14 @@ export default async function handler(req, res) {
       });
     }
 
-    const loginUnavailable = payload.user_id == null;
+    const accountCreated = payload.user_id != null;
     return res.status(200).json({
       ok: true,
       planSent: true,
-      loginUnavailable: !!loginUnavailable,
-      message: loginUnavailable
-        ? 'Údaje byly uloženy a plán byl odeslán na e-mail. Přihlášení do profilu je dočasně nedostupné – zkus to později nebo nás kontaktuj na info@bodyandmindon.cz.'
-        : 'Údaje byly úspěšně uloženy a plán byl odeslán na e-mail.',
+      loginUnavailable: !accountCreated,
+      message: accountCreated
+        ? 'Údaje byly úspěšně uloženy a plán byl odeslán na e-mail. V e-mailu najdeš přihlašovací údaje – s nimi se můžeš přihlásit a vidět svůj profil.'
+        : 'Údaje a plán byly uloženy a odeslány na e-mail. Vytvoření přihlašovacího účtu se nezdařilo – pro přístup do profilu nás kontaktuj na info@bodyandmindon.cz.',
     });
 
   } catch (e) {

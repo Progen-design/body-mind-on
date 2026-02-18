@@ -62,8 +62,8 @@ export default function Start() {
           setStatus("⚠️ " + (result.message || "Údaje uloženy, ale e-mail s plánem se nepodařilo odeslat. Zkontroluj spam nebo napiš na info@bodyandmindon.cz."));
         } else {
           const msg = result.message || "Údaje byly uloženy a plán byl odeslán na e-mail.";
-          const hasLogin = msg.includes('nedostupné') ? '' : " Do e-mailu ti přijde plán a přihlašovací údaje – s nimi se můžeš přihlásit a vidět svůj profil.";
-          setStatus("✅ " + msg + hasLogin);
+          const appendLogin = result.loginUnavailable ? "" : " Do e-mailu ti přijde plán a přihlašovací údaje – s nimi se můžeš přihlásit a vidět svůj profil.";
+          setStatus("✅ " + msg + appendLogin);
         }
         setFormData({
           name: "",

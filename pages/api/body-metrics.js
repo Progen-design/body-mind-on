@@ -116,10 +116,11 @@ export default async function handler(req, res) {
     const loginUnavailable = payload.user_id == null;
     return res.status(200).json({
       ok: true,
+      planSent: true,
+      loginUnavailable: !!loginUnavailable,
       message: loginUnavailable
         ? 'Údaje byly uloženy a plán byl odeslán na e-mail. Přihlášení do profilu je dočasně nedostupné – zkus to později nebo nás kontaktuj na info@bodyandmindon.cz.'
         : 'Údaje byly úspěšně uloženy a plán byl odeslán na e-mail.',
-      planSent: true,
     });
 
   } catch (e) {

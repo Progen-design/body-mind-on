@@ -12,7 +12,10 @@ export default function Header() {
           <Link href="/#jak-to-funguje">Jak to funguje</Link>
           <Link href="/pricing">Ceník</Link>
           <Link href="/start">Registrace</Link>
+<<<<<<< HEAD
           <Link href="/dashboard">Profil</Link>
+=======
+>>>>>>> 6f5240f6f8b1258409583a0b19f720f567efd04d
           <Link href="/login">Přihlášení</Link>
         </nav>
       </div>

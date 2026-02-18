@@ -1,20 +1,3 @@
-<<<<<<< HEAD
-// /pages/pricing.js
-import { useEffect } from 'react'
-import Header from '../components/Header'
-import Footer from '../components/Footer'
-import BodyMetricsForm from '../components/BodyMetricsForm'
-
-export default function PricingPage() {
-  useEffect(() => { window.__BMON_FORM_V2 = true }, [])
-
-  return (
-    <>
-      <Header />
-      <section className="container">
-        <h2>Detaily pro „Start“</h2>
-        <BodyMetricsForm submitLabel="Dokončit registraci" />
-=======
 // /pages/pricing.js – Ceník plánů, registrace jen přes /start
 import Link from 'next/link';
 import Header from '../components/Header';
@@ -37,14 +20,10 @@ export default function PricingPage() {
         <p className="single-cta">
             Jediná registrace pro Start: <Link href="/start">Začít 7denní START zdarma →</Link>
         </p>
->>>>>>> 6f5240f6f8b1258409583a0b19f720f567efd04d
       </section>
       <Footer />
 
       <style jsx>{`
-<<<<<<< HEAD
-        .container { max-width: 980px; margin: 32px auto; padding: 0 16px; }
-=======
         .pricing-page {
           max-width: 980px;
           margin: 0 auto;
@@ -105,7 +84,6 @@ export default function PricingPage() {
         .single-cta a:hover {
           text-decoration: underline;
         }
->>>>>>> 6f5240f6f8b1258409583a0b19f720f567efd04d
       `}</style>
     </>
   );

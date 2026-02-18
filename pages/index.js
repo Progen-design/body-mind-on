@@ -18,13 +18,9 @@ export default function Home() {
           </p>
 
           <div className="buttons">
-            {/* 🔹 ODKAZ NA CENÍK / REGISTRACI */}
-            <a
-              href="https://app.bodyandmindon.cz/pricing"
-              className="btn btn-primary"
-            >
+            <Link href="/start" className="btn btn-primary">
               Začít 7denní START zdarma
-            </a>
+            </Link>
 
             {/* 🔹 ODKAZ NA SEKCI „Jak to funguje“ */}
             <a href="#jak-to-funguje" className="btn btn-secondary">

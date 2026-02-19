@@ -118,8 +118,9 @@ create policy "Users can CRUD own workouts" on workouts for all using (auth.uid(
 
 ## 7. Jak spustit migraci (workouts tabulka)
 
-**Chyba „Could not find duration_min / notes column“:** Pokud už máš tabulku `workouts` s neúplným schématem, spusť v Supabase SQL Editoru:
-`supabase/migrations/20250219_fix_workouts_schema.sql` – přidá chybějící sloupce `duration_min` a `notes`.
+**Chyba „Could not find duration_min / notes column“:** Spusť v Supabase SQL Editoru `supabase/migrations/20250219_fix_workouts_schema.sql` – přidá chybějící sloupce `duration_min` a `notes`.
+
+**Chyba „null value in column workout_name“:** Tabulka má sloupec `workout_name` NOT NULL a API ho musí vyplnit. V kódu je to už vyřešené (API posílá `workout_name` odvozené z typu tréninku). Pokud ti v DB chybí sloupec `workout_name`, spusť `supabase/migrations/20250219_fix_workouts_workout_name.sql`. Kompletní rozbor: [docs/WORKOUTS_SCHEMA_ROZBOR.md](docs/WORKOUTS_SCHEMA_ROZBOR.md).
 
 (Starší fix jen pro duration_min: `supabase/migrations/20250219_fix_workouts_duration.sql`.)
 

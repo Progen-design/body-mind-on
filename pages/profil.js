@@ -280,7 +280,7 @@ export default function Profil() {
               ) : (
                 <div className="workouts-list">
                   {workouts.slice(0, 20).map((w) => {
-                    const type = WORKOUT_TYPES.find((t) => t.id === w.workout_type) || { label: w.workout_type, emoji: '✨' };
+                    const type = WORKOUT_TYPES.find((t) => t.id === w.workout_type) || { label: w.workout_name || w.workout_type || '—', emoji: '✨' };
                     return (
                       <div key={w.id} className="workout-card">
                         <div className="workout-main">

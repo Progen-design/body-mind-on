@@ -1,16 +1,28 @@
-// /components/Header.js
+// /components/Header.js – na main doméně (bodyandmindon.cz) marketing, na app (app.bodyandmindon.cz) odkazy na main + registrace/profil
 import Link from "next/link";
+import { useState, useEffect } from "react";
+
+const MAIN_SITE = process.env.NEXT_PUBLIC_MAIN_SITE_URL || "https://bodyandmindon.cz";
 
 export default function Header() {
+  const [isApp, setIsApp] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hostname === "app.bodyandmindon.cz") setIsApp(true);
+  }, []);
+
+  const homeHref = isApp ? MAIN_SITE : "/";
+  const jakHref = isApp ? `${MAIN_SITE}/#jak-to-funguje` : "/#jak-to-funguje";
+  const cenikHref = isApp ? `${MAIN_SITE}/#cenik` : "/#cenik";
+
   return (
     <header className="header">
       <div className="container">
-        <Link href="/" className="logo">
+        <a href={homeHref} className="logo">
           <strong>Body & Mind ON</strong>
-        </Link>
+        </a>
         <nav>
-          <Link href="/#jak-to-funguje">Jak to funguje</Link>
-          <Link href="/pricing">Ceník</Link>
+          <a href={jakHref}>Jak to funguje</a>
+          <a href={cenikHref}>Ceník</a>
           <Link href="/start">Registrace</Link>
           <Link href="/profil">Profil</Link>
           <Link href="/login">Přihlášení</Link>

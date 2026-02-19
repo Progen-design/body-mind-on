@@ -41,11 +41,14 @@ export default function Profil() {
   const [submittingWeight, setSubmittingWeight] = useState(false);
 
   const refetchProfile = () => {
-    if (!session?.access_token) return;
-    fetch('/api/profile', { headers: { Authorization: `Bearer ${session.access_token}` } })
+    if (!session?.access_token) return Promise.resolve();
+    return fetch('/api/profile', { headers: { Authorization: `Bearer ${session.access_token}` } })
       .then((res) => res.json())
-      .then((data) => { if (!data.error) setProfile(data); })
-      .catch(() => {});
+      .then((data) => {
+        if (!data.error) setProfile(data);
+        return data;
+      })
+      .catch((err) => { console.warn('[profil] refetch failed', err); });
   };
 
   useEffect(() => {
@@ -86,7 +89,8 @@ export default function Profil() {
         setShowWorkoutModal(false);
         setWorkoutError('');
         setWorkoutForm({ workout_date: new Date().toISOString().split('T')[0], workout_type: 'silovy', duration_min: 45, notes: '' });
-        refetchProfile();
+        setProfile((p) => ({ ...p, workouts: [json.workout, ...(p.workouts || [])] }));
+        await refetchProfile();
       } else setWorkoutError(json.error || 'Chyba při ukládání');
     } catch (err) {
       setWorkoutError(err.message || 'Chyba');
@@ -100,7 +104,8 @@ export default function Profil() {
     try {
       const res = await fetch(`/api/workouts?id=${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${session.access_token}` } });
       if (res.ok) {
-        refetchProfile();
+        setProfile((p) => ({ ...p, workouts: (p.workouts || []).filter((w) => w.id !== id) }));
+        await refetchProfile();
       }
     } catch (err) {
       setWorkoutError(err.message);

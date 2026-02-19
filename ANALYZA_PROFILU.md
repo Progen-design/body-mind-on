@@ -122,6 +122,8 @@ create policy "Users can CRUD own workouts" on workouts for all using (auth.uid(
 
 **Chyba „null value in column workout_name“:** Tabulka má sloupec `workout_name` NOT NULL a API ho musí vyplnit. V kódu je to už vyřešené (API posílá `workout_name` odvozené z typu tréninku). Pokud ti v DB chybí sloupec `workout_name`, spusť `supabase/migrations/20250219_fix_workouts_workout_name.sql`. Kompletní rozbor: [docs/WORKOUTS_SCHEMA_ROZBOR.md](docs/WORKOUTS_SCHEMA_ROZBOR.md).
 
+**Chyba „workouts_user_id_fkey“ (foreign key):** Cizí klíč na `user_id` odkazoval na jinou tabulku než `auth.users`. Spusť `supabase/migrations/20250219_fix_workouts_user_id_fkey.sql` – nastaví odkaz na `auth.users(id)`.
+
 (Starší fix jen pro duration_min: `supabase/migrations/20250219_fix_workouts_duration.sql`.)
 
 V Supabase Dashboard → SQL Editor spusť obsah souboru:

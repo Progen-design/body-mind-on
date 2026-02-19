@@ -62,6 +62,7 @@ Podle příznaku:
 
 | Problém | Kam se podívat |
 |--------|-----------------|
+| **„Neplatná session“** na Profilu | Aplikace teď před načtením obnoví token. Pokud to nepomůže: Vercel env musí být ze **stejného** Supabase projektu (stejná `SUPABASE_URL` jako `NEXT_PUBLIC_SUPABASE_URL`). V Supabase → Authentication → URL Configuration nastav **Site URL** na `https://app.bodyandmindon.cz`. |
 | Přihlášení nefunguje / hned odhlásí | Supabase URL Configuration (Site URL + Redirect URLs) + že na Vercelu máš `NEXT_PUBLIC_SUPABASE_*` |
 | Stránka bílá / „Supabase není nakonfigurován“ | Vercel env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` + Redeploy |
 | app.bodyandmindon.cz se nenačte | Vercel Domains + DNS u registrátora |

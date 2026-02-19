@@ -67,22 +67,45 @@ export default function Profil() {
       .catch((err) => { console.warn('[profil] refetch failed', err); });
   };
 
+  function fetchProfileWithToken(accessToken) {
+    return fetch('/api/profile', { headers: { Authorization: `Bearer ${accessToken}` } })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) {
+          setError(data.error);
+          return { error: data.error };
+        }
+        setProfile(data);
+        setError('');
+        return { ok: true };
+      });
+  }
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (!s) {
+    let cancelled = false;
+    (async () => {
+      const { data: { session: s }, error: sessionErr } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (sessionErr || !s) {
         router.replace('/login');
         return;
       }
-      setSession(s);
-      fetch('/api/profile', { headers: { Authorization: `Bearer ${s.access_token}` } })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.error) setError(data.error);
-          else setProfile(data);
-        })
-        .catch(() => setError('Nepodařilo se načíst data'))
-        .finally(() => setLoading(false));
-    });
+      // Na produkci často vyprší token – nejdřív obnovíme session
+      const { data: { session: fresh }, error: refreshErr } = await supabase.auth.refreshSession();
+      const sessionToUse = !refreshErr && fresh ? fresh : s;
+      setSession(sessionToUse);
+      const result = await fetchProfileWithToken(sessionToUse.access_token);
+      if (cancelled) return;
+      if (result?.error === 'Neplatná session') {
+        // Token je neplatný i po refreshi – odhlásíme a pošleme na login
+        await supabase.auth.signOut();
+        router.replace('/login');
+        return;
+      }
+    })()
+      .catch(() => { if (!cancelled) setError('Nepodařilo se načíst data'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [router]);
 
   async function handleLogout() {

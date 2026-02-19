@@ -31,6 +31,7 @@ export default function Profil() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [workoutError, setWorkoutError] = useState('');
   const [showWorkoutModal, setShowWorkoutModal] = useState(false);
   const [workoutForm, setWorkoutForm] = useState({ workout_date: new Date().toISOString().split('T')[0], workout_type: 'silovy', duration_min: 45, notes: '' });
   const [submitting, setSubmitting] = useState(false);
@@ -72,10 +73,11 @@ export default function Profil() {
       if (res.ok) {
         setProfile((p) => ({ ...p, workouts: [json.workout, ...(p.workouts || [])] }));
         setShowWorkoutModal(false);
+        setWorkoutError('');
         setWorkoutForm({ workout_date: new Date().toISOString().split('T')[0], workout_type: 'silovy', duration_min: 45, notes: '' });
-      } else setError(json.error || 'Chyba při ukládání');
+      } else setWorkoutError(json.error || 'Chyba při ukládání');
     } catch (err) {
-      setError(err.message || 'Chyba');
+      setWorkoutError(err.message || 'Chyba');
     } finally {
       setSubmitting(false);
     }
@@ -89,7 +91,7 @@ export default function Profil() {
         setProfile((p) => ({ ...p, workouts: (p.workouts || []).filter((w) => w.id !== id) }));
       }
     } catch (err) {
-      setError(err.message);
+      setWorkoutError(err.message);
     }
   }
 
@@ -146,36 +148,7 @@ export default function Profil() {
 
         {!loading && !error && (
           <div className="profil-content">
-            {/* KPI karty */}
-            <section className="profil-section">
-              <h2>📊 Přehled pokroku</h2>
-              <div className="kpi-grid">
-                <div className="kpi-card">
-                  <span className="kpi-icon">🏋️</span>
-                  <span className="kpi-value">{stats.workouts_this_week ?? 0}</span>
-                  <span className="kpi-label">Tréninků tento týden</span>
-                </div>
-                <div className="kpi-card">
-                  <span className="kpi-icon">📈</span>
-                  <span className="kpi-value">{stats.total_workouts ?? 0}</span>
-                  <span className="kpi-label">Celkem tréninků</span>
-                </div>
-                <div className="kpi-card">
-                  <span className="kpi-icon">⚖️</span>
-                  <span className="kpi-value">{lastWeight != null ? `${lastWeight} kg` : '—'}</span>
-                  <span className="kpi-label">Aktuální váha</span>
-                </div>
-                <div className="kpi-card">
-                  <span className="kpi-icon">{weightDiff != null ? (weightDiff < 0 ? '📉' : weightDiff > 0 ? '📈' : '➖') : '📊'}</span>
-                  <span className="kpi-value">
-                    {weightDiff != null ? `${weightDiff > 0 ? '+' : ''}${weightDiff} kg` : '—'}
-                  </span>
-                  <span className="kpi-label">Změní od začátku</span>
-                </div>
-              </div>
-            </section>
-
-            {/* Postava – předtím vs teď */}
+            {/* Postava – předtím vs teď (první sekce) */}
             <section className="profil-section">
               <h2>👤 Tvůj postup</h2>
               <div className="body-figures-row">
@@ -225,6 +198,35 @@ export default function Profil() {
                     <Link href="/start" className="btn-primary">Vyplnit dotazník</Link>
                   </div>
                 )}
+              </div>
+            </section>
+
+            {/* KPI karty */}
+            <section className="profil-section">
+              <h2>📊 Přehled pokroku</h2>
+              <div className="kpi-grid">
+                <div className="kpi-card">
+                  <span className="kpi-icon">🏋️</span>
+                  <span className="kpi-value">{stats.workouts_this_week ?? 0}</span>
+                  <span className="kpi-label">Tréninků tento týden</span>
+                </div>
+                <div className="kpi-card">
+                  <span className="kpi-icon">📈</span>
+                  <span className="kpi-value">{stats.total_workouts ?? 0}</span>
+                  <span className="kpi-label">Celkem tréninků</span>
+                </div>
+                <div className="kpi-card">
+                  <span className="kpi-icon">⚖️</span>
+                  <span className="kpi-value">{lastWeight != null ? `${lastWeight} kg` : '—'}</span>
+                  <span className="kpi-label">Aktuální váha</span>
+                </div>
+                <div className="kpi-card">
+                  <span className="kpi-icon">{weightDiff != null ? (weightDiff < 0 ? '📉' : weightDiff > 0 ? '📈' : '➖') : '📊'}</span>
+                  <span className="kpi-value">
+                    {weightDiff != null ? `${weightDiff > 0 ? '+' : ''}${weightDiff} kg` : '—'}
+                  </span>
+                  <span className="kpi-label">Změní od začátku</span>
+                </div>
               </div>
             </section>
 
@@ -351,11 +353,11 @@ export default function Profil() {
 
         {/* Modal – Zapsat trénink */}
         {showWorkoutModal && (
-          <div className="modal-overlay" onClick={() => !submitting && setShowWorkoutModal(false)}>
+          <div className="modal-overlay" onClick={() => { if (!submitting) { setShowWorkoutModal(false); setWorkoutError(''); } }}>
             <div className="modal" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h3>Zapsat trénink</h3>
-                <button type="button" onClick={() => !submitting && setShowWorkoutModal(false)} aria-label="Zavřít">×</button>
+                <button type="button" onClick={() => { if (!submitting) { setShowWorkoutModal(false); setWorkoutError(''); } }} aria-label="Zavřít">×</button>
               </div>
               <form onSubmit={handleAddWorkout} className="modal-form">
                 <div>
@@ -397,8 +399,9 @@ export default function Profil() {
                     onChange={(e) => setWorkoutForm((f) => ({ ...f, notes: e.target.value }))}
                   />
                 </div>
+                {workoutError && <p className="modal-error">{workoutError}</p>}
                 <div className="modal-actions">
-                  <button type="button" onClick={() => !submitting && setShowWorkoutModal(false)} className="btn-ghost">Zrušit</button>
+                  <button type="button" onClick={() => { if (!submitting) { setShowWorkoutModal(false); setWorkoutError(''); } }} className="btn-ghost">Zrušit</button>
                   <button type="submit" disabled={submitting} className="btn-primary">
                     {submitting ? 'Ukládám…' : 'Uložit trénink'}
                   </button>
@@ -812,6 +815,15 @@ export default function Profil() {
           background: #0f0f0f;
           color: #fff;
           font-size: 15px;
+        }
+        .modal-error {
+          margin: 0 0 16px;
+          padding: 12px;
+          background: rgba(239, 68, 68, 0.15);
+          border: 1px solid rgba(239, 68, 68, 0.4);
+          border-radius: 8px;
+          color: #f87171;
+          font-size: 14px;
         }
         .modal-actions {
           display: flex;

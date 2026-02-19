@@ -33,6 +33,10 @@ export default async function handler(req, res) {
     if (!payload.email) {
       return res.status(400).json({ error: 'E-mail je povinný.' });
     }
+    const password = typeof b.password === 'string' ? b.password.trim() : '';
+    if (password && password.length < 6) {
+      return res.status(400).json({ error: 'Heslo musí mít alespoň 6 znaků.' });
+    }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(payload.email)) {
       return res.status(400).json({ error: 'Zadej platnou e-mailovou adresu.' });
@@ -51,9 +55,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Věk musí být mezi 15 a 120.' });
     }
 
-    const authResult = await createAuthUserIfNew(payload.email, payload.name);
+    const authResult = await createAuthUserIfNew(payload.email, payload.name, password || undefined);
     let loginPassword = null;
     let existingAccount = false;
+    let userChosePassword = authResult.userChosePassword === true;
 
     if (authResult.error) {
       console.error('❌ createAuthUserIfNew:', authResult.error);
@@ -66,8 +71,9 @@ export default async function handler(req, res) {
       payload.user_id = null;
     } else {
       payload.user_id = authResult.userId;
-      loginPassword = authResult.existing ? null : authResult.password;
+      loginPassword = authResult.password ?? null;
       existingAccount = authResult.existing === true;
+      userChosePassword = authResult.userChosePassword === true;
     }
 
     const { error: dbErr } = await supabaseServer
@@ -88,6 +94,7 @@ export default async function handler(req, res) {
         loginUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz',
         existingAccount,
         loginUnavailable: payload.user_id == null,
+        userChosePassword,
       });
     } catch (e) {
       console.error('⚠️ Chyba při generování AI plánu:', e);

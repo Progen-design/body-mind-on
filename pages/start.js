@@ -6,6 +6,8 @@ export default function Start() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    password: "",
+    passwordConfirm: "",
     gender: "",
     age: "",
     height: "",
@@ -37,10 +39,19 @@ export default function Start() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (formData.password && formData.password.length < 6) {
+      setStatus("❌ Heslo musí mít alespoň 6 znaků.");
+      return;
+    }
+    if (formData.password !== formData.passwordConfirm) {
+      setStatus("❌ Hesla se neshodují.");
+      return;
+    }
     setStatus("⏳ Odesílám... (může trvat až minutu – generuje se plán a e-mail)");
 
     try {
       const cleanedData = normalizeData(formData);
+      delete cleanedData.passwordConfirm;
 
       const res = await fetch("/api/body-metrics", {
         method: "POST",
@@ -65,6 +76,8 @@ export default function Start() {
         setFormData({
           name: "",
           email: "",
+          password: "",
+          passwordConfirm: "",
           gender: "",
           age: "",
           height: "",
@@ -126,6 +139,36 @@ export default function Start() {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="jan@example.com"
+                required
+              />
+            </div>
+          </div>
+
+          {/* HESLO */}
+          <div className="row grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="label block mb-2 text-gray-400">Heslo (min. 6 znaků)</label>
+              <input
+                name="password"
+                type="password"
+                className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Zvol si heslo pro přístup do profilu"
+                minLength={6}
+                required
+              />
+            </div>
+            <div>
+              <label className="label block mb-2 text-gray-400">Heslo znovu</label>
+              <input
+                name="passwordConfirm"
+                type="password"
+                className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
+                value={formData.passwordConfirm}
+                onChange={handleChange}
+                placeholder="Zadej heslo znovu"
+                minLength={6}
                 required
               />
             </div>

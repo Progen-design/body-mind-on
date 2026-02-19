@@ -16,6 +16,11 @@
   --color-dark-bg: #0a021f;
   --color-text-light: #f5f5f5;
   --color-text-gray: #bdbdbd;
+  /* Profil: karty a akcenty */
+  --profil-card-bg: rgba(28, 28, 42, 0.9);
+  --profil-card-border: #2e2e42;
+  --profil-accent: #9b5cff;
+  --profil-accent-light: #a78bfa;
 }
 
 /* ---- Base ---- */

@@ -83,10 +83,10 @@ export default function Profil() {
       });
       const json = await res.json();
       if (res.ok) {
-        setProfile((p) => ({ ...p, workouts: [json.workout, ...(p.workouts || [])] }));
         setShowWorkoutModal(false);
         setWorkoutError('');
         setWorkoutForm({ workout_date: new Date().toISOString().split('T')[0], workout_type: 'silovy', duration_min: 45, notes: '' });
+        refetchProfile();
       } else setWorkoutError(json.error || 'Chyba při ukládání');
     } catch (err) {
       setWorkoutError(err.message || 'Chyba');
@@ -100,7 +100,7 @@ export default function Profil() {
     try {
       const res = await fetch(`/api/workouts?id=${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${session.access_token}` } });
       if (res.ok) {
-        setProfile((p) => ({ ...p, workouts: (p.workouts || []).filter((w) => w.id !== id) }));
+        refetchProfile();
       }
     } catch (err) {
       setWorkoutError(err.message);

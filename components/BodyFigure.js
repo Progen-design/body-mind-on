@@ -1,4 +1,4 @@
-// /components/BodyFigure.js – Atraktivní vizualizace postavy (BMI → tvar), varianty Předtím / Teď
+// /components/BodyFigure.js – Tvar postavy podle BMI + pohlaví a cíle (jaký člověk je)
 function bmiToShape(weight, height) {
   if (!weight || !height || height <= 0) return { torso: 0.5, legs: 0.5 };
   const bmi = weight / ((height / 100) ** 2);
@@ -7,11 +7,23 @@ function bmiToShape(weight, height) {
   return { torso: t, legs: l };
 }
 
-export default function BodyFigure({ weight, height, label, size = 120, id, variant, weightDiff }) {
+function normalizeGender(g) {
+  if (!g) return null;
+  const t = String(g).toLowerCase();
+  if (t === 'male' || t === 'female') return t;
+  if (t.includes('muž') || t === 'm') return 'male';
+  if (t.includes('žena') || t === 'f') return 'female';
+  return null;
+}
+
+export default function BodyFigure({ weight, height, label, size = 120, id, variant, weightDiff, gender, goal }) {
   const { torso, legs } = bmiToShape(weight, height);
   const gradId = id ? `bodyGrad-${id}` : 'bodyGrad';
   const isBefore = variant === 'before';
   const isNow = variant === 'now';
+
+  const g = normalizeGender(gender);
+  const goalStr = goal ? String(goal).toLowerCase() : '';
 
   const w = 80;
   const h = 120;
@@ -22,10 +34,30 @@ export default function BodyFigure({ weight, height, label, size = 120, id, vari
   const hipY = headR + 72;
   const footY = h - 8;
 
-  const shoulderW = 22 + torso * 18;
-  const waistW = 16 + torso * 16;
-  const hipW = 18 + torso * 14;
-  const thighW = 8 + legs * 8;
+  let shoulderW = 22 + torso * 18;
+  let waistW = 16 + torso * 16;
+  let hipW = 18 + torso * 14;
+  let thighW = 8 + legs * 8;
+
+  if (g === 'male') {
+    shoulderW *= 1.12;
+    waistW *= 1.0;
+    hipW *= 0.88;
+    thighW *= 0.95;
+  } else if (g === 'female') {
+    shoulderW *= 0.92;
+    waistW *= 0.95;
+    hipW *= 1.12;
+    thighW *= 1.08;
+  }
+
+  if (goalStr.includes('nabirani') || goalStr.includes('sval')) {
+    shoulderW *= 1.06;
+    waistW *= 0.98;
+  } else if (goalStr.includes('redukce')) {
+    shoulderW *= 0.97;
+    hipW *= 0.97;
+  }
 
   const fillUrl = `url(#${gradId})`;
 

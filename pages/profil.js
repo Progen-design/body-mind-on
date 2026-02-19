@@ -203,7 +203,7 @@ export default function Profil() {
             <section className="profil-section">
               <h2>👤 Tvůj postup</h2>
               <p className="profil-section-hint">
-                Váha a tvar postavy vycházejí z tvých záznamů měření. Přidej nové měření s jinou váhou a uvidíš pokrok – „Předtím“ vs „Teď“ se přepočítají automaticky.
+                Tvar a postava se odvíjejí od tvého profilu (pohlaví, cíl) a váhy z měření. Přidej nové měření s jinou váhou a uvidíš pokrok – „Předtím“ vs „Teď“ se přepočítají automaticky.
               </p>
               <div className="body-figures-row">
                 {hasBeforeAfter ? (
@@ -216,6 +216,8 @@ export default function Profil() {
                         size={110}
                         id="before"
                         variant="before"
+                        gender={firstMetric.gender}
+                        goal={firstMetric.goal}
                       />
                       {firstMetric.created_at && (
                         <span className="body-figure-date">{formatDate(firstMetric.created_at)}</span>
@@ -231,6 +233,8 @@ export default function Profil() {
                         id="after"
                         variant="now"
                         weightDiff={weightDiff}
+                        gender={latestMetric.gender}
+                        goal={latestMetric.goal}
                       />
                       {latestMetric.created_at && (
                         <span className="body-figure-date">{formatDate(latestMetric.created_at)}</span>
@@ -245,6 +249,8 @@ export default function Profil() {
                       label="Tvůj profil"
                       size={130}
                       id="single"
+                      gender={latestMetric.gender}
+                      goal={latestMetric.goal}
                     />
                     <p className="body-figure-hint">Vyplň další měření v průběhu času – postava se bude měnit podle tvého pokroku.</p>
                   </div>

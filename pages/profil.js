@@ -175,14 +175,15 @@ export default function Profil() {
     <>
       <Header />
       <main className="profil-page">
-        {/* Hero */}
+        {/* Hero – portfolio uživatele */}
         <section className="profil-hero">
           <div className="profil-hero-bg" />
           <div className="profil-hero-content">
+            <p className="profil-hero-badge">Tvé portfolio</p>
             <h1>
               Ahoj, <span>{userName}</span> 👋
             </h1>
-            <p className="profil-hero-sub">Síla těla, klid mysli – tady máš přehled svého pokroku.</p>
+            <p className="profil-hero-sub">Síla těla, klid mysli – přehled se dynamicky mění s každým záznamem (trénink, váha).</p>
             <div className="profil-hero-actions">
               {profile?.user?.email && <span className="profil-email">{profile.user.email}</span>}
               <button type="button" onClick={handleLogout} className="btn-ghost">
@@ -276,7 +277,7 @@ export default function Profil() {
             <section className="profil-section">
               <h2>📊 Přehled pokroku</h2>
               <p className="profil-section-hint profil-section-hint-sub">
-                Všechny údaje vycházejí z tvých záznamů: tréninky z Historie, váha a změna z měření (stejný zdroj jako postava „Předtím“ / „Teď“).
+                Portfolio se mění v reálném čase: po zápisu tréninku nebo přidání váhy se všechny hodnoty přepočítají automaticky.
               </p>
               <div className="kpi-grid">
                 <div className="kpi-card">
@@ -556,6 +557,18 @@ export default function Profil() {
           position: relative;
           max-width: 900px;
           margin: 0 auto;
+        }
+        .profil-hero-badge {
+          display: inline-block;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.05em;
+          color: #a78bfa;
+          margin: 0 0 12px;
+          padding: 6px 14px;
+          background: rgba(139, 92, 255, 0.2);
+          border: 1px solid rgba(139, 92, 255, 0.4);
+          border-radius: 20px;
         }
         .profil-hero h1 {
           font-size: clamp(28px, 5vw, 36px);

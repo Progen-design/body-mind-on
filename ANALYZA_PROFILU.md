@@ -118,6 +118,9 @@ create policy "Users can CRUD own workouts" on workouts for all using (auth.uid(
 
 ## 7. Jak spustit migraci (workouts tabulka)
 
+**Chyba „Could not find duration_min column“:** Pokud už máš tabulku `workouts` bez sloupce `duration_min`, spusť v Supabase SQL Editoru:
+`supabase/migrations/20250219_fix_workouts_duration.sql`
+
 V Supabase Dashboard → SQL Editor spusť obsah souboru:
 `supabase/migrations/20250219_create_workouts.sql`
 

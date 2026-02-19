@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import BodyFigure from '../components/BodyFigure';
 import { supabase } from '../lib/supabaseClient';
 
 const WORKOUT_TYPES = [
@@ -105,6 +106,10 @@ export default function Profil() {
   const lastWeight = weightHistory.length ? weightHistory[weightHistory.length - 1]?.weight : null;
   const weightDiff = firstWeight != null && lastWeight != null ? (lastWeight - firstWeight).toFixed(1) : null;
 
+  const firstMetric = metrics.length > 0 ? metrics[metrics.length - 1] : null;
+  const latestMetric = metrics.length > 0 ? metrics[0] : null;
+  const hasBeforeAfter = firstMetric && latestMetric && (firstMetric.id !== latestMetric.id || firstMetric.weight_kg !== latestMetric.weight_kg);
+
   return (
     <>
       <Header />
@@ -167,6 +172,59 @@ export default function Profil() {
                   </span>
                   <span className="kpi-label">Změní od začátku</span>
                 </div>
+              </div>
+            </section>
+
+            {/* Postava – předtím vs teď */}
+            <section className="profil-section">
+              <h2>👤 Tvůj postup</h2>
+              <div className="body-figures-row">
+                {hasBeforeAfter ? (
+                  <>
+                    <div className="body-figure-card">
+                      <BodyFigure
+                        weight={firstMetric.weight_kg}
+                        height={firstMetric.height_cm}
+                        label="Předtím"
+                        size={110}
+                        id="before"
+                      />
+                      {firstMetric.created_at && (
+                        <span className="body-figure-date">{formatDate(firstMetric.created_at)}</span>
+                      )}
+                    </div>
+                    <div className="body-figures-arrow">→</div>
+                    <div className="body-figure-card">
+                      <BodyFigure
+                        weight={latestMetric.weight_kg}
+                        height={latestMetric.height_cm}
+                        label="Teď"
+                        size={110}
+                        id="after"
+                      />
+                      {latestMetric.created_at && (
+                        <span className="body-figure-date">{formatDate(latestMetric.created_at)}</span>
+                      )}
+                    </div>
+                  </>
+                ) : latestMetric ? (
+                  <div className="body-figure-card body-figure-single">
+                    <BodyFigure
+                      weight={latestMetric.weight_kg}
+                      height={latestMetric.height_cm}
+                      label="Tvůj profil"
+                      size={130}
+                      id="single"
+                    />
+                    <p className="body-figure-hint">Vyplň další měření v průběhu času – postava se bude měnit podle tvého pokroku.</p>
+                  </div>
+                ) : (
+                  <div className="body-figure-empty">
+                    <BodyFigure weight={70} height={175} label="Příklad" size={100} id="example" />
+                    <p>Vyplň dotazník, aby se ti zobrazila tvá postava a její změny v čase.</p>
+                    <Link href="/start" className="btn-primary">Vyplnit dotazník</Link>
+                  </div>
+                )}
               </div>
             </section>
 
@@ -526,6 +584,56 @@ export default function Profil() {
           margin-top: 4px;
           display: block;
         }
+        .body-figures-row {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 32px;
+          flex-wrap: wrap;
+          padding: 32px 24px;
+          background: rgba(24, 24, 36, 0.8);
+          border: 1px solid #2a2a3d;
+          border-radius: 16px;
+        }
+        .body-figure-card {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          padding: 20px;
+          background: rgba(30, 30, 46, 0.6);
+          border-radius: 12px;
+          border: 1px solid #2a2a3d;
+        }
+        .body-figure-card.body-figure-single {
+          padding: 24px 32px;
+        }
+        .body-figure-date {
+          font-size: 12px;
+          color: #71717a;
+        }
+        .body-figure-hint {
+          margin: 8px 0 0;
+          font-size: 13px;
+          color: #71717a;
+          text-align: center;
+          max-width: 260px;
+        }
+        .body-figures-arrow {
+          font-size: 28px;
+          color: #a78bfa;
+          font-weight: 300;
+        }
+        .body-figure-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 16px;
+          padding: 32px;
+          text-align: center;
+          color: #71717a;
+        }
+        .body-figure-empty p { margin: 0; }
         .weight-chart {
           background: rgba(24, 24, 36, 0.8);
           border: 1px solid #2a2a3d;

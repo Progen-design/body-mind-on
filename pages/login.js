@@ -26,14 +26,27 @@ export default function Login() {
     setLoading(true);
     setMessage('');
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
       if (error) throw error;
-      router.replace('/profil');
-      return;
+      // Po přihlášení necháme Supabase uložit session, pak přesměrujeme
+      if (data?.session) {
+        await new Promise((r) => setTimeout(r, 100));
+        router.replace('/profil');
+      } else {
+        setMessage('Přihlášení se nepodařilo. Zkus to znovu.');
+      }
     } catch (err) {
-      setMessage(err?.message === 'Invalid login credentials'
-        ? 'Nesprávný e-mail nebo heslo.'
-        : (err?.message || 'Přihlášení se nepodařilo.'));
+      const msg = err?.message || '';
+      if (msg === 'Invalid login credentials' || msg.includes('invalid') || msg.includes('credentials')) {
+        setMessage('Nesprávný e-mail nebo heslo.');
+      } else if (msg.includes('Supabase není nakonfigurován')) {
+        setMessage('Aplikace nemá nastavené připojení k databázi. Kontaktuj provozovatele.');
+      } else {
+        setMessage(msg || 'Přihlášení se nepodařilo.');
+      }
     } finally {
       setLoading(false);
     }

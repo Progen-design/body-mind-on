@@ -53,6 +53,7 @@ export default function Profil() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const [showWorkoutModal, setShowWorkoutModal] = useState(false);
   const [showWeightModal, setShowWeightModal] = useState(false);
@@ -69,32 +70,59 @@ export default function Profil() {
     weight_kg: '',
   });
 
-  const refetchProfile = () => {
-    if (!session?.access_token) return;
-    return fetch('/api/profile', {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    })
+  const fetchProfileWithToken = (accessToken) =>
+    fetch('/api/profile', { headers: { Authorization: `Bearer ${accessToken}` } })
       .then((res) => res.json())
       .then((data) => {
-        if (!data.error) setProfile(data);
+        if (data.error) {
+          setError(data.error);
+          return { error: data.error };
+        }
+        setProfile(data);
+        setError('');
+        return { ok: true };
       });
+
+  const refetchProfile = () => {
+    if (!session?.access_token) return Promise.resolve();
+    return fetchProfileWithToken(session.access_token);
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (!s) {
+    let cancelled = false;
+    (async () => {
+      const { data: { session: s }, error: sessionErr } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (sessionErr || !s) {
         router.replace('/login');
         return;
       }
-      setSession(s);
+      // Obnovení tokenu před načtením profilu (na webu často vyprší)
+      const { data: { session: fresh }, error: refreshErr } = await supabase.auth.refreshSession();
+      const sessionToUse = !refreshErr && fresh ? fresh : s;
+      setSession(sessionToUse);
 
-      fetch('/api/profile', {
-        headers: { Authorization: `Bearer ${s.access_token}` },
-      })
-        .then((res) => res.json())
-        .then((data) => setProfile(data))
-        .finally(() => setLoading(false));
-    });
+      let result = await fetchProfileWithToken(sessionToUse.access_token);
+      if (cancelled) return;
+      if (result?.error === 'Neplatná session' || result?.error === 'Nejste přihlášen') {
+        const { data: { session: retrySession } } = await supabase.auth.refreshSession();
+        if (retrySession) {
+          result = await fetchProfileWithToken(retrySession.access_token);
+          if (result?.ok) {
+            setSession(retrySession);
+          }
+        }
+        if (cancelled) return;
+        if (result?.error) {
+          await supabase.auth.signOut();
+          router.replace('/login');
+          return;
+        }
+      }
+    })()
+      .catch(() => { if (!cancelled) setError('Nepodařilo se načíst profil.'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [router]);
 
   async function handleLogout() {
@@ -205,7 +233,20 @@ export default function Profil() {
 
         {loading && <p className="loading">Načítám tvůj profil…</p>}
 
-        {!loading && (
+        {error && (
+          <div className="error-banner" role="alert">
+            <p>{error}</p>
+            <button type="button" onClick={() => { setError(''); setLoading(true); window.location.reload(); }} className="btn-ghost">
+              Obnovit stránku
+            </button>
+            <span> nebo </span>
+            <button type="button" onClick={handleLogout} className="btn-ghost">
+              Odhlásit se
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && (
           <>
             {/* POSTAVA */}
             <section className="card center">
@@ -380,6 +421,29 @@ export default function Profil() {
           text-align: center;
           color: #aaa;
         }
+
+        .error-banner {
+          background: rgba(231, 76, 60, 0.15);
+          border: 1px solid rgba(231, 76, 60, 0.4);
+          border-radius: 12px;
+          padding: 20px;
+          margin-bottom: 24px;
+          text-align: center;
+        }
+        .error-banner p {
+          color: #ff6b6b;
+          margin: 0 0 12px;
+        }
+        .error-banner .btn-ghost {
+          background: transparent;
+          border: 1px solid #555;
+          padding: 6px 12px;
+          border-radius: 8px;
+          color: #ccc;
+          cursor: pointer;
+          margin: 0 4px;
+        }
+        .error-banner span { color: #888; }
       `}</style>
     </>
   );

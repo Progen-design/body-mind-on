@@ -15,6 +15,21 @@ const WORKOUT_TYPES = [
   { id: 'ostatni', label: 'Ostatní', emoji: '✨' },
 ];
 
+// Odhad spálených kcal/min podle typu tréninku (trenérská praxe, průměrný intenzita)
+const KCAL_PER_MIN_BY_TYPE = {
+  silovy: 5,
+  kardio: 8,
+  strečink: 2.5,
+  joga: 3,
+  ostatni: 4,
+};
+function estimatedCalories(workout) {
+  const type = (workout.workout_type || 'ostatni').toLowerCase();
+  const min = Number(workout.duration_min) || 0;
+  const kcalPerMin = KCAL_PER_MIN_BY_TYPE[type] ?? KCAL_PER_MIN_BY_TYPE.ostatni;
+  return Math.round(min * kcalPerMin);
+}
+
 function formatDate(d) {
   if (!d) return '—';
   return new Date(d).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -157,8 +172,15 @@ export default function Profil() {
   weekStart.setDate(now.getDate() - daysToMonday);
   const weekStartStr = weekStart.toISOString().split('T')[0];
   const workoutDateNorm = (w) => (w.workout_date || '').toString().slice(0, 10);
-  const workoutsThisWeek = workouts.filter((w) => workoutDateNorm(w) >= weekStartStr).length;
+  const workoutsThisWeekList = workouts.filter((w) => workoutDateNorm(w) >= weekStartStr);
+  const workoutsThisWeek = workoutsThisWeekList.length;
   const totalWorkouts = workouts.length;
+
+  // Přepočty podle tréninků (trenérský model: čas v pohybu + odhad spálených kcal)
+  const totalMinutesThisWeek = workoutsThisWeekList.reduce((sum, w) => sum + (Number(w.duration_min) || 0), 0);
+  const estimatedCaloriesThisWeek = workoutsThisWeekList.reduce((sum, w) => sum + estimatedCalories(w), 0);
+  const totalMinutesAll = workouts.reduce((sum, w) => sum + (Number(w.duration_min) || 0), 0);
+  const estimatedCaloriesAll = workouts.reduce((sum, w) => sum + estimatedCalories(w), 0);
 
   const firstMetric = metrics.length > 0 ? metrics[metrics.length - 1] : null;
   const latestMetric = metrics.length > 0 ? metrics[0] : null;
@@ -282,7 +304,7 @@ export default function Profil() {
             <section className="profil-section">
               <h2>📊 Přehled pokroku</h2>
               <p className="profil-section-hint profil-section-hint-sub">
-                Portfolio se mění v reálném čase: po zápisu tréninku nebo přidání váhy se všechny hodnoty přepočítají automaticky.
+                Všechny hodnoty se přepočítávají z toho, co zapíšeš: typ tréninku a délka určí počet jednotek, odhad času i spálené energie. Váha a změna vycházejí z měření.
               </p>
               <div className="kpi-grid">
                 <div className="kpi-card kpi-card-workouts">
@@ -294,6 +316,16 @@ export default function Profil() {
                   <span className="kpi-icon">📈</span>
                   <span className="kpi-value">{totalWorkouts}</span>
                   <span className="kpi-label">Celkem tréninků</span>
+                </div>
+                <div className="kpi-card kpi-card-time">
+                  <span className="kpi-icon">⏱️</span>
+                  <span className="kpi-value">{totalMinutesThisWeek} min</span>
+                  <span className="kpi-label">Čas v pohybu (týden)</span>
+                </div>
+                <div className="kpi-card kpi-card-calories">
+                  <span className="kpi-icon">🔥</span>
+                  <span className="kpi-value">~{estimatedCaloriesThisWeek} kcal</span>
+                  <span className="kpi-label">Odhad spáleno (týden)</span>
                 </div>
                 <div className="kpi-card kpi-card-weight">
                   <span className="kpi-icon">⚖️</span>
@@ -308,6 +340,11 @@ export default function Profil() {
                   <span className="kpi-label">Změní od začátku</span>
                 </div>
               </div>
+              {(totalMinutesAll > 0 || estimatedCaloriesAll > 0) && (
+                <p className="profil-section-hint profil-kpi-total">
+                  Celkem od začátku: {totalMinutesAll} min v pohybu, odhad ~{estimatedCaloriesAll} kcal (výpočet z typu a délky tréninků).
+                </p>
+              )}
             </section>
 
             {/* Graf váhy – stejný zdroj jako postava a KPI (měření) */}
@@ -777,6 +814,11 @@ export default function Profil() {
         .kpi-card-weight .kpi-value { color: #86efac; }
         .kpi-card-trend { border-top: 2px solid rgba(251, 191, 36, 0.45); }
         .kpi-card-trend .kpi-value { color: #fde047; }
+        .kpi-card-time { border-top: 2px solid rgba(34, 197, 94, 0.4); }
+        .kpi-card-time .kpi-value { color: #86efac; }
+        .kpi-card-calories { border-top: 2px solid rgba(239, 68, 68, 0.4); }
+        .kpi-card-calories .kpi-value { color: #fca5a5; }
+        .profil-kpi-total { margin-top: 12px; font-size: 13px; color: #71717a; }
         .kpi-icon {
           font-size: 28px;
           display: block;

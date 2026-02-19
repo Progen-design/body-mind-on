@@ -101,8 +101,18 @@ export default function Profil() {
   const plans = profile?.plans || [];
   const workouts = profile?.workouts || [];
   const weightHistory = profile?.weight_history || [];
-  const stats = profile?.stats || {};
   const userName = profile?.user?.name || profile?.user?.email?.split('@')[0] || 'Sportovče';
+
+  // Počty tréninků vždy z aktuálního seznamu (po přidání/smazání se přepočítají)
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - daysToMonday);
+  const weekStartStr = weekStart.toISOString().split('T')[0];
+  const workoutDateNorm = (w) => (w.workout_date || '').toString().slice(0, 10);
+  const workoutsThisWeek = workouts.filter((w) => workoutDateNorm(w) >= weekStartStr).length;
+  const totalWorkouts = workouts.length;
 
   const firstWeight = weightHistory.length ? weightHistory[0]?.weight : null;
   const lastWeight = weightHistory.length ? weightHistory[weightHistory.length - 1]?.weight : null;
@@ -154,26 +164,28 @@ export default function Profil() {
               <div className="body-figures-row">
                 {hasBeforeAfter ? (
                   <>
-                    <div className="body-figure-card">
+                    <div className="body-figure-card body-figure-card-before">
                       <BodyFigure
                         weight={firstMetric.weight_kg}
                         height={firstMetric.height_cm}
                         label="Předtím"
                         size={110}
                         id="before"
+                        variant="before"
                       />
                       {firstMetric.created_at && (
                         <span className="body-figure-date">{formatDate(firstMetric.created_at)}</span>
                       )}
                     </div>
-                    <div className="body-figures-arrow">→</div>
-                    <div className="body-figure-card">
+                    <div className="body-figures-arrow" aria-hidden="true">→</div>
+                    <div className="body-figure-card body-figure-card-now">
                       <BodyFigure
                         weight={latestMetric.weight_kg}
                         height={latestMetric.height_cm}
                         label="Teď"
                         size={110}
                         id="after"
+                        variant="now"
                       />
                       {latestMetric.created_at && (
                         <span className="body-figure-date">{formatDate(latestMetric.created_at)}</span>
@@ -207,12 +219,12 @@ export default function Profil() {
               <div className="kpi-grid">
                 <div className="kpi-card">
                   <span className="kpi-icon">🏋️</span>
-                  <span className="kpi-value">{stats.workouts_this_week ?? 0}</span>
+                  <span className="kpi-value">{workoutsThisWeek}</span>
                   <span className="kpi-label">Tréninků tento týden</span>
                 </div>
                 <div className="kpi-card">
                   <span className="kpi-icon">📈</span>
-                  <span className="kpi-value">{stats.total_workouts ?? 0}</span>
+                  <span className="kpi-value">{totalWorkouts}</span>
                   <span className="kpi-label">Celkem tréninků</span>
                 </div>
                 <div className="kpi-card">
@@ -610,6 +622,14 @@ export default function Profil() {
         }
         .body-figure-card.body-figure-single {
           padding: 24px 32px;
+        }
+        .body-figure-card-now {
+          border-color: rgba(167, 139, 255, 0.5);
+          box-shadow: 0 0 24px rgba(139, 92, 255, 0.15);
+        }
+        .body-figure-card-before {
+          border-color: #2a2a3d;
+          opacity: 0.92;
         }
         .body-figure-date {
           font-size: 12px;

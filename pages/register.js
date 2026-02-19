@@ -46,10 +46,16 @@ export default function Register() {
           notes
         })
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'Neznámá chyba')
+      const text = await res.text()
+      let data
+      try {
+        data = text ? JSON.parse(text) : {}
+      } catch {
+        data = { error: res.ok ? 'Neplatná odpověď serveru.' : `Chyba ${res.status}` }
+      }
+      if (!res.ok) throw new Error(data?.error || data?.message || 'Neznámá chyba')
 
-      setMsg('Hotovo! Uloženo. Plán ti za chvíli pošleme na e-mail.')
+      setMsg(data?.message || 'Hotovo! Uloženo. Plán ti za chvíli pošleme na e-mail.')
       // případně router.push('/onboarding')
     } catch (err) {
       setMsg(`Chyba: ${err.message}`)

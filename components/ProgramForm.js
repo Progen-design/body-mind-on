@@ -13,32 +13,54 @@ export default function ProgramForm({ planType }) {
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
-      const res = await fetch("/api/assistant-intake", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, planType }),
+      const genderNorm = form.gender?.includes('Žena') || form.gender === 'female' ? 'female' : 'male';
+      const payload = {
+        name: form.name?.trim() || null,
+        email: form.email?.trim() || null,
+        gender: genderNorm,
+        age: form.age ? Number(form.age) : null,
+        height: form.height ? Number(form.height) : null,
+        weight: form.weight ? Number(form.weight) : null,
+        activity: 'stredne',
+        stress: 'medium',
+        worktype: 'office_it',
+        goal: 'udrzovani',
+        frequency: '2-3x týdně',
+        notes: form.notes?.trim() || null,
+        program: planType || 'START',
+      };
+
+      const res = await fetch('/api/body-metrics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
 
-      const text = await res.text(); // bezpečně přečteme
+      const text = await res.text();
       let data;
       try {
-        data = JSON.parse(text);
+        data = text ? JSON.parse(text) : {};
       } catch {
-        data = { success: res.ok }; // fallback
+        data = { error: res.ok ? 'Neplatná odpověď serveru.' : `Chyba ${res.status}` };
       }
 
-      if (data.success) setSuccess(true);
-      else alert("Odeslání se nezdařilo. Zkus to znovu.");
+      if (res.ok) {
+        setSuccess(true);
+      } else {
+        setError(data?.error || data?.message || 'Odeslání se nezdařilo. Zkus to znovu.');
+      }
     } catch (err) {
-      alert("Chyba připojení: " + err.message);
+      setError('Chyba připojení: ' + (err.message || 'Zkus to znovu.'));
     } finally {
       setLoading(false);
     }
@@ -47,8 +69,9 @@ export default function ProgramForm({ planType }) {
   if (success) {
     return (
       <div className="text-center text-green-400 mt-10">
-        <h3 className="text-2xl font-bold mb-2">✅ Plán odeslán!</h3>
-        <p>Tvůj osobní plán ti dorazí e-mailem během pár minut.</p>
+        <h3 className="text-2xl font-bold mb-2">✅ Registrace dokončena!</h3>
+        <p>Údaje byly uloženy a plán byl odeslán na e-mail. V e-mailu najdeš přihlašovací údaje – s nimi se můžeš přihlásit a vidět svůj profil.</p>
+        <a href="/login" className="inline-block mt-6 text-green-400 underline hover:no-underline">Přihlásit se do profilu →</a>
       </div>
     );
   }
@@ -125,12 +148,13 @@ export default function ProgramForm({ planType }) {
         className="p-4 mt-6 rounded-xl bg-neutral-800 border border-neutral-700 focus:ring-2 focus:ring-green-400 w-full"
       />
 
+      {error && <p className="mt-4 text-red-400 text-sm">{error}</p>}
       <button
         type="submit"
         disabled={loading}
         className="mt-8 w-full py-4 bg-green-500 hover:bg-green-600 text-black font-semibold rounded-xl text-lg shadow-lg shadow-green-800/30 transition-all"
       >
-        {loading ? "Odesílám..." : "Dokončit registraci"}
+        {loading ? 'Odesílám... (může trvat až minutu)' : 'Dokončit registraci'}
       </button>
     </form>
   );

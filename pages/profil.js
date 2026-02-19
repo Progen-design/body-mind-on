@@ -35,6 +35,18 @@ export default function Profil() {
   const [showWorkoutModal, setShowWorkoutModal] = useState(false);
   const [workoutForm, setWorkoutForm] = useState({ workout_date: new Date().toISOString().split('T')[0], workout_type: 'silovy', duration_min: 45, notes: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [showWeightModal, setShowWeightModal] = useState(false);
+  const [weightForm, setWeightForm] = useState({ date: new Date().toISOString().split('T')[0], weight_kg: '' });
+  const [weightError, setWeightError] = useState('');
+  const [submittingWeight, setSubmittingWeight] = useState(false);
+
+  const refetchProfile = () => {
+    if (!session?.access_token) return;
+    fetch('/api/profile', { headers: { Authorization: `Bearer ${session.access_token}` } })
+      .then((res) => res.json())
+      .then((data) => { if (!data.error) setProfile(data); })
+      .catch(() => {});
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
@@ -92,6 +104,35 @@ export default function Profil() {
       }
     } catch (err) {
       setWorkoutError(err.message);
+    }
+  }
+
+  async function handleAddWeight(e) {
+    e.preventDefault();
+    if (!session) return;
+    const w = Number(weightForm.weight_kg);
+    if (Number.isNaN(w) || w < 30 || w > 300) {
+      setWeightError('Váha musí být mezi 30 a 300 kg.');
+      return;
+    }
+    setSubmittingWeight(true);
+    setWeightError('');
+    try {
+      const res = await fetch('/api/quick-weight', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ weight_kg: w, date: weightForm.date || undefined }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setShowWeightModal(false);
+        setWeightForm({ date: new Date().toISOString().split('T')[0], weight_kg: '' });
+        refetchProfile();
+      } else setWeightError(json.error || 'Nepodařilo se uložit.');
+    } catch (err) {
+      setWeightError(err.message || 'Chyba');
+    } finally {
+      setSubmittingWeight(false);
     }
   }
 
@@ -161,6 +202,9 @@ export default function Profil() {
             {/* Postava – předtím vs teď (první sekce) */}
             <section className="profil-section">
               <h2>👤 Tvůj postup</h2>
+              <p className="profil-section-hint">
+                Váha a tvar postavy vycházejí z tvých záznamů měření. Přidej nové měření s jinou váhou a uvidíš pokrok – „Předtím“ vs „Teď“ se přepočítají automaticky.
+              </p>
               <div className="body-figures-row">
                 {hasBeforeAfter ? (
                   <>
@@ -186,6 +230,7 @@ export default function Profil() {
                         size={110}
                         id="after"
                         variant="now"
+                        weightDiff={weightDiff}
                       />
                       {latestMetric.created_at && (
                         <span className="body-figure-date">{formatDate(latestMetric.created_at)}</span>
@@ -272,6 +317,9 @@ export default function Profil() {
               <div className="action-buttons">
                 <button type="button" onClick={() => setShowWorkoutModal(true)} className="btn-primary">
                   <span>+</span> Zapsat trénink
+                </button>
+                <button type="button" onClick={() => { setShowWeightModal(true); setWeightError(''); setWeightForm({ date: new Date().toISOString().split('T')[0], weight_kg: latestMetric?.weight_kg != null ? String(latestMetric.weight_kg) : '' }); }} className="btn-primary btn-outline">
+                  ⚖️ Přidat váhu
                 </button>
                 <Link href="/start" className="btn-secondary">
                   Aktualizovat metriky
@@ -422,6 +470,50 @@ export default function Profil() {
             </div>
           </div>
         )}
+
+        {/* Modal – Přidat váhu */}
+        {showWeightModal && (
+          <div className="modal-overlay" onClick={() => { if (!submittingWeight) { setShowWeightModal(false); setWeightError(''); } }}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>⚖️ Přidat váhu</h3>
+                <button type="button" onClick={() => { if (!submittingWeight) { setShowWeightModal(false); setWeightError(''); } }} aria-label="Zavřít">×</button>
+              </div>
+              <form onSubmit={handleAddWeight} className="modal-form">
+                <div>
+                  <label>Datum měření</label>
+                  <input
+                    type="date"
+                    value={weightForm.date}
+                    onChange={(e) => setWeightForm((f) => ({ ...f, date: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <label>Váha (kg)</label>
+                  <input
+                    type="number"
+                    min={30}
+                    max={300}
+                    step={0.1}
+                    placeholder="např. 78.5"
+                    value={weightForm.weight_kg}
+                    onChange={(e) => setWeightForm((f) => ({ ...f, weight_kg: e.target.value }))}
+                    required
+                  />
+                </div>
+                {weightError && <p className="modal-error">{weightError}</p>}
+                <p className="modal-hint">Postava a graf váhy se hned přepočítají. Výška se bere z posledního měření.</p>
+                <div className="modal-actions">
+                  <button type="button" onClick={() => { if (!submittingWeight) { setShowWeightModal(false); setWeightError(''); } }} className="btn-ghost">Zrušit</button>
+                  <button type="submit" disabled={submittingWeight} className="btn-primary">
+                    {submittingWeight ? 'Ukládám…' : 'Uložit váhu'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </main>
 
       <Footer />
@@ -528,6 +620,15 @@ export default function Profil() {
           border-color: #52525b;
           background: rgba(255,255,255,0.03);
         }
+        .btn-outline {
+          background: transparent;
+          border: 2px solid rgba(155, 92, 255, 0.6);
+          color: #c4b5fd;
+        }
+        .btn-outline:hover {
+          background: rgba(155, 92, 255, 0.15);
+          border-color: #9b5cff;
+        }
         .profil-loading {
           text-align: center;
           padding: 64px 24px;
@@ -564,6 +665,13 @@ export default function Profil() {
           font-weight: 600;
           color: #e4e4e7;
           margin: 0 0 16px;
+        }
+        .profil-section-hint {
+          font-size: 14px;
+          color: #a1a1aa;
+          margin: -8px 0 20px;
+          line-height: 1.5;
+          max-width: 560px;
         }
         .kpi-grid {
           display: grid;
@@ -844,6 +952,12 @@ export default function Profil() {
           border-radius: 8px;
           color: #f87171;
           font-size: 14px;
+        }
+        .modal-hint {
+          margin: 0 0 16px;
+          font-size: 13px;
+          color: #71717a;
+          line-height: 1.4;
         }
         .modal-actions {
           display: flex;

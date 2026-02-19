@@ -1,27 +1,33 @@
-// /components/BodyFigure.js – Vizualizace postavy (váha, výška → BMI), varianty „předtím“ / „teď“
-function bmiToBodyType(weight, height) {
-  if (!weight || !height || height <= 0) return 0.5;
-  const heightM = height / 100;
-  const bmi = weight / (heightM * heightM);
-  if (bmi < 18) return 0.2;
-  if (bmi < 21) return 0.35;
-  if (bmi < 24) return 0.5;
-  if (bmi < 27) return 0.65;
-  if (bmi < 30) return 0.8;
-  return 0.95;
+// /components/BodyFigure.js – Atraktivní vizualizace postavy (BMI → tvar), varianty Předtím / Teď
+function bmiToShape(weight, height) {
+  if (!weight || !height || height <= 0) return { torso: 0.5, legs: 0.5 };
+  const bmi = weight / ((height / 100) ** 2);
+  const t = bmi < 18 ? 0.15 : bmi < 22 ? 0.35 : bmi < 26 ? 0.5 : bmi < 30 ? 0.7 : 0.9;
+  const l = bmi < 20 ? 0.3 : bmi < 26 ? 0.5 : 0.75;
+  return { torso: t, legs: l };
 }
 
-export default function BodyFigure({ weight, height, label, size = 120, id, variant }) {
-  const type = bmiToBodyType(weight, height);
-  const torsoW = 26 + type * 22;
-  const headR = 14;
-  const legW = 10 + type * 5;
+export default function BodyFigure({ weight, height, label, size = 120, id, variant, weightDiff }) {
+  const { torso, legs } = bmiToShape(weight, height);
   const gradId = id ? `bodyGrad-${id}` : 'bodyGrad';
   const isBefore = variant === 'before';
   const isNow = variant === 'now';
 
+  const w = 80;
+  const h = 120;
+  const cx = w / 2;
+  const headR = 14;
+  const shoulderY = headR + 18;
+  const waistY = headR + 52;
+  const hipY = headR + 72;
+  const footY = h - 8;
+
+  const shoulderW = 22 + torso * 18;
+  const waistW = 16 + torso * 16;
+  const hipW = 18 + torso * 14;
+  const thighW = 8 + legs * 8;
+
   const fillUrl = `url(#${gradId})`;
-  const strokeUrl = `url(#${gradId})`;
 
   return (
     <div
@@ -29,9 +35,9 @@ export default function BodyFigure({ weight, height, label, size = 120, id, vari
       title={weight && height ? `BMI: ${(weight / ((height / 100) ** 2)).toFixed(1)}` : ''}
     >
       <svg
-        viewBox="0 0 100 160"
+        viewBox={`0 0 ${w} ${h}`}
         width={size}
-        height={(size * 160) / 100}
+        height={(size * h) / w}
         className="body-figure-svg"
         aria-hidden
       >
@@ -39,20 +45,20 @@ export default function BodyFigure({ weight, height, label, size = 120, id, vari
           <linearGradient id={gradId} x1="0%" y1="0%" x2="0%" y2="100%">
             {isBefore ? (
               <>
-                <stop offset="0%" stopColor="#64748b" stopOpacity="0.85" />
-                <stop offset="100%" stopColor="#475569" stopOpacity="0.6" />
+                <stop offset="0%" stopColor="#94a3b8" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="#64748b" stopOpacity="0.7" />
               </>
             ) : (
               <>
-                <stop offset="0%" stopColor="#c4b5fd" stopOpacity="0.95" />
-                <stop offset="50%" stopColor="#a78bfa" stopOpacity="0.9" />
-                <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.85" />
+                <stop offset="0%" stopColor="#e9d5ff" stopOpacity="0.95" />
+                <stop offset="40%" stopColor="#c4b5fd" stopOpacity="0.95" />
+                <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.9" />
               </>
             )}
           </linearGradient>
           {isNow && (
-            <filter id={`glow-${id || 'x'}`} x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="2" result="blur" />
+            <filter id={`glow-${id || 'x'}`} x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="1.5" result="blur" />
               <feMerge>
                 <feMergeNode in="blur" />
                 <feMergeNode in="SourceGraphic" />
@@ -61,52 +67,34 @@ export default function BodyFigure({ weight, height, label, size = 120, id, vari
           )}
         </defs>
 
-        <g className={isNow ? 'body-figure-glow' : ''} style={isNow ? { filter: `url(#glow-${id || 'x'})` } : {}}>
-          {/* Hlava */}
-          <circle cx="50" cy={headR + 4} r={headR} fill={fillUrl} />
-
-          {/* Krk */}
+        <g style={isNow ? { filter: `url(#glow-${id || 'x'})` } : {}}>
+          <circle cx={cx} cy={headR} r={headR * 0.95} fill={fillUrl} />
           <path
-            d={`M ${50 - 7} ${headR * 2 + 2} L ${50 + 7} ${headR * 2 + 2} L ${50 + torsoW * 0.5} ${headR * 2 + 22} L ${50 - torsoW * 0.5} ${headR * 2 + 22} Z`}
+            d={`
+              M ${cx - 7} ${headR * 2 - 2}
+              L ${cx - shoulderW} ${shoulderY}
+              Q ${cx - waistW} ${waistY} ${cx - hipW * 0.85} ${hipY}
+              L ${cx - thighW} ${footY - 4}
+              Q ${cx - thighW * 0.5} ${hipY + 24} ${cx} ${hipY + 16}
+              Q ${cx + thighW * 0.5} ${hipY + 24} ${cx + thighW} ${footY - 4}
+              L ${cx + hipW * 0.85} ${hipY}
+              Q ${cx + waistW} ${waistY} ${cx + shoulderW} ${shoulderY}
+              L ${cx + 7} ${headR * 2 - 2}
+              Z
+            `}
             fill={fillUrl}
           />
-
-          {/* Trup – zaoblený tvar */}
-          <path
-            d={`M ${50 - torsoW * 0.95} ${headR * 2 + 24} 
-                Q ${50 - torsoW} ${headR * 2 + 50} ${50 - torsoW * 0.85} ${headR * 2 + 72}
-                Q ${50} ${headR * 2 + 82} ${50 + torsoW * 0.85} ${headR * 2 + 72}
-                Q ${50 + torsoW} ${headR * 2 + 50} ${50 + torsoW * 0.95} ${headR * 2 + 24} Z`}
-            fill={fillUrl}
-          />
-
-          {/* Paže – plynule od ramen */}
-          <path
-            d={`M ${50 - torsoW * 0.95} ${headR * 2 + 32} 
-                Q ${50 - torsoW - 8} ${headR * 2 + 38} ${50 - torsoW - 4} ${headR * 2 + 58}
-                Q ${50 - torsoW} ${headR * 2 + 70} ${50 - torsoW + 2} ${headR * 2 + 72}`}
-            stroke={strokeUrl}
-            strokeWidth="7"
-            strokeLinecap="round"
-            fill="none"
-          />
-          <path
-            d={`M ${50 + torsoW * 0.95} ${headR * 2 + 32} 
-                Q ${50 + torsoW + 8} ${headR * 2 + 38} ${50 + torsoW + 4} ${headR * 2 + 58}
-                Q ${50 + torsoW} ${headR * 2 + 70} ${50 + torsoW - 2} ${headR * 2 + 72}`}
-            stroke={strokeUrl}
-            strokeWidth="7"
-            strokeLinecap="round"
-            fill="none"
-          />
-
-          {/* Nohy – jednoduché zaoblené tvary */}
-          <ellipse cx={50 - 14} cy={headR * 2 + 118} rx={legW} ry={20} fill={fillUrl} />
-          <ellipse cx={50 + 14} cy={headR * 2 + 118} rx={legW} ry={20} fill={fillUrl} />
         </g>
       </svg>
       {label && <span className="body-figure-label">{label}</span>}
-      {weight != null && <span className="body-figure-meta">{weight} kg</span>}
+      <span className="body-figure-meta">
+        {weight != null && <>{weight} kg</>}
+        {isNow && weightDiff != null && Number(weightDiff) !== 0 && (
+          <span className={`body-figure-delta ${Number(weightDiff) < 0 ? 'body-figure-delta--loss' : 'body-figure-delta--gain'}`}>
+            {Number(weightDiff) > 0 ? '+' : ''}{weightDiff} kg
+          </span>
+        )}
+      </span>
 
       <style jsx>{`
         .body-figure-wrap {
@@ -117,13 +105,10 @@ export default function BodyFigure({ weight, height, label, size = 120, id, vari
           transition: transform 0.2s ease;
         }
         .body-figure-wrap.body-figure-before {
-          opacity: 0.82;
-        }
-        .body-figure-wrap.body-figure-before .body-figure-svg {
-          filter: none;
+          opacity: 0.85;
         }
         .body-figure-wrap.body-figure-now .body-figure-svg {
-          filter: drop-shadow(0 6px 20px rgba(139, 92, 255, 0.4));
+          filter: drop-shadow(0 8px 24px rgba(139, 92, 255, 0.35));
         }
         .body-figure-svg {
           display: block;
@@ -141,9 +126,24 @@ export default function BodyFigure({ weight, height, label, size = 120, id, vari
           font-size: 12px;
           color: #71717a;
           font-weight: 500;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
         }
-        .body-figure-before .body-figure-meta {
-          color: #64748b;
+        .body-figure-delta {
+          font-size: 11px;
+          padding: 3px 10px;
+          border-radius: 20px;
+          font-weight: 700;
+        }
+        .body-figure-delta--loss {
+          background: rgba(34, 197, 94, 0.25);
+          color: #4ade80;
+        }
+        .body-figure-delta--gain {
+          background: rgba(251, 146, 60, 0.25);
+          color: #fb923c;
         }
       `}</style>
     </div>

@@ -147,7 +147,11 @@ export default function Profil() {
       if (res.ok) {
         setShowWeightModal(false);
         setWeightForm({ date: new Date().toISOString().split('T')[0], weight_kg: '' });
-        refetchProfile();
+        // Okamžitá aktualizace postavy a grafu: přidáme nové měření do stavu a pak refetch
+        if (json.metric) {
+          setProfile((p) => ({ ...p, body_metrics: [json.metric, ...(p.body_metrics || [])] }));
+        }
+        await refetchProfile();
       } else setWeightError(json.error || 'Nepodařilo se uložit.');
     } catch (err) {
       setWeightError(err.message || 'Chyba');
@@ -239,7 +243,7 @@ export default function Profil() {
             <section className="profil-section">
               <h2>👤 Tvůj postup</h2>
               <p className="profil-section-hint">
-                Tvar a postava se odvíjejí od tvého profilu (pohlaví, cíl) a váhy z měření. Přidej nové měření s jinou váhou a uvidíš pokrok – „Předtím“ vs „Teď“ se přepočítají automaticky.
+                Tvar a postava se odvíjejí od tvého profilu (pohlaví, cíl) a váhy z měření. Přidej nové měření – „Předtím“ vs „Teď“ i graf váhy se přepočítají v reálném čase.
               </p>
               <div className="body-figures-row">
                 {hasBeforeAfter ? (
@@ -304,7 +308,7 @@ export default function Profil() {
             <section className="profil-section">
               <h2>📊 Přehled pokroku</h2>
               <p className="profil-section-hint profil-section-hint-sub">
-                Všechny hodnoty se přepočítávají z toho, co zapíšeš: typ tréninku a délka určí počet jednotek, odhad času i spálené energie. Váha a změna vycházejí z měření.
+                Hodnoty se počítají v reálném čase z toho, co zapíšeš: typ tréninku a délka určí počet jednotek, odhad času i spálené energie. Váha a změna vycházejí z měření – po přidání záznamu se přehled, postava i graf hned aktualizují.
               </p>
               <div className="kpi-grid">
                 <div className="kpi-card kpi-card-workouts">
@@ -364,7 +368,7 @@ export default function Profil() {
               return (
                 <section className="profil-section" key="weight-chart">
                   <h2>⚖️ Vývoj váhy</h2>
-                  <p className="profil-section-hint profil-section-hint-sub">Podle tvých záznamů měření (stejná data jako „Předtím“ / „Teď“).</p>
+                  <p className="profil-section-hint profil-section-hint-sub">Stejná data jako postava – přepočet v reálném čase při každém novém měření.</p>
                   <div className="weight-chart">
                     <svg className="weight-chart-svg" viewBox={`0 0 ${chartW} ${chartH}`} preserveAspectRatio="xMidYMid meet">
                       <defs>

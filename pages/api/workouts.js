@@ -1,6 +1,14 @@
 // /pages/api/workouts.js
 import { supabaseServer } from '../../lib/supabaseServer';
 
+const WORKOUT_TYPE_LABELS = {
+  silovy: 'Silový',
+  kardio: 'Kardio',
+  strečink: 'Strečink',
+  joga: 'Jóga',
+  ostatni: 'Ostatní',
+};
+
 function getAuthUser(req) {
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
@@ -54,10 +62,12 @@ export default async function handler(req, res) {
       if (!workout_date) {
         return res.status(400).json({ error: 'workout_date is required' });
       }
+      const typeVal = workout_type != null ? String(workout_type).trim() : null;
       const payload = {
         user_id: user.id,
         workout_date: String(workout_date).trim(),
-        workout_type: workout_type != null ? String(workout_type).trim() : null,
+        workout_type: typeVal,
+        workout_name: typeVal ? (WORKOUT_TYPE_LABELS[typeVal] || typeVal) : 'Ostatní',
         duration_min: duration_min != null ? parseInt(duration_min, 10) : null,
         notes: notes != null ? String(notes).trim() : null,
       };

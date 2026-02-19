@@ -1,4 +1,5 @@
 // /pages/profil.js – Můj profil: pokrok, tréninky, metriky
+import { getProgressData } from '../lib/progress';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';

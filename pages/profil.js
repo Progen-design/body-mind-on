@@ -147,6 +147,7 @@ export default function Profil() {
         ...p,
         workouts: [json.workout, ...(p.workouts || [])],
       }));
+      setWorkoutForm({ workout_date: new Date().toISOString().split('T')[0], workout_type: 'silovy', duration_min: 45, notes: '' });
       setShowWorkoutModal(false);
       await refetchProfile();
     }
@@ -174,6 +175,7 @@ export default function Profil() {
         ...p,
         body_metrics: [json.metric, ...(p.body_metrics || [])],
       }));
+      setWeightForm((f) => ({ ...f, weight_kg: '' }));
       setShowWeightModal(false);
       await refetchProfile();
     }
@@ -192,11 +194,26 @@ export default function Profil() {
       ? (latestMetric.weight_kg - firstMetric.weight_kg).toFixed(1)
       : null;
 
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - daysToMonday);
+  const weekStartStr = weekStart.toISOString().split('T')[0];
+  const workoutDateStr = (w) => (w.workout_date || '').toString().slice(0, 10);
+  const workoutsThisWeek = workouts.filter((w) => workoutDateStr(w) >= weekStartStr);
+  const totalMinutesThisWeek = workoutsThisWeek.reduce(
+    (sum, w) => sum + (Number(w.duration_min) || 0),
+    0
+  );
+  const estimatedCaloriesThisWeek = workoutsThisWeek.reduce(
+    (sum, w) => sum + estimatedCalories(w),
+    0
+  );
   const totalMinutes = workouts.reduce(
     (sum, w) => sum + (Number(w.duration_min) || 0),
     0
   );
-
   const estimatedCaloriesAll = workouts.reduce(
     (sum, w) => sum + estimatedCalories(w),
     0
@@ -248,71 +265,190 @@ export default function Profil() {
 
         {!loading && !error && (
           <>
+            <p className="trainer-hint">
+              Hodnoty se počítají automaticky z tvých záznamů – jako u trenéra. Přidej trénink nebo váhu a přehled se hned aktualizuje.
+            </p>
+
             {/* POSTAVA */}
             <section className="card center">
               <h2>Tvůj progres</h2>
 
-              {latestMetric && (
-                <BodyFigure
-                  weight={latestMetric.weight_kg}
-                  height={latestMetric.height_cm}
-                  gender={latestMetric.gender}
-                  goal={latestMetric.goal}
-                  size={150}
-                />
-              )}
-
-              {weightDiff && (
-                <p className="trend">
-                  Změna od začátku:{' '}
-                  <strong>
-                    {weightDiff > 0 ? '+' : ''}
-                    {weightDiff} kg
-                  </strong>
-                </p>
+              {latestMetric ? (
+                <>
+                  <BodyFigure
+                    weight={latestMetric.weight_kg}
+                    height={latestMetric.height_cm}
+                    gender={latestMetric.gender}
+                    goal={latestMetric.goal}
+                    size={150}
+                  />
+                  {currentWeight != null && <p className="weight-now">{currentWeight} kg</p>}
+                  {weightDiff != null && (
+                    <p className="trend">
+                      Změna od začátku:{' '}
+                      <strong>
+                        {Number(weightDiff) > 0 ? '+' : ''}
+                        {weightDiff} kg
+                      </strong>
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className="empty-progress">Zatím nemáš záznam měření. Klikni na „Přidat váhu“ a uvidíš zde postavu i trend.</p>
               )}
             </section>
 
-            {/* KPI */}
-            <section className="kpis">
-              <div className="kpi">
-                <span>🏋️</span>
-                <h3>{workouts.length}</h3>
-                <p>Tréninků</p>
-              </div>
-
-              <div className="kpi">
-                <span>⏱️</span>
-                <h3>{totalMinutes} min</h3>
-                <p>V pohybu</p>
-              </div>
-
-              <div className="kpi">
-                <span>🔥</span>
-                <h3>{estimatedCaloriesAll}</h3>
-                <p>Spáleno (odhad)</p>
-              </div>
-
-              <div className="kpi">
-                <span>⚖️</span>
-                <h3>{currentWeight ?? '—'} kg</h3>
-                <p>Aktuální váha</p>
+            {/* RYCHLÉ AKCE */}
+            <section className="card actions">
+              <h2>Rychlé akce</h2>
+              <div className="action-buttons">
+                <button type="button" onClick={() => setShowWorkoutModal(true)} className="btn-primary">
+                  + Zapsat trénink
+                </button>
+                <button type="button" onClick={() => setShowWeightModal(true)} className="btn-secondary">
+                  ⚖️ Přidat váhu
+                </button>
               </div>
             </section>
 
-            {/* GRAF */}
-            {chartWeightData.length >= 2 && (
-              <section className="card">
-                <h2>Vývoj váhy</h2>
-                <div className="chart">
-                  {chartWeightData.map((p) => (
-                    <div key={p.date} className="chart-item">
-                      <strong>{p.weight}</strong>
-                      <span>{formatShortDate(p.date)}</span>
-                    </div>
-                  ))}
+            {/* KPI – tento týden + celkem */}
+            <section className="kpi-section">
+              <h2>Přehled jako u trenéra</h2>
+              <p className="kpi-sub">Tento týden / Celkem</p>
+              <div className="kpis">
+                <div className="kpi">
+                  <span className="kpi-icon">🏋️</span>
+                  <h3>{workoutsThisWeek.length}</h3>
+                  <p className="kpi-label">Tréninků</p>
+                  <p className="kpi-total">{workouts.length} celkem</p>
                 </div>
+                <div className="kpi">
+                  <span className="kpi-icon">⏱️</span>
+                  <h3>{totalMinutesThisWeek} min</h3>
+                  <p className="kpi-label">V pohybu</p>
+                  <p className="kpi-total">{totalMinutes} min celkem</p>
+                </div>
+                <div className="kpi">
+                  <span className="kpi-icon">🔥</span>
+                  <h3>~{estimatedCaloriesThisWeek}</h3>
+                  <p className="kpi-label">Spáleno (odhad)</p>
+                  <p className="kpi-total">~{estimatedCaloriesAll} kcal celkem</p>
+                </div>
+                <div className="kpi">
+                  <span className="kpi-icon">⚖️</span>
+                  <h3>{currentWeight != null ? `${currentWeight} kg` : '—'}</h3>
+                  <p className="kpi-label">Aktuální váha</p>
+                  <p className="kpi-total">z měření</p>
+                </div>
+              </div>
+            </section>
+
+            {/* GRAF VÁHY – line chart */}
+            {chartWeightData.length >= 1 && (
+              <section className="card chart-section">
+                <h2>Vývoj váhy</h2>
+                <p className="chart-hint">Podle tvých záznamů měření. Přidej váhu a graf se přepočítá.</p>
+                {chartWeightData.length >= 2 ? (
+                  <>
+                    <div className="chart-svg-wrap">
+                      <svg className="chart-svg" viewBox="0 0 560 200" preserveAspectRatio="xMidYMid meet">
+                        <defs>
+                          <linearGradient id="weightGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="#9b5cff" stopOpacity="0.35" />
+                            <stop offset="100%" stopColor="#7c3aed" stopOpacity="0" />
+                          </linearGradient>
+                        </defs>
+                        {(() => {
+                          const pad = { t: 20, r: 20, b: 36, l: 44 };
+                          const W = 560 - pad.l - pad.r;
+                          const H = 200 - pad.t - pad.b;
+                          const minW = Math.min(...chartWeightData.map((x) => x.weight));
+                          const maxW = Math.max(...chartWeightData.map((x) => x.weight));
+                          const range = maxW - minW || 1;
+                          const pts = chartWeightData.map((p, i) => {
+                            const x = pad.l + (chartWeightData.length > 1 ? (i / (chartWeightData.length - 1)) * W : 0);
+                            const y = pad.t + H - ((p.weight - minW) / range) * H;
+                            return [x, y, p.weight, p.date];
+                          });
+                          const pathD = pts.length ? `M ${pts.map(([x, y]) => `${x} ${y}`).join(' L ')}` : '';
+                          const areaD = pathD ? `${pathD} L ${pad.l + W} ${pad.t + H} L ${pad.l} ${pad.t + H} Z` : '';
+                          return (
+                            <>
+                              {areaD && <path fill="url(#weightGrad)" d={areaD} />}
+                              <path fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" d={pathD} />
+                              {pts.map(([x, y, weight, date], i) => (
+                                <g key={`${date}-${i}`}>
+                                  <circle cx={x} cy={y} r="4" fill="#a78bfa" />
+                                  <title>{`${formatShortDate(date)}: ${weight} kg`}</title>
+                                </g>
+                              ))}
+                            </>
+                          );
+                        })()}
+                      </svg>
+                    </div>
+                    <div className="chart-labels">
+                      {chartWeightData.map((p, i) => (
+                        <div key={`${p.date}-${i}`} className="chart-label-item">
+                          <span className="chart-value">{p.weight} kg</span>
+                          <span className="chart-date">{formatShortDate(p.date)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="chart-single">
+                    <span className="chart-value">{chartWeightData[0].weight} kg</span>
+                    <span className="chart-date">{formatShortDate(chartWeightData[0].date)}</span>
+                    <p className="chart-hint">Přidej další měření a uvidíš trend.</p>
+                  </div>
+                )}
               </section>
+            )}
+
+            {/* Modaly */}
+            {showWorkoutModal && (
+              <div className="modal-overlay" onClick={() => setShowWorkoutModal(false)}>
+                <div className="modal" onClick={(e) => e.stopPropagation()}>
+                  <h3>Zapsat trénink</h3>
+                  <form onSubmit={handleAddWorkout}>
+                    <label>Datum</label>
+                    <input type="date" value={workoutForm.workout_date} onChange={(e) => setWorkoutForm((f) => ({ ...f, workout_date: e.target.value }))} required />
+                    <label>Typ</label>
+                    <select value={workoutForm.workout_type} onChange={(e) => setWorkoutForm((f) => ({ ...f, workout_type: e.target.value }))}>
+                      {WORKOUT_TYPES.map((t) => (
+                        <option key={t.id} value={t.id}>{t.emoji} {t.label}</option>
+                      ))}
+                    </select>
+                    <label>Délka (min)</label>
+                    <input type="number" min={1} value={workoutForm.duration_min} onChange={(e) => setWorkoutForm((f) => ({ ...f, duration_min: Number(e.target.value) || 0 }))} />
+                    <label>Poznámka (volitelné)</label>
+                    <input type="text" value={workoutForm.notes} onChange={(e) => setWorkoutForm((f) => ({ ...f, notes: e.target.value }))} placeholder="např. nohy" />
+                    <div className="modal-actions">
+                      <button type="button" onClick={() => setShowWorkoutModal(false)}>Zrušit</button>
+                      <button type="submit">Uložit</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+            {showWeightModal && (
+              <div className="modal-overlay" onClick={() => setShowWeightModal(false)}>
+                <div className="modal" onClick={(e) => e.stopPropagation()}>
+                  <h3>Přidat váhu</h3>
+                  <form onSubmit={handleAddWeight}>
+                    <label>Datum měření</label>
+                    <input type="date" value={weightForm.date} onChange={(e) => setWeightForm((f) => ({ ...f, date: e.target.value }))} required />
+                    <label>Váha (kg)</label>
+                    <input type="number" min={30} max={300} step={0.1} placeholder="např. 78.5" value={weightForm.weight_kg} onChange={(e) => setWeightForm((f) => ({ ...f, weight_kg: e.target.value }))} required />
+                    <p className="modal-hint">Graf a přehled se přepočítají hned.</p>
+                    <div className="modal-actions">
+                      <button type="button" onClick={() => setShowWeightModal(false)}>Zrušit</button>
+                      <button type="submit">Uložit</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
             )}
           </>
         )}
@@ -355,6 +491,31 @@ export default function Profil() {
           margin-top: 14px;
         }
 
+        .trainer-hint {
+          text-align: center;
+          color: #94a3b8;
+          font-size: 14px;
+          margin: -20px 0 32px;
+          max-width: 520px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+
+        .weight-now {
+          font-size: 20px;
+          font-weight: 700;
+          margin: 8px 0 0;
+          color: #e9d5ff;
+        }
+        .empty-progress {
+          color: #64748b;
+          font-size: 15px;
+          margin-top: 16px;
+          max-width: 320px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+
         .logout {
           margin-top: 20px;
           background: transparent;
@@ -378,10 +539,45 @@ export default function Profil() {
         }
 
         .trend {
-          margin-top: 20px;
+          margin-top: 8px;
           font-size: 18px;
         }
 
+        .actions {
+          margin-bottom: 32px;
+        }
+        .actions h2 { margin-bottom: 16px; }
+        .action-buttons {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+        .btn-primary {
+          background: linear-gradient(135deg, #7c3aed, #9b5cff);
+          color: #fff;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 12px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .btn-secondary {
+          background: rgba(255,255,255,0.08);
+          color: #e9d5ff;
+          border: 1px solid #6d28d9;
+          padding: 12px 24px;
+          border-radius: 12px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .kpi-section { margin-bottom: 40px; }
+        .kpi-section h2 { margin-bottom: 4px; }
+        .kpi-sub {
+          color: #64748b;
+          font-size: 13px;
+          margin-bottom: 20px;
+        }
         .kpis {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -397,24 +593,114 @@ export default function Profil() {
           backdrop-filter: blur(20px);
         }
 
-        .kpi span {
-          font-size: 30px;
+        .kpi-icon {
+          font-size: 28px;
+          display: block;
+          margin-bottom: 4px;
         }
-
         .kpi h3 {
-          margin: 10px 0;
-          font-size: 24px;
+          margin: 4px 0 2px;
+          font-size: 22px;
         }
+        .kpi-label { color: #94a3b8; font-size: 13px; margin: 0; }
+        .kpi-total { color: #64748b; font-size: 11px; margin-top: 4px; }
 
-        .chart {
+        .chart-section { margin-bottom: 40px; }
+        .chart-hint {
+          color: #64748b;
+          font-size: 13px;
+          margin: 4px 0 16px;
+        }
+        .chart-svg-wrap {
+          width: 100%;
+          max-width: 560px;
+          margin: 0 auto 16px;
+        }
+        .chart-svg {
+          width: 100%;
+          height: auto;
+          display: block;
+        }
+        .chart-labels {
           display: flex;
-          gap: 20px;
-          overflow-x: auto;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 16px 24px;
         }
-
-        .chart-item {
+        .chart-label-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          min-width: 64px;
+        }
+        .chart-value {
+          font-weight: 700;
+          font-size: 16px;
+          color: #e9d5ff;
+        }
+        .chart-date {
+          font-size: 12px;
+          color: #64748b;
+          margin-top: 2px;
+        }
+        .chart-single {
           text-align: center;
-          min-width: 80px;
+          padding: 20px;
+        }
+        .chart-single .chart-value { font-size: 24px; }
+        .chart-single .chart-date { display: block; margin-top: 4px; }
+
+        .modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.7);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+        }
+        .modal {
+          background: #1a1a2e;
+          border-radius: 20px;
+          padding: 28px;
+          max-width: 400px;
+          width: 100%;
+          border: 1px solid #333;
+        }
+        .modal h3 { margin: 0 0 20px; }
+        .modal label { display: block; margin: 12px 0 4px; color: #94a3b8; font-size: 14px; }
+        .modal input, .modal select {
+          width: 100%;
+          padding: 10px 12px;
+          border-radius: 10px;
+          border: 1px solid #444;
+          background: #0f0f1a;
+          color: #fff;
+          font-size: 16px;
+          box-sizing: border-box;
+        }
+        .modal-hint { color: #64748b; font-size: 13px; margin: 12px 0; }
+        .modal-actions {
+          display: flex;
+          gap: 12px;
+          margin-top: 24px;
+        }
+        .modal-actions button {
+          padding: 10px 20px;
+          border-radius: 10px;
+          cursor: pointer;
+          font-weight: 600;
+        }
+        .modal-actions button[type="button"] {
+          background: transparent;
+          border: 1px solid #555;
+          color: #94a3b8;
+        }
+        .modal-actions button[type="submit"] {
+          background: linear-gradient(135deg, #7c3aed, #9b5cff);
+          border: none;
+          color: #fff;
         }
 
         .loading {

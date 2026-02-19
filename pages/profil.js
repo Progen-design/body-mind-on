@@ -155,13 +155,21 @@ export default function Profil() {
   const workoutsThisWeek = workouts.filter((w) => workoutDateNorm(w) >= weekStartStr).length;
   const totalWorkouts = workouts.length;
 
-  const firstWeight = weightHistory.length ? weightHistory[0]?.weight : null;
-  const lastWeight = weightHistory.length ? weightHistory[weightHistory.length - 1]?.weight : null;
-  const weightDiff = firstWeight != null && lastWeight != null ? (lastWeight - firstWeight).toFixed(1) : null;
-
   const firstMetric = metrics.length > 0 ? metrics[metrics.length - 1] : null;
   const latestMetric = metrics.length > 0 ? metrics[0] : null;
   const hasBeforeAfter = firstMetric && latestMetric && (firstMetric.id !== latestMetric.id || firstMetric.weight_kg !== latestMetric.weight_kg);
+
+  // Aktuální váha a změna od začátku = stejný zdroj jako postavy (první vs poslední měření), aby vše sedělo
+  const currentWeight = latestMetric?.weight_kg ?? (weightHistory.length ? weightHistory[weightHistory.length - 1]?.weight : null);
+  const weightDiff = (latestMetric?.weight_kg != null && firstMetric?.weight_kg != null)
+    ? (latestMetric.weight_kg - firstMetric.weight_kg).toFixed(1)
+    : null;
+
+  // Graf váhy z měření (chronologicky), aby odpovídal postavě a KPI
+  const chartWeightData = metrics
+    .filter((m) => m.weight_kg != null && m.created_at)
+    .map((m) => ({ date: m.created_at.split('T')[0], weight: m.weight_kg }))
+    .reverse();
 
   return (
     <>
@@ -264,9 +272,12 @@ export default function Profil() {
               </div>
             </section>
 
-            {/* KPI karty */}
+            {/* KPI karty – propojené s postavou a s historií tréninků */}
             <section className="profil-section">
               <h2>📊 Přehled pokroku</h2>
+              <p className="profil-section-hint profil-section-hint-sub">
+                Všechny údaje vycházejí z tvých záznamů: tréninky z Historie, váha a změna z měření (stejný zdroj jako postava „Předtím“ / „Teď“).
+              </p>
               <div className="kpi-grid">
                 <div className="kpi-card">
                   <span className="kpi-icon">🏋️</span>
@@ -280,7 +291,7 @@ export default function Profil() {
                 </div>
                 <div className="kpi-card">
                   <span className="kpi-icon">⚖️</span>
-                  <span className="kpi-value">{lastWeight != null ? `${lastWeight} kg` : '—'}</span>
+                  <span className="kpi-value">{currentWeight != null ? `${currentWeight} kg` : '—'}</span>
                   <span className="kpi-label">Aktuální váha</span>
                 </div>
                 <div className="kpi-card">
@@ -293,19 +304,19 @@ export default function Profil() {
               </div>
             </section>
 
-            {/* Graf váhy */}
-            {weightHistory.length >= 2 && (
+            {/* Graf váhy – stejný zdroj jako postava a KPI (měření) */}
+            {chartWeightData.length >= 2 && (
               <section className="profil-section">
                 <h2>⚖️ Vývoj váhy</h2>
+                <p className="profil-section-hint profil-section-hint-sub">Podle tvých záznamů měření (stejná data jako „Předtím“ / „Teď“).</p>
                 <div className="weight-chart">
                   <div className="weight-chart-bars">
-                    {weightHistory.map((p, i) => {
-                      const max = Math.max(...weightHistory.map((x) => x.weight));
-                      const min = Math.min(...weightHistory.map((x) => x.weight));
+                    {chartWeightData.map((p, i) => {
+                      const max = Math.max(...chartWeightData.map((x) => x.weight));
+                      const min = Math.min(...chartWeightData.map((x) => x.weight));
                       const range = max - min || 1;
-                      const h = 80 - ((p.weight - min) / range) * 60;
                       return (
-                        <div key={i} className="weight-bar-wrap" title={`${p.date}: ${p.weight} kg`}>
+                        <div key={`${p.date}-${i}`} className="weight-bar-wrap" title={`${p.date}: ${p.weight} kg`}>
                           <div className="weight-bar" style={{ height: `${20 + ((p.weight - min) / range) * 60}%` }} />
                           <span className="weight-bar-value">{p.weight}</span>
                           <span className="weight-bar-date">{formatShortDate(p.date)}</span>
@@ -678,6 +689,11 @@ export default function Profil() {
           margin: -8px 0 20px;
           line-height: 1.5;
           max-width: 560px;
+        }
+        .profil-section-hint-sub {
+          margin-bottom: 16px;
+          font-size: 13px;
+          color: #71717a;
         }
         .kpi-grid {
           display: grid;

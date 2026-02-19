@@ -1,22 +1,13 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseServer } from '../lib/supabaseServer';
 
-/** server-side Supabase client (service role) */
-function getServerSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceKey) throw new Error('Chybí SUPABASE env proměnné');
-  return createClient(url, serviceKey, { auth: { persistSession: false } });
-}
-
-export async function getServerSideProps({ query, res }) {
+export async function getServerSideProps({ query }) {
   // jednoduché zabezpečení: /admin?key=TVŮJ_TOKEN
   const key = query.key || '';
   if (!process.env.ADMIN_TOKEN || key !== process.env.ADMIN_TOKEN) {
     return { notFound: true };
   }
 
-  const supabase = getServerSupabase();
-  const { data, error } = await supabase
+  const { data, error } = await supabaseServer
     .from('body_metrics')
     .select('id, created_at, user_id, email, name, gender, age, height_cm, weight_kg, body_fat_percentage, water_percentage, bmi, tdee')
     .order('created_at', { ascending: false })

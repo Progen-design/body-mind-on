@@ -23,7 +23,7 @@ export const PRICING = [
       'E-mailové připomínky a motivace',
       'Bez osobního trenéra – možnost doobjednat',
     ],
-    cta: { label: 'Zvolit individuální', href: '/checkout?plan=individual' },
+    cta: { label: 'Zvolit individuální', href: '/start?plan=individual' },
   },
   {
     id: 'group',
@@ -35,7 +35,7 @@ export const PRICING = [
       '1× skupinový trénink / měsíc (online/offline)',
       'Uzavřená komunita + skupinová Q&A 1× měsíčně',
     ],
-    cta: { label: 'Zvolit skupinu', href: '/checkout?plan=group' },
+    cta: { label: 'Zvolit skupinu', href: '/start?plan=group' },
   },
 ];
 

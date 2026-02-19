@@ -1,16 +1,11 @@
-import { createClient } from "@supabase/supabase-js";
-import nodemailer from "nodemailer";
+import { supabaseServer } from '../../lib/supabaseServer';
+import nodemailer from 'nodemailer';
 
 export const config = {
   api: {
-    bodyParser: true, // <-- nutné pro čtení JSON dat
+    bodyParser: true,
   },
 };
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -32,7 +27,7 @@ export default async function handler(req, res) {
     }
 
     // ✅ 1. Uložení do Supabase
-    const { error: insertError } = await supabase.from("registrations").insert([
+    const { error: insertError } = await supabaseServer.from('registrations').insert([
       {
         name: data.name,
         email: data.email,
@@ -55,19 +50,19 @@ export default async function handler(req, res) {
       throw new Error("Nepodařilo se uložit data do databáze.");
     }
 
-    // ✅ 2. Odeslání potvrzovacího e-mailu
+    // ✅ 2. Odeslání potvrzovacího e-mailu (GMAIL_* nebo SMTP_* fallback)
+    const smtpUser = process.env.GMAIL_USER || process.env.SMTP_USER;
+    const smtpPass = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS;
     const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
+      service: 'gmail',
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: smtpUser,
+        pass: smtpPass,
       },
     });
 
     await transporter.sendMail({
-      from: `"Body & Mind ON" <${process.env.SMTP_USER}>`,
+      from: `"Body & Mind ON" <${smtpUser || process.env.EMAIL_FROM || 'info@bodyandmindon.cz'}>`,
       to: data.email,
       subject: `Potvrzení registrace – ${data.program || "START"} program`,
       html: `

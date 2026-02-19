@@ -1,4 +1,20 @@
-# Kompletní rozbor: chyba „null value in column workout_name“
+# Kompletní rozbor: chyby tabulky workouts
+
+---
+
+## Chyba: „workouts_user_id_fkey“ (foreign key constraint)
+
+**Význam:** Sloupec `workouts.user_id` má cizí klíč na jinou tabulku. Vkládaný `user_id` (UUID z Supabase Auth) v té tabulce neexistuje.
+
+**Častá příčina:** Tabulka `workouts` byla vytvořena s odkazem na `public.profiles(id)` nebo `public.users(id)`, ale uživatel z přihlášení existuje jen v `auth.users`. API posílá `user.id` z `auth.getUser(token)` = ID z `auth.users`.
+
+**Řešení:** Spusť v Supabase SQL Editoru migraci `supabase/migrations/20250219_fix_workouts_user_id_fkey.sql`. Ta odstraní starý cizí klíč a nastaví `workouts.user_id` → `auth.users(id)`, takže vložení bude platné.
+
+Pokud chyba přetrvává, ověř v Supabase Dashboard → Authentication → Users, že uživatel s daným e-mailem existuje (token může být po smazání účtu).
+
+---
+
+## Chyba: „null value in column workout_name“
 
 ## 1. Co chyba znamená
 

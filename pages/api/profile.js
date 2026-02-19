@@ -17,20 +17,50 @@ export default async function handler(req, res) {
     const userId = user.id;
     const email = user.email?.toLowerCase();
 
-    const [metricsRes, plansRes] = await Promise.all([
+    const [metricsRes, plansRes, workoutsRes] = await Promise.allSettled([
       supabaseServer
         .from('body_metrics')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
-        .limit(10),
+        .limit(50),
       supabaseServer
         .from('ai_generated_plans')
         .select('id, plan_type, daily_calories, macros, valid_from, valid_until, created_at, plan_html')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
-        .limit(10)
+        .limit(10),
+      supabaseServer
+        .from('workouts')
+        .select('*')
+        .eq('user_id', userId)
+        .order('workout_date', { ascending: false })
+        .limit(100)
     ]);
+
+    const bodyMetrics = (metricsRes.status === 'fulfilled' && metricsRes.value?.data) ? metricsRes.value.data : [];
+    const plansData = (plansRes.status === 'fulfilled' && plansRes.value?.data) ? plansRes.value.data : [];
+    const workouts = (workoutsRes.status === 'fulfilled' && workoutsRes.value?.data) ? workoutsRes.value.data : [];
+    if (workoutsRes.status === 'rejected') {
+      console.warn('[profile] workouts fetch failed (table may not exist):', workoutsRes.reason?.message);
+    }
+
+    const weightByDate = {};
+    bodyMetrics
+      .filter(m => m.weight_kg != null && m.created_at)
+      .forEach(m => {
+        const d = m.created_at.split('T')[0];
+        if (!(d in weightByDate)) weightByDate[d] = m.weight_kg;
+      });
+    const weightHistory = Object.entries(weightByDate)
+      .map(([date, weight]) => ({ date, weight }))
+      .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
+    const weekStartStr = weekStart.toISOString().split('T')[0];
+    const workoutsThisWeek = workouts.filter(w => (w.workout_date || '') >= weekStartStr).length;
 
     return res.status(200).json({
       user: {
@@ -38,8 +68,14 @@ export default async function handler(req, res) {
         email: user.email,
         name: user.user_metadata?.name || null
       },
-      body_metrics: metricsRes.data || [],
-      plans: plansRes.data || []
+      body_metrics: bodyMetrics,
+      plans: plansData,
+      workouts,
+      weight_history: weightHistory,
+      stats: {
+        workouts_this_week: workoutsThisWeek,
+        total_workouts: workouts.length
+      }
     });
   } catch (err) {
     console.error('[profile] ERROR:', err);

@@ -1,4 +1,4 @@
-// /pages/profil.js – Můj profil: údaje, naměřené hodnoty
+// /pages/profil.js – Můj profil: pokrok, tréninky, metriky
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -6,38 +6,33 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { supabase } from '../lib/supabaseClient';
 
-const LABELS = {
-  created_at: 'Datum',
-  email: 'E-mail',
-  name: 'Jméno',
-  gender: 'Pohlaví',
-  age: 'Věk',
-  height_cm: 'Výška (cm)',
-  weight_kg: 'Váha (kg)',
-  activity: 'Aktivita',
-  stress_level: 'Stres',
-  occupation: 'Typ práce',
-  goal: 'Cíl',
-  freq_choice: 'Frekvence cvičení',
-  notes: 'Poznámky',
-  program: 'Program',
-};
+const WORKOUT_TYPES = [
+  { id: 'silovy', label: 'Silový', emoji: '🏋️' },
+  { id: 'kardio', label: 'Kardio', emoji: '🏃' },
+  { id: 'strečink', label: 'Strečink', emoji: '🧘' },
+  { id: 'joga', label: 'Jóga', emoji: '🪷' },
+  { id: 'ostatni', label: 'Ostatní', emoji: '✨' },
+];
 
-function formatVal(val) {
-  if (val == null || val === '') return '—';
-  if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}/)) {
-    return new Date(val).toLocaleDateString('cs-CZ', { dateStyle: 'medium' });
-  }
-  return String(val);
+function formatDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function formatShortDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short' });
 }
 
 export default function Profil() {
   const router = useRouter();
   const [session, setSession] = useState(null);
-  const [metrics, setMetrics] = useState([]);
-  const [email, setEmail] = useState('');
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showWorkoutModal, setShowWorkoutModal] = useState(false);
+  const [workoutForm, setWorkoutForm] = useState({ workout_date: new Date().toISOString().split('T')[0], workout_type: 'silovy', duration_min: 45, notes: '' });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
@@ -46,18 +41,11 @@ export default function Profil() {
         return;
       }
       setSession(s);
-      setEmail(s.user?.email || '');
-
-      fetch('/api/my-metrics', {
-        headers: { Authorization: `Bearer ${s.access_token}` },
-      })
+      fetch('/api/profile', { headers: { Authorization: `Bearer ${s.access_token}` } })
         .then((res) => res.json())
-        .then((json) => {
-          if (json.error) setError(json.error);
-          else {
-            setMetrics(Array.isArray(json.data) ? json.data : []);
-            if (json.email) setEmail(json.email);
-          }
+        .then((data) => {
+          if (data.error) setError(data.error);
+          else setProfile(data);
         })
         .catch(() => setError('Nepodařilo se načíst data'))
         .finally(() => setLoading(false));
@@ -69,69 +57,661 @@ export default function Profil() {
     router.replace('/login');
   }
 
+  async function handleAddWorkout(e) {
+    e.preventDefault();
+    if (!session) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/workouts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify(workoutForm),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setProfile((p) => ({ ...p, workouts: [json.workout, ...(p.workouts || [])] }));
+        setShowWorkoutModal(false);
+        setWorkoutForm({ workout_date: new Date().toISOString().split('T')[0], workout_type: 'silovy', duration_min: 45, notes: '' });
+      } else setError(json.error || 'Chyba při ukládání');
+    } catch (err) {
+      setError(err.message || 'Chyba');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDeleteWorkout(id) {
+    if (!session || !confirm('Opravdu smazat tento trénink?')) return;
+    try {
+      const res = await fetch(`/api/workouts?id=${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${session.access_token}` } });
+      if (res.ok) {
+        setProfile((p) => ({ ...p, workouts: (p.workouts || []).filter((w) => w.id !== id) }));
+      }
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   if (!session && !loading) return null;
+
+  const metrics = profile?.body_metrics || [];
+  const plans = profile?.plans || [];
+  const workouts = profile?.workouts || [];
+  const weightHistory = profile?.weight_history || [];
+  const stats = profile?.stats || {};
+  const userName = profile?.user?.name || profile?.user?.email?.split('@')[0] || 'Sportovče';
+
+  const firstWeight = weightHistory.length ? weightHistory[0]?.weight : null;
+  const lastWeight = weightHistory.length ? weightHistory[weightHistory.length - 1]?.weight : null;
+  const weightDiff = firstWeight != null && lastWeight != null ? (lastWeight - firstWeight).toFixed(1) : null;
 
   return (
     <>
       <Header />
-      <main className="container" style={{ maxWidth: 900, margin: '32px auto', padding: '0 16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
-          <h1 style={{ margin: 0 }}>Můj profil</h1>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            {email && <span className="muted" style={{ fontSize: 14 }}>{email}</span>}
-            <button type="button" onClick={handleLogout} className="ghost" style={{ padding: '8px 14px', fontSize: 14 }}>
-              Odhlásit se
-            </button>
+      <main className="profil-page">
+        {/* Hero */}
+        <section className="profil-hero">
+          <div className="profil-hero-bg" />
+          <div className="profil-hero-content">
+            <h1>
+              Ahoj, <span>{userName}</span> 👋
+            </h1>
+            <p className="profil-hero-sub">Síla těla, klid mysli – tady máš přehled svého pokroku.</p>
+            <div className="profil-hero-actions">
+              {profile?.user?.email && <span className="profil-email">{profile.user.email}</span>}
+              <button type="button" onClick={handleLogout} className="btn-ghost">
+                Odhlásit se
+              </button>
+            </div>
           </div>
-        </div>
+        </section>
 
-        {loading && <p className="muted">Načítám tvé údaje…</p>}
-        {error && <p style={{ color: 'var(--error)' }}>{error}</p>}
+        {loading && (
+          <div className="profil-loading">
+            <div className="profil-spinner" />
+            <p>Načítám tvé údaje…</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="profil-error">
+            <p>{error}</p>
+          </div>
+        )}
 
         {!loading && !error && (
-          <>
-            <p className="muted" style={{ marginBottom: 24 }}>
-              Zde jsou tvoje uložené hodnoty z registrace a dotazníků. Můžeš si je kdykoli prohlédnout.
-            </p>
+          <div className="profil-content">
+            {/* KPI karty */}
+            <section className="profil-section">
+              <h2>📊 Přehled pokroku</h2>
+              <div className="kpi-grid">
+                <div className="kpi-card">
+                  <span className="kpi-icon">🏋️</span>
+                  <span className="kpi-value">{stats.workouts_this_week ?? 0}</span>
+                  <span className="kpi-label">Tréninků tento týden</span>
+                </div>
+                <div className="kpi-card">
+                  <span className="kpi-icon">📈</span>
+                  <span className="kpi-value">{stats.total_workouts ?? 0}</span>
+                  <span className="kpi-label">Celkem tréninků</span>
+                </div>
+                <div className="kpi-card">
+                  <span className="kpi-icon">⚖️</span>
+                  <span className="kpi-value">{lastWeight != null ? `${lastWeight} kg` : '—'}</span>
+                  <span className="kpi-label">Aktuální váha</span>
+                </div>
+                <div className="kpi-card">
+                  <span className="kpi-icon">{weightDiff != null ? (weightDiff < 0 ? '📉' : weightDiff > 0 ? '📈' : '➖') : '📊'}</span>
+                  <span className="kpi-value">
+                    {weightDiff != null ? `${weightDiff > 0 ? '+' : ''}${weightDiff} kg` : '—'}
+                  </span>
+                  <span className="kpi-label">Změní od začátku</span>
+                </div>
+              </div>
+            </section>
 
-            {metrics.length === 0 ? (
-              <div className="card" style={{ padding: 32, textAlign: 'center' }}>
-                <p className="muted">Zatím nemáš žádné záznamy.</p>
-                <p style={{ marginTop: 12 }}><Link href="/start" className="btn">Vyplnit dotazník / START</Link></p>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                {metrics.map((row, idx) => (
-                  <div key={row.id || idx} className="card" style={{ padding: 20 }}>
-                    <h3 style={{ margin: '0 0 16px', fontSize: 16, color: 'var(--accent)' }}>
-                      Záznam z {formatVal(row.created_at)}
-                    </h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px 24px' }}>
-                      {Object.entries(LABELS).map(([key, label]) => {
-                        if (key === 'created_at') return null;
-                        const val = row[key];
-                        if (val == null && val !== 0) return null;
-                        return (
-                          <div key={key}>
-                            <span className="muted" style={{ fontSize: 12 }}>{label}</span>
-                            <div style={{ fontWeight: 500 }}>{formatVal(val)}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {row.notes && (
-                      <p style={{ marginTop: 12, fontSize: 14, color: 'var(--muted)' }}>
-                        <strong>Poznámky:</strong> {row.notes}
-                      </p>
-                    )}
+            {/* Graf váhy */}
+            {weightHistory.length >= 2 && (
+              <section className="profil-section">
+                <h2>⚖️ Vývoj váhy</h2>
+                <div className="weight-chart">
+                  <div className="weight-chart-bars">
+                    {weightHistory.map((p, i) => {
+                      const max = Math.max(...weightHistory.map((x) => x.weight));
+                      const min = Math.min(...weightHistory.map((x) => x.weight));
+                      const range = max - min || 1;
+                      const h = 80 - ((p.weight - min) / range) * 60;
+                      return (
+                        <div key={i} className="weight-bar-wrap" title={`${p.date}: ${p.weight} kg`}>
+                          <div className="weight-bar" style={{ height: `${20 + ((p.weight - min) / range) * 60}%` }} />
+                          <span className="weight-bar-value">{p.weight}</span>
+                          <span className="weight-bar-date">{formatShortDate(p.date)}</span>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
+                </div>
+              </section>
             )}
-          </>
+
+            {/* Rychlé akce */}
+            <section className="profil-section">
+              <h2>⚡ Rychlé akce</h2>
+              <div className="action-buttons">
+                <button type="button" onClick={() => setShowWorkoutModal(true)} className="btn-primary">
+                  <span>+</span> Zapsat trénink
+                </button>
+                <Link href="/start" className="btn-secondary">
+                  Aktualizovat metriky
+                </Link>
+              </div>
+            </section>
+
+            {/* Historie tréninků */}
+            <section className="profil-section">
+              <h2>🏋️ Historie tréninků</h2>
+              {workouts.length === 0 ? (
+                <div className="empty-state">
+                  <p>Zatím nemáš žádné záznamy tréninků.</p>
+                  <button type="button" onClick={() => setShowWorkoutModal(true)} className="btn-primary">
+                    Zapsat první trénink
+                  </button>
+                </div>
+              ) : (
+                <div className="workouts-list">
+                  {workouts.slice(0, 20).map((w) => {
+                    const type = WORKOUT_TYPES.find((t) => t.id === w.workout_type) || { label: w.workout_type, emoji: '✨' };
+                    return (
+                      <div key={w.id} className="workout-card">
+                        <div className="workout-main">
+                          <span className="workout-emoji">{type.emoji}</span>
+                          <div>
+                            <span className="workout-type">{type.label}</span>
+                            <span className="workout-date">{formatDate(w.workout_date)}</span>
+                          </div>
+                          {w.duration_min && <span className="workout-duration">{w.duration_min} min</span>}
+                        </div>
+                        {w.notes && <p className="workout-notes">{w.notes}</p>}
+                        <button type="button" onClick={() => handleDeleteWorkout(w.id)} className="workout-delete" aria-label="Smazat">
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                  {workouts.length > 20 && <p className="muted">Zobrazuje se prvních 20 tréninků</p>}
+                </div>
+              )}
+            </section>
+
+            {/* Metriky */}
+            <section className="profil-section">
+              <h2>📋 Moje metriky</h2>
+              {metrics.length === 0 ? (
+                <div className="empty-state">
+                  <p>Zatím nemáš žádné záznamy.</p>
+                  <Link href="/start" className="btn-primary">Vyplnit dotazník / START</Link>
+                </div>
+              ) : (
+                <div className="metrics-list">
+                  {metrics.slice(0, 5).map((row, idx) => (
+                    <div key={row.id || idx} className="metric-card">
+                      <h3>Záznam z {formatDate(row.created_at)}</h3>
+                      <div className="metric-grid">
+                        <div><span className="muted">Váha</span><strong>{row.weight_kg ?? '—'} kg</strong></div>
+                        <div><span className="muted">Výška</span><strong>{row.height_cm ?? '—'} cm</strong></div>
+                        <div><span className="muted">Věk</span><strong>{row.age ?? '—'}</strong></div>
+                        <div><span className="muted">Cíl</span><strong>{row.goal ?? '—'}</strong></div>
+                        <div><span className="muted">Frekvence</span><strong>{row.freq_choice ?? '—'}</strong></div>
+                      </div>
+                      {row.notes && <p className="metric-notes">{row.notes}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Plány */}
+            {plans.length > 0 && (
+              <section className="profil-section">
+                <h2>📄 Můj plán</h2>
+                <div className="plans-list">
+                  {plans.slice(0, 3).map((p) => (
+                    <div key={p.id} className="plan-card">
+                      <div className="plan-header">
+                        <span className="plan-type">{p.plan_type || 'plán'}</span>
+                        <span className="plan-date">{formatDate(p.created_at)}</span>
+                      </div>
+                      {p.daily_calories && <p>Kalorie: {p.daily_calories} kcal/den</p>}
+                      {p.macros && <p className="muted">B: {p.macros.protein_g}g | T: {p.macros.fat_g}g | S: {p.macros.carbs_g}g</p>}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        )}
+
+        {/* Modal – Zapsat trénink */}
+        {showWorkoutModal && (
+          <div className="modal-overlay" onClick={() => !submitting && setShowWorkoutModal(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>Zapsat trénink</h3>
+                <button type="button" onClick={() => !submitting && setShowWorkoutModal(false)} aria-label="Zavřít">×</button>
+              </div>
+              <form onSubmit={handleAddWorkout} className="modal-form">
+                <div>
+                  <label>Datum</label>
+                  <input
+                    type="date"
+                    value={workoutForm.workout_date}
+                    onChange={(e) => setWorkoutForm((f) => ({ ...f, workout_date: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <label>Typ tréninku</label>
+                  <select
+                    value={workoutForm.workout_type}
+                    onChange={(e) => setWorkoutForm((f) => ({ ...f, workout_type: e.target.value }))}
+                  >
+                    {WORKOUT_TYPES.map((t) => (
+                      <option key={t.id} value={t.id}>{t.emoji} {t.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label>Délka (minuty)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={300}
+                    value={workoutForm.duration_min}
+                    onChange={(e) => setWorkoutForm((f) => ({ ...f, duration_min: parseInt(e.target.value, 10) || 0 }))}
+                  />
+                </div>
+                <div>
+                  <label>Poznámka (volitelně)</label>
+                  <input
+                    type="text"
+                    placeholder="Např. Leg day, Bench press..."
+                    value={workoutForm.notes}
+                    onChange={(e) => setWorkoutForm((f) => ({ ...f, notes: e.target.value }))}
+                  />
+                </div>
+                <div className="modal-actions">
+                  <button type="button" onClick={() => !submitting && setShowWorkoutModal(false)} className="btn-ghost">Zrušit</button>
+                  <button type="submit" disabled={submitting} className="btn-primary">
+                    {submitting ? 'Ukládám…' : 'Uložit trénink'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
       </main>
+
       <Footer />
+
+      <style jsx>{`
+        .profil-page {
+          min-height: 100vh;
+          background: linear-gradient(180deg, #0a021f 0%, #0a0a0f 40%, #0a0a0a 100%);
+        }
+        .profil-hero {
+          position: relative;
+          padding: 48px 24px 40px;
+          overflow: hidden;
+        }
+        .profil-hero-bg {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(139, 92, 255, 0.15), transparent),
+            radial-gradient(ellipse 60% 40% at 80% 20%, rgba(14, 165, 233, 0.08), transparent);
+          pointer-events: none;
+        }
+        .profil-hero-content {
+          position: relative;
+          max-width: 900px;
+          margin: 0 auto;
+        }
+        .profil-hero h1 {
+          font-size: clamp(28px, 5vw, 36px);
+          font-weight: 700;
+          margin: 0 0 8px;
+          color: #fff;
+        }
+        .profil-hero h1 span {
+          background: linear-gradient(90deg, #9b5cff, #0EA5E9);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+        .profil-hero-sub {
+          color: #a1a1aa;
+          font-size: 16px;
+          margin: 0 0 20px;
+        }
+        .profil-hero-actions {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          flex-wrap: wrap;
+        }
+        .profil-email {
+          font-size: 14px;
+          color: #71717a;
+        }
+        .btn-ghost {
+          background: transparent;
+          border: 1px solid #3f3f46;
+          color: #a1a1aa;
+          padding: 8px 16px;
+          border-radius: 10px;
+          font-size: 14px;
+          cursor: pointer;
+          transition: border-color 0.2s, color 0.2s;
+        }
+        .btn-ghost:hover {
+          border-color: #52525b;
+          color: #fff;
+        }
+        .btn-primary {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: linear-gradient(90deg, #9b5cff, #7c3aed);
+          color: #fff;
+          border: none;
+          padding: 12px 20px;
+          border-radius: 12px;
+          font-weight: 600;
+          font-size: 15px;
+          cursor: pointer;
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-primary:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 20px rgba(155, 92, 255, 0.4);
+        }
+        .btn-primary:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+          transform: none;
+        }
+        .btn-secondary {
+          display: inline-flex;
+          align-items: center;
+          border: 1px solid #3f3f46;
+          color: #eaeaea;
+          padding: 12px 20px;
+          border-radius: 12px;
+          font-weight: 500;
+          font-size: 15px;
+          text-decoration: none;
+          transition: border-color 0.2s, background 0.2s;
+        }
+        .btn-secondary:hover {
+          border-color: #52525b;
+          background: rgba(255,255,255,0.03);
+        }
+        .profil-loading {
+          text-align: center;
+          padding: 64px 24px;
+          color: #71717a;
+        }
+        .profil-spinner {
+          width: 40px;
+          height: 40px;
+          margin: 0 auto 16px;
+          border: 3px solid #2a2a2a;
+          border-top-color: #9b5cff;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        .profil-error {
+          max-width: 900px;
+          margin: 0 auto;
+          padding: 24px;
+          color: #ef4444;
+        }
+        .profil-content {
+          max-width: 900px;
+          margin: 0 auto;
+          padding: 0 24px 64px;
+        }
+        .profil-section {
+          margin-bottom: 40px;
+        }
+        .profil-section h2 {
+          font-size: 18px;
+          font-weight: 600;
+          color: #e4e4e7;
+          margin: 0 0 16px;
+        }
+        .kpi-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+          gap: 16px;
+        }
+        .kpi-card {
+          background: rgba(24, 24, 36, 0.8);
+          border: 1px solid #2a2a3d;
+          border-radius: 16px;
+          padding: 20px;
+          text-align: center;
+          transition: border-color 0.2s, transform 0.2s;
+        }
+        .kpi-card:hover {
+          border-color: #3f3f52;
+          transform: translateY(-2px);
+        }
+        .kpi-icon {
+          font-size: 28px;
+          display: block;
+          margin-bottom: 8px;
+        }
+        .kpi-value {
+          display: block;
+          font-size: 24px;
+          font-weight: 700;
+          color: #fff;
+        }
+        .kpi-label {
+          font-size: 12px;
+          color: #71717a;
+          margin-top: 4px;
+          display: block;
+        }
+        .weight-chart {
+          background: rgba(24, 24, 36, 0.8);
+          border: 1px solid #2a2a3d;
+          border-radius: 16px;
+          padding: 24px;
+          overflow-x: auto;
+        }
+        .weight-chart-bars {
+          display: flex;
+          align-items: flex-end;
+          gap: 12px;
+          min-height: 140px;
+          padding: 8px 0;
+        }
+        .weight-bar-wrap {
+          flex: 1;
+          min-width: 40px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+        }
+        .weight-bar {
+          width: 100%;
+          max-width: 32px;
+          min-height: 8px;
+          background: linear-gradient(180deg, #9b5cff, #7c3aed);
+          border-radius: 6px 6px 0 0;
+          transition: height 0.3s;
+        }
+        .weight-bar-value {
+          font-size: 11px;
+          font-weight: 600;
+          color: #a1a1aa;
+        }
+        .weight-bar-date {
+          font-size: 10px;
+          color: #52525b;
+        }
+        .action-buttons {
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .empty-state {
+          background: rgba(24, 24, 36, 0.6);
+          border: 1px dashed #3f3f52;
+          border-radius: 12px;
+          padding: 32px;
+          text-align: center;
+          color: #71717a;
+        }
+        .empty-state p { margin: 0 0 16px; }
+        .workouts-list { display: flex; flex-direction: column; gap: 12px; }
+        .workout-card {
+          position: relative;
+          background: rgba(24, 24, 36, 0.8);
+          border: 1px solid #2a2a3d;
+          border-radius: 12px;
+          padding: 16px 44px 16px 16px;
+          transition: border-color 0.2s;
+        }
+        .workout-card:hover { border-color: #3f3f52; }
+        .workout-main {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+        .workout-emoji { font-size: 24px; }
+        .workout-type { font-weight: 600; color: #e4e4e7; display: block; }
+        .workout-date { font-size: 13px; color: #71717a; }
+        .workout-duration {
+          margin-left: auto;
+          background: rgba(155, 92, 255, 0.2);
+          color: #a78bfa;
+          padding: 4px 10px;
+          border-radius: 8px;
+          font-size: 13px;
+        }
+        .workout-notes {
+          margin: 8px 0 0 40px;
+          font-size: 13px;
+          color: #a1a1aa;
+        }
+        .workout-delete {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          background: none;
+          border: none;
+          color: #71717a;
+          font-size: 20px;
+          cursor: pointer;
+          padding: 4px;
+          line-height: 1;
+          transition: color 0.2s;
+        }
+        .workout-delete:hover { color: #ef4444; }
+        .metrics-list, .plans-list { display: flex; flex-direction: column; gap: 16px; }
+        .metric-card, .plan-card {
+          background: rgba(24, 24, 36, 0.8);
+          border: 1px solid #2a2a3d;
+          border-radius: 12px;
+          padding: 20px;
+        }
+        .metric-card h3, .plan-header {
+          font-size: 14px;
+          color: #a78bfa;
+          margin: 0 0 12px;
+        }
+        .metric-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+          gap: 12px;
+        }
+        .metric-grid div { font-size: 14px; }
+        .metric-grid .muted { display: block; font-size: 11px; color: #71717a; margin-bottom: 2px; }
+        .metric-notes { margin: 12px 0 0; font-size: 13px; color: #a1a1aa; }
+        .plan-type { font-weight: 600; }
+        .plan-date { float: right; font-size: 12px; color: #71717a; }
+        .plan-card p { margin: 4px 0; font-size: 14px; }
+        .modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.7);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 100;
+          padding: 24px;
+        }
+        .modal {
+          background: #12121a;
+          border: 1px solid #2a2a3d;
+          border-radius: 20px;
+          width: 100%;
+          max-width: 400px;
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 20px 24px;
+          border-bottom: 1px solid #2a2a3d;
+        }
+        .modal-header h3 { margin: 0; font-size: 18px; color: #fff; }
+        .modal-header button {
+          background: none;
+          border: none;
+          color: #71717a;
+          font-size: 24px;
+          cursor: pointer;
+          padding: 0;
+          line-height: 1;
+        }
+        .modal-header button:hover { color: #fff; }
+        .modal-form {
+          padding: 24px;
+        }
+        .modal-form > div { margin-bottom: 16px; }
+        .modal-form label {
+          display: block;
+          font-size: 13px;
+          color: #a1a1aa;
+          margin-bottom: 6px;
+        }
+        .modal-form input,
+        .modal-form select {
+          width: 100%;
+          padding: 12px 14px;
+          border-radius: 10px;
+          border: 1px solid #2a2a3d;
+          background: #0f0f0f;
+          color: #fff;
+          font-size: 15px;
+        }
+        .modal-actions {
+          display: flex;
+          gap: 12px;
+          justify-content: flex-end;
+          margin-top: 24px;
+        }
+      `}</style>
     </>
   );
 }

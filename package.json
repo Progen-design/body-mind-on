@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "deploy": "git add -A && git commit -m \"Deploy: automatické úpravy\" && git push origin main"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

@@ -58,6 +58,8 @@ export default function Profil() {
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [workoutError, setWorkoutError] = useState('');
   const [savingWorkout, setSavingWorkout] = useState(false);
+  const [weightError, setWeightError] = useState('');
+  const [savingWeight, setSavingWeight] = useState(false);
 
   const [workoutForm, setWorkoutForm] = useState({
     workout_date: new Date().toISOString().split('T')[0],
@@ -211,6 +213,8 @@ export default function Profil() {
 
   async function handleAddWeight(e) {
     e.preventDefault();
+    setWeightError('');
+    setSavingWeight(true);
     try {
       const { data: { session: fresh } } = await supabase.auth.refreshSession();
       const token = fresh?.access_token ?? session?.access_token;
@@ -236,9 +240,13 @@ export default function Profil() {
         setShowWeightModal(false);
         if (fresh) setSession(fresh);
         await refetchProfile(token);
+      } else {
+        setWeightError(json.error || 'Chyba při ukládání váhy');
       }
     } catch (err) {
-      console.error('Add weight error:', err);
+      setWeightError(err.message || 'Chyba připojení');
+    } finally {
+      setSavingWeight(false);
     }
   }
 
@@ -327,22 +335,60 @@ export default function Profil() {
         {!loading && !error && (
           <>
             <p className="trainer-hint">
-              Hodnoty se počítají automaticky z tvých záznamů – jako u trenéra. Přidej trénink nebo váhu a přehled se hned aktualizuje.
+              Postava a graf vycházejí z <strong>měření váhy</strong>. Tréninky ovlivňují přehled (počty, minuty, kalorie). Vše se počítá hned.
             </p>
 
-            {/* POSTAVA */}
-            <section className="card center">
+            {/* POSTAVA – Předtím vs Teď, nebo jen Teď */}
+            <section className="card center progress-section">
               <h2>Tvůj progres</h2>
 
               {latestMetric ? (
                 <>
-                  <BodyFigure
-                    weight={latestMetric.weight_kg}
-                    height={latestMetric.height_cm}
-                    gender={latestMetric.gender}
-                    goal={latestMetric.goal}
-                    size={150}
-                  />
+                  <div className="body-figures-row">
+                    {firstMetric && firstMetric !== latestMetric ? (
+                      <>
+                        <div className="body-figure-box body-figure-before">
+                          <BodyFigure
+                            weight={firstMetric.weight_kg}
+                            height={firstMetric.height_cm}
+                            gender={firstMetric.gender}
+                            goal={firstMetric.goal}
+                            size={130}
+                            variant="before"
+                            label="Předtím"
+                          />
+                          <span className="figure-date">{formatShortDate(firstMetric.created_at)}</span>
+                        </div>
+                        <span className="body-figure-arrow" aria-hidden>→</span>
+                        <div className="body-figure-box body-figure-now">
+                          <BodyFigure
+                            weight={latestMetric.weight_kg}
+                            height={latestMetric.height_cm}
+                            gender={latestMetric.gender}
+                            goal={latestMetric.goal}
+                            size={130}
+                            variant="now"
+                            label="Teď"
+                            weightDiff={weightDiff}
+                          />
+                          <span className="figure-date">{formatShortDate(latestMetric.created_at)}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="body-figure-box body-figure-now body-figure-single">
+                        <BodyFigure
+                          weight={latestMetric.weight_kg}
+                          height={latestMetric.height_cm}
+                          gender={latestMetric.gender}
+                          goal={latestMetric.goal}
+                          size={150}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  {workoutsThisWeek.length > 0 && (
+                    <p className="workout-badge">Tento týden: {workoutsThisWeek.length} tréninků 🏋️</p>
+                  )}
                   {currentWeight != null && <p className="weight-now">{currentWeight} kg</p>}
                   {weightDiff != null && (
                     <p className="trend">
@@ -355,7 +401,9 @@ export default function Profil() {
                   )}
                 </>
               ) : (
-                <p className="empty-progress">Zatím nemáš záznam měření. Klikni na „Přidat váhu“ a uvidíš zde postavu i trend.</p>
+                <p className="empty-progress">
+                  Postava vychází z váhy – klikni na <strong>„Přidat váhu“</strong> níže a uvidíš zde tvar i trend. Tréninky se započítají do přehledu.
+                </p>
               )}
             </section>
 
@@ -366,7 +414,7 @@ export default function Profil() {
                 <button type="button" onClick={() => { setShowWorkoutModal(true); setWorkoutError(''); }} className="btn-primary">
                   + Zapsat trénink
                 </button>
-                <button type="button" onClick={() => setShowWeightModal(true)} className="btn-secondary">
+                <button type="button" onClick={() => { setShowWeightModal(true); setWeightError(''); }} className="btn-secondary">
                   ⚖️ Přidat váhu
                 </button>
               </div>
@@ -432,7 +480,7 @@ export default function Profil() {
             {chartWeightData.length >= 1 && (
               <section className="card chart-section">
                 <h2>Vývoj váhy</h2>
-                <p className="chart-hint">Podle tvých záznamů měření. Přidej váhu a graf se přepočítá.</p>
+                <p className="chart-hint">Data z tlačítka „Přidat váhu“. Každé nové měření se zobrazí ihned.</p>
                 {chartWeightData.length >= 2 ? (
                   <>
                     <div className="chart-svg-wrap">
@@ -519,7 +567,7 @@ export default function Profil() {
               </div>
             )}
             {showWeightModal && (
-              <div className="modal-overlay" onClick={() => setShowWeightModal(false)}>
+              <div className="modal-overlay" onClick={() => { setShowWeightModal(false); setWeightError(''); }}>
                 <div className="modal" onClick={(e) => e.stopPropagation()}>
                   <h3>Přidat váhu</h3>
                   <form onSubmit={handleAddWeight}>
@@ -527,10 +575,11 @@ export default function Profil() {
                     <input type="date" value={weightForm.date} onChange={(e) => setWeightForm((f) => ({ ...f, date: e.target.value }))} required />
                     <label>Váha (kg)</label>
                     <input type="number" min={30} max={300} step={0.1} placeholder="např. 78.5" value={weightForm.weight_kg} onChange={(e) => setWeightForm((f) => ({ ...f, weight_kg: e.target.value }))} required />
-                    <p className="modal-hint">Graf a přehled se přepočítají hned.</p>
+                    <p className="modal-hint">Postava i graf se přepočítají ihned.</p>
+                    {weightError && <p className="modal-error" role="alert">{weightError}</p>}
                     <div className="modal-actions">
-                      <button type="button" onClick={() => setShowWeightModal(false)}>Zrušit</button>
-                      <button type="submit">Uložit</button>
+                      <button type="button" onClick={() => { setShowWeightModal(false); setWeightError(''); }} disabled={savingWeight}>Zrušit</button>
+                      <button type="submit" disabled={savingWeight}>{savingWeight ? 'Ukládám…' : 'Uložit'}</button>
                     </div>
                   </form>
                 </div>
@@ -587,6 +636,37 @@ export default function Profil() {
           margin-right: auto;
         }
 
+        .progress-section { margin-bottom: 40px; }
+        .body-figures-row {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 24px;
+          flex-wrap: wrap;
+          margin: 24px 0 16px;
+        }
+        .body-figure-box {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+        }
+        .body-figure-box.body-figure-before { opacity: 0.9; }
+        .body-figure-box.body-figure-now .body-figure-svg { filter: drop-shadow(0 8px 24px rgba(139, 92, 255, 0.35)); }
+        .body-figure-arrow {
+          font-size: 24px;
+          color: #a78bfa;
+        }
+        .body-figure-single { margin: 16px 0; }
+        .figure-date { font-size: 12px; color: #64748b; }
+        .workout-badge {
+          margin-top: 12px;
+          padding: 8px 16px;
+          background: rgba(139, 92, 255, 0.2);
+          border-radius: 20px;
+          font-size: 14px;
+          color: #c4b5fd;
+        }
         .weight-now {
           font-size: 20px;
           font-weight: 700;

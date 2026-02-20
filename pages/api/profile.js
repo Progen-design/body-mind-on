@@ -62,6 +62,8 @@ export default async function handler(req, res) {
     const weekStartStr = weekStart.toISOString().split('T')[0];
     const workoutsThisWeek = workouts.filter(w => (w.workout_date || '') >= weekStartStr).length;
 
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
     return res.status(200).json({
       user: {
         id: user.id,

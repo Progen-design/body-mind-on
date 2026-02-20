@@ -1,6 +1,6 @@
 // /pages/profil.js – Modern Premium Profil (real-time update zachován)
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -91,9 +91,12 @@ export default function Profil() {
     weight_kg: '',
   });
 
+  const profileRef = useRef(null);
+  useEffect(() => { profileRef.current = profile; }, [profile]);
+
   const fetchOptions = { cache: 'no-store' };
 
-  const fetchProfileWithToken = (accessToken) =>
+  const fetchProfileWithToken = (accessToken, currentProfileForSkip) =>
     fetch(`/api/profile?t=${Date.now()}`, {
       ...fetchOptions,
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -104,25 +107,20 @@ export default function Profil() {
           setError(data.error);
           return { error: data.error };
         }
-        // Vytvořit nový objekt, aby React viděl změnu a useMemo se přepočítal
-        // Seřadit data správně - workouts podle data (nejnovější první), body_metrics podle created_at (nejnovější první)
-        const sortedWorkouts = Array.isArray(data.workouts) 
+        const sortedWorkouts = Array.isArray(data.workouts)
           ? [...data.workouts].sort((a, b) => {
               const dateA = (a.workout_date || '').toString();
               const dateB = (b.workout_date || '').toString();
-              return dateB.localeCompare(dateA); // Descending - nejnovější první
+              return dateB.localeCompare(dateA);
             })
           : [];
-        
         const sortedMetrics = Array.isArray(data.body_metrics)
           ? [...data.body_metrics].sort((a, b) => {
               const dateA = (a.created_at || '').toString();
               const dateB = (b.created_at || '').toString();
-              return dateB.localeCompare(dateA); // Descending - nejnovější první
+              return dateB.localeCompare(dateA);
             })
           : [];
-        
-        // Vytvořit úplně nový objekt s novými referencemi, aby React vždy viděl změnu
         const freshProfile = {
           user: data.user ? { ...data.user } : null,
           body_metrics: sortedMetrics,
@@ -130,12 +128,21 @@ export default function Profil() {
           plans: Array.isArray(data.plans) ? [...data.plans] : [],
           weight_history: Array.isArray(data.weight_history) ? [...data.weight_history] : [],
           stats: data.stats ? { ...data.stats } : {},
-          _updated: Date.now(), // Přidat timestamp pro zajištění změny reference
+          _updated: Date.now(),
         };
-        // Vždy vytvořit nový objekt, i když data jsou stejná
-        setProfile(() => freshProfile);
+        let skipped = false;
+        setProfile((prev) => {
+          if (!prev) return freshProfile;
+          const nw = prev.workouts?.length ?? 0;
+          const nm = prev.body_metrics?.length ?? 0;
+          if (sortedWorkouts.length < nw || sortedMetrics.length < nm) {
+            skipped = true;
+            return prev;
+          }
+          return freshProfile;
+        });
         setError('');
-        return { ok: true };
+        return { ok: true, skipped };
       })
       .catch((err) => {
         console.error('Fetch profile error:', err);
@@ -143,14 +150,20 @@ export default function Profil() {
         return { error: err.message };
       });
 
-  const refetchProfile = (token) => {
+  const refetchProfile = (token, currentProfileForSkip) => {
     const t = token ?? session?.access_token;
     if (!t) return Promise.resolve();
-    return fetchProfileWithToken(t);
+    return fetchProfileWithToken(t, currentProfileForSkip);
   };
 
   useEffect(() => {
     let cancelled = false;
+    const timeoutId = setTimeout(() => {
+      if (!cancelled) {
+        setLoading(false);
+        setError('Načítání trvalo příliš dlouho. Zkontroluj připojení a obnov stránku.');
+      }
+    }, 15000);
     (async () => {
       const { data: { session: s }, error: sessionErr } = await supabase.auth.getSession();
       if (cancelled) return;
@@ -158,7 +171,6 @@ export default function Profil() {
         router.replace('/login');
         return;
       }
-      // Obnovení tokenu před načtením profilu (na webu často vyprší)
       const { data: { session: fresh }, error: refreshErr } = await supabase.auth.refreshSession();
       const sessionToUse = !refreshErr && fresh ? fresh : s;
       setSession(sessionToUse);
@@ -169,9 +181,7 @@ export default function Profil() {
         const { data: { session: retrySession } } = await supabase.auth.refreshSession();
         if (retrySession) {
           result = await fetchProfileWithToken(retrySession.access_token);
-          if (result?.ok) {
-            setSession(retrySession);
-          }
+          if (result?.ok) setSession(retrySession);
         }
         if (cancelled) return;
         if (result?.error) {
@@ -182,32 +192,40 @@ export default function Profil() {
       }
     })()
       .catch(() => { if (!cancelled) setError('Nepodařilo se načíst profil.'); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { 
+      .finally(() => {
+        if (!cancelled) {
+          clearTimeout(timeoutId);
+          setLoading(false);
+        }
+      });
+    return () => {
       cancelled = true;
+      clearTimeout(timeoutId);
     };
   }, [router]);
 
-  // Automatické načítání dat každých 30 sekund pro real-time aktualizace
   useEffect(() => {
     if (!session?.access_token || loading) return;
-    
-    const autoRefreshInterval = setInterval(async () => {
+    const interval = setInterval(async () => {
       try {
         const { data: { session: fresh } } = await supabase.auth.refreshSession();
         const token = fresh?.access_token ?? session?.access_token;
-        if (token) {
-          await refetchProfile(token);
-        }
-      } catch (err) {
-        // Tichá chyba - nechceme rušit uživatele
-      }
-    }, 30000); // 30 sekund - automatická aktualizace dat
-
-    return () => {
-      clearInterval(autoRefreshInterval);
-    };
+        if (token) await refetchProfile(token);
+      } catch (err) {}
+    }, 30000);
+    return () => clearInterval(interval);
   }, [session, loading]);
+
+  useEffect(() => {
+    if (!session?.access_token) return;
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refetchProfile(session.access_token, profileRef.current);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, [session?.access_token]);
 
   // Zobrazit welcome tour po prvním přihlášení
   useEffect(() => {
@@ -285,16 +303,13 @@ export default function Profil() {
         // Zobrazit toast notifikaci
         setToast({ message: 'Trénink úspěšně přidán! 🏋️', type: 'success' });
         
-        // Načíst čerstvá data po krátkém zpoždění, aby API už vrátilo nový záznam (bez přepsání optimistické aktualizace)
         (async () => {
-          for (let attempt = 0; attempt < 2; attempt++) {
-            try {
-              await new Promise(resolve => setTimeout(resolve, attempt === 0 ? 600 : 400));
-              const result = await refetchProfile(token);
-              if (result?.ok) break;
-            } catch (err) {
-              if (attempt === 1) console.warn('Background refetch failed:', err);
-            }
+          try {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const result = await refetchProfile(token, profileRef.current);
+            if (result?.skipped) setTimeout(() => refetchProfile(token), 800);
+          } catch (err) {
+            console.warn('Background refetch failed:', err);
           }
         })();
       } else {
@@ -345,14 +360,12 @@ export default function Profil() {
         setToast({ message: 'Trénink smazán', type: 'info' });
         
         (async () => {
-          for (let attempt = 0; attempt < 2; attempt++) {
-            try {
-              await new Promise(resolve => setTimeout(resolve, attempt === 0 ? 600 : 400));
-              const result = await refetchProfile(token);
-              if (result?.ok) break;
-            } catch (err) {
-              if (attempt === 1) console.warn('Background refetch failed:', err);
-            }
+          try {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const result = await refetchProfile(token, profileRef.current);
+            if (result?.skipped) setTimeout(() => refetchProfile(token), 800);
+          } catch (err) {
+            console.warn('Background refetch failed:', err);
           }
         })();
       } else {
@@ -419,14 +432,12 @@ export default function Profil() {
         setToast({ message: 'Váha úspěšně přidána! ⚖️', type: 'success' });
         
         (async () => {
-          for (let attempt = 0; attempt < 2; attempt++) {
-            try {
-              await new Promise(resolve => setTimeout(resolve, attempt === 0 ? 600 : 400));
-              const result = await refetchProfile(token);
-              if (result?.ok) break;
-            } catch (err) {
-              if (attempt === 1) console.warn('Background refetch failed:', err);
-            }
+          try {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const result = await refetchProfile(token, profileRef.current);
+            if (result?.skipped) setTimeout(() => refetchProfile(token), 800);
+          } catch (err) {
+            console.warn('Background refetch failed:', err);
           }
         })();
       } else {

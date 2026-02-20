@@ -20,12 +20,12 @@ export default async function handler(req, res) {
     }
 
     const dateStr = req.body?.date?.trim?.();
+    if (dateStr && Number.isNaN(Date.parse(dateStr))) {
+      return res.status(400).json({ error: 'Neplatné datum.' });
+    }
     const created_at = dateStr
       ? new Date(dateStr).toISOString()
       : new Date().toISOString();
-    if (Number.isNaN(Date.parse(created_at))) {
-      return res.status(400).json({ error: 'Neplatné datum.' });
-    }
 
     const { data: latest } = await supabaseServer
       .from('body_metrics')

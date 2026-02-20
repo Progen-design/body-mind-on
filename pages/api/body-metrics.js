@@ -2,6 +2,7 @@
 import { supabaseServer } from '../../lib/supabaseServer';
 import { generatePlanForEmail } from '../../lib/generatePlan';
 import { createAuthUserIfNew } from '../../lib/authHelpers';
+import { getClientIp, isRateLimited } from '../../lib/rateLimit';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -9,10 +10,15 @@ export default async function handler(req, res) {
   }
 
   try {
+    const ip = getClientIp(req);
+    if (isRateLimited(`body-metrics:${ip}`, 5, 10 * 60 * 1000)) {
+      return res.status(429).json({ error: 'Příliš mnoho požadavků. Zkus to prosím za chvíli znovu.' });
+    }
+
     const b = req.body || {};
 
     const payload = {
-      email: b.email?.trim() || null,
+      email: b.email?.trim()?.toLowerCase() || null,
       name: b.name?.trim() || null,
       gender: normalizeGender(b.gender),
       age: toNum(b.age),
@@ -70,6 +76,11 @@ export default async function handler(req, res) {
       }
       payload.user_id = null;
     } else {
+      if (authResult.existing === true) {
+        return res.status(409).json({
+          error: 'Účet s tímto e-mailem už existuje. Přihlas se prosím nebo použij obnovu hesla na app.bodyandmindon.cz.',
+        });
+      }
       payload.user_id = authResult.userId;
       loginPassword = authResult.password ?? null;
       existingAccount = authResult.existing === true;

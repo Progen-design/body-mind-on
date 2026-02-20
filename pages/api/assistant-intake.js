@@ -1,5 +1,6 @@
 import { supabaseServer } from '../../lib/supabaseServer';
 import nodemailer from 'nodemailer';
+import { getClientIp, isRateLimited } from '../../lib/rateLimit';
 
 export const config = {
   api: {
@@ -15,10 +16,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    // ✅ Bezpečné načtení těla požadavku
-    const data = req.body;
+    const ip = getClientIp(req);
+    if (isRateLimited(`assistant-intake:${ip}`, 5, 10 * 60 * 1000)) {
+      return res.status(429).json({ success: false, message: 'Příliš mnoho požadavků. Zkus to prosím za chvíli znovu.' });
+    }
 
-    console.log("📩 Přijatá data:", data);
+    const data = req.body;
 
     if (!data || !data.email) {
       return res
@@ -26,11 +29,17 @@ export default async function handler(req, res) {
         .json({ success: false, message: "Chybí povinné údaje (např. e-mail)" });
     }
 
+    const email = String(data.email || '').trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ success: false, message: 'Neplatná e-mailová adresa.' });
+    }
+
     // ✅ 1. Uložení do Supabase
     const { error: insertError } = await supabaseServer.from('registrations').insert([
       {
         name: data.name,
-        email: data.email,
+        email,
         gender: data.gender,
         age: data.age,
         height: data.height,
@@ -63,7 +72,7 @@ export default async function handler(req, res) {
 
     await transporter.sendMail({
       from: `"Body & Mind ON" <${smtpUser || process.env.EMAIL_FROM || 'info@bodyandmindon.cz'}>`,
-      to: data.email,
+      to: email,
       subject: `Potvrzení registrace – ${data.program || "START"} program`,
       html: `
         <h2>Ahoj ${data.name || "člene"},</h2>
@@ -75,7 +84,7 @@ export default async function handler(req, res) {
       `,
     });
 
-    console.log("✅ E-mail odeslán na:", data.email);
+    console.log("✅ E-mail odeslán.");
 
     // ✅ 3. Úspěšná odpověď
     return res

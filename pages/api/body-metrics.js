@@ -12,6 +12,7 @@ export default async function handler(req, res) {
   try {
     const ip = getClientIp(req);
     if (isRateLimited(`body-metrics:${ip}`, 5, 10 * 60 * 1000)) {
+      res.setHeader('Retry-After', '600');
       return res.status(429).json({ error: 'Příliš mnoho požadavků. Zkus to prosím za chvíli znovu.' });
     }
 
@@ -76,11 +77,6 @@ export default async function handler(req, res) {
       }
       payload.user_id = null;
     } else {
-      if (authResult.existing === true) {
-        return res.status(409).json({
-          error: 'Účet s tímto e-mailem už existuje. Přihlas se prosím nebo použij obnovu hesla na app.bodyandmindon.cz.',
-        });
-      }
       payload.user_id = authResult.userId;
       loginPassword = authResult.password ?? null;
       existingAccount = authResult.existing === true;
@@ -137,7 +133,7 @@ export default async function handler(req, res) {
 
   } catch (e) {
     console.error('[body-metrics] ERROR:', e);
-    return res.status(400).json({
+    return res.status(500).json({
       error: e.message || 'Neočekávaná chyba při zpracování požadavku.'
     });
   }

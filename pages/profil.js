@@ -462,7 +462,7 @@ export default function Profil() {
 
   // Všechny parametry se přepočítají při každé změně profile (trénink, váha)
   // Použít _updated timestamp jako závislost, aby se vždy přepočítalo při změně
-  const { metrics, workouts, latestMetric, firstMetric, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName } = useMemo(() => {
+  const { metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName } = useMemo(() => {
     // Zajistit, že máme vždy nové reference na pole pro správnou detekci změn
     // A SORT podle data - nejnovější první
     const m = profile?.body_metrics 
@@ -687,6 +687,7 @@ export default function Profil() {
                           goal={latestMetric.goal}
                           size={150}
                         />
+                        <span className="figure-date">{formatShortDate(latestWorkout?.workout_date || latestMetric?.date || latestMetric?.created_at)}</span>
                       </div>
                     )}
                   </div>

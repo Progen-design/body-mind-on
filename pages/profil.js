@@ -1,4 +1,4 @@
-// /pages/profil.js – Modern Premium Profil (real-time update zachován)
+// /pages/profil.js – Modern Premium Profil (real-time update, refetch on focus, timeout 15s)
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/router';

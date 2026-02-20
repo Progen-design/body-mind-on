@@ -1,6 +1,6 @@
 // /pages/profil.js – Modern Premium Profil (real-time update zachován)
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -252,54 +252,64 @@ export default function Profil() {
 
   if (!session && !loading) return null;
 
-  const metrics = profile?.body_metrics || [];
-  const workouts = profile?.workouts || [];
-  const latestMetric = metrics[0];
-  const firstMetric = metrics[metrics.length - 1];
+  // Všechny parametry se přepočítají při každé změně profile (trénink, váha)
+  const { metrics, workouts, latestMetric, firstMetric, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName } = useMemo(() => {
+    const m = profile?.body_metrics || [];
+    const w = profile?.workouts || [];
+    const latest = m[0];
+    const first = m[m.length - 1];
+    const cw = latest?.weight_kg ?? null;
+    const wd = latest && first ? (latest.weight_kg - first.weight_kg).toFixed(1) : null;
 
-  const currentWeight = latestMetric?.weight_kg ?? null;
-  const weightDiff =
-    latestMetric && firstMetric
-      ? (latestMetric.weight_kg - firstMetric.weight_kg).toFixed(1)
-      : null;
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - daysToMonday);
+    const weekStartStr = weekStart.toISOString().split('T')[0];
+    const getDate = (x) => (x.workout_date || '').toString().slice(0, 10);
+    const thisWeek = w.filter((x) => getDate(x) >= weekStartStr);
+    const minWeek = thisWeek.reduce((s, x) => s + (Number(x.duration_min) || 0), 0);
+    const kcalWeek = thisWeek.reduce((s, x) => s + estimatedCalories(x), 0);
+    const minTotal = w.reduce((s, x) => s + (Number(x.duration_min) || 0), 0);
+    const kcalTotal = w.reduce((s, x) => s + estimatedCalories(x), 0);
 
-  const now = new Date();
-  const dayOfWeek = now.getDay();
-  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - daysToMonday);
-  const weekStartStr = weekStart.toISOString().split('T')[0];
-  const workoutDateStr = (w) => (w.workout_date || '').toString().slice(0, 10);
-  const workoutsThisWeek = workouts.filter((w) => workoutDateStr(w) >= weekStartStr);
-  const totalMinutesThisWeek = workoutsThisWeek.reduce(
-    (sum, w) => sum + (Number(w.duration_min) || 0),
-    0
-  );
-  const estimatedCaloriesThisWeek = workoutsThisWeek.reduce(
-    (sum, w) => sum + estimatedCalories(w),
-    0
-  );
-  const totalMinutes = workouts.reduce(
-    (sum, w) => sum + (Number(w.duration_min) || 0),
-    0
-  );
-  const estimatedCaloriesAll = workouts.reduce(
-    (sum, w) => sum + estimatedCalories(w),
-    0
-  );
+    const chartData = m
+      .filter((x) => x.weight_kg && x.created_at)
+      .map((x) => ({ date: x.created_at.split('T')[0], weight: x.weight_kg }))
+      .reverse();
 
-  const chartWeightData = metrics
-    .filter((m) => m.weight_kg && m.created_at)
-    .map((m) => ({
-      date: m.created_at.split('T')[0],
-      weight: m.weight_kg,
-    }))
-    .reverse();
+    const name = profile?.user?.name || profile?.user?.email?.split('@')[0] || 'Sportovče';
 
-  const userName =
-    profile?.user?.name ||
-    profile?.user?.email?.split('@')[0] ||
-    'Sportovče';
+    return {
+      metrics: m,
+      workouts: w,
+      latestMetric: latest,
+      firstMetric: first,
+      currentWeight: cw,
+      weightDiff: wd,
+      workoutsThisWeek: thisWeek,
+      totalMinutesThisWeek: minWeek,
+      estimatedCaloriesThisWeek: kcalWeek,
+      totalMinutes: minTotal,
+      estimatedCaloriesAll: kcalTotal,
+      chartWeightData: chartData,
+      userName: name,
+    };
+  }, [profile]);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const { data: { session: fresh } } = await supabase.auth.refreshSession();
+      const token = fresh?.access_token ?? session?.access_token;
+      if (fresh) setSession(fresh);
+      await refetchProfile(token);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   return (
     <>

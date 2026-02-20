@@ -77,7 +77,7 @@ export default function Profil() {
   const fetchOptions = { cache: 'no-store' };
 
   const fetchProfileWithToken = (accessToken) =>
-    fetch('/api/profile', {
+    fetch(`/api/profile?t=${Date.now()}`, {
       ...fetchOptions,
       headers: { Authorization: `Bearer ${accessToken}` },
     })
@@ -90,6 +90,11 @@ export default function Profil() {
         setProfile(data);
         setError('');
         return { ok: true };
+      })
+      .catch((err) => {
+        console.error('Fetch profile error:', err);
+        setError('Chyba při načítání profilu');
+        return { error: err.message };
       });
 
   const refetchProfile = (token) => {
@@ -165,19 +170,19 @@ export default function Profil() {
 
       const json = await res.json();
       if (res.ok && json.workout) {
-        const newWorkout = json.workout;
-        setProfile((p) => {
-          const prev = p || {};
-          return { ...prev, workouts: [newWorkout, ...(prev.workouts || [])] };
-        });
         setWorkoutForm({ workout_date: new Date().toISOString().split('T')[0], workout_type: 'silovy', duration_min: 45, notes: '' });
         setShowWorkoutModal(false);
         if (fresh) setSession(fresh);
+        // Počkat chvíli, aby server stihl uložit data, pak načíst čerstvá data
+        await new Promise(resolve => setTimeout(resolve, 300));
         const refetchResult = await refetchProfile(token);
-        if (refetchResult?.ok) {
-          /* Profil načten ze serveru, data v pořádku */
-        } else {
-          /* Optimistic update zůstává – nový trénink už je ve stavu */
+        if (!refetchResult?.ok) {
+          // Pokud refetch selhal, použij optimistic update
+          const newWorkout = json.workout;
+          setProfile((p) => {
+            const prev = p || {};
+            return { ...prev, workouts: [newWorkout, ...(prev.workouts || [])] };
+          });
         }
       } else {
         setWorkoutError(json.error || 'Chyba při ukládání tréninku');
@@ -200,12 +205,17 @@ export default function Profil() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        setProfile((p) => {
-          const prev = p || {};
-          return { ...prev, workouts: (prev.workouts || []).filter((w) => w.id !== id) };
-        });
         if (fresh) setSession(fresh);
-        await refetchProfile(token);
+        // Počkat chvíli, aby server stihl smazat data, pak načíst čerstvá data
+        await new Promise(resolve => setTimeout(resolve, 300));
+        const refetchResult = await refetchProfile(token);
+        if (!refetchResult?.ok) {
+          // Pokud refetch selhal, použij optimistic update
+          setProfile((p) => {
+            const prev = p || {};
+            return { ...prev, workouts: (prev.workouts || []).filter((w) => w.id !== id) };
+          });
+        }
       }
     } catch (err) {
       console.error('Delete workout error:', err);
@@ -233,14 +243,19 @@ export default function Profil() {
       });
       const json = await res.json();
       if (res.ok && json.metric) {
-        setProfile((p) => {
-          const prev = p || {};
-          return { ...prev, body_metrics: [json.metric, ...(prev.body_metrics || [])] };
-        });
         setWeightForm((f) => ({ ...f, weight_kg: '' }));
         setShowWeightModal(false);
         if (fresh) setSession(fresh);
-        await refetchProfile(token);
+        // Počkat chvíli, aby server stihl uložit data, pak načíst čerstvá data
+        await new Promise(resolve => setTimeout(resolve, 300));
+        const refetchResult = await refetchProfile(token);
+        if (!refetchResult?.ok) {
+          // Pokud refetch selhal, použij optimistic update
+          setProfile((p) => {
+            const prev = p || {};
+            return { ...prev, body_metrics: [json.metric, ...(prev.body_metrics || [])] };
+          });
+        }
       } else {
         setWeightError(json.error || 'Chyba při ukládání váhy');
       }

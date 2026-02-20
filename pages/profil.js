@@ -483,6 +483,9 @@ export default function Profil() {
     const first = m[m.length - 1];
     const cw = latest?.weight_kg ?? null;
     const wd = latest && first ? (latest.weight_kg - first.weight_kg).toFixed(1) : null;
+    
+    // Najít poslední trénink pro aktualizaci data u postavy
+    const latestWorkout = w.length > 0 ? w[0] : null;
 
     const now = new Date();
     const dayOfWeek = now.getDay();
@@ -522,6 +525,7 @@ export default function Profil() {
       workouts: w,
       latestMetric: latest,
       firstMetric: first,
+      latestWorkout: latestWorkout, // Poslední trénink pro aktualizaci postavy
       currentWeight: cw,
       weightDiff: wd,
       workoutsThisWeek: thisWeek,
@@ -543,8 +547,10 @@ export default function Profil() {
     profile?.body_metrics?.[0]?.created_at, // Poslední měření
     profile?.body_metrics?.[0]?.id, // ID posledního měření pro detekci změny
     profile?.body_metrics?.[0]?.weight_kg, // Váha posledního měření - důležité pro postavu
+    profile?.workouts?.[0]?.workout_date, // Datum posledního tréninku - důležité pro aktualizaci postavy
+    profile?.workouts?.[0]?.workout_type, // Typ posledního tréninku - důležité pro vizuální změnu
     // Přidat JSON string pro detekci změn v datech
-    JSON.stringify(profile?.workouts?.slice(0, 5)?.map(w => ({ id: w.id, date: w.workout_date })) || []),
+    JSON.stringify(profile?.workouts?.slice(0, 5)?.map(w => ({ id: w.id, date: w.workout_date, type: w.workout_type })) || []),
     JSON.stringify(profile?.body_metrics?.slice(0, 5)?.map(m => ({ id: m.id, date: m.created_at, weight: m.weight_kg })) || [])
   ]);
 
@@ -624,7 +630,7 @@ export default function Profil() {
         {!loading && !error && (
           <>
             <p className="trainer-hint">
-              Postava a graf vycházejí z <strong>měření váhy</strong>. Tréninky ovlivňují přehled (počty, minuty, kalorie). Vše se přepočítá hned po každé akci.
+              Postava se aktualizuje podle <strong>tvých tréninků</strong> - každý trénink se projeví okamžitě. Graf vychází z měření váhy. Vše se přepočítá hned po každé akci.
               <button type="button" onClick={handleRefresh} disabled={refreshing} className="btn-refresh" title="Obnovit data">
                 {refreshing ? 'Obnovuji…' : '🔄 Obnovit přehled'}
               </button>
@@ -668,7 +674,7 @@ export default function Profil() {
                             label="Teď"
                             weightDiff={weightDiff}
                           />
-                          <span className="figure-date">{formatShortDate(latestMetric.date || latestMetric.created_at)}</span>
+                          <span className="figure-date">{formatShortDate(latestWorkout?.workout_date || latestMetric?.date || latestMetric?.created_at)}</span>
                         </div>
                       </>
                     ) : (

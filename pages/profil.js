@@ -1,7 +1,6 @@
 // /pages/profil.js – Modern Premium Profil (real-time update zachován)
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -57,6 +56,8 @@ export default function Profil() {
 
   const [showWorkoutModal, setShowWorkoutModal] = useState(false);
   const [showWeightModal, setShowWeightModal] = useState(false);
+  const [workoutError, setWorkoutError] = useState('');
+  const [savingWorkout, setSavingWorkout] = useState(false);
 
   const [workoutForm, setWorkoutForm] = useState({
     workout_date: new Date().toISOString().split('T')[0],
@@ -132,24 +133,53 @@ export default function Profil() {
 
   async function handleAddWorkout(e) {
     e.preventDefault();
-    const res = await fetch('/api/workouts', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify(workoutForm),
-    });
+    setWorkoutError('');
+    setSavingWorkout(true);
+    try {
+      const res = await fetch('/api/workouts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(workoutForm),
+      });
 
-    const json = await res.json();
-    if (res.ok) {
-      setProfile((p) => ({
-        ...p,
-        workouts: [json.workout, ...(p.workouts || [])],
-      }));
-      setWorkoutForm({ workout_date: new Date().toISOString().split('T')[0], workout_type: 'silovy', duration_min: 45, notes: '' });
-      setShowWorkoutModal(false);
-      await refetchProfile();
+      const json = await res.json();
+      if (res.ok && json.workout) {
+        setProfile((p) => ({
+          ...p,
+          workouts: [json.workout, ...(p.workouts || [])],
+        }));
+        setWorkoutForm({ workout_date: new Date().toISOString().split('T')[0], workout_type: 'silovy', duration_min: 45, notes: '' });
+        setShowWorkoutModal(false);
+        await refetchProfile();
+      } else {
+        setWorkoutError(json.error || 'Chyba při ukládání tréninku');
+      }
+    } catch (err) {
+      setWorkoutError(err.message || 'Chyba připojení');
+    } finally {
+      setSavingWorkout(false);
+    }
+  }
+
+  async function handleDeleteWorkout(id) {
+    if (!confirm('Opravdu smazat tento trénink?')) return;
+    try {
+      const res = await fetch(`/api/workouts?id=${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        setProfile((p) => ({
+          ...p,
+          workouts: (p.workouts || []).filter((w) => w.id !== id),
+        }));
+        await refetchProfile();
+      }
+    } catch (err) {
+      console.error('Delete workout error:', err);
     }
   }
 
@@ -302,13 +332,37 @@ export default function Profil() {
             <section className="card actions">
               <h2>Rychlé akce</h2>
               <div className="action-buttons">
-                <button type="button" onClick={() => setShowWorkoutModal(true)} className="btn-primary">
+                <button type="button" onClick={() => { setShowWorkoutModal(true); setWorkoutError(''); }} className="btn-primary">
                   + Zapsat trénink
                 </button>
                 <button type="button" onClick={() => setShowWeightModal(true)} className="btn-secondary">
                   ⚖️ Přidat váhu
                 </button>
               </div>
+            </section>
+
+            {/* Historie tréninků */}
+            <section className="card history-section">
+              <h2>Historie tréninků</h2>
+              {workouts.length === 0 ? (
+                <p className="empty-history">Zatím nemáš žádné záznamy. Klikni na „Zapsat trénink“ a první trénink se objeví zde i v přehledu.</p>
+              ) : (
+                <ul className="workout-list">
+                  {workouts.map((w) => (
+                    <li key={w.id} className="workout-item">
+                      <span className="workout-icon">{WORKOUT_TYPES.find((t) => t.id === (w.workout_type || '').toLowerCase())?.emoji || '🏋️'}</span>
+                      <div className="workout-info">
+                        <strong>{WORKOUT_TYPES.find((t) => t.id === (w.workout_type || '').toLowerCase())?.label || w.workout_name || 'Trénink'}</strong>
+                        <span className="workout-meta">
+                          {formatShortDate(w.workout_date)} · {(Number(w.duration_min) || 0)} min
+                          {w.notes ? ` · ${w.notes}` : ''}
+                        </span>
+                      </div>
+                      <button type="button" onClick={() => handleDeleteWorkout(w.id)} className="workout-delete" title="Smazat">✕</button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </section>
 
             {/* KPI – tento týden + celkem */}
@@ -408,7 +462,7 @@ export default function Profil() {
 
             {/* Modaly */}
             {showWorkoutModal && (
-              <div className="modal-overlay" onClick={() => setShowWorkoutModal(false)}>
+              <div className="modal-overlay" onClick={() => { setShowWorkoutModal(false); setWorkoutError(''); }}>
                 <div className="modal" onClick={(e) => e.stopPropagation()}>
                   <h3>Zapsat trénink</h3>
                   <form onSubmit={handleAddWorkout}>
@@ -424,9 +478,10 @@ export default function Profil() {
                     <input type="number" min={1} value={workoutForm.duration_min} onChange={(e) => setWorkoutForm((f) => ({ ...f, duration_min: Number(e.target.value) || 0 }))} />
                     <label>Poznámka (volitelné)</label>
                     <input type="text" value={workoutForm.notes} onChange={(e) => setWorkoutForm((f) => ({ ...f, notes: e.target.value }))} placeholder="např. nohy" />
+                    {workoutError && <p className="modal-error" role="alert">{workoutError}</p>}
                     <div className="modal-actions">
-                      <button type="button" onClick={() => setShowWorkoutModal(false)}>Zrušit</button>
-                      <button type="submit">Uložit</button>
+                      <button type="button" onClick={() => { setShowWorkoutModal(false); setWorkoutError(''); }} disabled={savingWorkout}>Zrušit</button>
+                      <button type="submit" disabled={savingWorkout}>{savingWorkout ? 'Ukládám…' : 'Uložit'}</button>
                     </div>
                   </form>
                 </div>
@@ -681,6 +736,66 @@ export default function Profil() {
           box-sizing: border-box;
         }
         .modal-hint { color: #64748b; font-size: 13px; margin: 12px 0; }
+        .modal-error {
+          color: #f87171;
+          font-size: 14px;
+          margin: 12px 0 0;
+          padding: 10px;
+          background: rgba(239, 68, 68, 0.15);
+          border-radius: 8px;
+        }
+
+        .history-section { margin-bottom: 32px; }
+        .empty-history {
+          color: #64748b;
+          font-size: 15px;
+          margin: 0;
+        }
+        .workout-list {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+        }
+        .workout-item {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 14px 16px;
+          background: rgba(255,255,255,0.03);
+          border-radius: 12px;
+          margin-bottom: 8px;
+          border: 1px solid transparent;
+          transition: border-color 0.2s, background 0.2s;
+        }
+        .workout-item:hover { background: rgba(255,255,255,0.06); }
+        .workout-icon { font-size: 24px; }
+        .workout-info {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .workout-info strong { font-size: 15px; }
+        .workout-meta {
+          font-size: 13px;
+          color: #94a3b8;
+        }
+        .workout-delete {
+          background: transparent;
+          border: 1px solid #444;
+          color: #94a3b8;
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 14px;
+          flex-shrink: 0;
+        }
+        .workout-delete:hover {
+          background: rgba(239, 68, 68, 0.2);
+          color: #f87171;
+          border-color: rgba(239, 68, 68, 0.4);
+        }
         .modal-actions {
           display: flex;
           gap: 12px;

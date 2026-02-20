@@ -229,9 +229,15 @@ export default function Profil() {
             const dateB = (b.workout_date || '').toString();
             return dateB.localeCompare(dateA); // Descending - nejnovější první
           });
+          // Vytvořit NOVÝ objekt s novými referencemi pro všechny pole, aby React viděl změnu
           return { 
-            ...prev, 
+            ...prev,
+            user: prev.user ? { ...prev.user } : null,
+            body_metrics: prev.body_metrics ? [...prev.body_metrics] : [],
             workouts: newWorkouts,
+            plans: prev.plans ? [...prev.plans] : [],
+            weight_history: prev.weight_history ? [...prev.weight_history] : [],
+            stats: prev.stats ? { ...prev.stats } : {},
             _updated: Date.now() // Zajistit změnu reference pro useMemo
           };
         });
@@ -346,9 +352,15 @@ export default function Profil() {
             const dateB = (b.created_at || '').toString();
             return dateB.localeCompare(dateA); // Descending - nejnovější první
           });
+          // Vytvořit NOVÝ objekt s novými referencemi pro všechny pole, aby React viděl změnu
           return { 
-            ...prev, 
+            ...prev,
+            user: prev.user ? { ...prev.user } : null,
             body_metrics: newMetrics,
+            workouts: prev.workouts ? [...prev.workouts] : [],
+            plans: prev.plans ? [...prev.plans] : [],
+            weight_history: prev.weight_history ? [...prev.weight_history] : [],
+            stats: prev.stats ? { ...prev.stats } : {},
             _updated: Date.now() // Zajistit změnu reference pro useMemo
           };
         });
@@ -459,9 +471,10 @@ export default function Profil() {
     profile?.workouts?.[0]?.id, // ID prvního tréninku pro detekci změny
     profile?.body_metrics?.[0]?.created_at, // Poslední měření
     profile?.body_metrics?.[0]?.id, // ID posledního měření pro detekci změny
+    profile?.body_metrics?.[0]?.weight_kg, // Váha posledního měření - důležité pro postavu
     // Přidat JSON string pro detekci změn v datech
     JSON.stringify(profile?.workouts?.slice(0, 5)?.map(w => ({ id: w.id, date: w.workout_date })) || []),
-    JSON.stringify(profile?.body_metrics?.slice(0, 5)?.map(m => ({ id: m.id, date: m.created_at })) || [])
+    JSON.stringify(profile?.body_metrics?.slice(0, 5)?.map(m => ({ id: m.id, date: m.created_at, weight: m.weight_kg })) || [])
   ]);
 
   const handleRefresh = async () => {
@@ -555,11 +568,12 @@ export default function Profil() {
 
               {latestMetric ? (
                 <>
-                  <div className="body-figures-row">
+                  <div className="body-figures-row" key={`progress-${profile?._updated || 0}`}>
                     {firstMetric && firstMetric !== latestMetric ? (
                       <>
                         <div className="body-figure-box body-figure-before">
                           <BodyFigure
+                            key={`before-${firstMetric.id}-${profile?._updated || 0}`}
                             weight={firstMetric.weight_kg}
                             height={firstMetric.height_cm}
                             gender={firstMetric.gender}
@@ -573,6 +587,7 @@ export default function Profil() {
                         <span className="body-figure-arrow" aria-hidden>→</span>
                         <div className="body-figure-box body-figure-now">
                           <BodyFigure
+                            key={`now-${latestMetric.id}-${profile?._updated || 0}`}
                             weight={latestMetric.weight_kg}
                             height={latestMetric.height_cm}
                             gender={latestMetric.gender}
@@ -588,6 +603,7 @@ export default function Profil() {
                     ) : (
                       <div className="body-figure-box body-figure-now body-figure-single">
                         <BodyFigure
+                          key={`single-${latestMetric.id}-${profile?._updated || 0}`}
                           weight={latestMetric.weight_kg}
                           height={latestMetric.height_cm}
                           gender={latestMetric.gender}

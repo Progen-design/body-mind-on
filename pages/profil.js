@@ -71,8 +71,13 @@ export default function Profil() {
     weight_kg: '',
   });
 
+  const fetchOptions = { cache: 'no-store' as RequestCache };
+
   const fetchProfileWithToken = (accessToken) =>
-    fetch('/api/profile', { headers: { Authorization: `Bearer ${accessToken}` } })
+    fetch('/api/profile', {
+      ...fetchOptions,
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
       .then((res) => res.json())
       .then((data) => {
         if (data.error) {
@@ -84,9 +89,10 @@ export default function Profil() {
         return { ok: true };
       });
 
-  const refetchProfile = () => {
-    if (!session?.access_token) return Promise.resolve();
-    return fetchProfileWithToken(session.access_token);
+  const refetchProfile = (token) => {
+    const t = token ?? session?.access_token;
+    if (!t) return Promise.resolve();
+    return fetchProfileWithToken(t);
   };
 
   useEffect(() => {
@@ -136,24 +142,40 @@ export default function Profil() {
     setWorkoutError('');
     setSavingWorkout(true);
     try {
+      // Obnovit token před voláním (na produkci často vyprší)
+      const { data: { session: fresh } } = await supabase.auth.refreshSession();
+      const token = fresh?.access_token ?? session?.access_token;
+      if (!token) {
+        setWorkoutError('Session vypršela. Odhlas se a přihlas znovu.');
+        return;
+      }
+
       const res = await fetch('/api/workouts', {
+        ...fetchOptions,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(workoutForm),
       });
 
       const json = await res.json();
       if (res.ok && json.workout) {
-        setProfile((p) => ({
-          ...p,
-          workouts: [json.workout, ...(p.workouts || [])],
-        }));
+        const newWorkout = json.workout;
+        setProfile((p) => {
+          const prev = p || {};
+          return { ...prev, workouts: [newWorkout, ...(prev.workouts || [])] };
+        });
         setWorkoutForm({ workout_date: new Date().toISOString().split('T')[0], workout_type: 'silovy', duration_min: 45, notes: '' });
         setShowWorkoutModal(false);
-        await refetchProfile();
+        if (fresh) setSession(fresh);
+        const refetchResult = await refetchProfile(token);
+        if (refetchResult?.ok) {
+          /* Profil načten ze serveru, data v pořádku */
+        } else {
+          /* Optimistic update zůstává – nový trénink už je ve stavu */
+        }
       } else {
         setWorkoutError(json.error || 'Chyba při ukládání tréninku');
       }
@@ -167,16 +189,20 @@ export default function Profil() {
   async function handleDeleteWorkout(id) {
     if (!confirm('Opravdu smazat tento trénink?')) return;
     try {
+      const { data: { session: fresh } } = await supabase.auth.refreshSession();
+      const token = fresh?.access_token ?? session?.access_token;
       const res = await fetch(`/api/workouts?id=${id}`, {
+        ...fetchOptions,
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        setProfile((p) => ({
-          ...p,
-          workouts: (p.workouts || []).filter((w) => w.id !== id),
-        }));
-        await refetchProfile();
+        setProfile((p) => {
+          const prev = p || {};
+          return { ...prev, workouts: (prev.workouts || []).filter((w) => w.id !== id) };
+        });
+        if (fresh) setSession(fresh);
+        await refetchProfile(token);
       }
     } catch (err) {
       console.error('Delete workout error:', err);
@@ -185,29 +211,34 @@ export default function Profil() {
 
   async function handleAddWeight(e) {
     e.preventDefault();
-
-    const res = await fetch('/api/quick-weight', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        weight_kg: Number(weightForm.weight_kg),
-        date: weightForm.date,
-      }),
-    });
-
-    const json = await res.json();
-
-    if (res.ok && json.metric) {
-      setProfile((p) => ({
-        ...p,
-        body_metrics: [json.metric, ...(p.body_metrics || [])],
-      }));
-      setWeightForm((f) => ({ ...f, weight_kg: '' }));
-      setShowWeightModal(false);
-      await refetchProfile();
+    try {
+      const { data: { session: fresh } } = await supabase.auth.refreshSession();
+      const token = fresh?.access_token ?? session?.access_token;
+      const res = await fetch('/api/quick-weight', {
+        ...fetchOptions,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          weight_kg: Number(weightForm.weight_kg),
+          date: weightForm.date,
+        }),
+      });
+      const json = await res.json();
+      if (res.ok && json.metric) {
+        setProfile((p) => {
+          const prev = p || {};
+          return { ...prev, body_metrics: [json.metric, ...(prev.body_metrics || [])] };
+        });
+        setWeightForm((f) => ({ ...f, weight_kg: '' }));
+        setShowWeightModal(false);
+        if (fresh) setSession(fresh);
+        await refetchProfile(token);
+      }
+    } catch (err) {
+      console.error('Add weight error:', err);
     }
   }
 

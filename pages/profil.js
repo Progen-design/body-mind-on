@@ -183,8 +183,31 @@ export default function Profil() {
     })()
       .catch(() => { if (!cancelled) setError('Nepodařilo se načíst profil.'); })
       .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+    return () => { 
+      cancelled = true;
+    };
   }, [router]);
+
+  // Automatické načítání dat každých 30 sekund pro real-time aktualizace
+  useEffect(() => {
+    if (!session?.access_token || loading) return;
+    
+    const autoRefreshInterval = setInterval(async () => {
+      try {
+        const { data: { session: fresh } } = await supabase.auth.refreshSession();
+        const token = fresh?.access_token ?? session?.access_token;
+        if (token) {
+          await refetchProfile(token);
+        }
+      } catch (err) {
+        // Tichá chyba - nechceme rušit uživatele
+      }
+    }, 30000); // 30 sekund - automatická aktualizace dat
+
+    return () => {
+      clearInterval(autoRefreshInterval);
+    };
+  }, [session, loading]);
 
   // Zobrazit welcome tour po prvním přihlášení
   useEffect(() => {
@@ -262,19 +285,24 @@ export default function Profil() {
         // Zobrazit toast notifikaci
         setToast({ message: 'Trénink úspěšně přidán! 🏋️', type: 'success' });
         
-        // OKAMŽITĚ načíst čerstvá data ze serveru pro synchronizaci
-        // Použít malý delay, aby server stihl uložit data
-        setTimeout(async () => {
-          try {
-            const result = await refetchProfile(token);
-            if (result?.ok) {
-              // Data načtena - state se aktualizuje automaticky s čerstvými daty ze serveru
+        // OKAMŽITĚ načíst čerstvá data ze serveru pro synchronizaci - automatická aktualizace
+        (async () => {
+          // Zkusit okamžitě, pak znovu po krátkém delay pro jistotu
+          for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+              await new Promise(resolve => setTimeout(resolve, attempt * 200));
+              const result = await refetchProfile(token);
+              if (result?.ok) {
+                // Data načtena - state se aktualizuje automaticky s čerstvými daty ze serveru
+                break;
+              }
+            } catch (err) {
+              if (attempt === 1) {
+                console.warn('Background refetch failed:', err);
+              }
             }
-          } catch (err) {
-            // Tichá chyba - optimistic update už je aplikován
-            console.warn('Background refetch failed:', err);
           }
-        }, 500); // Krátký delay pro zajištění, že server stihl uložit
+        })();
       } else {
         const errorMsg = json.error || 'Chyba při ukládání tréninku';
         setWorkoutError(errorMsg);
@@ -304,9 +332,15 @@ export default function Profil() {
         setProfile((p) => {
           const prev = p || {};
           const newWorkouts = (prev.workouts || []).filter((w) => w.id !== id);
+          // Vytvořit NOVÝ objekt s novými referencemi pro všechny pole
           return { 
-            ...prev, 
+            ...prev,
+            user: prev.user ? { ...prev.user } : null,
+            body_metrics: prev.body_metrics ? [...prev.body_metrics] : [],
             workouts: newWorkouts,
+            plans: prev.plans ? [...prev.plans] : [],
+            weight_history: prev.weight_history ? [...prev.weight_history] : [],
+            stats: prev.stats ? { ...prev.stats } : {},
             _updated: Date.now()
           };
         });
@@ -316,13 +350,20 @@ export default function Profil() {
         // Zobrazit toast notifikaci
         setToast({ message: 'Trénink smazán', type: 'info' });
         
-        // Na pozadí načíst čerstvá data ze serveru (neblokuje UI)
+        // OKAMŽITĚ načíst čerstvá data ze serveru pro synchronizaci - automatická aktualizace
         (async () => {
-          await new Promise(resolve => setTimeout(resolve, 200));
-          try {
-            await refetchProfile(token);
-          } catch (err) {
-            // Tichá chyba - optimistic update už je aplikován
+          for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+              await new Promise(resolve => setTimeout(resolve, attempt * 200));
+              const result = await refetchProfile(token);
+              if (result?.ok) {
+                break;
+              }
+            } catch (err) {
+              if (attempt === 1) {
+                console.warn('Background refetch failed:', err);
+              }
+            }
           }
         })();
       } else {
@@ -385,19 +426,24 @@ export default function Profil() {
         // Zobrazit toast notifikaci
         setToast({ message: 'Váha úspěšně přidána! ⚖️', type: 'success' });
         
-        // OKAMŽITĚ načíst čerstvá data ze serveru pro synchronizaci
-        // Použít malý delay, aby server stihl uložit data
-        setTimeout(async () => {
-          try {
-            const result = await refetchProfile(token);
-            if (result?.ok) {
-              // Data načtena - state se aktualizuje automaticky s čerstvými daty ze serveru
+        // OKAMŽITĚ načíst čerstvá data ze serveru pro synchronizaci - automatická aktualizace
+        (async () => {
+          // Zkusit okamžitě, pak znovu po krátkém delay pro jistotu
+          for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+              await new Promise(resolve => setTimeout(resolve, attempt * 200));
+              const result = await refetchProfile(token);
+              if (result?.ok) {
+                // Data načtena - state se aktualizuje automaticky s čerstvými daty ze serveru
+                break;
+              }
+            } catch (err) {
+              if (attempt === 1) {
+                console.warn('Background refetch failed:', err);
+              }
             }
-          } catch (err) {
-            // Tichá chyba - optimistic update už je aplikován
-            console.warn('Background refetch failed:', err);
           }
-        }, 500); // Krátký delay pro zajištění, že server stihl uložit
+        })();
       } else {
         const errorMsg = json.error || 'Chyba při ukládání váhy';
         setWeightError(errorMsg);

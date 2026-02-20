@@ -2,6 +2,7 @@
 import { supabaseServer } from '../../lib/supabaseServer';
 import { generatePlanForEmail } from '../../lib/generatePlan';
 import { createAuthUserIfNew } from '../../lib/authHelpers';
+import { getClientIp, isRateLimited } from '../../lib/rateLimit';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -9,10 +10,16 @@ export default async function handler(req, res) {
   }
 
   try {
+    const ip = getClientIp(req);
+    if (isRateLimited(`body-metrics:${ip}`, 5, 10 * 60 * 1000)) {
+      res.setHeader('Retry-After', '600');
+      return res.status(429).json({ error: 'Příliš mnoho požadavků. Zkus to prosím za chvíli znovu.' });
+    }
+
     const b = req.body || {};
 
     const payload = {
-      email: b.email?.trim() || null,
+      email: b.email?.trim()?.toLowerCase() || null,
       name: b.name?.trim() || null,
       gender: normalizeGender(b.gender),
       age: toNum(b.age),
@@ -126,7 +133,7 @@ export default async function handler(req, res) {
 
   } catch (e) {
     console.error('[body-metrics] ERROR:', e);
-    return res.status(400).json({
+    return res.status(500).json({
       error: e.message || 'Neočekávaná chyba při zpracování požadavku.'
     });
   }

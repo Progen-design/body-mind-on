@@ -1,5 +1,36 @@
 import { supabaseServer } from '../../lib/supabaseServer';
 import nodemailer from 'nodemailer';
+import { getClientIp, isRateLimited } from '../../lib/rateLimit';
+
+function createTransporter() {
+  const smtpUser = process.env.GMAIL_USER || process.env.SMTP_USER;
+  const smtpPass = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS;
+  if (!smtpUser || !smtpPass) {
+    throw new Error('Chybí SMTP/GMAIL přihlašovací údaje.');
+  }
+
+  if (process.env.SMTP_HOST) {
+    const smtpPort = Number(process.env.SMTP_PORT || 587);
+    const smtpSecure = process.env.SMTP_SECURE === 'true' || smtpPort === 465;
+    return {
+      transporter: nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: smtpPort,
+        secure: smtpSecure,
+        auth: { user: smtpUser, pass: smtpPass },
+      }),
+      smtpUser,
+    };
+  }
+
+  return {
+    transporter: nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: smtpUser, pass: smtpPass },
+    }),
+    smtpUser,
+  };
+}
 
 export const config = {
   api: {
@@ -15,10 +46,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    // ✅ Bezpečné načtení těla požadavku
-    const data = req.body;
+    const ip = getClientIp(req);
+    if (isRateLimited(`assistant-intake:${ip}`, 5, 10 * 60 * 1000)) {
+      res.setHeader('Retry-After', '600');
+      return res.status(429).json({ success: false, message: 'Příliš mnoho požadavků. Zkus to prosím za chvíli znovu.' });
+    }
 
-    console.log("📩 Přijatá data:", data);
+    const data = req.body;
 
     if (!data || !data.email) {
       return res
@@ -26,11 +60,17 @@ export default async function handler(req, res) {
         .json({ success: false, message: "Chybí povinné údaje (např. e-mail)" });
     }
 
+    const email = String(data.email || '').trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ success: false, message: 'Neplatná e-mailová adresa.' });
+    }
+
     // ✅ 1. Uložení do Supabase
     const { error: insertError } = await supabaseServer.from('registrations').insert([
       {
         name: data.name,
-        email: data.email,
+        email,
         gender: data.gender,
         age: data.age,
         height: data.height,
@@ -51,19 +91,11 @@ export default async function handler(req, res) {
     }
 
     // ✅ 2. Odeslání potvrzovacího e-mailu (GMAIL_* nebo SMTP_* fallback)
-    const smtpUser = process.env.GMAIL_USER || process.env.SMTP_USER;
-    const smtpPass = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS;
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-    });
+    const { transporter, smtpUser } = createTransporter();
 
     await transporter.sendMail({
       from: `"Body & Mind ON" <${smtpUser || process.env.EMAIL_FROM || 'info@bodyandmindon.cz'}>`,
-      to: data.email,
+      to: email,
       subject: `Potvrzení registrace – ${data.program || "START"} program`,
       html: `
         <h2>Ahoj ${data.name || "člene"},</h2>
@@ -75,7 +107,7 @@ export default async function handler(req, res) {
       `,
     });
 
-    console.log("✅ E-mail odeslán na:", data.email);
+    console.log("✅ E-mail odeslán.");
 
     // ✅ 3. Úspěšná odpověď
     return res

@@ -607,7 +607,7 @@ export default function Profil() {
                             variant="before"
                             label="Předtím"
                           />
-                          <span className="figure-date">{formatShortDate(firstMetric.created_at)}</span>
+                          <span className="figure-date">{formatShortDate(firstMetric.date || firstMetric.created_at)}</span>
                         </div>
                         <span className="body-figure-arrow" aria-hidden>→</span>
                         <div className="body-figure-box body-figure-now">
@@ -622,7 +622,7 @@ export default function Profil() {
                             label="Teď"
                             weightDiff={weightDiff}
                           />
-                          <span className="figure-date">{formatShortDate(latestMetric.created_at)}</span>
+                          <span className="figure-date">{formatShortDate(latestMetric.date || latestMetric.created_at)}</span>
                         </div>
                       </>
                     ) : (

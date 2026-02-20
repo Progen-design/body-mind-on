@@ -74,7 +74,7 @@ export default function Profil() {
     weight_kg: '',
   });
 
-  const fetchOptions = { cache: 'no-store' as RequestCache };
+  const fetchOptions = { cache: 'no-store' };
 
   const fetchProfileWithToken = (accessToken) =>
     fetch('/api/profile', {

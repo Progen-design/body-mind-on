@@ -223,11 +223,16 @@ export default function Profil() {
         // OKAMŽITĚ aktualizovat state - real-time update bez čekání
         setProfile((p) => {
           const prev = p || {};
-          const newWorkouts = [newWorkout, ...(prev.workouts || [])];
+          // Přidat nový trénink a SORT podle data (nejnovější první)
+          const newWorkouts = [newWorkout, ...(prev.workouts || [])].sort((a, b) => {
+            const dateA = (a.workout_date || '').toString();
+            const dateB = (b.workout_date || '').toString();
+            return dateB.localeCompare(dateA); // Descending - nejnovější první
+          });
           return { 
             ...prev, 
             workouts: newWorkouts,
-            _updated: Date.now()
+            _updated: Date.now() // Zajistit změnu reference pro useMemo
           };
         });
         
@@ -239,22 +244,19 @@ export default function Profil() {
         // Zobrazit toast notifikaci
         setToast({ message: 'Trénink úspěšně přidán! 🏋️', type: 'success' });
         
-        // Na pozadí načíst čerstvá data ze serveru (neblokuje UI)
-        // Zkusit několikrát s krátkým intervalem, ale nečekat
-        (async () => {
-          for (let i = 0; i < 3; i++) {
-            await new Promise(resolve => setTimeout(resolve, 300 + i * 200));
-            try {
-              const result = await refetchProfile(token);
-              if (result?.ok) {
-                // Data načtena - state se aktualizuje automaticky
-                break;
-              }
-            } catch (err) {
-              // Tichá chyba - optimistic update už je aplikován
+        // OKAMŽITĚ načíst čerstvá data ze serveru pro synchronizaci
+        // Použít malý delay, aby server stihl uložit data
+        setTimeout(async () => {
+          try {
+            const result = await refetchProfile(token);
+            if (result?.ok) {
+              // Data načtena - state se aktualizuje automaticky s čerstvými daty ze serveru
             }
+          } catch (err) {
+            // Tichá chyba - optimistic update už je aplikován
+            console.warn('Background refetch failed:', err);
           }
-        })();
+        }, 500); // Krátký delay pro zajištění, že server stihl uložit
       } else {
         const errorMsg = json.error || 'Chyba při ukládání tréninku';
         setWorkoutError(errorMsg);
@@ -338,11 +340,16 @@ export default function Profil() {
         // OKAMŽITĚ aktualizovat state - real-time update bez čekání
         setProfile((p) => {
           const prev = p || {};
-          const newMetrics = [json.metric, ...(prev.body_metrics || [])];
+          // Přidat nové měření a SORT podle created_at (nejnovější první)
+          const newMetrics = [json.metric, ...(prev.body_metrics || [])].sort((a, b) => {
+            const dateA = (a.created_at || '').toString();
+            const dateB = (b.created_at || '').toString();
+            return dateB.localeCompare(dateA); // Descending - nejnovější první
+          });
           return { 
             ...prev, 
             body_metrics: newMetrics,
-            _updated: Date.now()
+            _updated: Date.now() // Zajistit změnu reference pro useMemo
           };
         });
         
@@ -354,22 +361,19 @@ export default function Profil() {
         // Zobrazit toast notifikaci
         setToast({ message: 'Váha úspěšně přidána! ⚖️', type: 'success' });
         
-        // Na pozadí načíst čerstvá data ze serveru (neblokuje UI)
-        // Zkusit několikrát s krátkým intervalem, ale nečekat
-        (async () => {
-          for (let i = 0; i < 3; i++) {
-            await new Promise(resolve => setTimeout(resolve, 300 + i * 200));
-            try {
-              const result = await refetchProfile(token);
-              if (result?.ok) {
-                // Data načtena - state se aktualizuje automaticky
-                break;
-              }
-            } catch (err) {
-              // Tichá chyba - optimistic update už je aplikován
+        // OKAMŽITĚ načíst čerstvá data ze serveru pro synchronizaci
+        // Použít malý delay, aby server stihl uložit data
+        setTimeout(async () => {
+          try {
+            const result = await refetchProfile(token);
+            if (result?.ok) {
+              // Data načtena - state se aktualizuje automaticky s čerstvými daty ze serveru
             }
+          } catch (err) {
+            // Tichá chyba - optimistic update už je aplikován
+            console.warn('Background refetch failed:', err);
           }
-        })();
+        }, 500); // Krátký delay pro zajištění, že server stihl uložit
       } else {
         const errorMsg = json.error || 'Chyba při ukládání váhy';
         setWeightError(errorMsg);
@@ -390,8 +394,21 @@ export default function Profil() {
   // Použít _updated timestamp jako závislost, aby se vždy přepočítalo při změně
   const { metrics, workouts, latestMetric, firstMetric, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName } = useMemo(() => {
     // Zajistit, že máme vždy nové reference na pole pro správnou detekci změn
-    const m = profile?.body_metrics ? [...(profile.body_metrics || [])] : [];
-    const w = profile?.workouts ? [...(profile.workouts || [])] : [];
+    // A SORT podle data - nejnovější první
+    const m = profile?.body_metrics 
+      ? [...(profile.body_metrics || [])].sort((a, b) => {
+          const dateA = (a.created_at || '').toString();
+          const dateB = (b.created_at || '').toString();
+          return dateB.localeCompare(dateA); // Descending - nejnovější první
+        })
+      : [];
+    const w = profile?.workouts 
+      ? [...(profile.workouts || [])].sort((a, b) => {
+          const dateA = (a.workout_date || '').toString();
+          const dateB = (b.workout_date || '').toString();
+          return dateB.localeCompare(dateA); // Descending - nejnovější první
+        })
+      : [];
     const latest = m[0];
     const first = m[m.length - 1];
     const cw = latest?.weight_kg ?? null;
@@ -432,7 +449,20 @@ export default function Profil() {
       chartWeightData: chartData,
       userName: name,
     };
-  }, [profile, profile?._updated, profile?.workouts?.length, profile?.body_metrics?.length]);
+  }, [
+    profile, 
+    profile?._updated, 
+    profile?.workouts?.length, 
+    profile?.body_metrics?.length,
+    // Přidat explicitní závislosti pro zajištění přepočítání
+    profile?.workouts?.[0]?.workout_date, // První trénink (nejnovější)
+    profile?.workouts?.[0]?.id, // ID prvního tréninku pro detekci změny
+    profile?.body_metrics?.[0]?.created_at, // Poslední měření
+    profile?.body_metrics?.[0]?.id, // ID posledního měření pro detekci změny
+    // Přidat JSON string pro detekci změn v datech
+    JSON.stringify(profile?.workouts?.slice(0, 5)?.map(w => ({ id: w.id, date: w.workout_date })) || []),
+    JSON.stringify(profile?.body_metrics?.slice(0, 5)?.map(m => ({ id: m.id, date: m.created_at })) || [])
+  ]);
 
   const handleRefresh = async () => {
     setRefreshing(true);

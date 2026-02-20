@@ -60,6 +60,7 @@ export default function Profil() {
   const [savingWorkout, setSavingWorkout] = useState(false);
   const [weightError, setWeightError] = useState('');
   const [savingWeight, setSavingWeight] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [workoutForm, setWorkoutForm] = useState({
     workout_date: new Date().toISOString().split('T')[0],
@@ -298,7 +299,6 @@ export default function Profil() {
     };
   }, [profile]);
 
-  const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -345,7 +345,10 @@ export default function Profil() {
         {!loading && !error && (
           <>
             <p className="trainer-hint">
-              Postava a graf vycházejí z <strong>měření váhy</strong>. Tréninky ovlivňují přehled (počty, minuty, kalorie). Vše se počítá hned.
+              Postava a graf vycházejí z <strong>měření váhy</strong>. Tréninky ovlivňují přehled (počty, minuty, kalorie). Vše se přepočítá hned po každé akci.
+              <button type="button" onClick={handleRefresh} disabled={refreshing} className="btn-refresh" title="Obnovit data">
+                {refreshing ? 'Obnovuji…' : '🔄 Obnovit přehled'}
+              </button>
             </p>
 
             {/* POSTAVA – Předtím vs Teď, nebo jen Teď */}
@@ -641,10 +644,24 @@ export default function Profil() {
           color: #94a3b8;
           font-size: 14px;
           margin: -20px 0 32px;
-          max-width: 520px;
+          max-width: 580px;
           margin-left: auto;
           margin-right: auto;
         }
+        .btn-refresh {
+          display: inline-block;
+          margin-left: 12px;
+          padding: 6px 14px;
+          background: rgba(139, 92, 255, 0.25);
+          border: 1px solid #7c3aed;
+          border-radius: 8px;
+          color: #c4b5fd;
+          font-size: 13px;
+          cursor: pointer;
+          vertical-align: middle;
+        }
+        .btn-refresh:hover:not(:disabled) { background: rgba(139, 92, 255, 0.4); }
+        .btn-refresh:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .progress-section { margin-bottom: 40px; }
         .body-figures-row {

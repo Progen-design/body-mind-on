@@ -285,21 +285,15 @@ export default function Profil() {
         // Zobrazit toast notifikaci
         setToast({ message: 'Trénink úspěšně přidán! 🏋️', type: 'success' });
         
-        // OKAMŽITĚ načíst čerstvá data ze serveru pro synchronizaci - automatická aktualizace
+        // Načíst čerstvá data po krátkém zpoždění, aby API už vrátilo nový záznam (bez přepsání optimistické aktualizace)
         (async () => {
-          // Zkusit okamžitě, pak znovu po krátkém delay pro jistotu
           for (let attempt = 0; attempt < 2; attempt++) {
             try {
-              await new Promise(resolve => setTimeout(resolve, attempt * 200));
+              await new Promise(resolve => setTimeout(resolve, attempt === 0 ? 600 : 400));
               const result = await refetchProfile(token);
-              if (result?.ok) {
-                // Data načtena - state se aktualizuje automaticky s čerstvými daty ze serveru
-                break;
-              }
+              if (result?.ok) break;
             } catch (err) {
-              if (attempt === 1) {
-                console.warn('Background refetch failed:', err);
-              }
+              if (attempt === 1) console.warn('Background refetch failed:', err);
             }
           }
         })();
@@ -350,19 +344,14 @@ export default function Profil() {
         // Zobrazit toast notifikaci
         setToast({ message: 'Trénink smazán', type: 'info' });
         
-        // OKAMŽITĚ načíst čerstvá data ze serveru pro synchronizaci - automatická aktualizace
         (async () => {
           for (let attempt = 0; attempt < 2; attempt++) {
             try {
-              await new Promise(resolve => setTimeout(resolve, attempt * 200));
+              await new Promise(resolve => setTimeout(resolve, attempt === 0 ? 600 : 400));
               const result = await refetchProfile(token);
-              if (result?.ok) {
-                break;
-              }
+              if (result?.ok) break;
             } catch (err) {
-              if (attempt === 1) {
-                console.warn('Background refetch failed:', err);
-              }
+              if (attempt === 1) console.warn('Background refetch failed:', err);
             }
           }
         })();
@@ -396,11 +385,14 @@ export default function Profil() {
       });
       const json = await res.json();
       if (res.ok && json.metric) {
-        // OKAMŽITĚ aktualizovat state - real-time update bez čekání
+        // Normalizovat metrikum: mít pole date pro graf (z created_at nebo date)
+        const metric = {
+          ...json.metric,
+          date: json.metric.date || (json.metric.created_at ? String(json.metric.created_at).slice(0, 10) : weightForm.date),
+        };
         setProfile((p) => {
           const prev = p || {};
-          // Přidat nové měření a SORT podle created_at (nejnovější první)
-          const newMetrics = [json.metric, ...(prev.body_metrics || [])].sort((a, b) => {
+          const newMetrics = [metric, ...(prev.body_metrics || [])].sort((a, b) => {
             const dateA = (a.created_at || '').toString();
             const dateB = (b.created_at || '').toString();
             return dateB.localeCompare(dateA); // Descending - nejnovější první
@@ -426,21 +418,14 @@ export default function Profil() {
         // Zobrazit toast notifikaci
         setToast({ message: 'Váha úspěšně přidána! ⚖️', type: 'success' });
         
-        // OKAMŽITĚ načíst čerstvá data ze serveru pro synchronizaci - automatická aktualizace
         (async () => {
-          // Zkusit okamžitě, pak znovu po krátkém delay pro jistotu
           for (let attempt = 0; attempt < 2; attempt++) {
             try {
-              await new Promise(resolve => setTimeout(resolve, attempt * 200));
+              await new Promise(resolve => setTimeout(resolve, attempt === 0 ? 600 : 400));
               const result = await refetchProfile(token);
-              if (result?.ok) {
-                // Data načtena - state se aktualizuje automaticky s čerstvými daty ze serveru
-                break;
-              }
+              if (result?.ok) break;
             } catch (err) {
-              if (attempt === 1) {
-                console.warn('Background refetch failed:', err);
-              }
+              if (attempt === 1) console.warn('Background refetch failed:', err);
             }
           }
         })();

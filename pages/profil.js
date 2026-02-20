@@ -5,6 +5,9 @@ import { useRouter } from 'next/router';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import BodyFigure from '../components/BodyFigure';
+import WelcomeTour from '../components/WelcomeTour';
+import PlanViewer from '../components/PlanViewer';
+import Toast from '../components/Toast';
 import { supabase } from '../lib/supabaseClient';
 
 const WORKOUT_TYPES = [
@@ -61,6 +64,8 @@ export default function Profil() {
   const [weightError, setWeightError] = useState('');
   const [savingWeight, setSavingWeight] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showWelcomeTour, setShowWelcomeTour] = useState(false);
+  const [toast, setToast] = useState({ message: '', type: 'success' });
 
   const [workoutForm, setWorkoutForm] = useState({
     workout_date: new Date().toISOString().split('T')[0],
@@ -169,6 +174,20 @@ export default function Profil() {
     return () => { cancelled = true; };
   }, [router]);
 
+  // Zobrazit welcome tour po prvním přihlášení
+  useEffect(() => {
+    if (!loading && session && !error) {
+      const tourSeen = localStorage.getItem('welcomeTourSeen');
+      if (!tourSeen) {
+        // Počkat chvíli, aby se stránka načetla, pak zobrazit tour
+        const timer = setTimeout(() => {
+          setShowWelcomeTour(true);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [loading, session, error]);
+
   async function handleLogout() {
     await supabase.auth.signOut();
     router.replace('/login');
@@ -217,6 +236,9 @@ export default function Profil() {
         setShowWorkoutModal(false);
         if (fresh) setSession(fresh);
         
+        // Zobrazit toast notifikaci
+        setToast({ message: 'Trénink úspěšně přidán! 🏋️', type: 'success' });
+        
         // Na pozadí načíst čerstvá data ze serveru (neblokuje UI)
         // Zkusit několikrát s krátkým intervalem, ale nečekat
         (async () => {
@@ -234,10 +256,14 @@ export default function Profil() {
           }
         })();
       } else {
-        setWorkoutError(json.error || 'Chyba při ukládání tréninku');
+        const errorMsg = json.error || 'Chyba při ukládání tréninku';
+        setWorkoutError(errorMsg);
+        setToast({ message: errorMsg, type: 'error' });
       }
     } catch (err) {
-      setWorkoutError(err.message || 'Chyba připojení');
+      const errorMsg = err.message || 'Chyba připojení';
+      setWorkoutError(errorMsg);
+      setToast({ message: errorMsg, type: 'error' });
     } finally {
       setSavingWorkout(false);
     }
@@ -267,6 +293,9 @@ export default function Profil() {
         
         if (fresh) setSession(fresh);
         
+        // Zobrazit toast notifikaci
+        setToast({ message: 'Trénink smazán', type: 'info' });
+        
         // Na pozadí načíst čerstvá data ze serveru (neblokuje UI)
         (async () => {
           await new Promise(resolve => setTimeout(resolve, 200));
@@ -276,9 +305,12 @@ export default function Profil() {
             // Tichá chyba - optimistic update už je aplikován
           }
         })();
+      } else {
+        setToast({ message: 'Nepodařilo se smazat trénink', type: 'error' });
       }
     } catch (err) {
       console.error('Delete workout error:', err);
+      setToast({ message: 'Chyba při mazání tréninku', type: 'error' });
     }
   }
 
@@ -319,6 +351,9 @@ export default function Profil() {
         setShowWeightModal(false);
         if (fresh) setSession(fresh);
         
+        // Zobrazit toast notifikaci
+        setToast({ message: 'Váha úspěšně přidána! ⚖️', type: 'success' });
+        
         // Na pozadí načíst čerstvá data ze serveru (neblokuje UI)
         // Zkusit několikrát s krátkým intervalem, ale nečekat
         (async () => {
@@ -336,10 +371,14 @@ export default function Profil() {
           }
         })();
       } else {
-        setWeightError(json.error || 'Chyba při ukládání váhy');
+        const errorMsg = json.error || 'Chyba při ukládání váhy';
+        setWeightError(errorMsg);
+        setToast({ message: errorMsg, type: 'error' });
       }
     } catch (err) {
-      setWeightError(err.message || 'Chyba připojení');
+      const errorMsg = err.message || 'Chyba připojení';
+      setWeightError(errorMsg);
+      setToast({ message: errorMsg, type: 'error' });
     } finally {
       setSavingWeight(false);
     }
@@ -401,14 +440,44 @@ export default function Profil() {
       const { data: { session: fresh } } = await supabase.auth.refreshSession();
       const token = fresh?.access_token ?? session?.access_token;
       if (fresh) setSession(fresh);
-      await refetchProfile(token);
+      const result = await refetchProfile(token);
+      if (result?.ok) {
+        setToast({ message: 'Data obnovena! 🔄', type: 'success' });
+      } else {
+        setToast({ message: 'Nepodařilo se obnovit data', type: 'warning' });
+      }
+    } catch (err) {
+      setToast({ message: 'Chyba při obnovování dat', type: 'error' });
     } finally {
       setRefreshing(false);
     }
   };
 
+  // Najít aktuální/nejnovější plán
+  const currentPlan = useMemo(() => {
+    if (!profile?.plans || !Array.isArray(profile.plans) || profile.plans.length === 0) {
+      return null;
+    }
+    // Najít platný plán (valid_until >= dnes) nebo nejnovější
+    const now = new Date();
+    const validPlan = profile.plans.find(p => {
+      if (!p.valid_until) return false;
+      return new Date(p.valid_until) >= now;
+    });
+    // Pokud není platný, vezmi nejnovější
+    return validPlan || profile.plans[0];
+  }, [profile?.plans]);
+
   return (
     <>
+      {showWelcomeTour && <WelcomeTour onClose={() => setShowWelcomeTour(false)} />}
+      {toast.message && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ message: '', type: 'success' })}
+        />
+      )}
       <Header />
       <main className="page">
         <section className="hero">
@@ -446,6 +515,9 @@ export default function Profil() {
                 {refreshing ? 'Obnovuji…' : '🔄 Obnovit přehled'}
               </button>
             </p>
+
+            {/* MŮJ PLÁN */}
+            {currentPlan && <PlanViewer plan={currentPlan} userName={userName} />}
 
             {/* POSTAVA – Předtím vs Teď, nebo jen Teď */}
             <section className="card center progress-section">
@@ -667,9 +739,24 @@ export default function Profil() {
                     <label>Poznámka (volitelné)</label>
                     <input type="text" value={workoutForm.notes} onChange={(e) => setWorkoutForm((f) => ({ ...f, notes: e.target.value }))} placeholder="např. nohy" />
                     {workoutError && <p className="modal-error" role="alert">{workoutError}</p>}
+                    {savingWorkout && (
+                      <div className="modal-loading">
+                        <div className="loading-spinner"></div>
+                        <span>Ukládám trénink…</span>
+                      </div>
+                    )}
                     <div className="modal-actions">
                       <button type="button" onClick={() => { setShowWorkoutModal(false); setWorkoutError(''); }} disabled={savingWorkout}>Zrušit</button>
-                      <button type="submit" disabled={savingWorkout}>{savingWorkout ? 'Ukládám…' : 'Uložit'}</button>
+                      <button type="submit" disabled={savingWorkout} className={savingWorkout ? 'loading' : ''}>
+                        {savingWorkout ? (
+                          <>
+                            <span className="button-spinner"></span>
+                            Ukládám…
+                          </>
+                        ) : (
+                          'Uložit'
+                        )}
+                      </button>
                     </div>
                   </form>
                 </div>
@@ -686,9 +773,24 @@ export default function Profil() {
                     <input type="number" min={30} max={300} step={0.1} placeholder="např. 78.5" value={weightForm.weight_kg} onChange={(e) => setWeightForm((f) => ({ ...f, weight_kg: e.target.value }))} required />
                     <p className="modal-hint">Postava i graf se přepočítají ihned.</p>
                     {weightError && <p className="modal-error" role="alert">{weightError}</p>}
+                    {savingWeight && (
+                      <div className="modal-loading">
+                        <div className="loading-spinner"></div>
+                        <span>Ukládám váhu…</span>
+                      </div>
+                    )}
                     <div className="modal-actions">
                       <button type="button" onClick={() => { setShowWeightModal(false); setWeightError(''); }} disabled={savingWeight}>Zrušit</button>
-                      <button type="submit" disabled={savingWeight}>{savingWeight ? 'Ukládám…' : 'Uložit'}</button>
+                      <button type="submit" disabled={savingWeight} className={savingWeight ? 'loading' : ''}>
+                        {savingWeight ? (
+                          <>
+                            <span className="button-spinner"></span>
+                            Ukládám…
+                          </>
+                        ) : (
+                          'Uložit'
+                        )}
+                      </button>
                     </div>
                   </form>
                 </div>
@@ -1050,6 +1152,72 @@ export default function Profil() {
           background: linear-gradient(135deg, #7c3aed, #9b5cff);
           border: none;
           color: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        }
+        .modal-actions button[type="submit"]:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+        .modal-actions button[type="submit"].loading {
+          position: relative;
+        }
+
+        .modal-loading {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px;
+          background: rgba(155, 92, 255, 0.1);
+          border-radius: 10px;
+          margin: 12px 0;
+          color: #a78bfa;
+          font-size: 14px;
+        }
+
+        .loading-spinner,
+        .button-spinner {
+          width: 16px;
+          height: 16px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-top-color: #fff;
+          border-radius: 50%;
+          animation: spin 0.6s linear infinite;
+        }
+
+        .button-spinner {
+          width: 14px;
+          height: 14px;
+          border-width: 2px;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
+        .workout-item {
+          animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .kpi {
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .kpi:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(155, 92, 255, 0.2);
         }
 
         .loading {

@@ -1,28 +1,21 @@
-// /pages/register.js
+// /pages/register.js - Přesměrování na /start pro sjednocení onboarding flow
+import { useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
-import Header from '../components/Header'
-import Footer from '../components/Footer'
 
 export default function Register() {
   const router = useRouter()
   const { plan } = router.query
 
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [height, setHeight] = useState('')
-  const [weight, setWeight] = useState('')
-  const [age, setAge] = useState('')
-  const [activity, setActivity] = useState('stredne')
-  const [stress, setStress] = useState('medium')
-  const [occupation, setOccupation] = useState('office_it')
-  const [goal, setGoal] = useState('redukce')
-  const [freq, setFreq] = useState('2-3')
-  const [notes, setNotes] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [msg, setMsg] = useState(null)
+  useEffect(() => {
+    // Přesměrovat na /start s parametrem plan, pokud existuje
+    if (plan) {
+      router.replace(`/start?plan=${plan}`)
+    } else {
+      router.replace('/start')
+    }
+  }, [router, plan])
 
-  useEffect(() => { if (!plan) router.replace('/pricing') }, [plan, router])
+  return null
 
   async function onSubmit(e) {
     e.preventDefault()

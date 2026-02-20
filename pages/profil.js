@@ -600,9 +600,23 @@ export default function Profil() {
           <h1>
             Ahoj <span>{userName}</span> 👋
           </h1>
-          <p>
-            Každý trénink, každé měření. Tvoje tělo reaguje na každý krok.
-          </p>
+          <p className="hero-sub">Každý trénink, každé měření.</p>
+          {!loading && !error && (
+            <div className="hero-strip">
+              <div className="hero-stat">
+                <span className="hero-stat-value">{currentWeight != null ? `${currentWeight} kg` : '—'}</span>
+                <span className="hero-stat-label">Aktuální váha</span>
+              </div>
+              <div className="hero-stat">
+                <span className="hero-stat-value">{workoutsThisWeek?.length ?? 0}</span>
+                <span className="hero-stat-label">Tréninků tento týden</span>
+              </div>
+              <div className="hero-stat">
+                <span className="hero-stat-value trend-num">{weightDiff != null ? (Number(weightDiff) > 0 ? '+' : '') + weightDiff + ' kg' : '—'}</span>
+                <span className="hero-stat-label">Změna od začátku</span>
+              </div>
+            </div>
+          )}
           <button onClick={handleLogout} className="logout">
             Odhlásit se
           </button>
@@ -625,22 +639,23 @@ export default function Profil() {
 
         {!loading && !error && (
           <>
-            <p className="trainer-hint">
+            <div className="toolbar">
               <button type="button" onClick={handleRefresh} disabled={refreshing} className="btn-refresh" title="Obnovit data">
-                {refreshing ? 'Obnovuji…' : '🔄 Obnovit přehled'}
+                {refreshing ? 'Obnovuji…' : '🔄 Obnovit'}
               </button>
-              <span className="trainer-hint-text">Data se aktualizují po každé akci i při návratu na stránku.</span>
-            </p>
+            </div>
 
-            {/* RYCHLÉ AKCE – hned pod úvodem */}
-            <section className="card actions">
-              <h2>Rychlé akce</h2>
+            {/* RYCHLÉ AKCE – výrazný pruh */}
+            <section className="actions-block">
+              <h2 className="actions-title">Co chceš zapsat?</h2>
               <div className="action-buttons">
                 <button type="button" onClick={() => { setShowWorkoutModal(true); setWorkoutError(''); }} className="btn-primary">
-                  + Zapsat trénink
+                  <span className="btn-emoji">🏋️</span>
+                  Zapsat trénink
                 </button>
                 <button type="button" onClick={() => { setShowWeightModal(true); setWeightError(''); }} className="btn-secondary">
-                  ⚖️ Přidat váhu
+                  <span className="btn-emoji">⚖️</span>
+                  Přidat váhu
                 </button>
               </div>
             </section>
@@ -649,8 +664,8 @@ export default function Profil() {
             {currentPlan && <PlanViewer plan={currentPlan} userName={userName} />}
 
             {/* TVŮJ PROGRES – Předtím vs Teď + souhrn v jednom bloku */}
-            <section className="card center progress-section">
-              <h2>Tvůj progres</h2>
+            <section className="card card-accent center progress-section">
+              <h2 className="section-head">Tvůj progres</h2>
 
               {latestMetric ? (
                 <>
@@ -724,7 +739,7 @@ export default function Profil() {
 
             {/* Historie tréninků */}
             <section className="card history-section">
-              <h2>Historie tréninků</h2>
+              <h2 className="section-head">Historie tréninků</h2>
               {workouts.length === 0 ? (
                 <p className="empty-history">Zatím nemáš žádné záznamy. Klikni na „Zapsat trénink“ a první trénink se objeví zde i v přehledu.</p>
               ) : (
@@ -746,34 +761,35 @@ export default function Profil() {
               )}
             </section>
 
-            {/* KPI – tento týden + celkem */}
+            {/* KPI – horizontální pruh */}
             <section className="kpi-section">
-              <h2>Přehled jako u trenéra</h2>
-              <p className="kpi-sub">Tento týden / Celkem</p>
-              <div className="kpis">
-                <div className="kpi">
+              <h2 className="section-head">Statistiky</h2>
+              <div className="kpis-bar">
+                <div className="kpi-item">
                   <span className="kpi-icon">🏋️</span>
-                  <h3>{workoutsThisWeek.length}</h3>
-                  <p className="kpi-label">Tréninků</p>
-                  <p className="kpi-total">{workouts.length} celkem</p>
+                  <span className="kpi-num">{workoutsThisWeek.length}</span>
+                  <span className="kpi-label">tento týden</span>
+                  <span className="kpi-sub">{workouts.length} celkem</span>
                 </div>
-                <div className="kpi">
+                <div className="kpi-divider" />
+                <div className="kpi-item">
                   <span className="kpi-icon">⏱️</span>
-                  <h3>{totalMinutesThisWeek} min</h3>
-                  <p className="kpi-label">V pohybu</p>
-                  <p className="kpi-total">{totalMinutes} min celkem</p>
+                  <span className="kpi-num">{totalMinutesThisWeek} min</span>
+                  <span className="kpi-label">v pohybu</span>
+                  <span className="kpi-sub">{totalMinutes} min celkem</span>
                 </div>
-                <div className="kpi">
+                <div className="kpi-divider" />
+                <div className="kpi-item">
                   <span className="kpi-icon">🔥</span>
-                  <h3>~{estimatedCaloriesThisWeek}</h3>
-                  <p className="kpi-label">Spáleno (odhad)</p>
-                  <p className="kpi-total">~{estimatedCaloriesAll} kcal celkem</p>
+                  <span className="kpi-num">~{estimatedCaloriesThisWeek}</span>
+                  <span className="kpi-label">kcal</span>
+                  <span className="kpi-sub">~{estimatedCaloriesAll} celkem</span>
                 </div>
-                <div className="kpi">
+                <div className="kpi-divider" />
+                <div className="kpi-item">
                   <span className="kpi-icon">⚖️</span>
-                  <h3>{currentWeight != null ? `${currentWeight} kg` : '—'}</h3>
-                  <p className="kpi-label">Aktuální váha</p>
-                  <p className="kpi-total">z měření</p>
+                  <span className="kpi-num">{currentWeight != null ? `${currentWeight} kg` : '—'}</span>
+                  <span className="kpi-label">váha</span>
                 </div>
               </div>
             </section>
@@ -781,7 +797,7 @@ export default function Profil() {
             {/* GRAF VÁHY – line chart */}
             {chartWeightData.length >= 1 && (
               <section className="card chart-section">
-                <h2>Vývoj váhy</h2>
+                <h2 className="section-head">Vývoj váhy</h2>
                 <p className="chart-hint">Data z tlačítka „Přidat váhu“. Každé nové měření se zobrazí ihned.</p>
                 {chartWeightData.length >= 2 ? (
                   <>
@@ -939,48 +955,88 @@ export default function Profil() {
 
         .hero {
           text-align: center;
-          margin-bottom: 60px;
+          margin-bottom: 40px;
         }
-
         .hero h1 {
-          font-size: 40px;
+          font-size: 38px;
           font-weight: 700;
         }
-
         .hero span {
           background: linear-gradient(90deg, #9b5cff, #00cfff);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
-
-        .hero p {
-          color: #aaa;
-          margin-top: 14px;
-        }
-
-        .trainer-hint {
-          text-align: center;
+        .hero-sub {
           color: #94a3b8;
-          font-size: 14px;
-          margin: -20px 0 24px;
+          margin-top: 8px;
+          font-size: 16px;
+        }
+        .hero-strip {
           display: flex;
+          flex-wrap: wrap;
           align-items: center;
           justify-content: center;
-          flex-wrap: wrap;
-          gap: 10px;
+          gap: 24px 32px;
+          margin-top: 28px;
+          padding: 20px 24px;
+          background: rgba(139, 92, 255, 0.12);
+          border-radius: 16px;
+          border: 1px solid rgba(139, 92, 255, 0.25);
+          max-width: 520px;
+          margin-left: auto;
+          margin-right: auto;
         }
-        .trainer-hint-text { opacity: 0.9; }
+        .hero-stat {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
+        }
+        .hero-stat-value {
+          font-size: 22px;
+          font-weight: 700;
+          color: #e9d5ff;
+        }
+        .hero-stat-value.trend-num { color: #fbbf24; }
+        .hero-stat-label {
+          font-size: 12px;
+          color: #64748b;
+        }
+        .toolbar {
+          text-align: center;
+          margin: -8px 0 20px;
+        }
         .btn-refresh {
-          padding: 6px 14px;
-          background: rgba(139, 92, 255, 0.25);
-          border: 1px solid #7c3aed;
-          border-radius: 8px;
-          color: #c4b5fd;
+          padding: 8px 16px;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid #444;
+          border-radius: 10px;
+          color: #94a3b8;
           font-size: 13px;
           cursor: pointer;
         }
-        .btn-refresh:hover:not(:disabled) { background: rgba(139, 92, 255, 0.4); }
+        .btn-refresh:hover:not(:disabled) { background: rgba(255,255,255,0.1); color: #c4b5fd; }
         .btn-refresh:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .actions-block {
+          margin-bottom: 32px;
+          padding: 28px 32px;
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.25), rgba(155, 92, 255, 0.15));
+          border-radius: 20px;
+          border: 1px solid rgba(139, 92, 255, 0.35);
+        }
+        .actions-title {
+          margin: 0 0 20px;
+          font-size: 18px;
+          color: #e9d5ff;
+          font-weight: 600;
+        }
+        .action-buttons {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 14px;
+        }
+        .btn-emoji { font-size: 20px; margin-right: 8px; }
 
         .progress-section { margin-bottom: 40px; }
         .body-figures-row {
@@ -1063,82 +1119,88 @@ export default function Profil() {
           margin-bottom: 40px;
           backdrop-filter: blur(20px);
         }
-
+        .card-accent {
+          border-left: 4px solid #9b5cff;
+        }
+        .section-head {
+          margin: 0 0 24px;
+          font-size: 20px;
+          font-weight: 600;
+          color: #e2e8f0;
+          padding-bottom: 10px;
+          border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
         .center {
           text-align: center;
         }
-
+        .center .section-head { border-bottom-color: rgba(255,255,255,0.06); }
         .trend {
           margin-top: 8px;
           font-size: 18px;
         }
 
-        .actions {
-          margin-bottom: 32px;
-          border: 1px solid rgba(139, 92, 255, 0.2);
-        }
-        .actions h2 { margin-bottom: 16px; }
-        .action-buttons {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 12px;
-        }
         .btn-primary {
           background: linear-gradient(135deg, #7c3aed, #9b5cff);
           color: #fff;
           border: none;
-          padding: 14px 28px;
-          border-radius: 12px;
+          padding: 14px 24px;
+          border-radius: 14px;
           font-weight: 600;
           cursor: pointer;
           font-size: 15px;
+          display: inline-flex;
+          align-items: center;
         }
         .btn-primary:hover { opacity: 0.95; filter: brightness(1.05); }
         .btn-secondary {
-          background: rgba(255,255,255,0.08);
+          background: rgba(255,255,255,0.1);
           color: #e9d5ff;
-          border: 1px solid #6d28d9;
-          padding: 14px 28px;
-          border-radius: 12px;
+          border: 1px solid rgba(139, 92, 255, 0.5);
+          padding: 14px 24px;
+          border-radius: 14px;
           font-weight: 600;
           cursor: pointer;
           font-size: 15px;
+          display: inline-flex;
+          align-items: center;
         }
-        .btn-secondary:hover { background: rgba(255,255,255,0.12); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.15); }
 
         .kpi-section { margin-bottom: 40px; }
-        .kpi-section h2 { margin-bottom: 4px; }
-        .kpi-sub {
-          color: #64748b;
-          font-size: 13px;
-          margin-bottom: 20px;
+        .kpis-bar {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: stretch;
+          background: rgba(255,255,255,0.04);
+          border-radius: 16px;
+          padding: 20px 16px;
+          gap: 0;
+          border: 1px solid rgba(255,255,255,0.06);
         }
-        .kpis {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-          gap: 20px;
-          margin-bottom: 40px;
+        .kpi-item {
+          flex: 1;
+          min-width: 100px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          padding: 8px;
         }
-
-        .kpi {
-          background: rgba(255, 255, 255, 0.04);
-          padding: 30px;
-          border-radius: 20px;
-          text-align: center;
-          backdrop-filter: blur(20px);
+        .kpi-divider {
+          width: 1px;
+          background: rgba(255,255,255,0.08);
+          min-height: 50px;
+          align-self: center;
         }
-
-        .kpi-icon {
-          font-size: 28px;
-          display: block;
-          margin-bottom: 4px;
+        .kpis-bar .kpi-icon { font-size: 22px; }
+        .kpis-bar .kpi-num {
+          font-size: 18px;
+          font-weight: 700;
+          color: #e9d5ff;
         }
-        .kpi h3 {
-          margin: 4px 0 2px;
-          font-size: 22px;
-        }
-        .kpi-label { color: #94a3b8; font-size: 13px; margin: 0; }
-        .kpi-total { color: #64748b; font-size: 11px; margin-top: 4px; }
+        .kpis-bar .kpi-label { font-size: 12px; color: #94a3b8; }
+        .kpis-bar .kpi-sub { font-size: 11px; color: #64748b; }
 
         .chart-section { margin-bottom: 40px; }
         .chart-hint {

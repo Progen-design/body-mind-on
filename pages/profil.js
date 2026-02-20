@@ -44,7 +44,19 @@ function formatDate(d) {
 
 function formatShortDate(d) {
   if (!d) return '—';
-  return new Date(d).toLocaleDateString('cs-CZ', {
+  // Pokud je to string ve formátu YYYY-MM-DD, přidat čas pro správné parsování
+  let dateStr = d;
+  if (typeof d === 'string' && d.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    // Přidat čas pro správné parsování (UTC, aby se předešlo problémům s timezone)
+    dateStr = `${d}T12:00:00Z`;
+  }
+  const date = new Date(dateStr);
+  // Zkontrolovat, zda je datum platné
+  if (isNaN(date.getTime())) {
+    console.warn('Invalid date:', d);
+    return '—';
+  }
+  return date.toLocaleDateString('cs-CZ', {
     day: 'numeric',
     month: 'short',
   });
@@ -439,10 +451,23 @@ export default function Profil() {
     const minTotal = w.reduce((s, x) => s + (Number(x.duration_min) || 0), 0);
     const kcalTotal = w.reduce((s, x) => s + estimatedCalories(x), 0);
 
+    // Pro graf: použít datum z created_at, ale pokud je v date poli, použít to
+    // Zajistit, že každé měření má své vlastní datum
     const chartData = m
-      .filter((x) => x.weight_kg && x.created_at)
-      .map((x) => ({ date: x.created_at.split('T')[0], weight: x.weight_kg }))
-      .reverse();
+      .filter((x) => x.weight_kg && (x.created_at || x.date))
+      .map((x) => {
+        // Použít date pokud existuje, jinak created_at
+        const dateStr = x.date || (x.created_at ? x.created_at.split('T')[0] : null);
+        return { 
+          date: dateStr, 
+          weight: x.weight_kg,
+          // Přidat timestamp pro unikátní identifikaci
+          id: x.id || `${dateStr}-${x.weight_kg}`
+        };
+      })
+      .filter((x) => x.date) // Odstranit položky bez data
+      .sort((a, b) => (a.date || '').localeCompare(b.date || '')) // Seřadit podle data vzestupně
+      .reverse(); // Obrátit pro zobrazení (nejnovější první)
 
     const name = profile?.user?.name || profile?.user?.email?.split('@')[0] || 'Sportovče';
 

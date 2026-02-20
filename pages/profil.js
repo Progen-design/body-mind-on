@@ -626,16 +626,29 @@ export default function Profil() {
         {!loading && !error && (
           <>
             <p className="trainer-hint">
-              Postava se aktualizuje podle <strong>tvých tréninků</strong> - každý trénink se projeví okamžitě. Graf vychází z měření váhy. Vše se přepočítá hned po každé akci.
               <button type="button" onClick={handleRefresh} disabled={refreshing} className="btn-refresh" title="Obnovit data">
                 {refreshing ? 'Obnovuji…' : '🔄 Obnovit přehled'}
               </button>
+              <span className="trainer-hint-text">Data se aktualizují po každé akci i při návratu na stránku.</span>
             </p>
+
+            {/* RYCHLÉ AKCE – hned pod úvodem */}
+            <section className="card actions">
+              <h2>Rychlé akce</h2>
+              <div className="action-buttons">
+                <button type="button" onClick={() => { setShowWorkoutModal(true); setWorkoutError(''); }} className="btn-primary">
+                  + Zapsat trénink
+                </button>
+                <button type="button" onClick={() => { setShowWeightModal(true); setWeightError(''); }} className="btn-secondary">
+                  ⚖️ Přidat váhu
+                </button>
+              </div>
+            </section>
 
             {/* MŮJ PLÁN */}
             {currentPlan && <PlanViewer plan={currentPlan} userName={userName} />}
 
-            {/* POSTAVA – Předtím vs Teď, nebo jen Teď */}
+            {/* TVŮJ PROGRES – Předtím vs Teď + souhrn v jednom bloku */}
             <section className="card center progress-section">
               <h2>Tvůj progres</h2>
 
@@ -656,6 +669,7 @@ export default function Profil() {
                             label="Předtím"
                           />
                           <span className="figure-date">{formatShortDate(firstMetric.date || firstMetric.created_at)}</span>
+                          <span className="figure-weight">{firstMetric.weight_kg} kg</span>
                         </div>
                         <span className="body-figure-arrow" aria-hidden>→</span>
                         <div className="body-figure-box body-figure-now">
@@ -671,6 +685,7 @@ export default function Profil() {
                             weightDiff={weightDiff}
                           />
                           <span className="figure-date">{formatShortDate(latestWorkout?.workout_date || latestMetric?.date || latestMetric?.created_at)}</span>
+                          <span className="figure-weight">{currentWeight} kg</span>
                         </div>
                       </>
                     ) : (
@@ -684,41 +699,27 @@ export default function Profil() {
                           size={150}
                         />
                         <span className="figure-date">{formatShortDate(latestWorkout?.workout_date || latestMetric?.date || latestMetric?.created_at)}</span>
+                        <span className="figure-weight">{currentWeight} kg</span>
                       </div>
                     )}
                   </div>
-                  {workoutsThisWeek.length > 0 && (
-                    <p className="workout-badge">Tento týden: {workoutsThisWeek.length} tréninků 🏋️</p>
-                  )}
-                  {currentWeight != null && <p className="weight-now">{currentWeight} kg</p>}
-                  {weightDiff != null && (
-                    <p className="trend">
-                      Změna od začátku:{' '}
-                      <strong>
-                        {Number(weightDiff) > 0 ? '+' : ''}
-                        {weightDiff} kg
-                      </strong>
-                    </p>
-                  )}
+                  <div className="progress-summary">
+                    {workoutsThisWeek.length > 0 && (
+                      <span className="workout-badge">Tento týden: {workoutsThisWeek.length} tréninků</span>
+                    )}
+                    {currentWeight != null && <span className="weight-now">{currentWeight} kg</span>}
+                    {weightDiff != null && (
+                      <span className="trend">
+                        Změna od začátku: <strong>{Number(weightDiff) > 0 ? '+' : ''}{weightDiff} kg</strong>
+                      </span>
+                    )}
+                  </div>
                 </>
               ) : (
                 <p className="empty-progress">
-                  Postava vychází z váhy – klikni na <strong>„Přidat váhu“</strong> níže a uvidíš zde tvar i trend. Tréninky se započítají do přehledu.
+                  Postava vychází z váhy – klikni na <strong>„Přidat váhu“</strong> výše a uvidíš zde tvar i trend. Tréninky se započítají do přehledu.
                 </p>
               )}
-            </section>
-
-            {/* RYCHLÉ AKCE */}
-            <section className="card actions">
-              <h2>Rychlé akce</h2>
-              <div className="action-buttons">
-                <button type="button" onClick={() => { setShowWorkoutModal(true); setWorkoutError(''); }} className="btn-primary">
-                  + Zapsat trénink
-                </button>
-                <button type="button" onClick={() => { setShowWeightModal(true); setWeightError(''); }} className="btn-secondary">
-                  ⚖️ Přidat váhu
-                </button>
-              </div>
             </section>
 
             {/* Historie tréninků */}
@@ -961,14 +962,15 @@ export default function Profil() {
           text-align: center;
           color: #94a3b8;
           font-size: 14px;
-          margin: -20px 0 32px;
-          max-width: 580px;
-          margin-left: auto;
-          margin-right: auto;
+          margin: -20px 0 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-wrap: wrap;
+          gap: 10px;
         }
+        .trainer-hint-text { opacity: 0.9; }
         .btn-refresh {
-          display: inline-block;
-          margin-left: 12px;
           padding: 6px 14px;
           background: rgba(139, 92, 255, 0.25);
           border: 1px solid #7c3aed;
@@ -976,7 +978,6 @@ export default function Profil() {
           color: #c4b5fd;
           font-size: 13px;
           cursor: pointer;
-          vertical-align: middle;
         }
         .btn-refresh:hover:not(:disabled) { background: rgba(139, 92, 255, 0.4); }
         .btn-refresh:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -988,13 +989,13 @@ export default function Profil() {
           justify-content: center;
           gap: 24px;
           flex-wrap: wrap;
-          margin: 24px 0 16px;
+          margin: 24px 0 12px;
         }
         .body-figure-box {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 8px;
+          gap: 6px;
         }
         .body-figure-box.body-figure-before { opacity: 0.9; }
         .body-figure-box.body-figure-now .body-figure-svg { filter: drop-shadow(0 8px 24px rgba(139, 92, 255, 0.35)); }
@@ -1004,20 +1005,38 @@ export default function Profil() {
         }
         .body-figure-single { margin: 16px 0; }
         .figure-date { font-size: 12px; color: #64748b; }
-        .workout-badge {
-          margin-top: 12px;
+        .figure-weight {
+          font-size: 15px;
+          font-weight: 700;
+          color: #e9d5ff;
+        }
+        .progress-summary {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: center;
+          gap: 16px 24px;
+          margin-top: 20px;
+          padding-top: 20px;
+          border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        .progress-summary .workout-badge {
           padding: 8px 16px;
           background: rgba(139, 92, 255, 0.2);
           border-radius: 20px;
           font-size: 14px;
           color: #c4b5fd;
         }
-        .weight-now {
+        .progress-summary .weight-now {
           font-size: 20px;
           font-weight: 700;
-          margin: 8px 0 0;
           color: #e9d5ff;
         }
+        .progress-summary .trend {
+          font-size: 15px;
+          color: #94a3b8;
+        }
+        .progress-summary .trend strong { color: #e9d5ff; }
         .empty-progress {
           color: #64748b;
           font-size: 15px;
@@ -1056,6 +1075,7 @@ export default function Profil() {
 
         .actions {
           margin-bottom: 32px;
+          border: 1px solid rgba(139, 92, 255, 0.2);
         }
         .actions h2 { margin-bottom: 16px; }
         .action-buttons {
@@ -1067,20 +1087,24 @@ export default function Profil() {
           background: linear-gradient(135deg, #7c3aed, #9b5cff);
           color: #fff;
           border: none;
-          padding: 12px 24px;
+          padding: 14px 28px;
           border-radius: 12px;
           font-weight: 600;
           cursor: pointer;
+          font-size: 15px;
         }
+        .btn-primary:hover { opacity: 0.95; filter: brightness(1.05); }
         .btn-secondary {
           background: rgba(255,255,255,0.08);
           color: #e9d5ff;
           border: 1px solid #6d28d9;
-          padding: 12px 24px;
+          padding: 14px 28px;
           border-radius: 12px;
           font-weight: 600;
           cursor: pointer;
+          font-size: 15px;
         }
+        .btn-secondary:hover { background: rgba(255,255,255,0.12); }
 
         .kpi-section { margin-bottom: 40px; }
         .kpi-section h2 { margin-bottom: 4px; }

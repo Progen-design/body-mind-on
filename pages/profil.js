@@ -87,7 +87,36 @@ export default function Profil() {
           setError(data.error);
           return { error: data.error };
         }
-        setProfile(data);
+        // Vytvořit nový objekt, aby React viděl změnu a useMemo se přepočítal
+        // Seřadit data správně - workouts podle data (nejnovější první), body_metrics podle created_at (nejnovější první)
+        const sortedWorkouts = Array.isArray(data.workouts) 
+          ? [...data.workouts].sort((a, b) => {
+              const dateA = (a.workout_date || '').toString();
+              const dateB = (b.workout_date || '').toString();
+              return dateB.localeCompare(dateA); // Descending - nejnovější první
+            })
+          : [];
+        
+        const sortedMetrics = Array.isArray(data.body_metrics)
+          ? [...data.body_metrics].sort((a, b) => {
+              const dateA = (a.created_at || '').toString();
+              const dateB = (b.created_at || '').toString();
+              return dateB.localeCompare(dateA); // Descending - nejnovější první
+            })
+          : [];
+        
+        // Vytvořit úplně nový objekt s novými referencemi, aby React vždy viděl změnu
+        const freshProfile = {
+          user: data.user ? { ...data.user } : null,
+          body_metrics: sortedMetrics,
+          workouts: sortedWorkouts,
+          plans: Array.isArray(data.plans) ? [...data.plans] : [],
+          weight_history: Array.isArray(data.weight_history) ? [...data.weight_history] : [],
+          stats: data.stats ? { ...data.stats } : {},
+          _updated: Date.now(), // Přidat timestamp pro zajištění změny reference
+        };
+        // Vždy vytvořit nový objekt, i když data jsou stejná
+        setProfile(() => freshProfile);
         setError('');
         return { ok: true };
       })
@@ -170,20 +199,40 @@ export default function Profil() {
 
       const json = await res.json();
       if (res.ok && json.workout) {
+        const newWorkout = json.workout;
+        
+        // OKAMŽITĚ aktualizovat state - real-time update bez čekání
+        setProfile((p) => {
+          const prev = p || {};
+          const newWorkouts = [newWorkout, ...(prev.workouts || [])];
+          return { 
+            ...prev, 
+            workouts: newWorkouts,
+            _updated: Date.now()
+          };
+        });
+        
+        // Zavřít modal a resetovat formulář OKAMŽITĚ
         setWorkoutForm({ workout_date: new Date().toISOString().split('T')[0], workout_type: 'silovy', duration_min: 45, notes: '' });
         setShowWorkoutModal(false);
         if (fresh) setSession(fresh);
-        // Počkat chvíli, aby server stihl uložit data, pak načíst čerstvá data
-        await new Promise(resolve => setTimeout(resolve, 300));
-        const refetchResult = await refetchProfile(token);
-        if (!refetchResult?.ok) {
-          // Pokud refetch selhal, použij optimistic update
-          const newWorkout = json.workout;
-          setProfile((p) => {
-            const prev = p || {};
-            return { ...prev, workouts: [newWorkout, ...(prev.workouts || [])] };
-          });
-        }
+        
+        // Na pozadí načíst čerstvá data ze serveru (neblokuje UI)
+        // Zkusit několikrát s krátkým intervalem, ale nečekat
+        (async () => {
+          for (let i = 0; i < 3; i++) {
+            await new Promise(resolve => setTimeout(resolve, 300 + i * 200));
+            try {
+              const result = await refetchProfile(token);
+              if (result?.ok) {
+                // Data načtena - state se aktualizuje automaticky
+                break;
+              }
+            } catch (err) {
+              // Tichá chyba - optimistic update už je aplikován
+            }
+          }
+        })();
       } else {
         setWorkoutError(json.error || 'Chyba při ukládání tréninku');
       }
@@ -205,17 +254,28 @@ export default function Profil() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
+        // OKAMŽITĚ aktualizovat state - real-time update bez čekání
+        setProfile((p) => {
+          const prev = p || {};
+          const newWorkouts = (prev.workouts || []).filter((w) => w.id !== id);
+          return { 
+            ...prev, 
+            workouts: newWorkouts,
+            _updated: Date.now()
+          };
+        });
+        
         if (fresh) setSession(fresh);
-        // Počkat chvíli, aby server stihl smazat data, pak načíst čerstvá data
-        await new Promise(resolve => setTimeout(resolve, 300));
-        const refetchResult = await refetchProfile(token);
-        if (!refetchResult?.ok) {
-          // Pokud refetch selhal, použij optimistic update
-          setProfile((p) => {
-            const prev = p || {};
-            return { ...prev, workouts: (prev.workouts || []).filter((w) => w.id !== id) };
-          });
-        }
+        
+        // Na pozadí načíst čerstvá data ze serveru (neblokuje UI)
+        (async () => {
+          await new Promise(resolve => setTimeout(resolve, 200));
+          try {
+            await refetchProfile(token);
+          } catch (err) {
+            // Tichá chyba - optimistic update už je aplikován
+          }
+        })();
       }
     } catch (err) {
       console.error('Delete workout error:', err);
@@ -243,19 +303,38 @@ export default function Profil() {
       });
       const json = await res.json();
       if (res.ok && json.metric) {
+        // OKAMŽITĚ aktualizovat state - real-time update bez čekání
+        setProfile((p) => {
+          const prev = p || {};
+          const newMetrics = [json.metric, ...(prev.body_metrics || [])];
+          return { 
+            ...prev, 
+            body_metrics: newMetrics,
+            _updated: Date.now()
+          };
+        });
+        
+        // Zavřít modal a resetovat formulář OKAMŽITĚ
         setWeightForm((f) => ({ ...f, weight_kg: '' }));
         setShowWeightModal(false);
         if (fresh) setSession(fresh);
-        // Počkat chvíli, aby server stihl uložit data, pak načíst čerstvá data
-        await new Promise(resolve => setTimeout(resolve, 300));
-        const refetchResult = await refetchProfile(token);
-        if (!refetchResult?.ok) {
-          // Pokud refetch selhal, použij optimistic update
-          setProfile((p) => {
-            const prev = p || {};
-            return { ...prev, body_metrics: [json.metric, ...(prev.body_metrics || [])] };
-          });
-        }
+        
+        // Na pozadí načíst čerstvá data ze serveru (neblokuje UI)
+        // Zkusit několikrát s krátkým intervalem, ale nečekat
+        (async () => {
+          for (let i = 0; i < 3; i++) {
+            await new Promise(resolve => setTimeout(resolve, 300 + i * 200));
+            try {
+              const result = await refetchProfile(token);
+              if (result?.ok) {
+                // Data načtena - state se aktualizuje automaticky
+                break;
+              }
+            } catch (err) {
+              // Tichá chyba - optimistic update už je aplikován
+            }
+          }
+        })();
       } else {
         setWeightError(json.error || 'Chyba při ukládání váhy');
       }
@@ -269,9 +348,11 @@ export default function Profil() {
   if (!session && !loading) return null;
 
   // Všechny parametry se přepočítají při každé změně profile (trénink, váha)
+  // Použít _updated timestamp jako závislost, aby se vždy přepočítalo při změně
   const { metrics, workouts, latestMetric, firstMetric, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName } = useMemo(() => {
-    const m = profile?.body_metrics || [];
-    const w = profile?.workouts || [];
+    // Zajistit, že máme vždy nové reference na pole pro správnou detekci změn
+    const m = profile?.body_metrics ? [...(profile.body_metrics || [])] : [];
+    const w = profile?.workouts ? [...(profile.workouts || [])] : [];
     const latest = m[0];
     const first = m[m.length - 1];
     const cw = latest?.weight_kg ?? null;
@@ -312,7 +393,7 @@ export default function Profil() {
       chartWeightData: chartData,
       userName: name,
     };
-  }, [profile]);
+  }, [profile, profile?._updated, profile?.workouts?.length, profile?.body_metrics?.length]);
 
   const handleRefresh = async () => {
     setRefreshing(true);

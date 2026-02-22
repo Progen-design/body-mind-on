@@ -470,9 +470,7 @@ export default function Profil() {
         return;
       }
       const payload = {};
-      if (settingsForm.start_weight_kg !== '') payload.start_weight_kg = Number(settingsForm.start_weight_kg);
       if (settingsForm.goal_weight_kg !== '') payload.goal_weight_kg = Number(settingsForm.goal_weight_kg);
-      if (settingsForm.height_cm !== '') payload.height_cm = Number(settingsForm.height_cm);
       const res = await fetch('/api/profile-settings', {
         ...fetchOptions,
         method: 'PATCH',
@@ -525,11 +523,10 @@ export default function Profil() {
         })
       : [];
     const latest = m[0];
-    const first = m[m.length - 1];
+    const first = m[m.length - 1]; // nejstarší záznam = z registrace (Start)
     const cw = latest?.weight_kg ?? null;
     const wd = latest && first ? (latest.weight_kg - first.weight_kg).toFixed(1) : null;
-    
-    // Najít poslední trénink pro aktualizaci data u postavy
+    const registrationMetric = first; // údaje z registrace (Start): váha, výška
     const latestWorkout = w.length > 0 ? w[0] : null;
 
     const now = new Date();
@@ -568,9 +565,10 @@ export default function Profil() {
       .sort((a, b) => (a.date || '').localeCompare(b.date || '')); // nejstarší první = vlevo na grafu
 
     const name = profile?.user?.name || profile?.user?.email?.split('@')[0] || 'Sportovče';
-    const startWeight = profile?.user?.start_weight_kg != null ? Number(profile.user.start_weight_kg) : null;
+    // Výchozí váha a výška z registrace (Start) – nevyplňovat znovu
+    const startWeight = registrationMetric?.weight_kg != null ? Number(registrationMetric.weight_kg) : (profile?.user?.start_weight_kg != null ? Number(profile.user.start_weight_kg) : null);
+    const heightCm = registrationMetric?.height_cm != null ? Number(registrationMetric.height_cm) : (profile?.user?.height_cm != null ? Number(profile.user.height_cm) : null);
     const goalWeight = profile?.user?.goal_weight_kg != null ? Number(profile.user.goal_weight_kg) : null;
-    const heightCm = profile?.user?.height_cm != null ? Number(profile.user.height_cm) : null;
     const KCAL_PER_KG = 7700;
     const estimatedKgLostTotal = kcalTotal / KCAL_PER_KG;
     const estimatedCurrentWeight = startWeight != null ? Math.max(goalWeight != null ? goalWeight : 0, startWeight - estimatedKgLostTotal) : null;
@@ -730,10 +728,10 @@ export default function Profil() {
                   <span className="btn-emoji">🏋️</span>
                   Zapsat trénink
                 </button>
-                <button type="button" onClick={() => { setShowSettingsModal(true); setSettingsError(''); setSettingsForm({ start_weight_kg: startWeight ?? '', goal_weight_kg: goalWeight ?? '', height_cm: heightCm ?? '' }); }} className="btn-secondary btn-weight">
+                <button type="button" onClick={() => { setShowSettingsModal(true); setSettingsError(''); setSettingsForm({ start_weight_kg: '', goal_weight_kg: goalWeight ?? '', height_cm: '' }); }} className="btn-secondary btn-weight">
                   <span className="btn-emoji">📋</span>
                   Nastavení pro výpočet
-                  <span className="btn-sublabel">Výchozí váha, cíl, výška</span>
+                  <span className="btn-sublabel">Cílová váha pro odhad do cíle</span>
                 </button>
               </div>
             </section>
@@ -813,7 +811,7 @@ export default function Profil() {
                 </>
               ) : (
                 <p className="empty-progress">
-                  Vyplň <strong>„Nastavení pro výpočet“</strong> (výchozí váha, cílová váha, výška) – podle toho se spočítá odhad zhubnutí jen z tréninků.
+                  Výchozí váha a výška jsou z registrace (Start). V <strong>„Nastavení pro výpočet“</strong> můžeš doplnit cílovou váhu – odhad zhubnutí se počítá jen z tréninků.
                 </p>
               )}
             </section>
@@ -988,14 +986,10 @@ export default function Profil() {
               <div className="modal-overlay" onClick={() => { setShowSettingsModal(false); setSettingsError(''); }}>
                 <div className="modal" onClick={(e) => e.stopPropagation()}>
                   <h3>Nastavení pro výpočet</h3>
-                  <p className="modal-hint">Tyto údaje slouží jen k odhadu zhubnutí z tréninků. Žádná ruční váha do výpočtu nezasahuje. Po napojení skutečného závaží můžeš doplnit váhu ze zařízení.</p>
+                  <p className="modal-hint">Výchozí váha a výška se berou z tvé registrace (Start) – nevyplňuj je znovu. Zde můžeš doplnit jen <strong>cílovou váhu</strong> pro odhad „týdny do cíle“. Žádná ruční váha do výpočtu nezasahuje.</p>
                   <form onSubmit={handleSaveSettings}>
-                    <label>Výchozí váha (kg)</label>
-                    <input type="number" min={30} max={300} step={0.1} placeholder="např. 85" value={settingsForm.start_weight_kg} onChange={(e) => setSettingsForm((f) => ({ ...f, start_weight_kg: e.target.value }))} />
                     <label>Cílová váha (kg)</label>
                     <input type="number" min={30} max={300} step={0.1} placeholder="např. 75" value={settingsForm.goal_weight_kg} onChange={(e) => setSettingsForm((f) => ({ ...f, goal_weight_kg: e.target.value }))} />
-                    <label>Výška (cm)</label>
-                    <input type="number" min={100} max={250} placeholder="např. 175" value={settingsForm.height_cm} onChange={(e) => setSettingsForm((f) => ({ ...f, height_cm: e.target.value }))} />
                     {settingsError && <p className="modal-error" role="alert">{settingsError}</p>}
                     {savingSettings && (
                       <div className="modal-loading">

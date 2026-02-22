@@ -505,7 +505,7 @@ export default function Profil() {
 
   // Všechny parametry se přepočítají při každé změně profile (trénink, váha)
   // Použít _updated timestamp jako závislost, aby se vždy přepočítalo při změně
-  const { metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, thisWeekDates } = useMemo(() => {
+  const { metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, thisWeekDates, startWeightDate, lastWeightDate } = useMemo(() => {
     // Zajistit, že máme vždy nové reference na pole pro správnou detekci změn
     // A SORT podle data - nejnovější první
     const m = profile?.body_metrics 
@@ -622,6 +622,8 @@ export default function Profil() {
       weekStartFormatted: formatShortDate(weekStartStr),
       weekEndFormatted: formatShortDate(weekEndStr),
       thisWeekDates,
+      startWeightDate: chartData.length > 0 ? chartData[0].date : (registrationMetric?.created_at ? String(registrationMetric.created_at).split('T')[0] : null),
+      lastWeightDate: chartData.length > 0 ? chartData[chartData.length - 1].date : null,
     };
   }, [
     profile, 
@@ -816,6 +818,7 @@ export default function Profil() {
                       <div className="body-figure-box body-figure-before">
                         <BodyFigure weight={startWeight} height={heightCm} size={130} variant="before" label="Výchozí" />
                         <span className="figure-weight">{startWeight} kg</span>
+                        {startWeightDate && <span className="figure-date">{formatShortDate(startWeightDate)}</span>}
                       </div>
                       <span className="body-figure-arrow" aria-hidden>→</span>
                       <div className="body-figure-box body-figure-now">
@@ -828,6 +831,7 @@ export default function Profil() {
                           weightDiff={estimatedCurrentWeight != null && startWeight != null ? (estimatedCurrentWeightRounded - startWeight).toFixed(1) : null}
                         />
                         <span className="figure-weight">{estimatedCurrentWeightRounded != null ? `${estimatedCurrentWeightRounded} kg` : '—'}</span>
+                        {lastWeightDate && <span className="figure-date">k {formatShortDate(lastWeightDate)}</span>}
                       </div>
                     </div>
                   )}
@@ -1234,11 +1238,15 @@ export default function Profil() {
           color: #a78bfa;
         }
         .body-figure-single { margin: 16px 0; }
-        .figure-date { font-size: 12px; color: #64748b; }
         .figure-weight {
           font-size: 15px;
           font-weight: 700;
           color: #e9d5ff;
+        }
+        .figure-date {
+          font-size: 12px;
+          color: #64748b;
+          margin-top: 4px;
         }
         .progress-summary {
           display: flex;
@@ -1404,15 +1412,18 @@ export default function Profil() {
         }
         .chart-labels {
           display: flex;
-          flex-wrap: wrap;
-          justify-content: center;
-          gap: 16px 24px;
+          justify-content: space-between;
+          width: 100%;
+          padding-left: 7.86%;
+          padding-right: 3.57%;
+          margin-top: 8px;
+          box-sizing: border-box;
         }
         .chart-label-item {
           display: flex;
           flex-direction: column;
           align-items: center;
-          min-width: 64px;
+          flex: 0 1 auto;
         }
         .chart-value {
           font-weight: 700;

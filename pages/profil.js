@@ -70,11 +70,11 @@ export default function Profil() {
   const [error, setError] = useState('');
 
   const [showWorkoutModal, setShowWorkoutModal] = useState(false);
-  const [showWeightModal, setShowWeightModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [workoutError, setWorkoutError] = useState('');
   const [savingWorkout, setSavingWorkout] = useState(false);
-  const [weightError, setWeightError] = useState('');
-  const [savingWeight, setSavingWeight] = useState(false);
+  const [settingsError, setSettingsError] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showWelcomeTour, setShowWelcomeTour] = useState(false);
   const [toast, setToast] = useState({ message: '', type: 'success' });
@@ -86,9 +86,10 @@ export default function Profil() {
     notes: '',
   });
 
-  const [weightForm, setWeightForm] = useState({
-    date: new Date().toISOString().split('T')[0],
-    weight_kg: '',
+  const [settingsForm, setSettingsForm] = useState({
+    start_weight_kg: '',
+    goal_weight_kg: '',
+    height_cm: '',
   });
 
   const profileRef = useRef(null);
@@ -457,11 +458,56 @@ export default function Profil() {
     }
   }
 
+  async function handleSaveSettings(e) {
+    e.preventDefault();
+    setSettingsError('');
+    setSavingSettings(true);
+    try {
+      const { data: { session: fresh } } = await supabase.auth.refreshSession();
+      const token = fresh?.access_token ?? session?.access_token;
+      if (!token) {
+        setSettingsError('Session vypršela. Obnov stránku.');
+        return;
+      }
+      const payload = {};
+      if (settingsForm.start_weight_kg !== '') payload.start_weight_kg = Number(settingsForm.start_weight_kg);
+      if (settingsForm.goal_weight_kg !== '') payload.goal_weight_kg = Number(settingsForm.goal_weight_kg);
+      if (settingsForm.height_cm !== '') payload.height_cm = Number(settingsForm.height_cm);
+      const res = await fetch('/api/profile-settings', {
+        ...fetchOptions,
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (res.ok && json.ok) {
+        setProfile((p) => ({
+          ...p,
+          user: p?.user ? { ...p.user, ...(json.user_metadata || {}) } : { ...json.user_metadata },
+          _updated: Date.now(),
+        }));
+        setShowSettingsModal(false);
+        setToast({ message: 'Údaje pro výpočet uloženy.', type: 'success' });
+        const result = await refetchProfile(token);
+        if (result?.ok) setProfile((prev) => ({ ...prev, _updated: Date.now() }));
+      } else {
+        setSettingsError(json.error || 'Nepodařilo se uložit.');
+      }
+    } catch (err) {
+      setSettingsError(err.message || 'Chyba připojení');
+    } finally {
+      setSavingSettings(false);
+    }
+  }
+
   if (!session && !loading) return null;
 
   // Všechny parametry se přepočítají při každé změně profile (trénink, váha)
   // Použít _updated timestamp jako závislost, aby se vždy přepočítalo při změně
-  const { metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName } = useMemo(() => {
+  const { metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, kgPerWeekFromWeek, weeksToGoal } = useMemo(() => {
     // Zajistit, že máme vždy nové reference na pole pro správnou detekci změn
     // A SORT podle data - nejnovější první
     const m = profile?.body_metrics 
@@ -498,33 +544,48 @@ export default function Profil() {
     const kcalWeek = thisWeek.reduce((s, x) => s + estimatedCalories(x), 0);
     const minTotal = w.reduce((s, x) => s + (Number(x.duration_min) || 0), 0);
     const kcalTotal = w.reduce((s, x) => s + estimatedCalories(x), 0);
+    const lastWeekStart = new Date(weekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+    const lastWeekStartStr = lastWeekStart.toISOString().split('T')[0];
+    const lastWeek = w.filter((x) => getDate(x) >= lastWeekStartStr && getDate(x) < weekStartStr);
+    const lastWeekMin = lastWeek.reduce((s, x) => s + (Number(x.duration_min) || 0), 0);
+    const workoutTrend = lastWeek.length > 0 || thisWeek.length > 0
+      ? (thisWeek.length > lastWeek.length ? '↑' : thisWeek.length < lastWeek.length ? '↓' : '→')
+      : null;
 
-    // Pro graf: použít datum z created_at, ale pokud je v date poli, použít to
-    // Zajistit, že každé měření má své vlastní datum
-    const chartData = m
-      .filter((x) => x.weight_kg && (x.created_at || x.date))
-      .map((x) => {
-        // Použít date pokud existuje, jinak created_at
-        const dateStr = x.date || (x.created_at ? x.created_at.split('T')[0] : null);
-        return { 
-          date: dateStr, 
-          weight: x.weight_kg,
-          // Přidat timestamp pro unikátní identifikaci
-          id: x.id || `${dateStr}-${x.weight_kg}`
-        };
-      })
-      .filter((x) => x.date) // Odstranit položky bez data
-      .sort((a, b) => (a.date || '').localeCompare(b.date || '')) // Seřadit podle data vzestupně
-      .reverse(); // Obrátit pro zobrazení (nejnovější první)
+    // Graf váhy: jeden bod na den (nejnovější váha daného dne), řazení od nejstaršího (vlevo) po nejnovější (vpravo)
+    const byDate = {};
+    m
+      .filter((x) => x.weight_kg != null && (x.created_at || x.date))
+      .forEach((x) => {
+        const dateStr = x.date || (x.created_at ? String(x.created_at).split('T')[0] : null);
+        if (!dateStr) return;
+        if (!(dateStr in byDate) || new Date(x.created_at || dateStr) > new Date(byDate[dateStr].created_at)) {
+          byDate[dateStr] = { date: dateStr, weight: x.weight_kg, id: x.id, created_at: x.created_at || dateStr };
+        }
+      });
+    const chartData = Object.values(byDate)
+      .sort((a, b) => (a.date || '').localeCompare(b.date || '')); // nejstarší první = vlevo na grafu
 
     const name = profile?.user?.name || profile?.user?.email?.split('@')[0] || 'Sportovče';
+    const startWeight = profile?.user?.start_weight_kg != null ? Number(profile.user.start_weight_kg) : null;
+    const goalWeight = profile?.user?.goal_weight_kg != null ? Number(profile.user.goal_weight_kg) : null;
+    const heightCm = profile?.user?.height_cm != null ? Number(profile.user.height_cm) : null;
+    const KCAL_PER_KG = 7700;
+    const estimatedKgLostTotal = kcalTotal / KCAL_PER_KG;
+    const estimatedCurrentWeight = startWeight != null ? Math.max(goalWeight != null ? goalWeight : 0, startWeight - estimatedKgLostTotal) : null;
+    const kgPerWeekFromWeek = minWeek > 0 ? kcalWeek / KCAL_PER_KG : 0;
+    let weeksToGoal = null;
+    if (goalWeight != null && estimatedCurrentWeight != null && goalWeight < estimatedCurrentWeight && kgPerWeekFromWeek > 0) {
+      weeksToGoal = (estimatedCurrentWeight - goalWeight) / kgPerWeekFromWeek;
+    }
 
     return {
       metrics: m,
       workouts: w,
       latestMetric: latest,
       firstMetric: first,
-      latestWorkout: latestWorkout, // Poslední trénink pro aktualizaci postavy
+      latestWorkout: latestWorkout,
       currentWeight: cw,
       weightDiff: wd,
       workoutsThisWeek: thisWeek,
@@ -534,6 +595,16 @@ export default function Profil() {
       estimatedCaloriesAll: kcalTotal,
       chartWeightData: chartData,
       userName: name,
+      lastWeekCount: lastWeek.length,
+      lastWeekMinutes: lastWeekMin,
+      workoutTrend,
+      startWeight,
+      goalWeight,
+      heightCm,
+      estimatedKgLostTotal,
+      estimatedCurrentWeight,
+      kgPerWeekFromWeek,
+      weeksToGoal,
     };
   }, [
     profile, 
@@ -550,7 +621,10 @@ export default function Profil() {
     profile?.workouts?.[0]?.workout_type, // Typ posledního tréninku - důležité pro vizuální změnu
     // Přidat JSON string pro detekci změn v datech
     JSON.stringify(profile?.workouts?.slice(0, 5)?.map(w => ({ id: w.id, date: w.workout_date, type: w.workout_type })) || []),
-    JSON.stringify(profile?.body_metrics?.slice(0, 5)?.map(m => ({ id: m.id, date: m.created_at, weight: m.weight_kg })) || [])
+    JSON.stringify(profile?.body_metrics?.slice(0, 5)?.map(m => ({ id: m.id, date: m.created_at, weight: m.weight_kg })) || []),
+    profile?.user?.start_weight_kg,
+    profile?.user?.goal_weight_kg,
+    profile?.user?.height_cm,
   ]);
 
   const handleRefresh = async () => {
@@ -607,16 +681,16 @@ export default function Profil() {
           {!loading && !error && (
             <div className="hero-strip">
               <div className="hero-stat">
-                <span className="hero-stat-value">{currentWeight != null ? `${currentWeight} kg` : '—'}</span>
-                <span className="hero-stat-label">Aktuální váha</span>
-              </div>
-              <div className="hero-stat">
-                <span className="hero-stat-value">{workoutsThisWeek?.length ?? 0}</span>
+                <span className="hero-stat-value">{workoutsThisWeek?.length ?? 0} {workoutTrend ? <span className="trend-arrow" title={workoutTrend === '↑' ? 'Víc než minulý týden' : workoutTrend === '↓' ? 'Méně než minulý týden' : 'Stejně'}>{workoutTrend}</span> : null}</span>
                 <span className="hero-stat-label">Tréninků tento týden</span>
               </div>
               <div className="hero-stat">
-                <span className="hero-stat-value trend-num">{weightDiff != null ? (Number(weightDiff) > 0 ? '+' : '') + weightDiff + ' kg' : '—'}</span>
-                <span className="hero-stat-label">Změna od začátku</span>
+                <span className="hero-stat-value">{totalMinutesThisWeek ?? 0} min</span>
+                <span className="hero-stat-label">V pohybu</span>
+              </div>
+              <div className="hero-stat">
+                <span className="hero-stat-value">{estimatedCurrentWeight != null ? `${estimatedCurrentWeight.toFixed(1)} kg` : '—'}</span>
+                <span className="hero-stat-label">Odhad z tréninků</span>
               </div>
             </div>
           )}
@@ -656,9 +730,10 @@ export default function Profil() {
                   <span className="btn-emoji">🏋️</span>
                   Zapsat trénink
                 </button>
-                <button type="button" onClick={() => { setShowWeightModal(true); setWeightError(''); }} className="btn-secondary">
-                  <span className="btn-emoji">⚖️</span>
-                  Přidat váhu
+                <button type="button" onClick={() => { setShowSettingsModal(true); setSettingsError(''); setSettingsForm({ start_weight_kg: startWeight ?? '', goal_weight_kg: goalWeight ?? '', height_cm: heightCm ?? '' }); }} className="btn-secondary btn-weight">
+                  <span className="btn-emoji">📋</span>
+                  Nastavení pro výpočet
+                  <span className="btn-sublabel">Výchozí váha, cíl, výška</span>
                 </button>
               </div>
             </section>
@@ -666,76 +741,79 @@ export default function Profil() {
             {/* MŮJ PLÁN */}
             {currentPlan && <PlanViewer plan={currentPlan} userName={userName} />}
 
-            {/* TVŮJ PROGRES – Předtím vs Teď + souhrn v jednom bloku */}
+            {/* TVŮJ PROGRES – jen z tréninků a z údajů (výchozí váha, cíl, výška). Žádná ruční váha. */}
             <section className="card card-accent center progress-section">
               <h2 className="section-head">Tvůj progres</h2>
+              <p className="progress-lead">Všechny hodnoty vycházejí jen z tréninků a z tvého nastavení (výchozí váha, cíl, výška). Ruční váha do výpočtu nezasahuje.</p>
 
-              {latestMetric ? (
+              <div className="progress-activity">
+                <div className="progress-activity-main">
+                  <span className="progress-big-num">{workoutsThisWeek?.length ?? 0}</span>
+                  <span className="progress-big-label">tréninků tento týden</span>
+                </div>
+                <div className="progress-activity-main">
+                  <span className="progress-big-num">{totalMinutesThisWeek ?? 0}</span>
+                  <span className="progress-big-label">minut v pohybu</span>
+                </div>
+                <div className="progress-activity-main">
+                  <span className="progress-big-num">~{estimatedCaloriesThisWeek ?? 0}</span>
+                  <span className="progress-big-label">kcal tento týden</span>
+                </div>
+              </div>
+              {workoutTrend && (
+                <p className="progress-trend-hint">
+                  {workoutTrend === '↑' && 'Víc tréninků než minulý týden. '}
+                  {workoutTrend === '↓' && 'Méně než minulý týden – zkus přidat. '}
+                  {workoutTrend === '→' && 'Stejný počet jako minulý týden. '}
+                  Minulý týden: {lastWeekCount} tréninků, {lastWeekMinutes} min.
+                </p>
+              )}
+
+              {startWeight != null || goalWeight != null ? (
                 <>
-                  <div className="body-figures-row" key={`progress-${profile?._updated || 0}`}>
-                    {firstMetric && firstMetric !== latestMetric ? (
-                      <>
-                        <div className="body-figure-box body-figure-before">
-                          <BodyFigure
-                            key={`before-${firstMetric.id}-${profile?._updated || 0}`}
-                            weight={firstMetric.weight_kg}
-                            height={firstMetric.height_cm}
-                            gender={firstMetric.gender}
-                            goal={firstMetric.goal}
-                            size={130}
-                            variant="before"
-                            label="Předtím"
-                          />
-                          <span className="figure-date">{formatShortDate(firstMetric.date || firstMetric.created_at)}</span>
-                          <span className="figure-weight">{firstMetric.weight_kg} kg</span>
-                        </div>
-                        <span className="body-figure-arrow" aria-hidden>→</span>
-                        <div className="body-figure-box body-figure-now">
-                          <BodyFigure
-                            key={`now-${latestMetric.id}-${profile?._updated || 0}`}
-                            weight={latestMetric.weight_kg}
-                            height={latestMetric.height_cm}
-                            gender={latestMetric.gender}
-                            goal={latestMetric.goal}
-                            size={130}
-                            variant="now"
-                            label="Teď"
-                            weightDiff={weightDiff}
-                          />
-                          <span className="figure-date">{formatShortDate(latestWorkout?.workout_date || latestMetric?.date || latestMetric?.created_at)}</span>
-                          <span className="figure-weight">{currentWeight} kg</span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="body-figure-box body-figure-now body-figure-single">
-                        <BodyFigure
-                          key={`single-${latestMetric.id}-${profile?._updated || 0}`}
-                          weight={latestMetric.weight_kg}
-                          height={latestMetric.height_cm}
-                          gender={latestMetric.gender}
-                          goal={latestMetric.goal}
-                          size={150}
-                        />
-                        <span className="figure-date">{formatShortDate(latestWorkout?.workout_date || latestMetric?.date || latestMetric?.created_at)}</span>
-                        <span className="figure-weight">{currentWeight} kg</span>
+                  <div className="progress-calc">
+                    <p className="progress-calc-line">
+                      Spáleno celkem odhad <strong>~{Math.round(estimatedCaloriesAll)} kcal</strong> ≈ úbytek <strong>~{estimatedKgLostTotal.toFixed(1)} kg</strong> (při 7700 kcal/kg).
+                    </p>
+                    {estimatedCurrentWeight != null && (
+                      <p className="progress-calc-line">
+                        Odhadovaná váha z tréninků: <strong>{estimatedCurrentWeight.toFixed(1)} kg</strong>
+                        {startWeight != null && ` (výchozí ${startWeight} kg)`}.
+                      </p>
+                    )}
+                    {goalWeight != null && estimatedCurrentWeight != null && estimatedCurrentWeight > goalWeight && (
+                      <p className="progress-calc-line">
+                        Do cíle <strong>{goalWeight} kg</strong> zbývá <strong>{(estimatedCurrentWeight - goalWeight).toFixed(1)} kg</strong>
+                        {weeksToGoal != null && weeksToGoal > 0 && (
+                          <> · Při tempu tohoto týdne odhad <strong>{weeksToGoal.toFixed(0)} týdnů</strong></>
+                        )}.
+                      </p>
+                    )}
+                  </div>
+                  {startWeight != null && heightCm != null && (
+                    <div className="body-figures-row" key={`progress-${profile?._updated || 0}`}>
+                      <div className="body-figure-box body-figure-before">
+                        <BodyFigure weight={startWeight} height={heightCm} size={130} variant="before" label="Výchozí" />
+                        <span className="figure-weight">{startWeight} kg</span>
                       </div>
-                    )}
-                  </div>
-                  <div className="progress-summary">
-                    {workoutsThisWeek.length > 0 && (
-                      <span className="workout-badge">Tento týden: {workoutsThisWeek.length} tréninků</span>
-                    )}
-                    {currentWeight != null && <span className="weight-now">{currentWeight} kg</span>}
-                    {weightDiff != null && (
-                      <span className="trend">
-                        Změna od začátku: <strong>{Number(weightDiff) > 0 ? '+' : ''}{weightDiff} kg</strong>
-                      </span>
-                    )}
-                  </div>
+                      <span className="body-figure-arrow" aria-hidden>→</span>
+                      <div className="body-figure-box body-figure-now">
+                        <BodyFigure
+                          weight={estimatedCurrentWeight ?? startWeight}
+                          height={heightCm}
+                          size={130}
+                          variant="now"
+                          label="Odhad z tréninků"
+                          weightDiff={estimatedCurrentWeight != null && goalWeight != null ? (estimatedCurrentWeight - startWeight).toFixed(1) : null}
+                        />
+                        <span className="figure-weight">{estimatedCurrentWeight != null ? `${estimatedCurrentWeight.toFixed(1)} kg` : '—'}</span>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <p className="empty-progress">
-                  Postava vychází z váhy – klikni na <strong>„Přidat váhu“</strong> výše a uvidíš zde tvar i trend. Tréninky se započítají do přehledu.
+                  Vyplň <strong>„Nastavení pro výpočet“</strong> (výchozí váha, cílová váha, výška) – podle toho se spočítá odhad zhubnutí jen z tréninků.
                 </p>
               )}
             </section>
@@ -791,17 +869,18 @@ export default function Profil() {
                 <div className="kpi-divider" />
                 <div className="kpi-item">
                   <span className="kpi-icon">⚖️</span>
-                  <span className="kpi-num">{currentWeight != null ? `${currentWeight} kg` : '—'}</span>
-                  <span className="kpi-label">váha</span>
+                  <span className="kpi-num">{estimatedCurrentWeight != null ? `${estimatedCurrentWeight.toFixed(1)} kg` : '—'}</span>
+                  <span className="kpi-label">odhad z tréninků</span>
                 </div>
               </div>
             </section>
 
-            {/* GRAF VÁHY – line chart */}
-            {chartWeightData.length >= 1 && (
-              <section className="card chart-section">
-                <h2 className="section-head">Vývoj váhy</h2>
-                <p className="chart-hint">Data z tlačítka „Přidat váhu“. Každé nové měření se zobrazí ihned.</p>
+            {/* GRAF VÁHY – po napojení závaží nebo ručním zápisu */}
+            <section className="card chart-section">
+              <h2 className="section-head">Vývoj váhy</h2>
+              {chartWeightData.length >= 1 ? (
+                <>
+                <p className="chart-hint">Jeden bod = jeden den (ze závaží). Vlevo nejstarší, vpravo nejnovější.</p>
                 {chartWeightData.length >= 2 ? (
                   <>
                     <div className="chart-svg-wrap">
@@ -857,8 +936,11 @@ export default function Profil() {
                     <p className="chart-hint">Přidej další měření a uvidíš trend.</p>
                   </div>
                 )}
-              </section>
-            )}
+                </>
+              ) : (
+                <p className="chart-empty">Graf se naplní po napojení na skutečné závaží nebo po ručním zápisu váhy.</p>
+              )}
+            </section>
 
             {/* Modaly */}
             {showWorkoutModal && (
@@ -902,34 +984,29 @@ export default function Profil() {
                 </div>
               </div>
             )}
-            {showWeightModal && (
-              <div className="modal-overlay" onClick={() => { setShowWeightModal(false); setWeightError(''); }}>
+            {showSettingsModal && (
+              <div className="modal-overlay" onClick={() => { setShowSettingsModal(false); setSettingsError(''); }}>
                 <div className="modal" onClick={(e) => e.stopPropagation()}>
-                  <h3>Přidat váhu</h3>
-                  <form onSubmit={handleAddWeight}>
-                    <label>Datum měření</label>
-                    <input type="date" value={weightForm.date} onChange={(e) => setWeightForm((f) => ({ ...f, date: e.target.value }))} required />
-                    <label>Váha (kg)</label>
-                    <input type="number" min={30} max={300} step={0.1} placeholder="např. 78.5" value={weightForm.weight_kg} onChange={(e) => setWeightForm((f) => ({ ...f, weight_kg: e.target.value }))} required />
-                    <p className="modal-hint">Postava i graf se přepočítají ihned.</p>
-                    {weightError && <p className="modal-error" role="alert">{weightError}</p>}
-                    {savingWeight && (
+                  <h3>Nastavení pro výpočet</h3>
+                  <p className="modal-hint">Tyto údaje slouží jen k odhadu zhubnutí z tréninků. Žádná ruční váha do výpočtu nezasahuje. Po napojení skutečného závaží můžeš doplnit váhu ze zařízení.</p>
+                  <form onSubmit={handleSaveSettings}>
+                    <label>Výchozí váha (kg)</label>
+                    <input type="number" min={30} max={300} step={0.1} placeholder="např. 85" value={settingsForm.start_weight_kg} onChange={(e) => setSettingsForm((f) => ({ ...f, start_weight_kg: e.target.value }))} />
+                    <label>Cílová váha (kg)</label>
+                    <input type="number" min={30} max={300} step={0.1} placeholder="např. 75" value={settingsForm.goal_weight_kg} onChange={(e) => setSettingsForm((f) => ({ ...f, goal_weight_kg: e.target.value }))} />
+                    <label>Výška (cm)</label>
+                    <input type="number" min={100} max={250} placeholder="např. 175" value={settingsForm.height_cm} onChange={(e) => setSettingsForm((f) => ({ ...f, height_cm: e.target.value }))} />
+                    {settingsError && <p className="modal-error" role="alert">{settingsError}</p>}
+                    {savingSettings && (
                       <div className="modal-loading">
                         <div className="loading-spinner"></div>
-                        <span>Ukládám váhu…</span>
+                        <span>Ukládám…</span>
                       </div>
                     )}
                     <div className="modal-actions">
-                      <button type="button" onClick={() => { setShowWeightModal(false); setWeightError(''); }} disabled={savingWeight}>Zrušit</button>
-                      <button type="submit" disabled={savingWeight} className={savingWeight ? 'loading' : ''}>
-                        {savingWeight ? (
-                          <>
-                            <span className="button-spinner"></span>
-                            Ukládám…
-                          </>
-                        ) : (
-                          'Uložit'
-                        )}
+                      <button type="button" onClick={() => { setShowSettingsModal(false); setSettingsError(''); }} disabled={savingSettings}>Zrušit</button>
+                      <button type="submit" disabled={savingSettings} className={savingSettings ? 'loading' : ''}>
+                        {savingSettings ? (<><span className="button-spinner"></span> Ukládám…</>) : 'Uložit'}
                       </button>
                     </div>
                   </form>
@@ -1042,6 +1119,73 @@ export default function Profil() {
         .btn-emoji { font-size: 20px; margin-right: 8px; }
 
         .progress-section { margin-bottom: 40px; }
+        .progress-lead {
+          color: #94a3b8;
+          font-size: 14px;
+          margin: -8px 0 20px;
+          max-width: 420px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        .progress-activity {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 28px 40px;
+          margin-bottom: 24px;
+          padding: 24px 20px;
+          background: rgba(139, 92, 255, 0.1);
+          border-radius: 16px;
+          border: 1px solid rgba(139, 92, 255, 0.2);
+        }
+        .progress-activity-main {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+        }
+        .progress-big-num {
+          font-size: 28px;
+          font-weight: 700;
+          color: #e9d5ff;
+        }
+        .progress-big-label {
+          font-size: 13px;
+          color: #64748b;
+        }
+        .progress-trend-hint {
+          font-size: 13px;
+          color: #94a3b8;
+          margin: 0 0 20px;
+        }
+        .progress-calc {
+          margin: 20px 0 16px;
+          padding: 16px 20px;
+          background: rgba(0,0,0,0.2);
+          border-radius: 12px;
+          text-align: left;
+          max-width: 480px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        .progress-calc-line {
+          margin: 0 0 8px;
+          font-size: 14px;
+          color: #94a3b8;
+        }
+        .progress-calc-line:last-child { margin-bottom: 0; }
+        .progress-calc-line strong { color: #e9d5ff; }
+        .progress-weight-note {
+          font-size: 12px;
+          color: #64748b;
+          margin: 16px 0 8px;
+        }
+        .trend-arrow {
+          font-size: 18px;
+          color: #4ade80;
+          margin-left: 4px;
+        }
+        .hero-stat-value .trend-arrow { color: #fbbf24; }
         .body-figures-row {
           display: flex;
           align-items: center;
@@ -1168,6 +1312,16 @@ export default function Profil() {
           align-items: center;
         }
         .btn-secondary:hover { background: rgba(255,255,255,0.15); }
+        .btn-weight {
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
+        }
+        .btn-sublabel {
+          font-size: 11px;
+          font-weight: 400;
+          opacity: 0.85;
+        }
 
         .kpi-section { margin-bottom: 40px; }
         .kpis-bar {
@@ -1249,6 +1403,12 @@ export default function Profil() {
         }
         .chart-single .chart-value { font-size: 24px; }
         .chart-single .chart-date { display: block; margin-top: 4px; }
+        .chart-empty {
+          color: #64748b;
+          font-size: 14px;
+          margin: 0;
+          padding: 20px;
+        }
 
         .modal-overlay {
           position: fixed;

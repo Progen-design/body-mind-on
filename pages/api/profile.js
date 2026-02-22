@@ -64,11 +64,15 @@ export default async function handler(req, res) {
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
+    const meta = user.user_metadata || {};
     return res.status(200).json({
       user: {
         id: user.id,
         email: user.email,
-        name: user.user_metadata?.name || null
+        name: meta.name || null,
+        start_weight_kg: meta.start_weight_kg != null ? Number(meta.start_weight_kg) : null,
+        goal_weight_kg: meta.goal_weight_kg != null ? Number(meta.goal_weight_kg) : null,
+        height_cm: meta.height_cm != null ? Number(meta.height_cm) : null,
       },
       body_metrics: bodyMetrics,
       plans: plansData,

@@ -917,15 +917,18 @@ export default function Profil() {
                           </linearGradient>
                         </defs>
                         {(() => {
-                          const pad = { t: 20, r: 20, b: 36, l: 44 };
+                          const pad = { t: 24, r: 28, b: 40, l: 48 };
                           const W = 560 - pad.l - pad.r;
                           const H = 200 - pad.t - pad.b;
                           const minW = Math.min(...chartWeightData.map((x) => x.weight));
                           const maxW = Math.max(...chartWeightData.map((x) => x.weight));
-                          const range = maxW - minW || 1;
+                          const rangeRaw = maxW - minW || 1;
+                          const margin = Math.max(rangeRaw * 0.08, 0.2);
+                          const range = rangeRaw + 2 * margin;
+                          const minWPlot = minW - margin;
                           const pts = chartWeightData.map((p, i) => {
                             const x = pad.l + (chartWeightData.length > 1 ? (i / (chartWeightData.length - 1)) * W : 0);
-                            const y = pad.t + H - ((p.weight - minW) / range) * H;
+                            const y = pad.t + H - ((p.weight - minWPlot) / range) * H;
                             return [x, y, p.weight, p.date];
                           });
                           const pathD = pts.length ? `M ${pts.map(([x, y]) => `${x} ${y}`).join(' L ')}` : '';
@@ -946,12 +949,21 @@ export default function Profil() {
                       </svg>
                     </div>
                     <div className="chart-labels">
-                      {chartWeightData.map((p, i) => (
-                        <div key={`${p.date}-${i}`} className="chart-label-item">
-                          <span className="chart-value">{p.weight} kg</span>
-                          <span className="chart-date">{formatShortDate(p.date)}</span>
-                        </div>
-                      ))}
+                      <div className="chart-labels-inner" style={{ paddingLeft: '8.57%', paddingRight: '5%' }}>
+                        {chartWeightData.map((p, i) => (
+                          <div
+                            key={`${p.date}-${i}`}
+                            className="chart-label-item"
+                            style={{
+                              left: chartWeightData.length > 1 ? `${(i / (chartWeightData.length - 1)) * 100}%` : '50%',
+                              transform: chartWeightData.length > 1 ? 'translateX(-50%)' : 'translateX(-50%)',
+                            }}
+                          >
+                            <span className="chart-value">{p.weight} kg</span>
+                            <span className="chart-date">{formatShortDate(p.date)}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </>
                 ) : (
@@ -1411,19 +1423,23 @@ export default function Profil() {
           display: block;
         }
         .chart-labels {
-          display: flex;
-          justify-content: space-between;
           width: 100%;
-          padding-left: 7.86%;
-          padding-right: 3.57%;
-          margin-top: 8px;
+          margin-top: 10px;
           box-sizing: border-box;
         }
+        .chart-labels-inner {
+          position: relative;
+          width: 100%;
+          min-height: 44px;
+        }
         .chart-label-item {
+          position: absolute;
+          top: 0;
           display: flex;
           flex-direction: column;
           align-items: center;
-          flex: 0 1 auto;
+          text-align: center;
+          min-width: 56px;
         }
         .chart-value {
           font-weight: 700;

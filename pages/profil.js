@@ -92,6 +92,7 @@ export default function Profil() {
   });
 
   const profileRef = useRef(null);
+  const lastMutatedAtRef = useRef(0);
   useEffect(() => { profileRef.current = profile; }, [profile]);
 
   const fetchOptions = { cache: 'no-store' };
@@ -133,6 +134,11 @@ export default function Profil() {
         let skipped = false;
         setProfile((prev) => {
           if (!prev) return freshProfile;
+          const justMutated = lastMutatedAtRef.current && (Date.now() - lastMutatedAtRef.current) < 2500;
+          if (justMutated) {
+            skipped = true;
+            return prev;
+          }
           const nw = prev.workouts?.length ?? 0;
           const nm = prev.body_metrics?.length ?? 0;
           if (sortedWorkouts.length < nw || sortedMetrics.length < nm) {
@@ -271,9 +277,8 @@ export default function Profil() {
 
       const json = await res.json();
       if (res.ok && json.workout) {
-        const newWorkout = json.workout;
-        
-        // OKAMŽITĚ aktualizovat state - real-time update bez čekání
+        lastMutatedAtRef.current = Date.now();
+        const newWorkout = { ...json.workout, id: json.workout.id ?? `new-${Date.now()}` };
         setProfile((p) => {
           const prev = p || {};
           // Přidat nový trénink a SORT podle data (nejnovější první)
@@ -302,12 +307,11 @@ export default function Profil() {
         
         // Zobrazit toast notifikaci
         setToast({ message: 'Trénink úspěšně přidán! 🏋️', type: 'success' });
-        
         (async () => {
           try {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const result = await refetchProfile(token, profileRef.current);
-            if (result?.skipped) setTimeout(() => refetchProfile(token), 800);
+            await new Promise(resolve => setTimeout(resolve, 2500));
+            lastMutatedAtRef.current = 0;
+            await refetchProfile(token, profileRef.current);
           } catch (err) {
             console.warn('Background refetch failed:', err);
           }
@@ -359,11 +363,12 @@ export default function Profil() {
         // Zobrazit toast notifikaci
         setToast({ message: 'Trénink smazán', type: 'info' });
         
+        lastMutatedAtRef.current = Date.now();
         (async () => {
           try {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const result = await refetchProfile(token, profileRef.current);
-            if (result?.skipped) setTimeout(() => refetchProfile(token), 800);
+            await new Promise(resolve => setTimeout(resolve, 2500));
+            lastMutatedAtRef.current = 0;
+            await refetchProfile(token, profileRef.current);
           } catch (err) {
             console.warn('Background refetch failed:', err);
           }
@@ -398,7 +403,7 @@ export default function Profil() {
       });
       const json = await res.json();
       if (res.ok && json.metric) {
-        // Normalizovat metrikum: mít pole date pro graf (z created_at nebo date)
+        lastMutatedAtRef.current = Date.now();
         const metric = {
           ...json.metric,
           date: json.metric.date || (json.metric.created_at ? String(json.metric.created_at).slice(0, 10) : weightForm.date),
@@ -428,14 +433,12 @@ export default function Profil() {
         setShowWeightModal(false);
         if (fresh) setSession(fresh);
         
-        // Zobrazit toast notifikaci
         setToast({ message: 'Váha úspěšně přidána! ⚖️', type: 'success' });
-        
         (async () => {
           try {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const result = await refetchProfile(token, profileRef.current);
-            if (result?.skipped) setTimeout(() => refetchProfile(token), 800);
+            await new Promise(resolve => setTimeout(resolve, 2500));
+            lastMutatedAtRef.current = 0;
+            await refetchProfile(token, profileRef.current);
           } catch (err) {
             console.warn('Background refetch failed:', err);
           }
@@ -743,9 +746,9 @@ export default function Profil() {
               {workouts.length === 0 ? (
                 <p className="empty-history">Zatím nemáš žádné záznamy. Klikni na „Zapsat trénink“ a první trénink se objeví zde i v přehledu.</p>
               ) : (
-                <ul className="workout-list">
-                  {workouts.map((w) => (
-                    <li key={w.id} className="workout-item">
+                <ul className="workout-list" key={`workouts-${profile?._updated ?? 0}`}>
+                  {workouts.map((w, idx) => (
+                    <li key={w.id ?? `w-${idx}-${w.workout_date}`} className="workout-item">
                       <span className="workout-icon">{WORKOUT_TYPES.find((t) => t.id === (w.workout_type || '').toLowerCase())?.emoji || '🏋️'}</span>
                       <div className="workout-info">
                         <strong>{WORKOUT_TYPES.find((t) => t.id === (w.workout_type || '').toLowerCase())?.label || w.workout_name || 'Trénink'}</strong>

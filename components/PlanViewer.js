@@ -164,6 +164,22 @@ export default function PlanViewer({ plan, userName, hideHero }) {
   const [parsed, setParsed] = useState(null);
   const [recipeModal, setRecipeModal] = useState(null); // { title, content, anchorRect, hasRecipe, openId? }
   const recipeOpenIdRef = useRef(0);
+  const recipeCacheRef = useRef(new Map()); // dish -> html, 5 min TTL
+
+  const getRecipeForDish = (dishName) => {
+    const key = (dishName || '').trim().toLowerCase().slice(0, 120);
+    if (!key) return Promise.resolve(null);
+    const cached = recipeCacheRef.current.get(key);
+    if (cached && cached.html != null && Date.now() - (cached.at || 0) < 5 * 60 * 1000) return Promise.resolve(cached.html);
+    return fetch('/api/recipe?dish=' + encodeURIComponent((dishName || '').trim().slice(0, 150)))
+      .then((res) => res.json())
+      .then((data) => {
+        const html = data.ok && data.html ? data.html : null;
+        recipeCacheRef.current.set(key, { html, at: Date.now() });
+        return html;
+      })
+      .catch(() => null);
+  };
 
   useEffect(() => {
     if (plan?.plan_html && typeof document !== 'undefined') {
@@ -278,7 +294,7 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                           if (startWords.length >= 5 && rn.includes(startWords)) return true;
                           return false;
                         });
-                        const openRecipe = async (e) => {
+                        const openRecipe = (e) => {
                           const button = e?.currentTarget;
                           const rect = button?.getBoundingClientRect?.();
                           const anchorRect = rect ? { top: rect.bottom + 8, left: rect.left, width: rect.width } : null;
@@ -291,17 +307,10 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                           }
                           const dishName = (mealFullText.replace(/\s*\([^)]*\)\s*$/g, '').trim() || meal.type || 'Jídlo').slice(0, 150);
                           setRecipeModal({ openId: thisOpenId, title: meal.type || 'Jídlo', content: null, anchorRect, hasRecipe: false, loading: true });
-                          try {
-                            const res = await fetch('/api/recipe?dish=' + encodeURIComponent(dishName));
-                            const data = await res.json();
-                            if (data.ok && data.html) {
-                              setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: data.html, loading: false } : prev));
-                            } else {
-                              setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkus to znovu.</p>', loading: false } : prev));
-                            }
-                          } catch (err) {
-                            setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení k internetu.</p>', loading: false } : prev));
-                          }
+                          getRecipeForDish(dishName).then((html) => {
+                            const fallback = '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení nebo zkus znovu.</p>';
+                            setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: html || fallback, loading: false } : prev));
+                          });
                         };
                         return (
                           <div key={mi} className="plan-meal-card">
@@ -386,18 +395,40 @@ export default function PlanViewer({ plan, userName, hideHero }) {
             document.body
           )}
 
-          {/* Recepty – rozbalovací karty */}
+          {/* Recepty – lehké odkazy (klik = modal, obsah z plánu nebo cache/API) */}
           {parsed.recipes?.length > 0 && (
             <div className="plan-block">
               <h3 className="plan-block-title">Recepty</h3>
-              <div className="plan-recipes">
-                {parsed.recipes.map((r, i) => (
-                  <details key={i} className="plan-recipe-card">
-                    <summary>{r.name}</summary>
-                    <div className="plan-recipe-body" dangerouslySetInnerHTML={{ __html: recipeContentOnly(r.content) }} />
-                  </details>
-                ))}
-              </div>
+              <ul className="plan-recipe-links">
+                {parsed.recipes.map((r, i) => {
+                  const hasContent = r.content && !/lorem\s+ipsum|dolor\s+sit\s+amet/i.test(r.content);
+                  return (
+                    <li key={i}>
+                      <button
+                        type="button"
+                        className="plan-recipe-link"
+                        onClick={(e) => {
+                          const rect = e?.currentTarget?.getBoundingClientRect?.();
+                          const anchorRect = rect ? { top: rect.bottom + 8, left: rect.left, width: rect.width } : null;
+                          recipeOpenIdRef.current += 1;
+                          const thisOpenId = recipeOpenIdRef.current;
+                          if (hasContent) {
+                            setRecipeModal({ openId: thisOpenId, title: r.name, content: recipeContentOnly(r.content), anchorRect, hasRecipe: true, loading: false });
+                            return;
+                          }
+                          setRecipeModal({ openId: thisOpenId, title: r.name, content: null, anchorRect, hasRecipe: false, loading: true });
+                          getRecipeForDish(r.name).then((html) => {
+                            setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: html || '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst.</p>', loading: false } : prev));
+                          });
+                        }}
+                      >
+                        <span>{r.name}</span>
+                        <span aria-hidden>›</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           )}
 
@@ -770,11 +801,39 @@ const planSectionStyles = `
     color: #e9d5ff;
   }
 
-  .plan-recipes {
+  .plan-recipe-links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
   }
+  .plan-recipe-links li { margin: 0; }
+  .plan-recipe-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    color: #c4b5fd;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .plan-recipe-link:hover {
+    background: rgba(139, 92, 255, 0.15);
+    border-color: rgba(139, 92, 255, 0.3);
+  }
+  .plan-recipe-link span:last-child {
+    opacity: 0.7;
+    font-size: 18px;
+  }
+
   .plan-recipe-card {
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.08);

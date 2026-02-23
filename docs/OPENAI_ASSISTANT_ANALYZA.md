@@ -93,4 +93,8 @@ Tofu, tempeh, luštěniny, čočka, fazole, cizrna, quinoa, rostlinné proteiny,
 
 ## 6. PREFERENCES
 
-Konkrétní potraviny z preferences se nikdy nezařazují. Makra se nemění, pouze se nahrazuje alternativou.
+Konkrétní potraviny nebo omezení z preferences se nikdy nezařazují. Makra se nemění, pouze se nahrazuje alternativou.
+
+## 7. Instrukce pro platform.openai.com
+
+Jednotný zdroj instrukcí pro asistenta na platformě OpenAI: **`docs/OPENAI_ASSISTANT_INSTRUKCE.md`**

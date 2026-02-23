@@ -205,56 +205,55 @@ export default function Start() {
             </div>
           )}
 
-          {/* KROK 3: Aktivita, stres, typ práce, cíl, frekvence + „proč“ */}
+          {/* KROK 3: Aktivita, stres, typ práce, cíl, frekvence */}
           {step === 3 && (
-            <>
-              <div className="row grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="label block mb-2 text-gray-400">Úroveň aktivity</label>
-                  <p className="text-xs text-gray-500 mb-1">Pomůže nám nastavit denní kalorie a intenzitu tréninku.</p>
-                  <select name="activity" className="select w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" value={formData.activity} onChange={handleChange} required>
-                    <option value="">Vyber</option>
-                    <option value="sedavy">Nízká</option>
-                    <option value="stredne">Střední</option>
-                    <option value="velmi">Vysoká</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="label block mb-2 text-gray-400">Míra stresu</label>
-                  <select name="stress" className="select w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" value={formData.stress} onChange={handleChange} required>
-                    <option value="">Vyber</option>
-                    <option value="low">Nízká</option>
-                    <option value="medium">Střední</option>
-                    <option value="high">Vysoká</option>
-                  </select>
-                </div>
+            <div className="step3-grid">
+              <div className="step3-field">
+                <label className="step3-label">Úroveň aktivity</label>
+                <p className="step3-hint">Pomůže nám nastavit denní kalorie a intenzitu tréninku.</p>
+                <select name="activity" className="step3-select" value={formData.activity} onChange={handleChange} required>
+                  <option value="">Vyber</option>
+                  <option value="sedavy">Nízká</option>
+                  <option value="stredne">Střední</option>
+                  <option value="velmi">Vysoká</option>
+                </select>
               </div>
-              <div className="row grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="label block mb-2 text-gray-400">Typ práce</label>
-                  <select name="worktype" className="select w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" value={formData.worktype} onChange={handleChange} required>
-                    <option value="">Vyber</option>
-                    <option value="office_it">Kancelář / IT</option>
-                    <option value="manual">Manuální</option>
-                    <option value="kombinovana">Kombinovaná</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="label block mb-2 text-gray-400">Cíl</label>
-                  <p className="text-xs text-gray-500 mb-1">Podle cíle upravíme kalorie a makra (redukce / udržení / nárůst).</p>
-                  <select name="goal" className="select w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" value={formData.goal} onChange={handleChange} required>
-                    <option value="">Vyber</option>
-                    <option value="redukce">Redukce hmotnosti</option>
-                    <option value="nabirani_svaly">Nárůst svalů</option>
-                    <option value="udrzovani">Zdravý životní styl</option>
-                  </select>
-                </div>
+              <div className="step3-field">
+                <label className="step3-label">Míra stresu</label>
+                <p className="step3-hint step3-hint-empty" aria-hidden> </p>
+                <select name="stress" className="step3-select" value={formData.stress} onChange={handleChange} required>
+                  <option value="">Vyber</option>
+                  <option value="low">Nízká</option>
+                  <option value="medium">Střední</option>
+                  <option value="high">Vysoká</option>
+                </select>
               </div>
-              <div>
-                <label className="label block mb-2 text-gray-400">Frekvence cvičení</label>
+              <div className="step3-field">
+                <label className="step3-label">Typ práce</label>
+                <p className="step3-hint step3-hint-empty" aria-hidden> </p>
+                <select name="worktype" className="step3-select" value={formData.worktype} onChange={handleChange} required>
+                  <option value="">Vyber</option>
+                  <option value="office_it">Kancelář / IT</option>
+                  <option value="manual">Manuální</option>
+                  <option value="kombinovana">Kombinovaná</option>
+                </select>
+              </div>
+              <div className="step3-field">
+                <label className="step3-label">Cíl</label>
+                <p className="step3-hint">Podle cíle upravíme kalorie a makra (redukce / udržení / nárůst).</p>
+                <select name="goal" className="step3-select" value={formData.goal} onChange={handleChange} required>
+                  <option value="">Vyber</option>
+                  <option value="redukce">Redukce hmotnosti</option>
+                  <option value="nabirani_svaly">Nárůst svalů</option>
+                  <option value="udrzovani">Zdravý životní styl</option>
+                </select>
+              </div>
+              <div className="step3-field step3-field-full">
+                <label className="step3-label">Frekvence cvičení</label>
+                <p className="step3-hint step3-hint-empty" aria-hidden> </p>
                 <select
                   name="frequency"
-                  className="select w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
+                  className="step3-select"
                   value={formData.frequency}
                   onChange={(e) => setFormData({ ...formData, frequency: e.target.value.replace("–", "-") })}
                   required
@@ -265,7 +264,7 @@ export default function Start() {
                   <option value="4-5x týdně">4–5x týdně</option>
                 </select>
               </div>
-            </>
+            </div>
           )}
 
           {/* KROK 4: Strava a omezení (volitelné) + „proč“ */}
@@ -298,9 +297,9 @@ export default function Start() {
             </details>
           )}
 
-          <div className="flex flex-wrap gap-3 justify-between pt-4">
+          <div className="form-actions">
             {step > 1 ? (
-              <button type="button" onClick={handleBack} className="px-5 py-2.5 rounded-lg border border-gray-600 text-gray-300 hover:bg-[#1a1a1a]">
+              <button type="button" onClick={handleBack} className="btn-back">
                 Zpět
               </button>
             ) : (
@@ -309,13 +308,13 @@ export default function Start() {
             {step < MAX_STEP ? (
               <button
                 type="submit"
-                className="submit px-6 py-3 rounded-lg font-semibold text-white bg-gradient-to-r from-sky-500 to-sky-700 hover:opacity-90 transition"
+                className="btn-submit"
                 disabled={step === 1 && !canProceedStep1() || step === 2 && !canProceedStep2() || step === 3 && !canProceedStep3()}
               >
                 Pokračovat
               </button>
             ) : (
-              <button type="submit" className="submit px-6 py-3 rounded-lg font-semibold text-lg text-white bg-gradient-to-r from-sky-500 to-sky-700 hover:opacity-90 transition">
+              <button type="submit" className="btn-submit btn-submit-large">
                 Dokončit registraci
               </button>
             )}
@@ -336,6 +335,90 @@ export default function Start() {
         .progress-dots span.active { background: #0ea5e9; color: #fff; }
         .progress-dots span.done { background: #22c55e; color: #fff; }
         .progress-label { font-size: 13px; color: #64748b; margin: 0; }
+
+        .step3-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 24px 32px;
+        }
+        @media (max-width: 640px) {
+          .step3-grid { grid-template-columns: 1fr; }
+        }
+        .step3-field {
+          display: flex;
+          flex-direction: column;
+          min-height: 88px;
+        }
+        .step3-field-full { grid-column: 1 / -1; }
+        .step3-label {
+          display: block;
+          font-size: 14px;
+          font-weight: 500;
+          color: #94a3b8;
+          margin-bottom: 4px;
+        }
+        .step3-hint {
+          font-size: 12px;
+          color: #64748b;
+          margin: 0 0 8px;
+          line-height: 1.4;
+          min-height: 16px;
+        }
+        .step3-hint-empty { visibility: hidden; margin-bottom: 8px; }
+        .step3-select {
+          width: 100%;
+          padding: 12px 14px;
+          border-radius: 10px;
+          background: #0f0f0f;
+          border: 1px solid #374151;
+          color: #fff;
+          font-size: 15px;
+          margin-top: auto;
+        }
+        .step3-select:focus {
+          outline: none;
+          border-color: #0ea5e9;
+          box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+        }
+
+        .form-actions {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding-top: 28px;
+          margin-top: 8px;
+          border-top: 1px solid #222;
+        }
+        .btn-back {
+          padding: 12px 24px;
+          border-radius: 10px;
+          border: 1px solid #4b5563;
+          background: transparent;
+          color: #d1d5db;
+          font-size: 15px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.2s, border-color 0.2s;
+        }
+        .btn-back:hover {
+          background: #1a1a1a;
+          border-color: #6b7280;
+        }
+        .btn-submit {
+          padding: 12px 28px;
+          border-radius: 10px;
+          border: none;
+          background: linear-gradient(135deg, #0ea5e9, #0284c7);
+          color: #fff;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: opacity 0.2s;
+        }
+        .btn-submit:hover:not(:disabled) { opacity: 0.9; }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-submit-large { padding: 14px 32px; font-size: 16px; }
       `}</style>
     </>
   );

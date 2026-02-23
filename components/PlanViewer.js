@@ -1,6 +1,7 @@
 // /components/PlanViewer.js – Grafické zobrazení AI plánu (wow efekt, obrázky u jídel)
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { supabase } from '../lib/supabaseClient';
 
 // Obrázky jídel – NEJDELŠÍ SHODA. Žádný obecný klíč „zelenina“ (dával by všem stejnou mísu). Jen konkrétní jídla.
 const DISH_IMAGES = [
@@ -11,10 +12,10 @@ const DISH_IMAGES = [
   { keys: ['toasty s avokádovým krémem', 'toast s avokádovým', 'avokádovým krémem', 'avokadovym kremem', 'bezlepkové toasty'], url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=280&fit=crop' },
   { keys: ['červený salát s červenou řepou', 'cerveny salat s cervenou repou', 'červenou řepou', 'cervenou repou', 'řepou a bylinkami'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
   { keys: ['zeleninové placky s jogurtovým', 'zeleninove placky', 'placky s jogurtem'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
-  { keys: ['hovězí steak s batátovou kaší', 'hovezi steak s batatovou kasi', 'hovězí steak s batátovou', 'steak s batátovou kaší'], url: 'https://images.unsplash.com/photo-1558030006-4502153934bb?w=400&h=280&fit=crop' },
+  { keys: ['hovězí steak s quinoa a zeleninovým salátem', 'hovezi steak s quinoa', 'hovězí steak s batátovou kaší', 'hovezi steak s batatovou kasi', 'hovězí steak s batátovou', 'steak s batátovou kaší', 'steak s quinoa'], url: 'https://images.unsplash.com/photo-1558030006-4502153934bb?w=400&h=280&fit=crop' },
   { keys: ['zeleninová polévka s čočkou', 'zeleninova polevka s cockou', 'polévka s čočkou', 'polevka s cockou'], url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop' },
   { keys: ['zeleninové curry s luštěninami', 'zeleninove curry s lusteninami', 'curry s luštěninami a rýží', 'curry s lusteninami'], url: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=280&fit=crop' },
-  { keys: ['tofu stir-fry se zeleninou', 'tofu stir-fry', 'stir-fry se zeleninou'], url: 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop' },
+  { keys: ['tofu stir-fry s rýžovými nudlemi', 'tofu stir-fry se zeleninou', 'tofu stir-fry', 'stir-fry se zeleninou', 'stir-fry s rýžovými'], url: 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop' },
   { keys: ['kuřecí stehno pečené', 'kureci stehno pecene', 'kuřecí stehno', 'kuřecí prso s pečenou'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
   { keys: ['grilované kuřecí prso s brokolicí', 'grilovane kureci prso s brokolici', 'kuřecí prso s brokolicí', 'kureci prso s brokolici'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
   { keys: ['brambory s kuřecím špenátem', 'brambory s kurecim', 'kuřecím špenátem'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
@@ -34,7 +35,7 @@ const DISH_IMAGES = [
   { keys: ['bramborová kaše', 'bramborova kase', 'bramborovou kaší', 'batátovou kaší', 'batatovou kasi'], url: 'https://images.unsplash.com/photo-1518013431117-eb2895b37a9d?w=400&h=280&fit=crop' },
   { keys: ['ovesná kaše', 'oatmeal', 'porridge', 'ovesna kase'], url: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=400&h=280&fit=crop' },
   { keys: ['jogurt', 'granola', 'müsli', 'parfait'], url: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=280&fit=crop' },
-  { keys: ['smoothie', 'koktejl'], url: 'https://images.unsplash.com/photo-1505252585461-04db1ebd3c2c?w=400&h=280&fit=crop' },
+  { keys: ['smoothie s banánem a proteinem', 'smoothie s banánem', 'smoothie s proteinem', 'smoothie', 'koktejl'], url: 'https://images.unsplash.com/photo-1505252585461-04db1ebd3c2c?w=400&h=280&fit=crop' },
   { keys: ['houbové', 'houby', 'mushroom', 'žampion'], url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop' },
   { keys: ['kuskus', 'couscous'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
   { keys: ['polévka', 'polevka', 'soup'], url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop' },
@@ -246,6 +247,7 @@ export default function PlanViewer({ plan, userName, hideHero }) {
   const [mealOverrides, setMealOverrides] = useState({}); // { "di_mi": { title, content } }
   const [swapModal, setSwapModal] = useState(null); // { dayIndex, mealIndex, dishQuery, loading, html }
   const [shoppingCopyDone, setShoppingCopyDone] = useState(false);
+  const [shoppingSendEmail, setShoppingSendEmail] = useState({ loading: false, done: false, error: null });
   const recipeOpenIdRef = useRef(0);
   const recipeCacheRef = useRef(new Map()); // dish -> html, 5 min TTL
 
@@ -583,6 +585,36 @@ export default function PlanViewer({ plan, userName, hideHero }) {
               }
               window.open('https://www.rohlik.cz/', '_blank', 'noopener,noreferrer');
             };
+            const handleSendEmail = async () => {
+              setShoppingSendEmail({ loading: true, done: false, error: null });
+              try {
+                const { data: { session } } = await supabase.auth.getSession();
+                const token = session?.access_token;
+                if (!token) {
+                  setShoppingSendEmail({ loading: false, done: false, error: 'Pro odeslání e-mailem se přihlas.' });
+                  return;
+                }
+                const res = await fetch('/api/send-shopping-list', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                  body: JSON.stringify({ items: list }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                  setShoppingSendEmail({ loading: false, done: false, error: data.error || 'Nepodařilo odeslat.' });
+                  return;
+                }
+                setShoppingSendEmail({ loading: false, done: true, error: null });
+                setTimeout(() => setShoppingSendEmail((s) => ({ ...s, done: false })), 4000);
+              } catch (e) {
+                setShoppingSendEmail({ loading: false, done: false, error: 'Chyba připojení.' });
+              }
+            };
+            const handleShareWhatsApp = () => {
+              const text = list.join('\n');
+              const url = `https://wa.me/?text=${encodeURIComponent('🛒 Nákupní seznam Body & Mind ON:\n\n' + text)}`;
+              window.open(url, '_blank', 'noopener,noreferrer');
+            };
             return list.length > 0 ? (
               <div className="plan-block">
                 <h3 className="plan-block-title">Nákupní seznam na týden</h3>
@@ -592,10 +624,20 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                   ))}
                 </ul>
                 <div className="plan-order-ingredients">
-                  <button type="button" className="plan-btn-order" onClick={copyAndOpen}>
-                    🛒 Objednat suroviny
-                  </button>
+                  <div className="plan-shopping-actions">
+                    <button type="button" className="plan-btn-order" onClick={copyAndOpen}>
+                      🛒 Objednat suroviny
+                    </button>
+                    <button type="button" className="plan-btn-share" onClick={handleSendEmail} disabled={shoppingSendEmail.loading}>
+                      {shoppingSendEmail.loading ? 'Odesílám…' : '✉️ Poslat e-mailem'}
+                    </button>
+                    <button type="button" className="plan-btn-share" onClick={handleShareWhatsApp}>
+                      📱 Sdílet WhatsApp
+                    </button>
+                  </div>
                   {shoppingCopyDone && <span className="plan-copy-hint">Seznam zkopírován do schránky</span>}
+                  {shoppingSendEmail.done && <span className="plan-copy-hint plan-copy-success">Odesláno na e-mail</span>}
+                  {shoppingSendEmail.error && <span className="plan-copy-hint plan-copy-error">{shoppingSendEmail.error}</span>}
                   <p className="plan-order-links">
                     Seznam se zkopíruje a otevře se <a href="https://www.rohlik.cz/" target="_blank" rel="noopener noreferrer">Rohlík.cz</a>.
                     Můžeš ho vložit v nákupním seznamu (Ctrl+V). Případně nákup vyřídíš na{' '}
@@ -726,6 +768,13 @@ const planSectionStyles = `
     padding-top: 16px;
     border-top: 1px solid rgba(139, 92, 255, 0.25);
   }
+  .plan-shopping-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
   .plan-btn-order {
     display: inline-flex;
     align-items: center;
@@ -744,12 +793,36 @@ const planSectionStyles = `
     transform: translateY(-1px);
     box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4);
   }
+  .plan-btn-share {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    background: rgba(139, 92, 255, 0.25);
+    color: #e9d5ff;
+    border: 1px solid rgba(139, 92, 255, 0.4);
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+  }
+  .plan-btn-share:hover:not(:disabled) {
+    background: rgba(139, 92, 255, 0.35);
+    transform: translateY(-1px);
+  }
+  .plan-btn-share:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
   .plan-copy-hint {
     display: inline-block;
     margin-left: 12px;
     font-size: 13px;
     color: #86efac;
   }
+  .plan-copy-success { color: #86efac !important; }
+  .plan-copy-error { color: #f87171 !important; }
   .plan-order-links {
     margin: 12px 0 0;
     font-size: 13px;

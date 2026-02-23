@@ -693,6 +693,14 @@ export default function Profil() {
       )}
       <Header />
       <main className="page">
+        {/* Hlavní cíl plánu úplně nahoře */}
+        {currentPlan && (
+          <div className="plan-goal-hero">
+            <h2 className="plan-goal-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
+            {currentPlan.plan_type && <span className="plan-goal-badge">{currentPlan.plan_type}</span>}
+          </div>
+        )}
+
         <section className="hero">
           <h1>
             Ahoj <span>{userName}</span> 👋
@@ -842,7 +850,7 @@ export default function Profil() {
             </section>
 
             {/* MŮJ PLÁN */}
-            {currentPlan && <PlanViewer plan={currentPlan} userName={userName} />}
+            {currentPlan && <PlanViewer plan={currentPlan} userName={userName} hideHero />}
 
             {/* Historie tréninků – poslední 3 viditelné, zbytek v rozbalovacím menu */}
             <section className="card history-section">
@@ -1074,6 +1082,43 @@ export default function Profil() {
             #0a0a0f;
           color: #fff;
           font-family: Inter, sans-serif;
+        }
+
+        .plan-goal-hero {
+          text-align: center;
+          padding: 28px 24px 32px;
+          margin: -20px -20px 32px -20px;
+          background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4c1d95 100%);
+          border-radius: 0 0 20px 20px;
+          position: relative;
+          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+        }
+        .plan-goal-hero::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.5), transparent);
+        }
+        .plan-goal-hero-title {
+          margin: 0 0 12px;
+          font-size: 22px;
+          font-weight: 700;
+          color: #fff;
+          text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+        }
+        .plan-goal-badge {
+          display: inline-block;
+          background: rgba(255, 255, 255, 0.25);
+          color: #e9d5ff;
+          padding: 6px 14px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 600;
+          text-transform: uppercase;
+          border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .hero {

@@ -154,7 +154,7 @@ function parsePlanHtml(html) {
   }
 }
 
-export default function PlanViewer({ plan, userName }) {
+export default function PlanViewer({ plan, userName, hideHero }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [parsed, setParsed] = useState(null);
   const [recipeModal, setRecipeModal] = useState(null); // { title, content, anchorRect, hasRecipe }
@@ -186,11 +186,13 @@ export default function PlanViewer({ plan, userName }) {
 
   return (
     <section className="card plan-section plan-section-premium">
-      {/* Hero nadpis */}
-      <div className="plan-hero">
-        <h2 className="plan-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
-        {plan.plan_type && <span className="plan-badge">{plan.plan_type}</span>}
-      </div>
+      {/* Hero nadpis (lze skrýt, když je vykreslen nahoře na stránce) */}
+      {!hideHero && (
+        <div className="plan-hero">
+          <h2 className="plan-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
+          {plan.plan_type && <span className="plan-badge">{plan.plan_type}</span>}
+        </div>
+      )}
 
       {!isValid && (
         <p className="plan-expired">

@@ -18,6 +18,23 @@ export default async function handler(req, res) {
 
     const b = req.body || {};
 
+    const dietType = b.diet_type?.trim() || null;
+    const dietaryRestrictions = b.dietary_restrictions?.trim() || null;
+    const dietLabels = {
+      vegetarian: 'Vegetarián',
+      vegan: 'Vegan',
+      gluten_free: 'Bez lepku',
+      lactose_free: 'Bez laktózy',
+      paleo: 'Paleo',
+      low_carb: 'Nízkosacharidová',
+      other: 'Jiné',
+    };
+    const dietLabel = dietType && dietLabels[dietType] ? dietLabels[dietType] : '';
+    const notesParts = [];
+    if (dietLabel) notesParts.push('Typ stravy: ' + dietLabel);
+    if (dietaryRestrictions) notesParts.push('Co nejí: ' + dietaryRestrictions);
+    const notesFinal = notesParts.length ? notesParts.join('. ') : (b.notes?.trim() || null);
+
     const payload = {
       email: b.email?.trim()?.toLowerCase() || null,
       name: b.name?.trim() || null,
@@ -31,9 +48,9 @@ export default async function handler(req, res) {
       goal: normalizeGoal(b.goal),
       freq_choice: normalizeFrequency(b.frequency || b.freq_choice),
       weekly_sessions_user: getWeeklySessions(b.frequency || b.freq_choice),
-      diet_type: b.diet_type?.trim() || null,
-      dietary_restrictions: b.dietary_restrictions?.trim() || null,
-      notes: b.notes?.trim() || null,
+      diet_type: dietType || null,
+      dietary_restrictions: dietaryRestrictions || null,
+      notes: notesFinal,
       program: b.program || 'START',
       created_at: new Date().toISOString(),
       user_id: null,

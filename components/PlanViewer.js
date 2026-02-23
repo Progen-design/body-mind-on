@@ -162,6 +162,7 @@ function parsePlanHtml(html) {
         }).filter(Boolean);
       } else if (/Jídelníček|celý týden/i.test(title)) {
         const dayNames = ['Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota', 'Neděle'];
+        const mealTypes = ['Snídaně', 'Oběd', 'Večeře', 'Svačina', 'Snidane', 'Obed', 'Vecere', 'Svacina'];
         let el = h3.nextElementSibling;
         while (el) {
           if (el.tagName === 'H4') {
@@ -169,12 +170,13 @@ function parsePlanHtml(html) {
             if (dayNames.some((d) => dayName.includes(d))) {
               const meals = [];
               let next = el.nextElementSibling;
-              while (next && next.tagName !== 'H4') {
+              while (next && next.tagName !== 'H4' && next.tagName !== 'H3') {
                 if (next.tagName === 'P') {
                   const bold = next.querySelector('b');
                   const mealType = bold ? bold.textContent.replace(/:\s*$/, '').trim() : '';
                   const rest = (next.textContent || '').replace(bold?.textContent || '', '').replace(/^:\s*/, '').trim();
-                  if (mealType || rest) meals.push({ type: mealType || 'Jídlo', text: rest, fullHtml: next.innerHTML });
+                  const isMeal = mealTypes.some((m) => norm(mealType).includes(norm(m)));
+                  if (isMeal && (mealType || rest)) meals.push({ type: mealType || 'Jídlo', text: rest, fullHtml: next.innerHTML });
                 }
                 next = next.nextElementSibling;
               }

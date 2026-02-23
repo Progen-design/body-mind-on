@@ -36,7 +36,49 @@ Tím je objednávka surovin „zajištěna“ v režimu **copy + odkaz**; plné 
 
 ---
 
-## 4. Shrnutí
+## 4. Jak nastavit integraci typu Goulash (Rohlík / Košík)
+
+Goulash má s Rohlíkem a Košíkem **partnerství** – uživatelé mohou seznam z aplikace přidat přímo do košíku a přepínat mezi prodejci. U nás to bez B2B dohody nejde; níže je, jak se k tomu dostat.
+
+### 4.1 Co máš teď (bez nastavování)
+
+- V profilu u plánu je tlačítko **„Objednat suroviny“** – zkopíruje nákupní seznam a otevře Rohlík.
+- Odkazy na Rohlík.cz, Košík.cz a Billa e-shop jsou v textu pod tlačítkem.
+- **Není potřeba nic nastavovat** – po deployi to funguje. Uživatel vloží seznam (Ctrl+V) v Rohlíku/Košíku/Billa ručně.
+
+### 4.2 Jak získat integraci „jako Goulash“ (předvyplnění košíku)
+
+Plnohodnotná integrace = **B2B / partnerství** s Rohlíkem nebo Košíkem. Postup:
+
+1. **Rohlík.cz**
+   - Web: [www.rohlik.cz](https://www.rohlik.cz) → v patičce nebo „Pro firmy“ / „Pro partnery“ (pokud je odkaz).
+   - Kontakt: Obecně **obchodní oddělení** nebo **partner@rohlik.cz** (nebo ekvivalent na jejich stránce).
+   - Napsat stručně: že provozuješ aplikaci Body & Mind ON (jídelníček na míru), uživatelé mají nákupní seznam a chtěli byste nabídnout možnost **přidat seznam do košíku / nákupního seznamu na Rohlíku** (integrace typu Goulash). Zeptat se, zda mají **API nebo partner program pro tento typ integrace**.
+
+2. **Košík.cz**
+   - Web: [www.kosik.cz](https://www.kosik.cz) → sekce pro partnery / B2B (pokud existuje).
+   - Kontakt: **Obchodní nebo technické oddělení** – stejná idea: popsat aplikaci, nákupní seznamy a zájem o integraci (předvyplnění seznamu/košíku).
+
+3. **Billa**
+   - E-shop: [shop.billa.cz](https://shop.billa.cz).
+   - Pro API/integraci: kontaktovat **Billa** přes oficiální kontakt na webu (obchodní/technické oddělení) a zeptat se na možnost partnerství pro předvyplnění nákupu z externí aplikace.
+
+### 4.3 Co mít připravené pro jednání
+
+- Krátký popis produktu (Body & Mind ON, kdo jsou uživatelé, jak vzniká nákupní seznam).
+- Co přesně chceš: např. „Odkaz nebo API, které umožní předvyplnit nákupní seznam / košík z naší aplikace (jako u Goulash).“
+- Počet uživatelů nebo odhady (pokud máš) – pro B2B často chtějí odhad objemu.
+
+### 4.4 Shrnutí nastavení
+
+| Chceš | Co udělat |
+|-------|-----------|
+| Používat současné tlačítko a odkazy | Nic nenastavovat – po deployi je to v produkci. |
+| Integraci „jako Goulash“ (do košíku jedním klikem) | Kontaktovat Rohlík a Košík (a případně Billa) s návrhem partnerství a požadavkem na API / partner program. |
+
+---
+
+## 5. Shrnutí
 
 | Cíl | Stav |
 |-----|------|

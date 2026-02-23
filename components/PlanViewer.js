@@ -141,7 +141,7 @@ function parsePlanHtml(html) {
 export default function PlanViewer({ plan, userName }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [parsed, setParsed] = useState(null);
-  const [recipeModal, setRecipeModal] = useState(null); // { title, content } nebo { title, mealHtml }
+  const [recipeModal, setRecipeModal] = useState(null); // { title, content, anchorRect, hasRecipe }
 
   useEffect(() => {
     if (plan?.plan_html && typeof document !== 'undefined') {
@@ -244,11 +244,20 @@ export default function PlanViewer({ plan, userName }) {
                           if (startWords.length >= 5 && rn.includes(startWords)) return true;
                           return false;
                         });
-                        const openRecipe = () => setRecipeModal(
-                          matchingRecipe
-                            ? { title: matchingRecipe.name, content: matchingRecipe.content }
-                            : { title: meal.type || 'Jídlo', content: meal.fullHtml || meal.text || '' }
-                        );
+                        const openRecipe = (e) => {
+                          const rect = e?.currentTarget?.getBoundingClientRect?.();
+                          const anchorRect = rect ? { top: rect.bottom + 8, left: rect.left, width: rect.width } : null;
+                          if (matchingRecipe) {
+                            setRecipeModal({ title: matchingRecipe.name, content: matchingRecipe.content, anchorRect, hasRecipe: true });
+                          } else {
+                            setRecipeModal({
+                              title: meal.type || 'Jídlo',
+                              content: '<p class="plan-no-recipe-msg">Pro toto jídlo není v plánu detailní recept (suroviny a postup).</p><p class="plan-no-recipe-hint">V sekci Recepty níže najdeš vybrané recepty z plánu.</p>',
+                              anchorRect,
+                              hasRecipe: false,
+                            });
+                          }
+                        };
                         return (
                           <div key={mi} className="plan-meal-card">
                             <button type="button" className="plan-meal-image-wrap" onClick={openRecipe} title="Klikni pro zobrazení receptu">
@@ -273,12 +282,20 @@ export default function PlanViewer({ plan, userName }) {
             </div>
           )}
 
-          {/* Modal receptu po kliknutí na obrázek */}
+          {/* Modal receptu – vyskakuje u kliknuté karty */}
           {recipeModal && (
             <div className="plan-recipe-modal-overlay" onClick={() => setRecipeModal(null)}>
-              <div className="plan-recipe-modal" onClick={(e) => e.stopPropagation()}>
+              <div
+                className="plan-recipe-modal"
+                onClick={(e) => e.stopPropagation()}
+                style={recipeModal.anchorRect && typeof window !== 'undefined' ? {
+                  position: 'fixed',
+                  top: Math.min(recipeModal.anchorRect.top, window.innerHeight - 320),
+                  left: Math.max(12, Math.min(recipeModal.anchorRect.left, window.innerWidth - 532)),
+                } : {}}
+              >
                 <div className="plan-recipe-modal-header">
-                  <h3>Recept: {recipeModal.title}</h3>
+                  <h3>{recipeModal.hasRecipe ? `Recept: ${recipeModal.title}` : recipeModal.title}</h3>
                   <button type="button" className="plan-recipe-modal-close" onClick={() => setRecipeModal(null)} aria-label="Zavřít">×</button>
                 </div>
                 <div className="plan-recipe-modal-body" dangerouslySetInnerHTML={{ __html: recipeModal.content }} />
@@ -620,6 +637,15 @@ const planSectionStyles = `
   .plan-recipe-modal-body :global(p) { margin: 10px 0; }
   .plan-recipe-modal-body :global(b) { color: #e9d5ff; }
   .plan-recipe-modal-body :global(ul) { margin: 10px 0; padding-left: 20px; }
+  .plan-recipe-modal-body :global(.plan-no-recipe-msg) {
+    color: #fbbf24;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .plan-recipe-modal-body :global(.plan-no-recipe-hint) {
+    color: #94a3b8;
+    font-size: 13px;
+  }
   .plan-meal-body {
     padding: 14px;
   }

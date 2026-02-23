@@ -1,5 +1,14 @@
 # Nasazení na web (Vercel)
 
+## ⚠️ Pravidlo nasazení (vždy platí)
+
+- **Všechny změny se musí dávat na tuto produkční verzi:**  
+  **Push na větev `main`** → automatický deploy na Vercel → **https://app.bodyandmindon.cz**
+- **Vercel projekt:** [body-mind-on](https://vercel.com/progen-designs-projects/body-mind-on)
+- **Jinou verzi nepoužívat** – produkce je jen tato (main → tento Vercel projekt). Ostatní deploye / větve pro produkci nesmí být používány.
+
+---
+
 Aplikace je Next.js projekt. Aby běžela na internetu (např. na **https://app.bodyandmindon.cz**), nasaď ji na Vercel.
 
 ## Kroky

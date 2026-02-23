@@ -1,36 +1,6 @@
 import { supabaseServer } from '../../lib/supabaseServer';
-import nodemailer from 'nodemailer';
+import { generatePlanAndSendFromParams } from '../../lib/generatePlan';
 import { getClientIp, isRateLimited } from '../../lib/rateLimit';
-
-function createTransporter() {
-  const smtpUser = process.env.GMAIL_USER || process.env.SMTP_USER;
-  const smtpPass = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS;
-  if (!smtpUser || !smtpPass) {
-    throw new Error('Chybí SMTP/GMAIL přihlašovací údaje.');
-  }
-
-  if (process.env.SMTP_HOST) {
-    const smtpPort = Number(process.env.SMTP_PORT || 587);
-    const smtpSecure = process.env.SMTP_SECURE === 'true' || smtpPort === 465;
-    return {
-      transporter: nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: smtpPort,
-        secure: smtpSecure,
-        auth: { user: smtpUser, pass: smtpPass },
-      }),
-      smtpUser,
-    };
-  }
-
-  return {
-    transporter: nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: smtpUser, pass: smtpPass },
-    }),
-    smtpUser,
-  };
-}
 
 export const config = {
   api: {
@@ -66,6 +36,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: 'Neplatná e-mailová adresa.' });
     }
 
+    const height = Number(data.height ?? data.height_cm) || null;
+    const weight = Number(data.weight ?? data.weight_kg) || null;
+    if (!height || !weight || height < 100 || height > 250 || weight < 30 || weight > 300) {
+      return res.status(400).json({ success: false, message: 'Výška (100–250 cm) a váha (30–300 kg) jsou povinné pro generování plánu.' });
+    }
+
     // ✅ 1. Uložení do Supabase
     const { error: insertError } = await supabaseServer.from('registrations').insert([
       {
@@ -73,8 +49,8 @@ export default async function handler(req, res) {
         email,
         gender: data.gender,
         age: data.age,
-        height: data.height,
-        weight: data.weight,
+        height,
+        weight,
         activity: data.activity,
         stress: data.stress,
         workType: data.workType,
@@ -90,29 +66,40 @@ export default async function handler(req, res) {
       throw new Error("Nepodařilo se uložit data do databáze.");
     }
 
-    // ✅ 2. Odeslání potvrzovacího e-mailu (GMAIL_* nebo SMTP_* fallback)
-    const { transporter, smtpUser } = createTransporter();
+    // ✅ 2. Generování plánu přes OpenAI a odeslání e-mailem
+    const loginUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '') + '/login';
+    const planResult = await generatePlanAndSendFromParams(
+      {
+        name: data.name,
+        email,
+        gender: data.gender,
+        age: data.age,
+        height,
+        weight,
+        activity: data.activity,
+        stress: data.stress,
+        workType: data.workType,
+        goal: data.goal,
+        frequency: data.frequency,
+        notes: data.notes,
+      },
+      { loginUrl, existingAccount: true }
+    );
 
-    await transporter.sendMail({
-      from: `"Body & Mind ON" <${smtpUser || process.env.EMAIL_FROM || 'info@bodyandmindon.cz'}>`,
-      to: email,
-      subject: `Potvrzení registrace – ${data.program || "START"} program`,
-      html: `
-        <h2>Ahoj ${data.name || "člene"},</h2>
-        <p>Děkujeme za registraci do programu <b>${data.program || "START"}</b>.</p>
-        <p>Tvůj osobní AI trenér právě připravuje tvůj první plán tréninku a jídelníček.</p>
-        <p>Očekávej e-mail s přehledem do několika minut.</p>
-        <hr />
-        <p><small>Body & Mind ON © 2025</small></p>
-      `,
+    if (!planResult?.ok) {
+      console.error("⚠️ Generování plánu selhalo:", planResult?.message);
+      return res.status(200).json({
+        success: true,
+        message: "Formulář byl přijat. Generování plánu se nepodařilo – zkontroluj spam nebo nás kontaktuj na info@bodyandmindon.cz.",
+        planSent: false,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Formulář byl přijat a plán byl odeslán na tvůj e-mail.",
+      planSent: true,
     });
-
-    console.log("✅ E-mail odeslán.");
-
-    // ✅ 3. Úspěšná odpověď
-    return res
-      .status(200)
-      .json({ success: true, message: "Formulář byl přijat a e-mail odeslán." });
   } catch (error) {
     console.error("💥 Server error:", error);
     // vždy vrať platný JSON, aby se neobjevila JSON.parse chyba

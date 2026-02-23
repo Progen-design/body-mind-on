@@ -28,10 +28,10 @@
 
 ### assistant-intake vs body-metrics
 
-- **assistant-intake**: Ukládá do `registrations`, posílá **jen potvrzovací e-mail** („Tvůj plán se připravuje“). **Nevolá OpenAI** ani negeneruje plán.
-- **body-metrics**: Ukládá do `body_metrics`, volá `generatePlanForEmail` → **OpenAI** vygeneruje plán → `sendPlanEmail` odešle **e-mail s plánem** (jídelníček, makra, trénink, suplementace atd.).
+- **assistant-intake**: Ukládá do `registrations`, volá `generatePlanAndSendFromParams` → **OpenAI** vygeneruje plán → `sendPlanEmail` odešle **e-mail s plánem**. Vyžaduje výšku a váhu.
+- **body-metrics**: Ukládá do `body_metrics`, volá `generatePlanForEmail` → **OpenAI** vygeneruje plán → `sendPlanEmail` odešle **e-mail s plánem**.
 
-**E-mail s plánem** tedy generuje výhradně tok **body-metrics** (registrace na `/start`).
+**Oba toky** generují plán přes OpenAI a odesílají e-mail s plánem (jídelníček, makra, trénink, suplementace).
 
 ## 2. Formát výstupu AI (od února 2025)
 

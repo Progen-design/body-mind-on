@@ -2,37 +2,49 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
-// Obrázky jídel. Výběr podle NEJDELŠÍ SHODY (getMealImageByDish): „Palačinky…“ → palačinky, „Chia pudink…“ → chia, ne těstoviny/snídaně.
+// Obrázky jídel – NEJDELŠÍ SHODA. Žádný obecný klíč „zelenina“ (dával by všem stejnou mísu). Jen konkrétní jídla.
 const DISH_IMAGES = [
-  { keys: ['palačinky', 'palacinky', 'pancake', 'pancakes'], url: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=280&fit=crop' },
-  { keys: ['chia pudink', 'chia puding', 'chia pudding'], url: 'https://images.unsplash.com/photo-1517673132405-a56a62b18ddb?w=400&h=280&fit=crop' },
-  { keys: ['omeleta', 'omelet', 'vajíčk', 'vejce', 'vajec'], url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=280&fit=crop' },
-  { keys: ['kuřecí', 'kuře', 'chicken', 'zapečené kuře', 'zapecene kure', 'grilované kuře', 'grilovane kure', 'kureci prso'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
+  { keys: ['palačinky z mandlové', 'palacinky z mandlove', 'palačinky', 'palacinky', 'pancake'], url: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=280&fit=crop' },
+  { keys: ['chia pudink s kokosovým', 'chia pudink s kokosovym', 'chia pudink', 'chia pudding'], url: 'https://images.unsplash.com/photo-1517673132405-a56a62b18ddb?w=400&h=280&fit=crop' },
+  { keys: ['jogurt s bezlepkovými ovesnými', 'jogurt s ovesnými vločkami', 'ovesnými vločkami', 'ovesne vlocky', 'ovesné vločky'], url: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=400&h=280&fit=crop' },
+  { keys: ['vejce na tvrdo s avokádem', 'vajec na tvrdo', 'vejce na tvrdo'], url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=280&fit=crop' },
+  { keys: ['toasty s avokádovým krémem', 'toast s avokádovým', 'avokádovým krémem', 'avokadovym kremem', 'bezlepkové toasty'], url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=280&fit=crop' },
+  { keys: ['červený salát s červenou řepou', 'cerveny salat s cervenou repou', 'červenou řepou', 'cervenou repou', 'řepou a bylinkami'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
+  { keys: ['zeleninové placky s jogurtovým', 'zeleninove placky', 'placky s jogurtem'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
+  { keys: ['hovězí steak s batátovou kaší', 'hovezi steak s batatovou kasi', 'hovězí steak s batátovou', 'steak s batátovou kaší'], url: 'https://images.unsplash.com/photo-1558030006-4502153934bb?w=400&h=280&fit=crop' },
+  { keys: ['zeleninová polévka s čočkou', 'zeleninova polevka s cockou', 'polévka s čočkou', 'polevka s cockou'], url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop' },
+  { keys: ['zeleninové curry s luštěninami', 'zeleninove curry s lusteninami', 'curry s luštěninami a rýží', 'curry s lusteninami'], url: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=280&fit=crop' },
+  { keys: ['tofu stir-fry se zeleninou', 'tofu stir-fry', 'stir-fry se zeleninou'], url: 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop' },
+  { keys: ['kuřecí stehno pečené', 'kureci stehno pecene', 'kuřecí stehno', 'kuřecí prso s pečenou'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
+  { keys: ['grilované kuřecí prso s brokolicí', 'grilovane kureci prso s brokolici', 'kuřecí prso s brokolicí', 'kureci prso s brokolici'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
+  { keys: ['brambory s kuřecím špenátem', 'brambory s kurecim', 'kuřecím špenátem'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
+  { keys: ['kuřecí salát s avokádem', 'kureci salat s avokadem', 'kuřecí salát'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
+  { keys: ['omeleta se špenátem a feta', 'omeleta se spinatem', 'omeleta', 'omelet', 'vajíčk', 'vejce', 'vajec'], url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=280&fit=crop' },
+  { keys: ['kuřecí', 'kuře', 'chicken', 'zapečené kuře', 'grilované kuře', 'kureci prso'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
   { keys: ['hovězí burger', 'beef burger', 'burger'], url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=280&fit=crop' },
-  { keys: ['pečená ryba s bramborovou', 'pecena ryba s bramborovou', 'pečená ryba', 'pecena ryba', 'baked fish', 'ryba s brambor'], url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=280&fit=crop' },
-  { keys: ['losos', 'salmon', 'pečený losos', 'peceny losos'], url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=280&fit=crop' },
-  { keys: ['zeleninové curry', 'zeleninove curry', 'vegetable curry', 'curry s houbami'], url: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=280&fit=crop' },
-  { keys: ['quinoa salát', 'quinoa salat', 'cizrnou a paprikou'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
+  { keys: ['pečená ryba s bramborovou', 'pecena ryba s bramborovou', 'pečená ryba', 'pecena ryba', 'ryba s brambor'], url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=280&fit=crop' },
+  { keys: ['pečený losos s nokem', 'peceny losos s nokem', 'losos s cuketou', 'losos', 'salmon', 'pečený losos'], url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=280&fit=crop' },
+  { keys: ['quinoa salát s cizrnou a paprikou', 'quinoa salat s cizrnou', 'quinoa salát s avokádem', 'cizrnou a paprikou'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
+  { keys: ['cizrnový salát s červenou cibulí', 'cizrnovy salat', 'cizrnový salát'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
   { keys: ['steak', 'hovězí', 'beef', 'pečený steak', 'hovězí steak'], url: 'https://images.unsplash.com/photo-1558030006-4502153934bb?w=400&h=280&fit=crop' },
-  { keys: ['tofu', 'stir-fry', 'wok'], url: 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop' },
-  { keys: ['rizoto', 'risotto', 'houbové rizoto', 'houbove rizoto'], url: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=400&h=280&fit=crop' },
+  { keys: ['zeleninové curry', 'zeleninove curry', 'vegetable curry', 'curry s houbami'], url: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=280&fit=crop' },
+  { keys: ['rizoto', 'risotto', 'houbové rizoto'], url: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=400&h=280&fit=crop' },
   { keys: ['kari', 'curry', 'kokosové mléko', 'kokosove mleko'], url: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=280&fit=crop' },
   { keys: ['quinoa', 'bulgur'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
-  { keys: ['brokolic', 'brokolice'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
-  { keys: ['bramborová kaše', 'bramborova kase', 'bramborovou kaší', 'mashed potato'], url: 'https://images.unsplash.com/photo-1518013431117-eb2895b37a9d?w=400&h=280&fit=crop' },
-  { keys: ['ovesná kaše', 'oatmeal', 'ovesné vločky', 'porridge', 'ovesna kase'], url: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=400&h=280&fit=crop' },
+  { keys: ['bramborová kaše', 'bramborova kase', 'bramborovou kaší', 'batátovou kaší', 'batatovou kasi'], url: 'https://images.unsplash.com/photo-1518013431117-eb2895b37a9d?w=400&h=280&fit=crop' },
+  { keys: ['ovesná kaše', 'oatmeal', 'porridge', 'ovesna kase'], url: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=400&h=280&fit=crop' },
   { keys: ['jogurt', 'granola', 'müsli', 'parfait'], url: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=280&fit=crop' },
   { keys: ['smoothie', 'koktejl'], url: 'https://images.unsplash.com/photo-1505252585461-04db1ebd3c2c?w=400&h=280&fit=crop' },
   { keys: ['houbové', 'houby', 'mushroom', 'žampion'], url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop' },
   { keys: ['kuskus', 'couscous'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
   { keys: ['polévka', 'polevka', 'soup'], url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop' },
-  { keys: ['těstovin', 'testovin', 'pasta', 'špagety', 'spagety'], url: 'https://images.unsplash.com/photo-1551183053-bf91a1f81115?w=400&h=280&fit=crop' },
+  { keys: ['těstovin', 'testovin', 'pasta', 'špagety', 'spagety', 'nokem', 'noky', 'gnocchi'], url: 'https://images.unsplash.com/photo-1551183053-bf91a1f81115?w=400&h=280&fit=crop' },
   { keys: ['rýže', 'ryze', 'rice'], url: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=280&fit=crop' },
   { keys: ['brambor', 'brambory'], url: 'https://images.unsplash.com/photo-1518013431117-eb2895b37a9d?w=400&h=280&fit=crop' },
+  { keys: ['brokolic', 'brokolice'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
   { keys: ['cuket', 'cuketa'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
   { keys: ['feta', 'fetou'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
   { keys: ['salát', 'salad'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
-  { keys: ['zeleninou', 'zelenina', 'zelenin'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
   { keys: ['večeře', 'večere'], url: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=280&fit=crop' },
   { keys: ['oběd', 'obed'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
   { keys: ['snídaně', 'snidane'], url: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=400&h=280&fit=crop' },
@@ -571,43 +583,6 @@ export default function PlanViewer({ plan, userName, hideHero }) {
               </div>
             ) : null;
           })()}
-
-          {/* Recepty – lehké odkazy (klik = modal, obsah z plánu nebo cache/API) */}
-          {parsed.recipes?.length > 0 && (
-            <div className="plan-block">
-              <h3 className="plan-block-title">Recepty</h3>
-              <ul className="plan-recipe-links">
-                {parsed.recipes.map((r, i) => {
-                  const hasContent = r.content && !/lorem\s+ipsum|dolor\s+sit\s+amet/i.test(r.content);
-                  return (
-                    <li key={i}>
-                      <button
-                        type="button"
-                        className="plan-recipe-link"
-                        onClick={(e) => {
-                          const rect = e?.currentTarget?.getBoundingClientRect?.();
-                          const anchorRect = rect ? { top: rect.bottom + 8, left: rect.left, width: rect.width } : null;
-                          recipeOpenIdRef.current += 1;
-                          const thisOpenId = recipeOpenIdRef.current;
-                          if (hasContent) {
-                            setRecipeModal({ openId: thisOpenId, title: r.name, content: recipeContentOnly(r.content), anchorRect, hasRecipe: true, loading: false });
-                            return;
-                          }
-                          setRecipeModal({ openId: thisOpenId, title: r.name, content: null, anchorRect, hasRecipe: false, loading: true });
-                          getRecipeForDish(r.name).then((html) => {
-                            setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: html || '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst.</p>', loading: false } : prev));
-                          });
-                        }}
-                      >
-                        <span>{r.name}</span>
-                        <span aria-hidden>›</span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
 
           {/* Trénink + Regenerace – zbytek v rozbalovacím celém plánu */}
           <div className="plan-expandable">

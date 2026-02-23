@@ -78,6 +78,7 @@ export default function Profil() {
   const [refreshing, setRefreshing] = useState(false);
   const [showWelcomeTour, setShowWelcomeTour] = useState(false);
   const [toast, setToast] = useState({ message: '', type: 'success' });
+  const [showAllWorkouts, setShowAllWorkouts] = useState(false);
 
   const [workoutForm, setWorkoutForm] = useState({
     workout_date: new Date().toISOString().split('T')[0],
@@ -843,27 +844,34 @@ export default function Profil() {
               )}
             </section>
 
-            {/* Historie tréninků */}
+            {/* Historie tréninků – poslední 3 viditelné, zbytek v rozbalovacím menu */}
             <section className="card history-section">
               <h2 className="section-head">Historie tréninků</h2>
               {workouts.length === 0 ? (
                 <p className="empty-history">Zatím nemáš žádné záznamy. Klikni na „Zapsat trénink“ a první trénink se objeví zde i v přehledu.</p>
               ) : (
-                <ul className="workout-list" key={`workouts-${profile?._updated ?? 0}`}>
-                  {workouts.map((w, idx) => (
-                    <li key={w.id ?? `w-${idx}-${w.workout_date}`} className="workout-item">
-                      <span className="workout-icon">{WORKOUT_TYPES.find((t) => t.id === (w.workout_type || '').toLowerCase())?.emoji || '🏋️'}</span>
-                      <div className="workout-info">
-                        <strong>{WORKOUT_TYPES.find((t) => t.id === (w.workout_type || '').toLowerCase())?.label || w.workout_name || 'Trénink'}</strong>
-                        <span className="workout-meta">
-                          {formatShortDate(w.workout_date)} · {(Number(w.duration_min) || 0)} min
-                          {w.notes ? ` · ${w.notes}` : ''}
-                        </span>
-                      </div>
-                      <button type="button" onClick={() => handleDeleteWorkout(w.id)} className="workout-delete" title="Smazat">✕</button>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <ul className="workout-list" key={`workouts-${profile?._updated ?? 0}`}>
+                    {(showAllWorkouts ? workouts : workouts.slice(0, 3)).map((w, idx) => (
+                      <li key={w.id ?? `w-${idx}-${w.workout_date}`} className="workout-item">
+                        <span className="workout-icon">{WORKOUT_TYPES.find((t) => t.id === (w.workout_type || '').toLowerCase())?.emoji || '🏋️'}</span>
+                        <div className="workout-info">
+                          <strong>{WORKOUT_TYPES.find((t) => t.id === (w.workout_type || '').toLowerCase())?.label || w.workout_name || 'Trénink'}</strong>
+                          <span className="workout-meta">
+                            {formatShortDate(w.workout_date)} · {(Number(w.duration_min) || 0)} min
+                            {w.notes ? ` · ${w.notes}` : ''}
+                          </span>
+                        </div>
+                        <button type="button" onClick={() => handleDeleteWorkout(w.id)} className="workout-delete" title="Smazat">✕</button>
+                      </li>
+                    ))}
+                  </ul>
+                  {workouts.length > 3 && (
+                    <button type="button" className="workout-expand-btn" onClick={() => setShowAllWorkouts((v) => !v)}>
+                      {showAllWorkouts ? 'Skrýt starší tréninky' : `Zobrazit starší tréninky (${workouts.length - 3})`}
+                    </button>
+                  )}
+                </>
               )}
             </section>
 
@@ -908,8 +916,9 @@ export default function Profil() {
                 <p className="chart-hint">Odhad váhy z tréninků – jeden bod = den s tréninkem. Vlevo nejstarší, vpravo nejnovější. Vše se přepočítá hned po zápisu tréninku.</p>
                 {chartWeightData.length >= 2 ? (
                   <>
-                    <div className="chart-svg-wrap">
-                      <svg className="chart-svg" viewBox="0 0 560 200" preserveAspectRatio="xMidYMid meet">
+                    <div className="chart-wrapper">
+                      <div className="chart-svg-wrap">
+                        <svg className="chart-svg" viewBox="0 0 560 200" preserveAspectRatio="none">
                         <defs>
                           <linearGradient id="weightGrad" x1="0%" y1="0%" x2="0%" y2="100%">
                             <stop offset="0%" stopColor="#9b5cff" stopOpacity="0.35" />
@@ -946,10 +955,10 @@ export default function Profil() {
                             </>
                           );
                         })()}
-                      </svg>
-                    </div>
-                    <div className="chart-labels">
-                      <div className="chart-labels-inner" style={{ paddingLeft: '8.57%', paddingRight: '5%' }}>
+                        </svg>
+                      </div>
+                      <div className="chart-labels">
+                        <div className="chart-labels-inner" style={{ paddingLeft: '8.57%', paddingRight: '5%' }}>
                         {chartWeightData.map((p, i) => (
                           <div
                             key={`${p.date}-${i}`}
@@ -963,6 +972,7 @@ export default function Profil() {
                             <span className="chart-date">{formatShortDate(p.date)}</span>
                           </div>
                         ))}
+                        </div>
                       </div>
                     </div>
                   </>
@@ -1412,15 +1422,21 @@ export default function Profil() {
           font-size: 13px;
           margin: 4px 0 16px;
         }
+        .chart-wrapper {
+          max-width: 560px;
+          margin: 0 auto;
+          width: 100%;
+        }
         .chart-svg-wrap {
           width: 100%;
-          max-width: 560px;
-          margin: 0 auto 16px;
+          margin-bottom: 4px;
         }
         .chart-svg {
           width: 100%;
           height: auto;
+          aspect-ratio: 560 / 200;
           display: block;
+          vertical-align: top;
         }
         .chart-labels {
           width: 100%;
@@ -1554,6 +1570,24 @@ export default function Profil() {
           background: rgba(239, 68, 68, 0.2);
           color: #f87171;
           border-color: rgba(239, 68, 68, 0.4);
+        }
+        .workout-expand-btn {
+          display: block;
+          width: 100%;
+          margin-top: 12px;
+          padding: 12px 16px;
+          background: rgba(139, 92, 255, 0.15);
+          border: 1px solid rgba(139, 92, 255, 0.3);
+          border-radius: 12px;
+          color: #a78bfa;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.2s, border-color 0.2s;
+        }
+        .workout-expand-btn:hover {
+          background: rgba(139, 92, 255, 0.25);
+          border-color: rgba(139, 92, 255, 0.5);
         }
         .modal-actions {
           display: flex;

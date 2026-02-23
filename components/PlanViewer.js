@@ -1,18 +1,29 @@
 // /components/PlanViewer.js – Grafické zobrazení AI plánu (wow efekt, obrázky u jídel)
 import { useState, useEffect } from 'react';
 
-// Obrázky jídel (Unsplash, free to use) – podle typu jídla
-const MEAL_IMAGES = {
-  snídaně: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=280&fit=crop',
-  breakfast: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=280&fit=crop',
-  oběd: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop',
-  obed: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop',
-  večeře: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=280&fit=crop',
-  večere: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=280&fit=crop',
-  svačina: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop',
-  svačina2: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=280&fit=crop',
-  default: 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop',
-};
+// Obrázky podle konkrétního jídla (klíčová slova v názvu/popisu) – každé jídlo jiný obrázek
+const DISH_IMAGES = [
+  { keys: ['ovesná kaše', 'oatmeal', 'ovesné'], url: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=280&fit=crop' },
+  { keys: ['jogurt', 'granola', 'müsli'], url: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=280&fit=crop' },
+  { keys: ['vajíčk', 'omelet', 'vejce'], url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=280&fit=crop' },
+  { keys: ['smoothie', 'koktejl'], url: 'https://images.unsplash.com/photo-1505252585461-04db1ebd3c2c?w=400&h=280&fit=crop' },
+  { keys: ['kuřecí', 'chicken', 'prsa'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
+  { keys: ['tofu', 'stir-fry', 'wok'], url: 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop' },
+  { keys: ['losos', 'salmon', 'ryb'], url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=280&fit=crop' },
+  { keys: ['steak', 'hovězí', 'beef'], url: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=280&fit=crop' },
+  { keys: ['quinoa', 'bulgur', 'couscous'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
+  { keys: ['salát', 'salad', 'zelenin'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
+  { keys: ['polévka', 'soup'], url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop' },
+  { keys: ['špenát', 'spinach', 'listová'], url: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=280&fit=crop' },
+  { keys: ['brambor', 'brambory'], url: 'https://images.unsplash.com/photo-1518013431117-eb2895b37a9d?w=400&h=280&fit=crop' },
+  { keys: ['těstovin', 'pasta', 'špagety'], url: 'https://images.unsplash.com/photo-1551183053-bf91a1f81115?w=400&h=280&fit=crop' },
+  { keys: ['rýže', 'rice'], url: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=280&fit=crop' },
+  { keys: ['večeře', 'večere'], url: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=280&fit=crop' },
+  { keys: ['oběd', 'obed'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
+  { keys: ['snídaně', 'snidane'], url: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=280&fit=crop' },
+  { keys: ['svačina'], url: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=280&fit=crop' },
+];
+const DEFAULT_MEAL_IMAGE = 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop';
 
 const PERSONAL_ICONS = {
   'Věk': '🎂',
@@ -25,10 +36,13 @@ const PERSONAL_ICONS = {
   'Frekvence cvičení': '📅',
 };
 
-function getMealImage(mealLabel) {
-  if (!mealLabel) return MEAL_IMAGES.default;
-  const key = Object.keys(MEAL_IMAGES).find((k) => k !== 'default' && mealLabel.toLowerCase().includes(k));
-  return MEAL_IMAGES[key] || MEAL_IMAGES.default;
+function getMealImageByDish(mealText) {
+  if (!mealText || typeof mealText !== 'string') return DEFAULT_MEAL_IMAGE;
+  const lower = mealText.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  for (const { keys, url } of DISH_IMAGES) {
+    if (keys.some((k) => lower.includes(k.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '')))) return url;
+  }
+  return DEFAULT_MEAL_IMAGE;
 }
 
 function parsePlanHtml(html) {
@@ -126,6 +140,7 @@ function parsePlanHtml(html) {
 export default function PlanViewer({ plan, userName }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [parsed, setParsed] = useState(null);
+  const [recipeModal, setRecipeModal] = useState(null); // { title, content } nebo { title, mealHtml }
 
   useEffect(() => {
     if (plan?.plan_html && typeof document !== 'undefined') {
@@ -217,24 +232,47 @@ export default function PlanViewer({ plan, userName }) {
                   <div key={di} className="plan-day-card">
                     <h4 className="plan-day-name">{day.dayName}</h4>
                     <div className="plan-meals">
-                      {day.meals.map((meal, mi) => (
-                        <div key={mi} className="plan-meal-card">
-                          <div className="plan-meal-image-wrap">
-                            <img
-                              src={getMealImage(meal.type)}
-                              alt=""
-                              className="plan-meal-image"
-                            />
-                            <span className="plan-meal-type">{meal.type}</span>
+                      {day.meals.map((meal, mi) => {
+                        const mealFullText = `${meal.type || ''} ${meal.text || ''}`;
+                        const matchingRecipe = parsed.recipes?.find((r) => mealFullText.toLowerCase().includes(r.name.toLowerCase()));
+                        const openRecipe = () => setRecipeModal(
+                          matchingRecipe
+                            ? { title: matchingRecipe.name, content: matchingRecipe.content }
+                            : { title: meal.type || 'Jídlo', content: meal.fullHtml || meal.text || '' }
+                        );
+                        return (
+                          <div key={mi} className="plan-meal-card">
+                            <button type="button" className="plan-meal-image-wrap" onClick={openRecipe} title="Zobrazit recept">
+                              <img
+                                src={getMealImageByDish(meal.text || meal.type)}
+                                alt=""
+                                className="plan-meal-image"
+                              />
+                              <span className="plan-meal-type">{meal.type}</span>
+                              <span className="plan-meal-recept-badge">Recept</span>
+                            </button>
+                            <div className="plan-meal-body">
+                              <p className="plan-meal-text" dangerouslySetInnerHTML={{ __html: meal.text || meal.fullHtml }} />
+                            </div>
                           </div>
-                          <div className="plan-meal-body">
-                            <p className="plan-meal-text" dangerouslySetInnerHTML={{ __html: meal.text || meal.fullHtml }} />
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Modal receptu po kliknutí na obrázek */}
+          {recipeModal && (
+            <div className="plan-recipe-modal-overlay" onClick={() => setRecipeModal(null)}>
+              <div className="plan-recipe-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="plan-recipe-modal-header">
+                  <h3>{recipeModal.title}</h3>
+                  <button type="button" className="plan-recipe-modal-close" onClick={() => setRecipeModal(null)} aria-label="Zavřít">×</button>
+                </div>
+                <div className="plan-recipe-modal-body" dangerouslySetInnerHTML={{ __html: recipeModal.content }} />
               </div>
             </div>
           )}
@@ -478,6 +516,13 @@ const planSectionStyles = `
     position: relative;
     height: 140px;
     overflow: hidden;
+    display: block;
+    width: 100%;
+    border: none;
+    padding: 0;
+    background: none;
+    cursor: pointer;
+    text-align: left;
   }
   .plan-meal-image {
     width: 100%;
@@ -496,6 +541,76 @@ const planSectionStyles = `
     font-size: 12px;
     font-weight: 600;
   }
+  .plan-meal-recept-badge {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(139, 92, 255, 0.9);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .plan-recipe-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  .plan-recipe-modal {
+    background: linear-gradient(180deg, #1e1b4b 0%, #0f0f1a 100%);
+    border: 1px solid rgba(139, 92, 255, 0.4);
+    border-radius: 20px;
+    max-width: 520px;
+    width: 100%;
+    max-height: 85vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 24px 48px rgba(0,0,0,0.5);
+  }
+  .plan-recipe-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .plan-recipe-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #e9d5ff;
+  }
+  .plan-recipe-modal-close {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .plan-recipe-modal-close:hover {
+    background: rgba(239, 68, 68, 0.3);
+  }
+  .plan-recipe-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    font-size: 14px;
+    color: #cbd5e1;
+    line-height: 1.6;
+  }
+  .plan-recipe-modal-body :global(p) { margin: 10px 0; }
+  .plan-recipe-modal-body :global(b) { color: #e9d5ff; }
+  .plan-recipe-modal-body :global(ul) { margin: 10px 0; padding-left: 20px; }
   .plan-meal-body {
     padding: 14px;
   }

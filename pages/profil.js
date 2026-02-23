@@ -758,10 +758,7 @@ export default function Profil() {
               </div>
             </section>
 
-            {/* MŮJ PLÁN */}
-            {currentPlan && <PlanViewer plan={currentPlan} userName={userName} />}
-
-            {/* TVŮJ PROGRES – jen z tréninků a z údajů (výchozí váha, cíl, výška). Žádná ruční váha. */}
+            {/* TVŮJ PROGRES – nahoře, nejdůležitější */}
             <section className="card card-accent center progress-section">
               <h2 className="section-head">Tvůj progres</h2>
               <p className="progress-lead">Všechny hodnoty vycházejí jen z tréninků a z tvého nastavení (výchozí váha, cíl, výška). Ruční váha do výpočtu nezasahuje.</p>
@@ -843,6 +840,9 @@ export default function Profil() {
                 </p>
               )}
             </section>
+
+            {/* MŮJ PLÁN */}
+            {currentPlan && <PlanViewer plan={currentPlan} userName={userName} />}
 
             {/* Historie tréninků – poslední 3 viditelné, zbytek v rozbalovacím menu */}
             <section className="card history-section">

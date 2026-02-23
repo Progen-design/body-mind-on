@@ -79,6 +79,7 @@ export default function Profil() {
   const [showWelcomeTour, setShowWelcomeTour] = useState(false);
   const [toast, setToast] = useState({ message: '', type: 'success' });
   const [showAllWorkouts, setShowAllWorkouts] = useState(false);
+  const [sendingPlan, setSendingPlan] = useState(false);
 
   const [workoutForm, setWorkoutForm] = useState({
     workout_date: new Date().toISOString().split('T')[0],
@@ -308,7 +309,7 @@ export default function Profil() {
         if (fresh) setSession(fresh);
         
         // Zobrazit toast notifikaci
-        setToast({ message: 'Trénink úspěšně přidán! 🏋️', type: 'success' });
+        setToast({ message: 'Trénink úspěšně přidán! 🏋️ Dobrý krok – každý trénink se počítá.', type: 'success' });
         (async () => {
           try {
             await new Promise(resolve => setTimeout(resolve, 2500));
@@ -647,6 +648,32 @@ export default function Profil() {
     profile?.user?.height_cm,
   ]);
 
+  async function handleSendPlanAgain() {
+    setSendingPlan(true);
+    try {
+      const { data: { session: fresh } } = await supabase.auth.refreshSession();
+      const token = fresh?.access_token ?? session?.access_token;
+      if (!token) {
+        setToast({ message: 'Session vypršela. Přihlas se znovu.', type: 'error' });
+        return;
+      }
+      const res = await fetch('/api/send-plan-again', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (res.ok && json.ok) {
+        setToast({ message: 'Plán byl odeslán na tvůj e-mail.', type: 'success' });
+      } else {
+        setToast({ message: json.error || 'Nepodařilo se odeslat plán.', type: 'error' });
+      }
+    } catch (err) {
+      setToast({ message: 'Chyba připojení.', type: 'error' });
+    } finally {
+      setSendingPlan(false);
+    }
+  }
+
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -744,10 +771,48 @@ export default function Profil() {
 
         {!loading && !error && (
           <>
+            {/* Tvé milníky */}
+            <section className="milestones-block">
+              <h2 className="section-head">Tvé milníky</h2>
+              <div className="milestones-list">
+                <div className={`milestone-item ${currentPlan ? 'done' : ''}`}>
+                  <span className="milestone-icon">{currentPlan ? '✓' : '○'}</span>
+                  <span className="milestone-label">Plán připraven</span>
+                </div>
+                <div className={`milestone-item ${workouts.length > 0 ? 'done' : ''}`}>
+                  <span className="milestone-icon">{workouts.length > 0 ? '✓' : '○'}</span>
+                  <span className="milestone-label">První trénink</span>
+                </div>
+                <div className={`milestone-item ${(() => {
+                  const created = profile?.user?.created_at;
+                  if (!created) return false;
+                  const reg = new Date(created);
+                  const now = new Date();
+                  const diffDays = (now - reg) / (1000 * 60 * 60 * 24);
+                  return diffDays >= 7;
+                })() ? 'done' : ''}`}>
+                  <span className="milestone-icon">{(() => {
+                    const created = profile?.user?.created_at;
+                    if (!created) return '○';
+                    const reg = new Date(created);
+                    const now = new Date();
+                    const diffDays = (now - reg) / (1000 * 60 * 60 * 24);
+                    return diffDays >= 7 ? '✓' : '○';
+                  })()}</span>
+                  <span className="milestone-label">Týden s námi</span>
+                </div>
+              </div>
+            </section>
+
             <div className="toolbar">
               <button type="button" onClick={handleRefresh} disabled={refreshing} className="btn-refresh" title="Obnovit data">
                 {refreshing ? 'Obnovuji…' : '🔄 Obnovit'}
               </button>
+              {currentPlan && (
+                <button type="button" onClick={handleSendPlanAgain} disabled={sendingPlan} className="btn-send-plan" title="Poslat plán znovu na e-mail">
+                  {sendingPlan ? 'Odesílám…' : '📧 Poslat plán znovu'}
+                </button>
+              )}
             </div>
 
             {/* RYCHLÉ AKCE – výrazný pruh */}
@@ -1170,11 +1235,53 @@ export default function Profil() {
           font-size: 12px;
           color: #64748b;
         }
+        .milestones-block {
+          margin-bottom: 28px;
+          padding: 20px 24px;
+          background: rgba(255,255,255,0.04);
+          border-radius: 16px;
+          border: 1px solid rgba(255,255,255,0.08);
+        }
+        .milestones-block .section-head { margin-bottom: 16px; }
+        .milestones-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 16px 24px;
+        }
+        .milestone-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 16px;
+          background: rgba(255,255,255,0.04);
+          border-radius: 12px;
+          border: 1px solid rgba(255,255,255,0.06);
+        }
+        .milestone-item.done { border-color: rgba(34, 197, 94, 0.4); background: rgba(34, 197, 94, 0.08); }
+        .milestone-icon {
+          width: 24px;
+          height: 24px;
+          line-height: 24px;
+          text-align: center;
+          border-radius: 50%;
+          font-size: 14px;
+          font-weight: 700;
+          color: #64748b;
+          background: rgba(255,255,255,0.06);
+        }
+        .milestone-item.done .milestone-icon { color: #22c55e; background: rgba(34, 197, 94, 0.2); }
+        .milestone-label { font-size: 14px; color: #94a3b8; }
+        .milestone-item.done .milestone-label { color: #e9d5ff; }
+
         .toolbar {
           text-align: center;
           margin: -8px 0 20px;
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 12px;
         }
-        .btn-refresh {
+        .btn-refresh, .btn-send-plan {
           padding: 8px 16px;
           background: rgba(255,255,255,0.06);
           border: 1px solid #444;
@@ -1183,8 +1290,8 @@ export default function Profil() {
           font-size: 13px;
           cursor: pointer;
         }
-        .btn-refresh:hover:not(:disabled) { background: rgba(255,255,255,0.1); color: #c4b5fd; }
-        .btn-refresh:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-refresh:hover:not(:disabled), .btn-send-plan:hover:not(:disabled) { background: rgba(255,255,255,0.1); color: #c4b5fd; }
+        .btn-refresh:disabled, .btn-send-plan:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .actions-block {
           margin-bottom: 32px;

@@ -67,11 +67,32 @@ function recipeContentOnly(html) {
   return html;
 }
 
+/** Fallback: sestaví nákupní seznam z bloků Suroviny v receptech */
+function buildShoppingListFromRecipes(recipes) {
+  if (!Array.isArray(recipes) || recipes.length === 0) return [];
+  const seen = new Set();
+  const out = [];
+  const surovinyRe = /suroviny\s*:?\s*<\/b>\s*([\s\S]*?)(?=<p\s*><b>|$)/gi;
+  const listRe = /<li[^>]*>([^<]*)<\/li>/gi;
+  recipes.forEach((r) => {
+    const content = r.content || '';
+    const match = surovinyRe.exec(content);
+    if (!match) return;
+    const block = match[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    const items = block.split(/[,;]|\s+-\s+/).map((s) => s.trim()).filter(Boolean);
+    items.forEach((item) => {
+      const n = item.toLowerCase().slice(0, 50);
+      if (n && !seen.has(n)) { seen.add(n); out.push(item); }
+    });
+  });
+  return out;
+}
+
 function parsePlanHtml(html) {
   if (!html || typeof document === 'undefined') return null;
   try {
     const doc = new DOMParser().parseFromString(html, 'text/html');
-    const result = { personal: [], macros: [], days: [], recipes: [], workout: '', regeneration: [], rawSections: {} };
+    const result = { personal: [], macros: [], days: [], recipes: [], workout: '', regeneration: [], shoppingList: [], mindsetTip: '', rawSections: {} };
 
     const sections = doc.querySelectorAll('section, body');
     const root = sections[0] || doc.body;
@@ -147,8 +168,29 @@ function parsePlanHtml(html) {
           result.workout += el.outerHTML || '';
           el = el.nextElementSibling;
         }
-      } else if (/Regenerace|Mindset/i.test(title)) {
+      } else if (/Regenerace|Mindset/i.test(title) && !/Mindset na tento týden/i.test(title)) {
         result.regeneration = list;
+      } else if (/Nákupní seznam/i.test(title)) {
+        let el = h3.nextElementSibling;
+        while (el && el.tagName !== 'H3') {
+          if (el.tagName === 'UL') {
+            el.querySelectorAll('li').forEach((li) => {
+              const t = (li.textContent || '').trim();
+              if (t) result.shoppingList.push(t);
+            });
+            break;
+          }
+          el = el.nextElementSibling;
+        }
+      } else if (/Mindset na tento týden/i.test(title)) {
+        let el = h3.nextElementSibling;
+        while (el && el.tagName !== 'H3') {
+          if (el.tagName === 'P') {
+            result.mindsetTip = (el.textContent || '').trim();
+            break;
+          }
+          el = el.nextElementSibling;
+        }
       }
     });
 
@@ -163,6 +205,8 @@ export default function PlanViewer({ plan, userName, hideHero }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [parsed, setParsed] = useState(null);
   const [recipeModal, setRecipeModal] = useState(null); // { title, content, anchorRect, hasRecipe, openId? }
+  const [mealOverrides, setMealOverrides] = useState({}); // { "di_mi": { title, content } }
+  const [swapModal, setSwapModal] = useState(null); // { dayIndex, mealIndex, dishQuery, loading, html }
   const recipeOpenIdRef = useRef(0);
   const recipeCacheRef = useRef(new Map()); // dish -> html, 5 min TTL
 
@@ -191,13 +235,13 @@ export default function PlanViewer({ plan, userName, hideHero }) {
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    if (recipeModal) {
+    if (recipeModal || swapModal) {
       document.body.style.overflow = 'hidden';
       return () => {
         document.body.style.overflow = '';
       };
     }
-  }, [recipeModal]);
+  }, [recipeModal, swapModal]);
 
   if (!plan || !plan.plan_html) {
     return (
@@ -274,6 +318,38 @@ export default function PlanViewer({ plan, userName, hideHero }) {
             </div>
           </div>
 
+          {/* Export jídelníčku */}
+          {parsed.days?.length > 0 && (
+            <div className="plan-block plan-export-row">
+              <button
+                type="button"
+                className="plan-export-btn"
+                onClick={() => {
+                  const lines = [];
+                  parsed.days.forEach((day, di) => {
+                    lines.push(day.dayName || 'Den');
+                    day.meals.forEach((meal, mi) => {
+                      const key = `${di}_${mi}`;
+                      const ov = mealOverrides[key];
+                      const text = ov ? ov.title : (meal.text || meal.fullHtml || '').replace(/<[^>]+>/g, ' ').trim();
+                      lines.push(`  ${meal.type || 'Jídlo'}: ${text}`);
+                    });
+                    lines.push('');
+                  });
+                  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'jidelnicek-tyden.txt';
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                📥 Stáhnout jídelníček (týden)
+              </button>
+            </div>
+          )}
+
           {/* Jídelníček – dny a jídla s obrázky */}
           {parsed.days?.length > 0 && (
             <div className="plan-block">
@@ -284,9 +360,11 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                     <h4 className="plan-day-name">{day.dayName}</h4>
                     <div className="plan-meals">
                       {day.meals.map((meal, mi) => {
-                        const mealFullText = `${meal.type || ''} ${meal.text || ''}`.trim();
+                        const overrideKey = `${di}_${mi}`;
+                        const override = mealOverrides[overrideKey];
+                        const mealFullText = override ? `${meal.type || ''} ${override.title || ''}`.trim() : `${meal.type || ''} ${meal.text || ''}`.trim();
                         const mealStart = mealFullText.replace(/\s*\(.*$/, '').trim().slice(0, 35);
-                        const matchingRecipe = parsed.recipes?.find((r) => {
+                        const matchingRecipe = !override && parsed.recipes?.find((r) => {
                           const rn = r.name.toLowerCase();
                           const mt = mealFullText.toLowerCase();
                           if (mt.includes(rn)) return true;
@@ -295,6 +373,14 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                           return false;
                         });
                         const openRecipe = (e) => {
+                          if (override?.content) {
+                            const button = e?.currentTarget;
+                            const rect = button?.getBoundingClientRect?.();
+                            const anchorRect = rect ? { top: rect.bottom + 8, left: rect.left, width: rect.width } : null;
+                            recipeOpenIdRef.current += 1;
+                            setRecipeModal({ openId: recipeOpenIdRef.current, title: override.title || meal.type, content: recipeContentOnly(override.content), anchorRect, hasRecipe: true, loading: false });
+                            return;
+                          }
                           const button = e?.currentTarget;
                           const rect = button?.getBoundingClientRect?.();
                           const anchorRect = rect ? { top: rect.bottom + 8, left: rect.left, width: rect.width } : null;
@@ -312,6 +398,13 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                             setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: html || fallback, loading: false } : prev));
                           });
                         };
+                        const handleSwap = () => {
+                          const dishQuery = `${meal.type || 'Jídlo'} alternativa, do 500 kcal`.slice(0, 150);
+                          setSwapModal({ dayIndex: di, mealIndex: mi, dishQuery, loading: true, html: null });
+                          getRecipeForDish(dishQuery).then((html) => {
+                            setSwapModal((prev) => prev ? { ...prev, loading: false, html: html || '' } : null);
+                          });
+                        };
                         return (
                           <div key={mi} className="plan-meal-card">
                             <button type="button" className="plan-meal-image-wrap" onClick={openRecipe} title="Klikni pro zobrazení receptu">
@@ -324,7 +417,10 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                               <span className="plan-meal-recept-badge">Klikni pro recept</span>
                             </button>
                             <div className="plan-meal-body">
-                              <p className="plan-meal-text" dangerouslySetInnerHTML={{ __html: meal.text || meal.fullHtml }} />
+                              <p className="plan-meal-text">
+                                {override ? (override.title || 'Náhrada') : <span dangerouslySetInnerHTML={{ __html: meal.text || meal.fullHtml }} />}
+                              </p>
+                              <button type="button" className="plan-meal-swap" onClick={(e) => { e.stopPropagation(); handleSwap(); }}>Nahradit jiným</button>
                             </div>
                           </div>
                         );
@@ -394,6 +490,60 @@ export default function PlanViewer({ plan, userName, hideHero }) {
             </div>,
             document.body
           )}
+
+          {/* Swap modal – alternativa jídla */}
+          {swapModal && typeof document !== 'undefined' && createPortal(
+            <div className="plan-recipe-modal-overlay" onClick={() => setSwapModal(null)}>
+              <div className="plan-recipe-modal plan-recipe-modal-dynamic" onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'min(520px, calc(100vw - 24px))', maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#1a1a2e', borderRadius: '16px', border: '1px solid #333', zIndex: 10001 }}>
+                <div className="plan-recipe-modal-header">
+                  <h3>Alternativa: {swapModal.dishQuery}</h3>
+                  <button type="button" className="plan-recipe-modal-close" onClick={() => setSwapModal(null)} aria-label="Zavřít">×</button>
+                </div>
+                {swapModal.loading ? (
+                  <div className="plan-recipe-modal-loading">
+                    <span className="plan-recipe-modal-spinner" />
+                    <p>Generuji alternativu…</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="plan-recipe-modal-body" dangerouslySetInnerHTML={{ __html: swapModal.html || '<p>Recept se nepodařilo načíst.</p>' }} />
+                    <div className="plan-recipe-modal-actions">
+                      <button type="button" className="plan-recipe-modal-replace-btn" onClick={() => {
+                        setMealOverrides((o) => ({ ...o, [`${swapModal.dayIndex}_${swapModal.mealIndex}`]: { title: swapModal.dishQuery, content: swapModal.html } }));
+                        setSwapModal(null);
+                      }}>
+                        Nahradit toto jídlo v plánu
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>,
+            document.body
+          )}
+
+          {/* Mindset na tento týden */}
+          {parsed.mindsetTip && (
+            <div className="plan-block plan-mindset-block">
+              <h3 className="plan-block-title">Mindset na tento týden</h3>
+              <p className="plan-mindset-text">{parsed.mindsetTip}</p>
+            </div>
+          )}
+
+          {/* Nákupní seznam na týden (z plánu nebo fallback z receptů) */}
+          {(() => {
+            const list = parsed.shoppingList?.length ? parsed.shoppingList : buildShoppingListFromRecipes(parsed.recipes);
+            return list.length > 0 ? (
+              <div className="plan-block">
+                <h3 className="plan-block-title">Nákupní seznam na týden</h3>
+                <ul className="plan-shopping-list">
+                  {list.map((item, i) => (
+                    <li key={i}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null;
+          })()}
 
           {/* Recepty – lehké odkazy (klik = modal, obsah z plánu nebo cache/API) */}
           {parsed.recipes?.length > 0 && (
@@ -530,6 +680,21 @@ const planSectionStyles = `
     margin: 0 0 16px;
     padding-bottom: 8px;
     border-bottom: 1px solid rgba(139, 92, 255, 0.3);
+  }
+  .plan-mindset-block { background: rgba(139, 92, 255, 0.08); border-radius: 12px; padding: 16px; }
+  .plan-mindset-text { margin: 0; color: #e9d5ff; line-height: 1.5; }
+  .plan-shopping-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+  }
+  .plan-shopping-list li {
+    padding: 6px 10px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 8px;
+    color: #e9d5ff;
   }
 
   .plan-cards-grid {
@@ -790,9 +955,10 @@ const planSectionStyles = `
   }
   .plan-meal-body {
     padding: 14px;
+    position: relative;
   }
   .plan-meal-text {
-    margin: 0;
+    margin: 0 0 8px;
     font-size: 13px;
     color: #cbd5e1;
     line-height: 1.5;
@@ -800,6 +966,40 @@ const planSectionStyles = `
   .plan-meal-text :global(b) {
     color: #e9d5ff;
   }
+  .plan-meal-swap {
+    font-size: 11px;
+    color: #94a3b8;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 4px 10px;
+    cursor: pointer;
+  }
+  .plan-meal-swap:hover { color: #c4b5fd; border-color: rgba(139, 92, 255, 0.5); }
+  .plan-export-row { padding-top: 0; }
+  .plan-export-btn {
+    padding: 10px 18px;
+    background: rgba(139, 92, 255, 0.2);
+    border: 1px solid rgba(139, 92, 255, 0.4);
+    border-radius: 12px;
+    color: #e9d5ff;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .plan-export-btn:hover { background: rgba(139, 92, 255, 0.3); }
+  .plan-recipe-modal-actions { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .plan-recipe-modal-replace-btn {
+    width: 100%;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #7c3aed, #9b5cff);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .plan-recipe-modal-replace-btn:hover { opacity: 0.95; }
 
   .plan-recipe-links {
     list-style: none;

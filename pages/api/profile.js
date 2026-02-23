@@ -73,6 +73,7 @@ export default async function handler(req, res) {
         start_weight_kg: meta.start_weight_kg != null ? Number(meta.start_weight_kg) : null,
         goal_weight_kg: meta.goal_weight_kg != null ? Number(meta.goal_weight_kg) : null,
         height_cm: meta.height_cm != null ? Number(meta.height_cm) : null,
+        created_at: user.created_at || null,
       },
       body_metrics: bodyMetrics,
       plans: plansData,

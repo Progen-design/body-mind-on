@@ -116,10 +116,14 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Ceník */}
+        {/* Ceník + hodnota */}
         <section id="cenik" className="section section-dark">
           <h2>Vyber si cestu k úspěchu</h2>
           <p className="section-lead">Každý plán tě posune o krok blíž k tvému cíli. Přizpůsobené plány pro tvé cíle a potřeby. Tvá změna začíná teď!</p>
+          <div className="value-block">
+            <p className="value-text">Osobní plán + jídelníček + trénink na míru – od 499 Kč/měsíc. Místo tisíců za osobního trenéra dostaneš AI kouče a jasný systém, který funguje.</p>
+            <a href={`${APP_URL}/start`} className="btn btn-primary">Začni 7 dní zdarma</a>
+          </div>
           <div className="pricing-cards">
             <div className="price-card">
               <h3>START</h3>
@@ -271,6 +275,21 @@ export default function Home() {
         .testimonial { padding: 20px; background: rgba(255,255,255,0.04); border-radius: 12px; border-left: 4px solid #9f46ff; margin: 0; font-style: italic; color: #d4d4d8; }
         .testimonial cite { display: block; margin-top: 10px; font-style: normal; font-size: 0.9rem; color: #71717a; }
 
+        .value-block {
+          max-width: 640px;
+          margin: 0 auto 32px;
+          padding: 28px 32px;
+          background: rgba(159, 70, 255, 0.12);
+          border: 1px solid rgba(159, 70, 255, 0.3);
+          border-radius: 16px;
+          text-align: center;
+        }
+        .value-text {
+          margin: 0 0 20px;
+          font-size: 1.1rem;
+          line-height: 1.6;
+          color: #e4e4e7;
+        }
         .pricing-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; margin-top: 32px; }
         .price-card { position: relative; padding: 28px; background: rgba(24,24,36,0.9); border: 1px solid #2a2a3d; border-radius: 20px; text-align: center; display: flex; flex-direction: column; align-items: center; }
         .price-card-featured { border-color: #9f46ff; box-shadow: 0 0 30px rgba(159, 70, 255, 0.2); }

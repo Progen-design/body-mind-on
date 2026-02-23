@@ -1,14 +1,15 @@
 // /components/PlanViewer.js – Grafické zobrazení AI plánu (wow efekt, obrázky u jídel)
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
-// Realistické obrázky jídel – ověřené Unsplash fotky (kaše = kaše, steak = steak)
+// Realistické obrázky jídel – ověřené Unsplash fotky; konkrétní jídla před obecnými (pořadí rozhoduje)
 const DISH_IMAGES = [
   { keys: ['ovesná kaše', 'oatmeal', 'ovesné vločky', 'porridge', 'ovesna kase'], url: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=400&h=280&fit=crop' },
   { keys: ['jogurt', 'granola', 'müsli', 'parfait'], url: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=280&fit=crop' },
   { keys: ['vajíčk', 'omelet', 'vejce', 'vajec'], url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=280&fit=crop' },
   { keys: ['smoothie', 'koktejl'], url: 'https://images.unsplash.com/photo-1505252585461-04db1ebd3c2c?w=400&h=280&fit=crop' },
   { keys: ['steak', 'hovězí', 'beef', 'pečený steak', 'hovězí steak'], url: 'https://images.unsplash.com/photo-1558030006-4502153934bb?w=400&h=280&fit=crop' },
-  { keys: ['kuřecí', 'chicken'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
+  { keys: ['kuřecí', 'kuře', 'chicken', 'zapečené kuře', 'zapecene kure'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
   { keys: ['tofu', 'stir-fry', 'wok'], url: 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop' },
   { keys: ['losos', 'salmon', 'pečený losos'], url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=280&fit=crop' },
   { keys: ['quinoa', 'bulgur', 'couscous'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
@@ -16,7 +17,6 @@ const DISH_IMAGES = [
   { keys: ['těstovin', 'pasta', 'špagety'], url: 'https://images.unsplash.com/photo-1551183053-bf91a1f81115?w=400&h=280&fit=crop' },
   { keys: ['rýže', 'rice'], url: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=280&fit=crop' },
   { keys: ['brambor', 'brambory'], url: 'https://images.unsplash.com/photo-1518013431117-eb2895b37a9d?w=400&h=280&fit=crop' },
-  { keys: ['špenát', 'spinach'], url: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=280&fit=crop' },
   { keys: ['salát', 'salad'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
   { keys: ['zeleninou', 'zelenina', 'zelenin'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
   { keys: ['večeře', 'večere'], url: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=280&fit=crop' },
@@ -39,7 +39,8 @@ const PERSONAL_ICONS = {
 
 function getMealImageByDish(mealText) {
   if (!mealText || typeof mealText !== 'string') return DEFAULT_MEAL_IMAGE;
-  const lower = mealText.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  const plain = mealText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const lower = plain.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
   for (const { keys, url } of DISH_IMAGES) {
     if (keys.some((k) => lower.includes(k.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '')))) return url;
   }
@@ -157,7 +158,8 @@ function parsePlanHtml(html) {
 export default function PlanViewer({ plan, userName, hideHero }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [parsed, setParsed] = useState(null);
-  const [recipeModal, setRecipeModal] = useState(null); // { title, content, anchorRect, hasRecipe }
+  const [recipeModal, setRecipeModal] = useState(null); // { title, content, anchorRect, hasRecipe, openId? }
+  const recipeOpenIdRef = useRef(0);
 
   useEffect(() => {
     if (plan?.plan_html && typeof document !== 'undefined') {
@@ -263,32 +265,35 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                           return false;
                         });
                         const openRecipe = async (e) => {
-                          const rect = e?.currentTarget?.getBoundingClientRect?.();
+                          const button = e?.currentTarget;
+                          const rect = button?.getBoundingClientRect?.();
                           const anchorRect = rect ? { top: rect.bottom + 8, left: rect.left, width: rect.width } : null;
+                          recipeOpenIdRef.current += 1;
+                          const thisOpenId = recipeOpenIdRef.current;
                           const hasRealRecipe = matchingRecipe?.content && !/lorem\s+ipsum|dolor\s+sit\s+amet/i.test(matchingRecipe.content);
                           if (hasRealRecipe) {
-                            setRecipeModal({ title: matchingRecipe.name, content: recipeContentOnly(matchingRecipe.content), anchorRect, hasRecipe: true, loading: false });
+                            setRecipeModal({ openId: thisOpenId, title: matchingRecipe.name, content: recipeContentOnly(matchingRecipe.content), anchorRect, hasRecipe: true, loading: false });
                             return;
                           }
                           const dishName = (mealFullText.replace(/\s*\([^)]*\)\s*$/g, '').trim() || meal.type || 'Jídlo').slice(0, 150);
-                          setRecipeModal({ title: meal.type || 'Jídlo', content: null, anchorRect, hasRecipe: false, loading: true });
+                          setRecipeModal({ openId: thisOpenId, title: meal.type || 'Jídlo', content: null, anchorRect, hasRecipe: false, loading: true });
                           try {
                             const res = await fetch('/api/recipe?dish=' + encodeURIComponent(dishName));
                             const data = await res.json();
                             if (data.ok && data.html) {
-                              setRecipeModal((prev) => (prev ? { ...prev, content: data.html, loading: false } : null));
+                              setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: data.html, loading: false } : prev));
                             } else {
-                              setRecipeModal((prev) => (prev ? { ...prev, content: '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkus to znovu.</p>', loading: false } : null));
+                              setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkus to znovu.</p>', loading: false } : prev));
                             }
                           } catch (err) {
-                            setRecipeModal((prev) => (prev ? { ...prev, content: '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení k internetu.</p>', loading: false } : null));
+                            setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení k internetu.</p>', loading: false } : prev));
                           }
                         };
                         return (
                           <div key={mi} className="plan-meal-card">
                             <button type="button" className="plan-meal-image-wrap" onClick={openRecipe} title="Klikni pro zobrazení receptu">
                               <img
-                                src={getMealImageByDish(meal.text || meal.type)}
+                                src={getMealImageByDish(mealFullText || meal.text || meal.type)}
                                 alt=""
                                 className="plan-meal-image"
                               />
@@ -308,19 +313,29 @@ export default function PlanViewer({ plan, userName, hideHero }) {
             </div>
           )}
 
-          {/* Modal receptu – dynamicky u kliknuté karty, přizpůsobí se obsahu a obrazovce */}
-          {recipeModal && (
+          {/* Modal receptu – vykreslen v portálu do body, aby byl u kliknutého jídla (fixed vůči viewportu) */}
+          {recipeModal && typeof document !== 'undefined' && createPortal(
             <div className="plan-recipe-modal-overlay" onClick={() => setRecipeModal(null)}>
               <div
                 className="plan-recipe-modal plan-recipe-modal-dynamic"
                 onClick={(e) => e.stopPropagation()}
-                style={recipeModal.anchorRect && typeof window !== 'undefined' ? {
-                  position: 'fixed',
-                  top: Math.max(12, Math.min(recipeModal.anchorRect.top, window.innerHeight - 340)),
-                  left: Math.max(12, Math.min(recipeModal.anchorRect.left, window.innerWidth - 532)),
-                  maxHeight: 'min(85vh, 520px)',
-                  width: 'min(520px, calc(100vw - 24px))',
-                } : {}}
+                style={(() => {
+                  const pad = 12;
+                  const maxW = 520;
+                  const maxH = 340;
+                  if (recipeModal.anchorRect && typeof window !== 'undefined') {
+                    const top = recipeModal.anchorRect.top;
+                    const left = recipeModal.anchorRect.left;
+                    return {
+                      position: 'fixed',
+                      top: `${Math.max(pad, Math.min(top, window.innerHeight - maxH - pad))}px`,
+                      left: `${Math.max(pad, Math.min(left, window.innerWidth - maxW - pad))}px`,
+                      maxHeight: 'min(85vh, 520px)',
+                      width: 'min(520px, calc(100vw - 24px))',
+                    };
+                  }
+                  return { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', maxHeight: '85vh', width: 'min(520px, calc(100vw - 24px))' };
+                })()}
               >
                 <div className="plan-recipe-modal-header">
                   <h3>{recipeModal.hasRecipe ? `Recept: ${recipeModal.title}` : recipeModal.title}</h3>
@@ -335,7 +350,8 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                   <div className="plan-recipe-modal-body" dangerouslySetInnerHTML={{ __html: recipeModal.content || '' }} />
                 )}
               </div>
-            </div>
+            </div>,
+            document.body
           )}
 
           {/* Recepty – rozbalovací karty */}

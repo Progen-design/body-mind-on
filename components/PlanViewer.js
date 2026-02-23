@@ -2,17 +2,24 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
-// Obrázky jídel – POŘADÍ ROZHODUJE: nejdřív konkrétní jídlo (omeleta, kuře, losos), až nakonec obecné (snídaně, oběd, feta). „Omeleta se špenátem a feta“ → obrázek omelety.
+// Obrázky jídel. Výběr podle NEJDELŠÍ SHODY (getMealImageByDish): „Palačinky…“ → palačinky, „Chia pudink…“ → chia, ne těstoviny/snídaně.
 const DISH_IMAGES = [
+  { keys: ['palačinky', 'palacinky', 'pancake', 'pancakes'], url: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=280&fit=crop' },
+  { keys: ['chia pudink', 'chia puding', 'chia pudding'], url: 'https://images.unsplash.com/photo-1517673132405-a56a62b18ddb?w=400&h=280&fit=crop' },
   { keys: ['omeleta', 'omelet', 'vajíčk', 'vejce', 'vajec'], url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=280&fit=crop' },
   { keys: ['kuřecí', 'kuře', 'chicken', 'zapečené kuře', 'zapecene kure', 'grilované kuře', 'grilovane kure', 'kureci prso'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
+  { keys: ['hovězí burger', 'beef burger', 'burger'], url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=280&fit=crop' },
+  { keys: ['pečená ryba s bramborovou', 'pecena ryba s bramborovou', 'pečená ryba', 'pecena ryba', 'baked fish', 'ryba s brambor'], url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=280&fit=crop' },
   { keys: ['losos', 'salmon', 'pečený losos', 'peceny losos'], url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=280&fit=crop' },
+  { keys: ['zeleninové curry', 'zeleninove curry', 'vegetable curry', 'curry s houbami'], url: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=280&fit=crop' },
+  { keys: ['quinoa salát', 'quinoa salat', 'cizrnou a paprikou'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
   { keys: ['steak', 'hovězí', 'beef', 'pečený steak', 'hovězí steak'], url: 'https://images.unsplash.com/photo-1558030006-4502153934bb?w=400&h=280&fit=crop' },
   { keys: ['tofu', 'stir-fry', 'wok'], url: 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop' },
   { keys: ['rizoto', 'risotto', 'houbové rizoto', 'houbove rizoto'], url: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=400&h=280&fit=crop' },
   { keys: ['kari', 'curry', 'kokosové mléko', 'kokosove mleko'], url: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=280&fit=crop' },
   { keys: ['quinoa', 'bulgur'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
   { keys: ['brokolic', 'brokolice'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
+  { keys: ['bramborová kaše', 'bramborova kase', 'bramborovou kaší', 'mashed potato'], url: 'https://images.unsplash.com/photo-1518013431117-eb2895b37a9d?w=400&h=280&fit=crop' },
   { keys: ['ovesná kaše', 'oatmeal', 'ovesné vločky', 'porridge', 'ovesna kase'], url: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=400&h=280&fit=crop' },
   { keys: ['jogurt', 'granola', 'müsli', 'parfait'], url: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=280&fit=crop' },
   { keys: ['smoothie', 'koktejl'], url: 'https://images.unsplash.com/photo-1505252585461-04db1ebd3c2c?w=400&h=280&fit=crop' },
@@ -44,14 +51,30 @@ const PERSONAL_ICONS = {
   'Frekvence cvičení': '📅',
 };
 
+/** Normalizuje text pro porovnání (bez diakritiky, lowercase). */
+function norm(s) {
+  if (!s || typeof s !== 'string') return '';
+  return s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+}
+
+/**
+ * Vybere obrázek podle názvu jídla. Používá NEJDELŠÍ SHODU (nejvíc specifický klíč vyhrává),
+ * aby „Palačinky z mandlové mouky“ dostaly obrázek palačinek, ne těstovin nebo snídaně.
+ */
 function getMealImageByDish(mealText) {
   if (!mealText || typeof mealText !== 'string') return DEFAULT_MEAL_IMAGE;
   const plain = mealText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-  const lower = plain.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  const lower = norm(plain);
+  let best = { url: DEFAULT_MEAL_IMAGE, keyLen: 0 };
   for (const { keys, url } of DISH_IMAGES) {
-    if (keys.some((k) => lower.includes(k.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '')))) return url;
+    for (const k of keys) {
+      const nk = norm(k);
+      if (nk && lower.includes(nk) && nk.length > best.keyLen) {
+        best = { url, keyLen: nk.length };
+      }
+    }
   }
-  return DEFAULT_MEAL_IMAGE;
+  return best.url;
 }
 
 function recipeContentOnly(html) {
@@ -415,6 +438,7 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                                 src={getMealImageByDish(mealFullText || meal.text || meal.type)}
                                 alt=""
                                 className="plan-meal-image"
+                                onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_MEAL_IMAGE; }}
                               />
                               <span className="plan-meal-type">{meal.type}</span>
                               <span className="plan-meal-recept-badge">Klikni pro recept</span>

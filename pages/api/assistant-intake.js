@@ -81,6 +81,8 @@ export default async function handler(req, res) {
         workType: data.workType,
         goal: data.goal,
         frequency: data.frequency,
+        diet_type: data.diet_type ?? null,
+        dietary_restrictions: data.dietary_restrictions ?? data.preferences ?? null,
         notes: data.notes,
       },
       { loginUrl, existingAccount: true }

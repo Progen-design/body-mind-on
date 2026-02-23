@@ -4,16 +4,22 @@
 
 ### Tok generování plánu
 
+**body-metrics (např. /start):**
 ```
-/start (formulář) → POST /api/body-metrics → body_metrics (Supabase)
-                        ↓
-              generatePlanForEmail(email)
-                        ↓
-              OpenAI Chat API (gpt-4o-mini)
-                        ↓
-              JSON výstup { ok, metrics, html }
-                        ↓
-              ai_generated_plans (Supabase) + sendPlanEmail()
+POST /api/body-metrics → body_metrics (Supabase)
+        ↓
+generatePlanForEmail(email) → OpenAI Chat API (gpt-4o-mini)
+        ↓
+JSON { ok, metrics, html } → ai_generated_plans + sendPlanEmail()
+```
+
+**assistant-intake (např. VIP/Club formulář, webhook):**
+```
+POST /api/assistant-intake → registrations (Supabase)
+        ↓
+generatePlanAndSendFromParams(params) → generatePlanForEmail(bmOverride)
+        ↓
+Stejný OpenAI Chat API (SYS prompt) → ai_generated_plans + sendPlanEmail()
 ```
 
 ### Klíčové soubory
@@ -24,7 +30,7 @@
 | `lib/openai.js` | OpenAI klient |
 | `pages/api/body-metrics.js` | Přijímá data z /start, volá generatePlanForEmail |
 | `pages/api/generate-plan.js` | Alternativní API – volá generatePlan(params) přímo |
-| `pages/api/assistant-intake.js` | Samostatný tok – registrace do `registrations`, **nepoužívá OpenAI** |
+| `pages/api/assistant-intake.js` | Ukládá do `registrations`, volá `generatePlanAndSendFromParams` → OpenAI → plán na e-mail |
 
 ### assistant-intake vs body-metrics
 

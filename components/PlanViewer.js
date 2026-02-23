@@ -201,7 +201,7 @@ function parsePlanHtml(html) {
           }
           el = el.nextElementSibling;
         }
-      } else if (/Tréninkový plán/i.test(title)) {
+      } else if (/Trénink/i.test(title)) {
         let el = h3.nextElementSibling;
         while (el && el.tagName !== 'H3') {
           result.workout += el.outerHTML || '';

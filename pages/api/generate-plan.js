@@ -21,6 +21,9 @@ export default async function handler(req, res) {
       occupation,
       goal,
       weekly_sessions,
+      diet_type,
+      dietary_restrictions,
+      notes,
       preferences,
     } = req.body || {}
 
@@ -35,7 +38,9 @@ export default async function handler(req, res) {
       occupation,
       goal,
       weekly_sessions,
-      preferences,
+      diet_type: diet_type ?? null,
+      dietary_restrictions: dietary_restrictions ?? preferences ?? null,
+      notes,
     })
 
     return res.status(200).json({ ok: true, html, metrics })

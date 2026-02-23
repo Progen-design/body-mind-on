@@ -17,6 +17,8 @@ export default function Start() {
     worktype: "",
     goal: "",
     frequency: "",
+    diet_type: "",
+    dietary_restrictions: "",
     notes: "",
     program: "START",
   });
@@ -87,6 +89,8 @@ export default function Start() {
           worktype: "",
           goal: "",
           frequency: "",
+          diet_type: "",
+          dietary_restrictions: "",
           notes: "",
           program: "START",
         });
@@ -320,16 +324,55 @@ export default function Start() {
             </select>
           </div>
 
+          {/* STRAVA – rozbalovací sekce */}
+          <details className="group border border-gray-700 rounded-lg bg-[#0f0f0f] overflow-hidden">
+            <summary className="label flex items-center justify-between gap-2 cursor-pointer list-none p-3 text-gray-400 hover:text-gray-300 select-none">
+              <span>Strava a omezení (volitelné)</span>
+              <span className="text-sm transition group-open:rotate-180" aria-hidden>▼</span>
+            </summary>
+            <div className="px-3 pb-3 pt-0 space-y-4 border-t border-gray-700/50">
+              <div>
+                <label className="label block mb-2 text-gray-500 text-sm">Typ stravy</label>
+                <select
+                  name="diet_type"
+                  className="select w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
+                  value={formData.diet_type}
+                  onChange={handleChange}
+                >
+                  <option value="">Žádná preference</option>
+                  <option value="vegetarian">Vegetarián</option>
+                  <option value="vegan">Vegan</option>
+                  <option value="gluten_free">Bez lepku</option>
+                  <option value="lactose_free">Bez laktózy</option>
+                  <option value="paleo">Paleo</option>
+                  <option value="low_carb">Nízkosacharidová</option>
+                  <option value="other">Jiné (popiš v poznámkách)</option>
+                </select>
+              </div>
+              <div>
+                <label className="label block mb-2 text-gray-500 text-sm">Co nejí (alergie, intolerance, vynechané potraviny)</label>
+                <textarea
+                  name="dietary_restrictions"
+                  className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
+                  rows="2"
+                  value={formData.dietary_restrictions}
+                  onChange={handleChange}
+                  placeholder="např. ořechy, mléko, lepek…"
+                />
+              </div>
+            </div>
+          </details>
+
           {/* POZNÁMKY */}
           <div>
             <label className="label block mb-2 text-gray-400">Poznámky (volitelné)</label>
             <textarea
               name="notes"
               className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
-              rows="3"
+              rows="2"
               value={formData.notes}
               onChange={handleChange}
-              placeholder="Zdravotní omezení, preference jídel..."
+              placeholder="Co nejí, další omezení, preference…"
             />
           </div>
 

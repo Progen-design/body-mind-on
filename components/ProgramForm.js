@@ -8,6 +8,8 @@ export default function ProgramForm({ planType }) {
     age: "",
     height: "",
     weight: "",
+    diet_type: "",
+    dietary_restrictions: "",
     notes: "",
   });
 
@@ -36,6 +38,8 @@ export default function ProgramForm({ planType }) {
         worktype: 'office_it',
         goal: 'udrzovani',
         frequency: '2-3x týdně',
+        diet_type: form.diet_type?.trim() || null,
+        dietary_restrictions: form.dietary_restrictions?.trim() || null,
         notes: form.notes?.trim() || null,
         program: planType || 'START',
       };
@@ -140,12 +144,49 @@ export default function ProgramForm({ planType }) {
         />
       </div>
 
+      <details className="mt-6 rounded-xl bg-neutral-800 border border-neutral-700 overflow-hidden group">
+        <summary className="flex items-center justify-between gap-2 cursor-pointer list-none p-4 text-gray-400 hover:text-gray-300 select-none">
+          <span>Strava a omezení (volitelné)</span>
+          <span className="text-sm transition group-open:rotate-180" aria-hidden>▼</span>
+        </summary>
+        <div className="px-4 pb-4 pt-0 space-y-4 border-t border-neutral-700">
+          <div>
+            <label className="block text-sm text-gray-500 mb-1">Typ stravy</label>
+            <select
+              name="diet_type"
+              value={form.diet_type}
+              onChange={handleChange}
+              className="p-4 w-full rounded-xl bg-neutral-800 border border-neutral-700 focus:ring-2 focus:ring-green-400"
+            >
+              <option value="">Žádná preference</option>
+              <option value="vegetarian">Vegetarián</option>
+              <option value="vegan">Vegan</option>
+              <option value="gluten_free">Bez lepku</option>
+              <option value="lactose_free">Bez laktózy</option>
+              <option value="paleo">Paleo</option>
+              <option value="low_carb">Nízkosacharidová</option>
+              <option value="other">Jiné</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-gray-500 mb-1">Co nejí (alergie, intolerance, vynechané potraviny)</label>
+            <textarea
+              name="dietary_restrictions"
+              placeholder="např. ořechy, mléko, lepek…"
+              value={form.dietary_restrictions}
+              onChange={handleChange}
+              rows={2}
+              className="p-4 w-full rounded-xl bg-neutral-800 border border-neutral-700 focus:ring-2 focus:ring-green-400"
+            />
+          </div>
+        </div>
+      </details>
       <textarea
         name="notes"
-        placeholder="Poznámky (volitelné)"
+        placeholder="Poznámky – co nejí, další omezení, preference…"
         value={form.notes}
         onChange={handleChange}
-        className="p-4 mt-6 rounded-xl bg-neutral-800 border border-neutral-700 focus:ring-2 focus:ring-green-400 w-full"
+        className="p-4 mt-4 rounded-xl bg-neutral-800 border border-neutral-700 focus:ring-2 focus:ring-green-400 w-full"
       />
 
       {error && <p className="mt-4 text-red-400 text-sm">{error}</p>}

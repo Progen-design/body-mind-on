@@ -31,6 +31,8 @@ export default async function handler(req, res) {
       goal: normalizeGoal(b.goal),
       freq_choice: normalizeFrequency(b.frequency || b.freq_choice),
       weekly_sessions_user: getWeeklySessions(b.frequency || b.freq_choice),
+      diet_type: b.diet_type?.trim() || null,
+      dietary_restrictions: b.dietary_restrictions?.trim() || null,
       notes: b.notes?.trim() || null,
       program: b.program || 'START',
       created_at: new Date().toISOString(),

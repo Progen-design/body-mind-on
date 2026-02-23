@@ -18,6 +18,7 @@ const WORKOUT_TYPES = [
   { id: 'ostatni', label: 'Ostatní', emoji: '✨' },
 ];
 
+// Odhad kcal/min dle typu (orientační; zdroje: běh ~8, silový 4–7, strečink/jóga nižší)
 const KCAL_PER_MIN_BY_TYPE = {
   silovy: 5,
   kardio: 8,

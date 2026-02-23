@@ -245,6 +245,7 @@ export default function PlanViewer({ plan, userName, hideHero }) {
   const [recipeModal, setRecipeModal] = useState(null); // { title, content, anchorRect, hasRecipe, openId? }
   const [mealOverrides, setMealOverrides] = useState({}); // { "di_mi": { title, content } }
   const [swapModal, setSwapModal] = useState(null); // { dayIndex, mealIndex, dishQuery, loading, html }
+  const [shoppingCopyDone, setShoppingCopyDone] = useState(false);
   const recipeOpenIdRef = useRef(0);
   const recipeCacheRef = useRef(new Map()); // dish -> html, 5 min TTL
 
@@ -572,6 +573,16 @@ export default function PlanViewer({ plan, userName, hideHero }) {
           {/* Nákupní seznam na týden (z plánu nebo fallback z receptů) */}
           {(() => {
             const list = parsed.shoppingList?.length ? parsed.shoppingList : buildShoppingListFromRecipes(parsed.recipes);
+            const copyAndOpen = () => {
+              const text = list.join('\n');
+              if (navigator.clipboard?.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                  setShoppingCopyDone(true);
+                  setTimeout(() => setShoppingCopyDone(false), 3000);
+                });
+              }
+              window.open('https://www.rohlik.cz/', '_blank', 'noopener,noreferrer');
+            };
             return list.length > 0 ? (
               <div className="plan-block">
                 <h3 className="plan-block-title">Nákupní seznam na týden</h3>
@@ -580,6 +591,18 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                     <li key={i}>{item}</li>
                   ))}
                 </ul>
+                <div className="plan-order-ingredients">
+                  <button type="button" className="plan-btn-order" onClick={copyAndOpen}>
+                    🛒 Objednat suroviny
+                  </button>
+                  {shoppingCopyDone && <span className="plan-copy-hint">Seznam zkopírován do schránky</span>}
+                  <p className="plan-order-links">
+                    Seznam se zkopíruje a otevře se <a href="https://www.rohlik.cz/" target="_blank" rel="noopener noreferrer">Rohlík.cz</a>.
+                    Můžeš ho vložit v nákupním seznamu (Ctrl+V). Případně nákup vyřídíš na{' '}
+                    <a href="https://www.kosik.cz/" target="_blank" rel="noopener noreferrer">Košík.cz</a> nebo{' '}
+                    <a href="https://shop.billa.cz/" target="_blank" rel="noopener noreferrer">Billa e-shop</a>.
+                  </p>
+                </div>
               </div>
             ) : null;
           })()}
@@ -697,6 +720,48 @@ const planSectionStyles = `
     background: rgba(255,255,255,0.06);
     border-radius: 8px;
     color: #e9d5ff;
+  }
+  .plan-order-ingredients {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(139, 92, 255, 0.25);
+  }
+  .plan-btn-order {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .plan-btn-order:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4);
+  }
+  .plan-copy-hint {
+    display: inline-block;
+    margin-left: 12px;
+    font-size: 13px;
+    color: #86efac;
+  }
+  .plan-order-links {
+    margin: 12px 0 0;
+    font-size: 13px;
+    color: rgba(233, 213, 255, 0.85);
+    line-height: 1.5;
+  }
+  .plan-order-links a {
+    color: #a78bfa;
+    text-decoration: none;
+  }
+  .plan-order-links a:hover {
+    text-decoration: underline;
   }
 
   .plan-cards-grid {

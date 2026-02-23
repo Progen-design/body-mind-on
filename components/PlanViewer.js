@@ -1,13 +1,13 @@
 // /components/PlanViewer.js – Grafické zobrazení AI plánu (wow efekt, obrázky u jídel)
 import { useState, useEffect } from 'react';
 
-// Obrázky podle jídla – POŘADÍ DŮLEŽITÉ: konkrétní jídla první, obecné výrazy (zelenina, salát) až na konec
+// Realistické obrázky jídel – ověřené Unsplash fotky (kaše = kaše, steak = steak)
 const DISH_IMAGES = [
-  { keys: ['ovesná kaše', 'oatmeal', 'ovesné vločky', 'porridge'], url: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=400&h=280&fit=crop' },
-  { keys: ['jogurt', 'granola', 'müsli'], url: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=280&fit=crop' },
+  { keys: ['ovesná kaše', 'oatmeal', 'ovesné vločky', 'porridge', 'ovesna kase'], url: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=400&h=280&fit=crop' },
+  { keys: ['jogurt', 'granola', 'müsli', 'parfait'], url: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=280&fit=crop' },
   { keys: ['vajíčk', 'omelet', 'vejce', 'vajec'], url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=280&fit=crop' },
   { keys: ['smoothie', 'koktejl'], url: 'https://images.unsplash.com/photo-1505252585461-04db1ebd3c2c?w=400&h=280&fit=crop' },
-  { keys: ['steak', 'hovězí', 'beef', 'pečený steak'], url: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=280&fit=crop' },
+  { keys: ['steak', 'hovězí', 'beef', 'pečený steak', 'hovězí steak'], url: 'https://images.unsplash.com/photo-1558030006-4502153934bb?w=400&h=280&fit=crop' },
   { keys: ['kuřecí', 'chicken'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
   { keys: ['tofu', 'stir-fry', 'wok'], url: 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop' },
   { keys: ['losos', 'salmon', 'pečený losos'], url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=280&fit=crop' },
@@ -21,7 +21,7 @@ const DISH_IMAGES = [
   { keys: ['zeleninou', 'zelenina', 'zelenin'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
   { keys: ['večeře', 'večere'], url: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=280&fit=crop' },
   { keys: ['oběd', 'obed'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
-  { keys: ['snídaně', 'snidane'], url: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=400&h=280&fit=crop' },
+  { keys: ['snídaně', 'snidane'], url: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=400&h=280&fit=crop' },
   { keys: ['svačina'], url: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=280&fit=crop' },
 ];
 const DEFAULT_MEAL_IMAGE = 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop';
@@ -247,7 +247,8 @@ export default function PlanViewer({ plan, userName }) {
                         const openRecipe = (e) => {
                           const rect = e?.currentTarget?.getBoundingClientRect?.();
                           const anchorRect = rect ? { top: rect.bottom + 8, left: rect.left, width: rect.width } : null;
-                          if (matchingRecipe) {
+                          const hasRealRecipe = matchingRecipe?.content && !/lorem\s+ipsum|dolor\s+sit\s+amet/i.test(matchingRecipe.content);
+                          if (hasRealRecipe) {
                             setRecipeModal({ title: matchingRecipe.name, content: matchingRecipe.content, anchorRect, hasRecipe: true });
                           } else {
                             setRecipeModal({
@@ -282,16 +283,18 @@ export default function PlanViewer({ plan, userName }) {
             </div>
           )}
 
-          {/* Modal receptu – vyskakuje u kliknuté karty */}
+          {/* Modal receptu – dynamicky u kliknuté karty, přizpůsobí se obsahu a obrazovce */}
           {recipeModal && (
             <div className="plan-recipe-modal-overlay" onClick={() => setRecipeModal(null)}>
               <div
-                className="plan-recipe-modal"
+                className="plan-recipe-modal plan-recipe-modal-dynamic"
                 onClick={(e) => e.stopPropagation()}
                 style={recipeModal.anchorRect && typeof window !== 'undefined' ? {
                   position: 'fixed',
-                  top: Math.min(recipeModal.anchorRect.top, window.innerHeight - 320),
+                  top: Math.max(12, Math.min(recipeModal.anchorRect.top, window.innerHeight - 340)),
                   left: Math.max(12, Math.min(recipeModal.anchorRect.left, window.innerWidth - 532)),
+                  maxHeight: 'min(85vh, 520px)',
+                  width: 'min(520px, calc(100vw - 24px))',
                 } : {}}
               >
                 <div className="plan-recipe-modal-header">
@@ -583,10 +586,10 @@ const planSectionStyles = `
     inset: 0;
     background: rgba(0,0,0,0.75);
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
+    justify-content: flex-start;
     z-index: 1000;
-    padding: 20px;
+    padding: 12px;
     box-sizing: border-box;
   }
   .plan-recipe-modal {
@@ -600,6 +603,9 @@ const planSectionStyles = `
     display: flex;
     flex-direction: column;
     box-shadow: 0 24px 48px rgba(0,0,0,0.5);
+  }
+  .plan-recipe-modal-dynamic {
+    align-self: stretch;
   }
   .plan-recipe-modal-header {
     display: flex;
@@ -630,6 +636,8 @@ const planSectionStyles = `
   .plan-recipe-modal-body {
     padding: 20px;
     overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
     font-size: 14px;
     color: #cbd5e1;
     line-height: 1.6;

@@ -1,26 +1,27 @@
 // /components/PlanViewer.js – Grafické zobrazení AI plánu (wow efekt, obrázky u jídel)
 import { useState, useEffect } from 'react';
 
-// Obrázky podle konkrétního jídla (klíčová slova v názvu/popisu) – každé jídlo jiný obrázek
+// Obrázky podle jídla – POŘADÍ DŮLEŽITÉ: konkrétní jídla první, obecné výrazy (zelenina, salát) až na konec
 const DISH_IMAGES = [
-  { keys: ['ovesná kaše', 'oatmeal', 'ovesné'], url: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=280&fit=crop' },
+  { keys: ['ovesná kaše', 'oatmeal', 'ovesné vločky', 'porridge'], url: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=400&h=280&fit=crop' },
   { keys: ['jogurt', 'granola', 'müsli'], url: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=280&fit=crop' },
-  { keys: ['vajíčk', 'omelet', 'vejce'], url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=280&fit=crop' },
+  { keys: ['vajíčk', 'omelet', 'vejce', 'vajec'], url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=280&fit=crop' },
   { keys: ['smoothie', 'koktejl'], url: 'https://images.unsplash.com/photo-1505252585461-04db1ebd3c2c?w=400&h=280&fit=crop' },
-  { keys: ['kuřecí', 'chicken', 'prsa'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
+  { keys: ['steak', 'hovězí', 'beef', 'pečený steak'], url: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=280&fit=crop' },
+  { keys: ['kuřecí', 'chicken'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
   { keys: ['tofu', 'stir-fry', 'wok'], url: 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop' },
-  { keys: ['losos', 'salmon', 'ryb'], url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=280&fit=crop' },
-  { keys: ['steak', 'hovězí', 'beef'], url: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=280&fit=crop' },
+  { keys: ['losos', 'salmon', 'pečený losos'], url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=280&fit=crop' },
   { keys: ['quinoa', 'bulgur', 'couscous'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
-  { keys: ['salát', 'salad', 'zelenin'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
   { keys: ['polévka', 'soup'], url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop' },
-  { keys: ['špenát', 'spinach', 'listová'], url: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=280&fit=crop' },
-  { keys: ['brambor', 'brambory'], url: 'https://images.unsplash.com/photo-1518013431117-eb2895b37a9d?w=400&h=280&fit=crop' },
   { keys: ['těstovin', 'pasta', 'špagety'], url: 'https://images.unsplash.com/photo-1551183053-bf91a1f81115?w=400&h=280&fit=crop' },
   { keys: ['rýže', 'rice'], url: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=280&fit=crop' },
+  { keys: ['brambor', 'brambory'], url: 'https://images.unsplash.com/photo-1518013431117-eb2895b37a9d?w=400&h=280&fit=crop' },
+  { keys: ['špenát', 'spinach'], url: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=280&fit=crop' },
+  { keys: ['salát', 'salad'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
+  { keys: ['zeleninou', 'zelenina', 'zelenin'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
   { keys: ['večeře', 'večere'], url: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=280&fit=crop' },
   { keys: ['oběd', 'obed'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
-  { keys: ['snídaně', 'snidane'], url: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=280&fit=crop' },
+  { keys: ['snídaně', 'snidane'], url: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=400&h=280&fit=crop' },
   { keys: ['svačina'], url: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=280&fit=crop' },
 ];
 const DEFAULT_MEAL_IMAGE = 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop';
@@ -233,8 +234,16 @@ export default function PlanViewer({ plan, userName }) {
                     <h4 className="plan-day-name">{day.dayName}</h4>
                     <div className="plan-meals">
                       {day.meals.map((meal, mi) => {
-                        const mealFullText = `${meal.type || ''} ${meal.text || ''}`;
-                        const matchingRecipe = parsed.recipes?.find((r) => mealFullText.toLowerCase().includes(r.name.toLowerCase()));
+                        const mealFullText = `${meal.type || ''} ${meal.text || ''}`.trim();
+                        const mealStart = mealFullText.replace(/\s*\(.*$/, '').trim().slice(0, 35);
+                        const matchingRecipe = parsed.recipes?.find((r) => {
+                          const rn = r.name.toLowerCase();
+                          const mt = mealFullText.toLowerCase();
+                          if (mt.includes(rn)) return true;
+                          const startWords = mealStart.toLowerCase().split(/\s+/).slice(0, 4).join(' ');
+                          if (startWords.length >= 5 && rn.includes(startWords)) return true;
+                          return false;
+                        });
                         const openRecipe = () => setRecipeModal(
                           matchingRecipe
                             ? { title: matchingRecipe.name, content: matchingRecipe.content }
@@ -242,14 +251,14 @@ export default function PlanViewer({ plan, userName }) {
                         );
                         return (
                           <div key={mi} className="plan-meal-card">
-                            <button type="button" className="plan-meal-image-wrap" onClick={openRecipe} title="Zobrazit recept">
+                            <button type="button" className="plan-meal-image-wrap" onClick={openRecipe} title="Klikni pro zobrazení receptu">
                               <img
                                 src={getMealImageByDish(meal.text || meal.type)}
                                 alt=""
                                 className="plan-meal-image"
                               />
                               <span className="plan-meal-type">{meal.type}</span>
-                              <span className="plan-meal-recept-badge">Recept</span>
+                              <span className="plan-meal-recept-badge">Klikni pro recept</span>
                             </button>
                             <div className="plan-meal-body">
                               <p className="plan-meal-text" dangerouslySetInnerHTML={{ __html: meal.text || meal.fullHtml }} />
@@ -269,7 +278,7 @@ export default function PlanViewer({ plan, userName }) {
             <div className="plan-recipe-modal-overlay" onClick={() => setRecipeModal(null)}>
               <div className="plan-recipe-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="plan-recipe-modal-header">
-                  <h3>{recipeModal.title}</h3>
+                  <h3>Recept: {recipeModal.title}</h3>
                   <button type="button" className="plan-recipe-modal-close" onClick={() => setRecipeModal(null)} aria-label="Zavřít">×</button>
                 </div>
                 <div className="plan-recipe-modal-body" dangerouslySetInnerHTML={{ __html: recipeModal.content }} />

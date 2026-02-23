@@ -6,13 +6,13 @@ export default function WelcomeTour({ onClose }) {
 
   const steps = [
     {
-      title: 'Vítej v Body & Mind ON! 👋',
-      content: 'Tady můžeš sledovat svůj pokrok, zapisovat tréninky a měřit váhu. Vše se automaticky přepočítá.',
+      title: 'Tvůj plán je připraven! 👋',
+      content: 'První krok: Podívej se níže na jídelníček a zapiš svůj první trénink. Plán máš v e-mailu i tady v aplikaci.',
       position: 'center'
     },
     {
       title: 'Rychlé akce',
-      content: 'Klikni na "Zapsat trénink" nebo "Přidat váhu" pro rychlý zápis. Data se aktualizují okamžitě!',
+      content: 'Klikni na "Zapsat trénink" pro rychlý zápis. Data se aktualizují okamžitě!',
       position: 'top'
     },
     {
@@ -27,7 +27,7 @@ export default function WelcomeTour({ onClose }) {
     },
     {
       title: 'Hotovo! 🎉',
-      content: 'Teď už víš, jak to funguje. Začni zapisovat tréninky a sleduj svůj pokrok!',
+      content: 'Teď už víš, jak to funguje. Začni zapsáním prvního tréninku nebo se podívej na dnešní jídlo v plánu!',
       position: 'center'
     }
   ];

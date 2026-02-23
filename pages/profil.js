@@ -772,6 +772,13 @@ export default function Profil() {
 
         {!loading && !error && (
           <>
+            {/* Jasná první akce – pro uživatele bez tréninku */}
+            {workouts.length === 0 && currentPlan && (
+              <div className="first-action-banner">
+                <p><strong>Tvůj plán je připraven.</strong> První krok: zapiš svůj první trénink nebo se podívej na dnešní jídlo v plánu níže.</p>
+              </div>
+            )}
+
             {/* Tvé milníky */}
             <section className="milestones-block">
               <h2 className="section-head">Tvé milníky</h2>
@@ -1236,6 +1243,22 @@ export default function Profil() {
           font-size: 12px;
           color: #64748b;
         }
+        .first-action-banner {
+          margin-bottom: 24px;
+          padding: 16px 20px;
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(99, 102, 241, 0.1));
+          border: 1px solid rgba(139, 92, 255, 0.3);
+          border-radius: 12px;
+          text-align: center;
+        }
+        .first-action-banner p {
+          margin: 0;
+          font-size: 15px;
+          color: #e9d5ff;
+          line-height: 1.5;
+        }
+        .first-action-banner strong { color: #fff; }
+
         .milestones-block {
           margin-bottom: 28px;
           padding: 20px 24px;

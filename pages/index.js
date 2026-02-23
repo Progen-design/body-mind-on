@@ -16,8 +16,9 @@ export default function Home() {
           <div className="hero-content">
             <h1>Body and Mind ON</h1>
             <p className="subtitle">Zapni své tělo i mysl</p>
+            <p className="hero-value">Za 2 minuty máš jídelníček a trénink na míru. Bez trenéra. Bez výmluv.</p>
             <p className="text">
-              Body and Mind ON je místo, kde zapneš své tělo i mysl. Nejde jen o trénink nebo jídelníček – jde o kompletní systém, který ti ukáže, jak mít silné, funkční a zdravé tělo, víc energie každý den a pevnější sebevědomí. Vše je postavené na jednoduchých a ověřených krocích, které tě povedou od prvního dne.
+              AI ti připraví osobní plán podle tvých cílů – jídlo na týden, recepty, nákupní seznam a trénink. Vše na jednom místě. Sleduj pokrok, zapisuj tréninky a nech se vést.
             </p>
             <div className="buttons">
               <a href={`${APP_URL}/start`} className="btn btn-primary">
@@ -49,7 +50,7 @@ export default function Home() {
             <div className="step">
               <span className="step-num">3</span>
               <h3>Sleduj pokrok a výsledky</h3>
-              <p>V aplikaci vidíš výsledky a každý týden dostáváš doporučení od AI trenéra.</p>
+              <p>V profilu zapisuješ tréninky, vidíš spálené kalorie a odhad vývoje váhy. Plán máš v e-mailu i v aplikaci.</p>
             </div>
           </div>
         </section>
@@ -82,24 +83,24 @@ export default function Home() {
         {/* Motivace a pokrok */}
         <section className="section section-dark">
           <h2>Motivace a pokrok</h2>
-          <p className="section-lead">Tvůj každodenní systém, který tě udrží v pohybu a pomůže ti růst – fyzicky i mentálně.</p>
-          <p>Každý den dostaneš malé výzvy, které tě motivují, odmění a pomůžou ti zůstat na cestě. Sleduj svůj progres, sbírej odznaky a nenech motivaci vyprchat.</p>
+          <p className="section-lead">Tvůj systém, který tě udrží v pohybu a pomůže ti růst – fyzicky i mentálně.</p>
+          <p>Sleduj svůj progres, plň milníky a nech se motivovat. Plán obsahuje mindset tipy a v profilu vidíš každý trénink i odhad vývoje váhy.</p>
           <div className="features-grid">
             <div className="feature-card">
-              <h4>Denní výzvy</h4>
-              <p>Každý den nové úkoly – <strong>malé kroky, velké výsledky</strong>.</p>
+              <h4>Milníky</h4>
+              <p>Plán připraven, první trénink, týden s námi – <strong>vidíš, co jsi už zvládl</strong>.</p>
             </div>
             <div className="feature-card">
-              <h4>Odznaky & úspěchy</h4>
-              <p>Plň cíle, <strong>získávaj medaile</strong> a sleduj, jak se posouváš.</p>
+              <h4>Sledování pokroku</h4>
+              <p>Tréninky, spálené kalorie a odhad váhy – <strong>vše na jednom místě</strong>.</p>
             </div>
             <div className="feature-card">
               <h4>Mindset & fokus</h4>
-              <p>Krátké tipy, které ti pomůžou <strong>udržet rovnováhu a klid</strong>.</p>
+              <p>Krátké tipy v plánu, které ti pomůžou <strong>udržet rovnováhu a klid</strong>.</p>
             </div>
             <div className="feature-card">
-              <h4>Chytré připomínky</h4>
-              <p>Notifikace, které ti pomůžou <strong>držet tempo</strong> – přesně, když to potřebuješ.</p>
+              <h4>Plán na míru</h4>
+              <p>Jídelníček, recepty, nákupní seznam – <strong>vše podle tvých cílů a stravy</strong>.</p>
             </div>
           </div>
         </section>
@@ -173,8 +174,8 @@ export default function Home() {
           <p className="section-lead">Stačí pár kroků a začneš se hýbat s plánem na míru.</p>
           <ol className="start-steps">
             <li><strong>Vyplníš krátký dotazník</strong> – Odpovíš na pár otázek o svých cílech, pohybu a stravování.</li>
-            <li><strong>AI vytvoří tvůj plán</strong> – Na základě odpovědí ti systém během pár vteřin sestaví osobní plán tréninku a jídelníček.</li>
-            <li><strong>Začneš první den výzvy</strong> – Každý den uvidíš konkrétní úkoly, jídla a tipy, jak se posunout dál.</li>
+            <li><strong>AI vytvoří tvůj plán</strong> – Na základě odpovědí ti systém během pár minut sestaví osobní plán tréninku a jídelníček.</li>
+            <li><strong>Podíváš se na plán a začneš</strong> – Přihlásíš se, uvidíš jídelníček na týden, recepty a trénink. První krok: zapiš trénink nebo zkontroluj dnešní jídlo.</li>
             <li><strong>Sleduješ výsledky</strong> – Tvůj pokrok se ukládá automaticky. Získáváš přehled a motivaci pokračovat.</li>
           </ol>
           <div className="cta-block">
@@ -193,11 +194,11 @@ export default function Home() {
             <dt>Co když mám zdravotní omezení?</dt>
             <dd>Plán se plně přizpůsobí tvému zdravotnímu stavu a fyzickým možnostem.</dd>
             <dt>Jak funguje AI trenér?</dt>
-            <dd>AI analyzuje tvůj pokrok a každý týden upravuje plán podle výsledků a zpětné vazby.</dd>
+            <dd>AI ti po registraci vygeneruje osobní plán na míru – jídelníček, recepty, nákupní seznam a trénink. V profilu můžeš plán upravovat (swap jídel), zapisovat tréninky a sledovat pokrok.</dd>
             <dt>Můžu kdykoliv zrušit?</dt>
             <dd>Ano, můžeš zrušit kdykoliv bez poplatků. 7denní START je zcela zdarma.</dd>
             <dt>Co když ztratím motivaci?</dt>
-            <dd>Máš přístup ke komunitě, denním výzvám a osobní podpoře od AI i lidských koučů.</dd>
+            <dd>V profilu máš milníky (plán připraven, první trénink, týden s námi), mindset tipy v plánu a přehled pokroku. Plán můžeš kdykoli poslat znovu na e-mail.</dd>
           </dl>
         </section>
 
@@ -220,7 +221,8 @@ export default function Home() {
         }
         .hero-content { max-width: 800px; margin: 0 auto; }
         .hero h1 { font-size: clamp(2rem, 5vw, 3.2rem); margin-bottom: 10px; }
-        .subtitle { font-size: 1.4rem; margin-bottom: 20px; color: #a8a8ff; }
+        .subtitle { font-size: 1.4rem; margin-bottom: 16px; color: #a8a8ff; }
+        .hero-value { font-size: 1.25rem; font-weight: 600; color: #fff; margin-bottom: 16px; line-height: 1.4; }
         .hero .text { font-size: 1.05rem; line-height: 1.7; color: #ddd; margin-bottom: 28px; }
         .buttons { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
         .btn {

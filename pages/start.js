@@ -324,9 +324,9 @@ export default function Start() {
             </select>
           </div>
 
-          {/* STRAVA – rozbalovací sekce */}
-          <details className="group border border-gray-700 rounded-lg bg-[#0f0f0f] overflow-hidden">
-            <summary className="label flex items-center justify-between gap-2 cursor-pointer list-none p-3 text-gray-400 hover:text-gray-300 select-none">
+          {/* STRAVA – rozbalovací sekce (důležité) */}
+          <details className="group border border-sky-500/50 rounded-lg bg-[#0f0f0f] overflow-hidden">
+            <summary className="flex items-center justify-between gap-2 cursor-pointer list-none p-3.5 text-white font-bold text-base hover:bg-[#1a1a2e] select-none">
               <span>Strava a omezení (volitelné)</span>
               <span className="text-sm transition group-open:rotate-180" aria-hidden>▼</span>
             </summary>
@@ -346,7 +346,7 @@ export default function Start() {
                   <option value="lactose_free">Bez laktózy</option>
                   <option value="paleo">Paleo</option>
                   <option value="low_carb">Nízkosacharidová</option>
-                  <option value="other">Jiné (popiš v poznámkách)</option>
+                  <option value="other">Jiné (popiš v poli Co nejí)</option>
                 </select>
               </div>
               <div>
@@ -362,19 +362,6 @@ export default function Start() {
               </div>
             </div>
           </details>
-
-          {/* POZNÁMKY */}
-          <div>
-            <label className="label block mb-2 text-gray-400">Poznámky (volitelné)</label>
-            <textarea
-              name="notes"
-              className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
-              rows="2"
-              value={formData.notes}
-              onChange={handleChange}
-              placeholder="Co nejí, další omezení, preference…"
-            />
-          </div>
 
           {/* SUBMIT */}
           <button

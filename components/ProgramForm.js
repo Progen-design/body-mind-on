@@ -144,8 +144,8 @@ export default function ProgramForm({ planType }) {
         />
       </div>
 
-      <details className="mt-6 rounded-xl bg-neutral-800 border border-neutral-700 overflow-hidden group">
-        <summary className="flex items-center justify-between gap-2 cursor-pointer list-none p-4 text-gray-400 hover:text-gray-300 select-none">
+      <details className="mt-6 rounded-xl bg-neutral-800 border-2 border-green-400/50 overflow-hidden group">
+        <summary className="flex items-center justify-between gap-2 cursor-pointer list-none p-4 text-white font-bold text-base hover:bg-neutral-700/50 select-none">
           <span>Strava a omezení (volitelné)</span>
           <span className="text-sm transition group-open:rotate-180" aria-hidden>▼</span>
         </summary>
@@ -181,13 +181,6 @@ export default function ProgramForm({ planType }) {
           </div>
         </div>
       </details>
-      <textarea
-        name="notes"
-        placeholder="Poznámky – co nejí, další omezení, preference…"
-        value={form.notes}
-        onChange={handleChange}
-        className="p-4 mt-4 rounded-xl bg-neutral-800 border border-neutral-700 focus:ring-2 focus:ring-green-400 w-full"
-      />
 
       {error && <p className="mt-4 text-red-400 text-sm">{error}</p>}
       <button

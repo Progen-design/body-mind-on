@@ -2,31 +2,34 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
-// Realistické obrázky jídel – konkrétní jídla první (pořadí rozhoduje), Unsplash
+// Obrázky jídel – POŘADÍ ROZHODUJE: nejdřív konkrétní jídlo (omeleta, kuře, losos), až nakonec obecné (snídaně, oběd, feta). „Omeleta se špenátem a feta“ → obrázek omelety.
 const DISH_IMAGES = [
+  { keys: ['omeleta', 'omelet', 'vajíčk', 'vejce', 'vajec'], url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=280&fit=crop' },
+  { keys: ['kuřecí', 'kuře', 'chicken', 'zapečené kuře', 'zapecene kure', 'grilované kuře', 'grilovane kure', 'kureci prso'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
+  { keys: ['losos', 'salmon', 'pečený losos', 'peceny losos'], url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=280&fit=crop' },
+  { keys: ['steak', 'hovězí', 'beef', 'pečený steak', 'hovězí steak'], url: 'https://images.unsplash.com/photo-1558030006-4502153934bb?w=400&h=280&fit=crop' },
+  { keys: ['tofu', 'stir-fry', 'wok'], url: 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop' },
   { keys: ['rizoto', 'risotto', 'houbové rizoto', 'houbove rizoto'], url: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=400&h=280&fit=crop' },
   { keys: ['kari', 'curry', 'kokosové mléko', 'kokosove mleko'], url: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=280&fit=crop' },
-  { keys: ['kuskus', 'couscous', 'feta', 'fetou'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
-  { keys: ['houbové', 'houby', 'mushroom', 'žampion'], url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop' },
+  { keys: ['quinoa', 'bulgur'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
+  { keys: ['brokolic', 'brokolice'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
   { keys: ['ovesná kaše', 'oatmeal', 'ovesné vločky', 'porridge', 'ovesna kase'], url: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=400&h=280&fit=crop' },
   { keys: ['jogurt', 'granola', 'müsli', 'parfait'], url: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=280&fit=crop' },
-  { keys: ['vajíčk', 'omelet', 'vejce', 'vajec'], url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=280&fit=crop' },
   { keys: ['smoothie', 'koktejl'], url: 'https://images.unsplash.com/photo-1505252585461-04db1ebd3c2c?w=400&h=280&fit=crop' },
-  { keys: ['steak', 'hovězí', 'beef', 'pečený steak', 'hovězí steak'], url: 'https://images.unsplash.com/photo-1558030006-4502153934bb?w=400&h=280&fit=crop' },
-  { keys: ['kuřecí', 'kuře', 'chicken', 'zapečené kuře', 'zapecene kure', 'grilované kuře', 'grilovane kure'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
-  { keys: ['tofu', 'stir-fry', 'wok'], url: 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop' },
-  { keys: ['losos', 'salmon', 'pečený losos'], url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=280&fit=crop' },
-  { keys: ['quinoa', 'bulgur'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
-  { keys: ['polévka', 'soup'], url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop' },
-  { keys: ['těstovin', 'pasta', 'špagety'], url: 'https://images.unsplash.com/photo-1551183053-bf91a1f81115?w=400&h=280&fit=crop' },
-  { keys: ['rýže', 'rice'], url: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=280&fit=crop' },
+  { keys: ['houbové', 'houby', 'mushroom', 'žampion'], url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop' },
+  { keys: ['kuskus', 'couscous'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
+  { keys: ['polévka', 'polevka', 'soup'], url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop' },
+  { keys: ['těstovin', 'testovin', 'pasta', 'špagety', 'spagety'], url: 'https://images.unsplash.com/photo-1551183053-bf91a1f81115?w=400&h=280&fit=crop' },
+  { keys: ['rýže', 'ryze', 'rice'], url: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=280&fit=crop' },
   { keys: ['brambor', 'brambory'], url: 'https://images.unsplash.com/photo-1518013431117-eb2895b37a9d?w=400&h=280&fit=crop' },
+  { keys: ['cuket', 'cuketa'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
+  { keys: ['feta', 'fetou'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
   { keys: ['salát', 'salad'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
   { keys: ['zeleninou', 'zelenina', 'zelenin'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
   { keys: ['večeře', 'večere'], url: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=280&fit=crop' },
   { keys: ['oběd', 'obed'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
   { keys: ['snídaně', 'snidane'], url: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=400&h=280&fit=crop' },
-  { keys: ['svačina'], url: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=280&fit=crop' },
+  { keys: ['svačina', 'svacina'], url: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=280&fit=crop' },
 ];
 const DEFAULT_MEAL_IMAGE = 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop';
 

@@ -46,6 +46,22 @@ function getMealImageByDish(mealText) {
   return DEFAULT_MEAL_IMAGE;
 }
 
+function recipeContentOnly(html) {
+  if (!html || typeof html !== 'string') return html;
+  const lower = html.toLowerCase();
+  const stopPhrases = ['tréninkový plán', 'treninkovy plan', 'regenerace', 'mindset'];
+  for (const phrase of stopPhrases) {
+    const idx = lower.indexOf(phrase);
+    if (idx !== -1) {
+      const before = html.slice(0, idx);
+      const h3Start = before.lastIndexOf('<h3');
+      if (h3Start !== -1) return before.slice(0, h3Start).trim();
+      return before.trim();
+    }
+  }
+  return html;
+}
+
 function parsePlanHtml(html) {
   if (!html || typeof document === 'undefined') return null;
   try {
@@ -111,7 +127,7 @@ function parsePlanHtml(html) {
             if (!dayNames.some((d) => name.includes(d))) {
               let next = el.nextElementSibling;
               let content = '';
-              while (next && next.tagName !== 'H4') {
+              while (next && next.tagName !== 'H4' && next.tagName !== 'H3') {
                 content += next.outerHTML;
                 next = next.nextElementSibling;
               }
@@ -244,19 +260,26 @@ export default function PlanViewer({ plan, userName }) {
                           if (startWords.length >= 5 && rn.includes(startWords)) return true;
                           return false;
                         });
-                        const openRecipe = (e) => {
+                        const openRecipe = async (e) => {
                           const rect = e?.currentTarget?.getBoundingClientRect?.();
                           const anchorRect = rect ? { top: rect.bottom + 8, left: rect.left, width: rect.width } : null;
                           const hasRealRecipe = matchingRecipe?.content && !/lorem\s+ipsum|dolor\s+sit\s+amet/i.test(matchingRecipe.content);
                           if (hasRealRecipe) {
-                            setRecipeModal({ title: matchingRecipe.name, content: matchingRecipe.content, anchorRect, hasRecipe: true });
-                          } else {
-                            setRecipeModal({
-                              title: meal.type || 'Jídlo',
-                              content: '<p class="plan-no-recipe-msg">Pro toto jídlo není v plánu detailní recept (suroviny a postup).</p><p class="plan-no-recipe-hint">V sekci Recepty níže najdeš vybrané recepty z plánu.</p>',
-                              anchorRect,
-                              hasRecipe: false,
-                            });
+                            setRecipeModal({ title: matchingRecipe.name, content: recipeContentOnly(matchingRecipe.content), anchorRect, hasRecipe: true, loading: false });
+                            return;
+                          }
+                          const dishName = (mealFullText.replace(/\s*\([^)]*\)\s*$/g, '').trim() || meal.type || 'Jídlo').slice(0, 150);
+                          setRecipeModal({ title: meal.type || 'Jídlo', content: null, anchorRect, hasRecipe: false, loading: true });
+                          try {
+                            const res = await fetch('/api/recipe?dish=' + encodeURIComponent(dishName));
+                            const data = await res.json();
+                            if (data.ok && data.html) {
+                              setRecipeModal((prev) => (prev ? { ...prev, content: data.html, loading: false } : null));
+                            } else {
+                              setRecipeModal((prev) => (prev ? { ...prev, content: '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkus to znovu.</p>', loading: false } : null));
+                            }
+                          } catch (err) {
+                            setRecipeModal((prev) => (prev ? { ...prev, content: '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení k internetu.</p>', loading: false } : null));
                           }
                         };
                         return (
@@ -301,7 +324,14 @@ export default function PlanViewer({ plan, userName }) {
                   <h3>{recipeModal.hasRecipe ? `Recept: ${recipeModal.title}` : recipeModal.title}</h3>
                   <button type="button" className="plan-recipe-modal-close" onClick={() => setRecipeModal(null)} aria-label="Zavřít">×</button>
                 </div>
-                <div className="plan-recipe-modal-body" dangerouslySetInnerHTML={{ __html: recipeModal.content }} />
+                {recipeModal.loading ? (
+                  <div className="plan-recipe-modal-loading">
+                    <span className="plan-recipe-modal-spinner" />
+                    <p>Načítám recept z internetu…</p>
+                  </div>
+                ) : (
+                  <div className="plan-recipe-modal-body" dangerouslySetInnerHTML={{ __html: recipeModal.content || '' }} />
+                )}
               </div>
             </div>
           )}
@@ -314,7 +344,7 @@ export default function PlanViewer({ plan, userName }) {
                 {parsed.recipes.map((r, i) => (
                   <details key={i} className="plan-recipe-card">
                     <summary>{r.name}</summary>
-                    <div className="plan-recipe-body" dangerouslySetInnerHTML={{ __html: r.content }} />
+                    <div className="plan-recipe-body" dangerouslySetInnerHTML={{ __html: recipeContentOnly(r.content) }} />
                   </details>
                 ))}
               </div>
@@ -632,6 +662,27 @@ const planSectionStyles = `
   }
   .plan-recipe-modal-close:hover {
     background: rgba(239, 68, 68, 0.3);
+  }
+  .plan-recipe-modal-loading {
+    padding: 40px 20px;
+    text-align: center;
+    color: #94a3b8;
+  }
+  .plan-recipe-modal-spinner {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(139, 92, 255, 0.3);
+    border-top-color: #9b5cff;
+    border-radius: 50%;
+    animation: plan-spin 0.8s linear infinite;
+  }
+  .plan-recipe-modal-loading p {
+    margin: 16px 0 0;
+    font-size: 14px;
+  }
+  @keyframes plan-spin {
+    to { transform: rotate(360deg); }
   }
   .plan-recipe-modal-body {
     padding: 20px;

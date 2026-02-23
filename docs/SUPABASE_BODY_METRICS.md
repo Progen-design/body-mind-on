@@ -2,6 +2,8 @@
 
 Registrace na [app.bodyandmindon.cz/start](https://app.bodyandmindon.cz/start) funguje **bez úprav databáze**: údaje o stravě a omezeních se ukládají do sloupce `notes`.
 
+Pole **Typ stravy** a **Co nejí** jsou v aplikaci i v API **nepovinná** – při prázdných hodnotách se ukládá `null`. Sloupce v DB jsou nullable.
+
 Pokud v budoucnu budeš chtít mít typ stravy a omezení v samostatných sloupcích (např. pro reporting nebo API), můžeš v Supabase přidat sloupce takto:
 
 ## 1. Otevři Supabase

@@ -332,7 +332,7 @@ export default function Start() {
             </summary>
             <div className="px-3 pb-3 pt-0 space-y-4 border-t border-gray-700/50">
               <div>
-                <label className="label block mb-2 text-gray-500 text-sm">Typ stravy</label>
+                <label className="label block mb-2 text-gray-500 text-sm">Typ stravy (volitelné)</label>
                 <select
                   name="diet_type"
                   className="select w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"
@@ -350,7 +350,7 @@ export default function Start() {
                 </select>
               </div>
               <div>
-                <label className="label block mb-2 text-gray-500 text-sm">Co nejí (alergie, intolerance, vynechané potraviny)</label>
+                <label className="label block mb-2 text-gray-500 text-sm">Co nejí – alergie, intolerance (volitelné)</label>
                 <textarea
                   name="dietary_restrictions"
                   className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white"

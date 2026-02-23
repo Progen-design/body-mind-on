@@ -18,6 +18,7 @@ export default async function handler(req, res) {
 
     const b = req.body || {};
 
+    // Strava a omezení – volitelná pole (null při prázdných)
     const dietType = b.diet_type?.trim() || null;
     const dietaryRestrictions = b.dietary_restrictions?.trim() || null;
     const dietLabels = {
@@ -117,7 +118,7 @@ export default async function handler(req, res) {
     try {
       planResult = await generatePlanForEmail(payload.email, {
         loginPassword,
-        loginUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz',
+        loginUrl: (process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '') + '/login',
         existingAccount,
         loginUnavailable: payload.user_id == null,
         userChosePassword,

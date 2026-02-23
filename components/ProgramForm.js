@@ -151,7 +151,7 @@ export default function ProgramForm({ planType }) {
         </summary>
         <div className="px-4 pb-4 pt-0 space-y-4 border-t border-neutral-700">
           <div>
-            <label className="block text-sm text-gray-500 mb-1">Typ stravy</label>
+            <label className="block text-sm text-gray-500 mb-1">Typ stravy (volitelné)</label>
             <select
               name="diet_type"
               value={form.diet_type}
@@ -169,7 +169,7 @@ export default function ProgramForm({ planType }) {
             </select>
           </div>
           <div>
-            <label className="block text-sm text-gray-500 mb-1">Co nejí (alergie, intolerance, vynechané potraviny)</label>
+            <label className="block text-sm text-gray-500 mb-1">Co nejí – alergie, intolerance (volitelné)</label>
             <textarea
               name="dietary_restrictions"
               placeholder="např. ořechy, mléko, lepek…"

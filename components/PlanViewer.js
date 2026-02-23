@@ -2,17 +2,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
-// Realistické obrázky jídel – ověřené Unsplash fotky; konkrétní jídla před obecnými (pořadí rozhoduje)
+// Realistické obrázky jídel – konkrétní jídla první (pořadí rozhoduje), Unsplash
 const DISH_IMAGES = [
+  { keys: ['rizoto', 'risotto', 'houbové rizoto', 'houbove rizoto'], url: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=400&h=280&fit=crop' },
+  { keys: ['kari', 'curry', 'kokosové mléko', 'kokosove mleko'], url: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=280&fit=crop' },
+  { keys: ['kuskus', 'couscous', 'feta', 'fetou'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
+  { keys: ['houbové', 'houby', 'mushroom', 'žampion'], url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop' },
   { keys: ['ovesná kaše', 'oatmeal', 'ovesné vločky', 'porridge', 'ovesna kase'], url: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=400&h=280&fit=crop' },
   { keys: ['jogurt', 'granola', 'müsli', 'parfait'], url: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=280&fit=crop' },
   { keys: ['vajíčk', 'omelet', 'vejce', 'vajec'], url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=280&fit=crop' },
   { keys: ['smoothie', 'koktejl'], url: 'https://images.unsplash.com/photo-1505252585461-04db1ebd3c2c?w=400&h=280&fit=crop' },
   { keys: ['steak', 'hovězí', 'beef', 'pečený steak', 'hovězí steak'], url: 'https://images.unsplash.com/photo-1558030006-4502153934bb?w=400&h=280&fit=crop' },
-  { keys: ['kuřecí', 'kuře', 'chicken', 'zapečené kuře', 'zapecene kure'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
+  { keys: ['kuřecí', 'kuře', 'chicken', 'zapečené kuře', 'zapecene kure', 'grilované kuře', 'grilovane kure'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
   { keys: ['tofu', 'stir-fry', 'wok'], url: 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop' },
   { keys: ['losos', 'salmon', 'pečený losos'], url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=280&fit=crop' },
-  { keys: ['quinoa', 'bulgur', 'couscous'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
+  { keys: ['quinoa', 'bulgur'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
   { keys: ['polévka', 'soup'], url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop' },
   { keys: ['těstovin', 'pasta', 'špagety'], url: 'https://images.unsplash.com/photo-1551183053-bf91a1f81115?w=400&h=280&fit=crop' },
   { keys: ['rýže', 'rice'], url: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=280&fit=crop' },
@@ -169,6 +173,16 @@ export default function PlanViewer({ plan, userName, hideHero }) {
     }
   }, [plan?.plan_html]);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (recipeModal) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [recipeModal]);
+
   if (!plan || !plan.plan_html) {
     return (
       <section className="card plan-section">
@@ -320,21 +334,39 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                 className="plan-recipe-modal plan-recipe-modal-dynamic"
                 onClick={(e) => e.stopPropagation()}
                 style={(() => {
-                  const pad = 12;
+                  const pad = 16;
                   const maxW = 520;
-                  const maxH = 340;
+                  const vh = typeof window !== 'undefined' ? window.innerHeight : 600;
+                  const vw = typeof window !== 'undefined' ? window.innerWidth : 400;
+                  const maxH = vh - pad * 2;
                   if (recipeModal.anchorRect && typeof window !== 'undefined') {
                     const top = recipeModal.anchorRect.top;
                     const left = recipeModal.anchorRect.left;
+                    const topClamped = Math.max(pad, Math.min(top, vh - maxH - pad));
                     return {
                       position: 'fixed',
-                      top: `${Math.max(pad, Math.min(top, window.innerHeight - maxH - pad))}px`,
-                      left: `${Math.max(pad, Math.min(left, window.innerWidth - maxW - pad))}px`,
-                      maxHeight: 'min(85vh, 520px)',
+                      top: `${topClamped}px`,
+                      left: `${Math.max(pad, Math.min(left, vw - maxW - pad))}px`,
+                      height: `${maxH}px`,
+                      maxHeight: `${maxH}px`,
                       width: 'min(520px, calc(100vw - 24px))',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      overflow: 'hidden',
                     };
                   }
-                  return { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', maxHeight: '85vh', width: 'min(520px, calc(100vw - 24px))' };
+                  return {
+                    position: 'fixed',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    height: `${maxH}px`,
+                    maxHeight: `${maxH}px`,
+                    width: 'min(520px, calc(100vw - 24px))',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
+                  };
                 })()}
               >
                 <div className="plan-recipe-modal-header">
@@ -705,11 +737,13 @@ const planSectionStyles = `
   .plan-recipe-modal-body {
     padding: 20px;
     overflow-y: auto;
+    overflow-x: hidden;
     flex: 1 1 auto;
     min-height: 0;
     font-size: 14px;
     color: #cbd5e1;
     line-height: 1.6;
+    -webkit-overflow-scrolling: touch;
   }
   .plan-recipe-modal-body :global(p) { margin: 10px 0; }
   .plan-recipe-modal-body :global(b) { color: #e9d5ff; }

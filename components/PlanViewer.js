@@ -253,6 +253,7 @@ function parsePlanHtml(html) {
   }
 }
 
+export { parsePlanHtml };
 export default function PlanViewer({ plan, userName, hideHero }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [parsed, setParsed] = useState(null);
@@ -582,13 +583,7 @@ export default function PlanViewer({ plan, userName, hideHero }) {
             document.body
           )}
 
-          {/* Mindset na tento týden */}
-          {parsed.mindsetTip && (
-            <div className="plan-block plan-mindset-block">
-              <h3 className="plan-block-title">Mindset na tento týden</h3>
-              <p className="plan-mindset-text">{parsed.mindsetTip}</p>
-            </div>
-          )}
+          {/* Mindset se vykresluje v profil.js hned pod Tvé milníky */}
 
           {/* Nákupní seznam na týden (z plánu nebo fallback z receptů) */}
           {(() => {

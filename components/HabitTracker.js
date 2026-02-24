@@ -1,109 +1,86 @@
-// components/HabitTracker.js – Mřížka návyků × dny
+// components/HabitTracker.js – Denní návyky (jen dnes, zdravé vs zlozvyky, doporučení)
 import { useState, useEffect, useCallback } from 'react';
 import { POSITIVE_HABITS, NEGATIVE_HABITS, getHabitById } from '../lib/habits';
-
-function formatShortDate(d) {
-  if (!d) return '—';
-  let dateStr = d;
-  if (typeof d === 'string' && d.match(/^\d{4}-\d{2}-\d{2}$/)) {
-    dateStr = `${d}T12:00:00Z`;
-  }
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString('cs-CZ', {
-    day: 'numeric',
-    month: 'short',
-  });
-}
 
 function toDateStr(date) {
   return date.toISOString().split('T')[0];
 }
 
-const DAYS_BACK = 7;
-const DAYS_FORWARD = 7;
-
 export default function HabitTracker({ session, userHabits, onToast }) {
-  const [habits, setHabits] = useState([]);
-  const [days, setDays] = useState([]);
-  const [logs, setLogs] = useState([]);
+  const [positiveHabits, setPositiveHabits] = useState([]);
+  const [negativeHabits, setNegativeHabits] = useState([]);
+  const [todayLogs, setTodayLogs] = useState([]);
+  const [weekLogs, setWeekLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(null);
 
-  const buildHabitsList = useCallback((uh) => {
+  const buildHabitsLists = useCallback((uh) => {
+    let list = [];
     if (Array.isArray(uh) && uh.length > 0) {
-      return uh
-        .map((h) => getHabitById(h.habit_id))
-        .filter(Boolean);
+      list = uh.map((h) => getHabitById(h.habit_id)).filter(Boolean);
+    } else {
+      list = [...POSITIVE_HABITS, ...NEGATIVE_HABITS];
     }
-    return [...POSITIVE_HABITS, ...NEGATIVE_HABITS];
+    const pos = list.filter((h) => POSITIVE_HABITS.some((p) => p.id === h.id));
+    const neg = list.filter((h) => NEGATIVE_HABITS.some((n) => n.id === h.id));
+    return { pos, neg };
   }, []);
 
-  const buildDaysList = useCallback(() => {
-    const today = new Date();
-    today.setHours(12, 0, 0, 0);
-    const result = [];
-    for (let i = -DAYS_BACK; i <= DAYS_FORWARD; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      result.push(toDateStr(d));
-    }
-    return result;
-  }, []);
+  const todayStr = toDateStr(new Date());
 
   useEffect(() => {
-    setHabits(buildHabitsList(userHabits));
-    setDays(buildDaysList());
-  }, [userHabits, buildHabitsList, buildDaysList]);
+    const { pos, neg } = buildHabitsLists(userHabits);
+    setPositiveHabits(pos);
+    setNegativeHabits(neg);
+  }, [userHabits, buildHabitsLists]);
 
   const fetchLogs = useCallback(
-    async (dayList) => {
-      if (!session?.access_token || dayList.length === 0) return;
-      setLoading(true);
-      try {
-        const from = dayList[0];
-        const to = dayList[dayList.length - 1];
-        const habitIds = habits.map((h) => h.id);
-        const params = new URLSearchParams({ from, to });
-        if (habitIds.length > 0) params.set('habit_ids', habitIds.join(','));
-        const res = await fetch(`/api/habits?${params}`, {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-          cache: 'no-store',
-        });
-        const json = await res.json();
-        if (res.ok && Array.isArray(json.logs)) {
-          setLogs(json.logs);
-        } else {
-          setLogs([]);
-        }
-      } catch (err) {
-        console.error('[HabitTracker] fetch error:', err);
-        setLogs([]);
-      } finally {
-        setLoading(false);
-      }
+    async (from, to, habitIds) => {
+      if (!session?.access_token || habitIds.length === 0) return [];
+      const params = new URLSearchParams({ from, to, habit_ids: habitIds.join(',') });
+      const res = await fetch(`/api/habits?${params}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        cache: 'no-store',
+      });
+      const json = await res.json();
+      return res.ok && Array.isArray(json.logs) ? json.logs : [];
     },
-    [session?.access_token, habits]
+    [session?.access_token]
   );
 
   useEffect(() => {
-    if (days.length > 0 && habits.length > 0) {
-      fetchLogs(days);
-    } else {
+    const allHabits = [...positiveHabits, ...negativeHabits];
+    if (allHabits.length === 0) {
       setLoading(false);
+      return;
     }
-  }, [days, habits, fetchLogs]);
+    const habitIds = allHabits.map((h) => h.id);
+    const today = new Date();
+    const weekAgo = new Date(today);
+    weekAgo.setDate(today.getDate() - 6);
+    const fromStr = toDateStr(weekAgo);
 
-  const getCompleted = (habitId, dateStr) => {
-    const log = logs.find((l) => l.habit_id === habitId && l.log_date === dateStr);
+    setLoading(true);
+    Promise.all([
+      fetchLogs(todayStr, todayStr, habitIds),
+      fetchLogs(fromStr, todayStr, habitIds),
+    ]).then(([todayData, weekData]) => {
+      setTodayLogs(todayData);
+      setWeekLogs(weekData);
+      setLoading(false);
+    });
+  }, [positiveHabits, negativeHabits, todayStr, fetchLogs]);
+
+  const getCompleted = (habitId) => {
+    const log = todayLogs.find((l) => l.habit_id === habitId);
     return log?.completed ?? false;
   };
 
-  const handleToggle = async (habitId, dateStr) => {
+  const handleToggle = async (habitId) => {
     if (!session?.access_token || toggling) return;
-    const current = getCompleted(habitId, dateStr);
+    const current = getCompleted(habitId);
     const nextCompleted = !current;
-    setToggling(`${habitId}:${dateStr}`);
+    setToggling(habitId);
     try {
       const res = await fetch('/api/habits', {
         method: 'POST',
@@ -112,17 +89,19 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          log_date: dateStr,
+          log_date: todayStr,
           habit_id: habitId,
           completed: nextCompleted,
         }),
       });
       const json = await res.json();
       if (res.ok && json.log) {
-        setLogs((prev) => {
-          const filtered = prev.filter(
-            (l) => !(l.habit_id === habitId && l.log_date === dateStr)
-          );
+        setTodayLogs((prev) => {
+          const filtered = prev.filter((l) => l.habit_id !== habitId);
+          return [...filtered, json.log];
+        });
+        setWeekLogs((prev) => {
+          const filtered = prev.filter((l) => !(l.habit_id === habitId && l.log_date === todayStr));
           return [...filtered, json.log];
         });
         if (onToast) {
@@ -132,23 +111,51 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           });
         }
       } else if (onToast) {
-        onToast({
-          message: json.error || 'Chyba při ukládání',
-          type: 'error',
-        });
+        onToast({ message: json.error || 'Chyba při ukládání', type: 'error' });
       }
     } catch (err) {
-      if (onToast) {
-        onToast({ message: 'Chyba připojení', type: 'error' });
-      }
+      if (onToast) onToast({ message: 'Chyba připojení', type: 'error' });
     } finally {
       setToggling(null);
     }
   };
 
-  const todayStr = toDateStr(new Date());
+  const completedToday = todayLogs.filter((l) => l.completed).length;
+  const totalHabits = positiveHabits.length + negativeHabits.length;
+  const weekCompletedByHabit = {};
+  weekLogs.filter((l) => l.completed).forEach((l) => {
+    weekCompletedByHabit[l.habit_id] = (weekCompletedByHabit[l.habit_id] || 0) + 1;
+  });
+  const avgWeekCompletion =
+    totalHabits > 0
+      ? Object.values(weekCompletedByHabit).reduce((a, b) => a + b, 0) / totalHabits
+      : 0;
 
-  if (habits.length === 0) {
+  const getRecommendation = () => {
+    if (totalHabits === 0) return null;
+    const pctToday = Math.round((completedToday / totalHabits) * 100);
+    const avgWeek = Math.round(avgWeekCompletion);
+    if (completedToday === totalHabits) {
+      return 'Výborně! Dnes máš vše splněno. Každý den se počítá – pokračuj takhle.';
+    }
+    if (pctToday >= 70) {
+      return `Dnes máš ${pctToday} % splněno. Skvělé! Zbývá jen pár návyků – zkus je doplnit před večerem.`;
+    }
+    if (avgWeek >= 4 && avgWeek < 7) {
+      return `Za posledních 7 dní máš v průměru ${avgWeek} splnění na návyk. Dobrý trend – pokračuj v pravidelnosti.`;
+    }
+    if (avgWeek >= 7) {
+      return 'Za poslední týden jsi byl/a velmi konzistentní. Taková pravidelnost přináší výsledky.';
+    }
+    if (completedToday === 0) {
+      return 'Začni malým krokem – odškrtni alespoň jeden návyk dnes. I jeden je lepší než žádný.';
+    }
+    return `Dnes máš ${completedToday} z ${totalHabits} splněno. Každý malý krok se počítá – zkus přidat ještě jeden.`;
+  };
+
+  const recommendation = getRecommendation();
+
+  if (positiveHabits.length === 0 && negativeHabits.length === 0) {
     return (
       <section className="habit-tracker">
         <h2 className="habit-tracker-title">Denní návyky</h2>
@@ -163,75 +170,73 @@ export default function HabitTracker({ session, userHabits, onToast }) {
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.08);
           }
-          .habit-tracker-title {
-            margin: 0 0 12px;
-            font-size: 18px;
-            font-weight: 600;
-            color: #e2e8f0;
-          }
-          .habit-tracker-empty {
-            color: #94a3b8;
-            font-size: 14px;
-          }
+          .habit-tracker-title { margin: 0 0 12px; font-size: 18px; font-weight: 600; color: #e2e8f0; }
+          .habit-tracker-empty { color: #94a3b8; font-size: 14px; }
         `}</style>
       </section>
     );
   }
 
+  const renderHabitRow = (h, isNegative) => {
+    const completed = getCompleted(h.id);
+    const busy = toggling === h.id;
+    return (
+      <div key={h.id} className={`habit-row habit-row-${isNegative ? 'negative' : 'positive'}`}>
+        <div className="habit-row-label">
+          <span className="habit-emoji">{h.emoji}</span>
+          <span>{h.label}</span>
+        </div>
+        <button
+          type="button"
+          className={`habit-cell ${completed ? 'completed' : ''} ${busy ? 'busy' : ''}`}
+          onClick={() => handleToggle(h.id)}
+          disabled={busy}
+          title={isNegative ? 'Vyhnul/a jsem se = ✓' : 'Splněno = ✓'}
+        >
+          {completed ? '✓' : '○'}
+        </button>
+      </div>
+    );
+  };
+
   return (
     <section className="habit-tracker">
       <h2 className="habit-tracker-title">Denní návyky</h2>
       <p className="habit-tracker-subtitle">
-        Klikni na buňku pro přepnutí ○ / ✓
+        Jen dnes – klikni pro přepnutí ○ / ✓
       </p>
 
       {loading ? (
         <div className="habit-loading">Načítám…</div>
       ) : (
-        <div className="habit-grid-wrapper">
-          <div className="habit-grid">
-            <div className="habit-grid-corner" />
-            {days.map((d) => (
-              <div
-                key={d}
-                className={`habit-grid-header-cell ${d === todayStr ? 'today' : ''}`}
-              >
-                {formatShortDate(d)}
-                {d === todayStr && <span className="habit-today-badge">Dnes</span>}
+        <>
+          {positiveHabits.length > 0 && (
+            <div className="habit-group habit-group-positive">
+              <h3 className="habit-group-title">Zdravé návyky</h3>
+              <p className="habit-group-hint">Splň = ✓</p>
+              <div className="habit-rows">
+                {positiveHabits.map((h) => renderHabitRow(h, false))}
               </div>
-            ))}
-            {habits.map((h) => {
-              const isNegative = NEGATIVE_HABITS.some((n) => n.id === h.id);
-              return (
-                <div key={h.id} className="habit-grid-row">
-                  <div
-                    className={`habit-grid-label ${isNegative ? 'negative' : ''}`}
-                    title={h.label}
-                  >
-                    <span className="habit-label-emoji">{h.emoji}</span>
-                    <span className="habit-label-text">{h.label}</span>
-                  </div>
-                  {days.map((dateStr) => {
-                    const completed = getCompleted(h.id, dateStr);
-                    const busy = toggling === `${h.id}:${dateStr}`;
-                    return (
-                      <button
-                        key={`${h.id}-${dateStr}`}
-                        type="button"
-                        className={`habit-grid-cell ${isNegative ? 'negative' : ''} ${completed ? 'completed' : ''} ${busy ? 'busy' : ''}`}
-                        onClick={() => handleToggle(h.id, dateStr)}
-                        disabled={busy}
-                        title={`${h.label} – ${formatShortDate(dateStr)}`}
-                      >
-                        {completed ? '✓' : '○'}
-                      </button>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+            </div>
+          )}
+
+          {negativeHabits.length > 0 && (
+            <div className="habit-group habit-group-negative">
+              <h3 className="habit-group-title">Zlozvyky</h3>
+              <p className="habit-group-hint">Vyhnul/a jsem se = ✓</p>
+              <div className="habit-rows">
+                {negativeHabits.map((h) => renderHabitRow(h, true))}
+              </div>
+            </div>
+          )}
+
+          {recommendation && (
+            <div className="habit-recommendation">
+              <h3 className="habit-recommendation-title">Doporučení</h3>
+              <p className="habit-recommendation-text">{recommendation}</p>
+            </div>
+          )}
+        </>
       )}
 
       <style jsx>{`
@@ -258,100 +263,113 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           color: #94a3b8;
           padding: 24px;
         }
-        .habit-grid-wrapper {
-          overflow-x: auto;
-          -webkit-overflow-scrolling: touch;
+        .habit-group {
+          margin-bottom: 24px;
+          padding: 16px;
+          border-radius: 16px;
         }
-        .habit-grid {
-          display: grid;
-          grid-template-columns: minmax(140px, 1fr) repeat(15, minmax(44px, 44px));
-          gap: 1px;
-          min-width: min-content;
+        .habit-group-positive {
+          background: rgba(34, 197, 94, 0.06);
+          border: 1px solid rgba(34, 197, 94, 0.2);
         }
-        .habit-grid-corner {
-          background: rgba(255, 255, 255, 0.06);
-          border-radius: 8px 0 0 0;
+        .habit-group-negative {
+          background: rgba(248, 113, 113, 0.06);
+          border: 1px solid rgba(248, 113, 113, 0.25);
         }
-        .habit-grid-header-cell {
-          padding: 10px 6px;
-          background: rgba(255, 255, 255, 0.06);
-          border-radius: 8px;
-          font-size: 11px;
+        .habit-group-title {
+          margin: 0 0 4px;
+          font-size: 15px;
           font-weight: 600;
-          color: #94a3b8;
-          text-align: center;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 2px;
         }
-        .habit-grid-header-cell.today {
-          background: rgba(155, 92, 255, 0.2);
-          color: #c4b5fd;
+        .habit-group-positive .habit-group-title {
+          color: #4ade80;
         }
-        .habit-today-badge {
-          font-size: 9px;
-          font-weight: 500;
-          color: #a78bfa;
+        .habit-group-negative .habit-group-title {
+          color: #f87171;
         }
-        .habit-grid-row {
-          display: contents;
-        }
-        .habit-grid-label {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 10px 12px;
-          background: rgba(255, 255, 255, 0.04);
+        .habit-group-hint {
+          margin: 0 0 12px;
           font-size: 12px;
           color: #94a3b8;
-          border-radius: 0;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
         }
-        .habit-grid-label.negative {
-          border-left: 2px solid rgba(248, 113, 113, 0.4);
+        .habit-rows {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
         }
-        .habit-label-emoji {
-          font-size: 16px;
-          flex-shrink: 0;
+        .habit-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px 14px;
+          background: rgba(255, 255, 255, 0.04);
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
         }
-        .habit-label-text {
-          overflow: hidden;
-          text-overflow: ellipsis;
+        .habit-row-positive {
+          border-color: rgba(34, 197, 94, 0.15);
         }
-        .habit-grid-cell {
+        .habit-row-negative {
+          border-color: rgba(248, 113, 113, 0.2);
+        }
+        .habit-row-label {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 14px;
+          color: #e2e8f0;
+        }
+        .habit-emoji {
+          font-size: 20px;
+        }
+        .habit-cell {
+          width: 44px;
+          height: 44px;
           display: flex;
           align-items: center;
           justify-content: center;
-          min-width: 44px;
-          height: 44px;
           background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 8px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 10px;
           color: #64748b;
-          font-size: 18px;
+          font-size: 20px;
           font-weight: 700;
           cursor: pointer;
           transition: all 0.2s;
+          flex-shrink: 0;
         }
-        .habit-grid-cell:hover:not(:disabled) {
+        .habit-cell:hover:not(:disabled) {
           background: rgba(255, 255, 255, 0.1);
-          border-color: rgba(255, 255, 255, 0.15);
+          border-color: rgba(255, 255, 255, 0.2);
           color: #94a3b8;
         }
-        .habit-grid-cell.completed {
-          background: rgba(34, 197, 94, 0.15);
-          border-color: rgba(34, 197, 94, 0.35);
+        .habit-cell.completed {
+          background: rgba(34, 197, 94, 0.2);
+          border-color: rgba(34, 197, 94, 0.4);
           color: #4ade80;
         }
-        .habit-grid-cell.negative:not(.completed) {
-          border-color: rgba(248, 113, 113, 0.2);
-        }
-        .habit-grid-cell.busy {
+        .habit-cell.busy {
           opacity: 0.6;
           cursor: wait;
+        }
+        .habit-recommendation {
+          margin-top: 24px;
+          padding: 16px 18px;
+          background: rgba(155, 92, 255, 0.08);
+          border: 1px solid rgba(155, 92, 255, 0.2);
+          border-radius: 14px;
+        }
+        .habit-recommendation-title {
+          margin: 0 0 8px;
+          font-size: 14px;
+          font-weight: 600;
+          color: #c4b5fd;
+        }
+        .habit-recommendation-text {
+          margin: 0;
+          font-size: 14px;
+          line-height: 1.5;
+          color: #e9d5ff;
         }
       `}</style>
     </section>

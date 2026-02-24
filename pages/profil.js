@@ -6,7 +6,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import BodyFigure from '../components/BodyFigure';
 import WelcomeTour from '../components/WelcomeTour';
-import PlanViewer from '../components/PlanViewer';
+import PlanViewer, { parsePlanHtml } from '../components/PlanViewer';
 import HabitTracker from '../components/HabitTracker';
 import HabitEntryWizard from '../components/HabitEntryWizard';
 import Toast from '../components/Toast';
@@ -92,6 +92,7 @@ export default function Profil() {
   const [sendingPlan, setSendingPlan] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [mindsetTipFromPlan, setMindsetTipFromPlan] = useState('');
 
   const [workoutForm, setWorkoutForm] = useState({
     workout_date: new Date().toISOString().split('T')[0],
@@ -763,6 +764,15 @@ export default function Profil() {
     return validPlan || profile.plans[0];
   }, [profile?.plans]);
 
+  useEffect(() => {
+    if (typeof document === 'undefined' || !currentPlan?.plan_html) {
+      setMindsetTipFromPlan('');
+      return;
+    }
+    const parsed = parsePlanHtml(currentPlan.plan_html);
+    setMindsetTipFromPlan(parsed?.mindsetTip || '');
+  }, [currentPlan?.plan_html]);
+
   return (
     <>
       {showWelcomeTour && <WelcomeTour onClose={() => setShowWelcomeTour(false)} />}
@@ -785,11 +795,13 @@ export default function Profil() {
       )}
       <Header />
       <main className="page">
-        {/* Hlavní cíl plánu úplně nahoře */}
-        {currentPlan && (
+        {/* Hlavní cíl plánu úplně nahoře – vždy pro ON Club/VIP, jinak jen s plánem */}
+        {(currentPlan || program === 'ON_CLUB' || program === 'VIP') && (
           <div className="plan-goal-hero">
             <h2 className="plan-goal-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
-            <span className="plan-goal-badge">{program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP' : currentPlan.plan_type || 'START'}</span>
+            <span className="plan-goal-badge plan-goal-badge-program">
+              {program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP' : (currentPlan?.plan_type || 'START')}
+            </span>
           </div>
         )}
 
@@ -893,6 +905,14 @@ export default function Profil() {
                 </div>
               </div>
             </section>
+
+            {/* Mindset na tento týden – hned pod Tvé milníky */}
+            {mindsetTipFromPlan && (
+              <div className="mindset-block">
+                <h3 className="mindset-block-title">Mindset na tento týden</h3>
+                <p className="mindset-block-text">{mindsetTipFromPlan}</p>
+              </div>
+            )}
 
             <div className="toolbar">
               <button type="button" onClick={handleRefresh} disabled={refreshing} className="btn-refresh" title="Obnovit data">
@@ -1305,6 +1325,14 @@ export default function Profil() {
           text-transform: uppercase;
           border: 1px solid rgba(255, 255, 255, 0.2);
         }
+        .plan-goal-badge-program {
+          background: rgba(255, 255, 255, 0.35);
+          color: #fff;
+          font-size: 13px;
+          padding: 8px 18px;
+          border: 1px solid rgba(255, 255, 255, 0.4);
+          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+        }
 
         .hero {
           text-align: center;
@@ -1421,6 +1449,26 @@ export default function Profil() {
         .milestone-item.done .milestone-icon { color: #22c55e; background: rgba(34, 197, 94, 0.2); }
         .milestone-label { font-size: 14px; color: #94a3b8; }
         .milestone-item.done .milestone-label { color: #e9d5ff; }
+
+        .mindset-block {
+          margin-bottom: 28px;
+          padding: 20px 24px;
+          background: rgba(139, 92, 255, 0.08);
+          border-radius: 16px;
+          border: 1px solid rgba(139, 92, 255, 0.2);
+        }
+        .mindset-block-title {
+          margin: 0 0 12px;
+          font-size: 18px;
+          font-weight: 600;
+          color: #e9d5ff;
+        }
+        .mindset-block-text {
+          margin: 0;
+          color: #e9d5ff;
+          line-height: 1.5;
+          font-size: 15px;
+        }
 
         .toolbar {
           text-align: center;

@@ -235,6 +235,17 @@ function parsePlanHtml(html) {
       }
     });
 
+    // Doplnění chybějících dnů (AI někdy vynechá Sobotu) – vždy zobrazit 7 dní
+    const dayOrder = ['Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota', 'Neděle'];
+    if (result.days.length > 0 && result.days.length < 7) {
+      const byDay = {};
+      result.days.forEach((d) => {
+        const match = dayOrder.find((dn) => (d.dayName || '').includes(dn));
+        if (match) byDay[match] = d;
+      });
+      result.days = dayOrder.map((dn) => byDay[dn] || { dayName: dn, meals: [], _placeholder: true });
+    }
+
     if (result.personal.length || result.macros.length || result.days.length) return result;
     return null;
   } catch (e) {
@@ -399,9 +410,12 @@ export default function PlanViewer({ plan, userName, hideHero }) {
               <h3 className="plan-block-title">Jídelníček na celý týden</h3>
               <div className="plan-days">
                 {parsed.days.map((day, di) => (
-                  <div key={di} className="plan-day-card">
+                  <div key={di} className={`plan-day-card ${day._placeholder ? 'plan-day-placeholder' : ''}`}>
                     <h4 className="plan-day-name">{day.dayName}</h4>
                     <div className="plan-meals">
+                      {day._placeholder && day.meals.length === 0 ? (
+                        <p className="plan-day-placeholder-msg">V plánu chybí – vygeneruj nový plán pro kompletní jídelníček.</p>
+                      ) : null}
                       {day.meals.map((meal, mi) => {
                         const overrideKey = `${di}_${mi}`;
                         const override = mealOverrides[overrideKey];
@@ -415,13 +429,15 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                           if (startWords.length >= 5 && rn.includes(startWords)) return true;
                           return false;
                         });
+                        const dishTitle = (meal.text || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+                        const modalTitle = (meal.type && dishTitle) ? `${meal.type}: ${dishTitle}` : dishTitle || meal.type || mealFullText || 'Jídlo';
                         const openRecipe = (e) => {
                           if (override?.content) {
                             const button = e?.currentTarget;
                             const rect = button?.getBoundingClientRect?.();
                             const anchorRect = rect ? { top: rect.bottom + 8, left: rect.left, width: rect.width } : null;
                             recipeOpenIdRef.current += 1;
-                            setRecipeModal({ openId: recipeOpenIdRef.current, title: override.title || meal.type, content: recipeContentOnly(override.content), anchorRect, hasRecipe: true, loading: false });
+                            setRecipeModal({ openId: recipeOpenIdRef.current, title: override.title || modalTitle, content: recipeContentOnly(override.content), anchorRect, hasRecipe: true, loading: false });
                             return;
                           }
                           const button = e?.currentTarget;
@@ -431,11 +447,11 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                           const thisOpenId = recipeOpenIdRef.current;
                           const hasRealRecipe = matchingRecipe?.content && !/lorem\s+ipsum|dolor\s+sit\s+amet/i.test(matchingRecipe.content);
                           if (hasRealRecipe) {
-                            setRecipeModal({ openId: thisOpenId, title: matchingRecipe.name, content: recipeContentOnly(matchingRecipe.content), anchorRect, hasRecipe: true, loading: false });
+                            setRecipeModal({ openId: thisOpenId, title: matchingRecipe.name || modalTitle, content: recipeContentOnly(matchingRecipe.content), anchorRect, hasRecipe: true, loading: false });
                             return;
                           }
                           const dishName = (mealFullText.replace(/\s*\([^)]*\)\s*$/g, '').trim() || meal.type || 'Jídlo').slice(0, 150);
-                          setRecipeModal({ openId: thisOpenId, title: meal.type || 'Jídlo', content: null, anchorRect, hasRecipe: false, loading: true });
+                          setRecipeModal({ openId: thisOpenId, title: modalTitle, content: null, anchorRect, hasRecipe: false, loading: true });
                           getRecipeForDish(dishName).then((html) => {
                             const fallback = '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení nebo zkus znovu.</p>';
                             setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: html || fallback, loading: false } : prev));
@@ -932,6 +948,18 @@ const planSectionStyles = `
     border: 1px solid rgba(255,255,255,0.06);
     border-radius: 16px;
     overflow: hidden;
+  }
+  .plan-day-placeholder {
+    border-style: dashed;
+    opacity: 0.85;
+  }
+  .plan-day-placeholder-msg {
+    grid-column: 1 / -1;
+    padding: 24px 16px;
+    color: #94a3b8;
+    font-size: 14px;
+    text-align: center;
+    margin: 0;
   }
   .plan-day-name {
     margin: 0;

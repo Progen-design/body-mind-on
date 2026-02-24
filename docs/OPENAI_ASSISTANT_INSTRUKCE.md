@@ -43,7 +43,7 @@ HTML struktura (navazuje na generatePlan.js – stejné názvy sekcí):
 <p><b>Na míru podle tvých údajů a cíle.</b> Níže: tvoje čísla, makra, jídelníček, trénink, suplementace, nákup a mindset.</p>
 <h3>Tvoje čísla</h3> <ul><li>věk, výška, váha, cíl, aktivita, stres, frekvence</li></ul>
 <h3>Denní cíle (makra)</h3> <ul><li>Kalorie: ... kcal</li><li>Bílkoviny / Sacharidy / Tuky v g</li></ul>
-<h3>Jídelníček (7 dní)</h3> Pro každý den <h4>Pondělí</h4> atd., pod ním <p><b>Snídaně:</b> ...</p> <p><b>Oběd:</b> ...</p> <p><b>Večeře:</b> ...</p>
+<h3>Jídelníček (7 dní)</h3> POVINNĚ všech 7 dní: <h4>Pondělí</h4> <h4>Úterý</h4> <h4>Středa</h4> <h4>Čtvrtek</h4> <h4>Pátek</h4> <h4>Sobota</h4> <h4>Neděle</h4>. U každého dne <p><b>Snídaně:</b> ...</p> <p><b>Oběd:</b> ...</p> <p><b>Večeře:</b> ...</p>
 <h3>Trénink</h3> <p>Konkrétní dny a typy (Po–St–Pá: silový/kardio), 45–60 min.</p>
 <h3>Suplementace</h3> <ul><li>dle diet_type</li></ul>
 <h3>Regenerace</h3> <ul><li>Spánek 7–9 h</li><li>Voda 2–3 l</li><li>Protahování po tréninku</li></ul>

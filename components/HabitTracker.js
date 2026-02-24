@@ -1,4 +1,4 @@
-// components/HabitTracker.js – Denní návyky (jen dnes, zdravé vs zlozvyky, doporučení)
+// components/HabitTracker.js – Denní návyky (dnes + dny dopředu, jen dnes editovatelné)
 import { useState, useEffect, useCallback } from 'react';
 import { POSITIVE_HABITS, NEGATIVE_HABITS, getHabitById } from '../lib/habits';
 
@@ -6,10 +6,19 @@ function toDateStr(date) {
   return date.toISOString().split('T')[0];
 }
 
+function formatShortDate(d) {
+  if (!d) return '—';
+  const date = new Date(d + 'T12:00:00Z');
+  if (isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short' });
+}
+
+const DAYS_FORWARD = 6;
+
 export default function HabitTracker({ session, userHabits, onToast }) {
   const [positiveHabits, setPositiveHabits] = useState([]);
   const [negativeHabits, setNegativeHabits] = useState([]);
-  const [todayLogs, setTodayLogs] = useState([]);
+  const [allLogs, setAllLogs] = useState([]);
   const [weekLogs, setWeekLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(null);
@@ -27,6 +36,17 @@ export default function HabitTracker({ session, userHabits, onToast }) {
   }, []);
 
   const todayStr = toDateStr(new Date());
+  const days = useCallback(() => {
+    const result = [];
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    for (let i = 0; i <= DAYS_FORWARD; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      result.push(toDateStr(d));
+    }
+    return result;
+  }, [])();
 
   useEffect(() => {
     const { pos, neg } = buildHabitsLists(userHabits);
@@ -62,23 +82,24 @@ export default function HabitTracker({ session, userHabits, onToast }) {
 
     setLoading(true);
     Promise.all([
-      fetchLogs(todayStr, todayStr, habitIds),
+      fetchLogs(days[0], days[days.length - 1], habitIds),
       fetchLogs(fromStr, todayStr, habitIds),
-    ]).then(([todayData, weekData]) => {
-      setTodayLogs(todayData);
+    ]).then(([rangeData, weekData]) => {
+      setAllLogs(rangeData);
       setWeekLogs(weekData);
       setLoading(false);
     });
-  }, [positiveHabits, negativeHabits, todayStr, fetchLogs]);
+  }, [positiveHabits, negativeHabits, days, todayStr, fetchLogs]);
 
-  const getCompleted = (habitId) => {
-    const log = todayLogs.find((l) => l.habit_id === habitId);
+  const getCompleted = (habitId, dateStr) => {
+    const log = allLogs.find((l) => l.habit_id === habitId && l.log_date === dateStr);
     return log?.completed ?? false;
   };
 
-  const handleToggle = async (habitId) => {
+  const handleToggle = async (habitId, dateStr) => {
+    if (dateStr !== todayStr) return;
     if (!session?.access_token || toggling) return;
-    const current = getCompleted(habitId);
+    const current = getCompleted(habitId, todayStr);
     const nextCompleted = !current;
     setToggling(habitId);
     try {
@@ -96,8 +117,8 @@ export default function HabitTracker({ session, userHabits, onToast }) {
       });
       const json = await res.json();
       if (res.ok && json.log) {
-        setTodayLogs((prev) => {
-          const filtered = prev.filter((l) => l.habit_id !== habitId);
+        setAllLogs((prev) => {
+          const filtered = prev.filter((l) => !(l.habit_id === habitId && l.log_date === todayStr));
           return [...filtered, json.log];
         });
         setWeekLogs((prev) => {
@@ -120,7 +141,7 @@ export default function HabitTracker({ session, userHabits, onToast }) {
     }
   };
 
-  const completedToday = todayLogs.filter((l) => l.completed).length;
+  const completedToday = allLogs.filter((l) => l.log_date === todayStr && l.completed).length;
   const totalHabits = positiveHabits.length + negativeHabits.length;
   const weekCompletedByHabit = {};
   weekLogs.filter((l) => l.completed).forEach((l) => {
@@ -177,58 +198,73 @@ export default function HabitTracker({ session, userHabits, onToast }) {
     );
   }
 
-  const renderHabitRow = (h, isNegative) => {
-    const completed = getCompleted(h.id);
-    const busy = toggling === h.id;
-    return (
-      <div key={h.id} className={`habit-row habit-row-${isNegative ? 'negative' : 'positive'}`}>
-        <div className="habit-row-label">
-          <span className="habit-emoji">{h.emoji}</span>
-          <span>{h.label}</span>
-        </div>
-        <button
-          type="button"
-          className={`habit-cell ${completed ? 'completed' : ''} ${busy ? 'busy' : ''}`}
-          onClick={() => handleToggle(h.id)}
-          disabled={busy}
-          title={isNegative ? 'Vyhnul/a jsem se = ✓' : 'Splněno = ✓'}
-        >
-          {completed ? '✓' : '○'}
-        </button>
+  const renderHabitRow = (h, isNegative) => (
+    <div key={h.id} className={`habit-grid-row habit-row-${isNegative ? 'negative' : 'positive'}`}>
+      <div className="habit-grid-label">
+        <span className="habit-emoji">{h.emoji}</span>
+        <span>{h.label}</span>
       </div>
-    );
-  };
+      {days.map((dateStr) => {
+        const completed = getCompleted(h.id, dateStr);
+        const isToday = dateStr === todayStr;
+        const busy = isToday && toggling === h.id;
+        return (
+          <button
+            key={`${h.id}-${dateStr}`}
+            type="button"
+            className={`habit-grid-cell ${isNegative ? 'negative' : ''} ${completed ? 'completed' : ''} ${busy ? 'busy' : ''} ${!isToday ? 'future' : ''}`}
+            onClick={() => handleToggle(h.id, dateStr)}
+            disabled={!isToday || busy}
+            title={isToday ? (isNegative ? 'Vyhnul/a jsem se = ✓' : 'Splněno = ✓') : 'Jen dnes lze odškrtnout'}
+          >
+            {completed ? '✓' : '○'}
+          </button>
+        );
+      })}
+    </div>
+  );
 
   return (
     <section className="habit-tracker">
       <h2 className="habit-tracker-title">Denní návyky</h2>
       <p className="habit-tracker-subtitle">
-        Jen dnes – klikni pro přepnutí ○ / ✓
+        Jen dnes lze odškrtnout – klikni na buňku u dnešního data
       </p>
 
       {loading ? (
         <div className="habit-loading">Načítám…</div>
       ) : (
         <>
-          {positiveHabits.length > 0 && (
-            <div className="habit-group habit-group-positive">
-              <h3 className="habit-group-title">Zdravé návyky</h3>
-              <p className="habit-group-hint">Splň = ✓</p>
-              <div className="habit-rows">
-                {positiveHabits.map((h) => renderHabitRow(h, false))}
-              </div>
+          <div className="habit-grid-wrapper">
+            <div className="habit-grid">
+              <div className="habit-grid-corner" />
+              {days.map((d) => (
+                <div
+                  key={d}
+                  className={`habit-grid-header-cell ${d === todayStr ? 'today' : 'future'}`}
+                >
+                  {formatShortDate(d)}
+                  {d === todayStr && <span className="habit-today-badge">Dnes</span>}
+                </div>
+              ))}
+              {positiveHabits.length > 0 && (
+                <>
+                  <div className="habit-grid-section-header positive">
+                    Zdravé návyky <span className="habit-section-hint">Splň = ✓</span>
+                  </div>
+                  {positiveHabits.map((h) => renderHabitRow(h, false))}
+                </>
+              )}
+              {negativeHabits.length > 0 && (
+                <>
+                  <div className="habit-grid-section-header negative">
+                    Zlozvyky <span className="habit-section-hint">Vyhnul/a jsem se = ✓</span>
+                  </div>
+                  {negativeHabits.map((h) => renderHabitRow(h, true))}
+                </>
+              )}
             </div>
-          )}
-
-          {negativeHabits.length > 0 && (
-            <div className="habit-group habit-group-negative">
-              <h3 className="habit-group-title">Zlozvyky</h3>
-              <p className="habit-group-hint">Vyhnul/a jsem se = ✓</p>
-              <div className="habit-rows">
-                {negativeHabits.map((h) => renderHabitRow(h, true))}
-              </div>
-            </div>
-          )}
+          </div>
 
           {recommendation && (
             <div className="habit-recommendation">
@@ -263,92 +299,126 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           color: #94a3b8;
           padding: 24px;
         }
-        .habit-group {
-          margin-bottom: 24px;
-          padding: 16px;
-          border-radius: 16px;
+        .habit-grid-wrapper {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
         }
-        .habit-group-positive {
-          background: rgba(34, 197, 94, 0.06);
-          border: 1px solid rgba(34, 197, 94, 0.2);
+        .habit-grid {
+          display: grid;
+          grid-template-columns: minmax(140px, 1fr) repeat(7, minmax(44px, 44px));
+          gap: 1px;
+          min-width: min-content;
         }
-        .habit-group-negative {
-          background: rgba(248, 113, 113, 0.06);
-          border: 1px solid rgba(248, 113, 113, 0.25);
+        .habit-grid-corner {
+          background: rgba(255, 255, 255, 0.06);
+          border-radius: 8px 0 0 0;
         }
-        .habit-group-title {
-          margin: 0 0 4px;
-          font-size: 15px;
+        .habit-grid-header-cell {
+          padding: 10px 6px;
+          background: rgba(255, 255, 255, 0.06);
+          border-radius: 8px;
+          font-size: 11px;
           font-weight: 600;
-        }
-        .habit-group-positive .habit-group-title {
-          color: #4ade80;
-        }
-        .habit-group-negative .habit-group-title {
-          color: #f87171;
-        }
-        .habit-group-hint {
-          margin: 0 0 12px;
-          font-size: 12px;
           color: #94a3b8;
-        }
-        .habit-rows {
+          text-align: center;
           display: flex;
           flex-direction: column;
-          gap: 8px;
-        }
-        .habit-row {
-          display: flex;
           align-items: center;
-          justify-content: space-between;
-          padding: 12px 14px;
-          background: rgba(255, 255, 255, 0.04);
-          border-radius: 12px;
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          gap: 2px;
         }
-        .habit-row-positive {
-          border-color: rgba(34, 197, 94, 0.15);
+        .habit-grid-header-cell.today {
+          background: rgba(155, 92, 255, 0.2);
+          color: #c4b5fd;
         }
-        .habit-row-negative {
-          border-color: rgba(248, 113, 113, 0.2);
+        .habit-grid-header-cell.future {
+          opacity: 0.7;
         }
-        .habit-row-label {
-          display: flex;
-          align-items: center;
-          gap: 10px;
+        .habit-today-badge {
+          font-size: 9px;
+          font-weight: 500;
+          color: #a78bfa;
+        }
+        .habit-grid-section-header {
+          grid-column: 1 / -1;
+          padding: 10px 12px;
+          margin-top: 12px;
           font-size: 14px;
-          color: #e2e8f0;
+          font-weight: 600;
+          border-radius: 8px;
+        }
+        .habit-grid-section-header.positive {
+          background: rgba(34, 197, 94, 0.12);
+          color: #4ade80;
+          margin-top: 0;
+        }
+        .habit-grid-section-header.negative {
+          background: rgba(248, 113, 113, 0.12);
+          color: #f87171;
+        }
+        .habit-section-hint {
+          font-weight: 400;
+          font-size: 12px;
+          opacity: 0.9;
+          margin-left: 8px;
+        }
+        .habit-grid-row {
+          display: contents;
+        }
+        .habit-grid-label {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 12px;
+          background: rgba(255, 255, 255, 0.04);
+          font-size: 12px;
+          color: #94a3b8;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .habit-row-positive .habit-grid-label {
+          border-left: 2px solid rgba(34, 197, 94, 0.4);
+        }
+        .habit-row-negative .habit-grid-label {
+          border-left: 2px solid rgba(248, 113, 113, 0.4);
         }
         .habit-emoji {
-          font-size: 20px;
+          font-size: 16px;
+          flex-shrink: 0;
         }
-        .habit-cell {
-          width: 44px;
-          height: 44px;
+        .habit-grid-cell {
           display: flex;
           align-items: center;
           justify-content: center;
+          min-width: 44px;
+          height: 44px;
           background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          border-radius: 10px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 8px;
           color: #64748b;
-          font-size: 20px;
+          font-size: 18px;
           font-weight: 700;
           cursor: pointer;
           transition: all 0.2s;
-          flex-shrink: 0;
         }
-        .habit-cell:hover:not(:disabled) {
+        .habit-grid-cell:hover:not(:disabled):not(.future) {
           background: rgba(255, 255, 255, 0.1);
-          border-color: rgba(255, 255, 255, 0.2);
+          border-color: rgba(255, 255, 255, 0.15);
           color: #94a3b8;
         }
-        .habit-cell.completed {
-          background: rgba(34, 197, 94, 0.2);
-          border-color: rgba(34, 197, 94, 0.4);
+        .habit-grid-cell.future {
+          cursor: default;
+          opacity: 0.5;
+        }
+        .habit-grid-cell.completed {
+          background: rgba(34, 197, 94, 0.15);
+          border-color: rgba(34, 197, 94, 0.35);
           color: #4ade80;
         }
-        .habit-cell.busy {
+        .habit-grid-cell.negative:not(.completed) {
+          border-color: rgba(248, 113, 113, 0.2);
+        }
+        .habit-grid-cell.busy {
           opacity: 0.6;
           cursor: wait;
         }

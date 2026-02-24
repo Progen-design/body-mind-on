@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     const userId = user.id;
     const email = user.email?.toLowerCase();
 
-    const [metricsRes, plansRes, workoutsRes] = await Promise.allSettled([
+    const [metricsRes, plansRes, workoutsRes, userHabitsRes] = await Promise.allSettled([
       supabaseServer
         .from('body_metrics')
         .select('*')
@@ -35,12 +35,19 @@ export default async function handler(req, res) {
         .select('*')
         .eq('user_id', userId)
         .order('workout_date', { ascending: false })
-        .limit(100)
+        .limit(100),
+      supabaseServer
+        .from('user_habits')
+        .select('*')
+        .eq('user_id', userId)
+        .order('is_positive', { ascending: false })
+        .order('sort_order', { ascending: true })
     ]);
 
     const bodyMetrics = (metricsRes.status === 'fulfilled' && metricsRes.value?.data) ? metricsRes.value.data : [];
     const plansData = (plansRes.status === 'fulfilled' && plansRes.value?.data) ? plansRes.value.data : [];
     const workouts = (workoutsRes.status === 'fulfilled' && workoutsRes.value?.data) ? workoutsRes.value.data : [];
+    const userHabits = (userHabitsRes.status === 'fulfilled' && userHabitsRes.value?.data) ? userHabitsRes.value.data : [];
     const program = (() => {
       const reg = bodyMetrics.find(m => m.program) || bodyMetrics[bodyMetrics.length - 1];
       return reg?.program || 'START';
@@ -81,6 +88,7 @@ export default async function handler(req, res) {
         created_at: user.created_at || null,
       },
       body_metrics: bodyMetrics,
+      user_habits: userHabits,
       plans: plansData,
       workouts,
       weight_history: weightHistory,

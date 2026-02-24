@@ -1,46 +1,85 @@
-// components/HabitEntryWizard.js – Vstupní formulář s bublinami návyků (proklikávací průvodce)
+// components/HabitEntryWizard.js – Vstupní formulář s výběrem návyků (proklikávací průvodce)
 import { useState } from 'react';
-import { POSITIVE_HABITS, NEGATIVE_HABITS } from '../lib/habits';
+import { POSITIVE_HABITS, NEGATIVE_HABITS, getSuggestedHabits } from '../lib/habits';
 
 const WIZARD_STORAGE_KEY = 'habitEntryWizardSeen';
 
-export default function HabitEntryWizard({ program, onClose }) {
+export default function HabitEntryWizard({ program, session, bodyMetrics, userHabits, onClose, onHabitsSaved }) {
   const [step, setStep] = useState(0);
+  const [selectedIds, setSelectedIds] = useState(() => {
+    const existing = (userHabits || []).map((h) => h.habit_id);
+    if (existing.length > 0) return existing;
+    const regMetric = Array.isArray(bodyMetrics) && bodyMetrics.length > 0
+      ? bodyMetrics[bodyMetrics.length - 1]
+      : null;
+    return getSuggestedHabits(regMetric);
+  });
+  const [saving, setSaving] = useState(false);
 
   const programTitle = program === 'ON_CLUB' ? 'ON Clubu' : program === 'VIP' ? 'VIP' : '';
 
   const steps = [
     {
       title: programTitle ? `Vítej v ${programTitle}! 🎯` : 'Denní návyky 🎯',
-      content: 'Tady můžeš sledovat své návyky den po dni. Proklikej si jednotlivé kroky.',
-      showBubbles: null,
+      content: 'Tady můžeš sledovat své návyky den po dni. Nejprve si vyber, které návyky chceš sledovat.',
+      showSelection: false,
     },
     {
-      title: 'Pozitivní návyky',
-      content: 'Klikni na bublinu pro označení „splněno“ ✓. Každý den si odškrtávej, co jsi zvládl.',
-      showBubbles: 'positive',
-    },
-    {
-      title: 'Zlozvyky (vyhnul se = ✓)',
-      content: 'U zlozvyků ✓ znamená „vyhnul jsem se“ – dobrý den!',
-      showBubbles: 'negative',
+      title: 'Vyber si návyky',
+      content: 'Zaškrtni návyky, které chceš sledovat. Některé jsou předvybrané podle tvého profilu.',
+      showSelection: true,
     },
     {
       title: 'Přepínač data',
       content: 'Šipkami ◀ ▶ můžeš přepínat datum a doplnit návyky z jiných dní.',
-      showBubbles: null,
+      showSelection: false,
     },
     {
       title: 'Hotovo! 🎉',
       content: 'Začni sledovat své návyky každý den. Každý malý krok se počítá.',
-      showBubbles: null,
+      showSelection: false,
     },
   ];
 
   const currentStep = steps[step];
   const isLast = step === steps.length - 1;
+  const isSelectionStep = currentStep.showSelection;
 
-  const handleNext = () => {
+  const toggleHabit = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleNext = async () => {
+    if (isSelectionStep && selectedIds.length > 0) {
+      setSaving(true);
+      try {
+        const token = session?.access_token;
+        if (!token) {
+          handleClose();
+          return;
+        }
+        const habits = selectedIds.map((habit_id) => ({ habit_id }));
+        const res = await fetch('/api/user-habits', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ habits }),
+        });
+        const json = await res.json();
+        if (res.ok && json.ok) {
+          onHabitsSaved?.();
+        }
+      } catch (err) {
+        console.error('[HabitEntryWizard] save error:', err);
+      } finally {
+        setSaving(false);
+      }
+    }
+
     if (isLast) {
       handleClose();
     } else {
@@ -55,11 +94,7 @@ export default function HabitEntryWizard({ program, onClose }) {
     onClose();
   };
 
-  const habitsToShow = currentStep.showBubbles === 'positive'
-    ? POSITIVE_HABITS
-    : currentStep.showBubbles === 'negative'
-      ? NEGATIVE_HABITS
-      : null;
+  const canProceed = !isSelectionStep || selectedIds.length > 0;
 
   return (
     <>
@@ -72,15 +107,43 @@ export default function HabitEntryWizard({ program, onClose }) {
           <h3>{currentStep.title}</h3>
           <p className="habit-wizard-text">{currentStep.content}</p>
 
-          {habitsToShow && (
-            <div className={`habit-wizard-bubbles habit-wizard-bubbles-${currentStep.showBubbles}`}>
-              {habitsToShow.map((h) => (
-                <div key={h.id} className="habit-wizard-bubble" title={h.label}>
-                  <span className="habit-wizard-emoji">{h.emoji}</span>
-                  <span className="habit-wizard-check">○</span>
-                  <span className="habit-wizard-label">{h.label}</span>
+          {isSelectionStep && (
+            <div className="habit-wizard-selection">
+              <div className="habit-wizard-group">
+                <h4 className="habit-wizard-group-title">Pozitivní návyky</h4>
+                <div className="habit-wizard-checkboxes">
+                  {POSITIVE_HABITS.map((h) => (
+                    <label key={h.id} className="habit-wizard-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(h.id)}
+                        onChange={() => toggleHabit(h.id)}
+                      />
+                      <span className="habit-wizard-checkbox-emoji">{h.emoji}</span>
+                      <span className="habit-wizard-checkbox-label">{h.label}</span>
+                    </label>
+                  ))}
                 </div>
-              ))}
+              </div>
+              <div className="habit-wizard-group habit-wizard-group-negative">
+                <h4 className="habit-wizard-group-title">Zlozvyky (vyhnul se = ✓)</h4>
+                <div className="habit-wizard-checkboxes">
+                  {NEGATIVE_HABITS.map((h) => (
+                    <label key={h.id} className="habit-wizard-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(h.id)}
+                        onChange={() => toggleHabit(h.id)}
+                      />
+                      <span className="habit-wizard-checkbox-emoji">{h.emoji}</span>
+                      <span className="habit-wizard-checkbox-label">{h.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              {selectedIds.length === 0 && (
+                <p className="habit-wizard-hint">Vyber alespoň jeden návyk pro pokračování.</p>
+              )}
             </div>
           )}
 
@@ -96,8 +159,12 @@ export default function HabitEntryWizard({ program, onClose }) {
             <button className="habit-wizard-skip" onClick={handleClose}>
               Přeskočit
             </button>
-            <button className="habit-wizard-next" onClick={handleNext}>
-              {isLast ? 'Začít' : 'Další'}
+            <button
+              className="habit-wizard-next"
+              onClick={handleNext}
+              disabled={!canProceed || saving}
+            >
+              {saving ? 'Ukládám…' : isLast ? 'Začít' : 'Další'}
             </button>
           </div>
         </div>
@@ -158,8 +225,8 @@ export default function HabitEntryWizard({ program, onClose }) {
         .habit-wizard-content h3 {
           margin: 0 0 12px;
           font-size: 22px;
-          color: #fff;
           font-weight: 700;
+          color: #fff;
         }
 
         .habit-wizard-text {
@@ -169,52 +236,70 @@ export default function HabitEntryWizard({ program, onClose }) {
           font-size: 15px;
         }
 
-        .habit-wizard-bubbles {
+        .habit-wizard-selection {
+          margin-bottom: 24px;
+          max-height: 320px;
+          overflow-y: auto;
+        }
+
+        .habit-wizard-group {
+          margin-bottom: 20px;
+        }
+
+        .habit-wizard-group-negative .habit-wizard-group-title {
+          color: #f87171;
+        }
+
+        .habit-wizard-group-title {
+          margin: 0 0 10px;
+          font-size: 14px;
+          font-weight: 600;
+          color: #94a3b8;
+        }
+
+        .habit-wizard-checkboxes {
           display: flex;
           flex-wrap: wrap;
-          gap: 10px;
-          justify-content: center;
-          margin-bottom: 24px;
-          padding: 16px 0;
+          gap: 8px;
         }
 
-        .habit-wizard-bubble {
+        .habit-wizard-checkbox {
           display: flex;
-          flex-direction: column;
           align-items: center;
-          justify-content: center;
-          gap: 6px;
-          min-width: 80px;
-          padding: 14px 12px;
+          gap: 8px;
+          padding: 10px 14px;
           background: rgba(255, 255, 255, 0.06);
           border: 1px solid rgba(255, 255, 255, 0.12);
-          border-radius: 20px;
+          border-radius: 12px;
           color: #94a3b8;
-          font-size: 11px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.2s;
         }
 
-        .habit-wizard-bubbles-negative .habit-wizard-bubble {
+        .habit-wizard-checkbox:hover {
+          background: rgba(255, 255, 255, 0.1);
+          border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .habit-wizard-checkbox input {
+          accent-color: #9b5cff;
+          width: 18px;
+          height: 18px;
+        }
+
+        .habit-wizard-checkbox-emoji {
+          font-size: 18px;
+        }
+
+        .habit-wizard-group-negative .habit-wizard-checkbox {
           border-color: rgba(248, 113, 113, 0.25);
         }
 
-        .habit-wizard-emoji {
-          font-size: 24px;
-        }
-
-        .habit-wizard-check {
-          font-size: 18px;
-          font-weight: 700;
-          color: rgba(255, 255, 255, 0.4);
-        }
-
-        .habit-wizard-label {
-          text-align: center;
-          line-height: 1.2;
-          max-width: 75px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+        .habit-wizard-hint {
+          margin: 12px 0 0;
+          font-size: 13px;
+          color: #f87171;
         }
 
         .habit-wizard-progress {
@@ -274,10 +359,15 @@ export default function HabitEntryWizard({ program, onClose }) {
           color: #fff;
         }
 
-        .habit-wizard-next:hover {
+        .habit-wizard-next:hover:not(:disabled) {
           background: linear-gradient(135deg, #6d28d9, #8b5cf6);
           transform: translateY(-1px);
           box-shadow: 0 4px 12px rgba(155, 92, 255, 0.4);
+        }
+
+        .habit-wizard-next:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
       `}</style>
     </>

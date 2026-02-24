@@ -140,6 +140,7 @@ export default function Profil() {
         const freshProfile = {
           user: data.user ? { ...data.user } : null,
           body_metrics: sortedMetrics,
+          user_habits: Array.isArray(data.user_habits) ? [...data.user_habits] : [],
           workouts: sortedWorkouts,
           plans: Array.isArray(data.plans) ? [...data.plans] : [],
           weight_history: Array.isArray(data.weight_history) ? [...data.weight_history] : [],
@@ -767,7 +768,11 @@ export default function Profil() {
       {showHabitEntryWizard && (
         <HabitEntryWizard
           program={profile?.program || 'START'}
+          session={session}
+          bodyMetrics={profile?.body_metrics}
+          userHabits={profile?.user_habits}
           onClose={() => setShowHabitEntryWizard(false)}
+          onHabitsSaved={() => refetchProfile(session?.access_token, profile)}
         />
       )}
       {toast.message && (
@@ -918,6 +923,7 @@ export default function Profil() {
             {/* Denní návyky */}
             <HabitTracker
               session={session}
+              userHabits={profile?.user_habits}
               onToast={(t) => setToast({ message: t.message, type: t.type })}
             />
 

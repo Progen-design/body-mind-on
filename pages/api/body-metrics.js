@@ -198,14 +198,21 @@ function normalizeStress(v) {
   return 'medium';
 }
 
+/** Hodnoty povolené v DB (body_metrics_occupation_check). Pokud neznámá → other. */
+const OCCUPATION_WHITELIST = ['office_it', 'manual', 'driver', 'warehouse', 'healthcare', 'teacher_sales', 'gastronomy', 'other'];
+
 function normalizeOccupation(v) {
   if (!v) return null;
   const t = v.toString().toLowerCase().trim();
-  const known = ['office_it', 'manual', 'driver', 'warehouse', 'healthcare', 'teacher_sales', 'gastronomy', 'other', 'kombinovana'];
-  if (known.includes(t)) return t;
+  if (OCCUPATION_WHITELIST.includes(t)) return t;
   if (t.includes('it') || t.includes('kancel')) return 'office_it';
   if (t.includes('manu')) return 'manual';
   if (t.includes('kombin')) return 'teacher_sales';
+  if (t.includes('řidič') || t.includes('ridic')) return 'driver';
+  if (t.includes('sklad')) return 'warehouse';
+  if (t.includes('zdrav') || t.includes('health')) return 'healthcare';
+  if (t.includes('učitel') || t.includes('ucitel') || t.includes('prodej')) return 'teacher_sales';
+  if (t.includes('gastro') || t.includes('restau')) return 'gastronomy';
   return 'other';
 }
 

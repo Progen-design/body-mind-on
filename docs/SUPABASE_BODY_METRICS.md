@@ -32,3 +32,20 @@ a zároveň buď nechat ukládání do `notes`, nebo ho odstranit a ukládat jen
 ---
 
 **Shrnutí:** Teď nic v Supabase měnit nemusíš – registrace by měla projít a strava jde do `notes`.
+
+---
+
+## Chyba: body_metrics_occupation_check
+
+Pokud se objeví chyba `violates check constraint "body_metrics_occupation_check"`, sloupec `occupation` má omezené povolené hodnoty. Aplikace mapuje vstupy na: `office_it`, `manual`, `driver`, `warehouse`, `healthcare`, `teacher_sales`, `gastronomy`, `other`. Hodnota `kombinovana` (z formuláře) se mapuje na `teacher_sales`.
+
+Pokud chceš povolit `kombinovana` přímo v DB, v Supabase SQL Editor spusť:
+
+```sql
+ALTER TABLE body_metrics DROP CONSTRAINT IF EXISTS body_metrics_occupation_check;
+ALTER TABLE body_metrics ADD CONSTRAINT body_metrics_occupation_check
+  CHECK (occupation IS NULL OR occupation IN (
+    'office_it', 'manual', 'driver', 'warehouse', 'healthcare',
+    'teacher_sales', 'gastronomy', 'other', 'kombinovana'
+  ));
+```

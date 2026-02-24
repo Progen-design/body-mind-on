@@ -13,6 +13,12 @@ import VipTour from '../components/VipTour';
 import Toast from '../components/Toast';
 import { supabase } from '../lib/supabaseClient';
 
+const PROGRAM_LABELS = {
+  START: { greeting: 'Ahoj', subtitle: 'Každý trénink, každé měření.' },
+  ON_CLUB: { greeting: 'Vítej v ON Clubu', subtitle: 'Jsi členem ON Clubu – sleduj návyky, tréninky a svůj progres.' },
+  VIP: { greeting: 'Vítej v VIP', subtitle: 'Jsi VIP člen – máš přístup ke všem funkcím včetně habit trackeru.' },
+};
+
 const WORKOUT_TYPES = [
   { id: 'silovy', label: 'Silový', emoji: '🏋️' },
   { id: 'kardio', label: 'Kardio', emoji: '🏃' },
@@ -519,7 +525,7 @@ export default function Profil() {
 
   // Všechny parametry se přepočítají při každé změně profile (trénink, váha)
   // Použít _updated timestamp jako závislost, aby se vždy přepočítalo při změně
-  const { metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, thisWeekDates, startWeightDate, lastWeightDate } = useMemo(() => {
+  const { program, metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, thisWeekDates, startWeightDate, lastWeightDate } = useMemo(() => {
     // Zajistit, že máme vždy nové reference na pole pro správnou detekci změn
     // A SORT podle data - nejnovější první
     const m = profile?.body_metrics 
@@ -607,7 +613,10 @@ export default function Profil() {
       weeksToGoal = (estimatedCurrentWeight - goalWeight) / kgPerWeekFromWeek;
     }
 
+    const program = profile?.program || 'START';
+
     return {
+      program,
       metrics: m,
       workouts: w,
       latestMetric: latest,
@@ -658,6 +667,7 @@ export default function Profil() {
     profile?.user?.start_weight_kg,
     profile?.user?.goal_weight_kg,
     profile?.user?.height_cm,
+    profile?.program,
   ]);
 
   async function handleSendPlanAgain() {
@@ -738,15 +748,18 @@ export default function Profil() {
         {currentPlan && (
           <div className="plan-goal-hero">
             <h2 className="plan-goal-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
-            {currentPlan.plan_type && <span className="plan-goal-badge">{currentPlan.plan_type}</span>}
+            <span className="plan-goal-badge">{program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP' : currentPlan.plan_type || 'START'}</span>
           </div>
         )}
 
         <section className="hero">
           <h1>
-            Ahoj <span>{userName}</span> 👋
+            {(PROGRAM_LABELS[program] || PROGRAM_LABELS.START).greeting} <span>{userName}</span> 👋
+            {(program === 'ON_CLUB' || program === 'VIP') && (
+              <span className="hero-program-badge">{program === 'ON_CLUB' ? 'ON Club' : 'VIP'}</span>
+            )}
           </h1>
-          <p className="hero-sub">Každý trénink, každé měření.</p>
+          <p className="hero-sub">{(PROGRAM_LABELS[program] || PROGRAM_LABELS.START).subtitle}</p>
           {!loading && !error && (
             <div className="hero-strip">
               <div className="hero-stat">
@@ -788,7 +801,12 @@ export default function Profil() {
             {/* Jasná první akce – pro uživatele bez tréninku */}
             {workouts.length === 0 && currentPlan && (
               <div className="first-action-banner">
-                <p><strong>Tvůj plán je připraven.</strong> První krok: zapiš svůj první trénink nebo se podívej na dnešní jídlo v plánu níže.</p>
+                <p>
+                  <strong>Tvůj plán je připraven.</strong>{' '}
+                  {program === 'ON_CLUB' && 'Jsi v ON Clubu – zapiš první trénink, sleduj denní návyky nebo se podívej na dnešní jídlo v plánu níže.'}
+                  {program === 'VIP' && 'Jsi VIP – zapiš první trénink, sleduj denní návyky nebo se podívej na dnešní jídlo v plánu níže.'}
+                  {program !== 'ON_CLUB' && program !== 'VIP' && 'První krok: zapiš svůj první trénink nebo se podívej na dnešní jídlo v plánu níže.'}
+                </p>
               </div>
             )}
 
@@ -1221,10 +1239,23 @@ export default function Profil() {
           font-size: 38px;
           font-weight: 700;
         }
-        .hero span {
+        .hero h1 > span:not(.hero-program-badge) {
           background: linear-gradient(90deg, #9b5cff, #00cfff);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
+        }
+        .hero-program-badge {
+          display: inline-block;
+          margin-left: 12px;
+          padding: 4px 12px;
+          background: rgba(155, 92, 255, 0.25);
+          border: 1px solid rgba(155, 92, 255, 0.5);
+          border-radius: 20px;
+          font-size: 14px;
+          font-weight: 600;
+          color: #c4b5fd;
+          -webkit-text-fill-color: #c4b5fd;
+          vertical-align: middle;
         }
         .hero-sub {
           color: #94a3b8;

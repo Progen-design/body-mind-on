@@ -3,6 +3,7 @@ import { supabaseServer } from '../../lib/supabaseServer';
 import { generatePlanForEmail } from '../../lib/generatePlan';
 import { createAuthUserIfNew } from '../../lib/authHelpers';
 import { getClientIp, isRateLimited } from '../../lib/rateLimit';
+import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -113,6 +114,21 @@ export default async function handler(req, res) {
     }
 
     console.log(`✅ Data uložena do body_metrics pro ${payload.email}, user_id: ${payload.user_id}`);
+
+    if (payload.user_id && Array.isArray(b.selected_habits) && b.selected_habits.length > 0) {
+      const validHabits = b.selected_habits
+        .filter((id) => typeof id === 'string' && isValidHabitId(id.trim()))
+        .map((id, i) => ({
+          user_id: payload.user_id,
+          habit_id: String(id).trim(),
+          is_positive: POSITIVE_HABITS.some((p) => p.id === String(id).trim()),
+          sort_order: i,
+        }));
+      if (validHabits.length > 0) {
+        const { error: uhErr } = await supabaseServer.from('user_habits').insert(validHabits);
+        if (uhErr) console.warn('[body-metrics] user_habits insert:', uhErr.message);
+      }
+    }
 
     let planResult;
     try {

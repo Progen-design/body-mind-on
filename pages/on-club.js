@@ -1,9 +1,11 @@
 // /pages/on-club.js – Registrace ON Club (stejná grafika jako START)
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import HabitSelection from "../components/HabitSelection";
+import { getSuggestedHabits } from "../lib/habits";
 
-const MAX_STEP = 4;
+const MAX_STEP = 5;
 
 export default function OnClubPage() {
   const [step, setStep] = useState(1);
@@ -28,6 +30,7 @@ export default function OnClubPage() {
   });
 
   const [status, setStatus] = useState("");
+  const [selectedHabits, setSelectedHabits] = useState([]);
 
   const normalizeData = (data) => {
     const cleaned = { ...data };
@@ -46,8 +49,20 @@ export default function OnClubPage() {
   const canProceedStep1 = () => formData.name?.trim() && formData.email?.trim() && formData.password?.length >= 6 && formData.password === formData.passwordConfirm;
   const canProceedStep2 = () => formData.gender && formData.age && formData.height && formData.weight;
   const canProceedStep3 = () => formData.activity && formData.stress && formData.worktype && formData.goal && formData.frequency;
+  const canProceedStep5 = () => selectedHabits.length > 0;
 
-  const handleNext = () => { if (step < MAX_STEP) setStep((s) => s + 1); };
+  const suggestedHabits = useMemo(() => getSuggestedHabits({
+    goal: formData.goal,
+    stress_level: formData.stress,
+    activity: formData.activity,
+    dietary_restrictions: formData.dietary_restrictions,
+    notes: formData.notes,
+  }), [formData.goal, formData.stress, formData.activity, formData.dietary_restrictions, formData.notes]);
+
+  const handleNext = () => {
+    if (step === 4 && selectedHabits.length === 0 && suggestedHabits.length > 0) setSelectedHabits(suggestedHabits);
+    if (step < MAX_STEP) setStep((s) => s + 1);
+  };
   const handleBack = () => { if (step > 1) setStep((s) => s - 1); };
 
   const handleSubmit = async (e) => {
@@ -69,7 +84,7 @@ export default function OnClubPage() {
       const res = await fetch("/api/body-metrics", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(cleanedData),
+        body: JSON.stringify({ ...cleanedData, selected_habits: selectedHabits }),
       });
 
       let result;
@@ -87,6 +102,7 @@ export default function OnClubPage() {
           setStatus("✅ " + (result.message || "Údaje byly uloženy a plán byl odeslán na e-mail."));
         }
         setFormData({ name: "", email: "", password: "", passwordConfirm: "", gender: "", age: "", height: "", weight: "", activity: "", stress: "", worktype: "", goal: "", frequency: "", diet_type: "", dietary_restrictions: "", notes: "", program: "ON_CLUB" });
+        setSelectedHabits([]);
         setStep(1);
       } else {
         setStatus("❌ Chyba: " + (result.error || result.message || "Nepodařilo se odeslat."));
@@ -111,7 +127,7 @@ export default function OnClubPage() {
 
         <div className="progress-bar-wrap max-w-3xl mx-auto mb-8">
           <div className="progress-dots">
-            {[1, 2, 3, 4].map((s) => (
+            {[1, 2, 3, 4, 5].map((s) => (
               <span key={s} className={s === step ? "active" : s < step ? "done" : ""} aria-hidden>{s}</span>
             ))}
           </div>
@@ -256,6 +272,14 @@ export default function OnClubPage() {
             </details>
           )}
 
+          {step === 5 && (
+            <div className="habit-step">
+              <h3 className="habit-step-title">Vyber si návyky k sledování</h3>
+              <HabitSelection selectedIds={selectedHabits} onChange={setSelectedHabits} />
+              {selectedHabits.length === 0 && <p className="habit-step-hint">Vyber alespoň jeden návyk pro pokračování.</p>}
+            </div>
+          )}
+
           <div className="form-actions">
             {step > 1 ? (
               <button type="button" onClick={handleBack} className="btn-back">Zpět</button>
@@ -263,7 +287,7 @@ export default function OnClubPage() {
               <span />
             )}
             {step < MAX_STEP ? (
-              <button type="submit" className="btn-submit" disabled={step === 1 && !canProceedStep1() || step === 2 && !canProceedStep2() || step === 3 && !canProceedStep3()}>
+              <button type="submit" className="btn-submit" disabled={(step === 1 && !canProceedStep1()) || (step === 2 && !canProceedStep2()) || (step === 3 && !canProceedStep3()) || (step === 5 && !canProceedStep5())}>
                 Pokračovat
               </button>
             ) : (
@@ -307,6 +331,9 @@ export default function OnClubPage() {
         .btn-submit:hover:not(:disabled) { opacity: 0.9; }
         .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-submit-large { padding: 14px 32px; font-size: 16px; }
+        .habit-step { margin-bottom: 0; }
+        .habit-step-title { margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #e2e8f0; }
+        .habit-step-hint { margin: 12px 0 0; font-size: 13px; color: #f87171; }
       `}</style>
     </>
   );

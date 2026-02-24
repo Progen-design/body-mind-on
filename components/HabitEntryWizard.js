@@ -156,9 +156,6 @@ export default function HabitEntryWizard({ program, session, bodyMetrics, userHa
             ))}
           </div>
           <div className="habit-wizard-actions">
-            <button className="habit-wizard-skip" onClick={handleClose}>
-              Přeskočit
-            </button>
             <button
               className="habit-wizard-next"
               onClick={handleNext}
@@ -329,11 +326,9 @@ export default function HabitEntryWizard({ program, session, bodyMetrics, userHa
 
         .habit-wizard-actions {
           display: flex;
-          gap: 12px;
           justify-content: flex-end;
         }
 
-        .habit-wizard-skip,
         .habit-wizard-next {
           padding: 10px 20px;
           border-radius: 12px;
@@ -341,17 +336,6 @@ export default function HabitEntryWizard({ program, session, bodyMetrics, userHa
           cursor: pointer;
           border: none;
           transition: all 0.2s;
-        }
-
-        .habit-wizard-skip {
-          background: transparent;
-          color: #94a3b8;
-          border: 1px solid #475569;
-        }
-
-        .habit-wizard-skip:hover {
-          background: rgba(255, 255, 255, 0.05);
-          color: #fff;
         }
 
         .habit-wizard-next {

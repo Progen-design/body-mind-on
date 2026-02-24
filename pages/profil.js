@@ -257,7 +257,8 @@ export default function Profil() {
       const habitWizardSeen = localStorage.getItem('habitEntryWizardSeen');
       const welcomeTourSeen = localStorage.getItem('welcomeTourSeen');
       const timer = setTimeout(() => {
-        if ((program === 'ON_CLUB' || program === 'VIP') && !habitWizardSeen) {
+        const hasNoHabits = !profile.user_habits || profile.user_habits.length === 0;
+        if ((program === 'ON_CLUB' || program === 'VIP') && !habitWizardSeen && hasNoHabits) {
           setShowHabitEntryWizard(true);
         } else if (!welcomeTourSeen) {
           setShowWelcomeTour(true);
@@ -265,7 +266,7 @@ export default function Profil() {
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [loading, session, error, profile?.program]);
+  }, [loading, session, error, profile?.program, profile?.user_habits]);
 
   async function handleLogout() {
     await supabase.auth.signOut();

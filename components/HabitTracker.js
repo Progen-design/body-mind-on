@@ -1,5 +1,5 @@
 // components/HabitTracker.js – Denní návyky (dnes + dny dopředu, jen dnes editovatelné)
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { POSITIVE_HABITS, NEGATIVE_HABITS, getHabitById } from '../lib/habits';
 
 function toDateStr(date) {
@@ -21,6 +21,7 @@ export default function HabitTracker({ session, userHabits, onToast }) {
   const [allLogs, setAllLogs] = useState([]);
   const [weekLogs, setWeekLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [toggling, setToggling] = useState(null);
 
   const buildHabitsLists = useCallback((uh) => {
@@ -36,7 +37,7 @@ export default function HabitTracker({ session, userHabits, onToast }) {
   }, []);
 
   const todayStr = toDateStr(new Date());
-  const days = useCallback(() => {
+  const days = useMemo(() => {
     const result = [];
     const today = new Date();
     today.setHours(12, 0, 0, 0);
@@ -46,7 +47,7 @@ export default function HabitTracker({ session, userHabits, onToast }) {
       result.push(toDateStr(d));
     }
     return result;
-  }, [])();
+  }, []);
 
   useEffect(() => {
     const { pos, neg } = buildHabitsLists(userHabits);
@@ -68,10 +69,11 @@ export default function HabitTracker({ session, userHabits, onToast }) {
     [session?.access_token]
   );
 
-  useEffect(() => {
+  const loadLogs = useCallback(() => {
     const allHabits = [...positiveHabits, ...negativeHabits];
     if (allHabits.length === 0) {
       setLoading(false);
+      setFetchError(null);
       return;
     }
     const habitIds = allHabits.map((h) => h.id);
@@ -81,15 +83,30 @@ export default function HabitTracker({ session, userHabits, onToast }) {
     const fromStr = toDateStr(weekAgo);
 
     setLoading(true);
+    setFetchError(null);
     Promise.all([
       fetchLogs(days[0], days[days.length - 1], habitIds),
       fetchLogs(fromStr, todayStr, habitIds),
-    ]).then(([rangeData, weekData]) => {
-      setAllLogs(rangeData);
-      setWeekLogs(weekData);
-      setLoading(false);
-    });
+    ])
+      .then(([rangeData, weekData]) => {
+        setAllLogs(rangeData);
+        setWeekLogs(weekData);
+        setFetchError(null);
+      })
+      .catch((err) => {
+        console.error('[HabitTracker] fetch error:', err);
+        setFetchError(err?.message || 'Nepodařilo se načíst návyky');
+        setAllLogs([]);
+        setWeekLogs([]);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [positiveHabits, negativeHabits, days, todayStr, fetchLogs]);
+
+  useEffect(() => {
+    loadLogs();
+  }, [loadLogs]);
 
   const getCompleted = (habitId, dateStr) => {
     const log = allLogs.find((l) => l.habit_id === habitId && l.log_date === dateStr);
@@ -232,7 +249,19 @@ export default function HabitTracker({ session, userHabits, onToast }) {
       </p>
 
       {loading ? (
-        <div className="habit-loading">Načítám…</div>
+        <div className="habit-loading">
+          <span className="habit-loading-dots">
+            <span>.</span><span>.</span><span>.</span>
+          </span>
+          <span className="habit-loading-text">Načítám návyky</span>
+        </div>
+      ) : fetchError ? (
+        <div className="habit-error">
+          <p className="habit-error-message">{fetchError}</p>
+          <button type="button" className="habit-retry-btn" onClick={loadLogs}>
+            Zkusit znovu
+          </button>
+        </div>
       ) : (
         <>
           <div className="habit-grid-wrapper">
@@ -295,9 +324,61 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           color: #94a3b8;
         }
         .habit-loading {
-          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          padding: 32px 24px;
           color: #94a3b8;
+        }
+        .habit-loading-dots {
+          display: inline-flex;
+          gap: 2px;
+          font-size: 28px;
+          font-weight: 700;
+          color: #a78bfa;
+          line-height: 1;
+        }
+        .habit-loading-dots span {
+          animation: habit-dot 1.4s ease-in-out infinite both;
+        }
+        .habit-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .habit-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes habit-dot {
+          0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+          40% { opacity: 1; transform: scale(1); }
+        }
+        .habit-loading-text {
+          font-size: 14px;
+          color: #94a3b8;
+        }
+        .habit-error {
+          text-align: center;
           padding: 24px;
+          background: rgba(248, 113, 113, 0.08);
+          border: 1px solid rgba(248, 113, 113, 0.2);
+          border-radius: 12px;
+        }
+        .habit-error-message {
+          margin: 0 0 16px;
+          font-size: 14px;
+          color: #fca5a5;
+        }
+        .habit-retry-btn {
+          padding: 10px 20px;
+          background: rgba(155, 92, 255, 0.3);
+          border: 1px solid rgba(155, 92, 255, 0.5);
+          border-radius: 10px;
+          color: #e9d5ff;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .habit-retry-btn:hover {
+          background: rgba(155, 92, 255, 0.45);
+          transform: translateY(-1px);
         }
         .habit-grid-wrapper {
           overflow-x: auto;

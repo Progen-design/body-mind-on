@@ -8,8 +8,7 @@ import BodyFigure from '../components/BodyFigure';
 import WelcomeTour from '../components/WelcomeTour';
 import PlanViewer from '../components/PlanViewer';
 import HabitTracker from '../components/HabitTracker';
-import OnClubTour from '../components/OnClubTour';
-import VipTour from '../components/VipTour';
+import HabitEntryWizard from '../components/HabitEntryWizard';
 import Toast from '../components/Toast';
 import { supabase } from '../lib/supabaseClient';
 
@@ -87,11 +86,12 @@ export default function Profil() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showWelcomeTour, setShowWelcomeTour] = useState(false);
-  const [showOnClubTour, setShowOnClubTour] = useState(false);
-  const [showVipTour, setShowVipTour] = useState(false);
+  const [showHabitEntryWizard, setShowHabitEntryWizard] = useState(false);
   const [toast, setToast] = useState({ message: '', type: 'success' });
   const [showAllWorkouts, setShowAllWorkouts] = useState(false);
   const [sendingPlan, setSendingPlan] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const [workoutForm, setWorkoutForm] = useState({
     workout_date: new Date().toISOString().split('T')[0],
@@ -249,17 +249,15 @@ export default function Profil() {
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   }, [session?.access_token]);
 
-  // Zobrazit welcome tour nebo ON Club tour po prvním přihlášení
+  // Zobrazit vstupní formulář (habit wizard) jen pro ON Club a VIP; START má WelcomeTour
   useEffect(() => {
     if (!loading && session && !error && profile) {
       const program = profile.program || 'START';
-      const onClubTourSeen = localStorage.getItem('onClubTourSeen');
+      const habitWizardSeen = localStorage.getItem('habitEntryWizardSeen');
       const welcomeTourSeen = localStorage.getItem('welcomeTourSeen');
       const timer = setTimeout(() => {
-        if (program === 'ON_CLUB' && !onClubTourSeen) {
-          setShowOnClubTour(true);
-        } else if (program === 'VIP' && !localStorage.getItem('vipTourSeen')) {
-          setShowVipTour(true);
+        if ((program === 'ON_CLUB' || program === 'VIP') && !habitWizardSeen) {
+          setShowHabitEntryWizard(true);
         } else if (!welcomeTourSeen) {
           setShowWelcomeTour(true);
         }
@@ -271,6 +269,39 @@ export default function Profil() {
   async function handleLogout() {
     await supabase.auth.signOut();
     router.replace('/login');
+  }
+
+  async function handleDeleteAccount() {
+    setDeletingAccount(true);
+    try {
+      const { data: { session: fresh } } = await supabase.auth.refreshSession();
+      const token = fresh?.access_token ?? session?.access_token;
+      if (!token) {
+        setToast({ message: 'Session vypršela. Odhlas se a přihlas znovu.', type: 'error' });
+        return;
+      }
+      const res = await fetch('/api/delete-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ confirm: true }),
+      });
+      const json = await res.json();
+      if (res.ok && json.ok) {
+        await supabase.auth.signOut();
+        setToast({ message: 'Účet byl smazán.', type: 'success' });
+        router.replace('/login');
+      } else {
+        setToast({ message: json.error || 'Nepodařilo se smazat účet.', type: 'error' });
+      }
+    } catch (err) {
+      setToast({ message: 'Chyba připojení.', type: 'error' });
+    } finally {
+      setDeletingAccount(false);
+      setShowDeleteAccountModal(false);
+    }
   }
 
   async function handleAddWorkout(e) {
@@ -733,8 +764,12 @@ export default function Profil() {
   return (
     <>
       {showWelcomeTour && <WelcomeTour onClose={() => setShowWelcomeTour(false)} />}
-      {showOnClubTour && <OnClubTour onClose={() => setShowOnClubTour(false)} />}
-      {showVipTour && <VipTour onClose={() => setShowVipTour(false)} />}
+      {showHabitEntryWizard && (
+        <HabitEntryWizard
+          program={profile?.program || 'START'}
+          onClose={() => setShowHabitEntryWizard(false)}
+        />
+      )}
       {toast.message && (
         <Toast
           message={toast.message}
@@ -776,9 +811,19 @@ export default function Profil() {
               </div>
             </div>
           )}
-          <button onClick={handleLogout} className="logout">
-            Odhlásit se
-          </button>
+          <div className="hero-actions">
+            <button onClick={handleLogout} className="logout">
+              Odhlásit se
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowDeleteAccountModal(true)}
+              className="logout logout-danger"
+              title="Trvale smazat účet a všechna data"
+            >
+              Zrušit profil
+            </button>
+          </div>
         </section>
 
         {loading && <p className="loading">Načítám tvůj profil…</p>}
@@ -1174,6 +1219,29 @@ export default function Profil() {
                 </div>
               </div>
             )}
+            {showDeleteAccountModal && (
+              <div className="modal-overlay" onClick={() => { if (!deletingAccount) setShowDeleteAccountModal(false); }}>
+                <div className="modal modal-danger" onClick={(e) => e.stopPropagation()}>
+                  <h3>Zrušit profil</h3>
+                  <p className="modal-hint">
+                    Opravdu chceš smazat svůj účet? Veškerá data (tréninky, návyky, plán, měření) budou <strong>trvale smazána</strong>. Tato akce je nevratná.
+                  </p>
+                  <div className="modal-actions">
+                    <button type="button" onClick={() => { if (!deletingAccount) setShowDeleteAccountModal(false); }} disabled={deletingAccount}>
+                      Zrušit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDeleteAccount}
+                      disabled={deletingAccount}
+                      className="btn-danger"
+                    >
+                      {deletingAccount ? (<><span className="button-spinner"></span> Mažu…</>) : 'Ano, smazat účet'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </main>
@@ -1532,14 +1600,44 @@ export default function Profil() {
           margin-right: auto;
         }
 
-        .logout {
+        .hero-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          justify-content: center;
           margin-top: 20px;
+        }
+        .logout {
           background: transparent;
           border: 1px solid #444;
           padding: 8px 16px;
           border-radius: 8px;
           color: #ccc;
           cursor: pointer;
+        }
+        .logout:hover {
+          background: rgba(255, 255, 255, 0.05);
+          color: #fff;
+        }
+        .logout-danger {
+          border-color: rgba(239, 68, 68, 0.5);
+          color: #f87171;
+        }
+        .logout-danger:hover {
+          background: rgba(239, 68, 68, 0.15);
+          border-color: rgba(239, 68, 68, 0.7);
+          color: #fca5a5;
+        }
+        .modal-danger .modal-hint { color: #fca5a5; }
+        .btn-danger {
+          background: rgba(239, 68, 68, 0.3) !important;
+          border: 1px solid rgba(239, 68, 68, 0.6) !important;
+          color: #fca5a5 !important;
+        }
+        .btn-danger:hover:not(:disabled) {
+          background: rgba(239, 68, 68, 0.5) !important;
+          border-color: #ef4444 !important;
+          color: #fff !important;
         }
 
         .card {

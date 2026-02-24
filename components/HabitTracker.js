@@ -219,7 +219,12 @@ export default function HabitTracker({ session, userHabits, onToast }) {
     <div key={h.id} className={`habit-grid-row habit-row-${isNegative ? 'negative' : 'positive'}`}>
       <div className="habit-grid-label">
         <span className="habit-emoji">{h.emoji}</span>
-        <span>{h.label}</span>
+        <div className="habit-label-text">
+          <span>{h.label}</span>
+          {h.description && (
+            <span className="habit-description">{h.description}</span>
+          )}
+        </div>
       </div>
       {days.map((dateStr) => {
         const completed = getCompleted(h.id, dateStr);
@@ -386,7 +391,7 @@ export default function HabitTracker({ session, userHabits, onToast }) {
         }
         .habit-grid {
           display: grid;
-          grid-template-columns: minmax(140px, 1fr) repeat(7, minmax(44px, 44px));
+          grid-template-columns: minmax(180px, 1fr) repeat(7, minmax(44px, 44px));
           gap: 1px;
           min-width: min-content;
         }
@@ -447,15 +452,13 @@ export default function HabitTracker({ session, userHabits, onToast }) {
         }
         .habit-grid-label {
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           gap: 8px;
           padding: 10px 12px;
           background: rgba(255, 255, 255, 0.04);
           font-size: 12px;
           color: #94a3b8;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          min-width: 0;
         }
         .habit-row-positive .habit-grid-label {
           border-left: 2px solid rgba(34, 197, 94, 0.4);
@@ -490,6 +493,18 @@ export default function HabitTracker({ session, userHabits, onToast }) {
         .habit-grid-cell.future {
           cursor: default;
           opacity: 0.5;
+        }
+        .habit-label-text {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .habit-description {
+          font-size: 11px;
+          font-weight: 400;
+          color: #94a3b8;
+          opacity: 0.9;
+          line-height: 1.3;
         }
         .habit-grid-cell.completed {
           background: rgba(34, 197, 94, 0.15);

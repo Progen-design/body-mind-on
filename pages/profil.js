@@ -7,6 +7,8 @@ import Footer from '../components/Footer';
 import BodyFigure from '../components/BodyFigure';
 import WelcomeTour from '../components/WelcomeTour';
 import PlanViewer from '../components/PlanViewer';
+import HabitTracker from '../components/HabitTracker';
+import OnClubTour from '../components/OnClubTour';
 import Toast from '../components/Toast';
 import { supabase } from '../lib/supabaseClient';
 
@@ -78,6 +80,7 @@ export default function Profil() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showWelcomeTour, setShowWelcomeTour] = useState(false);
+  const [showOnClubTour, setShowOnClubTour] = useState(false);
   const [toast, setToast] = useState({ message: '', type: 'success' });
   const [showAllWorkouts, setShowAllWorkouts] = useState(false);
   const [sendingPlan, setSendingPlan] = useState(false);
@@ -133,6 +136,7 @@ export default function Profil() {
           plans: Array.isArray(data.plans) ? [...data.plans] : [],
           weight_history: Array.isArray(data.weight_history) ? [...data.weight_history] : [],
           stats: data.stats ? { ...data.stats } : {},
+          program: data.program || 'START',
           _updated: Date.now(),
         };
         let skipped = false;
@@ -237,19 +241,22 @@ export default function Profil() {
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   }, [session?.access_token]);
 
-  // Zobrazit welcome tour po prvním přihlášení
+  // Zobrazit welcome tour nebo ON Club tour po prvním přihlášení
   useEffect(() => {
-    if (!loading && session && !error) {
-      const tourSeen = localStorage.getItem('welcomeTourSeen');
-      if (!tourSeen) {
-        // Počkat chvíli, aby se stránka načetla, pak zobrazit tour
-        const timer = setTimeout(() => {
+    if (!loading && session && !error && profile) {
+      const program = profile.program || 'START';
+      const onClubTourSeen = localStorage.getItem('onClubTourSeen');
+      const welcomeTourSeen = localStorage.getItem('welcomeTourSeen');
+      const timer = setTimeout(() => {
+        if (program === 'ON_CLUB' && !onClubTourSeen) {
+          setShowOnClubTour(true);
+        } else if (!welcomeTourSeen) {
           setShowWelcomeTour(true);
-        }, 1000);
-        return () => clearTimeout(timer);
-      }
+        }
+      }, 1000);
+      return () => clearTimeout(timer);
     }
-  }, [loading, session, error]);
+  }, [loading, session, error, profile?.program]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -712,6 +719,7 @@ export default function Profil() {
   return (
     <>
       {showWelcomeTour && <WelcomeTour onClose={() => setShowWelcomeTour(false)} />}
+      {showOnClubTour && <OnClubTour onClose={() => setShowOnClubTour(false)} />}
       {toast.message && (
         <Toast
           message={toast.message}
@@ -838,6 +846,12 @@ export default function Profil() {
                 </button>
               </div>
             </section>
+
+            {/* Denní návyky */}
+            <HabitTracker
+              session={session}
+              onToast={(t) => setToast({ message: t.message, type: t.type })}
+            />
 
             {/* TVŮJ PROGRES – nahoře, nejdůležitější */}
             <section className="card card-accent center progress-section">

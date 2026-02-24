@@ -41,6 +41,10 @@ export default async function handler(req, res) {
     const bodyMetrics = (metricsRes.status === 'fulfilled' && metricsRes.value?.data) ? metricsRes.value.data : [];
     const plansData = (plansRes.status === 'fulfilled' && plansRes.value?.data) ? plansRes.value.data : [];
     const workouts = (workoutsRes.status === 'fulfilled' && workoutsRes.value?.data) ? workoutsRes.value.data : [];
+    const program = (() => {
+      const reg = bodyMetrics.find(m => m.program) || bodyMetrics[bodyMetrics.length - 1];
+      return reg?.program || 'START';
+    })();
     if (workoutsRes.status === 'rejected') {
       console.warn('[profile] workouts fetch failed (table may not exist):', workoutsRes.reason?.message);
     }
@@ -66,6 +70,7 @@ export default async function handler(req, res) {
     res.setHeader('Pragma', 'no-cache');
     const meta = user.user_metadata || {};
     return res.status(200).json({
+      program,
       user: {
         id: user.id,
         email: user.email,

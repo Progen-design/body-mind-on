@@ -32,7 +32,27 @@ PREFERENCES: konkrétní potraviny nebo omezení nikdy nezařazuj. Makra neměň
 
 Makra přesně dle výpočtů, kalorie zaokrouhli na 50 kcal.
 
-JÍDELNÍČEK: 7 dní, 3 jídla denně. Stručné názvy + krátký popis v závorce, žádné receptové postupy ani dlouhé seznamy.
+DOPORUČENÉ POTRAVINY (používej při sestavování jídelníčku a nákupního seznamu. Respektuj diet_type – u vegetarian/vegan vynech živočišné):
+• Maso a živočišné produkty: hovězí maso, mleté hovězí, steak, játra, srdce, jehněčí, kuřecí, krůtí, kachna, vepřové (kvalitní), slanina bez dusitanů, hovězí vývar, kostní vývar
+• Ryby a mořské plody: losos (divoký), sardinky, makrela, pstruh, treska, tuňák, krevety, mušle
+• Vejce: vejce z volného chovu, kachní vejce
+• Tuky: ghí, máslo, hovězí lůj, kachní sádlo, extra panenský olivový olej, kokosový olej, avokádo
+• Mléčné výrobky (kvalitní, plnotučné): plnotučný řecký jogurt, kefír, tvaroh, tvrdé sýry, parmezán
+• Sacharidy (whole foods): bílá rýže (basmati, jasmínová), brambory, batáty, pohanka, quinoa
+• Ovoce: borůvky, maliny, ostružiny, banán, mango, ananas, jablko, hruška, pomeranč, meloun, datle, fíky, syrový med
+• Zelenina (dle tolerance): okurka, rajče, mrkev, cuketa, dýně, špenát, rukola, brokolice (vařená), květák (vařený), kysané zelí, kimchi
+• Ořechy a semena: vlašské ořechy, pekany, mandle, makadamové ořechy, chia semínka, lněná semínka
+• Ostatní: mořská sůl, himálajská sůl, jablečný ocet, hořčice bez cukru, česnek, bylinky, koření
+
+NEDOPORUČENÉ POTRAVINY (nikdy nezařazuj do jídelníčku ani nákupního seznamu):
+• Průmyslově zpracované: polotovary, ultra-processed jídla, proteinové tyčinky s aditivy, light produkty, margaríny
+• Seed oils: slunečnicový olej, řepkový olej, sójový olej, kukuřičný olej, arašídový olej
+• Sladké a chemické: slazené nápoje, energetické nápoje, umělá sladidla, glukózo-fruktózový sirup
+• Náhražky a silně průmyslové alternativy: tofu (jen u vegan), sójové maso, veganské náhražky masa, rostlinné „burgery“, sójový proteinový izolát
+• Vysoce rafinované sacharidy: bílé pečivo, sladké cereálie, klasické těstoviny z bílé mouky, sušenky, dorty, sladké snídaňové kaše
+Poznámka: tofu a tempeh jsou u vegan povolené; u standard/vegetarian preferuj živočišné zdroje.
+
+JÍDELNÍČEK: 7 dní, 3 jídla denně. Stručné názvy + krátký popis v závorce, žádné receptové postupy ani dlouhé seznamy. Sestavuj pouze z DOPORUČENÝCH POTRAVIN, respektuj diet_type.
 
 Vegan zdroje: tofu, tempeh, luštěniny, čočka, fazole, cizrna, quinoa, rostlinné proteiny, ořechy, semínka. Nikdy syrovátka ani živočišné proteiny.
 
@@ -70,5 +90,5 @@ Před vrácením ověř: diet_type, preferences, zákaz potravin, všechny sekce
 1. Otevři [platform.openai.com](https://platform.openai.com) → Assistants → vybraný asistent
 2. V sekci **Instructions** vlož obsah z bloku výše
 3. V sekci **Tools** měj zapnutý **File Search** s vector store (Body and Mind ON)
-4. Do vector store nahraj relevantní dokumenty z `docs/` (např. ASISTENT_OPENAI_JIDELNICEK.md, ANALYZA_*.md)
+4. Do vector store nahraj relevantní dokumenty z `docs/` (např. DOPORUCENE_A_NEDOPORUCENE_POTRAVINY.md, ASISTENT_OPENAI_JIDELNICEK.md, ANALYZA_*.md)
 5. Ulož změny

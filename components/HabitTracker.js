@@ -18,6 +18,7 @@ function formatShortDate(d) {
 const DAYS_FORWARD = 6;
 
 export default function HabitTracker({ session, userHabits, onToast }) {
+  const [mounted, setMounted] = useState(false);
   const [positiveHabits, setPositiveHabits] = useState([]);
   const [negativeHabits, setNegativeHabits] = useState([]);
   const [allLogs, setAllLogs] = useState([]);
@@ -25,6 +26,10 @@ export default function HabitTracker({ session, userHabits, onToast }) {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
   const [toggling, setToggling] = useState(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const buildHabitsLists = useCallback((uh) => {
     let list = [];
@@ -194,6 +199,31 @@ export default function HabitTracker({ session, userHabits, onToast }) {
   };
 
   const recommendation = getRecommendation();
+
+  if (!mounted) {
+    return (
+      <section className="habit-tracker">
+        <h2 className="habit-tracker-title">Denní návyky</h2>
+        <p className="habit-tracker-subtitle">Klikni na buňku pro přepnutí O / ✓</p>
+        <div className="habit-loading">
+          <span className="habit-loading-dots"><span>.</span><span>.</span><span>.</span></span>
+          <span className="habit-loading-text">Načítám…</span>
+        </div>
+        <style jsx>{`
+          .habit-tracker { margin-bottom: 40px; padding: 28px 24px; background: rgba(255,255,255,0.04); border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); }
+          .habit-tracker-title { margin: 0 0 4px; font-size: 18px; font-weight: 600; color: #e2e8f0; }
+          .habit-tracker-subtitle { margin: 0 0 20px; font-size: 13px; color: #94a3b8; }
+          .habit-loading { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 32px 24px; color: #94a3b8; }
+          .habit-loading-dots { display: inline-flex; gap: 2px; font-size: 28px; font-weight: 700; color: #a78bfa; }
+          .habit-loading-dots span { animation: habit-dot 1.4s ease-in-out infinite both; }
+          .habit-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+          .habit-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+          @keyframes habit-dot { 0%,80%,100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
+          .habit-loading-text { font-size: 14px; }
+        `}</style>
+      </section>
+    );
+  }
 
   if (positiveHabits.length === 0 && negativeHabits.length === 0) {
     return (

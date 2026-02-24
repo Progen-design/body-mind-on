@@ -9,6 +9,7 @@ import WelcomeTour from '../components/WelcomeTour';
 import PlanViewer from '../components/PlanViewer';
 import HabitTracker from '../components/HabitTracker';
 import OnClubTour from '../components/OnClubTour';
+import VipTour from '../components/VipTour';
 import Toast from '../components/Toast';
 import { supabase } from '../lib/supabaseClient';
 
@@ -81,6 +82,7 @@ export default function Profil() {
   const [refreshing, setRefreshing] = useState(false);
   const [showWelcomeTour, setShowWelcomeTour] = useState(false);
   const [showOnClubTour, setShowOnClubTour] = useState(false);
+  const [showVipTour, setShowVipTour] = useState(false);
   const [toast, setToast] = useState({ message: '', type: 'success' });
   const [showAllWorkouts, setShowAllWorkouts] = useState(false);
   const [sendingPlan, setSendingPlan] = useState(false);
@@ -250,6 +252,8 @@ export default function Profil() {
       const timer = setTimeout(() => {
         if (program === 'ON_CLUB' && !onClubTourSeen) {
           setShowOnClubTour(true);
+        } else if (program === 'VIP' && !localStorage.getItem('vipTourSeen')) {
+          setShowVipTour(true);
         } else if (!welcomeTourSeen) {
           setShowWelcomeTour(true);
         }
@@ -720,6 +724,7 @@ export default function Profil() {
     <>
       {showWelcomeTour && <WelcomeTour onClose={() => setShowWelcomeTour(false)} />}
       {showOnClubTour && <OnClubTour onClose={() => setShowOnClubTour(false)} />}
+      {showVipTour && <VipTour onClose={() => setShowVipTour(false)} />}
       {toast.message && (
         <Toast
           message={toast.message}

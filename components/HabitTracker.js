@@ -13,13 +13,6 @@ function formatShortDate(d) {
   return date.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short' });
 }
 
-function formatWeekday(d) {
-  if (!d) return '';
-  const date = new Date(d + 'T12:00:00Z');
-  if (isNaN(date.getTime())) return '';
-  return date.toLocaleDateString('cs-CZ', { weekday: 'short' }).replace('.', '');
-}
-
 const DAYS_FORWARD = 6;
 
 export default function HabitTracker({ session, userHabits, onToast }) {
@@ -224,16 +217,12 @@ export default function HabitTracker({ session, userHabits, onToast }) {
 
   const renderHabitRow = (h, isNegative) => (
     <div key={h.id} className={`habit-row habit-row-${isNegative ? 'negative' : 'positive'}`}>
-      <div className="habit-label">
+      <div className="habit-label" title={h.description}>
         <span className="habit-emoji">{h.emoji}</span>
-        <div className="habit-label-content">
-          <span className="habit-label-name">{h.label}</span>
-          {h.description && (
-            <span className="habit-label-desc">{h.description}</span>
-          )}
-        </div>
+        <span className="habit-label-name">{h.label}</span>
       </div>
-      <div className="habit-cells">
+      <div className="habit-cells-wrap">
+        <div className="habit-cells">
         {days.map((dateStr) => {
           const completed = getCompleted(h.id, dateStr);
           const isToday = dateStr === todayStr;
@@ -251,6 +240,8 @@ export default function HabitTracker({ session, userHabits, onToast }) {
             </button>
           );
         })}
+        </div>
+        <div className="habit-row-scroll-hint" aria-hidden="true">›</div>
       </div>
     </div>
   );
@@ -259,7 +250,7 @@ export default function HabitTracker({ session, userHabits, onToast }) {
     <section className="habit-tracker">
       <h2 className="habit-tracker-title">Denní návyky</h2>
       <p className="habit-tracker-subtitle">
-        Jen dnes lze odškrtnout – klikni na buňku u dnešního data
+        Klikni na buňku pro přepnutí ○ / ✓
       </p>
 
       {loading ? (
@@ -287,17 +278,17 @@ export default function HabitTracker({ session, userHabits, onToast }) {
                     key={d}
                     className={`habit-header-cell ${d === todayStr ? 'today' : 'future'}`}
                   >
-                    <span className="habit-header-weekday">{formatWeekday(d)}</span>
                     {formatShortDate(d)}
                     {d === todayStr && <span className="habit-today-badge">Dnes</span>}
                   </div>
                 ))}
               </div>
+              <div className="habit-scroll-hint" aria-hidden="true">›</div>
             </div>
             {positiveHabits.length > 0 && (
               <>
                 <div className="habit-section-header positive">
-                  Zdravé návyky <span className="habit-section-hint">Splň = ✓</span>
+                  Zdravé návyky
                 </div>
                 {positiveHabits.map((h) => renderHabitRow(h, false))}
               </>
@@ -305,27 +296,11 @@ export default function HabitTracker({ session, userHabits, onToast }) {
             {negativeHabits.length > 0 && (
               <>
                 <div className="habit-section-header negative">
-                  Zlozvyky <span className="habit-section-hint">Vyhnul/a jsem se = ✓</span>
+                  Zlozvyky
                 </div>
                 {negativeHabits.map((h) => renderHabitRow(h, true))}
               </>
             )}
-            <div className="habit-dates-row">
-              <div className="habit-dates-spacer" />
-              <div className="habit-dates-cols">
-                {days.map((d) => (
-                  <div
-                    key={d}
-                    className={`habit-date-footer ${d === todayStr ? 'today' : ''}`}
-                    title={formatShortDate(d)}
-                  >
-                    <span className="habit-date-weekday">{formatWeekday(d)}</span>
-                    <span className="habit-date-day">{formatShortDate(d)}</span>
-                    {d === todayStr && <span className="habit-dates-today">Dnes</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
           {recommendation && (
@@ -428,8 +403,19 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           margin-bottom: 12px;
         }
         .habit-header-spacer {
-          width: 240px;
-          min-width: 240px;
+          width: 220px;
+          min-width: 220px;
+          flex-shrink: 0;
+        }
+        .habit-row-scroll-hint {
+          width: 32px;
+          min-width: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: rgba(255, 255, 255, 0.2);
+          font-size: 16px;
+          font-weight: 600;
           flex-shrink: 0;
         }
         .habit-header-dates {
@@ -440,7 +426,7 @@ export default function HabitTracker({ session, userHabits, onToast }) {
         .habit-header-cell {
           width: 48px;
           min-width: 48px;
-          padding: 8px 6px;
+          padding: 10px 6px;
           background: rgba(255, 255, 255, 0.06);
           border-radius: 10px;
           font-size: 12px;
@@ -451,16 +437,6 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           flex-direction: column;
           align-items: center;
           gap: 2px;
-        }
-        .habit-header-weekday {
-          font-size: 10px;
-          font-weight: 500;
-          color: #64748b;
-          text-transform: uppercase;
-          letter-spacing: 0.02em;
-        }
-        .habit-header-cell.today .habit-header-weekday {
-          color: #a78bfa;
         }
         .habit-header-cell.today {
           background: rgba(155, 92, 255, 0.25);
@@ -474,60 +450,16 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           font-weight: 500;
           color: #a78bfa;
         }
-        .habit-dates-row {
+        .habit-scroll-hint {
+          width: 32px;
+          min-width: 32px;
           display: flex;
-          align-items: stretch;
-          gap: 8px;
-          margin-top: 12px;
-          padding-top: 12px;
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .habit-dates-spacer {
-          width: 240px;
-          min-width: 240px;
-          flex-shrink: 0;
-        }
-        .habit-dates-cols {
-          display: flex;
-          gap: 8px;
-          flex-shrink: 0;
-        }
-        .habit-date-footer {
-          width: 48px;
-          min-width: 48px;
-          padding: 8px 4px;
-          background: rgba(255, 255, 255, 0.04);
-          border-radius: 8px;
-          font-size: 11px;
-          font-weight: 600;
-          color: #94a3b8;
-          text-align: center;
-          display: flex;
-          flex-direction: column;
           align-items: center;
-          gap: 2px;
-        }
-        .habit-date-weekday {
-          font-size: 9px;
-          font-weight: 500;
-          color: #64748b;
-          text-transform: uppercase;
-          letter-spacing: 0.02em;
-        }
-        .habit-date-day {
-          font-size: 11px;
-        }
-        .habit-date-footer.today {
-          background: rgba(155, 92, 255, 0.15);
-          color: #c4b5fd;
-        }
-        .habit-date-footer.today .habit-date-weekday {
-          color: #a78bfa;
-        }
-        .habit-dates-today {
-          font-size: 9px;
-          font-weight: 500;
-          color: #a78bfa;
+          justify-content: center;
+          color: rgba(255, 255, 255, 0.3);
+          font-size: 18px;
+          font-weight: 600;
+          flex-shrink: 0;
         }
         .habit-section-header {
           padding: 12px 16px;
@@ -545,12 +477,6 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           background: rgba(248, 113, 113, 0.12);
           color: #f87171;
         }
-        .habit-section-hint {
-          font-weight: 400;
-          font-size: 12px;
-          opacity: 0.9;
-          margin-left: 8px;
-        }
         .habit-row {
           display: flex;
           align-items: center;
@@ -558,16 +484,14 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           margin-bottom: 8px;
         }
         .habit-label {
-          width: 240px;
-          min-width: 240px;
+          width: 220px;
+          min-width: 220px;
           flex-shrink: 0;
           display: flex;
-          align-items: flex-start;
+          align-items: center;
           gap: 10px;
           padding: 12px 14px;
-          background: rgba(255, 255, 255, 0.04);
-          border-radius: 10px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         }
         .habit-row-positive .habit-label {
           border-left: 3px solid rgba(34, 197, 94, 0.5);
@@ -576,16 +500,9 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           border-left: 3px solid rgba(248, 113, 113, 0.5);
         }
         .habit-emoji {
-          font-size: 20px;
+          font-size: 18px;
           flex-shrink: 0;
           line-height: 1;
-        }
-        .habit-label-content {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-          min-width: 0;
-          flex: 1;
         }
         .habit-label-name {
           font-size: 13px;
@@ -593,12 +510,11 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           color: #e2e8f0;
           line-height: 1.3;
         }
-        .habit-label-desc {
-          font-size: 11px;
-          font-weight: 400;
-          color: #94a3b8;
-          line-height: 1.35;
-          word-wrap: break-word;
+        .habit-cells-wrap {
+          display: flex;
+          align-items: center;
+          gap: 0;
+          flex-shrink: 0;
         }
         .habit-cells {
           display: flex;

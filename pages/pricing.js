@@ -18,7 +18,11 @@ export default function PricingPage() {
         <Pricing />
 
         <p className="single-cta">
-            Jediná registrace pro Start: <Link href="/start">Začít 7denní START zdarma →</Link>
+          <Link href="/start">Začít 7denní START zdarma</Link>
+          {' · '}
+          <Link href="/on-club">Připojit se k ON Clubu</Link>
+          {' · '}
+          <Link href="/chci-vip">Chci VIP přístup</Link>
         </p>
       </section>
       <Footer />
@@ -54,6 +58,20 @@ export default function PricingPage() {
           border: 1px solid var(--border, #222);
           display: flex;
           flex-direction: column;
+          position: relative;
+        }
+        .pricing-page :global(.pricing .card .badge) {
+          position: absolute;
+          top: -10px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: linear-gradient(90deg, #0ea5e9, #06b6d4);
+          color: #fff;
+          font-size: 11px;
+          font-weight: 600;
+          padding: 4px 12px;
+          border-radius: 20px;
+          white-space: nowrap;
         }
         .pricing-page :global(.pricing .card .btn) {
           margin-top: auto;

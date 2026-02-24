@@ -6,9 +6,10 @@ export default function Pricing({ minimal = false }) {
       <div className="grid">
         {PRICING.map(t => (
           <article key={t.id} className="card">
+            {t.badge && <span className="badge">{t.badge}</span>}
             <h3>{t.name}</h3>
             {t.subtitle && <p className="sub">{t.subtitle}</p>}
-            <div className="price">{t.priceCzk ? `${t.priceCzk} Kč / měsíc` : 'ZDARMA'}</div>
+            <div className="price">{t.priceLabel || (t.priceCzk ? `${t.priceCzk.toLocaleString('cs-CZ')} Kč/měsíc` : 'ZDARMA')}</div>
             <ul>{t.features.map(f => <li key={f}>{f}</li>)}</ul>
             {!minimal && <a className="btn" href={t.cta.href}>{t.cta.label}</a>}
           </article>

@@ -30,6 +30,9 @@ export default function Header() {
   const jakHref = isApp ? `${MAIN_SITE}/#jak-to-funguje` : "/#jak-to-funguje";
   const cenikHref = isApp ? `${MAIN_SITE}/#cenik` : "/#cenik";
 
+  const isRegistrationPage = ["/start", "/on-club", "/chci-vip"].includes(router.pathname);
+  const showLoggedInNav = session && !isRegistrationPage;
+
   return (
     <header className="header">
       <div className="container">
@@ -39,7 +42,7 @@ export default function Header() {
         <nav>
           <a href={jakHref}>Jak to funguje</a>
           <a href={cenikHref}>Ceník</a>
-          {session ? (
+          {showLoggedInNav ? (
             <>
               <Link href="/profil">Profil</Link>
               <button type="button" onClick={handleLogout} className="nav-logout">

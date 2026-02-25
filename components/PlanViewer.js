@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabaseClient';
+import { jsPDF } from 'jspdf';
 
 // Obrázky jídel – NEJDELŠÍ SHODA. Žádný obecný klíč „zelenina“ (dával by všem stejnou mísu). Jen konkrétní jídla.
 const DISH_IMAGES = [
@@ -373,34 +374,50 @@ export default function PlanViewer({ plan, userName, hideHero }) {
             </div>
           </div>
 
-          {/* Export jídelníčku */}
+          {/* Export jídelníčku – PDF (otevřít všude) */}
           {parsed.days?.length > 0 && (
             <div className="plan-block plan-export-row">
               <button
                 type="button"
                 className="plan-export-btn"
                 onClick={() => {
-                  const lines = [];
+                  // PDF bez diakritiky kvůli kompatibilitě všude (standardní font)
+                  const stripDiacritics = (s) => (s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '');
+                  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                  const margin = 18;
+                  let y = 20;
+                  const lineHeight = 7;
+                  const fontTitle = 14;
+                  const fontDay = 12;
+                  const fontMeal = 10;
+                  doc.setFontSize(fontTitle);
+                  doc.text(stripDiacritics('Jidelnicek na tyden – Body & Mind ON'), margin, y);
+                  y += lineHeight + 4;
                   parsed.days.forEach((day, di) => {
-                    lines.push(day.dayName || 'Den');
-                    day.meals.forEach((meal, mi) => {
+                    doc.setFontSize(fontDay);
+                    doc.setFont(undefined, 'bold');
+                    doc.text(stripDiacritics(day.dayName || 'Den'), margin, y);
+                    y += lineHeight;
+                    doc.setFont(undefined, 'normal');
+                    (day.meals || []).forEach((meal, mi) => {
                       const key = `${di}_${mi}`;
                       const ov = mealOverrides[key];
                       const text = ov ? ov.title : (meal.text || meal.fullHtml || '').replace(/<[^>]+>/g, ' ').trim();
-                      lines.push(`  ${meal.type || 'Jídlo'}: ${text}`);
+                      const line = (meal.type || 'Jidlo') + ': ' + stripDiacritics(text);
+                      doc.setFontSize(fontMeal);
+                      const split = doc.splitTextToSize(line, 180);
+                      split.forEach((l) => {
+                        if (y > 270) { doc.addPage(); y = margin; }
+                        doc.text(l, margin + 5, y);
+                        y += lineHeight - 1;
+                      });
                     });
-                    lines.push('');
+                    y += 4;
                   });
-                  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = 'jidelnicek-tyden.txt';
-                  a.click();
-                  URL.revokeObjectURL(url);
+                  doc.save('jidelnicek-tyden.pdf');
                 }}
               >
-                📥 Stáhnout jídelníček (týden)
+                Stáhnout jídelníček (PDF)
               </button>
             </div>
           )}

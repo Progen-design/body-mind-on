@@ -281,6 +281,14 @@ export default function HabitTracker({ session, userHabits, onToast }) {
         </div>
       ) : (
         <>
+          <div className="habit-tracker-card">
+            <div className="habit-tracker-progress">
+              <span className="habit-progress-label">Dnes</span>
+              <div className="habit-progress-bar-wrap">
+                <div className="habit-progress-bar" style={{ width: `${totalHabits ? Math.round((completedToday / totalHabits) * 100) : 0}%` }} />
+              </div>
+              <span className="habit-progress-value">{completedToday} / {totalHabits}</span>
+            </div>
           <div className="habit-wrapper">
             <div className="habit-header-row">
               <div className="habit-header-spacer" />
@@ -309,6 +317,7 @@ export default function HabitTracker({ session, userHabits, onToast }) {
               </div>
             )}
           </div>
+          </div>
 
           {recommendation && (
             <div className="habit-recommendation">
@@ -330,17 +339,17 @@ export default function HabitTracker({ session, userHabits, onToast }) {
         }
         .habit-tracker-title {
           margin: 0 0 8px;
-          font-size: 1.5rem;
+          font-size: 1.375rem;
           font-weight: 600;
           letter-spacing: -0.02em;
           color: #f8fafc;
         }
         .habit-tracker-subtitle {
           margin: 0;
-          font-size: 0.9375rem;
+          font-size: 0.875rem;
           font-weight: 400;
           color: #94a3b8;
-          line-height: 1.4;
+          line-height: 1.45;
         }
         .habit-loading {
           display: flex;
@@ -399,12 +408,50 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           background: rgba(248, 250, 252, 0.12);
           border-color: rgba(248, 250, 252, 0.18);
         }
+        .habit-tracker-card {
+          border-radius: 20px;
+          background: linear-gradient(145deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.85) 100%);
+          border: 1px solid rgba(148, 163, 184, 0.12);
+          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+          overflow: hidden;
+        }
+        .habit-tracker-progress {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 24px;
+          background: rgba(0, 0, 0, 0.15);
+          border-bottom: 1px solid rgba(248, 250, 252, 0.06);
+        }
+        .habit-progress-label {
+          font-size: 0.8125rem;
+          font-weight: 600;
+          color: #94a3b8;
+          min-width: 36px;
+        }
+        .habit-progress-bar-wrap {
+          flex: 1;
+          height: 8px;
+          background: rgba(255, 255, 255, 0.08);
+          border-radius: 4px;
+          overflow: hidden;
+        }
+        .habit-progress-bar {
+          height: 100%;
+          background: linear-gradient(90deg, #34d399, #22c55e);
+          border-radius: 4px;
+          transition: width 0.35s ease;
+        }
+        .habit-progress-value {
+          font-size: 0.875rem;
+          font-weight: 700;
+          color: #e2e8f0;
+          min-width: 48px;
+          text-align: right;
+        }
         .habit-wrapper {
           overflow-x: auto;
           -webkit-overflow-scrolling: touch;
-          border-radius: 16px;
-          background: rgba(15, 23, 42, 0.4);
-          border: 1px solid rgba(248, 250, 252, 0.1);
           padding: 24px 24px 28px;
         }
         .habit-header-row {
@@ -467,18 +514,24 @@ export default function HabitTracker({ session, userHabits, onToast }) {
         .habit-section-label {
           font-size: 0.8125rem;
           font-weight: 600;
-          letter-spacing: 0.04em;
+          letter-spacing: 0.05em;
           text-transform: uppercase;
-          color: #94a3b8;
-          margin-bottom: 12px;
-          padding-bottom: 8px;
-          border-bottom: 1px solid rgba(248, 250, 252, 0.08);
+          margin-bottom: 14px;
+          padding: 10px 14px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
         }
         .habit-section-label.positive {
           color: #86efac;
+          background: rgba(34, 197, 94, 0.1);
+          border-left: 4px solid #22c55e;
         }
         .habit-section-label.negative {
           color: #fca5a5;
+          background: rgba(248, 113, 113, 0.08);
+          border-left: 4px solid #f87171;
         }
         .habit-row {
           display: flex;
@@ -527,12 +580,13 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(255, 255, 255, 0.05);
-          border: 2px solid rgba(255, 255, 255, 0.12);
+          background: rgba(255, 255, 255, 0.04);
+          border: 2px solid rgba(255, 255, 255, 0.1);
           border-radius: 12px;
           color: #94a3b8;
           cursor: pointer;
           transition: border-color 0.2s, background 0.2s, color 0.2s, transform 0.15s;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
         }
         .habit-cell-inner {
           display: flex;

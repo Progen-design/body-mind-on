@@ -608,7 +608,9 @@ export default function Profil() {
       ? (thisWeek.length > lastWeek.length ? '↑' : thisWeek.length < lastWeek.length ? '↓' : '→')
       : null;
 
-    const name = profile?.user?.name || profile?.user?.email?.split('@')[0] || 'Sportovče';
+    // Oslovení: jméno a příjmení z registrace (nejstarší body_metrics), ne přezdívka
+    const registrationName = registrationMetric?.name?.trim();
+    const name = registrationName || profile?.user?.name || profile?.user?.email?.split('@')[0] || 'Sportovče';
     // Výchozí váha a výška z registrace (Start) – nevyplňovat znovu
     const startWeight = registrationMetric?.weight_kg != null ? Number(registrationMetric.weight_kg) : (profile?.user?.start_weight_kg != null ? Number(profile.user.start_weight_kg) : null);
     const heightCm = registrationMetric?.height_cm != null ? Number(registrationMetric.height_cm) : (profile?.user?.height_cm != null ? Number(profile.user.height_cm) : null);
@@ -807,7 +809,7 @@ export default function Profil() {
 
         <section className="hero">
           <h1>
-            {(PROGRAM_LABELS[program] || PROGRAM_LABELS.START).greeting} <span>{userName}</span> 👋
+            {(PROGRAM_LABELS[program] || PROGRAM_LABELS.START).greeting}, <span>{userName}</span>
             {(program === 'ON_CLUB' || program === 'VIP') && (
               <span className="hero-program-badge">{program === 'ON_CLUB' ? 'ON Club' : 'VIP'}</span>
             )}

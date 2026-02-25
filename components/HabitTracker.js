@@ -230,25 +230,17 @@ export default function HabitTracker({ session, userHabits, onToast }) {
               className={`habit-cell ${isNegative ? 'negative' : ''} ${completed ? 'completed' : ''} ${busy ? 'busy' : ''} ${!isToday ? 'future' : ''} ${isToday ? 'today-cell' : ''}`}
               onClick={() => handleToggle(h.id, dateStr)}
               disabled={!isToday || busy}
-              title={isToday ? (completed ? 'Splnil/a jsem – klikni pro nesplněno' : 'Nesplnil/a – klikni pro splněno') : `${formatShortDate(dateStr)} – jen dnes lze měnit`}
+              title={isToday ? (completed ? 'Splněno – klikni pro zrušení' : 'Klikni a označ splněno') : formatShortDate(dateStr)}
               aria-pressed={isToday ? completed : undefined}
               aria-label={`${h.label}, ${formatShortDate(dateStr)}${isToday ? ', dnes' : ''}${completed ? ', splněno' : ', nesplněno'}`}
             >
-              <span className="habit-cell-inner">
-                {completed ? (
-                  <>
-                    <svg className="habit-cell-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                      <path d="M5 12l5 5 9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span className="habit-cell-label">Splněno</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="habit-cell-empty" aria-hidden="true">−</span>
-                    <span className="habit-cell-label">Nesplněno</span>
-                  </>
-                )}
-              </span>
+              {completed ? (
+                <svg className="habit-cell-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M5 12l5 5 9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              ) : (
+                <span className="habit-cell-ring" aria-hidden="true" />
+              )}
             </button>
           );
         })}
@@ -261,7 +253,7 @@ export default function HabitTracker({ session, userHabits, onToast }) {
       <header className="habit-tracker-head">
         <h2 className="habit-tracker-title">Denní návyky</h2>
         <p className="habit-tracker-subtitle">
-          Klikni na buňku u dne – přepneš mezi „Splnil/a jsem“ a „Nesplnil/a“
+          Klikni na kroužek u dnešního data a označ, co jsi dnes splnil/a.
         </p>
       </header>
 
@@ -283,11 +275,10 @@ export default function HabitTracker({ session, userHabits, onToast }) {
         <>
           <div className="habit-tracker-card">
             <div className="habit-tracker-progress">
-              <span className="habit-progress-label">Dnes</span>
+              <span className="habit-progress-text">Dnes <strong>{completedToday}</strong> ze <strong>{totalHabits}</strong></span>
               <div className="habit-progress-bar-wrap">
                 <div className="habit-progress-bar" style={{ width: `${totalHabits ? Math.round((completedToday / totalHabits) * 100) : 0}%` }} />
               </div>
-              <span className="habit-progress-value">{completedToday} / {totalHabits}</span>
             </div>
           <div className="habit-wrapper">
             <div className="habit-header-row">
@@ -417,37 +408,31 @@ export default function HabitTracker({ session, userHabits, onToast }) {
         }
         .habit-tracker-progress {
           display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 14px 24px;
-          background: rgba(0, 0, 0, 0.15);
+          flex-direction: column;
+          gap: 8px;
+          padding: 16px 24px;
+          background: rgba(0, 0, 0, 0.12);
           border-bottom: 1px solid rgba(248, 250, 252, 0.06);
         }
-        .habit-progress-label {
-          font-size: 0.8125rem;
+        .habit-progress-text {
+          font-size: 0.9375rem;
+          color: #cbd5e1;
+        }
+        .habit-progress-text strong {
+          color: #f8fafc;
           font-weight: 600;
-          color: #94a3b8;
-          min-width: 36px;
         }
         .habit-progress-bar-wrap {
-          flex: 1;
-          height: 8px;
+          height: 10px;
           background: rgba(255, 255, 255, 0.08);
-          border-radius: 4px;
+          border-radius: 5px;
           overflow: hidden;
         }
         .habit-progress-bar {
           height: 100%;
-          background: linear-gradient(90deg, #34d399, #22c55e);
-          border-radius: 4px;
-          transition: width 0.35s ease;
-        }
-        .habit-progress-value {
-          font-size: 0.875rem;
-          font-weight: 700;
-          color: #e2e8f0;
-          min-width: 48px;
-          text-align: right;
+          background: linear-gradient(90deg, #34d399, #10b981);
+          border-radius: 5px;
+          transition: width 0.4s ease;
         }
         .habit-wrapper {
           overflow-x: auto;
@@ -467,16 +452,16 @@ export default function HabitTracker({ session, userHabits, onToast }) {
         }
         .habit-header-dates {
           display: flex;
-          gap: 12px;
+          gap: 10px;
           flex-shrink: 0;
         }
         .habit-header-cell {
-          width: 72px;
-          min-width: 72px;
-          padding: 12px 8px;
-          background: rgba(255, 255, 255, 0.06);
+          width: 56px;
+          min-width: 56px;
+          padding: 10px 4px;
+          background: rgba(255, 255, 255, 0.05);
           border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 12px;
+          border-radius: 14px;
           font-size: 0.75rem;
           font-weight: 600;
           color: #94a3b8;
@@ -484,26 +469,26 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 4px;
+          gap: 2px;
         }
         .habit-header-cell.today {
-          background: rgba(99, 102, 241, 0.2);
-          border-color: rgba(99, 102, 241, 0.35);
-          color: #c7d2fe;
+          background: rgba(34, 197, 94, 0.15);
+          border-color: rgba(34, 197, 94, 0.35);
+          color: #86efac;
         }
         .habit-header-date-num {
-          font-size: 0.875rem;
+          font-size: 0.8125rem;
           font-weight: 600;
           letter-spacing: 0;
         }
         .habit-header-cell.future {
-          opacity: 0.75;
+          opacity: 0.6;
         }
         .habit-today-badge {
-          font-size: 0.6875rem;
-          font-weight: 600;
-          letter-spacing: 0.03em;
-          color: #a5b4fc;
+          font-size: 0.625rem;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          color: #4ade80;
         }
         .habit-section {
           margin-top: 20px;
@@ -536,8 +521,13 @@ export default function HabitTracker({ session, userHabits, onToast }) {
         .habit-row {
           display: flex;
           align-items: center;
-          gap: 12px;
-          margin-bottom: 8px;
+          gap: 16px;
+          margin-bottom: 4px;
+          padding: 10px 0;
+          border-bottom: 1px solid rgba(248, 250, 252, 0.04);
+        }
+        .habit-row:last-child {
+          border-bottom: none;
         }
         .habit-label {
           width: 260px;
@@ -546,8 +536,7 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           display: flex;
           align-items: center;
           gap: 14px;
-          padding: 14px 0;
-          border-bottom: 1px solid rgba(248, 250, 252, 0.06);
+          padding: 0;
         }
         .habit-row-positive .habit-label {
           border-left: none;
@@ -569,95 +558,74 @@ export default function HabitTracker({ session, userHabits, onToast }) {
         }
         .habit-cells {
           display: flex;
-          gap: 12px;
+          gap: 10px;
           flex-shrink: 0;
+          align-items: center;
         }
         .habit-cell {
-          width: 72px;
-          min-width: 72px;
-          min-height: 80px;
-          padding: 10px 6px;
+          width: 56px;
+          min-width: 56px;
+          height: 56px;
+          padding: 0;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(255, 255, 255, 0.04);
-          border: 2px solid rgba(255, 255, 255, 0.1);
-          border-radius: 12px;
+          background: transparent;
+          border: none;
+          border-radius: 50%;
           color: #94a3b8;
           cursor: pointer;
-          transition: border-color 0.2s, background 0.2s, color 0.2s, transform 0.15s;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+          transition: transform 0.2s, background 0.2s, color 0.2s;
         }
-        .habit-cell-inner {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          width: 100%;
-        }
-        .habit-cell-empty {
+        .habit-cell-ring {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          border: 2px solid rgba(255, 255, 255, 0.25);
           display: block;
-          font-size: 1.5rem;
-          font-weight: 300;
-          line-height: 1;
-          color: rgba(255, 255, 255, 0.35);
         }
         .habit-cell-check {
-          width: 28px;
-          height: 28px;
-          color: inherit;
+          width: 24px;
+          height: 24px;
+          color: #fff;
           flex-shrink: 0;
         }
-        .habit-cell-label {
-          font-size: 0.6875rem;
-          font-weight: 600;
-          letter-spacing: 0.02em;
-          text-transform: uppercase;
-          color: inherit;
-          line-height: 1.2;
-        }
         .habit-cell:hover:not(:disabled):not(.future) {
-          background: rgba(255, 255, 255, 0.1);
-          border-color: rgba(255, 255, 255, 0.25);
-          transform: scale(1.02);
+          background: rgba(255, 255, 255, 0.06);
+          transform: scale(1.08);
         }
-        .habit-cell.today-cell:not(.completed) {
-          border-color: rgba(99, 102, 241, 0.4);
-          background: rgba(99, 102, 241, 0.08);
+        .habit-cell.today-cell:not(.completed) .habit-cell-ring {
+          border-color: rgba(148, 163, 184, 0.5);
+          border-width: 2.5px;
         }
         .habit-cell.today-cell:hover:not(:disabled):not(.completed) {
-          border-color: rgba(99, 102, 241, 0.6);
-          background: rgba(99, 102, 241, 0.15);
+          background: rgba(255, 255, 255, 0.08);
+        }
+        .habit-cell.today-cell:hover:not(:disabled):not(.completed) .habit-cell-ring {
+          border-color: rgba(148, 163, 184, 0.8);
         }
         .habit-cell.future {
           cursor: default;
-          opacity: 0.5;
+          opacity: 0.35;
         }
-        .habit-cell.future .habit-cell-empty {
-          color: rgba(255, 255, 255, 0.15);
-        }
-        .habit-cell.future .habit-cell-label {
-          color: rgba(255, 255, 255, 0.2);
+        .habit-cell.future .habit-cell-ring {
+          border-color: rgba(255, 255, 255, 0.12);
         }
         .habit-cell.completed {
-          background: rgba(34, 197, 94, 0.18);
-          border-color: rgba(34, 197, 94, 0.45);
-          color: #4ade80;
+          background: #22c55e;
+          color: #fff;
         }
-        .habit-cell.completed .habit-cell-label {
-          color: #86efac;
+        .habit-cell.completed .habit-cell-check {
+          color: #fff;
         }
         .habit-cell.negative.completed {
-          background: rgba(34, 197, 94, 0.18);
-          border-color: rgba(34, 197, 94, 0.45);
-          color: #4ade80;
+          background: #22c55e;
         }
-        .habit-cell.negative:not(.completed) {
-          border-color: rgba(255, 255, 255, 0.1);
+        .habit-cell.negative:not(.completed) .habit-cell-ring {
+          border-color: rgba(255, 255, 255, 0.2);
         }
         .habit-cell.busy {
-          opacity: 0.6;
+          opacity: 0.7;
           cursor: wait;
         }
         .habit-recommendation {

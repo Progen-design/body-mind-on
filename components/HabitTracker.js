@@ -227,20 +227,26 @@ export default function HabitTracker({ session, userHabits, onToast }) {
             <button
               key={`${h.id}-${dateStr}`}
               type="button"
-              className={`habit-cell ${isNegative ? 'negative' : ''} ${completed ? 'completed' : ''} ${busy ? 'busy' : ''} ${!isToday ? 'future' : ''}`}
+              className={`habit-cell ${isNegative ? 'negative' : ''} ${completed ? 'completed' : ''} ${busy ? 'busy' : ''} ${!isToday ? 'future' : ''} ${isToday ? 'today-cell' : ''}`}
               onClick={() => handleToggle(h.id, dateStr)}
               disabled={!isToday || busy}
-              title={`${formatShortDate(dateStr)}${isToday ? ' (Dnes)' : ''} – ${isToday ? (isNegative ? 'Vyhnul/a jsem se' : 'Splněno') : 'Jen dnes lze označit'}`}
+              title={isToday ? (completed ? 'Splnil/a jsem – klikni pro nesplněno' : 'Nesplnil/a – klikni pro splněno') : `${formatShortDate(dateStr)} – jen dnes lze měnit`}
               aria-pressed={isToday ? completed : undefined}
-              aria-label={`${h.label}, ${formatShortDate(dateStr)}${isToday ? ', dnes' : ''}${completed ? ', splněno' : ''}`}
+              aria-label={`${h.label}, ${formatShortDate(dateStr)}${isToday ? ', dnes' : ''}${completed ? ', splněno' : ', nesplněno'}`}
             >
               <span className="habit-cell-inner">
                 {completed ? (
-                  <svg className="habit-cell-check" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M3 8l3 3 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                  <>
+                    <svg className="habit-cell-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path d="M5 12l5 5 9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span className="habit-cell-label">Splněno</span>
+                  </>
                 ) : (
-                  <span className="habit-cell-dot" aria-hidden="true" />
+                  <>
+                    <span className="habit-cell-empty" aria-hidden="true">−</span>
+                    <span className="habit-cell-label">Nesplněno</span>
+                  </>
                 )}
               </span>
             </button>
@@ -255,7 +261,7 @@ export default function HabitTracker({ session, userHabits, onToast }) {
       <header className="habit-tracker-head">
         <h2 className="habit-tracker-title">Denní návyky</h2>
         <p className="habit-tracker-subtitle">
-          Klikni na dnešní sloupec a označ splnění
+          Klikni na buňku u dne – přepneš mezi „Splnil/a jsem“ a „Nesplnil/a“
         </p>
       </header>
 
@@ -323,18 +329,18 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           margin-bottom: 24px;
         }
         .habit-tracker-title {
-          margin: 0 0 6px;
-          font-size: 1.25rem;
+          margin: 0 0 8px;
+          font-size: 1.5rem;
           font-weight: 600;
           letter-spacing: -0.02em;
-          color: #f1f5f9;
+          color: #f8fafc;
         }
         .habit-tracker-subtitle {
           margin: 0;
-          font-size: 0.8125rem;
+          font-size: 0.9375rem;
           font-weight: 400;
-          color: #64748b;
-          letter-spacing: 0.01em;
+          color: #94a3b8;
+          line-height: 1.4;
         }
         .habit-loading {
           display: flex;
@@ -397,9 +403,9 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           overflow-x: auto;
           -webkit-overflow-scrolling: touch;
           border-radius: 16px;
-          background: rgba(248, 250, 252, 0.02);
-          border: 1px solid rgba(248, 250, 252, 0.06);
-          padding: 20px 20px 24px;
+          background: rgba(15, 23, 42, 0.4);
+          border: 1px solid rgba(248, 250, 252, 0.1);
+          padding: 24px 24px 28px;
         }
         .habit-header-row {
           display: flex;
@@ -408,26 +414,25 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           margin-bottom: 16px;
         }
         .habit-header-spacer {
-          width: 200px;
-          min-width: 200px;
+          width: 260px;
+          min-width: 260px;
           flex-shrink: 0;
         }
         .habit-header-dates {
           display: flex;
-          gap: 10px;
+          gap: 12px;
           flex-shrink: 0;
         }
         .habit-header-cell {
-          width: 44px;
-          min-width: 44px;
-          padding: 10px 4px;
-          background: transparent;
-          border-radius: 10px;
-          font-size: 0.6875rem;
-          font-weight: 500;
-          letter-spacing: 0.03em;
-          text-transform: uppercase;
-          color: #64748b;
+          width: 72px;
+          min-width: 72px;
+          padding: 12px 8px;
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 12px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #94a3b8;
           text-align: center;
           display: flex;
           flex-direction: column;
@@ -435,23 +440,23 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           gap: 4px;
         }
         .habit-header-cell.today {
-          background: rgba(99, 102, 241, 0.12);
-          color: #a5b4fc;
+          background: rgba(99, 102, 241, 0.2);
+          border-color: rgba(99, 102, 241, 0.35);
+          color: #c7d2fe;
         }
         .habit-header-date-num {
-          font-size: 0.75rem;
+          font-size: 0.875rem;
           font-weight: 600;
           letter-spacing: 0;
-          text-transform: none;
         }
         .habit-header-cell.future {
-          opacity: 0.6;
+          opacity: 0.75;
         }
         .habit-today-badge {
-          font-size: 0.625rem;
-          font-weight: 500;
-          letter-spacing: 0.04em;
-          color: #818cf8;
+          font-size: 0.6875rem;
+          font-weight: 600;
+          letter-spacing: 0.03em;
+          color: #a5b4fc;
         }
         .habit-section {
           margin-top: 20px;
@@ -460,36 +465,36 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           margin-top: 0;
         }
         .habit-section-label {
-          font-size: 0.6875rem;
+          font-size: 0.8125rem;
           font-weight: 600;
-          letter-spacing: 0.08em;
+          letter-spacing: 0.04em;
           text-transform: uppercase;
-          color: #64748b;
-          margin-bottom: 10px;
-          padding-bottom: 6px;
-          border-bottom: 1px solid rgba(248, 250, 252, 0.06);
+          color: #94a3b8;
+          margin-bottom: 12px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid rgba(248, 250, 252, 0.08);
         }
         .habit-section-label.positive {
-          color: #64748b;
+          color: #86efac;
         }
         .habit-section-label.negative {
-          color: #64748b;
+          color: #fca5a5;
         }
         .habit-row {
           display: flex;
           align-items: center;
-          gap: 10px;
-          margin-bottom: 2px;
+          gap: 12px;
+          margin-bottom: 8px;
         }
         .habit-label {
-          width: 200px;
-          min-width: 200px;
+          width: 260px;
+          min-width: 260px;
           flex-shrink: 0;
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 12px 0;
-          border-bottom: 1px solid rgba(248, 250, 252, 0.04);
+          gap: 14px;
+          padding: 14px 0;
+          border-bottom: 1px solid rgba(248, 250, 252, 0.06);
         }
         .habit-row-positive .habit-label {
           border-left: none;
@@ -498,81 +503,107 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           border-left: none;
         }
         .habit-emoji {
-          font-size: 1rem;
+          font-size: 1.25rem;
           flex-shrink: 0;
           line-height: 1;
-          opacity: 0.9;
         }
         .habit-label-name {
-          font-size: 0.8125rem;
-          font-weight: 500;
+          font-size: 0.9375rem;
+          font-weight: 600;
           letter-spacing: 0.01em;
-          color: #e2e8f0;
-          line-height: 1.4;
+          color: #f1f5f9;
+          line-height: 1.35;
         }
         .habit-cells {
           display: flex;
-          gap: 10px;
+          gap: 12px;
           flex-shrink: 0;
         }
         .habit-cell {
-          width: 44px;
-          min-width: 44px;
-          height: 44px;
+          width: 72px;
+          min-width: 72px;
+          min-height: 80px;
+          padding: 10px 6px;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: transparent;
-          border: 1px solid rgba(248, 250, 252, 0.08);
-          border-radius: 10px;
-          color: #475569;
+          background: rgba(255, 255, 255, 0.05);
+          border: 2px solid rgba(255, 255, 255, 0.12);
+          border-radius: 12px;
+          color: #94a3b8;
           cursor: pointer;
-          transition: border-color 0.15s, background 0.15s, color 0.15s;
+          transition: border-color 0.2s, background 0.2s, color 0.2s, transform 0.15s;
         }
         .habit-cell-inner {
           display: flex;
+          flex-direction: column;
           align-items: center;
           justify-content: center;
+          gap: 6px;
           width: 100%;
-          height: 100%;
         }
-        .habit-cell-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: rgba(248, 250, 252, 0.2);
+        .habit-cell-empty {
+          display: block;
+          font-size: 1.5rem;
+          font-weight: 300;
+          line-height: 1;
+          color: rgba(255, 255, 255, 0.35);
         }
         .habit-cell-check {
-          width: 14px;
-          height: 14px;
+          width: 28px;
+          height: 28px;
           color: inherit;
+          flex-shrink: 0;
+        }
+        .habit-cell-label {
+          font-size: 0.6875rem;
+          font-weight: 600;
+          letter-spacing: 0.02em;
+          text-transform: uppercase;
+          color: inherit;
+          line-height: 1.2;
         }
         .habit-cell:hover:not(:disabled):not(.future) {
-          background: rgba(248, 250, 252, 0.04);
-          border-color: rgba(248, 250, 252, 0.14);
+          background: rgba(255, 255, 255, 0.1);
+          border-color: rgba(255, 255, 255, 0.25);
+          transform: scale(1.02);
+        }
+        .habit-cell.today-cell:not(.completed) {
+          border-color: rgba(99, 102, 241, 0.4);
+          background: rgba(99, 102, 241, 0.08);
+        }
+        .habit-cell.today-cell:hover:not(:disabled):not(.completed) {
+          border-color: rgba(99, 102, 241, 0.6);
+          background: rgba(99, 102, 241, 0.15);
         }
         .habit-cell.future {
           cursor: default;
-          opacity: 0.4;
+          opacity: 0.5;
         }
-        .habit-cell.future .habit-cell-dot {
-          background: rgba(248, 250, 252, 0.08);
+        .habit-cell.future .habit-cell-empty {
+          color: rgba(255, 255, 255, 0.15);
+        }
+        .habit-cell.future .habit-cell-label {
+          color: rgba(255, 255, 255, 0.2);
         }
         .habit-cell.completed {
-          background: rgba(34, 197, 94, 0.08);
-          border-color: rgba(34, 197, 94, 0.2);
-          color: #22c55e;
+          background: rgba(34, 197, 94, 0.18);
+          border-color: rgba(34, 197, 94, 0.45);
+          color: #4ade80;
+        }
+        .habit-cell.completed .habit-cell-label {
+          color: #86efac;
         }
         .habit-cell.negative.completed {
-          background: rgba(34, 197, 94, 0.08);
-          border-color: rgba(34, 197, 94, 0.2);
-          color: #22c55e;
+          background: rgba(34, 197, 94, 0.18);
+          border-color: rgba(34, 197, 94, 0.45);
+          color: #4ade80;
         }
         .habit-cell.negative:not(.completed) {
-          border-color: rgba(248, 250, 252, 0.08);
+          border-color: rgba(255, 255, 255, 0.1);
         }
         .habit-cell.busy {
-          opacity: 0.5;
+          opacity: 0.6;
           cursor: wait;
         }
         .habit-recommendation {

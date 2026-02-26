@@ -109,7 +109,7 @@ export default function HabitTracker({ session, userHabits, onToast }) {
   }, [loadLogs]);
 
   const getCompleted = (habitId, dateStr) => {
-    const log = allLogs.find((l) => l.habit_id === habitId && l.log_date === dateStr);
+    const log = (allLogs || []).find((l) => l.habit_id === habitId && l.log_date === dateStr);
     return log?.completed ?? false;
   };
 
@@ -158,10 +158,10 @@ export default function HabitTracker({ session, userHabits, onToast }) {
     }
   };
 
-  const completedToday = allLogs.filter((l) => l.log_date === todayStr && l.completed).length;
-  const totalHabits = positiveHabits.length + negativeHabits.length;
+  const completedToday = (allLogs || []).filter((l) => l.log_date === todayStr && l.completed).length;
+  const totalHabits = (positiveHabits || []).length + (negativeHabits || []).length;
   const weekCompletedByHabit = {};
-  weekLogs.filter((l) => l.completed).forEach((l) => {
+  (weekLogs || []).filter((l) => l.completed).forEach((l) => {
     weekCompletedByHabit[l.habit_id] = (weekCompletedByHabit[l.habit_id] || 0) + 1;
   });
   const avgWeekCompletion =

@@ -1103,10 +1103,10 @@ export default function Profil() {
             {/* GRAF VÁHY – odhad z tréninků (automaticky po každém zápisu) */}
             <section className="card chart-section">
               <h2 className="section-head">Vývoj váhy</h2>
-              {chartWeightData.length >= 1 ? (
+              {(chartWeightData || []).length >= 1 ? (
                 <>
                 <p className="chart-hint">Odhad váhy z tréninků – jeden bod = den s tréninkem. Vlevo nejstarší, vpravo nejnovější. Vše se přepočítá hned po zápisu tréninku.</p>
-                {chartWeightData.length >= 2 ? (
+                {(chartWeightData || []).length >= 2 ? (
                   <>
                     <div className="chart-wrapper">
                       <div className="chart-svg-wrap">
@@ -1118,17 +1118,19 @@ export default function Profil() {
                           </linearGradient>
                         </defs>
                         {(() => {
+                          const data = chartWeightData || [];
                           const pad = { t: 24, r: 28, b: 40, l: 48 };
                           const W = 560 - pad.l - pad.r;
                           const H = 200 - pad.t - pad.b;
-                          const minW = Math.min(...chartWeightData.map((x) => x.weight));
-                          const maxW = Math.max(...chartWeightData.map((x) => x.weight));
+                          const weights = data.map((x) => x.weight).filter((w) => typeof w === 'number');
+                          const minW = weights.length ? Math.min(...weights) : 0;
+                          const maxW = weights.length ? Math.max(...weights) : 1;
                           const rangeRaw = maxW - minW || 1;
                           const margin = Math.max(rangeRaw * 0.08, 0.2);
                           const range = rangeRaw + 2 * margin;
                           const minWPlot = minW - margin;
-                          const pts = chartWeightData.map((p, i) => {
-                            const x = pad.l + (chartWeightData.length > 1 ? (i / (chartWeightData.length - 1)) * W : 0);
+                          const pts = data.map((p, i) => {
+                            const x = pad.l + (data.length > 1 ? (i / (data.length - 1)) * W : 0);
                             const y = pad.t + H - ((p.weight - minWPlot) / range) * H;
                             return [x, y, p.weight, p.date];
                           });
@@ -1151,13 +1153,13 @@ export default function Profil() {
                       </div>
                       <div className="chart-labels">
                         <div className="chart-labels-inner" style={{ paddingLeft: '8.57%', paddingRight: '5%' }}>
-                        {chartWeightData.map((p, i) => (
+                        {(chartWeightData || []).map((p, i) => (
                           <div
                             key={`${p.date}-${i}`}
                             className="chart-label-item"
                             style={{
-                              left: chartWeightData.length > 1 ? `${(i / (chartWeightData.length - 1)) * 100}%` : '50%',
-                              transform: chartWeightData.length > 1 ? 'translateX(-50%)' : 'translateX(-50%)',
+                              left: (chartWeightData || []).length > 1 ? `${(i / ((chartWeightData || []).length - 1)) * 100}%` : '50%',
+                              transform: 'translateX(-50%)',
                             }}
                           >
                             <span className="chart-value">{p.weight} kg</span>
@@ -1170,8 +1172,8 @@ export default function Profil() {
                   </>
                 ) : (
                   <div className="chart-single">
-                    <span className="chart-value">{chartWeightData[0].weight} kg</span>
-                    <span className="chart-date">{formatShortDate(chartWeightData[0].date)}</span>
+                    <span className="chart-value">{(chartWeightData || [])[0]?.weight ?? '—'} kg</span>
+                    <span className="chart-date">{formatShortDate((chartWeightData || [])[0]?.date)}</span>
                     <p className="chart-hint">Přidej další tréninky a uvidíš trend.</p>
                   </div>
                 )}

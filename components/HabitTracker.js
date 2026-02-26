@@ -14,6 +14,7 @@ function formatShortDate(d) {
 }
 
 const DAYS_FORWARD = 6;
+const DAYS_BACK = 14;
 
 export default function HabitTracker({ session, userHabits, onToast }) {
   const [positiveHabits, setPositiveHabits] = useState([]);
@@ -41,7 +42,7 @@ export default function HabitTracker({ session, userHabits, onToast }) {
     const result = [];
     const today = new Date();
     today.setHours(12, 0, 0, 0);
-    for (let i = 0; i <= DAYS_FORWARD; i++) {
+    for (let i = -DAYS_BACK; i <= DAYS_FORWARD; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       result.push(toDateStr(d));
@@ -222,12 +223,14 @@ export default function HabitTracker({ session, userHabits, onToast }) {
         {days.map((dateStr) => {
           const completed = getCompleted(h.id, dateStr);
           const isToday = dateStr === todayStr;
+          const isPast = dateStr < todayStr;
+          const isFuture = dateStr > todayStr;
           const busy = isToday && toggling === h.id;
           return (
             <button
               key={`${h.id}-${dateStr}`}
               type="button"
-              className={`habit-cell ${isNegative ? 'negative' : ''} ${completed ? 'completed' : ''} ${busy ? 'busy' : ''} ${!isToday ? 'future' : ''} ${isToday ? 'today-cell' : ''}`}
+              className={`habit-cell ${isNegative ? 'negative' : ''} ${completed ? 'completed' : ''} ${busy ? 'busy' : ''} ${isPast ? 'past' : ''} ${isFuture ? 'future' : ''} ${isToday ? 'today-cell' : ''}`}
               onClick={() => handleToggle(h.id, dateStr)}
               disabled={!isToday || busy}
               title={isToday ? (completed ? 'Splněno – klikni pro zrušení' : 'Klikni a označ splněno') : formatShortDate(dateStr)}
@@ -287,7 +290,7 @@ export default function HabitTracker({ session, userHabits, onToast }) {
                 {days.map((d) => (
                   <div
                     key={d}
-                    className={`habit-header-cell ${d === todayStr ? 'today' : 'future'}`}
+                    className={`habit-header-cell ${d === todayStr ? 'today' : d < todayStr ? 'past' : 'future'}`}
                   >
                     <span className="habit-header-date-num">{formatShortDate(d)}</span>
                     {d === todayStr && <span className="habit-today-badge">Dnes</span>}
@@ -311,7 +314,7 @@ export default function HabitTracker({ session, userHabits, onToast }) {
               <div className="habit-footer-spacer" />
               <div className="habit-footer-cols">
                 {days.map((d) => (
-                  <div key={d} className={`habit-footer-cell ${d === todayStr ? 'today' : ''}`}>
+                  <div key={d} className={`habit-footer-cell ${d === todayStr ? 'today' : d < todayStr ? 'past' : ''}`}>
                     {formatShortDate(d)}
                     {d === todayStr && <span className="habit-footer-badge">Dnes</span>}
                   </div>
@@ -493,6 +496,10 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           font-weight: 600;
           letter-spacing: 0;
         }
+        .habit-header-cell.past {
+          opacity: 0.7;
+          background: rgba(255, 255, 255, 0.02);
+        }
         .habit-header-cell.future {
           opacity: 0.6;
         }
@@ -666,6 +673,13 @@ export default function HabitTracker({ session, userHabits, onToast }) {
         }
         .habit-cell.today-cell:hover:not(:disabled):not(.completed) .habit-cell-ring {
           border-color: rgba(148, 163, 184, 0.9);
+        }
+        .habit-cell.past {
+          cursor: default;
+          opacity: 0.85;
+        }
+        .habit-cell.past:not(.completed) .habit-cell-ring {
+          border-color: rgba(255, 255, 255, 0.25);
         }
         .habit-cell.future {
           cursor: default;

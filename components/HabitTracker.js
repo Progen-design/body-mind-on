@@ -16,7 +16,7 @@ function formatShortDate(d) {
 const DAYS_FORWARD = 7;
 const DAYS_BACK = 0;
 
-export default function HabitTracker({ session, userHabits, onToast }) {
+export default function HabitTracker({ session, userHabits, onToast, onHabitSaved }) {
   const [positiveHabits, setPositiveHabits] = useState([]);
   const [negativeHabits, setNegativeHabits] = useState([]);
   const [allLogs, setAllLogs] = useState([]);
@@ -150,6 +150,7 @@ export default function HabitTracker({ session, userHabits, onToast }) {
             type: 'success',
           });
         }
+        if (onHabitSaved) onHabitSaved();
       } else if (onToast) {
         onToast({ message: json.error || 'Chyba při ukládání', type: 'error' });
       }

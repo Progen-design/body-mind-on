@@ -865,8 +865,8 @@ export default function Profil() {
                 <span className="hero-stat-label">V pohybu</span>
               </div>
               <div className="hero-stat">
-                <span className="hero-stat-value">{estimatedCurrentWeight != null ? `${estimatedCurrentWeight.toFixed(1)} kg` : '—'}</span>
-                <span className="hero-stat-label">Odhad z tréninků</span>
+                <span className="hero-stat-value">{(hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : estimatedCurrentWeight) != null ? `${(hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : estimatedCurrentWeight).toFixed(1)} kg` : '—'}</span>
+                <span className="hero-stat-label">{hasHabitData ? 'Odhad (tréninky + návyky)' : 'Odhad z tréninků'}</span>
               </div>
             </div>
           )}
@@ -1038,6 +1038,7 @@ export default function Profil() {
               session={session}
               userHabits={profile?.user_habits}
               onToast={(t) => setToast({ message: t.message, type: t.type })}
+              onHabitSaved={() => refetchProfile(session?.access_token)}
             />
 
             {/* TVŮJ PROGRES – nahoře, nejdůležitější */}
@@ -1198,8 +1199,8 @@ export default function Profil() {
                 <div className="kpi-divider" />
                 <div className="kpi-item">
                   <span className="kpi-icon">⚖️</span>
-                  <span className="kpi-num">{estimatedCurrentWeightRounded != null ? `${estimatedCurrentWeightRounded} kg` : '—'}</span>
-                  <span className="kpi-label">odhad z tréninků</span>
+                  <span className="kpi-num">{(hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : estimatedCurrentWeightRounded) != null ? `${(hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : estimatedCurrentWeightRounded)} kg` : '—'}</span>
+                  <span className="kpi-label">{hasHabitData ? 'odhad (tréninky + návyky)' : 'odhad z tréninků'}</span>
                 </div>
               </div>
             </section>

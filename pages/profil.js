@@ -146,6 +146,7 @@ export default function Profil() {
           plans: Array.isArray(data.plans) ? [...data.plans] : [],
           weight_history: Array.isArray(data.weight_history) ? [...data.weight_history] : [],
           stats: data.stats ? { ...data.stats } : {},
+          habit_summary_7d: data.habit_summary_7d ? { ...data.habit_summary_7d } : null,
           program: data.program || 'START',
           membershipStatus: data.membershipStatus || 'active',
           membershipSince: data.membershipSince || null,
@@ -595,10 +596,11 @@ export default function Profil() {
     const latestWorkout = w.length > 0 ? w[0] : null;
 
     const now = new Date();
-    const dayOfWeek = now.getDay();
-    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const regDate = profile?.user?.created_at ? new Date(profile.user.created_at) : null;
+    const regDow = regDate != null ? regDate.getDay() : 1;
+    const daysSinceWeekStart = (now.getDay() - regDow + 7) % 7;
     const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - daysToMonday);
+    weekStart.setDate(now.getDate() - daysSinceWeekStart);
     const weekStartStr = weekStart.toISOString().split('T')[0];
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
@@ -718,6 +720,7 @@ export default function Profil() {
     JSON.stringify(profile?.body_metrics?.slice(0, 5)?.map(m => ({ id: m.id, date: m.created_at, weight: m.weight_kg })) || []),
     profile?.user?.start_weight_kg,
     profile?.user?.goal_weight_kg,
+    profile?.user?.created_at,
     profile?.user?.height_cm,
     profile?.program,
   ]);
@@ -997,6 +1000,22 @@ export default function Profil() {
               </div>
             </section>
 
+            {/* Souhrn návyků tento týden – propojení s profilem */}
+            {(program === 'ON_CLUB' || program === 'VIP') && profile?.user_habits?.length > 0 && (
+              <div className="habit-summary-card">
+                <h3 className="habit-summary-title">Návyky tento týden</h3>
+                <div className="habit-summary-row">
+                  <span className="habit-summary-item habit-summary-positive">
+                    <strong>{profile?.habit_summary_7d?.positiveDone ?? 0}</strong> zdravých návyků splněno
+                  </span>
+                  <span className="habit-summary-item habit-summary-negative">
+                    <strong>{profile?.habit_summary_7d?.negativeDone ?? 0}</strong> zlozvyků (uděláno) – čím méně, tím lépe
+                  </span>
+                </div>
+                <p className="habit-summary-note">Odhad váhy v profilu vychází z tréninků. Na výsledky má vliv i strava a to, jak plníš zdravé návyky a vyhýbáš se zlozvykům.</p>
+              </div>
+            )}
+
             {/* Denní návyky */}
             <HabitTracker
               session={session}
@@ -1007,7 +1026,7 @@ export default function Profil() {
             {/* TVŮJ PROGRES – nahoře, nejdůležitější */}
             <section className="card card-accent center progress-section">
               <h2 className="section-head">Tvůj progres</h2>
-              <p className="progress-lead">Všechny hodnoty vycházejí jen z tréninků a z tvého nastavení (výchozí váha, cíl, výška). Ruční váha do výpočtu nezasahuje.</p>
+              <p className="progress-lead">Všechny hodnoty vycházejí jen z tréninků a z tvého nastavení (výchozí váha, cíl, výška). Ruční váha do výpočtu nezasahuje. Na výsledky má vliv i strava a denní návyky (zdravé i zlozvyky).</p>
 
               <p className="progress-dates">Období: <strong>{weekStartFormatted}</strong> – <strong>{weekEndFormatted}</strong></p>
               <div className="progress-activity">

@@ -88,6 +88,21 @@ main { padding: 40px 0; }
 .perks { color: var(--muted); margin: 12px 0 0 16px; }
 .card .submit { margin-top: auto; width: 100%; }
 
+/* ---- Habit summary (profil) ---- */
+.habit-summary-card {
+  background: var(--panel);
+  border-radius: 16px;
+  padding: 20px 24px;
+  border: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+.habit-summary-title { font-size: 1.1rem; margin: 0 0 12px 0; color: var(--text); }
+.habit-summary-row { display: flex; flex-wrap: wrap; gap: 16px 24px; margin-bottom: 10px; }
+.habit-summary-item { font-size: 14px; color: var(--muted); }
+.habit-summary-positive { color: #86efac; }
+.habit-summary-negative { color: #fca5a5; }
+.habit-summary-note { font-size: 13px; color: var(--muted); margin: 0; }
+
 /* ---- Form ---- */
 .form { display: grid; gap: 14px; }
 .label { font-size: 14px; color: #cfcfcf; }

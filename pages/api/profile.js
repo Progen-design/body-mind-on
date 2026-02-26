@@ -1,5 +1,6 @@
 // /pages/api/profile.js - Vrací data přihlášeného uživatele
 import { supabaseServer } from '../../lib/supabaseServer';
+import { POSITIVE_HABITS, NEGATIVE_HABITS } from '../../lib/habits';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -17,7 +18,18 @@ export default async function handler(req, res) {
     const userId = user.id;
     const email = user.email?.toLowerCase();
 
-    const [metricsRes, plansRes, workoutsRes, userHabitsRes, membershipRes] = await Promise.allSettled([
+    const now = new Date();
+    const regDate = user.created_at ? new Date(user.created_at) : null;
+    const regDow = regDate != null ? regDate.getDay() : 1;
+    const daysSinceWeekStart = (now.getDay() - regDow + 7) % 7;
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - daysSinceWeekStart);
+    const weekStartStr = weekStart.toISOString().split('T')[0];
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    const weekEndStr = weekEnd.toISOString().split('T')[0];
+
+    const [metricsRes, plansRes, workoutsRes, userHabitsRes, membershipRes, habitLogsRes] = await Promise.allSettled([
       supabaseServer
         .from('body_metrics')
         .select('*')
@@ -48,6 +60,12 @@ export default async function handler(req, res) {
         .eq('user_id', userId)
         .limit(1)
         .maybeSingle(),
+      supabaseServer
+        .from('habit_logs')
+        .select('log_date, habit_id, completed')
+        .eq('user_id', userId)
+        .gte('log_date', weekStartStr)
+        .lte('log_date', weekEndStr),
     ]);
 
     const bodyMetrics = (metricsRes.status === 'fulfilled' && metricsRes.value?.data) ? metricsRes.value.data : [];
@@ -79,11 +97,24 @@ export default async function handler(req, res) {
       .map(([date, weight]) => ({ date, weight }))
       .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
-    const now = new Date();
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
-    const weekStartStr = weekStart.toISOString().split('T')[0];
     const workoutsThisWeek = workouts.filter(w => (w.workout_date || '') >= weekStartStr).length;
+
+    const positiveIds = new Set(POSITIVE_HABITS.map((h) => h.id));
+    const negativeIds = new Set(NEGATIVE_HABITS.map((h) => h.id));
+    const habitLogs = (habitLogsRes.status === 'fulfilled' && habitLogsRes.value?.data) ? habitLogsRes.value.data : [];
+    let positiveDone = 0;
+    let negativeDone = 0;
+    const byHabit = {};
+    habitLogs.forEach((log) => {
+      if (log.completed !== true) return;
+      if (positiveIds.has(log.habit_id)) {
+        positiveDone += 1;
+        byHabit[log.habit_id] = (byHabit[log.habit_id] || 0) + 1;
+      } else if (negativeIds.has(log.habit_id)) {
+        negativeDone += 1;
+        byHabit[log.habit_id] = (byHabit[log.habit_id] || 0) + 1;
+      }
+    });
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
@@ -109,7 +140,12 @@ export default async function handler(req, res) {
       stats: {
         workouts_this_week: workoutsThisWeek,
         total_workouts: workouts.length
-      }
+      },
+      habit_summary_7d: {
+        positiveDone,
+        negativeDone,
+        byHabit,
+      },
     });
   } catch (err) {
     console.error('[profile] ERROR:', err);

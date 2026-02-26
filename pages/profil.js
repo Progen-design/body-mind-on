@@ -253,7 +253,7 @@ export default function Profil() {
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   }, [session?.access_token]);
 
-  // Zobrazit vstupní formulář (habit wizard) jen pro ON Club a VIP; START má WelcomeTour
+  // Habit wizard jen pro ON Club a VIP; průvodce (tour) jen pro ON Club a VIP – START to mít nesmí (přidaná hodnota)
   useEffect(() => {
     if (!loading && session && !error && profile) {
       const program = profile.program || 'START';
@@ -263,7 +263,7 @@ export default function Profil() {
         const hasNoHabits = !profile.user_habits || profile.user_habits.length === 0;
         if ((program === 'ON_CLUB' || program === 'VIP') && !habitWizardSeen && hasNoHabits) {
           setShowHabitEntryWizard(true);
-        } else if (!welcomeTourSeen) {
+        } else if ((program === 'ON_CLUB' || program === 'VIP') && !welcomeTourSeen) {
           setShowWelcomeTour(true);
         }
       }, 1000);

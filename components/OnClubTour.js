@@ -73,11 +73,6 @@ export default function OnClubTour({ onClose }) {
             ))}
           </div>
           <div className="onclub-tour-actions">
-            {!isLast && (
-              <button className="onclub-tour-skip" onClick={handleSkip}>
-                Přeskočit
-              </button>
-            )}
             <button className="onclub-tour-next" onClick={handleNext}>
               {isLast ? 'Začít' : 'Další'}
             </button>
@@ -184,7 +179,6 @@ export default function OnClubTour({ onClose }) {
           justify-content: flex-end;
         }
 
-        .onclub-tour-skip,
         .onclub-tour-next {
           padding: 10px 20px;
           border-radius: 10px;
@@ -192,20 +186,6 @@ export default function OnClubTour({ onClose }) {
           cursor: pointer;
           border: none;
           transition: all 0.2s;
-        }
-
-        .onclub-tour-skip {
-          background: transparent;
-          color: #94a3b8;
-          border: 1px solid #475569;
-        }
-
-        .onclub-tour-skip:hover {
-          background: rgba(255, 255, 255, 0.05);
-          color: #fff;
-        }
-
-        .onclub-tour-next {
           background: linear-gradient(135deg, #7c3aed, #9b5cff);
           color: #fff;
         }

@@ -1,9 +1,10 @@
 // components/HabitSelection.js – výběr návyků (checkboxy) pro registraci
 import { POSITIVE_HABITS, NEGATIVE_HABITS, getSuggestedHabits } from '../lib/habits';
 
-export default function HabitSelection({ selectedIds, onChange }) {
+export default function HabitSelection({ selectedIds = [], onChange }) {
+  const ids = Array.isArray(selectedIds) ? selectedIds : [];
   const toggle = (id) => {
-    const next = selectedIds.includes(id)
+    const next = ids.includes(id)
       ? selectedIds.filter((x) => x !== id)
       : [...selectedIds, id];
     onChange(next);
@@ -21,7 +22,7 @@ export default function HabitSelection({ selectedIds, onChange }) {
             <label key={h.id} className="habit-selection-item">
               <input
                 type="checkbox"
-                checked={selectedIds.includes(h.id)}
+                checked={ids.includes(h.id)}
                 onChange={() => toggle(h.id)}
               />
               <span className="habit-selection-emoji">{h.emoji}</span>
@@ -37,7 +38,7 @@ export default function HabitSelection({ selectedIds, onChange }) {
             <label key={h.id} className="habit-selection-item">
               <input
                 type="checkbox"
-                checked={selectedIds.includes(h.id)}
+                checked={ids.includes(h.id)}
                 onChange={() => toggle(h.id)}
               />
               <span className="habit-selection-emoji">{h.emoji}</span>

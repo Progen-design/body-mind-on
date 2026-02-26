@@ -5,7 +5,7 @@ import Footer from "../components/Footer";
 import HabitSelection from "../components/HabitSelection";
 import { getSuggestedHabits } from "../lib/habits";
 
-const MAX_STEP = 5;
+const MAX_STEP = 4;
 
 export default function OnClubPage() {
   const [step, setStep] = useState(1);
@@ -49,7 +49,7 @@ export default function OnClubPage() {
   const canProceedStep1 = () => formData.name?.trim() && formData.email?.trim() && formData.password?.length >= 6 && formData.password === formData.passwordConfirm;
   const canProceedStep2 = () => formData.gender && formData.age && formData.height && formData.weight;
   const canProceedStep3 = () => formData.activity && formData.stress && formData.worktype && formData.goal && formData.frequency;
-  const canProceedStep5 = () => selectedHabits.length > 0;
+  const canProceedStep4 = () => selectedHabits.length > 0;
 
   const suggestedHabits = useMemo(() => getSuggestedHabits({
     goal: formData.goal,
@@ -59,8 +59,12 @@ export default function OnClubPage() {
     notes: formData.notes,
   }), [formData.goal, formData.stress, formData.activity, formData.dietary_restrictions, formData.notes]);
 
+  const defaultHabits = useMemo(() => ['training', 'healthy_diet', 'quality_sleep'], []);
+
   const handleNext = () => {
-    if (step === 4 && selectedHabits.length === 0 && suggestedHabits.length > 0) setSelectedHabits(suggestedHabits);
+    if (step === 3 && selectedHabits.length === 0) {
+      setSelectedHabits(suggestedHabits.length > 0 ? [...suggestedHabits] : defaultHabits);
+    }
     if (step < MAX_STEP) setStep((s) => s + 1);
   };
   const handleBack = () => { if (step > 1) setStep((s) => s - 1); };
@@ -127,11 +131,11 @@ export default function OnClubPage() {
 
         <div className="progress-bar-wrap max-w-3xl mx-auto mb-8">
           <div className="progress-dots">
-            {[1, 2, 3, 4, 5].map((s) => (
+            {[1, 2, 3, 4].map((s) => (
               <span key={s} className={s === step ? "active" : s < step ? "done" : ""} aria-hidden>{s}</span>
             ))}
           </div>
-          <p className="progress-label">Krok {step} z {MAX_STEP}</p>
+          <p className="progress-label">Krok {step} z {MAX_STEP} {step === 4 ? '· Vyber denní návyky' : ''}</p>
         </div>
 
         <form
@@ -244,40 +248,40 @@ export default function OnClubPage() {
           )}
 
           {step === 4 && (
-            <details open className="group border border-sky-500/50 rounded-lg bg-[#0f0f0f] overflow-hidden">
-              <summary className="flex items-center justify-between gap-2 cursor-pointer list-none p-3.5 text-white font-bold text-base hover:bg-[#1a1a2e] select-none">
-                <span>Strava a omezení (volitelné)</span>
-                <span className="text-sm transition group-open:rotate-180" aria-hidden>▼</span>
-              </summary>
-              <p className="text-xs text-gray-500 px-3.5 pb-2">Abychom do jídelníčku nezařadili to, co nejíš.</p>
-              <div className="px-3 pb-3 pt-0 space-y-4 border-t border-gray-700/50">
-                <div>
-                  <label className="label block mb-2 text-gray-500 text-sm">Typ stravy (volitelné)</label>
-                  <select name="diet_type" className="select w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" value={formData.diet_type} onChange={handleChange}>
-                    <option value="">Žádná preference</option>
-                    <option value="vegetarian">Vegetarián</option>
-                    <option value="vegan">Vegan</option>
-                    <option value="gluten_free">Bez lepku</option>
-                    <option value="lactose_free">Bez laktózy</option>
-                    <option value="paleo">Paleo</option>
-                    <option value="low_carb">Nízkosacharidová</option>
-                    <option value="other">Jiné (popiš v poli Co nejí)</option>
-                  </select>
+            <>
+              <details className="group border border-sky-500/50 rounded-lg bg-[#0f0f0f] overflow-hidden mb-6">
+                <summary className="flex items-center justify-between gap-2 cursor-pointer list-none p-3.5 text-white font-bold text-base hover:bg-[#1a1a2e] select-none">
+                  <span>Strava a omezení (volitelné)</span>
+                  <span className="text-sm transition group-open:rotate-180" aria-hidden>▼</span>
+                </summary>
+                <p className="text-xs text-gray-500 px-3.5 pb-2">Abychom do jídelníčku nezařadili to, co nejíš.</p>
+                <div className="px-3 pb-3 pt-0 space-y-4 border-t border-gray-700/50">
+                  <div>
+                    <label className="label block mb-2 text-gray-500 text-sm">Typ stravy (volitelné)</label>
+                    <select name="diet_type" className="select w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" value={formData.diet_type} onChange={handleChange}>
+                      <option value="">Žádná preference</option>
+                      <option value="vegetarian">Vegetarián</option>
+                      <option value="vegan">Vegan</option>
+                      <option value="gluten_free">Bez lepku</option>
+                      <option value="lactose_free">Bez laktózy</option>
+                      <option value="paleo">Paleo</option>
+                      <option value="low_carb">Nízkosacharidová</option>
+                      <option value="other">Jiné (popiš v poli Co nejí)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label block mb-2 text-gray-500 text-sm">Co nejí – alergie, intolerance (volitelné)</label>
+                    <textarea name="dietary_restrictions" className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" rows="2" value={formData.dietary_restrictions} onChange={handleChange} placeholder="např. ořechy, mléko, lepek…" />
+                  </div>
                 </div>
-                <div>
-                  <label className="label block mb-2 text-gray-500 text-sm">Co nejí – alergie, intolerance (volitelné)</label>
-                  <textarea name="dietary_restrictions" className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" rows="2" value={formData.dietary_restrictions} onChange={handleChange} placeholder="např. ořechy, mléko, lepek…" />
-                </div>
+              </details>
+              <div className="habit-step">
+                <h3 className="habit-step-title">Vyber si denní návyky k sledování</h3>
+                <p className="habit-step-desc">Vyber alespoň jeden – v profilu pak uvidíš habit tracker a budeš si je moci odškrtávat.</p>
+                <HabitSelection selectedIds={selectedHabits} onChange={setSelectedHabits} />
+                {selectedHabits.length === 0 && <p className="habit-step-hint">Vyber alespoň jeden návyk pro pokračování.</p>}
               </div>
-            </details>
-          )}
-
-          {step === 5 && (
-            <div className="habit-step">
-              <h3 className="habit-step-title">Vyber si návyky k sledování</h3>
-              <HabitSelection selectedIds={selectedHabits} onChange={setSelectedHabits} />
-              {selectedHabits.length === 0 && <p className="habit-step-hint">Vyber alespoň jeden návyk pro pokračování.</p>}
-            </div>
+            </>
           )}
 
           <div className="form-actions">
@@ -287,11 +291,11 @@ export default function OnClubPage() {
               <span />
             )}
             {step < MAX_STEP ? (
-              <button type="submit" className="btn-submit" disabled={(step === 1 && !canProceedStep1()) || (step === 2 && !canProceedStep2()) || (step === 3 && !canProceedStep3()) || (step === 5 && !canProceedStep5())}>
+              <button type="submit" className="btn-submit" disabled={(step === 1 && !canProceedStep1()) || (step === 2 && !canProceedStep2()) || (step === 3 && !canProceedStep3())}>
                 Pokračovat
               </button>
             ) : (
-              <button type="submit" className="btn-submit btn-submit-large">
+              <button type="submit" className="btn-submit btn-submit-large" disabled={!canProceedStep4()}>
                 Připojit se k ON Clubu
               </button>
             )}
@@ -332,7 +336,8 @@ export default function OnClubPage() {
         .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-submit-large { padding: 14px 32px; font-size: 16px; }
         .habit-step { margin-bottom: 0; }
-        .habit-step-title { margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #e2e8f0; }
+        .habit-step-title { margin: 0 0 8px; font-size: 18px; font-weight: 600; color: #e2e8f0; }
+        .habit-step-desc { margin: 0 0 16px; font-size: 14px; color: #94a3b8; line-height: 1.5; }
         .habit-step-hint { margin: 12px 0 0; font-size: 13px; color: #f87171; }
       `}</style>
     </>

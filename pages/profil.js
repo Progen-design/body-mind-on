@@ -27,6 +27,13 @@ const WORKOUT_TYPES = [
   { id: 'ostatni', label: 'Ostatní', emoji: '✨' },
 ];
 
+const WORKOUT_DIFFICULTY_OPTIONS = [
+  { id: 'easy', label: 'Snadné, zvládl bych více' },
+  { id: 'just_right', label: 'Tak akorát' },
+  { id: 'hard', label: 'Náročné, ale zvládl jsem to' },
+  { id: 'too_hard', label: 'Příliš náročné' },
+];
+
 // Odhad kcal/min dle typu (orientační; zdroje: běh ~8, silový 4–7, strečink/jóga nižší)
 const KCAL_PER_MIN_BY_TYPE = {
   silovy: 5,
@@ -100,6 +107,7 @@ export default function Profil() {
     workout_type: 'silovy',
     duration_min: 45,
     notes: '',
+    perceived_difficulty: '',
   });
 
   const [settingsForm, setSettingsForm] = useState({
@@ -360,7 +368,7 @@ export default function Profil() {
         });
         
         // Zavřít modal a resetovat formulář OKAMŽITĚ
-        setWorkoutForm({ workout_date: new Date().toISOString().split('T')[0], workout_type: 'silovy', duration_min: 45, notes: '' });
+        setWorkoutForm({ workout_date: new Date().toISOString().split('T')[0], workout_type: 'silovy', duration_min: 45, notes: '', perceived_difficulty: '' });
         setShowWorkoutModal(false);
         if (fresh) setSession(fresh);
         
@@ -1307,6 +1315,21 @@ export default function Profil() {
                     <input type="number" min={1} value={workoutForm.duration_min} onChange={(e) => setWorkoutForm((f) => ({ ...f, duration_min: Number(e.target.value) || 0 }))} />
                     <label>Poznámka (volitelné)</label>
                     <input type="text" value={workoutForm.notes} onChange={(e) => setWorkoutForm((f) => ({ ...f, notes: e.target.value }))} placeholder="např. nohy" />
+                    <label>Jak náročné to pro tebe bylo?</label>
+                    <div className="workout-difficulty-options">
+                      {WORKOUT_DIFFICULTY_OPTIONS.map((opt) => (
+                        <label key={opt.id} className="workout-difficulty-option">
+                          <input
+                            type="radio"
+                            name="perceived_difficulty"
+                            value={opt.id}
+                            checked={(workoutForm.perceived_difficulty || '') === opt.id}
+                            onChange={() => setWorkoutForm((f) => ({ ...f, perceived_difficulty: opt.id }))}
+                          />
+                          <span>{opt.label}</span>
+                        </label>
+                      ))}
+                    </div>
                     {workoutError && <p className="modal-error" role="alert">{workoutError}</p>}
                     {savingWorkout && (
                       <div className="modal-loading">
@@ -2155,6 +2178,20 @@ export default function Profil() {
           box-sizing: border-box;
         }
         .modal-hint { color: #64748b; font-size: 13px; margin: 12px 0; }
+        .workout-difficulty-options {
+          display: flex; flex-direction: column; gap: 8px;
+          margin: 8px 0 0;
+        }
+        .workout-difficulty-option {
+          display: flex; align-items: center; gap: 10px;
+          cursor: pointer; font-size: 14px; color: #cbd5e1;
+          padding: 8px 10px; border-radius: 8px;
+          background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+        }
+        .workout-difficulty-option:hover { background: rgba(255,255,255,0.07); }
+        .workout-difficulty-option input[type="radio"] {
+          width: 18px; height: 18px; margin: 0; accent-color: #7c3aed;
+        }
         .modal-error {
           color: #f87171;
           font-size: 14px;

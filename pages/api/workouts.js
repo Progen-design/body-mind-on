@@ -58,11 +58,14 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { workout_date, workout_type, duration_min, notes } = req.body || {};
+      const { workout_date, workout_type, duration_min, notes, perceived_difficulty } = req.body || {};
       if (!workout_date) {
         return res.status(400).json({ error: 'workout_date is required' });
       }
       const typeVal = workout_type != null ? String(workout_type).trim() : null;
+      const validDifficulty = ['easy', 'just_right', 'hard', 'too_hard'].includes(perceived_difficulty)
+        ? perceived_difficulty
+        : null;
       const payload = {
         user_id: user.id,
         workout_date: String(workout_date).trim(),
@@ -70,6 +73,7 @@ export default async function handler(req, res) {
         workout_name: typeVal ? (WORKOUT_TYPE_LABELS[typeVal] || typeVal) : 'Ostatní',
         duration_min: duration_min != null ? parseInt(duration_min, 10) : null,
         notes: notes != null ? String(notes).trim() : null,
+        perceived_difficulty: validDifficulty,
       };
       if (Number.isNaN(payload.duration_min)) payload.duration_min = null;
 

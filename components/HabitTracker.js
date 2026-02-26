@@ -257,9 +257,12 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
 
   const renderHabitRow = (h, isNegative) => (
     <>
-      <div key={`lbl-${h.id}`} className="hg-label" title={h.description}>
+      <div key={`lbl-${h.id}`} className="hg-label">
         <span className="hg-emoji" aria-hidden="true">{h.emoji}</span>
-        <span className="hg-name">{h.label}</span>
+        <div className="hg-name-wrap">
+          <span className="hg-name">{h.label}</span>
+          {h.description && <span className="hg-hint">({h.description})</span>}
+        </div>
       </div>
       {days.map((dateStr) => {
         const completed = getCompleted(h.id, dateStr);
@@ -439,13 +442,20 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
 
         /* ── Habit label ── */
         .hg-label {
-          display: flex; align-items: center; gap: 10px;
-          height: 56px; padding-right: 16px; overflow: hidden;
+          display: flex; align-items: flex-start; gap: 10px;
+          min-height: 56px; padding-right: 16px; overflow: hidden;
         }
-        .hg-emoji { font-size: 1.3rem; flex-shrink: 0; line-height: 1; }
+        .hg-emoji { font-size: 1.3rem; flex-shrink: 0; line-height: 1; margin-top: 2px; }
+        .hg-name-wrap {
+          display: flex; flex-direction: column; gap: 2px;
+          min-width: 0; overflow: hidden;
+        }
         .hg-name {
           font-size: 0.875rem; font-weight: 600; color: #cbd5e1;
-          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3;
+          line-height: 1.3;
+        }
+        .hg-hint {
+          font-size: 0.75rem; color: #94a3b8; font-weight: 400; line-height: 1.25;
         }
 
         /* ── Habit cell – CRITICAL: reset button defaults ── */

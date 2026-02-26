@@ -571,7 +571,7 @@ export default function Profil() {
 
   // Všechny parametry se přepočítají při každé změně profile (trénink, váha)
   // Použít _updated timestamp jako závislost, aby se vždy přepočítalo při změně
-  const { program, membershipStatus, membershipSince, metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName, firstName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, thisWeekDates, startWeightDate, lastWeightDate } = useMemo(() => {
+  const { program, membershipStatus, membershipSince, metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName, firstName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, thisWeekDates, startWeightDate, lastWeightDate, habitAdjustedWeight, hasHabitData, positiveDone, negativeDone, habitCorrectionKg } = useMemo(() => {
     // Zajistit, že máme vždy nové reference na pole pro správnou detekci změn
     // A SORT podle data - nejnovější první
     const m = profile?.body_metrics 
@@ -662,6 +662,16 @@ export default function Profil() {
       weeksToGoal = (estimatedCurrentWeight - goalWeight) / kgPerWeekFromWeek;
     }
 
+    const positiveDone = profile?.habit_summary_7d?.positiveDone ?? 0;
+    const negativeDone = profile?.habit_summary_7d?.negativeDone ?? 0;
+    const habitCorrectionKg = (negativeDone * 0.05) - (positiveDone * 0.02);
+    const habitAdjustedWeight = estimatedCurrentWeightRounded != null
+      ? (goalWeight != null && (estimatedCurrentWeightRounded + habitCorrectionKg) < goalWeight
+          ? goalWeight
+          : Math.round((estimatedCurrentWeightRounded + habitCorrectionKg) * 10) / 10)
+      : null;
+    const hasHabitData = (profile?.habit_summary_7d != null) && (positiveDone > 0 || negativeDone > 0);
+
     const program = profile?.program || 'START';
     const membershipStatus = profile?.membershipStatus || 'active';
     const membershipSince = profile?.membershipSince || null;
@@ -701,6 +711,11 @@ export default function Profil() {
       thisWeekDates,
       startWeightDate: chartData.length > 0 ? chartData[0].date : (registrationMetric?.created_at ? String(registrationMetric.created_at).split('T')[0] : null),
       lastWeightDate: chartData.length > 0 ? chartData[chartData.length - 1].date : null,
+      habitAdjustedWeight,
+      hasHabitData,
+      positiveDone,
+      negativeDone,
+      habitCorrectionKg,
     };
   }, [
     profile, 
@@ -723,6 +738,8 @@ export default function Profil() {
     profile?.user?.created_at,
     profile?.user?.height_cm,
     profile?.program,
+    profile?.habit_summary_7d?.positiveDone,
+    profile?.habit_summary_7d?.negativeDone,
   ]);
 
   async function handleSendPlanAgain() {
@@ -1027,6 +1044,7 @@ export default function Profil() {
             <section className="card card-accent center progress-section">
               <h2 className="section-head">Tvůj progres</h2>
               <p className="progress-lead">Všechny hodnoty vycházejí jen z tréninků a z tvého nastavení (výchozí váha, cíl, výška). Ruční váha do výpočtu nezasahuje. Na výsledky má vliv i strava a denní návyky (zdravé i zlozvyky).</p>
+              <p className="progress-period-hint">Období „tento týden“ je tvůj osobní týden (začíná dnem v týdnu, kdy jsi se zaregistroval/a). Odhad váhy a celkové spálené kcal níže vycházejí ze <strong>všech</strong> zapsaných tréninků.</p>
 
               <p className="progress-dates">Období: <strong>{weekStartFormatted}</strong> – <strong>{weekEndFormatted}</strong></p>
               <div className="progress-activity">
@@ -1046,6 +1064,12 @@ export default function Profil() {
               {thisWeekDates?.length > 0 && (
                 <p className="progress-dates-detail">Dny s tréninkem: {thisWeekDates.join(', ')}</p>
               )}
+              {workouts.length === 0 && (
+                <p className="progress-empty-hint">Zatím nemáš zapsané tréninky. Po přidání tréninků („Zapsat trénink“) se zde objeví odhad spálených kcal a vliv na váhu.</p>
+              )}
+              {workouts.length > 0 && (workoutsThisWeek?.length ?? 0) === 0 && (
+                <p className="progress-total-hint">V tomto týdnu zatím žádný trénink. Celkem máš <strong>{workouts.length}</strong> tréninků, <strong>{totalMinutes ?? 0}</strong> minut – odhad váhy níže vychází z těchto dat.</p>
+              )}
               {workoutTrend && (
                 <p className="progress-trend-hint">
                   {workoutTrend === '↑' && 'Víc tréninků než minulý týden. '}
@@ -1062,10 +1086,17 @@ export default function Profil() {
                       Spáleno celkem odhad <strong>~{Math.round(estimatedCaloriesAll)} kcal</strong> ≈ úbytek <strong>~{estimatedKgLostTotal.toFixed(1)} kg</strong> (při 7700 kcal/kg).
                     </p>
                     {estimatedCurrentWeightRounded != null && (
-                      <p className="progress-calc-line">
-                        Odhadovaná váha z tréninků: <strong>{estimatedCurrentWeightRounded} kg</strong>
-                        {startWeight != null && ` (výchozí ${startWeight} kg)`}.
-                      </p>
+                      <>
+                        <p className="progress-calc-line">
+                          Odhadovaná váha z tréninků: <strong>{estimatedCurrentWeightRounded} kg</strong>
+                          {startWeight != null && ` (výchozí ${startWeight} kg)`}.
+                        </p>
+                        {hasHabitData && habitAdjustedWeight != null && (
+                          <p className="progress-calc-line progress-habit-line">
+                            S ohledem na návyky tohoto týdne ({positiveDone}× zdravé, {negativeDone}× zlozvyky): <strong>{habitAdjustedWeight} kg</strong>. Zdravé návyky odhad zlepšují, zlozvyky zhoršují.
+                          </p>
+                        )}
+                      </>
                     )}
                     {goalWeight != null && estimatedCurrentWeight != null && estimatedCurrentWeight > goalWeight && (
                       <p className="progress-calc-line">
@@ -1086,14 +1117,14 @@ export default function Profil() {
                       <span className="body-figure-arrow" aria-hidden>→</span>
                       <div className="body-figure-box body-figure-now">
                         <BodyFigure
-                          weight={estimatedCurrentWeightRounded ?? startWeight}
+                          weight={hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : (estimatedCurrentWeightRounded ?? startWeight)}
                           height={heightCm}
                           size={130}
                           variant="now"
-                          label="Odhad z tréninků"
-                          weightDiff={estimatedCurrentWeight != null && startWeight != null ? (estimatedCurrentWeightRounded - startWeight).toFixed(1) : null}
+                          label={hasHabitData ? 'Odhad (tréninky + návyky)' : 'Odhad z tréninků'}
+                          weightDiff={estimatedCurrentWeight != null && startWeight != null ? ((hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : estimatedCurrentWeightRounded) - startWeight).toFixed(1) : null}
                         />
-                        <span className="figure-weight">{estimatedCurrentWeightRounded != null ? `${estimatedCurrentWeightRounded} kg` : '—'}</span>
+                        <span className="figure-weight">{(hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : estimatedCurrentWeightRounded) != null ? `${(hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : estimatedCurrentWeightRounded)} kg` : '—'}</span>
                         {lastWeightDate && <span className="figure-date">k {formatShortDate(lastWeightDate)}</span>}
                       </div>
                     </div>
@@ -1748,6 +1779,18 @@ export default function Profil() {
           color: #94a3b8;
           margin: -8px 0 16px;
         }
+        .progress-period-hint {
+          font-size: 12px;
+          color: #64748b;
+          margin: -4px auto 12px;
+          max-width: 420px;
+        }
+        .progress-empty-hint,
+        .progress-total-hint {
+          font-size: 13px;
+          color: #94a3b8;
+          margin: 0 0 16px;
+        }
         .progress-activity {
           display: flex;
           flex-wrap: wrap;
@@ -1796,6 +1839,7 @@ export default function Profil() {
         }
         .progress-calc-line:last-child { margin-bottom: 0; }
         .progress-calc-line strong { color: #e9d5ff; }
+        .progress-habit-line { font-size: 13px; color: #94a3b8; }
         .progress-weight-note {
           font-size: 12px;
           color: #64748b;

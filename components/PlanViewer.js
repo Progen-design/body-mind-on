@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabaseClient';
+import { getPlanTypeLabel } from '../lib/planLabels';
 
 // Obrázky jídel – NEJDELŠÍ SHODA. Žádný obecný klíč „zelenina“ (dával by všem stejnou mísu). Jen konkrétní jídla.
 const DISH_IMAGES = [
@@ -329,7 +330,7 @@ export default function PlanViewer({ plan, userName, hideHero }) {
       {!hideHero && (
         <div className="plan-hero">
           <h2 className="plan-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
-          {plan.plan_type && <span className="plan-badge">{plan.plan_type}</span>}
+          {plan.plan_type && <span className="plan-badge">{getPlanTypeLabel(plan.plan_type)}</span>}
         </div>
       )}
 

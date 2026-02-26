@@ -11,6 +11,7 @@ import HabitTracker from '../components/HabitTracker';
 import HabitEntryWizard from '../components/HabitEntryWizard';
 import Toast from '../components/Toast';
 import { supabase } from '../lib/supabaseClient';
+import { getPlanTypeLabel } from '../lib/planLabels';
 
 const PROGRAM_LABELS = {
   START: { greeting: 'Ahoj', subtitle: 'Každý trénink, každé měření.' },
@@ -838,7 +839,7 @@ export default function Profil() {
           <div className="plan-goal-hero">
             <h2 className="plan-goal-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
             <span className="plan-goal-badge plan-goal-badge-program">
-              {program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP' : (currentPlan?.plan_type || 'START')}
+              {program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP' : getPlanTypeLabel(currentPlan?.plan_type) || 'START'}
             </span>
           </div>
         )}

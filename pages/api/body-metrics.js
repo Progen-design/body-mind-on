@@ -115,6 +115,25 @@ export default async function handler(req, res) {
 
     console.log(`✅ Data uložena do body_metrics pro ${payload.email}, user_id: ${payload.user_id}`);
 
+    // Uložit tier členství do tabulky memberships (upsert – aktualizovat pokud existuje)
+    if (payload.user_id) {
+      const { error: memErr } = await supabaseServer
+        .from('memberships')
+        .upsert([{
+          user_id: payload.user_id,
+          tier: payload.program || 'START',
+          status: 'active',
+          started_at: payload.created_at,
+          notes: `Registrace přes ${payload.program || 'START'} formulář`,
+          updated_at: new Date().toISOString(),
+        }], { onConflict: 'user_id' });
+      if (memErr) {
+        console.warn('[body-metrics] memberships upsert:', memErr.message);
+      } else {
+        console.log(`✅ Membership tier "${payload.program}" uložen pro user_id: ${payload.user_id}`);
+      }
+    }
+
     if (payload.user_id && Array.isArray(b.selected_habits) && b.selected_habits.length > 0) {
       const validHabits = b.selected_habits
         .filter((id) => typeof id === 'string' && isValidHabitId(id.trim()))

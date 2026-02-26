@@ -147,6 +147,8 @@ export default function Profil() {
           weight_history: Array.isArray(data.weight_history) ? [...data.weight_history] : [],
           stats: data.stats ? { ...data.stats } : {},
           program: data.program || 'START',
+          membershipStatus: data.membershipStatus || 'active',
+          membershipSince: data.membershipSince || null,
           _updated: Date.now(),
         };
         let skipped = false;
@@ -568,7 +570,7 @@ export default function Profil() {
 
   // Všechny parametry se přepočítají při každé změně profile (trénink, váha)
   // Použít _updated timestamp jako závislost, aby se vždy přepočítalo při změně
-  const { program, metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, thisWeekDates, startWeightDate, lastWeightDate } = useMemo(() => {
+  const { program, membershipStatus, membershipSince, metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, thisWeekDates, startWeightDate, lastWeightDate } = useMemo(() => {
     // Zajistit, že máme vždy nové reference na pole pro správnou detekci změn
     // A SORT podle data - nejnovější první
     const m = profile?.body_metrics 
@@ -659,9 +661,13 @@ export default function Profil() {
     }
 
     const program = profile?.program || 'START';
+    const membershipStatus = profile?.membershipStatus || 'active';
+    const membershipSince = profile?.membershipSince || null;
 
     return {
       program,
+      membershipStatus,
+      membershipSince,
       metrics: m,
       workouts: w,
       latestMetric: latest,
@@ -872,6 +878,35 @@ export default function Profil() {
 
         {!loading && !error && (
           <>
+            {/* Membership karta – tier badge */}
+            <div className={`membership-card membership-card--${(program || 'START').toLowerCase().replace('_', '-')}`}>
+              <div className="membership-card-left">
+                <span className="membership-icon">
+                  {program === 'VIP' ? '👑' : program === 'ON_CLUB' ? '⚡' : '🚀'}
+                </span>
+                <div>
+                  <div className="membership-tier-label">
+                    {program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP Coaching' : 'Start'}
+                  </div>
+                  <div className="membership-tier-sub">
+                    {program === 'VIP' && 'Plný přístup · Osobní coaching · Prémiová podpora'}
+                    {program === 'ON_CLUB' && 'Habit tracker · AI plán · Tréninky · Statistiky'}
+                    {program !== 'VIP' && program !== 'ON_CLUB' && 'AI plán · Jídelníček · Základní sledování'}
+                  </div>
+                </div>
+              </div>
+              <div className="membership-card-right">
+                <span className={`membership-status-badge membership-status--${membershipStatus}`}>
+                  {membershipStatus === 'active' ? 'Aktivní' : membershipStatus === 'trial' ? 'Zkušební' : membershipStatus === 'cancelled' ? 'Zrušeno' : 'Neaktivní'}
+                </span>
+                {membershipSince && (
+                  <span className="membership-since">
+                    od {new Date(membershipSince).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </span>
+                )}
+              </div>
+            </div>
+
             {/* Jasná první akce – pro uživatele bez tréninku */}
             {workouts.length === 0 && currentPlan && (
               <div className="first-action-banner">
@@ -1384,6 +1419,93 @@ export default function Profil() {
           margin-top: 8px;
           font-size: 16px;
         }
+
+        /* ── Membership karta ─────────────────────────────────── */
+        .membership-card {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 20px;
+          padding: 16px 22px;
+          border-radius: 16px;
+          border: 1px solid;
+          flex-wrap: wrap;
+        }
+        .membership-card--start {
+          background: linear-gradient(135deg, rgba(100,116,139,0.12), rgba(71,85,105,0.08));
+          border-color: rgba(100,116,139,0.35);
+        }
+        .membership-card--on-club {
+          background: linear-gradient(135deg, rgba(109,40,217,0.18), rgba(59,130,246,0.10));
+          border-color: rgba(139,92,255,0.45);
+          box-shadow: 0 4px 20px rgba(109,40,217,0.12);
+        }
+        .membership-card--vip {
+          background: linear-gradient(135deg, rgba(180,130,20,0.18), rgba(234,179,8,0.10));
+          border-color: rgba(234,179,8,0.45);
+          box-shadow: 0 4px 20px rgba(180,130,20,0.18);
+        }
+        .membership-card-left {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+        }
+        .membership-icon {
+          font-size: 28px;
+          line-height: 1;
+          flex-shrink: 0;
+        }
+        .membership-tier-label {
+          font-size: 16px;
+          font-weight: 700;
+          letter-spacing: -0.01em;
+        }
+        .membership-card--start .membership-tier-label { color: #94a3b8; }
+        .membership-card--on-club .membership-tier-label { color: #c4b5fd; }
+        .membership-card--vip .membership-tier-label { color: #fde68a; }
+        .membership-tier-sub {
+          font-size: 13px;
+          color: #64748b;
+          margin-top: 2px;
+        }
+        .membership-card--on-club .membership-tier-sub { color: #a78bfa; }
+        .membership-card--vip .membership-tier-sub { color: #ca8a04; }
+        .membership-card-right {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 4px;
+        }
+        .membership-status-badge {
+          font-size: 12px;
+          font-weight: 600;
+          padding: 4px 12px;
+          border-radius: 20px;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+        }
+        .membership-status--active {
+          background: rgba(34,197,94,0.15);
+          color: #4ade80;
+          border: 1px solid rgba(34,197,94,0.3);
+        }
+        .membership-status--trial {
+          background: rgba(234,179,8,0.15);
+          color: #fbbf24;
+          border: 1px solid rgba(234,179,8,0.3);
+        }
+        .membership-status--cancelled, .membership-status--expired {
+          background: rgba(239,68,68,0.12);
+          color: #f87171;
+          border: 1px solid rgba(239,68,68,0.25);
+        }
+        .membership-since {
+          font-size: 12px;
+          color: #64748b;
+        }
+        /* ───────────────────────────────────────────────────────── */
+
         .hero-strip {
           display: flex;
           flex-wrap: wrap;

@@ -115,11 +115,12 @@ export default function HabitTracker({ session, userHabits, onToast }) {
   };
 
   const handleToggle = async (habitId, dateStr) => {
-    if (dateStr !== todayStr) return;
+    if (dateStr > todayStr) return;
+    const key = `${habitId}-${dateStr}`;
     if (!session?.access_token || toggling) return;
-    const current = getCompleted(habitId, todayStr);
+    const current = getCompleted(habitId, dateStr);
     const nextCompleted = !current;
-    setToggling(habitId);
+    setToggling(key);
     try {
       const res = await fetch('/api/habits', {
         method: 'POST',
@@ -128,7 +129,7 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          log_date: todayStr,
+          log_date: dateStr,
           habit_id: habitId,
           completed: nextCompleted,
         }),
@@ -136,11 +137,11 @@ export default function HabitTracker({ session, userHabits, onToast }) {
       const json = await res.json();
       if (res.ok && json.log) {
         setAllLogs((prev) => {
-          const filtered = prev.filter((l) => !(l.habit_id === habitId && l.log_date === todayStr));
+          const filtered = prev.filter((l) => !(l.habit_id === habitId && l.log_date === dateStr));
           return [...filtered, json.log];
         });
         setWeekLogs((prev) => {
-          const filtered = prev.filter((l) => !(l.habit_id === habitId && l.log_date === todayStr));
+          const filtered = prev.filter((l) => !(l.habit_id === habitId && l.log_date === dateStr));
           return [...filtered, json.log];
         });
         if (onToast) {
@@ -213,66 +214,67 @@ export default function HabitTracker({ session, userHabits, onToast }) {
     );
   }
 
-  const renderHabitRow = (h, isNegative) => (
-    <div key={h.id} className={`habit-row habit-row-${isNegative ? 'negative' : 'positive'}`}>
-      <div className="habit-label" title={h.description}>
-        <span className="habit-emoji" aria-hidden="true">{h.emoji}</span>
-        <span className="habit-label-name">{h.label}</span>
-      </div>
-      <div className="habit-cells">
-        {days.map((dateStr) => {
-          const completed = getCompleted(h.id, dateStr);
-          const isToday = dateStr === todayStr;
-          const isPast = dateStr < todayStr;
-          const isFuture = dateStr > todayStr;
-          const busy = isToday && toggling === h.id;
-          return (
-            <button
-              key={`${h.id}-${dateStr}`}
-              type="button"
-              className={`habit-cell ${isNegative ? 'negative' : ''} ${completed ? 'completed' : ''} ${busy ? 'busy' : ''} ${isPast ? 'past' : ''} ${isFuture ? 'future' : ''} ${isToday ? 'today-cell' : ''}`}
-              onClick={() => handleToggle(h.id, dateStr)}
-              disabled={!isToday || busy}
-              title={isToday ? (completed ? 'Splněno – klikni pro zrušení' : 'Klikni a označ splněno') : formatShortDate(dateStr)}
-              aria-pressed={isToday ? completed : undefined}
-              aria-label={`${h.label}, ${formatShortDate(dateStr)}${isToday ? ', dnes' : ''}${completed ? ', splněno' : ', nesplněno'}`}
-            >
-              {completed ? (
-                <svg className="habit-cell-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <path d="M5 12l5 5 9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              ) : (
-                <span className="habit-cell-ring" aria-hidden="true" />
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
+  const CELL = 72;
+  const LABEL_W = 220;
+  const GAP = 8;
+  const cols = `${LABEL_W}px repeat(${days.length}, ${CELL}px)`;
+
+  const renderHabitCells = (h, isNegative) => {
+    return days.map((dateStr) => {
+      const completed = getCompleted(h.id, dateStr);
+      const isToday = dateStr === todayStr;
+      const isPast = dateStr < todayStr;
+      const isFuture = dateStr > todayStr;
+      const busy = toggling === `${h.id}-${dateStr}`;
+      const clickable = !isFuture && !busy;
+      return (
+        <button
+          key={`${h.id}-${dateStr}`}
+          type="button"
+          className={[
+            'hg-cell',
+            isNegative ? 'negative' : 'positive',
+            completed ? 'completed' : '',
+            busy ? 'busy' : '',
+            isPast ? 'past' : '',
+            isFuture ? 'future' : '',
+            isToday ? 'today-col' : '',
+          ].filter(Boolean).join(' ')}
+          onClick={() => clickable && handleToggle(h.id, dateStr)}
+          disabled={!clickable}
+          title={completed ? 'Splněno – klikni pro zrušení' : isFuture ? formatShortDate(dateStr) : 'Klikni a označ splněno'}
+          aria-pressed={completed}
+          aria-label={`${h.label}, ${formatShortDate(dateStr)}${isToday ? ', dnes' : ''}${completed ? ', splněno' : ', nesplněno'}`}
+        >
+          {busy ? (
+            <span className="hg-spinner" aria-hidden="true" />
+          ) : completed ? (
+            <svg className="hg-check" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 12l5 5 9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          ) : (
+            <span className="hg-ring" aria-hidden="true" />
+          )}
+        </button>
+      );
+    });
+  };
 
   return (
     <section className="habit-tracker">
       <header className="habit-tracker-head">
         <h2 className="habit-tracker-title">Denní návyky</h2>
-        <p className="habit-tracker-subtitle">
-          Klikni na buňku pro přepnutí ○ / ✓
-        </p>
       </header>
 
       {loading ? (
         <div className="habit-loading">
-          <span className="habit-loading-dots">
-            <span>.</span><span>.</span><span>.</span>
-          </span>
+          <span className="habit-loading-dots"><span>.</span><span>.</span><span>.</span></span>
           <span className="habit-loading-text">Načítám návyky</span>
         </div>
       ) : fetchError ? (
         <div className="habit-error">
           <p className="habit-error-message">{fetchError}</p>
-          <button type="button" className="habit-retry-btn" onClick={loadLogs}>
-            Zkusit znovu
-          </button>
+          <button type="button" className="habit-retry-btn" onClick={loadLogs}>Zkusit znovu</button>
         </div>
       ) : (
         <>
@@ -283,45 +285,57 @@ export default function HabitTracker({ session, userHabits, onToast }) {
                 <div className="habit-progress-bar" style={{ width: `${totalHabits ? Math.round((completedToday / totalHabits) * 100) : 0}%` }} />
               </div>
             </div>
-          <div className="habit-wrapper">
-            <div className="habit-header-row">
-              <div className="habit-header-spacer" />
-              <div className="habit-header-dates">
+
+            <div className="hg-scroll">
+              <div className="hg-grid" style={{ gridTemplateColumns: cols, gap: GAP }}>
+
+                {/* Header row */}
+                <div className="hg-corner" />
                 {days.map((d) => (
-                  <div
-                    key={d}
-                    className={`habit-header-cell ${d === todayStr ? 'today' : d < todayStr ? 'past' : 'future'}`}
-                  >
-                    <span className="habit-header-date-num">{formatShortDate(d)}</span>
-                    {d === todayStr && <span className="habit-today-badge">Dnes</span>}
+                  <div key={d} className={`hg-hdr ${d === todayStr ? 'today' : d < todayStr ? 'past' : 'future'}`}>
+                    <span className="hg-hdr-date">{formatShortDate(d)}</span>
+                    {d === todayStr && <span className="hg-hdr-badge">Dnes</span>}
                   </div>
                 ))}
+
+                {/* Zdravé návyky */}
+                {positiveHabits.length > 0 && (
+                  <>
+                    <div className="hg-section-label positive" style={{ gridColumn: `1 / span ${days.length + 1}` }}>
+                      Zdravé návyky
+                    </div>
+                    {positiveHabits.map((h) => (
+                      <>
+                        <div key={`label-${h.id}`} className="hg-label" title={h.description}>
+                          <span className="hg-emoji" aria-hidden="true">{h.emoji}</span>
+                          <span className="hg-label-name">{h.label}</span>
+                        </div>
+                        {renderHabitCells(h, false)}
+                      </>
+                    ))}
+                  </>
+                )}
+
+                {/* Zlozvyky */}
+                {negativeHabits.length > 0 && (
+                  <>
+                    <div className="hg-section-label negative" style={{ gridColumn: `1 / span ${days.length + 1}` }}>
+                      Zlozvyky
+                    </div>
+                    {negativeHabits.map((h) => (
+                      <>
+                        <div key={`label-${h.id}`} className="hg-label" title={h.description}>
+                          <span className="hg-emoji" aria-hidden="true">{h.emoji}</span>
+                          <span className="hg-label-name">{h.label}</span>
+                        </div>
+                        {renderHabitCells(h, true)}
+                      </>
+                    ))}
+                  </>
+                )}
+
               </div>
             </div>
-            {positiveHabits.length > 0 && (
-              <div className="habit-section">
-                <div className="habit-section-label positive">Zdravé návyky</div>
-                {positiveHabits.map((h) => renderHabitRow(h, false))}
-              </div>
-            )}
-            {negativeHabits.length > 0 && (
-              <div className="habit-section">
-                <div className="habit-section-label negative">Zlozvyky</div>
-                {negativeHabits.map((h) => renderHabitRow(h, true))}
-              </div>
-            )}
-            <div className="habit-footer-dates">
-              <div className="habit-footer-spacer" />
-              <div className="habit-footer-cols">
-                {days.map((d) => (
-                  <div key={d} className={`habit-footer-cell ${d === todayStr ? 'today' : d < todayStr ? 'past' : ''}`}>
-                    {formatShortDate(d)}
-                    {d === todayStr && <span className="habit-footer-badge">Dnes</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
           </div>
 
           {recommendation && (
@@ -337,24 +351,16 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           margin-bottom: 48px;
           padding: 0;
           background: transparent;
-          border-radius: 0;
         }
         .habit-tracker-head {
-          margin-bottom: 24px;
+          margin-bottom: 20px;
         }
         .habit-tracker-title {
-          margin: 0 0 8px;
+          margin: 0;
           font-size: 1.5rem;
           font-weight: 700;
           letter-spacing: -0.02em;
           color: #f8fafc;
-        }
-        .habit-tracker-subtitle {
-          margin: 0;
-          font-size: 0.9375rem;
-          font-weight: 400;
-          color: #94a3b8;
-          line-height: 1.5;
         }
         .habit-loading {
           display: flex;
@@ -448,268 +454,187 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           border-radius: 6px;
           transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .habit-wrapper {
+
+        /* ── CSS Grid table ── */
+        .hg-scroll {
           overflow-x: auto;
           -webkit-overflow-scrolling: touch;
-          padding: 28px 32px 32px;
+          padding: 24px 24px 28px;
         }
-        .habit-header-row {
+        .hg-grid {
+          display: grid;
+          align-items: center;
+          row-gap: 6px;
+        }
+        /* Corner cell */
+        .hg-corner {
+          height: 64px;
+        }
+        /* Date header */
+        .hg-hdr {
           display: flex;
-          align-items: stretch;
-          gap: 16px;
-          margin-bottom: 16px;
-        }
-        .habit-header-spacer {
-          width: 300px;
-          min-width: 300px;
-          flex-shrink: 0;
-        }
-        .habit-header-dates {
-          display: flex;
-          gap: 16px;
-          flex-shrink: 0;
-        }
-        .habit-header-cell {
-          width: 96px;
-          min-width: 96px;
-          padding: 14px 8px;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          height: 64px;
+          border-radius: 14px;
           background: rgba(255, 255, 255, 0.04);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 16px;
-          font-size: 0.875rem;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          font-size: 0.75rem;
           font-weight: 600;
           color: #94a3b8;
           text-align: center;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 6px;
+          user-select: none;
         }
-        .habit-header-cell.today {
-          background: linear-gradient(135deg, rgba(34, 197, 94, 0.25) 0%, rgba(16, 185, 129, 0.2) 100%);
-          border-color: rgba(34, 197, 94, 0.45);
+        .hg-hdr.today {
+          background: linear-gradient(135deg, rgba(34, 197, 94, 0.22) 0%, rgba(16, 185, 129, 0.16) 100%);
+          border-color: rgba(34, 197, 94, 0.5);
           color: #86efac;
-          box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
+          box-shadow: 0 0 18px rgba(34, 197, 94, 0.12);
         }
-        .habit-header-date-num {
-          font-size: 0.8125rem;
-          font-weight: 600;
-          letter-spacing: 0;
-        }
-        .habit-header-cell.past {
-          opacity: 0.7;
-          background: rgba(255, 255, 255, 0.02);
-        }
-        .habit-header-cell.future {
-          opacity: 0.6;
-        }
-        .habit-today-badge {
-          font-size: 0.625rem;
-          font-weight: 700;
-          letter-spacing: 0.04em;
-          color: #4ade80;
-        }
-        .habit-footer-dates {
-          display: flex;
-          align-items: stretch;
-          gap: 16px;
-          margin-top: 20px;
-          padding-top: 20px;
-          border-top: 1px solid rgba(248, 250, 252, 0.08);
-        }
-        .habit-footer-spacer {
-          width: 300px;
-          min-width: 300px;
-          flex-shrink: 0;
-        }
-        .habit-footer-cols {
-          display: flex;
-          gap: 16px;
-          flex-shrink: 0;
-        }
-        .habit-footer-cell {
-          width: 96px;
-          min-width: 96px;
-          padding: 10px 6px;
-          font-size: 0.8125rem;
-          font-weight: 600;
-          color: #64748b;
-          text-align: center;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 2px;
-        }
-        .habit-footer-cell.today {
-          color: #4ade80;
-        }
-        .habit-footer-badge {
-          font-size: 0.625rem;
-          font-weight: 600;
-          color: #22c55e;
-        }
-        .habit-section {
-          margin-top: 20px;
-        }
-        .habit-section:first-of-type {
-          margin-top: 0;
-        }
-        .habit-section-label {
-          font-size: 0.875rem;
-          font-weight: 700;
+        .hg-hdr.past { opacity: 0.65; }
+        .hg-hdr.future { opacity: 0.5; }
+        .hg-hdr-date { font-size: 0.75rem; font-weight: 700; }
+        .hg-hdr-badge {
+          font-size: 0.55rem;
+          font-weight: 800;
           letter-spacing: 0.06em;
+          color: #4ade80;
           text-transform: uppercase;
-          margin-bottom: 18px;
-          padding: 14px 20px;
-          border-radius: 14px;
+        }
+        /* Section label – spans all columns */
+        .hg-section-label {
+          font-size: 0.8125rem;
+          font-weight: 700;
+          letter-spacing: 0.07em;
+          text-transform: uppercase;
+          padding: 12px 16px;
+          border-radius: 12px;
+          margin-top: 8px;
+        }
+        .hg-section-label.positive {
+          color: #86efac;
+          background: linear-gradient(90deg, rgba(34, 197, 94, 0.15) 0%, transparent 100%);
+          border-left: 4px solid #22c55e;
+        }
+        .hg-section-label.negative {
+          color: #fca5a5;
+          background: linear-gradient(90deg, rgba(248, 113, 113, 0.12) 0%, transparent 100%);
+          border-left: 4px solid #f87171;
+        }
+        /* Habit label column */
+        .hg-label {
           display: flex;
           align-items: center;
           gap: 12px;
+          padding: 0 8px 0 4px;
+          height: 72px;
+          overflow: hidden;
         }
-        .habit-section-label.positive {
-          color: #86efac;
-          background: linear-gradient(90deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.06) 100%);
-          border-left: 5px solid #22c55e;
-        }
-        .habit-section-label.negative {
-          color: #fca5a5;
-          background: linear-gradient(90deg, rgba(248, 113, 113, 0.12) 0%, rgba(248, 113, 113, 0.04) 100%);
-          border-left: 5px solid #f87171;
-        }
-        .habit-row {
-          display: flex;
-          align-items: center;
-          gap: 20px;
-          margin-bottom: 6px;
-          padding: 14px 0;
-          border-bottom: 1px solid rgba(248, 250, 252, 0.05);
-          transition: background 0.2s;
-        }
-        .habit-row:hover {
-          background: rgba(255, 255, 255, 0.03);
-          border-radius: 12px;
-        }
-        .habit-row:last-child {
-          border-bottom: none;
-        }
-        .habit-label {
-          width: 300px;
-          min-width: 300px;
-          flex-shrink: 0;
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          padding: 0;
-        }
-        .habit-row-positive .habit-label {
-          border-left: none;
-        }
-        .habit-row-negative .habit-label {
-          border-left: none;
-        }
-        .habit-emoji {
-          font-size: 1.5rem;
+        .hg-emoji {
+          font-size: 1.4rem;
           flex-shrink: 0;
           line-height: 1;
         }
-        .habit-label-name {
-          font-size: 1rem;
+        .hg-label-name {
+          font-size: 0.9375rem;
           font-weight: 600;
-          letter-spacing: 0.02em;
-          color: #f8fafc;
-          line-height: 1.4;
+          color: #f1f5f9;
+          line-height: 1.3;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
-        .habit-cells {
-          display: flex;
-          gap: 16px;
-          flex-shrink: 0;
-          align-items: center;
-        }
-        .habit-cell {
-          width: 96px;
-          min-width: 96px;
-          height: 96px;
+        /* Habit cell (bubble) */
+        .hg-cell {
+          width: 100%;
+          height: 72px;
           padding: 0;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(255, 255, 255, 0.03);
-          border: 2px solid rgba(255, 255, 255, 0.12);
-          border-radius: 18px;
+          background: rgba(255, 255, 255, 0.04);
+          border: 2px solid rgba(255, 255, 255, 0.1);
+          border-radius: 16px;
           color: #94a3b8;
           cursor: pointer;
-          transition: transform 0.25s ease, background 0.25s, border-color 0.25s, box-shadow 0.25s;
+          transition: transform 0.18s ease, background 0.18s, border-color 0.18s, box-shadow 0.18s;
+          touch-action: manipulation;
         }
-        .habit-cell-ring {
-          width: 44px;
-          height: 44px;
+        .hg-cell:hover:not(:disabled) {
+          background: rgba(255, 255, 255, 0.09);
+          border-color: rgba(255, 255, 255, 0.22);
+          transform: scale(1.06);
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+        }
+        .hg-cell:active:not(:disabled) {
+          transform: scale(0.95);
+        }
+        .hg-cell.today-col:not(.completed) {
+          border-color: rgba(34, 197, 94, 0.45);
+          background: rgba(34, 197, 94, 0.07);
+        }
+        .hg-cell.today-col:hover:not(:disabled):not(.completed) {
+          background: rgba(34, 197, 94, 0.13);
+          border-color: rgba(34, 197, 94, 0.6);
+        }
+        .hg-cell.completed {
+          background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+          border-color: transparent;
+          color: #fff;
+          box-shadow: 0 4px 16px rgba(34, 197, 94, 0.35);
+        }
+        .hg-cell.completed:hover:not(:disabled) {
+          background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+          transform: scale(1.04);
+        }
+        .hg-cell.future {
+          cursor: default;
+          opacity: 0.28;
+          pointer-events: none;
+        }
+        .hg-cell.past:not(.completed) {
+          opacity: 0.75;
+        }
+        .hg-cell.busy {
+          cursor: wait;
+          opacity: 0.6;
+        }
+        .hg-ring {
+          width: 34px;
+          height: 34px;
           border-radius: 50%;
-          border: 3px solid rgba(255, 255, 255, 0.4);
+          border: 2.5px solid rgba(255, 255, 255, 0.35);
           display: block;
+          transition: border-color 0.18s;
         }
-        .habit-cell-check {
-          width: 44px;
-          height: 44px;
+        .hg-cell.today-col:not(.completed) .hg-ring {
+          border-color: rgba(134, 239, 172, 0.6);
+        }
+        .hg-cell:hover:not(:disabled) .hg-ring {
+          border-color: rgba(255, 255, 255, 0.65);
+        }
+        .hg-check {
+          width: 34px;
+          height: 34px;
           color: #fff;
           flex-shrink: 0;
         }
-        .habit-cell:hover:not(:disabled):not(.future) {
-          background: rgba(255, 255, 255, 0.08);
-          border-color: rgba(255, 255, 255, 0.2);
-          transform: scale(1.05);
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        .hg-spinner {
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          border: 2.5px solid rgba(255,255,255,0.15);
+          border-top-color: #fff;
+          animation: hg-spin 0.7s linear infinite;
+          display: block;
         }
-        .habit-cell.today-cell:not(.completed) {
-          border-color: rgba(34, 197, 94, 0.4);
-          background: rgba(34, 197, 94, 0.08);
-        }
-        .habit-cell.today-cell:not(.completed) .habit-cell-ring {
-          border-color: rgba(148, 163, 184, 0.6);
-          border-width: 3px;
-        }
-        .habit-cell.today-cell:hover:not(:disabled):not(.completed) {
-          background: rgba(34, 197, 94, 0.12);
-          border-color: rgba(34, 197, 94, 0.5);
-        }
-        .habit-cell.today-cell:hover:not(:disabled):not(.completed) .habit-cell-ring {
-          border-color: rgba(148, 163, 184, 0.9);
-        }
-        .habit-cell.past {
-          cursor: default;
-          opacity: 0.85;
-        }
-        .habit-cell.past:not(.completed) .habit-cell-ring {
-          border-color: rgba(255, 255, 255, 0.25);
-        }
-        .habit-cell.future {
-          cursor: default;
-          opacity: 0.35;
-        }
-        .habit-cell.future .habit-cell-ring {
-          border-color: rgba(255, 255, 255, 0.12);
-        }
-        .habit-cell.completed {
-          background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-          border-color: rgba(34, 197, 94, 0.7);
-          color: #fff;
-          box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3);
-        }
-        .habit-cell.completed .habit-cell-check {
-          color: #fff;
-        }
-        .habit-cell.negative.completed {
-          background: #22c55e;
-        }
-        .habit-cell.negative:not(.completed) .habit-cell-ring {
-          border-color: rgba(255, 255, 255, 0.2);
-        }
-        .habit-cell.busy {
-          opacity: 0.7;
-          cursor: wait;
-        }
+        @keyframes hg-spin { to { transform: rotate(360deg); } }
+
         .habit-recommendation {
-          margin-top: 28px;
-          padding: 18px 20px;
+          margin-top: 24px;
+          padding: 16px 20px;
           background: rgba(248, 250, 252, 0.03);
           border: 1px solid rgba(248, 250, 252, 0.06);
           border-radius: 12px;
@@ -719,110 +644,20 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           font-size: 0.875rem;
           line-height: 1.55;
           color: #94a3b8;
-          font-weight: 400;
         }
         @media (max-width: 768px) {
-          .habit-tracker {
-            margin-bottom: 32px;
-          }
-          .habit-tracker-head {
-            margin-bottom: 16px;
-          }
-          .habit-header-row {
-            gap: 8px;
-            margin-bottom: 10px;
-          }
-          .habit-tracker-title {
-            font-size: 1.25rem;
-          }
-          .habit-tracker-subtitle {
-            font-size: 0.8125rem;
-          }
-          .habit-tracker-card {
-            border-radius: 16px;
-          }
-          .habit-tracker-progress {
-            padding: 12px 16px;
-          }
-          .habit-progress-text {
-            font-size: 0.875rem;
-          }
-          .habit-wrapper {
-            padding: 16px 16px 20px;
-          }
-          .habit-header-spacer,
-          .habit-footer-spacer {
-            width: 180px;
-            min-width: 180px;
-          }
-          .habit-header-dates,
-          .habit-footer-cols {
-            gap: 10px;
-          }
-          .habit-header-cell,
-          .habit-footer-cell {
-            width: 56px;
-            min-width: 56px;
-            padding: 10px 4px;
-            font-size: 0.75rem;
-          }
-          .habit-header-cell.today,
-          .habit-footer-cell.today {
-            font-size: 0.75rem;
-          }
-          .habit-footer-dates {
-            margin-top: 12px;
-            padding-top: 12px;
-            gap: 8px;
-          }
-          .habit-footer-cols {
-            gap: 8px;
-          }
-          .habit-section-label {
-            font-size: 0.75rem;
-            padding: 8px 12px;
-            margin-bottom: 10px;
-          }
-          .habit-row {
-            gap: 10px;
-            padding: 8px 0;
-          }
-          .habit-label {
-            width: 180px;
-            min-width: 180px;
-            gap: 12px;
-          }
-          .habit-emoji {
-            font-size: 1.25rem;
-          }
-          .habit-label-name {
-            font-size: 0.875rem;
-          }
-          .habit-cells {
-            gap: 10px;
-          }
-          .habit-cell {
-            width: 56px;
-            min-width: 56px;
-            height: 56px;
-            border-radius: 14px;
-          }
-          .habit-cell-ring {
-            width: 28px;
-            height: 28px;
-            border-width: 2.5px;
-          }
-          .habit-cell-check {
-            width: 28px;
-            height: 28px;
-          }
-          .habit-recommendation {
-            margin-top: 20px;
-            padding: 14px 16px;
-          }
-          .habit-recommendation-text {
-            font-size: 0.8125rem;
-          }
+          .habit-tracker { margin-bottom: 32px; }
+          .habit-tracker-head { margin-bottom: 14px; }
+          .habit-tracker-title { font-size: 1.2rem; }
+          .hg-scroll { padding: 14px 12px 18px; }
+          .hg-corner { height: 52px; }
+          .hg-hdr { height: 52px; border-radius: 10px; font-size: 0.6875rem; }
+          .hg-label { height: 60px; gap: 8px; }
+          .hg-emoji { font-size: 1.1rem; }
+          .hg-label-name { font-size: 0.8125rem; }
+          .hg-cell { height: 60px; border-radius: 12px; }
+          .hg-ring { width: 26px; height: 26px; }
+          .hg-check { width: 26px; height: 26px; }
         }
       `}</style>
     </section>

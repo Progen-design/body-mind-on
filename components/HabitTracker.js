@@ -455,7 +455,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           line-height: 1.3;
         }
         .hg-hint {
-          font-size: 0.75rem; color: #94a3b8; font-weight: 400; line-height: 1.25;
+          font-size: 0.6875rem; color: #94a3b8; font-weight: 400; line-height: 1.25;
         }
 
         /* ── Habit cell – CRITICAL: reset button defaults ── */

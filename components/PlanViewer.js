@@ -379,49 +379,40 @@ export default function PlanViewer({ plan, userName, hideHero }) {
               <button
                 type="button"
                 className="plan-export-btn"
-                onClick={async () => {
-                  const el = document.createElement('div');
-                  el.style.cssText = 'width:750px;background:#fff;padding:32px 40px;font-family:Georgia,serif;color:#1e293b;position:fixed;top:-9999px;left:-9999px;z-index:-1;';
-                  document.body.appendChild(el);
-
-                  let html = '<h1 style="font-size:22px;font-weight:bold;margin:0 0 24px;color:#0f172a;border-bottom:2px solid #e2e8f0;padding-bottom:12px;">Jídelníček na týden – Body & Mind ON</h1>';
+                onClick={() => {
+                  let rows = '';
                   (parsed.days || []).forEach((day, di) => {
-                    html += `<div style="margin-top:20px;"><h2 style="font-size:15px;font-weight:bold;margin:0 0 10px;color:#1e40af;background:#eff6ff;padding:8px 12px;border-radius:6px;">${(day.dayName || 'Den').replace(/&/g, '&amp;').replace(/</g, '&lt;')}</h2>`;
+                    rows += `<div class="day-block"><div class="day-name">${(day.dayName || 'Den').replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>`;
                     (day.meals || []).forEach((meal, mi) => {
                       const key = `${di}_${mi}`;
                       const ov = mealOverrides[key];
                       const text = ov ? ov.title : (meal.text || meal.fullHtml || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
                       const dishTitle = (text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                       const imgUrl = getMealImageByDish(text);
-                      html += `<div style="margin:8px 0;display:flex;gap:14px;align-items:center;padding:8px;background:#f8fafc;border-radius:8px;">`;
-                      html += `<img src="${imgUrl}&fm=jpg" alt="" width="100" height="70" style="width:100px;height:70px;object-fit:cover;border-radius:6px;flex-shrink:0;" />`;
-                      html += `<div><div style="font-size:10px;font-weight:bold;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">${(meal.type || 'Jídlo').replace(/</g, '&lt;')}</div><div style="font-size:12px;color:#1e293b;line-height:1.45;">${dishTitle}</div></div>`;
-                      html += `</div>`;
+                      rows += `<div class="meal-row"><img src="${imgUrl}" class="meal-img" /><div class="meal-info"><div class="meal-type">${(meal.type || 'Jídlo').replace(/</g, '&lt;')}</div><div class="meal-title">${dishTitle}</div></div></div>`;
                     });
-                    html += `</div>`;
+                    rows += `</div>`;
                   });
-                  el.innerHTML = html;
 
-                  const imgs = el.querySelectorAll('img');
-                  await Promise.all(Array.from(imgs).map((img) => {
-                    if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-                    return new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; setTimeout(resolve, 3000); });
-                  }));
+                  const html = `<!DOCTYPE html><html lang="cs"><head><meta charset="UTF-8"><title>Jídelníček – Body & Mind ON</title><style>
+                    *{box-sizing:border-box;margin:0;padding:0}
+                    body{font-family:Arial,Helvetica,sans-serif;color:#1e293b;background:#fff;padding:20px}
+                    h1{font-size:20px;font-weight:700;margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid #e2e8f0;color:#0f172a}
+                    .day-block{margin-bottom:18px;break-inside:avoid}
+                    .day-name{font-size:14px;font-weight:700;background:#eff6ff;color:#1e40af;padding:6px 12px;border-radius:6px;margin-bottom:8px}
+                    .meal-row{display:flex;gap:12px;align-items:center;margin-bottom:6px;background:#f8fafc;border-radius:8px;padding:8px}
+                    .meal-img{width:80px;height:56px;object-fit:cover;border-radius:6px;flex-shrink:0}
+                    .meal-type{font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;letter-spacing:0.04em;margin-bottom:2px}
+                    .meal-title{font-size:12px;color:#1e293b;line-height:1.4}
+                    @media print{body{padding:10px}.day-block{break-inside:avoid}}
+                  </style></head><body>
+                    <h1>Jídelníček na týden – Body &amp; Mind ON</h1>
+                    ${rows}
+                    <script>window.onload=function(){window.print()}<\/script>
+                  </body></html>`;
 
-                  try {
-                    const html2pdf = (await import('html2pdf.js')).default;
-                    await html2pdf().set({
-                      margin: [8, 8, 8, 8],
-                      filename: 'jidelnicek-tyden.pdf',
-                      image: { type: 'jpeg', quality: 0.9 },
-                      html2canvas: { scale: 2, useCORS: true, allowTaint: false, logging: false },
-                      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                    }).from(el).save();
-                  } catch (err) {
-                    console.error('PDF export error:', err);
-                  } finally {
-                    document.body.removeChild(el);
-                  }
+                  const w = window.open('', '_blank', 'width=900,height=700');
+                  if (w) { w.document.write(html); w.document.close(); }
                 }}
               >
                 Stáhnout jídelníček (PDF)

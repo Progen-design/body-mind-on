@@ -13,7 +13,7 @@ function formatShortDate(d) {
   return date.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short' });
 }
 
-const DAYS_FORWARD = 0;
+const DAYS_FORWARD = 7;
 const DAYS_BACK = 0;
 
 export default function HabitTracker({ session, userHabits, onToast }) {
@@ -216,73 +216,71 @@ export default function HabitTracker({ session, userHabits, onToast }) {
 
   const pct = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0;
   const todayFormatted = new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
-  const circumference = 2 * Math.PI * 40;
-  const strokeOffset = circumference - (pct / 100) * circumference;
+  const CELL_W = 52;
+  const LABEL_W = 200;
+  const GAP = 6;
+  const gridCols = `${LABEL_W}px repeat(${days.length}, ${CELL_W}px)`;
 
-  const renderCard = (h, isNegative) => {
-    const completed = getCompleted(h.id, todayStr);
-    const busy = toggling === `${h.id}-${todayStr}`;
-    return (
-      <button
-        key={h.id}
-        type="button"
-        className={`hc-card ${completed ? 'completed' : ''} ${isNegative ? 'negative' : 'positive'} ${busy ? 'busy' : ''}`}
-        onClick={() => !busy && handleToggle(h.id, todayStr)}
-        aria-pressed={completed}
-        aria-label={`${h.label}${completed ? ', splněno' : ', nesplněno'}`}
-      >
-        <div className="hc-card-inner">
-          <span className="hc-emoji" aria-hidden="true">{h.emoji}</span>
-          <span className="hc-label">{h.label}</span>
-          <div className={`hc-toggle ${completed ? 'on' : ''}`}>
+  const renderHabitRow = (h, isNegative) => (
+    <>
+      <div key={`lbl-${h.id}`} className="hg-label" title={h.description}>
+        <span className="hg-emoji" aria-hidden="true">{h.emoji}</span>
+        <span className="hg-name">{h.label}</span>
+      </div>
+      {days.map((dateStr) => {
+        const completed = getCompleted(h.id, dateStr);
+        const isToday = dateStr === todayStr;
+        const isFuture = dateStr > todayStr;
+        const busy = toggling === `${h.id}-${dateStr}`;
+        return (
+          <button
+            key={`${h.id}-${dateStr}`}
+            type="button"
+            className={[
+              'hg-cell',
+              completed ? 'done' : '',
+              isToday ? 'today' : '',
+              isFuture ? 'future' : '',
+              busy ? 'busy' : '',
+              isNegative ? 'neg' : '',
+            ].filter(Boolean).join(' ')}
+            onClick={() => !isFuture && !busy && handleToggle(h.id, dateStr)}
+            disabled={isFuture || busy}
+            aria-pressed={completed}
+            aria-label={`${h.label}, ${formatShortDate(dateStr)}${completed ? ', splněno' : ', nesplněno'}`}
+          >
             {busy ? (
-              <span className="hc-spin" />
+              <span className="hg-spin" />
             ) : completed ? (
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="hc-checkmark">
-                <path d="M5 12l5 5 9-9" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
+              <svg className="hg-check" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             ) : (
-              <span className="hc-circle" />
+              <span className="hg-circle" />
             )}
-          </div>
-        </div>
-        {completed && <span className="hc-glow" aria-hidden="true" />}
-      </button>
-    );
-  };
+          </button>
+        );
+      })}
+    </>
+  );
 
   return (
     <section className="habit-tracker">
-      {/* Header */}
-      <div className="ht-header">
-        <div className="ht-header-text">
+      <div className="ht-top">
+        <div>
           <h2 className="ht-title">Denní návyky</h2>
           <p className="ht-date">{todayFormatted}</p>
         </div>
-        <div className="ht-ring-wrap" title={`${completedToday} z ${totalHabits} splněno`}>
-          <svg className="ht-ring" viewBox="0 0 100 100" aria-hidden="true">
-            <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="8" />
-            <circle
-              cx="50" cy="50" r="40" fill="none"
-              stroke={pct === 100 ? '#22c55e' : '#34d399'}
-              strokeWidth="8"
-              strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeOffset}
-              style={{ transition: 'stroke-dashoffset 0.6s cubic-bezier(0.4,0,0.2,1)', transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
-            />
-          </svg>
-          <div className="ht-ring-label">
-            <span className="ht-ring-pct">{pct}<span className="ht-ring-sym">%</span></span>
+        <div className="ht-progress-inline">
+          <span className="ht-prog-nums">{completedToday}<span className="ht-prog-sep">/</span>{totalHabits}</span>
+          <div className="ht-prog-bar-wrap">
+            <div className="ht-prog-bar" style={{ width: `${pct}%` }} />
           </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="ht-loading">
-          <span className="ht-spin-lg" />
-          <span>Načítám návyky…</span>
-        </div>
+        <div className="ht-loading"><span className="ht-spin-lg" /><span>Načítám…</span></div>
       ) : fetchError ? (
         <div className="ht-error">
           <p>{fetchError}</p>
@@ -290,41 +288,42 @@ export default function HabitTracker({ session, userHabits, onToast }) {
         </div>
       ) : (
         <>
-          {/* Progress bar */}
-          <div className="ht-progress-wrap">
-            <div className="ht-progress-bar" style={{ width: `${pct}%` }} />
-            <span className="ht-progress-label">{completedToday} / {totalHabits}</span>
+          <div className="hg-scroll">
+            <div className="hg-grid" style={{ gridTemplateColumns: gridCols, columnGap: GAP }}>
+
+              {/* Date header row */}
+              <div className="hg-corner" />
+              {days.map((d) => (
+                <div key={d} className={`hg-hdr-cell ${d === todayStr ? 'today' : ''}`}>
+                  <span className="hg-hdr-day">{new Date(d + 'T12:00:00Z').toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' }).replace(' ', '')}</span>
+                  {d === todayStr && <span className="hg-hdr-today">Dnes</span>}
+                </div>
+              ))}
+
+              {/* Positive habits */}
+              {positiveHabits.length > 0 && (
+                <>
+                  <div className="hg-section-bar pos" style={{ gridColumn: `1 / span ${days.length + 1}` }}>
+                    <span className="hg-section-dot" />ZDRAVÉ NÁVYKY
+                  </div>
+                  {positiveHabits.map((h) => renderHabitRow(h, false))}
+                </>
+              )}
+
+              {/* Negative habits */}
+              {negativeHabits.length > 0 && (
+                <>
+                  <div className="hg-section-bar neg" style={{ gridColumn: `1 / span ${days.length + 1}` }}>
+                    <span className="hg-section-dot neg" />ZLOZVYKY
+                  </div>
+                  {negativeHabits.map((h) => renderHabitRow(h, true))}
+                </>
+              )}
+            </div>
           </div>
-
-          {positiveHabits.length > 0 && (
-            <div className="ht-section">
-              <div className="ht-section-hdr positive">
-                <span className="ht-section-dot" />
-                Zdravé návyky
-              </div>
-              <div className="hc-grid">
-                {positiveHabits.map((h) => renderCard(h, false))}
-              </div>
-            </div>
-          )}
-
-          {negativeHabits.length > 0 && (
-            <div className="ht-section">
-              <div className="ht-section-hdr negative">
-                <span className="ht-section-dot neg" />
-                Zlozvyky
-              </div>
-              <div className="hc-grid">
-                {negativeHabits.map((h) => renderCard(h, true))}
-              </div>
-            </div>
-          )}
 
           {recommendation && (
             <div className="ht-tip">
-              <svg className="ht-tip-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
               <p className="ht-tip-text">{recommendation}</p>
             </div>
           )}
@@ -334,298 +333,242 @@ export default function HabitTracker({ session, userHabits, onToast }) {
       <style jsx>{`
         .habit-tracker { margin-bottom: 48px; }
 
-        /* ─── Header ─── */
-        .ht-header {
+        .ht-top {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-bottom: 24px;
-          gap: 16px;
+          gap: 20px;
+          margin-bottom: 20px;
         }
         .ht-title {
-          margin: 0 0 4px;
-          font-size: 1.6rem;
+          margin: 0 0 3px;
+          font-size: 1.5rem;
           font-weight: 800;
-          letter-spacing: -0.03em;
+          letter-spacing: -0.02em;
           color: #f8fafc;
-          background: linear-gradient(135deg, #f8fafc 0%, #94a3b8 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
         }
         .ht-date {
           margin: 0;
-          font-size: 0.875rem;
+          font-size: 0.8125rem;
           color: #64748b;
           font-weight: 500;
           text-transform: capitalize;
         }
-        .ht-ring-wrap {
-          position: relative;
-          width: 80px;
-          height: 80px;
+        .ht-progress-inline {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 6px;
           flex-shrink: 0;
         }
-        .ht-ring { width: 100%; height: 100%; display: block; }
-        .ht-ring-label {
-          position: absolute;
-          inset: 0;
+        .ht-prog-nums {
+          font-size: 1rem;
+          font-weight: 700;
+          color: #f8fafc;
+        }
+        .ht-prog-sep { color: #475569; margin: 0 2px; }
+        .ht-prog-bar-wrap {
+          width: 120px;
+          height: 5px;
+          background: rgba(255,255,255,0.07);
+          border-radius: 999px;
+          overflow: hidden;
+        }
+        .ht-prog-bar {
+          height: 100%;
+          background: linear-gradient(90deg, #34d399, #10b981);
+          border-radius: 999px;
+          transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+          box-shadow: 0 0 8px rgba(52,211,153,0.5);
+        }
+
+        /* ── Grid ── */
+        .hg-scroll {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          border-radius: 18px;
+          background: rgba(15,23,42,0.85);
+          border: 1px solid rgba(255,255,255,0.07);
+          box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .hg-grid {
+          display: grid;
+          row-gap: 0;
+          padding: 16px 16px 20px;
+          min-width: max-content;
+        }
+        .hg-corner { height: 56px; }
+
+        /* Date header cell */
+        .hg-hdr-cell {
+          height: 56px;
           display: flex;
+          flex-direction: column;
           align-items: center;
           justify-content: center;
-        }
-        .ht-ring-pct {
-          font-size: 1.1rem;
-          font-weight: 800;
-          color: #f8fafc;
-          line-height: 1;
-        }
-        .ht-ring-sym { font-size: 0.65rem; font-weight: 700; color: #94a3b8; }
-
-        /* ─── Progress bar ─── */
-        .ht-progress-wrap {
-          position: relative;
-          height: 6px;
-          background: rgba(255,255,255,0.06);
-          border-radius: 999px;
-          margin-bottom: 28px;
-          overflow: visible;
-        }
-        .ht-progress-bar {
-          height: 100%;
-          border-radius: 999px;
-          background: linear-gradient(90deg, #34d399, #10b981, #059669);
-          transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
-          box-shadow: 0 0 10px rgba(52,211,153,0.4);
-        }
-        .ht-progress-label {
-          position: absolute;
-          right: 0;
-          top: -22px;
-          font-size: 0.75rem;
-          font-weight: 600;
+          gap: 2px;
+          border-radius: 10px;
+          background: rgba(255,255,255,0.04);
+          font-size: 0.6875rem;
+          font-weight: 700;
           color: #64748b;
+          user-select: none;
+        }
+        .hg-hdr-cell.today {
+          background: linear-gradient(135deg, rgba(124,58,237,0.35) 0%, rgba(139,92,246,0.25) 100%);
+          border: 1px solid rgba(139,92,246,0.5);
+          color: #c4b5fd;
+          box-shadow: 0 0 16px rgba(139,92,246,0.2);
+        }
+        .hg-hdr-day { font-size: 0.75rem; font-weight: 700; line-height: 1; }
+        .hg-hdr-today {
+          font-size: 0.5rem;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: #a78bfa;
         }
 
-        /* ─── Section ─── */
-        .ht-section { margin-bottom: 20px; }
-        .ht-section-hdr {
+        /* Section bar */
+        .hg-section-bar {
           display: flex;
           align-items: center;
           gap: 8px;
-          font-size: 0.75rem;
-          font-weight: 700;
+          font-size: 0.6875rem;
+          font-weight: 800;
           letter-spacing: 0.1em;
-          text-transform: uppercase;
-          margin-bottom: 14px;
+          padding: 14px 4px 8px;
+          color: #475569;
         }
-        .ht-section-hdr.positive { color: #4ade80; }
-        .ht-section-hdr.negative { color: #f87171; }
-        .ht-section-dot {
-          width: 7px; height: 7px;
+        .hg-section-bar.pos { color: #4ade80; }
+        .hg-section-bar.neg { color: #f87171; }
+        .hg-section-dot {
+          width: 6px; height: 6px;
           border-radius: 50%;
           background: #22c55e;
-          box-shadow: 0 0 6px #22c55e;
+          box-shadow: 0 0 5px #22c55e;
           flex-shrink: 0;
         }
-        .ht-section-dot.neg {
-          background: #f87171;
-          box-shadow: 0 0 6px #f87171;
-        }
+        .hg-section-dot.neg { background: #f87171; box-shadow: 0 0 5px #f87171; }
 
-        /* ─── Cards grid ─── */
-        .hc-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-          gap: 12px;
-        }
-
-        /* ─── Single card ─── */
-        .hc-card {
-          position: relative;
-          padding: 0;
-          border: none;
-          border-radius: 20px;
-          cursor: pointer;
-          background: rgba(255, 255, 255, 0.03);
-          border: 1.5px solid rgba(255, 255, 255, 0.09);
-          transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s;
-          touch-action: manipulation;
-          overflow: hidden;
-          text-align: left;
-        }
-        .hc-card:hover:not(.busy) {
-          transform: translateY(-3px) scale(1.02);
-          box-shadow: 0 12px 32px rgba(0,0,0,0.3);
-          border-color: rgba(255,255,255,0.18);
-        }
-        .hc-card:active:not(.busy) {
-          transform: scale(0.97);
-        }
-        .hc-card.positive.completed {
-          background: linear-gradient(135deg, rgba(34,197,94,0.18) 0%, rgba(16,185,129,0.12) 100%);
-          border-color: rgba(34,197,94,0.45);
-          box-shadow: 0 4px 24px rgba(34,197,94,0.18), 0 0 0 1px rgba(34,197,94,0.2) inset;
-        }
-        .hc-card.negative.completed {
-          background: linear-gradient(135deg, rgba(34,197,94,0.18) 0%, rgba(16,185,129,0.12) 100%);
-          border-color: rgba(34,197,94,0.4);
-          box-shadow: 0 4px 24px rgba(34,197,94,0.15);
-        }
-        .hc-card.busy { opacity: 0.6; cursor: wait; }
-
-        .hc-card-inner {
+        /* Habit label */
+        .hg-label {
           display: flex;
-          flex-direction: column;
-          align-items: flex-start;
+          align-items: center;
           gap: 10px;
-          padding: 20px 18px 18px;
+          height: 52px;
+          padding-right: 12px;
+          overflow: hidden;
         }
-        .hc-emoji {
-          font-size: 2rem;
-          line-height: 1;
-          filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
-        }
-        .hc-label {
-          font-size: 0.9rem;
+        .hg-emoji { font-size: 1.25rem; flex-shrink: 0; line-height: 1; }
+        .hg-name {
+          font-size: 0.875rem;
           font-weight: 600;
           color: #e2e8f0;
-          line-height: 1.3;
-          flex: 1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
-        .hc-card.completed .hc-label { color: #f0fdf4; }
 
-        /* ─── Toggle button area ─── */
-        .hc-toggle {
-          width: 100%;
+        /* Habit cell */
+        .hg-cell {
+          width: ${CELL_W}px;
+          height: 52px;
           display: flex;
           align-items: center;
           justify-content: center;
-          height: 48px;
-          border-radius: 14px;
-          background: rgba(255,255,255,0.05);
-          border: 1.5px solid rgba(255,255,255,0.1);
-          margin-top: 4px;
-          transition: background 0.2s, border-color 0.2s;
+          background: rgba(255,255,255,0.04);
+          border: 1.5px solid rgba(255,255,255,0.08);
+          border-radius: 12px;
+          cursor: pointer;
+          transition: transform 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s;
+          touch-action: manipulation;
         }
-        .hc-toggle.on {
-          background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-          border-color: transparent;
-          box-shadow: 0 4px 16px rgba(34,197,94,0.4);
-        }
-        .hc-card:hover:not(.busy) .hc-toggle:not(.on) {
-          background: rgba(255,255,255,0.09);
+        .hg-cell:hover:not(:disabled):not(.future) {
+          background: rgba(255,255,255,0.1);
           border-color: rgba(255,255,255,0.2);
+          transform: scale(1.08);
         }
-        .hc-circle {
-          width: 24px; height: 24px;
+        .hg-cell:active:not(:disabled) { transform: scale(0.92); }
+        .hg-cell.today:not(.done) {
+          background: rgba(124,58,237,0.12);
+          border-color: rgba(139,92,246,0.35);
+        }
+        .hg-cell.today:not(.done):hover:not(:disabled) {
+          background: rgba(124,58,237,0.2);
+          border-color: rgba(139,92,246,0.55);
+        }
+        .hg-cell.done {
+          background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+          border-color: transparent;
+          box-shadow: 0 3px 12px rgba(34,197,94,0.4);
+        }
+        .hg-cell.done:hover:not(:disabled) {
+          background: linear-gradient(135deg, #15803d 0%, #166534 100%);
+          transform: scale(1.06);
+        }
+        .hg-cell.future { opacity: 0.22; cursor: default; pointer-events: none; }
+        .hg-cell.busy { opacity: 0.5; cursor: wait; }
+
+        .hg-circle {
+          width: 20px; height: 20px;
           border-radius: 50%;
-          border: 2.5px solid rgba(255,255,255,0.35);
+          border: 2px solid rgba(255,255,255,0.3);
           display: block;
-          transition: border-color 0.2s;
+          transition: border-color 0.15s;
         }
-        .hc-card:hover:not(.busy) .hc-circle {
-          border-color: rgba(255,255,255,0.7);
-        }
-        .hc-checkmark {
-          width: 28px; height: 28px;
-          color: #fff;
-        }
-        .hc-spin {
+        .hg-cell.today .hg-circle { border-color: rgba(167,139,250,0.6); }
+        .hg-cell:hover .hg-circle { border-color: rgba(255,255,255,0.7); }
+        .hg-check {
           width: 22px; height: 22px;
-          border-radius: 50%;
-          border: 2.5px solid rgba(255,255,255,0.2);
-          border-top-color: #fff;
-          animation: hc-spin 0.7s linear infinite;
-          display: block;
+          color: #bbf7d0;
         }
-        @keyframes hc-spin { to { transform: rotate(360deg); } }
-
-        /* Glow overlay for completed */
-        .hc-glow {
-          position: absolute;
-          inset: 0;
-          border-radius: 20px;
-          pointer-events: none;
-          background: radial-gradient(ellipse at 50% 0%, rgba(34,197,94,0.25) 0%, transparent 70%);
-        }
-
-        /* ─── Tip / recommendation ─── */
-        .ht-tip {
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
-          margin-top: 24px;
-          padding: 16px 18px;
-          background: rgba(248,250,252,0.03);
-          border: 1px solid rgba(248,250,252,0.07);
-          border-radius: 14px;
-        }
-        .ht-tip-icon {
+        .hg-spin {
           width: 18px; height: 18px;
-          color: #4ade80;
-          flex-shrink: 0;
-          margin-top: 1px;
-        }
-        .ht-tip-text {
-          margin: 0;
-          font-size: 0.875rem;
-          line-height: 1.55;
-          color: #94a3b8;
-        }
-
-        /* ─── Loading / error ─── */
-        .ht-loading {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 14px;
-          padding: 48px 24px;
-          color: #64748b;
-          font-size: 0.875rem;
-        }
-        .ht-spin-lg {
-          width: 36px; height: 36px;
           border-radius: 50%;
-          border: 3px solid rgba(255,255,255,0.08);
-          border-top-color: #34d399;
-          animation: hc-spin 0.8s linear infinite;
+          border: 2px solid rgba(255,255,255,0.15);
+          border-top-color: #fff;
+          animation: hg-spin 0.7s linear infinite;
           display: block;
         }
-        .ht-error {
-          text-align: center;
-          padding: 24px;
+        @keyframes hg-spin { to { transform: rotate(360deg); } }
+
+        .ht-tip {
+          margin-top: 16px;
+          padding: 14px 16px;
           background: rgba(248,250,252,0.03);
           border: 1px solid rgba(248,250,252,0.06);
           border-radius: 12px;
-          color: #94a3b8;
-          font-size: 0.875rem;
+        }
+        .ht-tip-text { margin: 0; font-size: 0.8125rem; line-height: 1.5; color: #64748b; }
+
+        .ht-loading {
+          display: flex; flex-direction: column; align-items: center;
+          gap: 12px; padding: 48px 24px; color: #64748b; font-size: 0.875rem;
+        }
+        .ht-spin-lg {
+          width: 32px; height: 32px; border-radius: 50%;
+          border: 3px solid rgba(255,255,255,0.07);
+          border-top-color: #34d399;
+          animation: hg-spin 0.8s linear infinite; display: block;
+        }
+        .ht-error {
+          text-align: center; padding: 24px;
+          background: rgba(248,250,252,0.03); border: 1px solid rgba(248,250,252,0.06);
+          border-radius: 12px; color: #94a3b8; font-size: 0.875rem;
         }
         .ht-retry {
-          margin-top: 12px;
-          padding: 10px 20px;
-          background: rgba(248,250,252,0.08);
-          border: 1px solid rgba(248,250,252,0.12);
-          border-radius: 8px;
-          color: #e2e8f0;
-          font-size: 0.8125rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: background 0.2s;
+          margin-top: 12px; padding: 10px 20px;
+          background: rgba(248,250,252,0.08); border: 1px solid rgba(248,250,252,0.12);
+          border-radius: 8px; color: #e2e8f0; font-size: 0.8125rem;
+          font-weight: 500; cursor: pointer; transition: background 0.2s;
         }
         .ht-retry:hover { background: rgba(248,250,252,0.13); }
 
-        /* ─── Mobile ─── */
         @media (max-width: 640px) {
           .habit-tracker { margin-bottom: 32px; }
-          .ht-title { font-size: 1.3rem; }
-          .hc-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-          .hc-card-inner { padding: 16px 14px 14px; gap: 8px; }
-          .hc-emoji { font-size: 1.6rem; }
-          .hc-label { font-size: 0.8125rem; }
-          .hc-toggle { height: 40px; border-radius: 12px; }
-          .ht-ring-wrap { width: 68px; height: 68px; }
-          .ht-ring-pct { font-size: 0.95rem; }
+          .ht-title { font-size: 1.2rem; }
+          .ht-prog-bar-wrap { width: 90px; }
         }
       `}</style>
     </section>

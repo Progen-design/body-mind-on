@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "migrate:trainer-calendar": "node scripts/run-trainer-calendar-migration.js",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -24,6 +25,8 @@
   },
   "devDependencies": {
     "eslint": "^8.57.0",
-    "eslint-config-next": "14.2.5"
+    "eslint-config-next": "14.2.5",
+    "pg": "^8.19.0",
+    "supabase": "^2.76.15"
   }
 }

@@ -101,6 +101,8 @@ export default function Profil() {
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [mindsetTipFromPlan, setMindsetTipFromPlan] = useState('');
+  const [trainerSchedule, setTrainerSchedule] = useState({ events: [], connected: false });
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
 
   const [workoutForm, setWorkoutForm] = useState({
     workout_date: new Date().toISOString().split('T')[0],
@@ -280,6 +282,36 @@ export default function Profil() {
       return () => clearTimeout(timer);
     }
   }, [loading, session, error, profile?.program, profile?.user_habits]);
+
+  // Načíst plánované tréninky z kalendáře trenéra (info@)
+  useEffect(() => {
+    if (!session?.access_token) return;
+    let cancelled = false;
+    setLoadingSchedule(true);
+    const from = new Date().toISOString().slice(0, 10);
+    const to = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    fetch(`${typeof window !== 'undefined' ? '' : ''}/api/trainer-schedule?from=${from}&to=${to}`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setTrainerSchedule({ events: data.events || [], connected: data.connected === true });
+      })
+      .catch(() => { if (!cancelled) setTrainerSchedule((s) => ({ ...s, connected: false })); })
+      .finally(() => { if (!cancelled) setLoadingSchedule(false); });
+    return () => { cancelled = true; };
+  }, [session?.access_token]);
+
+  // Toast po propojení kalendáře trenéra (redirect z Google OAuth)
+  useEffect(() => {
+    if (router.query?.calendar === 'connected') {
+      setToast({ message: 'Kalendář trenéra je propojen. Rozvrh tréninků se nyní načítá z info@.', type: 'success' });
+      router.replace('/profil', undefined, { shallow: true });
+    } else if (router.query?.calendar === 'error') {
+      setToast({ message: 'Propojení kalendáře se nepovedlo.', type: 'error' });
+      router.replace('/profil', undefined, { shallow: true });
+    }
+  }, [router.query?.calendar]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -1024,6 +1056,33 @@ export default function Profil() {
                   <span className="btn-sublabel">Cílová váha pro odhad do cíle</span>
                 </button>
               </div>
+            </section>
+
+            {/* Plánované tréninky – z kalendáře trenéra (info@) */}
+            <section className="card trainer-schedule-section">
+              <h2 className="section-head">Kdy mám trénink?</h2>
+              <p className="trainer-schedule-lead">Rozvrh plánovaných tréninků z kalendáře trenéra. Zdroj: info@ (Google Kalendář).</p>
+              {loadingSchedule ? (
+                <p className="trainer-schedule-loading">Načítám rozvrh…</p>
+              ) : !trainerSchedule.connected ? (
+                <p className="trainer-schedule-disconnected">Rozvrh zatím není propojen. Trenér může propojit kalendář (info@) v nastavení.</p>
+              ) : trainerSchedule.events.length === 0 ? (
+                <p className="trainer-schedule-empty">V příštích 14 dnech nejsou v kalendáři žádné události.</p>
+              ) : (
+                <ul className="trainer-schedule-list">
+                  {trainerSchedule.events.map((ev) => {
+                    const start = ev.start ? new Date(ev.start) : null;
+                    const dateStr = start && !isNaN(start.getTime()) ? formatShortDate(ev.start.slice(0, 10)) : ev.start?.slice(0, 10) || '—';
+                    const timeStr = ev.start && ev.start.length > 10 ? new Date(ev.start).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }) : null;
+                    return (
+                      <li key={ev.id || ev.start + ev.summary} className="trainer-schedule-item">
+                        <span className="trainer-schedule-date">{dateStr}{timeStr ? ` · ${timeStr}` : ''}</span>
+                        <span className="trainer-schedule-summary">{ev.summary}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </section>
 
             {/* Souhrn návyků tento týden – propojení s profilem */}
@@ -1786,6 +1845,40 @@ export default function Profil() {
         .btn-emoji { font-size: 20px; margin-right: 8px; }
 
         .progress-section { margin-bottom: 40px; }
+        .trainer-schedule-section { margin-bottom: 32px; }
+        .trainer-schedule-lead {
+          font-size: 14px;
+          color: #94a3b8;
+          margin: -8px 0 16px;
+        }
+        .trainer-schedule-loading,
+        .trainer-schedule-disconnected,
+        .trainer-schedule-empty {
+          font-size: 14px;
+          color: #64748b;
+          margin: 0;
+        }
+        .trainer-schedule-list {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+        }
+        .trainer-schedule-item {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: baseline;
+          gap: 12px;
+          padding: 10px 0;
+          border-bottom: 1px solid rgba(148,163,184,0.2);
+          font-size: 15px;
+        }
+        .trainer-schedule-item:last-child { border-bottom: none; }
+        .trainer-schedule-date {
+          color: #94a3b8;
+          font-size: 14px;
+          min-width: 140px;
+        }
+        .trainer-schedule-summary { font-weight: 500; }
         .progress-lead {
           color: #94a3b8;
           font-size: 14px;

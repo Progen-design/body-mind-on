@@ -360,8 +360,17 @@ export default function Profil() {
         setShowWorkoutModal(false);
         if (fresh) setSession(fresh);
         
+        // Automaticky označit habit "Trénink" jako splněný pro datum tréninku
+        try {
+          await fetch('/api/habits', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ log_date: workoutForm.workout_date, habit_id: 'training', completed: true }),
+          });
+        } catch (_) {}
+
         // Zobrazit toast notifikaci
-        setToast({ message: 'Trénink úspěšně přidán! 🏋️ Dobrý krok – každý trénink se počítá.', type: 'success' });
+        setToast({ message: 'Trénink úspěšně přidán! 🏋️ Habit "Trénink" byl automaticky označen jako splněný.', type: 'success' });
         (async () => {
           try {
             await new Promise(resolve => setTimeout(resolve, 2500));

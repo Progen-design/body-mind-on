@@ -376,50 +376,52 @@ export default function PlanViewer({ plan, userName, hideHero }) {
           {/* Export jídelníčku – PDF s češtinou a obrázky */}
           {parsed.days?.length > 0 && (
             <div className="plan-block plan-export-row">
-              <div id="pdf-export-content" style={{ position: 'absolute', left: '-9999px', top: 0, width: '210mm', background: '#fff', padding: '20mm', fontFamily: 'Georgia, serif', color: '#1e293b' }} aria-hidden="true" />
               <button
                 type="button"
                 className="plan-export-btn"
                 onClick={async () => {
-                  const el = document.getElementById('pdf-export-content');
-                  if (!el) return;
-                  let html = '<h1 style="font-size:18px;margin:0 0 20px;color:#0f172a;">Jídelníček na týden – Body &amp; Mind ON</h1>';
+                  const el = document.createElement('div');
+                  el.style.cssText = 'width:750px;background:#fff;padding:32px 40px;font-family:Georgia,serif;color:#1e293b;position:fixed;top:-9999px;left:-9999px;z-index:-1;';
+                  document.body.appendChild(el);
+
+                  let html = '<h1 style="font-size:22px;font-weight:bold;margin:0 0 24px;color:#0f172a;border-bottom:2px solid #e2e8f0;padding-bottom:12px;">Jídelníček na týden – Body & Mind ON</h1>';
                   (parsed.days || []).forEach((day, di) => {
-                    html += `<h2 style="font-size:14px;margin:16px 0 8px;color:#334155;">${(day.dayName || 'Den').replace(/</g, '&lt;')}</h2>`;
+                    html += `<div style="margin-top:20px;"><h2 style="font-size:15px;font-weight:bold;margin:0 0 10px;color:#1e40af;background:#eff6ff;padding:8px 12px;border-radius:6px;">${(day.dayName || 'Den').replace(/&/g, '&amp;').replace(/</g, '&lt;')}</h2>`;
                     (day.meals || []).forEach((meal, mi) => {
                       const key = `${di}_${mi}`;
                       const ov = mealOverrides[key];
-                      const text = ov ? ov.title : (meal.text || meal.fullHtml || '').replace(/<[^>]+>/g, ' ').trim();
-                      const dishTitle = (text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                      const text = ov ? ov.title : (meal.text || meal.fullHtml || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+                      const dishTitle = (text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                       const imgUrl = getMealImageByDish(text);
-                      html += `<div style="margin:12px 0;display:flex;gap:16px;align-items:flex-start;">`;
-                      html += `<img src="${imgUrl}" alt="" style="width:120px;height:84px;object-fit:cover;border-radius:8px;flex-shrink:0;" crossorigin="anonymous" />`;
-                      html += `<div><strong style="font-size:11px;color:#64748b;">${(meal.type || 'Jídlo').replace(/</g, '&lt;')}</strong><p style="margin:4px 0 0;font-size:12px;line-height:1.4;">${dishTitle}</p></div>`;
+                      html += `<div style="margin:8px 0;display:flex;gap:14px;align-items:center;padding:8px;background:#f8fafc;border-radius:8px;">`;
+                      html += `<img src="${imgUrl}&fm=jpg" alt="" width="100" height="70" style="width:100px;height:70px;object-fit:cover;border-radius:6px;flex-shrink:0;" />`;
+                      html += `<div><div style="font-size:10px;font-weight:bold;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">${(meal.type || 'Jídlo').replace(/</g, '&lt;')}</div><div style="font-size:12px;color:#1e293b;line-height:1.45;">${dishTitle}</div></div>`;
                       html += `</div>`;
                     });
+                    html += `</div>`;
                   });
                   el.innerHTML = html;
+
                   const imgs = el.querySelectorAll('img');
                   await Promise.all(Array.from(imgs).map((img) => {
-                    if (img.complete) return Promise.resolve();
-                    return new Promise((resolve) => {
-                      img.onload = resolve;
-                      img.onerror = resolve;
-                    });
+                    if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+                    return new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; setTimeout(resolve, 3000); });
                   }));
+
                   try {
                     const html2pdf = (await import('html2pdf.js')).default;
                     await html2pdf().set({
-                      margin: 10,
+                      margin: [8, 8, 8, 8],
                       filename: 'jidelnicek-tyden.pdf',
-                      image: { type: 'jpeg', quality: 0.92 },
-                      html2canvas: { scale: 2, useCORS: true },
+                      image: { type: 'jpeg', quality: 0.9 },
+                      html2canvas: { scale: 2, useCORS: true, allowTaint: false, logging: false },
                       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
                     }).from(el).save();
                   } catch (err) {
                     console.error('PDF export error:', err);
+                  } finally {
+                    document.body.removeChild(el);
                   }
-                  el.innerHTML = '';
                 }}
               >
                 Stáhnout jídelníček (PDF)

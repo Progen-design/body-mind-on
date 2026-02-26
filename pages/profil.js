@@ -570,7 +570,7 @@ export default function Profil() {
 
   // Všechny parametry se přepočítají při každé změně profile (trénink, váha)
   // Použít _updated timestamp jako závislost, aby se vždy přepočítalo při změně
-  const { program, membershipStatus, membershipSince, metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, thisWeekDates, startWeightDate, lastWeightDate } = useMemo(() => {
+  const { program, membershipStatus, membershipSince, metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName, firstName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, thisWeekDates, startWeightDate, lastWeightDate } = useMemo(() => {
     // Zajistit, že máme vždy nové reference na pole pro správnou detekci změn
     // A SORT podle data - nejnovější první
     const m = profile?.body_metrics 
@@ -682,6 +682,7 @@ export default function Profil() {
       estimatedCaloriesAll: kcalTotal,
       chartWeightData: chartData,
       userName: name,
+      firstName: (name || '').trim().split(/\s+/)[0] || name || 'ty',
       lastWeekCount: lastWeek.length,
       lastWeekMinutes: lastWeekMin,
       workoutTrend,
@@ -823,11 +824,14 @@ export default function Profil() {
         )}
 
         <section className="hero">
-          <h1>
-            {(PROGRAM_LABELS[program] || PROGRAM_LABELS.START).greeting}, <span>{userName}</span>
+          <p className="hero-intro">
+            {(PROGRAM_LABELS[program] || PROGRAM_LABELS.START).greeting}
             {(program === 'ON_CLUB' || program === 'VIP') && (
               <span className="hero-program-badge">{program === 'ON_CLUB' ? 'ON Club' : 'VIP'}</span>
             )}
+          </p>
+          <h1 className="hero-name">
+            Ahoj, <span>{firstName}</span>
           </h1>
           <p className="hero-sub">{(PROGRAM_LABELS[program] || PROGRAM_LABELS.START).subtitle}</p>
           {!loading && !error && (
@@ -1392,18 +1396,30 @@ export default function Profil() {
           text-align: center;
           margin-bottom: 40px;
         }
-        .hero h1 {
-          font-size: 38px;
-          font-weight: 700;
+        .hero-intro {
+          margin: 0 0 6px;
+          font-size: 18px;
+          font-weight: 600;
+          color: #94a3b8;
+          letter-spacing: -0.01em;
         }
-        .hero h1 > span:not(.hero-program-badge) {
+        .hero-name {
+          margin: 0 0 4px;
+          font-size: 36px;
+          font-weight: 700;
+          color: #fff;
+          letter-spacing: -0.02em;
+          line-height: 1.2;
+        }
+        .hero-name > span {
           background: linear-gradient(90deg, #9b5cff, #00cfff);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
         .hero-program-badge {
           display: inline-block;
-          margin-left: 12px;
+          margin-left: 10px;
           padding: 4px 12px;
           background: rgba(155, 92, 255, 0.25);
           border: 1px solid rgba(155, 92, 255, 0.5);
@@ -1416,8 +1432,9 @@ export default function Profil() {
         }
         .hero-sub {
           color: #94a3b8;
-          margin-top: 8px;
+          margin: 0;
           font-size: 16px;
+          line-height: 1.4;
         }
 
         /* ── Membership karta ─────────────────────────────────── */

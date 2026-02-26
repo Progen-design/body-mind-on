@@ -236,7 +236,8 @@ function parsePlanHtml(html) {
       }
     });
 
-    // Doplnění chybějících dnů (AI někdy vynechá Sobotu) – vždy zobrazit 7 dní
+    // Doplnění chybějících dnů (AI někdy vynechá den) – vždy zobrazit 7 dní
+    // Pořadí začíná od prvního dne v plánu (ne vždy Pondělí)
     const dayOrder = ['Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota', 'Neděle'];
     if (result.days.length > 0 && result.days.length < 7) {
       const byDay = {};
@@ -244,7 +245,13 @@ function parsePlanHtml(html) {
         const match = dayOrder.find((dn) => (d.dayName || '').includes(dn));
         if (match) byDay[match] = d;
       });
-      result.days = dayOrder.map((dn) => byDay[dn] || { dayName: dn, meals: [], _placeholder: true });
+      // Detekce prvního dne – zachovat pořadí dle plánu
+      const firstDayName = result.days[0]?.dayName || '';
+      const firstIdx = dayOrder.findIndex((dn) => firstDayName.includes(dn));
+      const rotated = firstIdx >= 0
+        ? [...dayOrder.slice(firstIdx), ...dayOrder.slice(0, firstIdx)]
+        : dayOrder;
+      result.days = rotated.map((dn) => byDay[dn] || { dayName: dn, meals: [], _placeholder: true });
     }
 
     if (result.personal.length || result.macros.length || result.days.length) return result;

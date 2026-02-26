@@ -225,13 +225,14 @@ function parsePlanHtml(html) {
         }
       } else if (/Mindset na tento týden/i.test(title)) {
         let el = h3.nextElementSibling;
+        const parts = [];
         while (el && el.tagName !== 'H3') {
-          if (el.tagName === 'P') {
-            result.mindsetTip = (el.textContent || '').trim();
-            break;
+          if (el.tagName === 'P' || el.tagName === 'UL' || el.tagName === 'BLOCKQUOTE') {
+            parts.push(el.innerHTML || el.textContent || '');
           }
           el = el.nextElementSibling;
         }
+        result.mindsetTip = parts.join('\n');
       }
     });
 

@@ -920,8 +920,14 @@ export default function Profil() {
             {/* Mindset na tento týden – hned pod Tvé milníky */}
             {mindsetTipFromPlan && (
               <div className="mindset-block">
-                <h3 className="mindset-block-title">Mindset na tento týden</h3>
-                <p className="mindset-block-text">{mindsetTipFromPlan}</p>
+                <div className="mindset-header">
+                  <span className="mindset-icon">🧠</span>
+                  <h3 className="mindset-block-title">Mindset na tento týden</h3>
+                </div>
+                <div
+                  className="mindset-content"
+                  dangerouslySetInnerHTML={{ __html: mindsetTipFromPlan }}
+                />
               </div>
             )}
 
@@ -1465,22 +1471,64 @@ export default function Profil() {
 
         .mindset-block {
           margin-bottom: 28px;
-          padding: 20px 24px;
-          background: rgba(139, 92, 255, 0.08);
-          border-radius: 16px;
-          border: 1px solid rgba(139, 92, 255, 0.2);
+          padding: 28px 28px 24px;
+          background: linear-gradient(135deg, rgba(109, 40, 217, 0.18) 0%, rgba(139, 92, 255, 0.10) 50%, rgba(59, 130, 246, 0.10) 100%);
+          border-radius: 20px;
+          border: 1px solid rgba(139, 92, 255, 0.35);
+          box-shadow: 0 8px 32px rgba(109, 40, 217, 0.15), inset 0 1px 0 rgba(255,255,255,0.06);
+          position: relative;
+          overflow: hidden;
+        }
+        .mindset-block::before {
+          content: '';
+          position: absolute;
+          top: -60px;
+          right: -60px;
+          width: 200px;
+          height: 200px;
+          background: radial-gradient(circle, rgba(139, 92, 255, 0.12) 0%, transparent 70%);
+          pointer-events: none;
+        }
+        .mindset-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 18px;
+        }
+        .mindset-icon {
+          font-size: 26px;
+          line-height: 1;
+          filter: drop-shadow(0 0 8px rgba(139, 92, 255, 0.6));
         }
         .mindset-block-title {
-          margin: 0 0 12px;
-          font-size: 18px;
-          font-weight: 600;
-          color: #e9d5ff;
-        }
-        .mindset-block-text {
           margin: 0;
+          font-size: 19px;
+          font-weight: 700;
           color: #e9d5ff;
-          line-height: 1.5;
+          letter-spacing: -0.01em;
+        }
+        .mindset-content {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .mindset-content p {
+          margin: 0;
+          color: #d8b4fe;
+          line-height: 1.65;
           font-size: 15px;
+          padding: 12px 16px;
+          background: rgba(255,255,255,0.04);
+          border-radius: 12px;
+          border-left: 3px solid rgba(139, 92, 255, 0.5);
+        }
+        .mindset-content p b {
+          color: #f3e8ff;
+          display: block;
+          margin-bottom: 4px;
+          font-size: 13px;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
         }
 
         .toolbar {

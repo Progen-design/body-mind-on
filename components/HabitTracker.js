@@ -307,6 +307,17 @@ export default function HabitTracker({ session, userHabits, onToast }) {
                 {negativeHabits.map((h) => renderHabitRow(h, true))}
               </div>
             )}
+            <div className="habit-footer-dates">
+              <div className="habit-footer-spacer" />
+              <div className="habit-footer-cols">
+                {days.map((d) => (
+                  <div key={d} className={`habit-footer-cell ${d === todayStr ? 'today' : ''}`}>
+                    {formatShortDate(d)}
+                    {d === todayStr && <span className="habit-footer-badge">Dnes</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
           </div>
 
@@ -442,8 +453,8 @@ export default function HabitTracker({ session, userHabits, onToast }) {
         .habit-header-row {
           display: flex;
           align-items: stretch;
-          gap: 10px;
-          margin-bottom: 16px;
+          gap: 12px;
+          margin-bottom: 12px;
         }
         .habit-header-spacer {
           width: 260px;
@@ -452,24 +463,24 @@ export default function HabitTracker({ session, userHabits, onToast }) {
         }
         .habit-header-dates {
           display: flex;
-          gap: 10px;
+          gap: 12px;
           flex-shrink: 0;
         }
         .habit-header-cell {
-          width: 56px;
-          min-width: 56px;
-          padding: 10px 4px;
+          width: 80px;
+          min-width: 80px;
+          padding: 12px 6px;
           background: rgba(255, 255, 255, 0.05);
           border: 1px solid rgba(255, 255, 255, 0.08);
           border-radius: 14px;
-          font-size: 0.75rem;
+          font-size: 0.8125rem;
           font-weight: 600;
           color: #94a3b8;
           text-align: center;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 2px;
+          gap: 4px;
         }
         .habit-header-cell.today {
           background: rgba(34, 197, 94, 0.15);
@@ -489,6 +500,45 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           font-weight: 700;
           letter-spacing: 0.04em;
           color: #4ade80;
+        }
+        .habit-footer-dates {
+          display: flex;
+          align-items: stretch;
+          gap: 12px;
+          margin-top: 16px;
+          padding-top: 16px;
+          border-top: 1px solid rgba(248, 250, 252, 0.08);
+        }
+        .habit-footer-spacer {
+          width: 260px;
+          min-width: 260px;
+          flex-shrink: 0;
+        }
+        .habit-footer-cols {
+          display: flex;
+          gap: 12px;
+          flex-shrink: 0;
+        }
+        .habit-footer-cell {
+          width: 80px;
+          min-width: 80px;
+          padding: 8px 4px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #64748b;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
+        }
+        .habit-footer-cell.today {
+          color: #4ade80;
+        }
+        .habit-footer-badge {
+          font-size: 0.625rem;
+          font-weight: 600;
+          color: #22c55e;
         }
         .habit-section {
           margin-top: 20px;
@@ -558,35 +608,35 @@ export default function HabitTracker({ session, userHabits, onToast }) {
         }
         .habit-cells {
           display: flex;
-          gap: 10px;
+          gap: 12px;
           flex-shrink: 0;
           align-items: center;
         }
         .habit-cell {
-          width: 56px;
-          min-width: 56px;
-          height: 56px;
+          width: 80px;
+          min-width: 80px;
+          height: 80px;
           padding: 0;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: transparent;
-          border: none;
-          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.04);
+          border: 2px solid rgba(255, 255, 255, 0.1);
+          border-radius: 14px;
           color: #94a3b8;
           cursor: pointer;
-          transition: transform 0.2s, background 0.2s, color 0.2s;
+          transition: transform 0.2s, background 0.2s, border-color 0.2s, color 0.2s;
         }
         .habit-cell-ring {
-          width: 24px;
-          height: 24px;
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
-          border: 2px solid rgba(255, 255, 255, 0.25);
+          border: 3px solid rgba(255, 255, 255, 0.35);
           display: block;
         }
         .habit-cell-check {
-          width: 24px;
-          height: 24px;
+          width: 36px;
+          height: 36px;
           color: #fff;
           flex-shrink: 0;
         }
@@ -594,15 +644,20 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           background: rgba(255, 255, 255, 0.06);
           transform: scale(1.08);
         }
+        .habit-cell.today-cell:not(.completed) {
+          border-color: rgba(34, 197, 94, 0.35);
+          background: rgba(34, 197, 94, 0.06);
+        }
         .habit-cell.today-cell:not(.completed) .habit-cell-ring {
-          border-color: rgba(148, 163, 184, 0.5);
-          border-width: 2.5px;
+          border-color: rgba(148, 163, 184, 0.6);
+          border-width: 3px;
         }
         .habit-cell.today-cell:hover:not(:disabled):not(.completed) {
-          background: rgba(255, 255, 255, 0.08);
+          background: rgba(34, 197, 94, 0.12);
+          border-color: rgba(34, 197, 94, 0.5);
         }
         .habit-cell.today-cell:hover:not(:disabled):not(.completed) .habit-cell-ring {
-          border-color: rgba(148, 163, 184, 0.8);
+          border-color: rgba(148, 163, 184, 0.9);
         }
         .habit-cell.future {
           cursor: default;
@@ -613,6 +668,7 @@ export default function HabitTracker({ session, userHabits, onToast }) {
         }
         .habit-cell.completed {
           background: #22c55e;
+          border-color: rgba(34, 197, 94, 0.6);
           color: #fff;
         }
         .habit-cell.completed .habit-cell-check {
@@ -641,6 +697,109 @@ export default function HabitTracker({ session, userHabits, onToast }) {
           line-height: 1.55;
           color: #94a3b8;
           font-weight: 400;
+        }
+        @media (max-width: 768px) {
+          .habit-tracker {
+            margin-bottom: 32px;
+          }
+          .habit-tracker-head {
+            margin-bottom: 16px;
+          }
+          .habit-header-row {
+            gap: 8px;
+            margin-bottom: 10px;
+          }
+          .habit-tracker-title {
+            font-size: 1.25rem;
+          }
+          .habit-tracker-subtitle {
+            font-size: 0.8125rem;
+          }
+          .habit-tracker-card {
+            border-radius: 16px;
+          }
+          .habit-tracker-progress {
+            padding: 12px 16px;
+          }
+          .habit-progress-text {
+            font-size: 0.875rem;
+          }
+          .habit-wrapper {
+            padding: 16px 16px 20px;
+          }
+          .habit-header-spacer,
+          .habit-footer-spacer {
+            width: 160px;
+            min-width: 160px;
+          }
+          .habit-header-dates,
+          .habit-footer-cols {
+            gap: 8px;
+          }
+          .habit-header-cell,
+          .habit-footer-cell {
+            width: 52px;
+            min-width: 52px;
+            padding: 8px 4px;
+            font-size: 0.75rem;
+          }
+          .habit-header-cell.today,
+          .habit-footer-cell.today {
+            font-size: 0.75rem;
+          }
+          .habit-footer-dates {
+            margin-top: 12px;
+            padding-top: 12px;
+            gap: 8px;
+          }
+          .habit-footer-cols {
+            gap: 8px;
+          }
+          .habit-section-label {
+            font-size: 0.75rem;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+          }
+          .habit-row {
+            gap: 10px;
+            padding: 8px 0;
+          }
+          .habit-label {
+            width: 160px;
+            min-width: 160px;
+            gap: 10px;
+          }
+          .habit-emoji {
+            font-size: 1.125rem;
+          }
+          .habit-label-name {
+            font-size: 0.875rem;
+          }
+          .habit-cells {
+            gap: 8px;
+          }
+          .habit-cell {
+            width: 52px;
+            min-width: 52px;
+            height: 52px;
+            border-radius: 12px;
+          }
+          .habit-cell-ring {
+            width: 28px;
+            height: 28px;
+            border-width: 2.5px;
+          }
+          .habit-cell-check {
+            width: 28px;
+            height: 28px;
+          }
+          .habit-recommendation {
+            margin-top: 20px;
+            padding: 14px 16px;
+          }
+          .habit-recommendation-text {
+            font-size: 0.8125rem;
+          }
         }
       `}</style>
     </section>

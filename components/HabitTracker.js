@@ -13,8 +13,8 @@ function formatShortDate(d) {
   return date.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short' });
 }
 
-const DAYS_FORWARD = 7;
-const DAYS_BACK = 0;
+const DAYS_FORWARD = 2;
+const DAYS_BACK = 5;
 
 export default function HabitTracker({ session, userHabits, onToast, onHabitSaved }) {
   const [positiveHabits, setPositiveHabits] = useState([]);

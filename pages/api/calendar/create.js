@@ -99,7 +99,7 @@ export default async function handler(req, res) {
         if (invitationsSent > 0) {
           return res.status(200).json({
             ok: true,
-            message: `Pozvánky byly odeslány na ${invitationsSent} e-mail${invitationsSent === 1 ? '' : invitationsSent < 5 ? 'y' : 'ů'}. Událost se nepodařilo zapsat do kalendáře trenéra – pro zápis propoj kalendář znovu (Admin → Propojit Google Kalendář).`,
+            message: `Pozvánky odeslány na ${invitationsSent} e-mail${invitationsSent === 1 ? '' : invitationsSent < 5 ? 'y' : 'ů'} – příjemce si může přidat trénink do kalendáře. Pro zápis i do kalendáře trenéra propoj kalendář znovu (Admin → Propojit Google Kalendář).`,
           });
         }
         return res.status(403).json({

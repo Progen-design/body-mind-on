@@ -3,6 +3,11 @@
 import { exchangeCodeForTokens } from '../../../../lib/googleCalendar';
 import { supabaseServer } from '../../../../lib/supabaseServer';
 
+function getProfilRedirect(status) {
+  const base = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '') || '';
+  return base ? `${base}/profil?calendar=${status}` : `/profil?calendar=${status}`;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -10,10 +15,10 @@ export default async function handler(req, res) {
   const { code, error: oauthError } = req.query || {};
   if (oauthError) {
     console.error('[google-calendar callback] OAuth error:', oauthError);
-    return res.redirect(302, (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '') + '/profil?calendar=error');
+    return res.redirect(302, getProfilRedirect('error'));
   }
   if (!code) {
-    return res.redirect(302, (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '') + '/profil?calendar=missing');
+    return res.redirect(302, getProfilRedirect('missing'));
   }
   try {
     const { access_token, refresh_token, expires_in } = await exchangeCodeForTokens(code);
@@ -40,14 +45,11 @@ export default async function handler(req, res) {
 
     if (insertErr) {
       console.error('[google-calendar callback] insert error:', insertErr);
-      return res.redirect(302, (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '') + '/profil?calendar=save_failed');
+      return res.redirect(302, getProfilRedirect('save_failed'));
     }
-
-    const base = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '') || '/';
-    return res.redirect(302, base + 'profil?calendar=connected');
+    return res.redirect(302, getProfilRedirect('connected'));
   } catch (err) {
     console.error('[google-calendar callback]', err);
-    const base = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '') || '/';
-    return res.redirect(302, base + 'profil?calendar=error');
+    return res.redirect(302, getProfilRedirect('error'));
   }
 }

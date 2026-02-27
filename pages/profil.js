@@ -1112,8 +1112,6 @@ export default function Profil() {
                 <p className="trainer-schedule-loading">Načítám rozvrh…</p>
               ) : !trainerSchedule.connected ? (
                 <p className="trainer-schedule-disconnected">Rozvrh zatím není propojen. Trenér může propojit kalendář (info@) v nastavení.</p>
-              ) : trainerSchedule.events.length === 0 ? (
-                <p className="trainer-schedule-empty">V příštích 14 dnech nejsou v kalendáři žádné události.</p>
               ) : (() => {
                 const eventsByDate = getEventsByDate(trainerSchedule.events);
                 return (
@@ -1169,22 +1167,27 @@ export default function Profil() {
                       )}
                     </div>
                   </div>
-                  <details className="trainer-schedule-list-details">
-                    <summary className="trainer-schedule-list-summary">Seznam událostí (text)</summary>
-                    <ul className="trainer-schedule-list">
-                      {trainerSchedule.events.map((ev) => {
-                        const start = ev.start ? new Date(ev.start) : null;
-                        const dateStr = start && !isNaN(start.getTime()) ? formatShortDate(ev.start.slice(0, 10)) : ev.start?.slice(0, 10) || '—';
-                        const timeStr = ev.start && ev.start.length > 10 ? new Date(ev.start).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }) : null;
-                        return (
-                          <li key={ev.id || ev.start + ev.summary} className="trainer-schedule-item">
-                            <span className="trainer-schedule-date">{dateStr}{timeStr ? ` · ${timeStr}` : ''}</span>
-                            <span className="trainer-schedule-summary">{ev.summary}</span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </details>
+                  {trainerSchedule.events.length === 0 && (
+                    <p className="trainer-schedule-empty">V příštích 90 dnech zatím nejsou v kalendáři žádné události. Přidej tréninky v Google Kalendáři nebo v Admin → Přidat trénink.</p>
+                  )}
+                  {trainerSchedule.events.length > 0 && (
+                    <details className="trainer-schedule-list-details">
+                      <summary className="trainer-schedule-list-summary">Seznam událostí (text)</summary>
+                      <ul className="trainer-schedule-list">
+                        {trainerSchedule.events.map((ev) => {
+                          const start = ev.start ? new Date(ev.start) : null;
+                          const dateStr = start && !isNaN(start.getTime()) ? formatShortDate(ev.start.slice(0, 10)) : ev.start?.slice(0, 10) || '—';
+                          const timeStr = ev.start && ev.start.length > 10 ? new Date(ev.start).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }) : null;
+                          return (
+                            <li key={ev.id || ev.start + ev.summary} className="trainer-schedule-item">
+                              <span className="trainer-schedule-date">{dateStr}{timeStr ? ` · ${timeStr}` : ''}</span>
+                              <span className="trainer-schedule-summary">{ev.summary}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </details>
+                  )}
                 </>
               );
               })()}

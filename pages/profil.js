@@ -162,7 +162,7 @@ export default function Profil() {
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [scheduleRefreshAt, setScheduleRefreshAt] = useState(0);
   const [calendarEventForm, setCalendarEventForm] = useState({
-    date: new Date().toISOString().slice(0, 10),
+    date: '',
     time: '10:00',
     title: 'Trénink',
     userEmails: '',
@@ -175,7 +175,7 @@ export default function Profil() {
   });
 
   const [workoutForm, setWorkoutForm] = useState({
-    workout_date: new Date().toISOString().split('T')[0],
+    workout_date: '',
     workout_type: 'silovy',
     duration_min: 45,
     notes: '',
@@ -375,6 +375,11 @@ export default function Profil() {
     return () => { cancelled = true; };
   }, [session?.access_token, scheduleRefreshAt]);
 
+  // Výchozí datum ve formuláři „Přidat trénink“ = dnešek (lokální čas, ne server UTC)
+  useEffect(() => {
+    setCalendarEventForm((prev) => ({ ...prev, date: prev.date || getLocalDateStr(new Date()) }));
+  }, []);
+
   // Toast po propojení kalendáře trenéra (redirect z Google OAuth)
   useEffect(() => {
     if (router.query?.calendar === 'connected') {
@@ -411,7 +416,7 @@ export default function Profil() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Chyba');
       setCalendarEventSubmit({ loading: false, message: data.message || 'Trénink přidán do kalendáře.' });
-      setCalendarEventForm((f) => ({ ...f, title: 'Trénink', userEmails: '' }));
+      setCalendarEventForm((f) => ({ ...f, date: getLocalDateStr(new Date()), title: 'Trénink', userEmails: '' }));
       setScheduleRefreshAt(Date.now());
     } catch (err) {
       setCalendarEventSubmit({ loading: false, message: err.message || 'Nepodařilo se přidat.' });
@@ -505,7 +510,7 @@ export default function Profil() {
         });
         
         // Zavřít modal a resetovat formulář OKAMŽITĚ
-        setWorkoutForm({ workout_date: new Date().toISOString().split('T')[0], workout_type: 'silovy', duration_min: 45, notes: '', perceived_difficulty: '' });
+        setWorkoutForm({ workout_date: getLocalDateStr(new Date()), workout_type: 'silovy', duration_min: 45, notes: '', perceived_difficulty: '' });
         setShowWorkoutModal(false);
         if (fresh) setSession(fresh);
         
@@ -717,7 +722,7 @@ export default function Profil() {
 
   // Všechny parametry se přepočítají při každé změně profile (trénink, váha)
   // Použít _updated timestamp jako závislost, aby se vždy přepočítalo při změně
-  const { program, membershipStatus, membershipSince, metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName, firstName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, thisWeekDates, startWeightDate, lastWeightDate, habitAdjustedWeight, hasHabitData, positiveDone, negativeDone, habitCorrectionKg } = useMemo(() => {
+  const { program, membershipStatus, membershipSince, metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName, firstName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, periodStartFormatted, periodEndFormatted, thisWeekDates, startWeightDate, lastWeightDate, habitAdjustedWeight, hasHabitData, positiveDone, negativeDone, habitCorrectionKg } = useMemo(() => {
     // Zajistit, že máme vždy nové reference na pole pro správnou detekci změn
     // A SORT podle data - nejnovější první
     const m = profile?.body_metrics 
@@ -854,6 +859,8 @@ export default function Profil() {
       weeksToGoal,
       weekStartFormatted: formatShortDate(weekStartStr),
       weekEndFormatted: formatShortDate(weekEndStr),
+      periodStartFormatted: chartData.length > 0 ? formatShortDate(chartData[0].date) : (registrationMetric?.created_at ? formatShortDate(String(registrationMetric.created_at).split('T')[0]) : formatShortDate(getLocalDateStr(now))),
+      periodEndFormatted: formatShortDate(getLocalDateStr(now)),
       thisWeekDates,
       startWeightDate: chartData.length > 0 ? chartData[0].date : (registrationMetric?.created_at ? String(registrationMetric.created_at).split('T')[0] : null),
       lastWeightDate: chartData.length > 0 ? chartData[chartData.length - 1].date : null,
@@ -1151,7 +1158,7 @@ export default function Profil() {
             <section className="actions-block">
               <h2 className="actions-title">Co chceš zapsat?</h2>
               <div className="action-buttons">
-                <button type="button" onClick={() => { setShowWorkoutModal(true); setWorkoutError(''); }} className="btn-primary">
+                <button type="button" onClick={() => { setShowWorkoutModal(true); setWorkoutError(''); setWorkoutForm((f) => ({ ...f, workout_date: getLocalDateStr(new Date()) })); }} className="btn-primary">
                   <span className="btn-emoji">🏋️</span>
                   Zapsat trénink
                 </button>
@@ -1312,25 +1319,25 @@ export default function Profil() {
             <section className="card card-accent center progress-section">
               <h2 className="section-head">Tvůj progres</h2>
               <p className="progress-lead">Všechny hodnoty vycházejí jen z tréninků a z tvého nastavení (výchozí váha, cíl, výška). Ruční váha do výpočtu nezasahuje. Na výsledky má vliv i strava a denní návyky (zdravé i zlozvyky).</p>
-              <p className="progress-period-hint">Období „tento týden“ je tvůj osobní týden (začíná dnem v týdnu, kdy jsi se zaregistroval/a). Odhad váhy a celkové spálené kcal níže vycházejí ze <strong>všech</strong> zapsaných tréninků.</p>
+              <p className="progress-period-hint">Hodnoty vycházejí ze <strong>všech</strong> zapsaných tréninků od začátku. Odhad váhy a spálené kcal níže jsou celkové.</p>
 
-              <p className="progress-dates">Období: <strong>{weekStartFormatted}</strong> – <strong>{weekEndFormatted}</strong></p>
+              <p className="progress-dates">Období od začátku: <strong>{periodStartFormatted}</strong> – <strong>{periodEndFormatted}</strong></p>
               <div className="progress-activity">
                 <div className="progress-activity-main">
-                  <span className="progress-big-num">{workoutsThisWeek?.length ?? 0}</span>
-                  <span className="progress-big-label">tréninků tento týden</span>
+                  <span className="progress-big-num">{workouts?.length ?? 0}</span>
+                  <span className="progress-big-label">celkem tréninků</span>
                 </div>
                 <div className="progress-activity-main">
-                  <span className="progress-big-num">{totalMinutesThisWeek ?? 0}</span>
-                  <span className="progress-big-label">minut v pohybu</span>
+                  <span className="progress-big-num">{totalMinutes ?? 0}</span>
+                  <span className="progress-big-label">celkem minut v pohybu</span>
                 </div>
                 <div className="progress-activity-main">
-                  <span className="progress-big-num">~{estimatedCaloriesThisWeek ?? 0}</span>
-                  <span className="progress-big-label">kcal tento týden</span>
+                  <span className="progress-big-num">~{Math.round(estimatedCaloriesAll ?? 0)}</span>
+                  <span className="progress-big-label">celkem kcal (odhad)</span>
                 </div>
               </div>
-              {thisWeekDates?.length > 0 && (
-                <p className="progress-dates-detail">Dny s tréninkem: {thisWeekDates.join(', ')}</p>
+              {(workoutsThisWeek?.length ?? 0) > 0 && (
+                <p className="progress-dates-detail">Tento týden ({weekStartFormatted} – {weekEndFormatted}): {workoutsThisWeek?.length ?? 0} tréninků, {totalMinutesThisWeek ?? 0} min. Dny s tréninkem: {thisWeekDates?.join(', ') || '—'}</p>
               )}
               {workouts.length === 0 && (
                 <p className="progress-empty-hint">Zatím nemáš zapsané tréninky. Po přidání tréninků („Zapsat trénink“) se zde objeví odhad spálených kcal a vliv na váhu.</p>

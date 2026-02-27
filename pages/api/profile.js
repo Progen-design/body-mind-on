@@ -116,6 +116,9 @@ export default async function handler(req, res) {
       }
     });
 
+    const trainerEmail = (process.env.TRAINER_EMAIL || '').toLowerCase().trim();
+    const canCreateCalendarEvents = !!trainerEmail && email === trainerEmail;
+
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     const meta = user.user_metadata || {};
@@ -123,6 +126,7 @@ export default async function handler(req, res) {
       program,
       membershipStatus,
       membershipSince,
+      can_create_calendar_events: canCreateCalendarEvents,
       user: {
         id: user.id,
         email: user.email,

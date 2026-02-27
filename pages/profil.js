@@ -89,17 +89,22 @@ function getMondayOfWeek(d) {
   return date;
 }
 function dateStrAddDays(dateStr, n) {
-  const d = new Date(dateStr + 'T12:00:00Z');
+  const d = new Date(dateStr + 'T12:00:00');
   d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
+  return getLocalDateStr(d);
+}
+/** Vrací YYYY-MM-DD v lokálním čase (ne UTC). */
+function getLocalDateStr(d = new Date()) {
+  const x = new Date(d);
+  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
 }
 // Jeden týden: 7 dní od pondělí
 function getWeekDays(weekStartStr) {
   const out = [];
+  const todayStr = getLocalDateStr(new Date());
   for (let i = 0; i < 7; i++) {
     const dateKey = dateStrAddDays(weekStartStr, i);
-    const d = new Date(dateKey + 'T12:00:00Z');
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const d = new Date(dateKey + 'T12:00:00');
     out.push({
       dateKey,
       dayNum: d.getDate(),
@@ -109,17 +114,20 @@ function getWeekDays(weekStartStr) {
   return out;
 }
 function formatWeekRange(weekStartStr) {
-  const start = new Date(weekStartStr + 'T12:00:00Z');
-  const end = new Date(dateStrAddDays(weekStartStr, 6) + 'T12:00:00Z');
+  const start = new Date(weekStartStr + 'T12:00:00');
+  const end = new Date(dateStrAddDays(weekStartStr, 6) + 'T12:00:00');
   const fmt = (d) => d.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short', year: 'numeric' });
   return `${fmt(start)} – ${fmt(end)}`;
 }
 
+/** Události seskupí podle lokálního data (ne UTC), aby se zobrazily ve správném dnu. */
 function getEventsByDate(events) {
   const byDate = {};
   (events || []).forEach((ev) => {
-    const key = ev.start ? ev.start.slice(0, 10) : '';
-    if (!key) return;
+    if (!ev.start) return;
+    const d = new Date(ev.start);
+    if (isNaN(d.getTime())) return;
+    const key = getLocalDateStr(d);
     if (!byDate[key]) byDate[key] = [];
     byDate[key].push(ev);
   });
@@ -152,9 +160,18 @@ export default function Profil() {
   const [mindsetTipFromPlan, setMindsetTipFromPlan] = useState('');
   const [trainerSchedule, setTrainerSchedule] = useState({ events: [], connected: false });
   const [loadingSchedule, setLoadingSchedule] = useState(false);
+  const [scheduleRefreshAt, setScheduleRefreshAt] = useState(0);
+  const [calendarEventForm, setCalendarEventForm] = useState({
+    date: new Date().toISOString().slice(0, 10),
+    time: '10:00',
+    title: 'Trénink',
+    userEmails: '',
+    durationMin: 60,
+  });
+  const [calendarEventSubmit, setCalendarEventSubmit] = useState({ loading: false, message: '' });
   const [calendarWeekStart, setCalendarWeekStart] = useState(() => {
     const monday = getMondayOfWeek(new Date());
-    return monday.toISOString().slice(0, 10);
+    return getLocalDateStr(monday);
   });
 
   const [workoutForm, setWorkoutForm] = useState({
@@ -214,6 +231,7 @@ export default function Profil() {
           program: data.program || 'START',
           membershipStatus: data.membershipStatus || 'active',
           membershipSince: data.membershipSince || null,
+          can_create_calendar_events: data.can_create_calendar_events === true,
           _updated: Date.now(),
         };
         let skipped = false;
@@ -355,7 +373,7 @@ export default function Profil() {
       .catch(() => { if (!cancelled) setTrainerSchedule((s) => ({ ...s, connected: false })); })
       .finally(() => { if (!cancelled) setLoadingSchedule(false); });
     return () => { cancelled = true; };
-  }, [session?.access_token]);
+  }, [session?.access_token, scheduleRefreshAt]);
 
   // Toast po propojení kalendáře trenéra (redirect z Google OAuth)
   useEffect(() => {
@@ -367,6 +385,38 @@ export default function Profil() {
       router.replace('/profil', undefined, { shallow: true });
     }
   }, [router.query?.calendar]);
+
+  async function handleCalendarEventSubmit(e) {
+    e.preventDefault();
+    if (!session?.access_token || calendarEventSubmit.loading) return;
+    setCalendarEventSubmit({ loading: true, message: '' });
+    try {
+      const userEmails = calendarEventForm.userEmails
+        ? calendarEventForm.userEmails.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean)
+        : [];
+      const res = await fetch('/api/calendar/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          date: calendarEventForm.date,
+          time: calendarEventForm.time,
+          title: calendarEventForm.title || 'Trénink',
+          userEmails,
+          durationMin: calendarEventForm.durationMin || 60,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Chyba');
+      setCalendarEventSubmit({ loading: false, message: data.message || 'Trénink přidán do kalendáře.' });
+      setCalendarEventForm((f) => ({ ...f, title: 'Trénink', userEmails: '' }));
+      setScheduleRefreshAt(Date.now());
+    } catch (err) {
+      setCalendarEventSubmit({ loading: false, message: err.message || 'Nepodařilo se přidat.' });
+    }
+  }
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -1122,6 +1172,35 @@ export default function Profil() {
                   Otevřít Google Kalendář (přidat / upravit tréninky)
                 </a>
               </p>
+              {profile?.can_create_calendar_events && trainerSchedule.connected && (
+                <details className="trainer-schedule-add-form-wrap" open={calendarEventSubmit.message ? true : undefined}>
+                  <summary className="trainer-schedule-add-form-summary">Přidat plánovaný trénink přímo z webu</summary>
+                  <form onSubmit={handleCalendarEventSubmit} className="trainer-schedule-add-form">
+                    <div className="trainer-schedule-add-form-row">
+                      <label className="trainer-schedule-add-label">
+                        Datum <input type="date" value={calendarEventForm.date} onChange={(e) => setCalendarEventForm((f) => ({ ...f, date: e.target.value }))} required className="trainer-schedule-add-input" />
+                      </label>
+                      <label className="trainer-schedule-add-label">
+                        Čas <input type="time" value={calendarEventForm.time} onChange={(e) => setCalendarEventForm((f) => ({ ...f, time: e.target.value }))} required className="trainer-schedule-add-input" />
+                      </label>
+                      <label className="trainer-schedule-add-label">
+                        Délka (min) <input type="number" min={15} max={480} value={calendarEventForm.durationMin} onChange={(e) => setCalendarEventForm((f) => ({ ...f, durationMin: Number(e.target.value) || 60 }))} className="trainer-schedule-add-input" style={{ width: 72 }} />
+                      </label>
+                    </div>
+                    <label className="trainer-schedule-add-label">
+                      Název <input type="text" value={calendarEventForm.title} onChange={(e) => setCalendarEventForm((f) => ({ ...f, title: e.target.value }))} placeholder="Trénink" className="trainer-schedule-add-input trainer-schedule-add-title" />
+                    </label>
+                    <label className="trainer-schedule-add-label">
+                      Přiřadit uživatelům (e-maily, čárka nebo středník)
+                      <textarea value={calendarEventForm.userEmails} onChange={(e) => setCalendarEventForm((f) => ({ ...f, userEmails: e.target.value }))} placeholder="jan@example.cz, eva@example.cz" rows={2} className="trainer-schedule-add-textarea" />
+                    </label>
+                    <button type="submit" disabled={calendarEventSubmit.loading} className="trainer-schedule-add-submit">
+                      {calendarEventSubmit.loading ? 'Ukládám…' : 'Přidat trénink do kalendáře'}
+                    </button>
+                    {calendarEventSubmit.message && <p className={`trainer-schedule-add-message ${calendarEventSubmit.message.startsWith('Trénink') ? 'success' : 'error'}`}>{calendarEventSubmit.message}</p>}
+                  </form>
+                </details>
+              )}
               {loadingSchedule ? (
                 <p className="trainer-schedule-loading">Načítám rozvrh…</p>
               ) : !trainerSchedule.connected ? (
@@ -1979,6 +2058,21 @@ export default function Profil() {
           text-decoration: none;
         }
         .trainer-calendar-link:hover { background: rgba(66, 133, 244, 0.35); color: #bfdbfe; }
+        .trainer-schedule-add-form-wrap { margin: 16px 0; border: 1px solid rgba(148,163,184,0.25); border-radius: 12px; background: rgba(30,41,59,0.4); overflow: hidden; }
+        .trainer-schedule-add-form-summary { padding: 12px 16px; cursor: pointer; font-weight: 600; color: #c4b5fd; font-size: 14px; list-style: none; }
+        .trainer-schedule-add-form-summary::-webkit-details-marker { display: none; }
+        .trainer-schedule-add-form { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+        .trainer-schedule-add-form-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+        .trainer-schedule-add-label { display: block; font-size: 13px; color: #94a3b8; }
+        .trainer-schedule-add-label .trainer-schedule-add-input { margin-left: 6px; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(148,163,184,0.3); background: rgba(15,23,42,0.8); color: #e2e8f0; }
+        .trainer-schedule-add-title { min-width: 200px; }
+        .trainer-schedule-add-textarea { display: block; margin-top: 4px; width: 100%; max-width: 400px; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(148,163,184,0.3); background: rgba(15,23,42,0.8); color: #e2e8f0; font-size: 14px; resize: vertical; }
+        .trainer-schedule-add-submit { align-self: flex-start; padding: 10px 20px; border-radius: 10px; background: #7c3aed; color: #fff; font-weight: 600; border: none; cursor: pointer; }
+        .trainer-schedule-add-submit:hover:not(:disabled) { background: #6d28d9; }
+        .trainer-schedule-add-submit:disabled { opacity: 0.7; cursor: wait; }
+        .trainer-schedule-add-message { font-size: 14px; margin: 4px 0 0; }
+        .trainer-schedule-add-message.success { color: #86efac; }
+        .trainer-schedule-add-message.error { color: #fca5a5; }
         .trainer-schedule-lead {
           font-size: 14px;
           color: #94a3b8;

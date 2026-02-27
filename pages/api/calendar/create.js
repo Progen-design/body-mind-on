@@ -1,5 +1,5 @@
-// POST /api/calendar/create – vytvoří událost v kalendáři trenéra (pouze admin)
-// Body: { key, date, time, title, userEmails?, durationMin? }. key = ADMIN_TOKEN
+// POST /api/calendar/create – vytvoří událost v kalendáři trenéra (admin key NEBO přihlášený trenér)
+// Body: { key?, date, time, title, userEmails?, durationMin? }. key = ADMIN_TOKEN, nebo Authorization: Bearer SESSION (trenér)
 import { supabaseServer } from '../../../lib/supabaseServer';
 import { createEvent } from '../../../lib/googleCalendar';
 
@@ -8,9 +8,20 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   const adminToken = process.env.ADMIN_TOKEN;
-  const key = req.body?.key || (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
-  if (!adminToken || key !== adminToken) {
-    return res.status(403).json({ error: 'Neoprávněný přístup. Pouze admin může přidávat tréninky.' });
+  const trainerEmail = (process.env.TRAINER_EMAIL || '').toLowerCase().trim();
+  const authHeader = (req.headers.authorization || '').trim();
+  const bearer = authHeader.replace(/^Bearer\s+/i, '');
+  const keyFromBody = req.body?.key;
+
+  let allowed = false;
+  if (adminToken && (keyFromBody === adminToken || bearer === adminToken)) {
+    allowed = true;
+  } else if (trainerEmail && bearer && bearer !== adminToken) {
+    const { data: { user }, error: userErr } = await supabaseServer.auth.getUser(bearer);
+    if (!userErr && user?.email && (user.email.toLowerCase() === trainerEmail)) allowed = true;
+  }
+  if (!allowed) {
+    return res.status(403).json({ error: 'Neoprávněný přístup. Pouze admin nebo trenér (přihlášený) může přidávat tréninky.' });
   }
 
   try {

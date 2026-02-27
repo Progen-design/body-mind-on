@@ -5,6 +5,14 @@ import { POSITIVE_HABITS, NEGATIVE_HABITS, getHabitById } from '../lib/habits';
 function toDateStr(date) {
   return date.toISOString().split('T')[0];
 }
+/** Vrací YYYY-MM-DD v lokálním čase (ne UTC), aby „dnes“ bylo správně i po půlnoci. */
+function getLocalDateStr(d = new Date()) {
+  const x = new Date(d);
+  const y = x.getFullYear();
+  const m = String(x.getMonth() + 1).padStart(2, '0');
+  const day = String(x.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 function formatShortDate(d) {
   if (!d) return '—';
@@ -37,7 +45,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     return { pos, neg };
   }, []);
 
-  const todayStr = toDateStr(new Date());
+  const todayStr = getLocalDateStr(new Date());
   const days = useMemo(() => {
     const result = [];
     const today = new Date();
@@ -45,7 +53,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     for (let i = -DAYS_BACK; i <= DAYS_FORWARD; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
-      result.push(toDateStr(d));
+      result.push(getLocalDateStr(d));
     }
     return result;
   }, []);

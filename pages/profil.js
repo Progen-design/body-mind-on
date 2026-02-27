@@ -79,6 +79,43 @@ function formatShortDate(d) {
   });
 }
 
+// Mřížka kalendáře (pondělí = první den týdne)
+function getCalendarWeeks(year, month) {
+  const first = new Date(year, month, 1);
+  const firstDayOfWeek = first.getDay();
+  const startOffset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+  const startDate = new Date(year, month, 1 - startOffset);
+  const weeks = [];
+  for (let w = 0; w < 6; w++) {
+    const week = [];
+    for (let d = 0; d < 7; d++) {
+      const cellDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + w * 7 + d);
+      const dateKey = cellDate.toISOString().slice(0, 10);
+      week.push({
+        dateKey,
+        dayNum: cellDate.getDate(),
+        isCurrentMonth: cellDate.getMonth() === month && cellDate.getFullYear() === year,
+      });
+    }
+    weeks.push(week);
+  }
+  return weeks;
+}
+
+function getEventsByDate(events) {
+  const byDate = {};
+  (events || []).forEach((ev) => {
+    const key = ev.start ? ev.start.slice(0, 10) : '';
+    if (!key) return;
+    if (!byDate[key]) byDate[key] = [];
+    byDate[key].push(ev);
+  });
+  return byDate;
+}
+
+const WEEKDAY_LABELS = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
+const MONTH_NAMES = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'];
+
 export default function Profil() {
   const router = useRouter();
   const [session, setSession] = useState(null);
@@ -103,6 +140,10 @@ export default function Profil() {
   const [mindsetTipFromPlan, setMindsetTipFromPlan] = useState('');
   const [trainerSchedule, setTrainerSchedule] = useState({ events: [], connected: false });
   const [loadingSchedule, setLoadingSchedule] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const d = new Date();
+    return { year: d.getFullYear(), month: d.getMonth() };
+  });
 
   const [workoutForm, setWorkoutForm] = useState({
     workout_date: new Date().toISOString().split('T')[0],
@@ -283,13 +324,13 @@ export default function Profil() {
     }
   }, [loading, session, error, profile?.program, profile?.user_habits]);
 
-  // Načíst plánované tréninky z kalendáře trenéra (info@)
+  // Načíst plánované tréninky z kalendáře trenéra (info@) – širší rozsah pro zobrazení kalendáře
   useEffect(() => {
     if (!session?.access_token) return;
     let cancelled = false;
     setLoadingSchedule(true);
     const from = new Date().toISOString().slice(0, 10);
-    const to = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const to = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     fetch(`${typeof window !== 'undefined' ? '' : ''}/api/trainer-schedule?from=${from}&to=${to}`, {
       headers: { Authorization: `Bearer ${session.access_token}` },
     })
@@ -1062,27 +1103,91 @@ export default function Profil() {
             <section className="card trainer-schedule-section">
               <h2 className="section-head">Kdy mám trénink?</h2>
               <p className="trainer-schedule-lead">Rozvrh plánovaných tréninků z kalendáře trenéra. Zdroj: info@ (Google Kalendář).</p>
+              <p className="trainer-schedule-actions">
+                <a href="https://calendar.google.com/calendar/u/0/r" target="_blank" rel="noopener noreferrer" className="trainer-calendar-link">
+                  Otevřít Google Kalendář (přidat / upravit tréninky)
+                </a>
+              </p>
               {loadingSchedule ? (
                 <p className="trainer-schedule-loading">Načítám rozvrh…</p>
               ) : !trainerSchedule.connected ? (
                 <p className="trainer-schedule-disconnected">Rozvrh zatím není propojen. Trenér může propojit kalendář (info@) v nastavení.</p>
               ) : trainerSchedule.events.length === 0 ? (
                 <p className="trainer-schedule-empty">V příštích 14 dnech nejsou v kalendáři žádné události.</p>
-              ) : (
-                <ul className="trainer-schedule-list">
-                  {trainerSchedule.events.map((ev) => {
-                    const start = ev.start ? new Date(ev.start) : null;
-                    const dateStr = start && !isNaN(start.getTime()) ? formatShortDate(ev.start.slice(0, 10)) : ev.start?.slice(0, 10) || '—';
-                    const timeStr = ev.start && ev.start.length > 10 ? new Date(ev.start).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }) : null;
-                    return (
-                      <li key={ev.id || ev.start + ev.summary} className="trainer-schedule-item">
-                        <span className="trainer-schedule-date">{dateStr}{timeStr ? ` · ${timeStr}` : ''}</span>
-                        <span className="trainer-schedule-summary">{ev.summary}</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
+              ) : (() => {
+                const eventsByDate = getEventsByDate(trainerSchedule.events);
+                return (
+                <>
+                  <div className="trainer-calendar-wrap">
+                    <div className="trainer-calendar-header">
+                      <button
+                        type="button"
+                        className="trainer-calendar-nav"
+                        onClick={() => setCalendarMonth((m) => (m.month === 0 ? { year: m.year - 1, month: 11 } : { year: m.year, month: m.month - 1 }))}
+                        aria-label="Předchozí měsíc"
+                      >
+                        ‹
+                      </button>
+                      <span className="trainer-calendar-title">{MONTH_NAMES[calendarMonth.month]} {calendarMonth.year}</span>
+                      <button
+                        type="button"
+                        className="trainer-calendar-nav"
+                        onClick={() => setCalendarMonth((m) => (m.month === 11 ? { year: m.year + 1, month: 0 } : { year: m.year, month: m.month + 1 }))}
+                        aria-label="Následující měsíc"
+                      >
+                        ›
+                      </button>
+                    </div>
+                    <div className="trainer-calendar-grid">
+                      {WEEKDAY_LABELS.map((label) => (
+                        <div key={label} className="trainer-calendar-weekday">{label}</div>
+                      ))}
+                      {getCalendarWeeks(calendarMonth.year, calendarMonth.month).map((week, wi) =>
+                        week.map((day) => {
+                          const eventsForDay = eventsByDate[day.dateKey] || [];
+                          return (
+                            <div
+                              key={day.dateKey}
+                              className={`trainer-calendar-day ${day.isCurrentMonth ? '' : 'trainer-calendar-day-other'}`}
+                            >
+                              <span className="trainer-calendar-day-num">{day.dayNum}</span>
+                              <div className="trainer-calendar-day-events">
+                                {eventsForDay.slice(0, 3).map((ev) => {
+                                  const timeStr = ev.start && ev.start.length > 10 ? new Date(ev.start).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }) : null;
+                                  return (
+                                    <div key={ev.id || ev.start + ev.summary} className="trainer-calendar-event" title={ev.summary}>
+                                      {timeStr && <span className="trainer-calendar-event-time">{timeStr}</span>}
+                                      <span className="trainer-calendar-event-summary">{ev.summary}</span>
+                                    </div>
+                                  );
+                                })}
+                                {eventsForDay.length > 3 && <span className="trainer-calendar-event-more">+{eventsForDay.length - 3}</span>}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                  <details className="trainer-schedule-list-details">
+                    <summary className="trainer-schedule-list-summary">Seznam událostí (text)</summary>
+                    <ul className="trainer-schedule-list">
+                      {trainerSchedule.events.map((ev) => {
+                        const start = ev.start ? new Date(ev.start) : null;
+                        const dateStr = start && !isNaN(start.getTime()) ? formatShortDate(ev.start.slice(0, 10)) : ev.start?.slice(0, 10) || '—';
+                        const timeStr = ev.start && ev.start.length > 10 ? new Date(ev.start).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }) : null;
+                        return (
+                          <li key={ev.id || ev.start + ev.summary} className="trainer-schedule-item">
+                            <span className="trainer-schedule-date">{dateStr}{timeStr ? ` · ${timeStr}` : ''}</span>
+                            <span className="trainer-schedule-summary">{ev.summary}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </details>
+                </>
+              );
+              })()}
             </section>
 
             {/* Souhrn návyků tento týden – propojení s profilem */}
@@ -1846,6 +1951,19 @@ export default function Profil() {
 
         .progress-section { margin-bottom: 40px; }
         .trainer-schedule-section { margin-bottom: 32px; }
+        .trainer-schedule-actions { margin: 0 0 16px; }
+        .trainer-calendar-link {
+          display: inline-block;
+          padding: 10px 18px;
+          background: rgba(66, 133, 244, 0.2);
+          border: 1px solid rgba(66, 133, 244, 0.5);
+          border-radius: 10px;
+          color: #93c5fd;
+          font-size: 14px;
+          font-weight: 500;
+          text-decoration: none;
+        }
+        .trainer-calendar-link:hover { background: rgba(66, 133, 244, 0.35); color: #bfdbfe; }
         .trainer-schedule-lead {
           font-size: 14px;
           color: #94a3b8;
@@ -1879,6 +1997,97 @@ export default function Profil() {
           min-width: 140px;
         }
         .trainer-schedule-summary { font-weight: 500; }
+        .trainer-calendar-wrap { margin-top: 8px; }
+        .trainer-calendar-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 12px;
+          padding: 0 4px;
+        }
+        .trainer-calendar-title {
+          font-size: 18px;
+          font-weight: 600;
+          color: #e2e8f0;
+        }
+        .trainer-calendar-nav {
+          width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(148,163,184,0.3);
+          border-radius: 10px;
+          color: #94a3b8;
+          font-size: 20px;
+          cursor: pointer;
+          line-height: 1;
+        }
+        .trainer-calendar-nav:hover { background: rgba(255,255,255,0.1); color: #c4b5fd; }
+        .trainer-calendar-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 1px;
+          background: rgba(148,163,184,0.2);
+          border-radius: 12px;
+          overflow: hidden;
+          border: 1px solid rgba(148,163,184,0.2);
+        }
+        .trainer-calendar-weekday {
+          padding: 10px 6px;
+          text-align: center;
+          font-size: 12px;
+          font-weight: 600;
+          color: #64748b;
+          background: rgba(30,41,59,0.6);
+        }
+        .trainer-calendar-day {
+          min-height: 72px;
+          padding: 6px;
+          background: rgba(30,41,59,0.5);
+          display: flex;
+          flex-direction: column;
+        }
+        .trainer-calendar-day-other { opacity: 0.5; }
+        .trainer-calendar-day-num {
+          font-size: 13px;
+          color: #94a3b8;
+          margin-bottom: 4px;
+        }
+        .trainer-calendar-day-events {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          overflow: hidden;
+        }
+        .trainer-calendar-event {
+          font-size: 11px;
+          padding: 2px 6px;
+          background: rgba(124,58,237,0.35);
+          border-radius: 6px;
+          color: #e9d5ff;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .trainer-calendar-event-time {
+          margin-right: 4px;
+          color: #c4b5fd;
+        }
+        .trainer-calendar-event-summary { font-weight: 500; }
+        .trainer-calendar-event-more {
+          font-size: 10px;
+          color: #94a3b8;
+          padding: 2px 0;
+        }
+        .trainer-schedule-list-details { margin-top: 20px; }
+        .trainer-schedule-list-summary {
+          font-size: 14px;
+          color: #94a3b8;
+          cursor: pointer;
+        }
         .progress-lead {
           color: #94a3b8;
           font-size: 14px;

@@ -1,13 +1,21 @@
 // GET /api/trainer-schedule – vrací plánované tréninky z kalendáře trenéra (info@)
-// Query: from (YYYY-MM-DD), to (YYYY-MM-DD). Volitelně Authorization pro přihlášené.
+// Pro přihlášeného uživatele vrací jen události přiřazené jemu (Pro: email nebo účastníci). Bez přihlášení: všechny.
 import { supabaseServer } from '../../lib/supabaseServer';
-import { refreshAccessToken, listEvents } from '../../lib/googleCalendar';
+import { refreshAccessToken, listEvents, eventIsForUser } from '../../lib/googleCalendar';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   try {
+    let userEmail = null;
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    if (token) {
+      const { data: { user }, error: userErr } = await supabaseServer.auth.getUser(token);
+      if (!userErr && user?.email) userEmail = user.email;
+    }
+
     const { data: rows, error: fetchErr } = await supabaseServer
       .from('trainer_calendar_tokens')
       .select('id, access_token, refresh_token, expires_at, calendar_id')
@@ -42,7 +50,11 @@ export default async function handler(req, res) {
       : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
 
     const calendarId = row.calendar_id || 'primary';
-    const events = await listEvents(accessToken, calendarId, timeMin, timeMax);
+    let events = await listEvents(accessToken, calendarId, timeMin, timeMax);
+
+    if (userEmail) {
+      events = events.filter((ev) => eventIsForUser(ev, userEmail));
+    }
 
     return res.status(200).json({ events, connected: true });
   } catch (err) {

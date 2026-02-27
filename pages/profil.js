@@ -79,27 +79,40 @@ function formatShortDate(d) {
   });
 }
 
-// Mřížka kalendáře (pondělí = první den týdne)
-function getCalendarWeeks(year, month) {
-  const first = new Date(year, month, 1);
-  const firstDayOfWeek = first.getDay();
-  const startOffset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
-  const startDate = new Date(year, month, 1 - startOffset);
-  const weeks = [];
-  for (let w = 0; w < 6; w++) {
-    const week = [];
-    for (let d = 0; d < 7; d++) {
-      const cellDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + w * 7 + d);
-      const dateKey = cellDate.toISOString().slice(0, 10);
-      week.push({
-        dateKey,
-        dayNum: cellDate.getDate(),
-        isCurrentMonth: cellDate.getMonth() === month && cellDate.getFullYear() === year,
-      });
-    }
-    weeks.push(week);
+// Pondělí daného týdne (Po = první den týdne)
+function getMondayOfWeek(d) {
+  const date = new Date(d);
+  date.setHours(12, 0, 0, 0);
+  const day = date.getDay();
+  const diff = day === 0 ? 6 : day - 1;
+  date.setDate(date.getDate() - diff);
+  return date;
+}
+function dateStrAddDays(dateStr, n) {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+// Jeden týden: 7 dní od pondělí
+function getWeekDays(weekStartStr) {
+  const out = [];
+  for (let i = 0; i < 7; i++) {
+    const dateKey = dateStrAddDays(weekStartStr, i);
+    const d = new Date(dateKey + 'T12:00:00Z');
+    const todayStr = new Date().toISOString().slice(0, 10);
+    out.push({
+      dateKey,
+      dayNum: d.getDate(),
+      isToday: dateKey === todayStr,
+    });
   }
-  return weeks;
+  return out;
+}
+function formatWeekRange(weekStartStr) {
+  const start = new Date(weekStartStr + 'T12:00:00Z');
+  const end = new Date(dateStrAddDays(weekStartStr, 6) + 'T12:00:00Z');
+  const fmt = (d) => d.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short', year: 'numeric' });
+  return `${fmt(start)} – ${fmt(end)}`;
 }
 
 function getEventsByDate(events) {
@@ -114,7 +127,6 @@ function getEventsByDate(events) {
 }
 
 const WEEKDAY_LABELS = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
-const MONTH_NAMES = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'];
 
 export default function Profil() {
   const router = useRouter();
@@ -140,9 +152,9 @@ export default function Profil() {
   const [mindsetTipFromPlan, setMindsetTipFromPlan] = useState('');
   const [trainerSchedule, setTrainerSchedule] = useState({ events: [], connected: false });
   const [loadingSchedule, setLoadingSchedule] = useState(false);
-  const [calendarMonth, setCalendarMonth] = useState(() => {
-    const d = new Date();
-    return { year: d.getFullYear(), month: d.getMonth() };
+  const [calendarWeekStart, setCalendarWeekStart] = useState(() => {
+    const monday = getMondayOfWeek(new Date());
+    return monday.toISOString().slice(0, 10);
   });
 
   const [workoutForm, setWorkoutForm] = useState({
@@ -324,12 +336,14 @@ export default function Profil() {
     }
   }, [loading, session, error, profile?.program, profile?.user_habits]);
 
-  // Načíst plánované tréninky z kalendáře trenéra (info@) – širší rozsah pro zobrazení kalendáře
+  // Načíst plánované tréninky z kalendáře trenéra (info@) – cca 2 týdny zpět + 90 dní dopředu (pro týdenní zobrazení)
   useEffect(() => {
     if (!session?.access_token) return;
     let cancelled = false;
     setLoadingSchedule(true);
-    const from = new Date().toISOString().slice(0, 10);
+    const monday = getMondayOfWeek(new Date());
+    const mondayStr = monday.toISOString().slice(0, 10);
+    const from = dateStrAddDays(mondayStr, -14);
     const to = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     fetch(`${typeof window !== 'undefined' ? '' : ''}/api/trainer-schedule?from=${from}&to=${to}`, {
       headers: { Authorization: `Bearer ${session.access_token}` },
@@ -1102,7 +1116,7 @@ export default function Profil() {
             {/* Plánované tréninky – z kalendáře trenéra (info@) */}
             <section className="card trainer-schedule-section">
               <h2 className="section-head">Kdy mám trénink?</h2>
-              <p className="trainer-schedule-lead">Rozvrh plánovaných tréninků z kalendáře trenéra. Zdroj: info@ (Google Kalendář).</p>
+              <p className="trainer-schedule-lead">Rozvrh plánovaných tréninků z kalendáře trenéra. Zdroj: info@ (Google Kalendář). Zobrazuje se vždy jeden týden (Po–Ne); v každém dnu jsou události přiřazené tobě (čas a název). Přepínání týdnů šipkami ‹ ›.</p>
               <p className="trainer-schedule-actions">
                 <a href="https://calendar.google.com/calendar/u/0/r" target="_blank" rel="noopener noreferrer" className="trainer-calendar-link">
                   Otevřít Google Kalendář (přidat / upravit tréninky)
@@ -1121,50 +1135,48 @@ export default function Profil() {
                       <button
                         type="button"
                         className="trainer-calendar-nav"
-                        onClick={() => setCalendarMonth((m) => (m.month === 0 ? { year: m.year - 1, month: 11 } : { year: m.year, month: m.month - 1 }))}
-                        aria-label="Předchozí měsíc"
+                        onClick={() => setCalendarWeekStart((s) => dateStrAddDays(s, -7))}
+                        aria-label="Předchozí týden"
                       >
                         ‹
                       </button>
-                      <span className="trainer-calendar-title">{MONTH_NAMES[calendarMonth.month]} {calendarMonth.year}</span>
+                      <span className="trainer-calendar-title">{formatWeekRange(calendarWeekStart)}</span>
                       <button
                         type="button"
                         className="trainer-calendar-nav"
-                        onClick={() => setCalendarMonth((m) => (m.month === 11 ? { year: m.year + 1, month: 0 } : { year: m.year, month: m.month + 1 }))}
-                        aria-label="Následující měsíc"
+                        onClick={() => setCalendarWeekStart((s) => dateStrAddDays(s, 7))}
+                        aria-label="Následující týden"
                       >
                         ›
                       </button>
                     </div>
-                    <div className="trainer-calendar-grid">
+                    <div className="trainer-calendar-grid trainer-calendar-grid-week">
                       {WEEKDAY_LABELS.map((label) => (
                         <div key={label} className="trainer-calendar-weekday">{label}</div>
                       ))}
-                      {getCalendarWeeks(calendarMonth.year, calendarMonth.month).map((week, wi) =>
-                        week.map((day) => {
-                          const eventsForDay = eventsByDate[day.dateKey] || [];
-                          return (
-                            <div
-                              key={day.dateKey}
-                              className={`trainer-calendar-day ${day.isCurrentMonth ? '' : 'trainer-calendar-day-other'}`}
-                            >
-                              <span className="trainer-calendar-day-num">{day.dayNum}</span>
-                              <div className="trainer-calendar-day-events">
-                                {eventsForDay.slice(0, 3).map((ev) => {
-                                  const timeStr = ev.start && ev.start.length > 10 ? new Date(ev.start).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }) : null;
-                                  return (
-                                    <div key={ev.id || ev.start + ev.summary} className="trainer-calendar-event" title={ev.summary}>
-                                      {timeStr && <span className="trainer-calendar-event-time">{timeStr}</span>}
-                                      <span className="trainer-calendar-event-summary">{ev.summary}</span>
-                                    </div>
-                                  );
-                                })}
-                                {eventsForDay.length > 3 && <span className="trainer-calendar-event-more">+{eventsForDay.length - 3}</span>}
-                              </div>
+                      {getWeekDays(calendarWeekStart).map((day) => {
+                        const eventsForDay = eventsByDate[day.dateKey] || [];
+                        return (
+                          <div
+                            key={day.dateKey}
+                            className={`trainer-calendar-day ${day.isToday ? 'trainer-calendar-day-today' : ''}`}
+                          >
+                            <span className="trainer-calendar-day-num">{day.dayNum}{day.isToday ? ' DNES' : ''}</span>
+                            <div className="trainer-calendar-day-events">
+                              {eventsForDay.slice(0, 5).map((ev) => {
+                                const timeStr = ev.start && ev.start.length > 10 ? new Date(ev.start).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }) : null;
+                                return (
+                                  <div key={ev.id || ev.start + ev.summary} className="trainer-calendar-event" title={ev.summary}>
+                                    {timeStr && <span className="trainer-calendar-event-time">{timeStr}</span>}
+                                    <span className="trainer-calendar-event-summary">{ev.summary}</span>
+                                  </div>
+                                );
+                              })}
+                              {eventsForDay.length > 5 && <span className="trainer-calendar-event-more">+{eventsForDay.length - 5}</span>}
                             </div>
-                          );
-                        })
-                      )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                   {trainerSchedule.events.length === 0 && (
@@ -2053,6 +2065,8 @@ export default function Profil() {
           flex-direction: column;
         }
         .trainer-calendar-day-other { opacity: 0.5; }
+        .trainer-calendar-day-today { background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.4); }
+        .trainer-calendar-grid-week .trainer-calendar-day { min-height: 96px; }
         .trainer-calendar-day-num {
           font-size: 13px;
           color: #94a3b8;

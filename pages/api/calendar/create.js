@@ -5,6 +5,30 @@ import { supabaseServer } from '../../../lib/supabaseServer';
 import { createEvent } from '../../../lib/googleCalendar';
 import { sendTrainingInvitationEmail } from '../../../lib/mail';
 
+/** Vrací počet hodin oproti UTC pro Europe/Prague v daný den (1 = CET zima, 2 = CEST léto). */
+function getPragueOffsetHours(dateStr) {
+  const parts = dateStr.split('-').map(Number);
+  if (parts.length !== 3) return 1;
+  const [y, m, d] = parts;
+  const lastSundayMarch = 31 - new Date(y, 2, 31).getDay();
+  const lastSundayOct = 31 - new Date(y, 9, 31).getDay();
+  if (m < 3 || (m === 3 && d < lastSundayMarch)) return 1;
+  if (m > 10 || (m === 10 && d > lastSundayOct)) return 1;
+  if (m >= 4 && m <= 9) return 2;
+  if (m === 3) return d >= lastSundayMarch ? 2 : 1;
+  if (m === 10) return d <= lastSundayOct ? 2 : 1;
+  return 1;
+}
+
+/** Parsuje datum (YYYY-MM-DD) a čas (HH:mm) jako lokální čas v Europe/Prague; vrací Date (UTC). */
+function parseDateTimeAsPrague(dateStr, timeStr) {
+  const [y, m, day] = dateStr.split('-').map(Number);
+  const [hh, mm] = (timeStr || '00:00').split(':').map(Number);
+  if (isNaN(y) || isNaN(m) || isNaN(day)) return null;
+  const offset = getPragueOffsetHours(dateStr);
+  return new Date(Date.UTC(y, m - 1, day, hh - offset, mm || 0, 0, 0));
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -60,9 +84,9 @@ export default async function handler(req, res) {
     }
 
     const duration = Math.max(15, Math.min(480, Number(durationMin) || 60));
-    const startStr = `${date}T${time.includes(':') ? time : time + ':00'}`;
-    const startDate = new Date(startStr);
-    if (isNaN(startDate.getTime())) {
+    // Interpretovat datum a čas jako Europe/Prague (CET/CEST), ne jako server UTC – aby 10:00 zůstalo 10:00 v kalendáři
+    const startDate = parseDateTimeAsPrague(date, time.includes(':') ? time : time + ':00');
+    if (!startDate || isNaN(startDate.getTime())) {
       return res.status(400).json({ error: 'Neplatné datum nebo čas. Použij např. date: 2026-02-28, time: 10:00' });
     }
     const endDate = new Date(startDate.getTime() + duration * 60 * 1000);

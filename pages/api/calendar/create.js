@@ -1,7 +1,9 @@
 // POST /api/calendar/create – vytvoří událost v kalendáři trenéra (admin key NEBO přihlášený trenér)
+// Pokud jsou vyplněné userEmails, vždy se odešle e-mail s pozvánkou (odkaz „Přidat do kalendáře“) – potvrzení záleží na uživateli.
 // Body: { key?, date, time, title, userEmails?, durationMin? }. key = ADMIN_TOKEN, nebo Authorization: Bearer SESSION (trenér)
 import { supabaseServer } from '../../../lib/supabaseServer';
 import { createEvent } from '../../../lib/googleCalendar';
+import { sendTrainingInvitationEmail } from '../../../lib/mail';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -74,16 +76,52 @@ export default async function handler(req, res) {
         ? userEmails.split(/[,;\s]+/).map((e) => e.trim()).filter(Boolean)
         : [];
 
-    await createEvent(accessToken, calendarId, {
-      summary: title || 'Trénink',
-      start,
-      end,
-      attendeeEmails,
-    });
+    const eventTitle = title || 'Trénink';
+    let calendarCreated = false;
 
-    return res.status(200).json({ ok: true, message: 'Trénink byl přidán do kalendáře.' });
+    // E-mailové pozvánky – vždy odeslat při vyplněných e-mailech; uživatel si může přidat do kalendáře (potvrdit)
+    const invitationResults = await Promise.allSettled(
+      attendeeEmails.map((email) => sendTrainingInvitationEmail(email, { title: eventTitle, start, end }))
+    );
+    const invitationsSent = invitationResults.filter((r) => r.status === 'fulfilled' && r.value?.ok).length;
+
+    try {
+      await createEvent(accessToken, calendarId, {
+        summary: eventTitle,
+        start,
+        end,
+        attendeeEmails,
+      });
+      calendarCreated = true;
+    } catch (calendarErr) {
+      const msg = calendarErr.message || '';
+      if (msg.includes('insufficient') || msg.includes('scope') || msg.includes('403') || msg.includes('PERMISSION_DENIED')) {
+        if (invitationsSent > 0) {
+          return res.status(200).json({
+            ok: true,
+            message: `Pozvánky byly odeslány na ${invitationsSent} e-mail${invitationsSent === 1 ? '' : invitationsSent < 5 ? 'y' : 'ů'}. Událost se nepodařilo zapsat do kalendáře trenéra – pro zápis propoj kalendář znovu (Admin → Propojit Google Kalendář).`,
+          });
+        }
+        return res.status(403).json({
+          error: 'Kalendář nemá oprávnění pro zápis. Propoj kalendář znovu: Admin → „Propojit Google Kalendář (info@)“ nebo otevři odkaz na propojení a přihlas se účtem info@. Nový token bude mít oprávnění pro přidávání tréninků.',
+        });
+      }
+      throw calendarErr;
+    }
+
+    let message = 'Trénink byl přidán do kalendáře.';
+    if (invitationsSent > 0) {
+      message += ` Pozvánky odeslány na ${invitationsSent} e-mail${invitationsSent === 1 ? '' : invitationsSent < 5 ? 'y' : 'ů'} – záleží na nich, jestli si událost přidají.`;
+    }
+    return res.status(200).json({ ok: true, message });
   } catch (err) {
     console.error('[calendar/create]', err);
+    const msg = err.message || '';
+    if (msg.includes('insufficient') || msg.includes('scope') || msg.includes('403') || msg.includes('PERMISSION_DENIED')) {
+      return res.status(403).json({
+        error: 'Kalendář nemá oprávnění pro zápis. Propoj kalendář znovu: Admin → „Propojit Google Kalendář (info@)“ nebo otevři odkaz na propojení a přihlas se účtem info@. Nový token bude mít oprávnění pro přidávání tréninků.',
+      });
+    }
     return res.status(500).json({ error: err.message || 'Nepodařilo se přidat událost.' });
   }
 }

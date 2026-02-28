@@ -21,6 +21,20 @@ export default function Login() {
     }).catch(() => setCheckingSession(false));
   }, [router]);
 
+  // Chyba z Supabase při vypršeném odkazu na potvrzení e-mailu (např. po registraci trenéra)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = window.location.hash || '';
+    const params = new URLSearchParams(hash.replace(/^#/, ''));
+    const error = params.get('error');
+    const code = params.get('error_code');
+    const desc = params.get('error_description') || '';
+    if (error === 'access_denied' && (code === 'otp_expired' || desc.includes('expired') || desc.includes('invalid'))) {
+      setMessage('Odkaz pro potvrzení e-mailu vypršel nebo byl již použit. Přihlas se níže e-mailem a heslem (účet už existuje), nebo se zaregistruj znovu na stránce Pro trenéry.');
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }, []);
+
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);

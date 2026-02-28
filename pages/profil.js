@@ -1406,8 +1406,21 @@ export default function Profil() {
                                 const timeStr = ev.start && ev.start.length > 10 ? new Date(ev.start).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }) : null;
                                 const attendees = Array.isArray(ev.attendees) ? ev.attendees : [];
                                 const title = [ev.summary, attendees.length ? `Účastníci: ${attendees.join(', ')}` : ''].filter(Boolean).join('\n');
+                                const attendeeEmailsLower = attendees.map((e) => String(e).toLowerCase());
+                                const clientFromEvent = profile?.can_create_calendar_events && trainerClients?.length > 0 && attendeeEmailsLower.length > 0
+                                  ? trainerClients.find((c) => attendeeEmailsLower.includes((c.email || '').toLowerCase()))
+                                  : null;
+                                const openClientCard = clientFromEvent ? () => setSelectedClient(clientFromEvent) : undefined;
                                 return (
-                                  <div key={ev.id || ev.start + ev.summary} className={`trainer-calendar-event${ev.unconfirmed ? ' trainer-calendar-event-unconfirmed' : ''}${ev.confirmed ? ' trainer-calendar-event-confirmed' : ''}`} title={title}>
+                                  <div
+                                    key={ev.id || ev.start + ev.summary}
+                                    className={`trainer-calendar-event${ev.unconfirmed ? ' trainer-calendar-event-unconfirmed' : ''}${ev.confirmed ? ' trainer-calendar-event-confirmed' : ''}${openClientCard ? ' trainer-calendar-event-clickable' : ''}`}
+                                    title={title}
+                                    onClick={openClientCard}
+                                    role={openClientCard ? 'button' : undefined}
+                                    tabIndex={openClientCard ? 0 : undefined}
+                                    onKeyDown={openClientCard ? (e) => e.key === 'Enter' && openClientCard() : undefined}
+                                  >
                                     {timeStr && <span className="trainer-calendar-event-time">{timeStr}</span>}
                                     <span className="trainer-calendar-event-summary">{ev.summary}</span>
                                     {profile?.can_create_calendar_events && attendees.length > 0 && (
@@ -2383,6 +2396,12 @@ export default function Profil() {
         .trainer-calendar-event-confirmed {
           background: rgba(34, 197, 94, 0.35);
           border-left: 3px solid #22c55e;
+        }
+        .trainer-calendar-event-clickable {
+          cursor: pointer;
+        }
+        .trainer-calendar-event-clickable:hover {
+          filter: brightness(1.1);
         }
         .trainer-calendar-event-time {
           margin-right: 4px;

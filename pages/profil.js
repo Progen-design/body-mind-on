@@ -1246,6 +1246,7 @@ export default function Profil() {
             )}
 
             {!profile?.can_create_calendar_events && (
+            <>
             <div className="toolbar">
               <button type="button" onClick={handleRefresh} disabled={refreshing} className="btn-refresh" title="Obnovit data">
                 {refreshing ? 'Obnovuji…' : '🔄 Obnovit'}
@@ -1272,6 +1273,7 @@ export default function Profil() {
                 </button>
               </div>
             </section>
+            </>
             )}
 
             {/* Plánované tréninky – z kalendáře trenéra (info@) */}

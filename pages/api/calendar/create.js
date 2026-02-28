@@ -123,11 +123,11 @@ export default async function handler(req, res) {
         if (invitationsSent > 0) {
           return res.status(200).json({
             ok: true,
-            message: `Pozvánky odeslány na ${invitationsSent} e-mail${invitationsSent === 1 ? '' : invitationsSent < 5 ? 'y' : 'ů'} – příjemce si může přidat trénink do kalendáře. Pro zápis i do kalendáře trenéra propoj kalendář znovu (Admin → Propojit Google Kalendář).`,
+            message: `Pozvánky odeslány na ${invitationsSent} e-mail${invitationsSent === 1 ? '' : invitationsSent < 5 ? 'y' : 'ů'} – příjemce si může přidat trénink do kalendáře. Pro zápis i do kalendáře trenéra: v Google Cloud Console (OAuth consent screen → Scopes) přidej scope Google Calendar API, pak Admin → Propojit Google Kalendář (přihlásit se jako info@).`,
           });
         }
         return res.status(403).json({
-          error: 'Kalendář nemá oprávnění pro zápis. Propoj kalendář znovu: Admin → „Propojit Google Kalendář (info@)“ nebo otevři odkaz na propojení a přihlas se účtem info@. Nový token bude mít oprávnění pro přidávání tréninků.',
+          error: 'Kalendář nemá oprávnění pro zápis. V Google Cloud Console (OAuth consent screen → Scopes) přidej scope „Google Calendar API“ (See, edit, share… calendars). Pak znovu propoj kalendář: Admin → Propojit Google Kalendář, přihlas se jako info@. Viz docs/KALENDAR_TRENER_NASTAVENI.md.',
         });
       }
       throw calendarErr;

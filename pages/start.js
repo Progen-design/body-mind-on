@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import Link from "next/link";
+import { useRouter } from "next/router";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import HabitSelection from "../components/HabitSelection";
@@ -7,7 +9,8 @@ import { getSuggestedHabits } from "../lib/habits";
 const MAX_STEP = 5;
 
 export default function Start() {
-  const [step, setStep] = useState(1);
+  const router = useRouter();
+  const [step, setStep] = useState(0);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -148,25 +151,53 @@ export default function Start() {
       <main className="container py-12 text-white">
         <section className="text-center mb-10">
           <h1 className="text-4xl font-extrabold mb-3 text-sky-400">
-            START Program – Začni zdarma
+            {step === 0 ? "Registrace" : "START Program – Začni zdarma"}
           </h1>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-            Vyzkoušej systém bez rizika – AI ti zdarma připraví osobní plán tréninku, jídelníček i regeneraci.
+            {step === 0
+              ? "Registruješ se jako trenér, nebo jako uživatel, který chce cvičit?"
+              : "Vyzkoušej systém bez rizika – AI ti zdarma připraví osobní plán tréninku, jídelníček i regeneraci."}
           </p>
         </section>
 
-        {/* Progress bar */}
-        <div className="progress-bar-wrap max-w-3xl mx-auto mb-8">
-          <div className="progress-dots">
-            {[1, 2, 3, 4, 5].map((s) => (
-              <span key={s} className={s === step ? "active" : s < step ? "done" : ""} aria-hidden>
-                {s}
-              </span>
-            ))}
+        {/* KROK 0: Výběr role – trenér vs. klient */}
+        {step === 0 && (
+          <div className="max-w-2xl mx-auto flex flex-col sm:flex-row gap-4 justify-center items-stretch">
+            <Link
+              href="/trener"
+              className="role-card role-card-trainer"
+            >
+              <span className="role-emoji">👤</span>
+              <strong className="role-title">Jsem trenér</strong>
+              <p className="role-desc">Přidávám tréninky, vedu klienty, mám přístup ke kalendáři a plánům.</p>
+            </Link>
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className="role-card role-card-client"
+            >
+              <span className="role-emoji">🏋️</span>
+              <strong className="role-title">Chci cvičit</strong>
+              <p className="role-desc">Jsem klient – chci plán, jídelníček a sledovat svůj progres.</p>
+            </button>
           </div>
-          <p className="progress-label">Krok {step} z {MAX_STEP}</p>
-        </div>
+        )}
 
+        {/* Progress bar – jen když už nejsme na výběru role */}
+        {step > 0 && (
+          <div className="progress-bar-wrap max-w-3xl mx-auto mb-8">
+            <div className="progress-dots">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <span key={s} className={s === step ? "active" : s < step ? "done" : ""} aria-hidden>
+                  {s}
+                </span>
+              ))}
+            </div>
+            <p className="progress-label">Krok {step} z {MAX_STEP}</p>
+          </div>
+        )}
+
+        {step > 0 && (
         <form
           onSubmit={step < MAX_STEP ? (e) => { e.preventDefault(); handleNext(); } : handleSubmit}
           className="max-w-3xl mx-auto bg-[#121212] p-8 rounded-2xl shadow-lg border border-[#222] space-y-6"
@@ -359,10 +390,33 @@ export default function Start() {
 
           {status && <p className="center mt-4 text-lg text-gray-300">{status}</p>}
         </form>
+        )}
       </main>
       <Footer />
 
       <style jsx>{`
+        .role-card {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          padding: 28px 24px;
+          border-radius: 16px;
+          border: 2px solid #334155;
+          background: #121212;
+          cursor: pointer;
+          transition: border-color 0.2s, background 0.2s;
+          text-decoration: none;
+          color: inherit;
+        }
+        .role-card:hover {
+          border-color: #0ea5e9;
+          background: #1a1a2e;
+        }
+        .role-card-trainer:hover { border-color: #a78bfa; }
+        .role-emoji { font-size: 2.5rem; margin-bottom: 12px; }
+        .role-title { display: block; font-size: 1.25rem; margin-bottom: 8px; color: #e2e8f0; }
+        .role-desc { font-size: 0.9rem; color: #94a3b8; margin: 0; line-height: 1.5; }
         .progress-bar-wrap { text-align: center; }
         .progress-dots { display: flex; justify-content: center; gap: 12px; margin-bottom: 8px; }
         .progress-dots span {

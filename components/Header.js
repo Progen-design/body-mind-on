@@ -51,6 +51,7 @@ export default function Header() {
             </>
           ) : (
             <>
+              <Link href="/trener">Pro trenéry</Link>
               <Link href="/start">Registrace</Link>
               <Link href="/profil">Profil</Link>
               <Link href="/login">Přihlášení</Link>

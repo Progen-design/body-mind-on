@@ -14,12 +14,16 @@ export default function Login() {
   const [message, setMessage] = useState('');
   const [checkingSession, setCheckingSession] = useState(true);
 
+  const redirectTo = (router.query.redirect && typeof router.query.redirect === 'string' && router.query.redirect.startsWith('/'))
+    ? router.query.redirect
+    : '/profil';
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setCheckingSession(false);
-      if (session) router.replace('/profil');
+      if (session) router.replace(redirectTo);
     }).catch(() => setCheckingSession(false));
-  }, [router]);
+  }, [router, redirectTo]);
 
   // Chyba z Supabase při vypršeném odkazu na potvrzení e-mailu (např. po registraci trenéra)
   useEffect(() => {
@@ -48,7 +52,7 @@ export default function Login() {
       // Po přihlášení necháme Supabase uložit session, pak přesměrujeme
       if (data?.session) {
         await new Promise((r) => setTimeout(r, 100));
-        router.replace('/profil');
+        router.replace(redirectTo);
       } else {
         setMessage('Přihlášení se nepodařilo. Zkus to znovu.');
       }

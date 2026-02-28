@@ -44,6 +44,7 @@ export default function Header() {
           <a href={cenikHref}>Ceník</a>
           {showLoggedInNav ? (
             <>
+              <Link href="/komunita">Komunita</Link>
               <Link href="/profil">Profil</Link>
               <button type="button" onClick={handleLogout} className="nav-logout">
                 Odhlásit se

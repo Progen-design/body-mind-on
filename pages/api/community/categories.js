@@ -20,5 +20,21 @@ export default async function handler(req, res) {
     console.error('[community/categories]', error);
     return res.status(500).json({ error: 'Nepodařilo načíst kategorie', categories: [] });
   }
-  return res.status(200).json({ categories: categories || [] });
+
+  const list = categories || [];
+  const categoryIds = list.map((c) => c.id);
+  const topicCountByCat = {};
+  if (categoryIds.length > 0) {
+    const { data: counts } = await supabaseServer
+      .from('community_posts')
+      .select('category_id')
+      .in('category_id', categoryIds);
+    (counts || []).forEach((row) => {
+      const cid = row.category_id;
+      if (cid) topicCountByCat[cid] = (topicCountByCat[cid] || 0) + 1;
+    });
+  }
+  const withCount = list.map((c) => ({ ...c, topic_count: topicCountByCat[c.id] || 0 }));
+
+  return res.status(200).json({ categories: withCount });
 }

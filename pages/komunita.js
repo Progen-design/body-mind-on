@@ -115,32 +115,45 @@ export default function Komunita() {
       <Header />
       <main className="komunita-page">
         <div className="komunita-container">
-          <h1 className="komunita-title">Fórum</h1>
+          <h1 className="komunita-title">Fórum komunity</h1>
           <p className="komunita-lead">
-            Kategorie, diskuze, sdílení zkušeností a progresu. Pište, odpovídejte, řešte věci společně.
+            Jasně rozdělené sekce pro trénink, stravu, motivaci i obecné dotazy. Bavte se, předávejte si zkušenosti a podporujte se.
           </p>
 
-          {/* Kategorie */}
+          {/* Sekce fóra – karty */}
           {categories.length > 0 && (
-            <div className="komunita-categories">
-              <button
-                type="button"
-                className={`komunita-cat-btn ${selectedCategoryId === null ? 'active' : ''}`}
-                onClick={() => setSelectedCategoryId(null)}
-              >
-                Vše
-              </button>
-              {categories.map((cat) => (
+            <section className="komunita-sections">
+              <h2 className="komunita-sections-title">Sekce fóra</h2>
+              <p className="komunita-sections-desc">Vyber sekci a čti nebo založ nové téma. V každé sekci se řeší dané téma.</p>
+              <div className="komunita-sections-grid">
                 <button
-                  key={cat.id}
                   type="button"
-                  className={`komunita-cat-btn ${selectedCategoryId === cat.id ? 'active' : ''}`}
-                  onClick={() => setSelectedCategoryId(cat.id)}
+                  className={`komunita-section-card ${selectedCategoryId === null ? 'active' : ''}`}
+                  onClick={() => setSelectedCategoryId(null)}
                 >
-                  {cat.name}
+                  <span className="komunita-section-icon">📋</span>
+                  <span className="komunita-section-name">Všechna témata</span>
+                  <span className="komunita-section-meta">Všechny diskuze napříč sekcemi</span>
                 </button>
-              ))}
-            </div>
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    className={`komunita-section-card ${selectedCategoryId === cat.id ? 'active' : ''}`}
+                    onClick={() => setSelectedCategoryId(cat.id)}
+                  >
+                    <span className="komunita-section-icon">
+                      {cat.slug === 'trenink' ? '🏋️' : cat.slug === 'jidlo-strava' ? '🥗' : cat.slug === 'motivace-progres' ? '📈' : '💬'}
+                    </span>
+                    <span className="komunita-section-name">{cat.name}</span>
+                    <span className="komunita-section-desc">{cat.description || ''}</span>
+                    <span className="komunita-section-count">
+                      {cat.topic_count ?? 0} {cat.topic_count === 1 ? 'téma' : 'témat'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
           )}
 
           {/* Nové téma */}
@@ -206,7 +219,11 @@ export default function Komunita() {
 
           {/* Seznam témat */}
           <section className="komunita-list">
-            <h2 className="komunita-list-title">Témata</h2>
+            <h2 className="komunita-list-title">
+              {selectedCategoryId
+                ? `Diskuze: ${categories.find((c) => c.id === selectedCategoryId)?.name || 'Sekce'}`
+                : 'Všechna témata'}
+            </h2>
             {loading ? (
               <p className="komunita-loading">Načítám…</p>
             ) : fetchError ? (
@@ -242,26 +259,42 @@ export default function Komunita() {
           background: linear-gradient(180deg, #0a021f 0%, #0d0d1a 30%, #0a0a12 100%);
           padding: 32px 20px 48px;
         }
-        .komunita-container { max-width: 720px; margin: 0 auto; }
+        .komunita-container { max-width: 800px; margin: 0 auto; }
         .komunita-title { font-size: 1.75rem; font-weight: 700; color: #f1f5f9; margin: 0 0 8px; }
-        .komunita-lead { color: #94a3b8; margin: 0 0 24px; font-size: 15px; line-height: 1.5; }
-        .komunita-categories {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-bottom: 20px;
+        .komunita-lead { color: #94a3b8; margin: 0 0 28px; font-size: 15px; line-height: 1.5; }
+        .komunita-sections { margin-bottom: 32px; }
+        .komunita-sections-title { font-size: 1.15rem; font-weight: 600; color: #e2e8f0; margin: 0 0 6px; }
+        .komunita-sections-desc { font-size: 14px; color: #94a3b8; margin: 0 0 16px; line-height: 1.5; }
+        .komunita-sections-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          gap: 14px;
         }
-        .komunita-cat-btn {
-          padding: 8px 16px;
-          border-radius: 8px;
-          border: 1px solid rgba(148, 163, 184, 0.3);
+        .komunita-section-card {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          text-align: left;
+          padding: 18px 16px;
+          border-radius: 12px;
+          border: 1px solid rgba(148, 163, 184, 0.25);
           background: rgba(30, 41, 59, 0.5);
           color: #e2e8f0;
-          font-size: 14px;
           cursor: pointer;
+          transition: border-color 0.2s, background 0.2s;
         }
-        .komunita-cat-btn:hover { background: rgba(148, 163, 184, 0.15); }
-        .komunita-cat-btn.active { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+        .komunita-section-card:hover {
+          border-color: rgba(124, 58, 237, 0.5);
+          background: rgba(124, 58, 237, 0.1);
+        }
+        .komunita-section-card.active {
+          border-color: #7c3aed;
+          background: rgba(124, 58, 237, 0.2);
+        }
+        .komunita-section-icon { font-size: 1.5rem; margin-bottom: 8px; }
+        .komunita-section-name { font-size: 1rem; font-weight: 600; color: #f1f5f9; margin-bottom: 4px; }
+        .komunita-section-desc, .komunita-section-meta { font-size: 13px; color: #94a3b8; line-height: 1.4; margin-bottom: 8px; }
+        .komunita-section-count { font-size: 12px; color: #64748b; }
         .komunita-form-card {
           margin-bottom: 28px;
           padding: 20px;

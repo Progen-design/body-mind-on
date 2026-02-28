@@ -1,5 +1,6 @@
-// POST /api/calendar/create – vytvoří událost v kalendáři trenéra (admin key NEBO přihlášený trenér)
-// Pokud jsou vyplněné userEmails, vždy se odešle e-mail s pozvánkou (odkaz „Přidat do kalendáře“) – potvrzení záleží na uživateli.
+// POST /api/calendar/create – vytvoří událost v kalendáři trenéra s účastníky (klienty).
+// Událost se vytvoří s attendeeEmails – Google Kalendář pak pošle klientům skutečnou pozvánku na událost (Přijmout/Odmítnout).
+// Náš vlastní e-mail s odkazem „Přidat do kalendáře“ se posílá jen při chybě zápisu do kalendáře jako záloha.
 // Body: { key?, date, time, title, userEmails?, durationMin? }. key = ADMIN_TOKEN, nebo Authorization: Bearer SESSION (trenér)
 import { supabaseServer } from '../../../lib/supabaseServer';
 import { createEvent } from '../../../lib/googleCalendar';
@@ -104,14 +105,8 @@ export default async function handler(req, res) {
         : [];
 
     const eventTitle = title || 'Trénink';
-    let calendarCreated = false;
 
-    // E-mailové pozvánky – vždy odeslat při vyplněných e-mailech; uživatel si může přidat do kalendáře (potvrdit)
-    const invitationResults = await Promise.allSettled(
-      attendeeEmails.map((email) => sendTrainingInvitationEmail(email, { title: eventTitle, start, end }))
-    );
-    const invitationsSent = invitationResults.filter((r) => r.status === 'fulfilled' && r.value?.ok).length;
-
+    // Nejdřív vytvořit událost v kalendáři s účastníky – Google pak pošle klientům skutečnou pozvánku na událost (Přijmout/Odmítnout)
     try {
       await createEvent(accessToken, calendarId, {
         summary: eventTitle,
@@ -119,14 +114,28 @@ export default async function handler(req, res) {
         end: endLocalStr,
         attendeeEmails,
       });
-      calendarCreated = true;
+      const inviteMsg = attendeeEmails.length > 0
+        ? ` Klientům byla odeslána pozvánka na událost (e-mail od Google Kalendáře) – mohou ji přijmout nebo odmítnout.`
+        : '';
+      return res.status(200).json({
+        ok: true,
+        message: `Trénink byl přidán do kalendáře.${inviteMsg}`,
+      });
     } catch (calendarErr) {
       const msg = calendarErr.message || '';
       if (msg.includes('insufficient') || msg.includes('scope') || msg.includes('403') || msg.includes('PERMISSION_DENIED')) {
+        // Záloha: poslat vlastní e-mail s odkazem „Přidat do kalendáře“, když zápis do kalendáře selže
+        let invitationsSent = 0;
+        if (attendeeEmails.length > 0) {
+          const invitationResults = await Promise.allSettled(
+            attendeeEmails.map((email) => sendTrainingInvitationEmail(email, { title: eventTitle, start, end }))
+          );
+          invitationsSent = invitationResults.filter((r) => r.status === 'fulfilled' && r.value?.ok).length;
+        }
         if (invitationsSent > 0) {
           return res.status(200).json({
             ok: true,
-            message: `Pozvánky odeslány na ${invitationsSent} e-mail${invitationsSent === 1 ? '' : invitationsSent < 5 ? 'y' : 'ů'} – příjemce si může přidat trénink do kalendáře. Pro zápis i do kalendáře trenéra: v Google Cloud Console (OAuth consent screen → Scopes) přidej scope Google Calendar API, pak Admin → Propojit Google Kalendář (přihlásit se jako info@).`,
+            message: `Pozvánky byly odeslány na ${invitationsSent} e-mail${invitationsSent === 1 ? '' : invitationsSent < 5 ? 'y' : 'ů'} (odkaz na přidání do kalendáře). Trénink se nepodařilo zapsat do tvého Google Kalendáře – v Adminu zkontroluj propojení kalendáře (viz návod v dokumentaci).`,
           });
         }
         return res.status(403).json({
@@ -135,12 +144,6 @@ export default async function handler(req, res) {
       }
       throw calendarErr;
     }
-
-    let message = 'Trénink byl přidán do kalendáře.';
-    if (invitationsSent > 0) {
-      message += ` Pozvánky odeslány na ${invitationsSent} e-mail${invitationsSent === 1 ? '' : invitationsSent < 5 ? 'y' : 'ů'} – záleží na nich, jestli si událost přidají.`;
-    }
-    return res.status(200).json({ ok: true, message });
   } catch (err) {
     console.error('[calendar/create]', err);
     const msg = err.message || '';

@@ -175,6 +175,7 @@ export default function Profil() {
   });
   const [trainerClients, setTrainerClients] = useState([]);
   const [loadingClients, setLoadingClients] = useState(false);
+  const [selectedClient, setSelectedClient] = useState(null);
 
   const [workoutForm, setWorkoutForm] = useState({
     workout_date: '',
@@ -1125,7 +1126,7 @@ export default function Profil() {
                       </thead>
                       <tbody>
                         {trainerClients.map((c) => (
-                          <tr key={c.id}>
+                          <tr key={c.id} className="trainer-clients-row" onClick={() => setSelectedClient(c)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setSelectedClient(c)}>
                             <td className="trainer-clients-name">{c.name || '—'}</td>
                             <td className="trainer-clients-email">{c.email || '—'}</td>
                             <td>{c.program === 'ON_CLUB' ? 'ON Club' : c.program === 'VIP' ? 'VIP' : 'START'}</td>
@@ -1142,6 +1143,30 @@ export default function Profil() {
                   </div>
                 )}
               </section>
+
+              {/* Modal karta klienta */}
+              {selectedClient && (
+                <div className="trainer-client-modal-overlay" onClick={() => setSelectedClient(null)} role="dialog" aria-modal="true" aria-label="Karta klienta">
+                  <div className="trainer-client-modal" onClick={(e) => e.stopPropagation()}>
+                    <div className="trainer-client-modal-header">
+                      <h3 className="trainer-client-modal-title">{selectedClient.name || 'Klient'}</h3>
+                      <button type="button" className="trainer-client-modal-close" onClick={() => setSelectedClient(null)} aria-label="Zavřít">×</button>
+                    </div>
+                    <div className="trainer-client-modal-body">
+                      <dl className="trainer-client-dl">
+                        <dt>E-mail</dt><dd>{selectedClient.email || '—'}</dd>
+                        <dt>Program</dt><dd>{selectedClient.program === 'ON_CLUB' ? 'ON Club' : selectedClient.program === 'VIP' ? 'VIP' : 'START'}</dd>
+                        <dt>Váha (kg)</dt><dd>{selectedClient.weight_kg != null ? String(selectedClient.weight_kg) : '—'}</dd>
+                        <dt>Cílová váha (kg)</dt><dd>{selectedClient.goal_weight_kg != null ? String(selectedClient.goal_weight_kg) : '—'}</dd>
+                        <dt>Výška (cm)</dt><dd>{selectedClient.height_cm != null ? String(selectedClient.height_cm) : '—'}</dd>
+                        <dt>Registrace</dt><dd>{selectedClient.registered_at ? formatDate(String(selectedClient.registered_at).slice(0, 10)) : '—'}</dd>
+                        <dt>Počet tréninků</dt><dd>{selectedClient.workout_count ?? 0}</dd>
+                        <dt>Poslední trénink</dt><dd>{selectedClient.last_workout_date ? formatDate(selectedClient.last_workout_date) : '—'}</dd>
+                      </dl>
+                    </div>
+                  </div>
+                </div>
+              )}
             )}
 
             {/* Jasná první akce – pro uživatele bez tréninku */}
@@ -2300,6 +2325,26 @@ export default function Profil() {
         .trainer-clients-table td { color: #e2e8f0; }
         .trainer-clients-name { font-weight: 500; }
         .trainer-clients-email { font-size: 13px; color: #94a3b8; }
+        .trainer-clients-row { cursor: pointer; transition: background 0.15s; }
+        .trainer-clients-row:hover { background: rgba(124, 58, 237, 0.12); }
+        .trainer-client-modal-overlay {
+          position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px;
+        }
+        .trainer-client-modal {
+          background: #121212; border: 1px solid #334155; border-radius: 16px; max-width: 420px; width: 100%; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+        .trainer-client-modal-header {
+          display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: #1a1a2e; border-bottom: 1px solid #334155;
+        }
+        .trainer-client-modal-title { margin: 0; font-size: 1.25rem; color: #e2e8f0; }
+        .trainer-client-modal-close {
+          background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; padding: 0 4px; line-height: 1;
+        }
+        .trainer-client-modal-close:hover { color: #fff; }
+        .trainer-client-modal-body { padding: 20px; }
+        .trainer-client-dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 20px; font-size: 14px; }
+        .trainer-client-dl dt { color: #94a3b8; }
+        .trainer-client-dl dd { margin: 0; color: #e2e8f0; }
         .trainer-schedule-list-details { margin-top: 20px; }
         .trainer-schedule-list-summary {
           font-size: 14px;

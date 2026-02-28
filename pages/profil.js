@@ -974,19 +974,30 @@ export default function Profil() {
     }
   };
 
-  // Najít aktuální/nejnovější plán
+  // Najít plán platný pro aktuální týden / dnes – jídelníček se mění s časem
   const currentPlan = useMemo(() => {
     if (!profile?.plans || !Array.isArray(profile.plans) || profile.plans.length === 0) {
       return null;
     }
-    // Najít platný plán (valid_until >= dnes) nebo nejnovější
-    const now = new Date();
-    const validPlan = profile.plans.find(p => {
-      if (!p.valid_until) return false;
-      return new Date(p.valid_until) >= now;
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    // 1) Plány, jejichž interval (valid_from, valid_until) obsahuje dnes
+    const containingToday = profile.plans.filter((p) => {
+      const from = p.valid_from ? new Date(p.valid_from) : null;
+      const until = p.valid_until ? new Date(p.valid_until) : null;
+      if (!from || !until) return false;
+      return from <= today && until >= today;
     });
-    // Pokud není platný, vezmi nejnovější
-    return validPlan || profile.plans[0];
+    if (containingToday.length > 0) {
+      // Preferuj plán s nejpozdějším valid_from (aktuální týden při víc plánech)
+      containingToday.sort((a, b) => (b.valid_from || '').localeCompare(a.valid_from || ''));
+      return containingToday[0];
+    }
+    // 2) Jinak plán, který ještě nevypršel (valid_until >= dnes)
+    const stillValid = profile.plans.find((p) => p.valid_until && new Date(p.valid_until) >= today);
+    if (stillValid) return stillValid;
+    // 3) Fallback: nejnovější plán
+    return profile.plans[0];
   }, [profile?.plans]);
 
   useEffect(() => {

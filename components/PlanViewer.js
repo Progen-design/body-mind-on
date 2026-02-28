@@ -71,6 +71,20 @@ function norm(s) {
   return s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
 }
 
+/** Připočte dny k datu (YYYY-MM-DD), vrátí ISO. */
+function addDaysToDateStr(dateStr, days) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+/** Formát data pro zobrazení u dne (např. "27. 2."). */
+function formatDayLabel(isoStr) {
+  if (!isoStr) return '';
+  return new Date(isoStr + 'T12:00:00').toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' });
+}
+
 /**
  * Vybere obrázek podle názvu jídla. Používá NEJDELŠÍ SHODU (nejvíc specifický klíč vyhrává),
  * aby „Palačinky z mandlové mouky“ dostaly obrázek palačinek, ne těstovin nebo snídaně.
@@ -324,6 +338,28 @@ export default function PlanViewer({ plan, userName, hideHero }) {
   const isValid = plan.valid_until ? new Date(plan.valid_until) >= today : true;
   const showGraphical = parsed && (parsed.personal?.length > 0 || parsed.days?.length > 0);
 
+  // Dynamicky zobrazit dny od dneška do konce platnosti (ne pevný týden od pondělí)
+  const displayedDays = (() => {
+    const days = parsed?.days || [];
+    if (days.length === 0 || !plan?.valid_from) return days.map((d, i) => ({ ...d, dateStr: '', isToday: false, originalIndex: i }));
+    const start = new Date(plan.valid_from + 'T12:00:00');
+    start.setHours(0, 0, 0, 0);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((now - start) / 86400000);
+    const dayIndex = Math.max(0, Math.min(days.length - 1, diffDays));
+    return days.slice(dayIndex).map((day, i) => {
+      const origIdx = dayIndex + i;
+      const dateIso = addDaysToDateStr(plan.valid_from, origIdx);
+      return {
+        ...day,
+        dateStr: formatDayLabel(dateIso),
+        isToday: i === 0,
+        originalIndex: origIdx,
+      };
+    });
+  })();
+
   return (
     <section className="card plan-section plan-section-premium">
       {/* Hero nadpis (lze skrýt, když je vykreslen nahoře na stránce) */}
@@ -383,7 +419,7 @@ export default function PlanViewer({ plan, userName, hideHero }) {
           </div>
 
           {/* Export jídelníčku – PDF s češtinou a obrázky */}
-          {parsed.days?.length > 0 && (
+          {displayedDays?.length > 0 && (
             <div className="plan-block plan-export-row">
               <button
                 type="button"
@@ -395,10 +431,11 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                   btn.disabled = true;
                   try {
                     let rows = '';
-                    (parsed.days || []).forEach((day, di) => {
-                      rows += `<div style="margin-bottom:18px;page-break-inside:avoid;"><div style="font-size:15px;font-weight:700;background:#eff6ff;color:#1e40af;padding:8px 14px;border-radius:7px;margin-bottom:10px;">${(day.dayName || 'Den').replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>`;
+                    (displayedDays || []).forEach((day, di) => {
+                      const dayLabel = (day.dayName || 'Den') + (day.dateStr ? ` (${day.dateStr})` : '') + (day.isToday ? ' – dnes' : '');
+                      rows += `<div style="margin-bottom:18px;page-break-inside:avoid;"><div style="font-size:15px;font-weight:700;background:#eff6ff;color:#1e40af;padding:8px 14px;border-radius:7px;margin-bottom:10px;">${dayLabel.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>`;
                       (day.meals || []).forEach((meal, mi) => {
-                        const key = `${di}_${mi}`;
+                        const key = `${day.originalIndex ?? di}_${mi}`;
                         const ov = mealOverrides[key];
                         const text = ov ? ov.title : (meal.text || meal.fullHtml || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
                         const dishTitle = (text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -430,20 +467,27 @@ export default function PlanViewer({ plan, userName, hideHero }) {
             </div>
           )}
 
-          {/* Jídelníček – dny a jídla s obrázky */}
-          {parsed.days?.length > 0 && (
+          {/* Jídelníček – od dneška dál (dynamicky podle aktuálního dne) */}
+          {displayedDays?.length > 0 && (
             <div className="plan-block">
-              <h3 className="plan-block-title">Jídelníček na celý týden</h3>
+              <h3 className="plan-block-title">Jídelníček od dneška</h3>
+              {plan.valid_from && plan.valid_until && (
+                <p className="plan-validity-range">
+                  Platnost plánu: {new Date(plan.valid_from).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' })} – {new Date(plan.valid_until).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' })}
+                </p>
+              )}
               <div className="plan-days">
-                {parsed.days.map((day, di) => (
-                  <div key={di} className={`plan-day-card ${day._placeholder ? 'plan-day-placeholder' : ''}`}>
-                    <h4 className="plan-day-name">{day.dayName}</h4>
+                {displayedDays.map((day, di) => (
+                  <div key={di} className={`plan-day-card ${day._placeholder ? 'plan-day-placeholder' : ''} ${day.isToday ? 'plan-day-today' : ''}`}>
+                    <h4 className="plan-day-name">
+                      {day.dayName}{day.dateStr ? ` (${day.dateStr})` : ''}{day.isToday ? ' – dnes' : ''}
+                    </h4>
                     <div className="plan-meals">
                       {day._placeholder && day.meals.length === 0 ? (
                         <p className="plan-day-placeholder-msg">V plánu chybí – vygeneruj nový plán pro kompletní jídelníček.</p>
                       ) : null}
                       {day.meals.map((meal, mi) => {
-                        const overrideKey = `${di}_${mi}`;
+                        const overrideKey = `${day.originalIndex ?? di}_${mi}`;
                         const override = mealOverrides[overrideKey];
                         const mealFullText = override ? `${meal.type || ''} ${override.title || ''}`.trim() : `${meal.type || ''} ${meal.text || ''}`.trim();
                         const mealStart = mealFullText.replace(/\s*\(.*$/, '').trim().slice(0, 35);
@@ -485,7 +529,7 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                         };
                         const handleSwap = () => {
                           const dishQuery = `${meal.type || 'Jídlo'} alternativa, do 500 kcal`.slice(0, 150);
-                          setSwapModal({ dayIndex: di, mealIndex: mi, dishQuery, loading: true, html: null });
+                          setSwapModal({ dayIndex: day.originalIndex ?? di, mealIndex: mi, dishQuery, loading: true, html: null });
                           getRecipeForDish(dishQuery).then((html) => {
                             setSwapModal((prev) => prev ? { ...prev, loading: false, html: html || '' } : null);
                           });
@@ -785,6 +829,15 @@ const planSectionStyles = `
     margin: 0 0 16px;
     padding-bottom: 8px;
     border-bottom: 1px solid rgba(139, 92, 255, 0.3);
+  }
+  .plan-validity-range {
+    margin: -8px 0 12px;
+    font-size: 13px;
+    color: #94a3b8;
+  }
+  .plan-day-today {
+    border-left: 3px solid #c4b5fd;
+    background: rgba(124, 58, 237, 0.08);
   }
   .plan-mindset-block { background: rgba(139, 92, 255, 0.08); border-radius: 12px; padding: 16px; }
   .plan-mindset-text { margin: 0; color: #e9d5ff; line-height: 1.5; }

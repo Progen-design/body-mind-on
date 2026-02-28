@@ -1,5 +1,6 @@
-// /pages/komunita.js – Fórum / zkušenosti (přístup jen po přihlášení)
+// /pages/komunita.js – Fórum s kategoriemi a tématy (přístup po přihlášení)
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -15,12 +16,34 @@ export default function Komunita() {
   const router = useRouter();
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [posts, setPosts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [topics, setTopics] = useState([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [fetchError, setFetchError] = useState('');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [categoryId, setCategoryId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState('');
+  const [showNewTopic, setShowNewTopic] = useState(false);
+
+  function loadCategories(token) {
+    fetch('/api/community/categories', { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((data) => setCategories(Array.isArray(data.categories) ? data.categories : []))
+      .catch(() => setCategories([]));
+  }
+
+  function loadTopics(token, catId) {
+    const url = catId ? `/api/community?category_id=${encodeURIComponent(catId)}` : '/api/community';
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((data) => {
+        setTopics(Array.isArray(data.topics) ? data.topics : []);
+        setFetchError(data.error || '');
+      })
+      .catch(() => { setTopics([]); setFetchError('Nepodařilo se načíst témata.'); });
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
@@ -29,18 +52,9 @@ export default function Komunita() {
         setLoading(false);
         return;
       }
-      setLoading(true);
-      fetch('/api/community', { headers: { Authorization: `Bearer ${s.access_token}` } })
-        .then((r) => r.json())
-        .then((data) => {
-          setPosts(Array.isArray(data.posts) ? data.posts : []);
-          setFetchError(data.error || '');
-        })
-        .catch(() => {
-          setPosts([]);
-          setFetchError('Nepodařilo se načíst příspěvky.');
-        })
-        .finally(() => setLoading(false));
+      loadCategories(s.access_token);
+      loadTopics(s.access_token, null);
+      setLoading(false);
     });
   }, []);
 
@@ -48,7 +62,11 @@ export default function Komunita() {
     if (!loading && !session) router.replace('/login?redirect=/komunita');
   }, [loading, session, router]);
 
-  async function handleSubmit(e) {
+  useEffect(() => {
+    if (session?.access_token) loadTopics(session.access_token, selectedCategoryId);
+  }, [selectedCategoryId, session?.access_token]);
+
+  async function handleSubmitTopic(e) {
     e.preventDefault();
     if (!session?.access_token) return;
     setSubmitting(true);
@@ -57,7 +75,11 @@ export default function Komunita() {
       const res = await fetch('/api/community', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ title: title.trim(), content: content.trim() }),
+        body: JSON.stringify({
+          category_id: categoryId || null,
+          title: title.trim(),
+          content: content.trim(),
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -66,8 +88,10 @@ export default function Komunita() {
       }
       setTitle('');
       setContent('');
-      setSubmitMessage('Příspěvek byl přidán.');
-      setPosts((prev) => [data.post, ...prev]);
+      setCategoryId('');
+      setShowNewTopic(false);
+      setSubmitMessage('Téma bylo vytvořeno.');
+      setTopics((prev) => [data.topic, ...prev]);
     } catch {
       setSubmitMessage('Odeslání se nepodařilo.');
     } finally {
@@ -79,14 +103,11 @@ export default function Komunita() {
     return (
       <>
         <Header />
-        <main className="komunita-page">
-          <p className="komunita-loading">Načítám…</p>
-        </main>
+        <main className="komunita-page"><p className="komunita-loading">Načítám…</p></main>
         <Footer />
       </>
     );
   }
-
   if (!session) return null;
 
   return (
@@ -94,67 +115,118 @@ export default function Komunita() {
       <Header />
       <main className="komunita-page">
         <div className="komunita-container">
-          <h1 className="komunita-title">Komunita</h1>
+          <h1 className="komunita-title">Fórum</h1>
           <p className="komunita-lead">
-            Sdílej zkušenosti, tipy a postřehy – trénink, jídlo, motivace, cokoli. Přístup mají jen přihlášení členové.
+            Kategorie, diskuze, sdílení zkušeností a progresu. Pište, odpovídejte, řešte věci společně.
           </p>
 
-          <section className="komunita-form-card card">
-            <h2 className="komunita-form-title">Napsat příspěvek</h2>
-            <form onSubmit={handleSubmit} className="komunita-form">
-              <label className="komunita-label">
-                Nadpis
-                <input
-                  type="text"
-                  className="komunita-input"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Např. Jak jsem zvládl první měsíc"
-                  maxLength={200}
-                  required
-                />
-              </label>
-              <label className="komunita-label">
-                Text
-                <textarea
-                  className="komunita-textarea"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Napiš, co chceš sdílet…"
-                  rows={5}
-                  required
-                />
-              </label>
-              <button type="submit" className="komunita-submit" disabled={submitting}>
-                {submitting ? 'Odesílám…' : 'Odeslat'}
+          {/* Kategorie */}
+          {categories.length > 0 && (
+            <div className="komunita-categories">
+              <button
+                type="button"
+                className={`komunita-cat-btn ${selectedCategoryId === null ? 'active' : ''}`}
+                onClick={() => setSelectedCategoryId(null)}
+              >
+                Vše
               </button>
-              {submitMessage && (
-                <p className={`komunita-feedback ${submitMessage.includes('nepodařilo') ? 'error' : 'success'}`}>
-                  {submitMessage}
-                </p>
-              )}
-            </form>
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  className={`komunita-cat-btn ${selectedCategoryId === cat.id ? 'active' : ''}`}
+                  onClick={() => setSelectedCategoryId(cat.id)}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Nové téma */}
+          <section className="komunita-form-card card">
+            <button
+              type="button"
+              className="komunita-toggle-new"
+              onClick={() => setShowNewTopic((v) => !v)}
+            >
+              {showNewTopic ? 'Zrušit' : '➕ Nové téma'}
+            </button>
+            {showNewTopic && (
+              <form onSubmit={handleSubmitTopic} className="komunita-form">
+                {categories.length > 0 && (
+                  <label className="komunita-label">
+                    Kategorie
+                    <select
+                      className="komunita-input"
+                      value={categoryId}
+                      onChange={(e) => setCategoryId(e.target.value)}
+                    >
+                      <option value="">— vyber —</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                <label className="komunita-label">
+                  Nadpis
+                  <input
+                    type="text"
+                    className="komunita-input"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Např. Jak jsem zvládl první měsíc"
+                    maxLength={200}
+                    required
+                  />
+                </label>
+                <label className="komunita-label">
+                  Text
+                  <textarea
+                    className="komunita-textarea"
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    placeholder="Napiš, o čem chceš diskutovat…"
+                    rows={5}
+                    required
+                  />
+                </label>
+                <button type="submit" className="komunita-submit" disabled={submitting}>
+                  {submitting ? 'Odesílám…' : 'Vytvořit téma'}
+                </button>
+                {submitMessage && (
+                  <p className={`komunita-feedback ${submitMessage.includes('nepodařilo') ? 'error' : 'success'}`}>
+                    {submitMessage}
+                  </p>
+                )}
+              </form>
+            )}
           </section>
 
+          {/* Seznam témat */}
           <section className="komunita-list">
-            <h2 className="komunita-list-title">Příspěvky</h2>
+            <h2 className="komunita-list-title">Témata</h2>
             {loading ? (
-              <p className="komunita-loading">Načítám příspěvky…</p>
+              <p className="komunita-loading">Načítám…</p>
             ) : fetchError ? (
               <p className="komunita-error">{fetchError}</p>
-            ) : posts.length === 0 ? (
-              <p className="komunita-empty">Zatím tu není žádný příspěvek. Buď první!</p>
+            ) : topics.length === 0 ? (
+              <p className="komunita-empty">Zatím tu není žádné téma. Založ první!</p>
             ) : (
-              <ul className="komunita-posts">
-                {posts.map((post) => (
-                  <li key={post.id} className="komunita-post card">
-                    <div className="komunita-post-header">
-                      <span className="komunita-post-title">{post.title}</span>
-                      <span className="komunita-post-meta">
-                        {post.author_name} · {formatDate(post.created_at)}
+              <ul className="komunita-topics">
+                {topics.map((t) => (
+                  <li key={t.id} className="komunita-topic-item card">
+                    <Link href={`/komunita/tema/${t.id}`} className="komunita-topic-link">
+                      <span className="komunita-topic-title">{t.title}</span>
+                      <span className="komunita-topic-meta">
+                        {t.author_name} · {formatDate(t.created_at)}
+                        {t.reply_count != null && t.reply_count > 0 && (
+                          <> · {t.reply_count} {t.reply_count === 1 ? 'odpověď' : 'odpovědí'}</>
+                        )}
                       </span>
-                    </div>
-                    <div className="komunita-post-content">{post.content}</div>
+                      <p className="komunita-topic-preview">{t.content.slice(0, 120)}{t.content.length > 120 ? '…' : ''}</p>
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -170,139 +242,71 @@ export default function Komunita() {
           background: linear-gradient(180deg, #0a021f 0%, #0d0d1a 30%, #0a0a12 100%);
           padding: 32px 20px 48px;
         }
-        .komunita-container {
-          max-width: 720px;
-          margin: 0 auto;
+        .komunita-container { max-width: 720px; margin: 0 auto; }
+        .komunita-title { font-size: 1.75rem; font-weight: 700; color: #f1f5f9; margin: 0 0 8px; }
+        .komunita-lead { color: #94a3b8; margin: 0 0 24px; font-size: 15px; line-height: 1.5; }
+        .komunita-categories {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-bottom: 20px;
         }
-        .komunita-title {
-          font-size: 1.75rem;
-          font-weight: 700;
-          color: #f1f5f9;
-          margin: 0 0 8px;
+        .komunita-cat-btn {
+          padding: 8px 16px;
+          border-radius: 8px;
+          border: 1px solid rgba(148, 163, 184, 0.3);
+          background: rgba(30, 41, 59, 0.5);
+          color: #e2e8f0;
+          font-size: 14px;
+          cursor: pointer;
         }
-        .komunita-lead {
-          color: #94a3b8;
-          margin: 0 0 28px;
-          font-size: 15px;
-          line-height: 1.5;
-        }
+        .komunita-cat-btn:hover { background: rgba(148, 163, 184, 0.15); }
+        .komunita-cat-btn.active { background: #7c3aed; border-color: #7c3aed; color: #fff; }
         .komunita-form-card {
-          margin-bottom: 32px;
-          padding: 24px;
+          margin-bottom: 28px;
+          padding: 20px;
           background: rgba(30, 41, 59, 0.5);
           border: 1px solid rgba(148, 163, 184, 0.2);
           border-radius: 12px;
         }
-        .komunita-form-title {
-          font-size: 1.1rem;
-          font-weight: 600;
-          color: #e2e8f0;
-          margin: 0 0 16px;
-        }
-        .komunita-form {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-        .komunita-label {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          font-size: 14px;
-          color: #94a3b8;
-        }
-        .komunita-input,
-        .komunita-textarea {
-          padding: 10px 14px;
+        .komunita-toggle-new {
+          padding: 8px 14px;
           border-radius: 8px;
-          border: 1px solid rgba(148, 163, 184, 0.3);
-          background: rgba(15, 23, 42, 0.8);
-          color: #e2e8f0;
-          font-size: 15px;
-          font-family: inherit;
-        }
-        .komunita-textarea {
-          resize: vertical;
-          min-height: 120px;
-        }
-        .komunita-input::placeholder,
-        .komunita-textarea::placeholder {
-          color: #64748b;
-        }
-        .komunita-submit {
-          align-self: flex-start;
-          padding: 10px 24px;
-          border-radius: 10px;
           background: #7c3aed;
           color: #fff;
-          font-weight: 600;
           border: none;
+          font-weight: 600;
           cursor: pointer;
-          font-size: 15px;
-        }
-        .komunita-submit:hover:not(:disabled) {
-          background: #6d28d9;
-        }
-        .komunita-submit:disabled {
-          opacity: 0.7;
-          cursor: wait;
-        }
-        .komunita-feedback {
-          margin: 0;
           font-size: 14px;
         }
+        .komunita-toggle-new:hover { background: #6d28d9; }
+        .komunita-form { margin-top: 16px; display: flex; flex-direction: column; gap: 14px; }
+        .komunita-label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #94a3b8; }
+        .komunita-input, .komunita-textarea {
+          padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(148, 163, 184, 0.3);
+          background: rgba(15, 23, 42, 0.8); color: #e2e8f0; font-size: 15px; font-family: inherit;
+        }
+        .komunita-textarea { resize: vertical; min-height: 100px; }
+        .komunita-submit {
+          align-self: flex-start; padding: 10px 24px; border-radius: 10px; background: #7c3aed;
+          color: #fff; font-weight: 600; border: none; cursor: pointer; font-size: 15px;
+        }
+        .komunita-submit:hover:not(:disabled) { background: #6d28d9; }
+        .komunita-submit:disabled { opacity: 0.7; cursor: wait; }
+        .komunita-feedback { margin: 0; font-size: 14px; }
         .komunita-feedback.success { color: #86efac; }
         .komunita-feedback.error { color: #fca5a5; }
-        .komunita-list-title {
-          font-size: 1.1rem;
-          font-weight: 600;
-          color: #e2e8f0;
-          margin: 0 0 16px;
+        .komunita-list-title { font-size: 1.1rem; font-weight: 600; color: #e2e8f0; margin: 0 0 14px; }
+        .komunita-loading, .komunita-error, .komunita-empty { color: #94a3b8; margin: 0; }
+        .komunita-topics { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+        .komunita-topic-item { padding: 0; overflow: hidden; }
+        .komunita-topic-link {
+          display: block; padding: 18px 20px; text-decoration: none; color: inherit; transition: background 0.15s;
         }
-        .komunita-loading,
-        .komunita-error,
-        .komunita-empty {
-          color: #94a3b8;
-          margin: 0;
-        }
-        .komunita-posts {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-        .komunita-post {
-          padding: 20px;
-          background: rgba(30, 41, 59, 0.4);
-          border: 1px solid rgba(148, 163, 184, 0.15);
-          border-radius: 12px;
-        }
-        .komunita-post-header {
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: space-between;
-          align-items: baseline;
-          gap: 8px;
-          margin-bottom: 12px;
-        }
-        .komunita-post-title {
-          font-size: 1.05rem;
-          font-weight: 600;
-          color: #f1f5f9;
-        }
-        .komunita-post-meta {
-          font-size: 13px;
-          color: #64748b;
-        }
-        .komunita-post-content {
-          font-size: 15px;
-          line-height: 1.6;
-          color: #e2e8f0;
-          white-space: pre-wrap;
-          word-break: break-word;
-        }
+        .komunita-topic-link:hover { background: rgba(124, 58, 237, 0.12); }
+        .komunita-topic-title { font-size: 1.05rem; font-weight: 600; color: #f1f5f9; display: block; margin-bottom: 4px; }
+        .komunita-topic-meta { font-size: 13px; color: #64748b; }
+        .komunita-topic-preview { font-size: 14px; color: #94a3b8; margin: 10px 0 0; line-height: 1.5; }
       `}</style>
     </>
   );

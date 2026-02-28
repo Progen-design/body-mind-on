@@ -1306,7 +1306,35 @@ export default function Profil() {
                       Název <input type="text" value={calendarEventForm.title} onChange={(e) => setCalendarEventForm((f) => ({ ...f, title: e.target.value }))} placeholder="Trénink" className="trainer-schedule-add-input trainer-schedule-add-title" />
                     </label>
                     <label className="trainer-schedule-add-label">
-                      Přiřadit uživatelům (e-maily, čárka nebo středník)
+                      Přiřadit klientům
+                    </label>
+                    {trainerClients.length > 0 && (
+                      <div className="trainer-schedule-add-clients-wrap">
+                        <select
+                          className="trainer-schedule-add-select"
+                          value=""
+                          onChange={(e) => {
+                            const email = e.target.value;
+                            if (!email) return;
+                            setCalendarEventForm((f) => {
+                              const current = (f.userEmails || '').split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean);
+                              if (current.includes(email)) return f;
+                              return { ...f, userEmails: [...current, email].join(', ') };
+                            });
+                            e.target.value = '';
+                          }}
+                          aria-label="Vybrat klienta"
+                        >
+                          <option value="">— Vybrat klienta (jméno, e-mail) —</option>
+                          {trainerClients.map((c) => (
+                            <option key={c.id} value={c.email || ''}>{c.name || '—'} ({c.email})</option>
+                          ))}
+                        </select>
+                        <span className="trainer-schedule-add-select-hint">Vyber ze seznamu nebo doplň e-maily níže.</span>
+                      </div>
+                    )}
+                    <label className="trainer-schedule-add-label">
+                      E-maily (můžeš doplnit ručně, čárka nebo středník)
                       <textarea value={calendarEventForm.userEmails} onChange={(e) => setCalendarEventForm((f) => ({ ...f, userEmails: e.target.value }))} placeholder="jan@example.cz, eva@example.cz" rows={2} className="trainer-schedule-add-textarea" />
                     </label>
                     <button type="submit" disabled={calendarEventSubmit.loading} className="trainer-schedule-add-submit">
@@ -1377,7 +1405,7 @@ export default function Profil() {
                                 const attendees = Array.isArray(ev.attendees) ? ev.attendees : [];
                                 const title = [ev.summary, attendees.length ? `Účastníci: ${attendees.join(', ')}` : ''].filter(Boolean).join('\n');
                                 return (
-                                  <div key={ev.id || ev.start + ev.summary} className="trainer-calendar-event" title={title}>
+                                  <div key={ev.id || ev.start + ev.summary} className={`trainer-calendar-event${ev.unconfirmed ? ' trainer-calendar-event-unconfirmed' : ''}`} title={title}>
                                     {timeStr && <span className="trainer-calendar-event-time">{timeStr}</span>}
                                     <span className="trainer-calendar-event-summary">{ev.summary}</span>
                                     {profile?.can_create_calendar_events && attendees.length > 0 && (
@@ -2215,6 +2243,12 @@ export default function Profil() {
         .trainer-schedule-add-label { display: block; font-size: 13px; color: #94a3b8; }
         .trainer-schedule-add-label .trainer-schedule-add-input { margin-left: 6px; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(148,163,184,0.3); background: rgba(15,23,42,0.8); color: #e2e8f0; }
         .trainer-schedule-add-title { min-width: 200px; }
+        .trainer-schedule-add-clients-wrap { margin-bottom: 12px; }
+        .trainer-schedule-add-select {
+          display: block; width: 100%; max-width: 420px; margin-top: 4px; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(148,163,184,0.3); background: rgba(15,23,42,0.8); color: #e2e8f0; font-size: 14px;
+        }
+        .trainer-schedule-add-select:focus { outline: none; border-color: #a78bfa; }
+        .trainer-schedule-add-select-hint { display: block; font-size: 12px; color: #64748b; margin-top: 4px; }
         .trainer-schedule-add-textarea { display: block; margin-top: 4px; width: 100%; max-width: 400px; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(148,163,184,0.3); background: rgba(15,23,42,0.8); color: #e2e8f0; font-size: 14px; resize: vertical; }
         .trainer-schedule-add-submit { align-self: flex-start; padding: 10px 20px; border-radius: 10px; background: #7c3aed; color: #fff; font-weight: 600; border: none; cursor: pointer; }
         .trainer-schedule-add-submit:hover:not(:disabled) { background: #6d28d9; }
@@ -2339,6 +2373,10 @@ export default function Profil() {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+        }
+        .trainer-calendar-event-unconfirmed {
+          background: rgba(202, 138, 4, 0.35);
+          border-left: 3px solid #eab308;
         }
         .trainer-calendar-event-time {
           margin-right: 4px;

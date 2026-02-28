@@ -45,16 +45,13 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const { category_id, title, content } = req.body || {};
-    const titleStr = (title != null ? String(title) : '').trim();
+    const { category_id, content } = req.body || {};
     const contentStr = (content != null ? String(content) : '').trim();
     const catId = (category_id != null ? String(category_id).trim() : '') || null;
-    if (!titleStr || !contentStr) {
-      return res.status(400).json({ error: 'Vyplň nadpis i text příspěvku.' });
-    }
-    if (titleStr.length > 200) return res.status(400).json({ error: 'Nadpis max. 200 znaků.' });
+    if (!contentStr) return res.status(400).json({ error: 'Napiš zprávu.' });
 
     const authorName = (user.user_metadata?.name || user.email?.split('@')[0] || 'Člen').trim().slice(0, 100);
+    const titleStr = contentStr.slice(0, 100).trim() || 'Zpráva';
 
     const { data: topic, error: insertErr } = await supabaseServer
       .from('community_posts')

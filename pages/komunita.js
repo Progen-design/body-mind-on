@@ -1,4 +1,4 @@
-// /pages/komunita.js – Fórum s kategoriemi a tématy (přístup po přihlášení)
+// /pages/komunita.js – Komunita jako chat: zprávy v sekcích, odpovědi pod zprávou (přístup po přihlášení)
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -20,12 +20,9 @@ export default function Komunita() {
   const [topics, setTopics] = useState([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [fetchError, setFetchError] = useState('');
-  const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [categoryId, setCategoryId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState('');
-  const [showNewTopic, setShowNewTopic] = useState(false);
 
   function loadCategories(token) {
     fetch('/api/community/categories', { headers: { Authorization: `Bearer ${token}` } })
@@ -42,7 +39,7 @@ export default function Komunita() {
         setTopics(Array.isArray(data.topics) ? data.topics : []);
         setFetchError(data.error || '');
       })
-      .catch(() => { setTopics([]); setFetchError('Nepodařilo se načíst témata.'); });
+      .catch(() => { setTopics([]); setFetchError('Nepodařilo se načíst zprávy.'); });
   }
 
   useEffect(() => {
@@ -66,9 +63,9 @@ export default function Komunita() {
     if (session?.access_token) loadTopics(session.access_token, selectedCategoryId);
   }, [selectedCategoryId, session?.access_token]);
 
-  async function handleSubmitTopic(e) {
+  async function handleSubmitMessage(e) {
     e.preventDefault();
-    if (!session?.access_token) return;
+    if (!session?.access_token || !content.trim()) return;
     setSubmitting(true);
     setSubmitMessage('');
     try {
@@ -76,8 +73,7 @@ export default function Komunita() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({
-          category_id: categoryId || null,
-          title: title.trim(),
+          category_id: selectedCategoryId || null,
           content: content.trim(),
         }),
       });
@@ -86,11 +82,8 @@ export default function Komunita() {
         setSubmitMessage(data.error || 'Odeslání se nepodařilo.');
         return;
       }
-      setTitle('');
       setContent('');
-      setCategoryId('');
-      setShowNewTopic(false);
-      setSubmitMessage('Téma bylo vytvořeno.');
+      setSubmitMessage('Zpráva odeslána.');
       setTopics((prev) => [data.topic, ...prev]);
     } catch {
       setSubmitMessage('Odeslání se nepodařilo.');
@@ -117,14 +110,14 @@ export default function Komunita() {
         <div className="komunita-container">
           <h1 className="komunita-title">Fórum komunity</h1>
           <p className="komunita-lead">
-            Jasně rozdělené sekce pro trénink, stravu, motivaci i obecné dotazy. Bavte se, předávejte si zkušenosti a podporujte se.
+            Sekce jako chat – napiš cokoli, ostatní mohou odpovědět. Předávejte si zkušenosti, ptejte se, podporujte se.
           </p>
 
-          {/* Sekce fóra – karty */}
+          {/* Sekce – karty */}
           {categories.length > 0 && (
             <section className="komunita-sections">
-              <h2 className="komunita-sections-title">Sekce fóra</h2>
-              <p className="komunita-sections-desc">Vyber sekci a čti nebo založ nové téma. V každé sekci se řeší dané téma.</p>
+              <h2 className="komunita-sections-title">Sekce</h2>
+              <p className="komunita-sections-desc">Vyber sekci – uvidíš zprávy v ní a můžeš napsat svoji nebo odpovědět.</p>
               <div className="komunita-sections-grid">
                 <button
                   type="button"
@@ -132,8 +125,8 @@ export default function Komunita() {
                   onClick={() => setSelectedCategoryId(null)}
                 >
                   <span className="komunita-section-icon">📋</span>
-                  <span className="komunita-section-name">Všechna témata</span>
-                  <span className="komunita-section-meta">Všechny diskuze napříč sekcemi</span>
+                  <span className="komunita-section-name">Všechny zprávy</span>
+                  <span className="komunita-section-meta">Všechny zprávy ze všech sekcí</span>
                 </button>
                 {categories.map((cat) => (
                   <button
@@ -148,7 +141,7 @@ export default function Komunita() {
                     <span className="komunita-section-name">{cat.name}</span>
                     <span className="komunita-section-desc">{cat.description || ''}</span>
                     <span className="komunita-section-count">
-                      {cat.topic_count ?? 0} {cat.topic_count === 1 ? 'téma' : 'témat'}
+                      {cat.topic_count ?? 0} {cat.topic_count === 1 ? 'zpráva' : 'zpráv'}
                     </span>
                   </button>
                 ))}
@@ -156,93 +149,57 @@ export default function Komunita() {
             </section>
           )}
 
-          {/* Nové téma */}
+          {/* Napiš zprávu – jako chat */}
           <section className="komunita-form-card card">
-            <button
-              type="button"
-              className="komunita-toggle-new"
-              onClick={() => setShowNewTopic((v) => !v)}
-            >
-              {showNewTopic ? 'Zrušit' : '➕ Nové téma'}
-            </button>
-            {showNewTopic && (
-              <form onSubmit={handleSubmitTopic} className="komunita-form">
-                {categories.length > 0 && (
-                  <label className="komunita-label">
-                    Kategorie
-                    <select
-                      className="komunita-input"
-                      value={categoryId}
-                      onChange={(e) => setCategoryId(e.target.value)}
-                    >
-                      <option value="">— vyber —</option>
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
-                  </label>
-                )}
-                <label className="komunita-label">
-                  Nadpis
-                  <input
-                    type="text"
-                    className="komunita-input"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Např. Jak jsem zvládl první měsíc"
-                    maxLength={200}
-                    required
-                  />
-                </label>
-                <label className="komunita-label">
-                  Text
-                  <textarea
-                    className="komunita-textarea"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="Napiš, o čem chceš diskutovat…"
-                    rows={5}
-                    required
-                  />
-                </label>
-                <button type="submit" className="komunita-submit" disabled={submitting}>
-                  {submitting ? 'Odesílám…' : 'Vytvořit téma'}
-                </button>
-                {submitMessage && (
-                  <p className={`komunita-feedback ${submitMessage.includes('nepodařilo') ? 'error' : 'success'}`}>
-                    {submitMessage}
-                  </p>
-                )}
-              </form>
-            )}
+            <form onSubmit={handleSubmitMessage} className="komunita-form">
+              <label className="komunita-label">
+                {selectedCategoryId ? `Napiš zprávu do sekce ${categories.find((c) => c.id === selectedCategoryId)?.name || ''}` : 'Napiš zprávu (vyber sekci výše, nebo pošleš do Všechny zprávy)'}
+                <textarea
+                  className="komunita-textarea"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Napiš cokoli – ostatní mohou odpovědět…"
+                  rows={3}
+                  required
+                />
+              </label>
+              <button type="submit" className="komunita-submit" disabled={submitting}>
+                {submitting ? 'Odesílám…' : 'Odeslat'}
+              </button>
+              {submitMessage && (
+                <p className={`komunita-feedback ${submitMessage.includes('nepodařilo') ? 'error' : 'success'}`}>
+                  {submitMessage}
+                </p>
+              )}
+            </form>
           </section>
 
-          {/* Seznam témat */}
+          {/* Feed zpráv */}
           <section className="komunita-list">
             <h2 className="komunita-list-title">
               {selectedCategoryId
-                ? `Diskuze: ${categories.find((c) => c.id === selectedCategoryId)?.name || 'Sekce'}`
-                : 'Všechna témata'}
+                ? categories.find((c) => c.id === selectedCategoryId)?.name || 'Sekce'
+                : 'Všechny zprávy'}
             </h2>
             {loading ? (
               <p className="komunita-loading">Načítám…</p>
             ) : fetchError ? (
               <p className="komunita-error">{fetchError}</p>
             ) : topics.length === 0 ? (
-              <p className="komunita-empty">Zatím tu není žádné téma. Založ první!</p>
+              <p className="komunita-empty">Zatím tu nic není. Napiš první zprávu!</p>
             ) : (
               <ul className="komunita-topics">
                 {topics.map((t) => (
                   <li key={t.id} className="komunita-topic-item card">
                     <Link href={`/komunita/tema/${t.id}`} className="komunita-topic-link">
-                      <span className="komunita-topic-title">{t.title}</span>
                       <span className="komunita-topic-meta">
                         {t.author_name} · {formatDate(t.created_at)}
                         {t.reply_count != null && t.reply_count > 0 && (
                           <> · {t.reply_count} {t.reply_count === 1 ? 'odpověď' : 'odpovědí'}</>
                         )}
                       </span>
-                      <p className="komunita-topic-preview">{t.content.slice(0, 120)}{t.content.length > 120 ? '…' : ''}</p>
+                      <p className="komunita-topic-preview">{t.content}</p>
+                      <span className="komunita-topic-reply-hint">Klikni a odpověz →</span>
                     </Link>
                   </li>
                 ))}

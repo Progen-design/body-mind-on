@@ -1407,7 +1407,7 @@ export default function Profil() {
                                 const attendees = Array.isArray(ev.attendees) ? ev.attendees : [];
                                 const title = [ev.summary, attendees.length ? `Účastníci: ${attendees.join(', ')}` : ''].filter(Boolean).join('\n');
                                 return (
-                                  <div key={ev.id || ev.start + ev.summary} className={`trainer-calendar-event${ev.unconfirmed ? ' trainer-calendar-event-unconfirmed' : ''}`} title={title}>
+                                  <div key={ev.id || ev.start + ev.summary} className={`trainer-calendar-event${ev.unconfirmed ? ' trainer-calendar-event-unconfirmed' : ''}${ev.confirmed ? ' trainer-calendar-event-confirmed' : ''}`} title={title}>
                                     {timeStr && <span className="trainer-calendar-event-time">{timeStr}</span>}
                                     <span className="trainer-calendar-event-summary">{ev.summary}</span>
                                     {profile?.can_create_calendar_events && attendees.length > 0 && (
@@ -2379,6 +2379,10 @@ export default function Profil() {
         .trainer-calendar-event-unconfirmed {
           background: rgba(202, 138, 4, 0.35);
           border-left: 3px solid #eab308;
+        }
+        .trainer-calendar-event-confirmed {
+          background: rgba(34, 197, 94, 0.35);
+          border-left: 3px solid #22c55e;
         }
         .trainer-calendar-event-time {
           margin-right: 4px;

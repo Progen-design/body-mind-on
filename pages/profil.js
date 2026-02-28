@@ -12,6 +12,7 @@ import HabitEntryWizard from '../components/HabitEntryWizard';
 import Toast from '../components/Toast';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
+import { getHabitById } from '../lib/habits';
 
 const PROGRAM_LABELS = {
   START: { greeting: 'Ahoj', subtitle: 'Každý trénink, každé měření.' },
@@ -176,6 +177,7 @@ export default function Profil() {
   const [trainerClients, setTrainerClients] = useState([]);
   const [loadingClients, setLoadingClients] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+  const [showFullClientCard, setShowFullClientCard] = useState(false);
 
   const [workoutForm, setWorkoutForm] = useState({
     workout_date: '',
@@ -369,6 +371,11 @@ export default function Profil() {
       .finally(() => { if (!cancelled) setLoadingClients(false); });
     return () => { cancelled = true; };
   }, [profile?.can_create_calendar_events, session?.access_token]);
+
+  // Při otevření jiného klienta zobrazit nejdřív souhrn, ne celou kartu
+  useEffect(() => {
+    setShowFullClientCard(false);
+  }, [selectedClient?.id]);
 
   // Načíst plánované tréninky z kalendáře trenéra (info@) – cca 2 týdny zpět + 90 dní dopředu (pro týdenní zobrazení)
   useEffect(() => {
@@ -1161,10 +1168,15 @@ export default function Profil() {
               {/* Modal karta klienta */}
               {selectedClient && (
                 <div className="trainer-client-modal-overlay" onClick={() => setSelectedClient(null)} role="dialog" aria-modal="true" aria-label="Karta klienta">
-                  <div className="trainer-client-modal" onClick={(e) => e.stopPropagation()}>
+                  <div className={`trainer-client-modal${showFullClientCard ? ' trainer-client-modal-full' : ''}`} onClick={(e) => e.stopPropagation()}>
                     <div className="trainer-client-modal-header">
                       <h3 className="trainer-client-modal-title">{selectedClient.name || 'Klient'}</h3>
-                      <button type="button" className="trainer-client-modal-close" onClick={() => setSelectedClient(null)} aria-label="Zavřít">×</button>
+                      <div className="trainer-client-modal-header-actions">
+                        <button type="button" className="trainer-client-modal-btn-toggle" onClick={() => setShowFullClientCard((v) => !v)}>
+                          {showFullClientCard ? 'Zabalit' : 'Zobrazit celou kartu'}
+                        </button>
+                        <button type="button" className="trainer-client-modal-close" onClick={() => setSelectedClient(null)} aria-label="Zavřít">×</button>
+                      </div>
                     </div>
                     <div className="trainer-client-modal-body">
                       <dl className="trainer-client-dl">
@@ -1191,7 +1203,7 @@ export default function Profil() {
                           )}
                         </div>
                       )}
-                      {selectedClient.last_workout && (
+                      {selectedClient.last_workout && !showFullClientCard && (
                         <div className="trainer-client-modal-section">
                           <h4 className="trainer-client-modal-section-title">Detail posledního tréninku</h4>
                           <dl className="trainer-client-dl trainer-client-dl-compact">
@@ -1205,6 +1217,58 @@ export default function Profil() {
                             )}
                           </dl>
                         </div>
+                      )}
+                      {showFullClientCard && (
+                        <>
+                          <div className="trainer-client-modal-section">
+                            <h4 className="trainer-client-modal-section-title">Sledované návyky – rozpis</h4>
+                            {selectedClient.user_habits?.length > 0 ? (
+                              <ul className="trainer-client-habits-list">
+                                {(selectedClient.user_habits || []).map((h) => {
+                                  const habit = getHabitById(h.habit_id);
+                                  return (
+                                    <li key={h.habit_id} className="trainer-client-habit-item">
+                                      <span className="trainer-client-habit-emoji">{habit?.emoji || '•'}</span>
+                                      <span>{habit?.label || h.habit_id}</span>
+                                      {selectedClient.habit_summary_7d?.byHabit?.[h.habit_id] != null && (
+                                        <span className="trainer-client-habit-count"> tento týden {selectedClient.habit_summary_7d.byHabit[h.habit_id]}×</span>
+                                      )}
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            ) : (
+                              <p className="trainer-client-modal-habits-intro">Zatím nemá vybrané návyky.</p>
+                            )}
+                          </div>
+                          {(selectedClient.last_workouts?.length > 0) && (
+                            <div className="trainer-client-modal-section">
+                              <h4 className="trainer-client-modal-section-title">Historie tréninků (posledních {selectedClient.last_workouts.length})</h4>
+                              <div className="trainer-client-workouts-table-wrap">
+                                <table className="trainer-client-workouts-table">
+                                  <thead>
+                                    <tr>
+                                      <th>Datum</th>
+                                      <th>Typ</th>
+                                      <th>Délka</th>
+                                      <th>Poznámka</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {selectedClient.last_workouts.map((w, i) => (
+                                      <tr key={`${w.workout_date}-${i}`}>
+                                        <td>{formatDate(w.workout_date)}</td>
+                                        <td>{w.workout_name || w.workout_type || '—'}</td>
+                                        <td>{w.duration_min != null ? `${w.duration_min} min` : '—'}</td>
+                                        <td className="trainer-client-workout-notes">{w.notes || '—'}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -2477,6 +2541,14 @@ export default function Profil() {
         .trainer-client-modal-header {
           display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: #1a1a2e; border-bottom: 1px solid #334155;
         }
+        .trainer-client-modal-header-actions { display: flex; align-items: center; gap: 12px; }
+        .trainer-client-modal-btn-toggle {
+          padding: 6px 12px; font-size: 13px; color: #c4b5fd; background: rgba(124, 58, 237, 0.25);
+          border: 1px solid #7c3aed; border-radius: 8px; cursor: pointer;
+        }
+        .trainer-client-modal-btn-toggle:hover { background: rgba(124, 58, 237, 0.4); color: #e9d5ff; }
+        .trainer-client-modal-full { max-width: 560px; max-height: 90vh; }
+        .trainer-client-modal-full .trainer-client-modal-body { max-height: calc(90vh - 60px); overflow-y: auto; }
         .trainer-client-modal-title { margin: 0; font-size: 1.25rem; color: #e2e8f0; }
         .trainer-client-modal-close {
           background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; padding: 0 4px; line-height: 1;
@@ -2493,6 +2565,17 @@ export default function Profil() {
         .trainer-client-habit-positive { color: #86efac; }
         .trainer-client-habit-negative { color: #fca5a5; }
         .trainer-client-dl-compact { gap: 4px 16px; font-size: 13px; }
+        .trainer-client-habits-list { margin: 0; padding-left: 20px; font-size: 14px; color: #e2e8f0; }
+        .trainer-client-habit-item { margin-bottom: 6px; }
+        .trainer-client-habit-emoji { margin-right: 8px; }
+        .trainer-client-habit-count { color: #94a3b8; font-size: 13px; margin-left: 4px; }
+        .trainer-client-workouts-table-wrap { overflow-x: auto; margin-top: 8px; }
+        .trainer-client-workouts-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .trainer-client-workouts-table th,
+        .trainer-client-workouts-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #334155; }
+        .trainer-client-workouts-table th { color: #94a3b8; font-weight: 600; }
+        .trainer-client-workouts-table td { color: #e2e8f0; }
+        .trainer-client-workout-notes { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .trainer-schedule-list-details { margin-top: 20px; }
         .trainer-schedule-list-summary {
           font-size: 14px;

@@ -116,9 +116,31 @@ export default async function handler(req, res) {
       if (log.completed !== true) return;
       const uid = log.user_id;
       if (!uid) return;
-      if (!habitSummaryByUserId[uid]) habitSummaryByUserId[uid] = { positiveDone: 0, negativeDone: 0 };
-      if (positiveIds.has(log.habit_id)) habitSummaryByUserId[uid].positiveDone += 1;
-      else if (negativeIds.has(log.habit_id)) habitSummaryByUserId[uid].negativeDone += 1;
+      if (!habitSummaryByUserId[uid]) habitSummaryByUserId[uid] = { positiveDone: 0, negativeDone: 0, byHabit: {} };
+      if (positiveIds.has(log.habit_id)) {
+        habitSummaryByUserId[uid].positiveDone += 1;
+        habitSummaryByUserId[uid].byHabit[log.habit_id] = (habitSummaryByUserId[uid].byHabit[log.habit_id] || 0) + 1;
+      } else if (negativeIds.has(log.habit_id)) {
+        habitSummaryByUserId[uid].negativeDone += 1;
+        habitSummaryByUserId[uid].byHabit[log.habit_id] = (habitSummaryByUserId[uid].byHabit[log.habit_id] || 0) + 1;
+      }
+    });
+
+    // Posledních 10 tréninků per user (pro celou kartu)
+    const lastWorkoutsByUserId = {};
+    (workoutsRows || []).forEach((row) => {
+      const uid = row.user_id;
+      if (!uid) return;
+      if (!lastWorkoutsByUserId[uid]) lastWorkoutsByUserId[uid] = [];
+      if (lastWorkoutsByUserId[uid].length < 10) {
+        lastWorkoutsByUserId[uid].push({
+          workout_date: String(row.workout_date).slice(0, 10),
+          workout_type: row.workout_type,
+          workout_name: row.workout_name,
+          duration_min: row.duration_min,
+          notes: row.notes,
+        });
+      }
     });
 
     // Auth uživatelé – jen ti, kteří jsou v clientUserIds a nejsou trenér
@@ -139,7 +161,7 @@ export default async function handler(req, res) {
       const meta = u.user_metadata || {};
       const latest = latestByUser[u.id] || {};
       const stats = workoutStats[u.id] || { count: 0, lastDate: null };
-      const habitSummary = habitSummaryByUserId[u.id] || { positiveDone: 0, negativeDone: 0 };
+      const habitSummary = habitSummaryByUserId[u.id] || { positiveDone: 0, negativeDone: 0, byHabit: {} };
       clients.push({
         id: u.id,
         email: u.email,
@@ -152,6 +174,7 @@ export default async function handler(req, res) {
         workout_count: stats.count,
         last_workout_date: stats.lastDate,
         last_workout: lastWorkoutByUser[u.id] || null,
+        last_workouts: lastWorkoutsByUserId[u.id] || [],
         user_habits: userHabitsByUserId[u.id] || [],
         habit_summary_7d: habitSummary,
       });

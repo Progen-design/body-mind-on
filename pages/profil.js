@@ -1102,6 +1102,7 @@ export default function Profil() {
 
             {/* Trenér: Moji klienti */}
             {profile?.can_create_calendar_events && (
+              <>
               <section className="card trainer-clients-section">
                 <h2 className="section-head">Moji klienti</h2>
                 {loadingClients ? (
@@ -1167,6 +1168,7 @@ export default function Profil() {
                   </div>
                 </div>
               )}
+              </>
             )}
 
             {/* Jasná první akce – pro uživatele bez tréninku */}

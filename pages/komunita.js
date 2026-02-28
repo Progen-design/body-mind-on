@@ -149,11 +149,12 @@ export default function Komunita() {
             </section>
           )}
 
-          {/* Napiš zprávu – jako chat */}
+          {/* Nový příspěvek – témata jsou sekce nahoře */}
           <section className="komunita-form-card card">
+            <h2 className="komunita-form-title">Nový příspěvek</h2>
             <form onSubmit={handleSubmitMessage} className="komunita-form">
               <label className="komunita-label">
-                {selectedCategoryId ? `Napiš zprávu do sekce ${categories.find((c) => c.id === selectedCategoryId)?.name || ''}` : 'Napiš zprávu (vyber sekci výše, nebo pošleš do Všechny zprávy)'}
+                {selectedCategoryId ? `Do sekce ${categories.find((c) => c.id === selectedCategoryId)?.name || ''}` : 'Vyber sekci výše, nebo pošleš do Všechny zprávy'}
                 <textarea
                   className="komunita-textarea"
                   value={content}
@@ -252,6 +253,7 @@ export default function Komunita() {
         .komunita-section-name { font-size: 1rem; font-weight: 600; color: #f1f5f9; margin-bottom: 4px; }
         .komunita-section-desc, .komunita-section-meta { font-size: 13px; color: #94a3b8; line-height: 1.4; margin-bottom: 8px; }
         .komunita-section-count { font-size: 12px; color: #64748b; }
+        .komunita-form-title { font-size: 1.1rem; font-weight: 600; color: #e2e8f0; margin: 0 0 12px; }
         .komunita-form-card {
           margin-bottom: 28px;
           padding: 20px;

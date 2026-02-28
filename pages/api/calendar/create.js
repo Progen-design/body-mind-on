@@ -135,11 +135,22 @@ export default async function handler(req, res) {
         if (invitationsSent > 0) {
           return res.status(200).json({
             ok: true,
-            message: `Pozvánky byly odeslány na ${invitationsSent} e-mail${invitationsSent === 1 ? '' : invitationsSent < 5 ? 'y' : 'ů'} (odkaz na přidání do kalendáře). Trénink se nepodařilo zapsat do tvého Google Kalendáře – v Adminu zkontroluj propojení kalendáře (viz návod v dokumentaci).`,
+            message: `Pozvánky byly odeslány na ${invitationsSent} e-mail${invitationsSent === 1 ? '' : invitationsSent < 5 ? 'y' : 'ů'} (odkaz na přidání do kalendáře). Trénink se nepodařilo zapsat do tvého Google Kalendáře – klienti teď nedostanou pozvánku s „Přijmout/Odmítnout“. Postup opravy: docs/KALENDAR_TRENER_NASTAVENI.md`,
+            fixChecklist: [
+              '1. Google Cloud Console → OAuth consent screen → Edit app → Scopes',
+              '2. Přidat scope: See, edit, share… Google Calendar (https://www.googleapis.com/auth/calendar)',
+              '3. Admin → Propojit Google Kalendář znovu (přihlásit se jako info@)',
+              '4. Ověřit, že Google Calendar API je v Library zapnutá (Enable)',
+            ],
           });
         }
         return res.status(403).json({
-          error: 'Kalendář nemá oprávnění pro zápis. V Google Cloud Console (OAuth consent screen → Scopes) přidej scope „Google Calendar API“ (See, edit, share… calendars). Pak znovu propoj kalendář: Admin → Propojit Google Kalendář, přihlas se jako info@. Viz docs/KALENDAR_TRENER_NASTAVENI.md.',
+          error: 'Kalendář nemá oprávnění pro zápis. Postup: 1) Google Cloud Console → OAuth consent screen → Scopes → přidat scope Google Calendar (See, edit, share…). 2) Admin → Propojit Google Kalendář znovu (info@). Viz docs/KALENDAR_TRENER_NASTAVENI.md',
+          fixChecklist: [
+            '1. Google Cloud Console → OAuth consent screen → Edit app → Scopes',
+            '2. Přidat scope: See, edit, share… Google Calendar',
+            '3. Admin → Propojit Google Kalendář znovu (přihlásit se jako info@)',
+          ],
         });
       }
       throw calendarErr;

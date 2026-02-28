@@ -168,7 +168,7 @@ export default function Profil() {
     userEmails: '',
     durationMin: 60,
   });
-  const [calendarEventSubmit, setCalendarEventSubmit] = useState({ loading: false, message: '' });
+  const [calendarEventSubmit, setCalendarEventSubmit] = useState({ loading: false, message: '', checklist: [] });
   const [calendarWeekStart, setCalendarWeekStart] = useState(() => {
     const monday = getMondayOfWeek(new Date());
     return getLocalDateStr(monday);
@@ -410,7 +410,7 @@ export default function Profil() {
   async function handleCalendarEventSubmit(e) {
     e.preventDefault();
     if (!session?.access_token || calendarEventSubmit.loading) return;
-    setCalendarEventSubmit({ loading: true, message: '' });
+    setCalendarEventSubmit({ loading: true, message: '', checklist: [] });
     try {
       const userEmails = calendarEventForm.userEmails
         ? calendarEventForm.userEmails.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean)
@@ -430,12 +430,23 @@ export default function Profil() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Chyba');
-      setCalendarEventSubmit({ loading: false, message: data.message || 'Trénink přidán do kalendáře.' });
+      if (!res.ok) {
+        setCalendarEventSubmit({
+          loading: false,
+          message: data.error || 'Chyba',
+          checklist: data.fixChecklist || [],
+        });
+        return;
+      }
+      setCalendarEventSubmit({
+        loading: false,
+        message: data.message || 'Trénink přidán do kalendáře.',
+        checklist: data.fixChecklist || [],
+      });
       setCalendarEventForm((f) => ({ ...f, date: getLocalDateStr(new Date()), title: 'Trénink', userEmails: '' }));
       setScheduleRefreshAt(Date.now());
     } catch (err) {
-      setCalendarEventSubmit({ loading: false, message: err.message || 'Nepodařilo se přidat.' });
+      setCalendarEventSubmit({ loading: false, message: err.message || 'Nepodařilo se přidat.', checklist: [] });
     }
   }
 
@@ -1301,7 +1312,22 @@ export default function Profil() {
                     <button type="submit" disabled={calendarEventSubmit.loading} className="trainer-schedule-add-submit">
                       {calendarEventSubmit.loading ? 'Ukládám…' : 'Přidat trénink do kalendáře'}
                     </button>
-                    {calendarEventSubmit.message && <p className={`trainer-schedule-add-message ${calendarEventSubmit.message.startsWith('Trénink') ? 'success' : 'error'}`}>{calendarEventSubmit.message}</p>}
+                    {calendarEventSubmit.message && (
+                      <div className="trainer-schedule-add-feedback">
+                        <p className={`trainer-schedule-add-message ${calendarEventSubmit.message.startsWith('Trénink') && !calendarEventSubmit.message.includes('nepodařilo') ? 'success' : 'error'}`}>{calendarEventSubmit.message}</p>
+                        {calendarEventSubmit.checklist?.length > 0 && (
+                          <div className="trainer-schedule-add-checklist">
+                            <strong>Postup opravy:</strong>
+                            <ol>
+                              {calendarEventSubmit.checklist.map((item, i) => (
+                                <li key={i}>{item.replace(/^\d+\.\s*/, '')}</li>
+                              ))}
+                            </ol>
+                            <p className="trainer-schedule-add-doc">Podrobný návod: <code>docs/KALENDAR_TRENER_NASTAVENI.md</code> v repozitáři.</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </form>
                 </details>
               )}
@@ -2193,9 +2219,16 @@ export default function Profil() {
         .trainer-schedule-add-submit { align-self: flex-start; padding: 10px 20px; border-radius: 10px; background: #7c3aed; color: #fff; font-weight: 600; border: none; cursor: pointer; }
         .trainer-schedule-add-submit:hover:not(:disabled) { background: #6d28d9; }
         .trainer-schedule-add-submit:disabled { opacity: 0.7; cursor: wait; }
+        .trainer-schedule-add-feedback { margin-top: 8px; }
         .trainer-schedule-add-message { font-size: 14px; margin: 4px 0 0; }
         .trainer-schedule-add-message.success { color: #86efac; }
         .trainer-schedule-add-message.error { color: #fca5a5; }
+        .trainer-schedule-add-checklist { margin-top: 12px; padding: 12px; background: rgba(30,41,59,0.5); border-radius: 8px; font-size: 13px; color: #94a3b8; }
+        .trainer-schedule-add-checklist strong { color: #e2e8f0; }
+        .trainer-schedule-add-checklist ol { margin: 8px 0 0; padding-left: 20px; }
+        .trainer-schedule-add-checklist li { margin: 4px 0; }
+        .trainer-schedule-add-doc { margin: 10px 0 0; font-size: 12px; color: #64748b; }
+        .trainer-schedule-add-doc code { font-size: 11px; }
         .trainer-schedule-lead {
           font-size: 14px;
           color: #94a3b8;

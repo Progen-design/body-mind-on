@@ -173,6 +173,8 @@ export default function Profil() {
     const monday = getMondayOfWeek(new Date());
     return getLocalDateStr(monday);
   });
+  const [trainerClients, setTrainerClients] = useState([]);
+  const [loadingClients, setLoadingClients] = useState(false);
 
   const [workoutForm, setWorkoutForm] = useState({
     workout_date: '',
@@ -353,6 +355,19 @@ export default function Profil() {
       return () => clearTimeout(timer);
     }
   }, [loading, session, error, profile?.program, profile?.user_habits]);
+
+  // Načíst seznam klientů (jen pro trenéra)
+  useEffect(() => {
+    if (!profile?.can_create_calendar_events || !session?.access_token) return;
+    let cancelled = false;
+    setLoadingClients(true);
+    fetch('/api/trainer/clients', { headers: { Authorization: `Bearer ${session.access_token}` } })
+      .then((r) => r.json())
+      .then((data) => { if (!cancelled) setTrainerClients(Array.isArray(data.clients) ? data.clients : []); })
+      .catch(() => { if (!cancelled) setTrainerClients([]); })
+      .finally(() => { if (!cancelled) setLoadingClients(false); });
+    return () => { cancelled = true; };
+  }, [profile?.can_create_calendar_events, session?.access_token]);
 
   // Načíst plánované tréninky z kalendáře trenéra (info@) – cca 2 týdny zpět + 90 dní dopředu (pro týdenní zobrazení)
   useEffect(() => {
@@ -1084,6 +1099,45 @@ export default function Profil() {
               </div>
             </div>
 
+            {/* Trenér: Moji klienti */}
+            {profile?.can_create_calendar_events && (
+              <section className="card trainer-clients-section">
+                <h2 className="section-head">Moji klienti</h2>
+                {loadingClients ? (
+                  <p className="trainer-clients-loading">Načítám seznam klientů…</p>
+                ) : trainerClients.length === 0 ? (
+                  <p className="trainer-clients-empty">Zatím nemáš žádné klienty v aplikaci. Klienti se objeví po registraci (START).</p>
+                ) : (
+                  <div className="trainer-clients-table-wrap">
+                    <table className="trainer-clients-table">
+                      <thead>
+                        <tr>
+                          <th>Jméno</th>
+                          <th>E-mail</th>
+                          <th>Program</th>
+                          <th>Váha (kg)</th>
+                          <th>Tréninků</th>
+                          <th>Poslední trénink</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {trainerClients.map((c) => (
+                          <tr key={c.id}>
+                            <td className="trainer-clients-name">{c.name || '—'}</td>
+                            <td className="trainer-clients-email">{c.email || '—'}</td>
+                            <td>{c.program === 'ON_CLUB' ? 'ON Club' : c.program === 'VIP' ? 'VIP' : 'START'}</td>
+                            <td>{c.weight_kg != null ? String(c.weight_kg) : '—'}</td>
+                            <td>{c.workout_count ?? 0}</td>
+                            <td>{c.last_workout_date ? formatShortDate(c.last_workout_date) : '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            )}
+
             {/* Jasná první akce – pro uživatele bez tréninku */}
             {workouts.length === 0 && currentPlan && (
               <div className="first-action-banner">
@@ -1172,8 +1226,12 @@ export default function Profil() {
 
             {/* Plánované tréninky – z kalendáře trenéra (info@) */}
             <section className="card trainer-schedule-section">
-              <h2 className="section-head">Kdy mám trénink?</h2>
-              <p className="trainer-schedule-lead">Rozvrh plánovaných tréninků z kalendáře trenéra. Zdroj: info@ (Google Kalendář). Zobrazuje se vždy jeden týden (Po–Ne); v každém dnu jsou události přiřazené tobě (čas a název). Přepínání týdnů šipkami ‹ ›.</p>
+              <h2 className="section-head">{profile?.can_create_calendar_events ? 'Můj kalendář tréninků' : 'Kdy mám trénink?'}</h2>
+              <p className="trainer-schedule-lead">
+                {profile?.can_create_calendar_events
+                  ? 'Tvůj rozvrh z Google Kalendáře. V každé události vidíš přiřazené klienty (účastníky). Přepínání týdnů šipkami ‹ ›.'
+                  : 'Rozvrh plánovaných tréninků z kalendáře trenéra. Zdroj: info@ (Google Kalendář). Zobrazuje se vždy jeden týden (Po–Ne); v každém dnu jsou události přiřazené tobě (čas a název). Přepínání týdnů šipkami ‹ ›.'}
+              </p>
               <p className="trainer-schedule-actions">
                 <a href="https://calendar.google.com/calendar/u/0/r" target="_blank" rel="noopener noreferrer" className="trainer-calendar-link">
                   Otevřít Google Kalendář (přidat / upravit tréninky)
@@ -1251,10 +1309,15 @@ export default function Profil() {
                             <div className="trainer-calendar-day-events">
                               {eventsForDay.slice(0, 5).map((ev) => {
                                 const timeStr = ev.start && ev.start.length > 10 ? new Date(ev.start).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }) : null;
+                                const attendees = Array.isArray(ev.attendees) ? ev.attendees : [];
+                                const title = [ev.summary, attendees.length ? `Účastníci: ${attendees.join(', ')}` : ''].filter(Boolean).join('\n');
                                 return (
-                                  <div key={ev.id || ev.start + ev.summary} className="trainer-calendar-event" title={ev.summary}>
+                                  <div key={ev.id || ev.start + ev.summary} className="trainer-calendar-event" title={title}>
                                     {timeStr && <span className="trainer-calendar-event-time">{timeStr}</span>}
                                     <span className="trainer-calendar-event-summary">{ev.summary}</span>
+                                    {profile?.can_create_calendar_events && attendees.length > 0 && (
+                                      <span className="trainer-calendar-event-attendees">{attendees.join(', ')}</span>
+                                    )}
                                   </div>
                                 );
                               })}
@@ -1276,10 +1339,14 @@ export default function Profil() {
                           const start = ev.start ? new Date(ev.start) : null;
                           const dateStr = start && !isNaN(start.getTime()) ? formatShortDate(ev.start.slice(0, 10)) : ev.start?.slice(0, 10) || '—';
                           const timeStr = ev.start && ev.start.length > 10 ? new Date(ev.start).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }) : null;
+                          const attendees = Array.isArray(ev.attendees) ? ev.attendees : [];
                           return (
                             <li key={ev.id || ev.start + ev.summary} className="trainer-schedule-item">
                               <span className="trainer-schedule-date">{dateStr}{timeStr ? ` · ${timeStr}` : ''}</span>
                               <span className="trainer-schedule-summary">{ev.summary}</span>
+                              {profile?.can_create_calendar_events && attendees.length > 0 && (
+                                <span className="trainer-schedule-item-attendees"> → {attendees.join(', ')}</span>
+                              )}
                             </li>
                           );
                         })}
@@ -2113,6 +2180,7 @@ export default function Profil() {
           min-width: 140px;
         }
         .trainer-schedule-summary { font-weight: 500; }
+        .trainer-schedule-item-attendees { font-size: 12px; color: #94a3b8; margin-left: 6px; }
         .trainer-calendar-wrap { margin-top: 8px; }
         .trainer-calendar-header {
           display: flex;
@@ -2200,6 +2268,30 @@ export default function Profil() {
           color: #94a3b8;
           padding: 2px 0;
         }
+        .trainer-calendar-event-attendees {
+          display: block;
+          font-size: 10px;
+          color: #94a3b8;
+          margin-top: 2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .trainer-clients-section { margin-bottom: 32px; }
+        .trainer-clients-loading,
+        .trainer-clients-empty { color: #94a3b8; margin: 0; font-size: 14px; }
+        .trainer-clients-table-wrap { overflow-x: auto; margin-top: 12px; }
+        .trainer-clients-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 14px;
+        }
+        .trainer-clients-table th,
+        .trainer-clients-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #334155; }
+        .trainer-clients-table th { color: #94a3b8; font-weight: 600; }
+        .trainer-clients-table td { color: #e2e8f0; }
+        .trainer-clients-name { font-weight: 500; }
+        .trainer-clients-email { font-size: 13px; color: #94a3b8; }
         .trainer-schedule-list-details { margin-top: 20px; }
         .trainer-schedule-list-summary {
           font-size: 14px;

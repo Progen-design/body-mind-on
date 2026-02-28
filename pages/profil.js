@@ -1002,8 +1002,8 @@ export default function Profil() {
       )}
       <Header />
       <main className="page">
-        {/* Hlavní cíl plánu úplně nahoře – vždy pro ON Club/VIP, jinak jen s plánem */}
-        {(currentPlan || program === 'ON_CLUB' || program === 'VIP') && (
+        {/* Hlavní cíl plánu úplně nahoře – jen pro klienty, ne pro trenéra */}
+        {!profile?.can_create_calendar_events && (currentPlan || program === 'ON_CLUB' || program === 'VIP') && (
           <div className="plan-goal-hero">
             <h2 className="plan-goal-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
             <span className="plan-goal-badge plan-goal-badge-program">
@@ -1014,16 +1014,16 @@ export default function Profil() {
 
         <section className="hero">
           <p className="hero-intro">
-            {(PROGRAM_LABELS[program] || PROGRAM_LABELS.START).greeting}
-            {(program === 'ON_CLUB' || program === 'VIP') && (
+            {profile?.can_create_calendar_events ? 'Trenér' : (PROGRAM_LABELS[program] || PROGRAM_LABELS.START).greeting}
+            {!profile?.can_create_calendar_events && (program === 'ON_CLUB' || program === 'VIP') && (
               <span className="hero-program-badge">{program === 'ON_CLUB' ? 'ON Club' : 'VIP'}</span>
             )}
           </p>
           <h1 className="hero-name">
             Ahoj, <span>{firstName}</span>
           </h1>
-          <p className="hero-sub">{(PROGRAM_LABELS[program] || PROGRAM_LABELS.START).subtitle}</p>
-          {!loading && !error && (
+          <p className="hero-sub">{profile?.can_create_calendar_events ? 'Přehled klientů a kalendář tréninků.' : (PROGRAM_LABELS[program] || PROGRAM_LABELS.START).subtitle}</p>
+          {!loading && !error && !profile?.can_create_calendar_events && (
             <div className="hero-strip">
               <div className="hero-stat">
                 <span className="hero-stat-value">{workoutsThisWeek?.length ?? 0} {workoutTrend ? <span className="trend-arrow" title={workoutTrend === '↑' ? 'Víc než minulý týden' : workoutTrend === '↓' ? 'Méně než minulý týden' : 'Stejně'}>{workoutTrend}</span> : null}</span>
@@ -1071,7 +1071,8 @@ export default function Profil() {
 
         {!loading && !error && (
           <>
-            {/* Membership karta – tier badge */}
+            {/* Membership karta – tier badge (jen pro klienty, trenér ji nepotřebuje) */}
+            {!profile?.can_create_calendar_events && (
             <div className={`membership-card membership-card--${(program || 'START').toLowerCase().replace('_', '-')}`}>
               <div className="membership-card-left">
                 <span className="membership-icon">
@@ -1099,6 +1100,7 @@ export default function Profil() {
                 )}
               </div>
             </div>
+            )}
 
             {/* Trenér: Moji klienti */}
             {profile?.can_create_calendar_events && (
@@ -1171,8 +1173,8 @@ export default function Profil() {
               </>
             )}
 
-            {/* Jasná první akce – pro uživatele bez tréninku */}
-            {workouts.length === 0 && currentPlan && (
+            {/* Jasná první akce – pro uživatele bez tréninku (jen klienti) */}
+            {!profile?.can_create_calendar_events && workouts.length === 0 && currentPlan && (
               <div className="first-action-banner">
                 <p>
                   <strong>Tvůj plán je připraven.</strong>{' '}
@@ -1183,7 +1185,8 @@ export default function Profil() {
               </div>
             )}
 
-            {/* Tvé milníky */}
+            {/* Tvé milníky (jen pro klienty) */}
+            {!profile?.can_create_calendar_events && (
             <section className="milestones-block">
               <h2 className="section-head">Tvé milníky</h2>
               <div className="milestones-list">
@@ -1215,9 +1218,10 @@ export default function Profil() {
                 </div>
               </div>
             </section>
+            )}
 
-            {/* Mindset na tento týden – hned pod Tvé milníky */}
-            {mindsetTipFromPlan && (
+            {/* Mindset na tento týden (jen klienti) */}
+            {!profile?.can_create_calendar_events && mindsetTipFromPlan && (
               <div className="mindset-block">
                 <div className="mindset-header">
                   <span className="mindset-icon">🧠</span>
@@ -1230,6 +1234,7 @@ export default function Profil() {
               </div>
             )}
 
+            {!profile?.can_create_calendar_events && (
             <div className="toolbar">
               <button type="button" onClick={handleRefresh} disabled={refreshing} className="btn-refresh" title="Obnovit data">
                 {refreshing ? 'Obnovuji…' : '🔄 Obnovit'}
@@ -1241,7 +1246,7 @@ export default function Profil() {
               )}
             </div>
 
-            {/* RYCHLÉ AKCE – výrazný pruh */}
+            {/* RYCHLÉ AKCE – výrazný pruh (jen klienti) */}
             <section className="actions-block">
               <h2 className="actions-title">Co chceš zapsat?</h2>
               <div className="action-buttons">
@@ -1256,6 +1261,7 @@ export default function Profil() {
                 </button>
               </div>
             </section>
+            )}
 
             {/* Plánované tréninky – z kalendáře trenéra (info@) */}
             <section className="card trainer-schedule-section">
@@ -1417,7 +1423,8 @@ export default function Profil() {
             />
             )}
 
-            {/* TVŮJ PROGRES – nahoře, nejdůležitější */}
+            {/* TVŮJ PROGRES – nahoře, nejdůležitější (jen klienti) */}
+            {!profile?.can_create_calendar_events && (
             <section className="card card-accent center progress-section">
               <h2 className="section-head">Tvůj progres</h2>
               <p className="progress-lead">Všechny hodnoty vycházejí jen z tréninků a z tvého nastavení (výchozí váha, cíl, výška). Ruční váha do výpočtu nezasahuje. Na výsledky má vliv i strava a denní návyky (zdravé i zlozvyky).</p>
@@ -1513,11 +1520,13 @@ export default function Profil() {
                 </p>
               )}
             </section>
+            )}
 
-            {/* MŮJ PLÁN */}
-            {currentPlan && <PlanViewer plan={currentPlan} userName={userName} hideHero />}
+            {/* MŮJ PLÁN (jen klienti) */}
+            {!profile?.can_create_calendar_events && currentPlan && <PlanViewer plan={currentPlan} userName={userName} hideHero />}
 
-            {/* Historie tréninků – poslední 3 viditelné, zbytek v rozbalovacím menu */}
+            {/* Historie tréninků (jen klienti) */}
+            {!profile?.can_create_calendar_events && (
             <section className="card history-section">
               <h2 className="section-head">Historie tréninků</h2>
               {workouts.length === 0 ? (
@@ -1547,8 +1556,10 @@ export default function Profil() {
                 </>
               )}
             </section>
+            )}
 
-            {/* KPI – horizontální pruh */}
+            {/* KPI – horizontální pruh (jen klienti) */}
+            {!profile?.can_create_calendar_events && (
             <section className="kpi-section">
               <h2 className="section-head">Statistiky</h2>
               <div className="kpis-bar">
@@ -1580,8 +1591,10 @@ export default function Profil() {
                 </div>
               </div>
             </section>
+            )}
 
-            {/* GRAF VÁHY – odhad z tréninků (automaticky po každém zápisu) */}
+            {/* GRAF VÁHY (jen klienti) */}
+            {!profile?.can_create_calendar_events && (
             <section className="card chart-section">
               <h2 className="section-head">Vývoj váhy</h2>
               {(chartWeightData || []).length >= 1 ? (
@@ -1663,6 +1676,7 @@ export default function Profil() {
                 <p className="chart-empty">Graf se naplní automaticky podle zapsaných tréninků (výchozí váha z registrace). Zapiš tréninky a uvidíš odhad vývoje váhy.</p>
               )}
             </section>
+            )}
 
             {/* Modaly */}
             {showWorkoutModal && (

@@ -1177,6 +1177,35 @@ export default function Profil() {
                         <dt>Počet tréninků</dt><dd>{selectedClient.workout_count ?? 0}</dd>
                         <dt>Poslední trénink</dt><dd>{selectedClient.last_workout_date ? formatDate(selectedClient.last_workout_date) : '—'}</dd>
                       </dl>
+                      {(selectedClient.habit_summary_7d || (selectedClient.user_habits && selectedClient.user_habits.length > 0)) && (
+                        <div className="trainer-client-modal-section">
+                          <h4 className="trainer-client-modal-section-title">Denní výzvy / návyky</h4>
+                          <p className="trainer-client-modal-habits-intro">
+                            {selectedClient.user_habits?.length > 0 ? `Sleduje ${selectedClient.user_habits.length} návyk${selectedClient.user_habits.length === 1 ? '' : selectedClient.user_habits.length >= 2 && selectedClient.user_habits.length <= 4 ? 'y' : 'ů'}.` : 'Zatím nemá vybrané návyky.'}
+                          </p>
+                          {selectedClient.habit_summary_7d && (selectedClient.habit_summary_7d.positiveDone > 0 || selectedClient.habit_summary_7d.negativeDone > 0) && (
+                            <div className="trainer-client-modal-habits-summary">
+                              <span className="trainer-client-habit-positive"><strong>{selectedClient.habit_summary_7d.positiveDone ?? 0}</strong>× zdravých návyků tento týden</span>
+                              <span className="trainer-client-habit-negative"><strong>{selectedClient.habit_summary_7d.negativeDone ?? 0}</strong>× zlozvyků (čím méně, tím lépe)</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {selectedClient.last_workout && (
+                        <div className="trainer-client-modal-section">
+                          <h4 className="trainer-client-modal-section-title">Detail posledního tréninku</h4>
+                          <dl className="trainer-client-dl trainer-client-dl-compact">
+                            <dt>Datum</dt><dd>{formatDate(selectedClient.last_workout.workout_date)}</dd>
+                            <dt>Typ</dt><dd>{selectedClient.last_workout.workout_name || selectedClient.last_workout.workout_type || '—'}</dd>
+                            {selectedClient.last_workout.duration_min != null && (
+                              <><dt>Délka</dt><dd>{selectedClient.last_workout.duration_min} min</dd></>
+                            )}
+                            {selectedClient.last_workout.notes && (
+                              <><dt>Poznámka</dt><dd>{selectedClient.last_workout.notes}</dd></>
+                            )}
+                          </dl>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2457,6 +2486,13 @@ export default function Profil() {
         .trainer-client-dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 20px; font-size: 14px; }
         .trainer-client-dl dt { color: #94a3b8; }
         .trainer-client-dl dd { margin: 0; color: #e2e8f0; }
+        .trainer-client-modal-section { margin-top: 20px; padding-top: 16px; border-top: 1px solid #334155; }
+        .trainer-client-modal-section-title { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: #c4b5fd; }
+        .trainer-client-modal-habits-intro { margin: 0 0 8px; font-size: 13px; color: #94a3b8; }
+        .trainer-client-modal-habits-summary { display: flex; flex-wrap: wrap; gap: 12px 20px; font-size: 13px; }
+        .trainer-client-habit-positive { color: #86efac; }
+        .trainer-client-habit-negative { color: #fca5a5; }
+        .trainer-client-dl-compact { gap: 4px 16px; font-size: 13px; }
         .trainer-schedule-list-details { margin-top: 20px; }
         .trainer-schedule-list-summary {
           font-size: 14px;

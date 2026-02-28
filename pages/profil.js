@@ -1116,6 +1116,9 @@ export default function Profil() {
                           <th>E-mail</th>
                           <th>Program</th>
                           <th>Váha (kg)</th>
+                          <th>Cíl (kg)</th>
+                          <th>Výška (cm)</th>
+                          <th>Registrace</th>
                           <th>Tréninků</th>
                           <th>Poslední trénink</th>
                         </tr>
@@ -1127,6 +1130,9 @@ export default function Profil() {
                             <td className="trainer-clients-email">{c.email || '—'}</td>
                             <td>{c.program === 'ON_CLUB' ? 'ON Club' : c.program === 'VIP' ? 'VIP' : 'START'}</td>
                             <td>{c.weight_kg != null ? String(c.weight_kg) : '—'}</td>
+                            <td>{c.goal_weight_kg != null ? String(c.goal_weight_kg) : '—'}</td>
+                            <td>{c.height_cm != null ? String(c.height_cm) : '—'}</td>
+                            <td>{c.registered_at ? formatShortDate(String(c.registered_at).slice(0, 10)) : '—'}</td>
                             <td>{c.workout_count ?? 0}</td>
                             <td>{c.last_workout_date ? formatShortDate(c.last_workout_date) : '—'}</td>
                           </tr>
@@ -1358,8 +1364,8 @@ export default function Profil() {
               })()}
             </section>
 
-            {/* Souhrn návyků tento týden – propojení s profilem */}
-            {(program === 'ON_CLUB' || program === 'VIP') && profile?.user_habits?.length > 0 && (
+            {/* Souhrn návyků tento týden – propojení s profilem (trenér nepotřebuje denní návyky) */}
+            {!profile?.can_create_calendar_events && (program === 'ON_CLUB' || program === 'VIP') && profile?.user_habits?.length > 0 && (
               <div className="habit-summary-card">
                 <h3 className="habit-summary-title">Návyky tento týden</h3>
                 <div className="habit-summary-row">
@@ -1374,13 +1380,15 @@ export default function Profil() {
               </div>
             )}
 
-            {/* Denní návyky */}
+            {/* Denní návyky (jen pro klienty, trenér nepotřebuje) */}
+            {!profile?.can_create_calendar_events && (
             <HabitTracker
               session={session}
               userHabits={profile?.user_habits}
               onToast={(t) => setToast({ message: t.message, type: t.type })}
               onHabitSaved={() => refetchProfile(session?.access_token)}
             />
+            )}
 
             {/* TVŮJ PROGRES – nahoře, nejdůležitější */}
             <section className="card card-accent center progress-section">

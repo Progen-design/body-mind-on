@@ -84,14 +84,17 @@ export default async function handler(req, res) {
     }
 
     const duration = Math.max(15, Math.min(480, Number(durationMin) || 60));
-    // Interpretovat datum a čas jako Europe/Prague (CET/CEST), ne jako server UTC – aby 10:00 zůstalo 10:00 v kalendáři
-    const startDate = parseDateTimeAsPrague(date, time.includes(':') ? time : time + ':00');
+    const timeNorm = (time || '00:00').includes(':') ? time.trim() : time.trim() + ':00';
+    const startDate = parseDateTimeAsPrague(date, timeNorm);
     if (!startDate || isNaN(startDate.getTime())) {
       return res.status(400).json({ error: 'Neplatné datum nebo čas. Použij např. date: 2026-02-28, time: 10:00' });
     }
     const endDate = new Date(startDate.getTime() + duration * 60 * 1000);
     const start = startDate.toISOString();
     const end = endDate.toISOString();
+    // Pro Google Calendar posílat čas jako lokální Prague (YYYY-MM-DDTHH:mm:ss), aby se 18:00 zobrazilo jako 18:00, ne o hodinu dřív
+    const startLocalStr = new Date(startDate.getTime() + getPragueOffsetHours(date) * 3600000).toISOString().slice(0, 19);
+    const endLocalStr = new Date(endDate.getTime() + getPragueOffsetHours(endDate.toISOString().slice(0, 10)) * 3600000).toISOString().slice(0, 19);
 
     const calendarId = row.calendar_id || 'primary';
     const attendeeEmails = Array.isArray(userEmails)
@@ -112,8 +115,8 @@ export default async function handler(req, res) {
     try {
       await createEvent(accessToken, calendarId, {
         summary: eventTitle,
-        start,
-        end,
+        start: startLocalStr,
+        end: endLocalStr,
         attendeeEmails,
       });
       calendarCreated = true;

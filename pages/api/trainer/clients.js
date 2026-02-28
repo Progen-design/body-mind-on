@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     // Uživatelé s alespoň jednou body_metrics (klienti ze START)
     const { data: metricsRows, error: metricsErr } = await supabaseServer
       .from('body_metrics')
-      .select('user_id, name, weight_kg, program, created_at')
+      .select('user_id, name, weight_kg, height_cm, program, created_at')
       .not('user_id', 'is', null)
       .order('created_at', { ascending: false });
 
@@ -39,6 +39,7 @@ export default async function handler(req, res) {
       latestByUser[uid] = {
         name: row.name,
         weight_kg: row.weight_kg != null ? Number(row.weight_kg) : null,
+        height_cm: row.height_cm != null ? Number(row.height_cm) : null,
         program: row.program || 'START',
         created_at: row.created_at,
       };
@@ -78,7 +79,6 @@ export default async function handler(req, res) {
     }
 
     const clients = [];
-    const trainerId = user.id;
     (authUsers || []).forEach((u) => {
       if (!clientUserIds.includes(u.id)) return;
       const uEmail = (u.email || '').toLowerCase();
@@ -92,6 +92,8 @@ export default async function handler(req, res) {
         name: latest.name || meta.name || u.email?.split('@')[0] || '—',
         program: latest.program || 'START',
         weight_kg: latest.weight_kg,
+        height_cm: latest.height_cm,
+        goal_weight_kg: meta.goal_weight_kg != null ? Number(meta.goal_weight_kg) : null,
         registered_at: latest.created_at || u.created_at,
         workout_count: stats.count,
         last_workout_date: stats.lastDate,

@@ -30,9 +30,19 @@ export default async function handler(req, res) {
     .eq('topic_id', topicId)
     .order('created_at', { ascending: true });
 
-  if (repliesErr) {
-    console.error('[community/topic] replies', repliesErr);
-    return res.status(200).json({ topic, replies: [] });
-  }
-  return res.status(200).json({ topic, replies: replies || [] });
+  const replyList = repliesErr ? [] : (replies || []);
+  const userIds = [topic.user_id, ...replyList.map((r) => r.user_id).filter(Boolean)];
+  const uniqIds = [...new Set(userIds)];
+  const { data: profiles } = await supabaseServer.from('profiles').select('id, avatar_url').in('id', uniqIds);
+  const avatarByUserId = {};
+  (profiles || []).forEach((p) => {
+    avatarByUserId[p.id] = p.avatar_url || null;
+  });
+
+  const topicWithAvatar = { ...topic, author_avatar_url: avatarByUserId[topic.user_id] || null };
+  const repliesWithAvatar = replyList.map((r) => ({
+    ...r,
+    author_avatar_url: avatarByUserId[r.user_id] || null,
+  }));
+  return res.status(200).json({ topic: topicWithAvatar, replies: repliesWithAvatar });
 }

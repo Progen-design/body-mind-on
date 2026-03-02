@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     weekEnd.setDate(weekEnd.getDate() + 6);
     const weekEndStr = weekEnd.toISOString().split('T')[0];
 
-    const [metricsRes, plansRes, workoutsRes, userHabitsRes, membershipRes, habitLogsRes] = await Promise.allSettled([
+    const [metricsRes, plansRes, workoutsRes, userHabitsRes, membershipRes, habitLogsRes, profileRes] = await Promise.allSettled([
       supabaseServer
         .from('body_metrics')
         .select('*')
@@ -66,6 +66,7 @@ export default async function handler(req, res) {
         .eq('user_id', userId)
         .gte('log_date', weekStartStr)
         .lte('log_date', weekEndStr),
+      supabaseServer.from('profiles').select('avatar_url').eq('id', userId).maybeSingle(),
     ]);
 
     const bodyMetrics = (metricsRes.status === 'fulfilled' && metricsRes.value?.data) ? metricsRes.value.data : [];
@@ -102,6 +103,7 @@ export default async function handler(req, res) {
     const positiveIds = new Set(POSITIVE_HABITS.map((h) => h.id));
     const negativeIds = new Set(NEGATIVE_HABITS.map((h) => h.id));
     const habitLogs = (habitLogsRes.status === 'fulfilled' && habitLogsRes.value?.data) ? habitLogsRes.value.data : [];
+    const profileRow = (profileRes.status === 'fulfilled' && profileRes.value?.data) ? profileRes.value.data : null;
     let positiveDone = 0;
     let negativeDone = 0;
     const byHabit = {};
@@ -131,6 +133,7 @@ export default async function handler(req, res) {
         id: user.id,
         email: user.email,
         name: meta.name || null,
+        avatar_url: profileRow?.avatar_url || null,
         start_weight_kg: meta.start_weight_kg != null ? Number(meta.start_weight_kg) : null,
         goal_weight_kg: meta.goal_weight_kg != null ? Number(meta.goal_weight_kg) : null,
         height_cm: meta.height_cm != null ? Number(meta.height_cm) : null,

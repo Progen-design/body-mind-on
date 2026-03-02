@@ -28,12 +28,14 @@ export default async function handler(req, res) {
       author_name: authorName,
       content: contentStr,
     })
-    .select('id, author_name, content, created_at')
+    .select('id, user_id, author_name, content, created_at')
     .single();
 
   if (insertErr) {
     console.error('[community/reply]', insertErr);
     return res.status(500).json({ error: 'Odpověď se nepodařilo uložit.' });
   }
-  return res.status(201).json({ reply });
+  const { data: profile } = await supabaseServer.from('profiles').select('avatar_url').eq('id', user.id).maybeSingle();
+  const replyWithAvatar = { ...reply, author_avatar_url: profile?.avatar_url || null };
+  return res.status(201).json({ reply: replyWithAvatar });
 }

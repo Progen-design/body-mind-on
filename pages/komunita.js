@@ -193,13 +193,37 @@ export default function Komunita() {
                 {topics.map((t) => (
                   <li key={t.id} className="komunita-topic-item card">
                     <Link href={`/komunita/tema/${t.id}`} className="komunita-topic-link">
-                      <span className="komunita-topic-meta">
-                        {t.author_name} · {formatDate(t.created_at)}
-                        {t.reply_count != null && t.reply_count > 0 && (
-                          <> · {t.reply_count} {t.reply_count === 1 ? 'odpověď' : 'odpovědí'}</>
+                      <div className="komunita-topic-row">
+                        {t.author_avatar_url ? (
+                          <img src={t.author_avatar_url} alt="" className="komunita-topic-avatar" />
+                        ) : (
+                          <span className="komunita-topic-avatar-placeholder">{t.author_name?.charAt(0)?.toUpperCase() || '?'}</span>
                         )}
-                      </span>
+                        <span className="komunita-topic-meta">
+                          {t.author_name} · {formatDate(t.created_at)}
+                          {t.reply_count != null && t.reply_count > 0 && (
+                            <> · {t.reply_count} {t.reply_count === 1 ? 'odpověď' : 'odpovědí'}</>
+                          )}
+                        </span>
+                      </div>
                       <p className="komunita-topic-preview">{t.content}</p>
+                      {Array.isArray(t.last_replies) && t.last_replies.length > 0 && (
+                        <ul className="komunita-topic-last-replies">
+                          {t.last_replies.map((r) => (
+                            <li key={r.id} className="komunita-last-reply">
+                              {r.author_avatar_url ? (
+                                <img src={r.author_avatar_url} alt="" className="komunita-reply-avatar" />
+                              ) : (
+                                <span className="komunita-reply-avatar-placeholder">{r.author_name?.charAt(0)?.toUpperCase() || '?'}</span>
+                              )}
+                              <div className="komunita-last-reply-body">
+                                <span className="komunita-last-reply-meta">{r.author_name} · {formatDate(r.created_at)}</span>
+                                <p className="komunita-last-reply-content">{r.content}</p>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                       <span className="komunita-topic-reply-hint">Klikni a odpověz →</span>
                     </Link>
                   </li>
@@ -297,8 +321,30 @@ export default function Komunita() {
         }
         .komunita-topic-link:hover { background: rgba(124, 58, 237, 0.12); }
         .komunita-topic-title { font-size: 1.05rem; font-weight: 600; color: #f1f5f9; display: block; margin-bottom: 4px; }
+        .komunita-topic-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .komunita-topic-avatar, .komunita-topic-avatar-placeholder {
+          width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+          border: 1px solid rgba(148, 163, 184, 0.25);
+        }
+        .komunita-topic-avatar-placeholder {
+          display: inline-flex; align-items: center; justify-content: center;
+          background: rgba(51, 65, 85, 0.6); color: #94a3b8; font-size: 14px; font-weight: 600;
+        }
         .komunita-topic-meta { font-size: 13px; color: #64748b; }
         .komunita-topic-preview { font-size: 14px; color: #94a3b8; margin: 10px 0 0; line-height: 1.5; }
+        .komunita-topic-last-replies { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+        .komunita-last-reply { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: rgba(15, 23, 42, 0.5); border-radius: 10px; border-left: 3px solid rgba(124, 58, 237, 0.5); }
+        .komunita-reply-avatar, .komunita-reply-avatar-placeholder {
+          width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+        }
+        .komunita-reply-avatar-placeholder {
+          display: inline-flex; align-items: center; justify-content: center;
+          background: rgba(51, 65, 85, 0.6); color: #94a3b8; font-size: 12px; font-weight: 600;
+        }
+        .komunita-last-reply-body { flex: 1; min-width: 0; }
+        .komunita-last-reply-meta { font-size: 12px; color: #64748b; }
+        .komunita-last-reply-content { margin: 4px 0 0; font-size: 13px; color: #94a3b8; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+        .komunita-topic-reply-hint { display: inline-block; margin-top: 10px; font-size: 13px; color: #7c3aed; }
       `}</style>
     </>
   );

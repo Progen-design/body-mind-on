@@ -19,6 +19,7 @@ export default async function handler(req, res) {
     const start_weight_kg = body.start_weight_kg != null ? Number(body.start_weight_kg) : null;
     const goal_weight_kg = body.goal_weight_kg != null ? Number(body.goal_weight_kg) : null;
     const height_cm = body.height_cm != null ? Number(body.height_cm) : null;
+    const avatar_url = typeof body.avatar_url === 'string' ? body.avatar_url.trim() || null : null;
 
     if (start_weight_kg != null && (start_weight_kg < 30 || start_weight_kg > 300)) {
       return res.status(400).json({ error: 'Výchozí váha musí být mezi 30 a 300 kg.' });
@@ -38,18 +39,30 @@ export default async function handler(req, res) {
       ...(height_cm != null && { height_cm }),
     };
 
-    const { data: updated, error } = await supabaseServer.auth.admin.updateUserById(user.id, {
-      user_metadata: nextMeta,
-    });
+    if (Object.keys(nextMeta).some((k) => nextMeta[k] !== currentMeta[k])) {
+      const { data: updated, error: authErr } = await supabaseServer.auth.admin.updateUserById(user.id, {
+        user_metadata: nextMeta,
+      });
+      if (authErr) {
+        console.error('[profile-settings] updateUserById error:', authErr);
+        return res.status(500).json({ error: authErr.message || 'Nepodařilo se uložit.' });
+      }
+    }
 
-    if (error) {
-      console.error('[profile-settings] updateUserById error:', error);
-      return res.status(500).json({ error: error.message || 'Nepodařilo se uložit.' });
+    if (avatar_url !== undefined) {
+      const { error: profileErr } = await supabaseServer
+        .from('profiles')
+        .upsert({ id: user.id, avatar_url, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+      if (profileErr) {
+        console.error('[profile-settings] profiles upsert error:', profileErr);
+        return res.status(500).json({ error: 'Nepodařilo se uložit avatar.' });
+      }
     }
 
     return res.status(200).json({
       ok: true,
-      user_metadata: updated?.user_metadata ?? nextMeta,
+      user_metadata: nextMeta,
+      ...(avatar_url !== undefined && { avatar_url }),
     });
   } catch (err) {
     console.error('[profile-settings] ERROR:', err);

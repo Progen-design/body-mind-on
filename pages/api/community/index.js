@@ -29,18 +29,66 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Nepodařilo načíst témata', topics: [] });
     }
 
-    const topicIds = (topics || []).map((t) => t.id);
+    const list = topics || [];
+    const topicIds = list.map((t) => t.id);
+    const userIds = [...new Set(list.map((t) => t.user_id).filter(Boolean))];
+
+    const [countsRes, repliesRes, profilesRes] = await Promise.all([
+      topicIds.length > 0
+        ? supabaseServer.from('community_replies').select('topic_id').in('topic_id', topicIds)
+        : Promise.resolve({ data: [] }),
+      topicIds.length > 0
+        ? supabaseServer
+            .from('community_replies')
+            .select('id, topic_id, user_id, author_name, content, created_at')
+            .in('topic_id', topicIds)
+            .order('created_at', { ascending: false })
+        : Promise.resolve({ data: [] }),
+      userIds.length > 0
+        ? supabaseServer.from('profiles').select('id, avatar_url').in('id', userIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+
     const replyCounts = {};
-    if (topicIds.length > 0) {
-      const { data: counts } = await supabaseServer
-        .from('community_replies')
-        .select('topic_id')
-        .in('topic_id', topicIds);
-      (counts || []).forEach((r) => {
-        replyCounts[r.topic_id] = (replyCounts[r.topic_id] || 0) + 1;
-      });
-    }
-    const topicsWithCount = (topics || []).map((t) => ({ ...t, reply_count: replyCounts[t.id] || 0 }));
+    (countsRes.data || []).forEach((r) => {
+      replyCounts[r.topic_id] = (replyCounts[r.topic_id] || 0) + 1;
+    });
+
+    const allReplies = repliesRes.data || [];
+    const lastRepliesByTopic = {};
+    allReplies.forEach((r) => {
+      if (!lastRepliesByTopic[r.topic_id]) lastRepliesByTopic[r.topic_id] = [];
+      if (lastRepliesByTopic[r.topic_id].length < 3) lastRepliesByTopic[r.topic_id].push(r);
+    });
+    const replyUserIds = [...new Set(allReplies.map((r) => r.user_id).filter(Boolean))];
+    const replyProfiles =
+      replyUserIds.length > 0
+        ? await supabaseServer.from('profiles').select('id, avatar_url').in('id', replyUserIds)
+        : { data: [] };
+    const avatarByUserId = {};
+    (profilesRes.data || []).forEach((p) => {
+      avatarByUserId[p.id] = p.avatar_url || null;
+    });
+    (replyProfiles.data || []).forEach((p) => {
+      avatarByUserId[p.id] = p.avatar_url || null;
+    });
+
+    const topicsWithCount = list.map((t) => {
+      const lastThree = lastRepliesByTopic[t.id] || [];
+      const chronological = [...lastThree].reverse();
+      return {
+        ...t,
+        reply_count: replyCounts[t.id] || 0,
+        author_avatar_url: avatarByUserId[t.user_id] || null,
+        last_replies: chronological.map((r) => ({
+        id: r.id,
+        author_name: r.author_name,
+        author_avatar_url: avatarByUserId[r.user_id] || null,
+        content: r.content.slice(0, 200) + (r.content.length > 200 ? '…' : ''),
+        created_at: r.created_at,
+      })),
+      };
+    });
     return res.status(200).json({ topics: topicsWithCount });
   }
 
@@ -69,7 +117,10 @@ export default async function handler(req, res) {
       console.error('[community] POST', insertErr);
       return res.status(500).json({ error: 'Téma se nepodařilo uložit.' });
     }
-    return res.status(201).json({ topic: { ...topic, reply_count: 0 } });
+    const { data: profile } = await supabaseServer.from('profiles').select('avatar_url').eq('id', user.id).maybeSingle();
+    return res.status(201).json({
+      topic: { ...topic, reply_count: 0, author_avatar_url: profile?.avatar_url || null, last_replies: [] },
+    });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });

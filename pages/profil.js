@@ -170,6 +170,9 @@ export default function Profil() {
     durationMin: 60,
   });
   const [calendarEventSubmit, setCalendarEventSubmit] = useState({ loading: false, message: '', checklist: [] });
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
+  const avatarInputRef = useRef(null);
   const [calendarWeekStart, setCalendarWeekStart] = useState(() => {
     const monday = getMondayOfWeek(new Date());
     return getLocalDateStr(monday);
@@ -752,6 +755,45 @@ export default function Profil() {
     }
   }
 
+  async function handleAvatarUpload(e) {
+    const file = e.target?.files?.[0];
+    if (!file || !session?.user?.id) return;
+    e.target.value = '';
+    setAvatarError('');
+    setUploadingAvatar(true);
+    try {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/, 'jpg');
+      const path = `${session.user.id}/${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+      if (uploadErr) {
+        setAvatarError(uploadErr.message || 'Nahrání se nepodařilo.');
+        return;
+      }
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+      const avatarUrl = urlData?.publicUrl || null;
+      if (!avatarUrl) {
+        setAvatarError('Nepodařilo se získat odkaz na obrázek.');
+        return;
+      }
+      const res = await fetch('/api/profile-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ avatar_url: avatarUrl }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setAvatarError(json.error || 'Uložení se nepodařilo.');
+        return;
+      }
+      setProfile((p) => (p?.user ? { ...p, user: { ...p.user, avatar_url: avatarUrl }, _updated: Date.now() } : p));
+      setToast({ message: 'Profilový obrázek byl uložen.', type: 'success' });
+    } catch (err) {
+      setAvatarError(err.message || 'Chyba při nahrávání.');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
   if (!session && !loading) return null;
 
   // Všechny parametry se přepočítají při každé změně profile (trénink, váha)
@@ -1042,6 +1084,24 @@ export default function Profil() {
         )}
 
         <section className="hero">
+          <div className="hero-avatar-wrap">
+            {profile?.user?.avatar_url ? (
+              <img src={profile.user.avatar_url} alt="" className="hero-avatar" />
+            ) : (
+              <span className="hero-avatar-placeholder" aria-hidden>{firstName?.charAt(0)?.toUpperCase() || '?'}</span>
+            )}
+            <input
+              type="file"
+              ref={avatarInputRef}
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              className="hero-avatar-input-hidden"
+              onChange={handleAvatarUpload}
+            />
+            <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="hero-avatar-change">
+              {uploadingAvatar ? 'Nahrávám…' : 'Změnit obrázek'}
+            </button>
+            {avatarError && <p className="hero-avatar-error" role="alert">{avatarError}</p>}
+          </div>
           <p className="hero-intro">
             {profile?.can_create_calendar_events ? 'Trenér' : (PROGRAM_LABELS[program] || PROGRAM_LABELS.START).greeting}
             {!profile?.can_create_calendar_events && (program === 'ON_CLUB' || program === 'VIP') && (
@@ -2025,6 +2085,42 @@ export default function Profil() {
           text-align: center;
           margin-bottom: 40px;
         }
+        .hero-avatar-wrap {
+          margin-bottom: 16px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+        }
+        .hero-avatar, .hero-avatar-placeholder {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 2px solid rgba(148, 163, 184, 0.3);
+        }
+        .hero-avatar-placeholder {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, #3b3b5c, #2d2d44);
+          color: #94a3b8;
+          font-size: 28px;
+          font-weight: 600;
+        }
+        .hero-avatar-input-hidden { position: absolute; width: 0; height: 0; opacity: 0; pointer-events: none; }
+        .hero-avatar-change {
+          font-size: 13px;
+          color: #94a3b8;
+          background: none;
+          border: none;
+          cursor: pointer;
+          text-decoration: underline;
+          padding: 0;
+        }
+        .hero-avatar-change:hover:not(:disabled) { color: #e2e8f0; }
+        .hero-avatar-change:disabled { opacity: 0.7; cursor: wait; }
+        .hero-avatar-error { margin: 0; font-size: 13px; color: #fca5a5; }
         .hero-intro {
           margin: 0 0 6px;
           font-size: 18px;

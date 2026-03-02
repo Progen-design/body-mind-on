@@ -112,11 +112,20 @@ export default function TemaDetail() {
           <Link href="/komunita" className="tema-back">← Zpět na fórum</Link>
 
           <article className="tema-op card">
-            <h1 className="tema-title">{topic.title}</h1>
-            <div className="tema-meta">
-              {topic.author_name} · {formatDate(topic.created_at)}
+            <div className="tema-op-row">
+              {topic.author_avatar_url ? (
+                <img src={topic.author_avatar_url} alt="" className="tema-op-avatar" />
+              ) : (
+                <span className="tema-op-avatar-placeholder">{topic.author_name?.charAt(0)?.toUpperCase() || '?'}</span>
+              )}
+              <div className="tema-op-body">
+                <h1 className="tema-title">{topic.title}</h1>
+                <div className="tema-meta">
+                  {topic.author_name} · {formatDate(topic.created_at)}
+                </div>
+                <div className="tema-content">{topic.content}</div>
+              </div>
             </div>
-            <div className="tema-content">{topic.content}</div>
           </article>
 
           <section className="tema-replies">
@@ -129,8 +138,17 @@ export default function TemaDetail() {
               <ul className="tema-replies-list">
                 {replies.map((r) => (
                   <li key={r.id} className="tema-reply card">
-                    <div className="tema-reply-meta">{r.author_name} · {formatDate(r.created_at)}</div>
-                    <div className="tema-reply-content">{r.content}</div>
+                    <div className="tema-reply-row">
+                      {r.author_avatar_url ? (
+                        <img src={r.author_avatar_url} alt="" className="tema-reply-avatar" />
+                      ) : (
+                        <span className="tema-reply-avatar-placeholder">{r.author_name?.charAt(0)?.toUpperCase() || '?'}</span>
+                      )}
+                      <div className="tema-reply-body">
+                        <div className="tema-reply-meta">{r.author_name} · {formatDate(r.created_at)}</div>
+                        <div className="tema-reply-content">{r.content}</div>
+                      </div>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -178,6 +196,16 @@ export default function TemaDetail() {
           padding: 24px; margin-bottom: 24px;
           background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 12px;
         }
+        .tema-op-row { display: flex; align-items: flex-start; gap: 16px; }
+        .tema-op-avatar, .tema-op-avatar-placeholder {
+          width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+          border: 1px solid rgba(148, 163, 184, 0.25);
+        }
+        .tema-op-avatar-placeholder {
+          display: inline-flex; align-items: center; justify-content: center;
+          background: rgba(51, 65, 85, 0.6); color: #94a3b8; font-size: 18px; font-weight: 600;
+        }
+        .tema-op-body { flex: 1; min-width: 0; }
         .tema-title { font-size: 1.35rem; font-weight: 700; color: #f1f5f9; margin: 0 0 10px; }
         .tema-meta { font-size: 14px; color: #64748b; margin-bottom: 16px; }
         .tema-content { font-size: 15px; line-height: 1.6; color: #e2e8f0; white-space: pre-wrap; word-break: break-word; }
@@ -189,6 +217,15 @@ export default function TemaDetail() {
           padding: 18px 20px;
           background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(148, 163, 184, 0.15); border-radius: 12px;
         }
+        .tema-reply-row { display: flex; align-items: flex-start; gap: 12px; }
+        .tema-reply-avatar, .tema-reply-avatar-placeholder {
+          width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+        }
+        .tema-reply-avatar-placeholder {
+          display: inline-flex; align-items: center; justify-content: center;
+          background: rgba(51, 65, 85, 0.6); color: #94a3b8; font-size: 14px; font-weight: 600;
+        }
+        .tema-reply-body { flex: 1; min-width: 0; }
         .tema-reply-meta { font-size: 13px; color: #64748b; margin-bottom: 8px; }
         .tema-reply-content { font-size: 15px; line-height: 1.6; color: #e2e8f0; white-space: pre-wrap; word-break: break-word; }
         .tema-reply-form {

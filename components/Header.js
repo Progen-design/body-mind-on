@@ -10,6 +10,7 @@ export default function Header() {
   const router = useRouter();
   const [isApp, setIsApp] = useState(false);
   const [session, setSession] = useState(null);
+  const [avatarUrl, setAvatarUrl] = useState(null);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.hostname === "app.bodyandmindon.cz") setIsApp(true);
@@ -20,6 +21,17 @@ export default function Header() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
     return () => subscription?.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!session?.access_token) {
+      setAvatarUrl(null);
+      return;
+    }
+    fetch("/api/profile", { headers: { Authorization: `Bearer ${session.access_token}` } })
+      .then((r) => r.json())
+      .then((data) => setAvatarUrl(data?.user?.avatar_url || null))
+      .catch(() => setAvatarUrl(null));
+  }, [session?.access_token]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -45,7 +57,14 @@ export default function Header() {
           {showLoggedInNav ? (
             <>
               <Link href="/komunita">Komunita</Link>
-              <Link href="/profil">Profil</Link>
+              <Link href="/profil" className="nav-profil-link">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="nav-avatar" />
+                ) : (
+                  <span className="nav-avatar-placeholder">?</span>
+                )}
+                Profil
+              </Link>
               <button type="button" onClick={handleLogout} className="nav-logout">
                 Odhlásit se
               </button>
@@ -95,6 +114,26 @@ export default function Header() {
 
         nav a:hover {
           color: #fff;
+        }
+
+        .nav-profil-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .nav-avatar, .nav-avatar-placeholder {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          object-fit: cover;
+        }
+        .nav-avatar-placeholder {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255,255,255,0.15);
+          color: #ccc;
+          font-size: 12px;
         }
 
         .nav-logout {

@@ -1353,8 +1353,9 @@ export default function Profil() {
               <div className="first-action-banner">
                 <p>
                   <strong>Tvůj plán je připraven.</strong>{' '}
-                  {program === 'ON_CLUB' && 'Jsi v ON Clubu – zapiš první trénink, sleduj denní návyky nebo se podívej na dnešní jídlo v plánu níže.'}
-                  {program === 'VIP' && 'Jsi VIP – zapiš první trénink, sleduj denní návyky nebo se podívej na dnešní jídlo v plánu níže.'}
+                  V plánu níže máš jídelníček a detailní tréninkový návod (rozcvička, cviky, progrese).{' '}
+                  {program === 'ON_CLUB' && 'Jsi v ON Clubu – zapiš první trénink, sleduj denní návyky nebo se podívej na dnešní jídlo.'}
+                  {program === 'VIP' && 'Jsi VIP – zapiš první trénink, sleduj denní návyky nebo se podívej na dnešní jídlo.'}
                   {program !== 'ON_CLUB' && program !== 'VIP' && 'První krok: zapiš svůj první trénink nebo se podívej na dnešní jídlo v plánu níže.'}
                 </p>
               </div>

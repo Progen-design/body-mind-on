@@ -414,7 +414,7 @@ export default function PlanViewer({ plan, userName, hideHero }) {
             <span className="plan-today-emoji">📅</span>
             <div>
               <h3>Dnes ({todayStr})</h3>
-              <p>Podívej se do jídelníčku a tréninku níže.</p>
+              <p>Podívej se do jídelníčku a na tréninkový plán (jak cvičit, rozcvička, cviky) níže.</p>
             </div>
           </div>
 
@@ -731,7 +731,15 @@ export default function PlanViewer({ plan, userName, hideHero }) {
             ) : null;
           })()}
 
-          {/* Trénink + Regenerace – zbytek v rozbalovacím celém plánu */}
+          {/* Tréninkový plán – viditelný blok (jeden z hlavních bodů plánu) */}
+          {parsed?.workout && parsed.workout.trim() ? (
+            <div className="plan-block plan-block-training">
+              <h3 className="plan-block-title">🏋️ Tréninkový plán – jak cvičit</h3>
+              <div className="plan-training-content" dangerouslySetInnerHTML={{ __html: parsed.workout }} />
+            </div>
+          ) : null}
+
+          {/* Regenerace, Suplementace, Mindset – zbytek v rozbalovacím celém plánu */}
           <div className="plan-expandable">
             <button type="button" className="plan-toggle" onClick={() => setIsExpanded(!isExpanded)}>
               {isExpanded ? '▼ Skrýt celý plán (trénink, regenerace, původní text)' : '▶ Zobrazit celý plán'}
@@ -830,6 +838,23 @@ const planSectionStyles = `
     padding-bottom: 8px;
     border-bottom: 1px solid rgba(139, 92, 255, 0.3);
   }
+  .plan-block-training {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(71, 85, 105, 0.5);
+    border-left: 4px solid #7c3aed;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .plan-block-training .plan-block-title { border-bottom-color: rgba(124, 58, 237, 0.4); }
+  .plan-training-content {
+    color: #e2e8f0;
+    font-size: 15px;
+    line-height: 1.65;
+  }
+  .plan-training-content p { margin: 0 0 12px; }
+  .plan-training-content p:last-child { margin-bottom: 0; }
+  .plan-training-content b { color: #c4b5fd; }
+  .plan-training-content img { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; }
   .plan-validity-range {
     margin: -8px 0 12px;
     font-size: 13px;

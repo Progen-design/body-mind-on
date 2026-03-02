@@ -7,7 +7,7 @@ export default function WelcomeTour({ onClose }) {
   const steps = [
     {
       title: 'Tvůj plán je připraven! 👋',
-      content: 'První krok: Podívej se níže na jídelníček a zapiš svůj první trénink. Plán máš v e-mailu i tady v aplikaci.',
+      content: 'První krok: Podívej se níže na jídelníček a na detailní tréninkový návod (jak cvičit, rozcvička, cviky). Pak zapiš svůj první trénink. Plán máš v e-mailu i tady v aplikaci.',
       position: 'center'
     },
     {

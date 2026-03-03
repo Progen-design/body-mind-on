@@ -105,6 +105,12 @@ function getMealImageByDish(mealText) {
   return best.url;
 }
 
+/** Odstraní obrázky z HTML (v sekci Trénink nechceme velké obrázky). */
+function stripImagesFromHtml(html) {
+  if (!html || typeof html !== 'string') return html;
+  return html.replace(/<img[^>]*>/gi, '').trim();
+}
+
 function recipeContentOnly(html) {
   if (!html || typeof html !== 'string') return html;
   const lower = html.toLowerCase();
@@ -136,6 +142,21 @@ function parseTrainingItems(html) {
   }
   return items.length ? items : null;
 }
+
+/** Stroj / vybavení ve fitku a domácí alternativa pro každý typ cviku (laik může cvičit i doma). */
+const EXERCISE_EQUIPMENT = {
+  warmup:   { machine: null, home: 'Lehké kardio: chůze, běh na místě, kolo. Dynamický strečink: kroužení ramen, kyčlí, kolen.' },
+  cooldown: { machine: null, home: 'Strečink na zemi nebo vestoje – hamstringy, záda, ramena, kvadricepsy.' },
+  rest:     { machine: null, home: 'Procházka venku nebo na pásu, lehké protažení.' },
+  squat:    { machine: 'Smithův stroj, leg press, nebo osa (back squat)', home: 'Dřepy s vlastní vahou, s lahví vody nebo kettlebell. Židle jako opora (sit-to-stand).' },
+  push_up:  { machine: 'Bench press, multipress, nebo jednoručky', home: 'Kliky na zemi (na kolenou snazší), kliky o zeď nebo o stůl. Roztahovače (expander).' },
+  pull_up:  { machine: 'Stroj na přítahy, shybovací hrazda, kladka', home: 'Přítahy s expanderem ke dveřím. Inverzní řady pod stolem. Gumy na nohy.' },
+  lunge:    { machine: 'Volné váhy (činky), multipress', home: 'Výpady v prostoru s vlastní vahou nebo s lahví / činkami. Držet se židle pro stabilitu.' },
+  plank:    { machine: null, home: 'Prkno na předloktí nebo na dlaních. Můžete na kolenou zjednodušit.' },
+  press:    { machine: 'Bench press, multipress, jednoručky', home: 'Kliky, tlaky s expanderem, tlaky s lahvemi nebo činkami vleže na zemi.' },
+  total:    { machine: null, home: null },
+  default:  { machine: 'Dle typu cviku – v posilovně požádej o ukázku.', home: 'Hledej variantu s vlastní vahou nebo expanderem.' },
+};
 
 /** Z textu položky tréninku vrátí typ ikony (squat, push_up, …). */
 function getExerciseIconType(text) {
@@ -693,14 +714,30 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                           <p className="plan-day-training-heading"><strong>Tréninkový plán</strong></p>
                           {trainingItems ? (
                             <ul className="plan-day-training-list">
-                              {trainingItems.map((item, idx) => (
-                                <li key={idx} className="plan-day-training-item">
-                                  <span className="plan-day-training-icon" aria-hidden>
-                                    <ExerciseIcon type={getExerciseIconType(item.text)} />
-                                  </span>
-                                  <span className="plan-day-training-text" dangerouslySetInnerHTML={{ __html: item.innerHTML }} />
-                                </li>
-                              ))}
+                              {trainingItems.map((item, idx) => {
+                                const iconType = getExerciseIconType(item.text);
+                                const equipment = EXERCISE_EQUIPMENT[iconType] || EXERCISE_EQUIPMENT.default;
+                                return (
+                                  <li key={idx} className="plan-day-training-item">
+                                    <span className="plan-day-training-icon" aria-hidden title="Jak cvičit">
+                                      <ExerciseIcon type={iconType} />
+                                    </span>
+                                    <div className="plan-day-training-body">
+                                      <span className="plan-day-training-text" dangerouslySetInnerHTML={{ __html: item.innerHTML }} />
+                                      {(equipment.machine || equipment.home) && (
+                                        <div className="plan-day-training-equipment">
+                                          {equipment.machine && (
+                                            <p className="plan-day-equip-line"><strong>Ve fitku:</strong> {equipment.machine}</p>
+                                          )}
+                                          {equipment.home && (
+                                            <p className="plan-day-equip-line"><strong>Doma:</strong> {equipment.home}</p>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </li>
+                                );
+                              })}
                             </ul>
                           ) : (
                             <div dangerouslySetInnerHTML={{ __html: day.trainingHtml }} />
@@ -888,7 +925,7 @@ export default function PlanViewer({ plan, userName, hideHero }) {
           {parsed?.workout && parsed.workout.trim() ? (
             <div className="plan-block plan-block-training">
               <h3 className="plan-block-title">🏋️ Tréninkový plán – jak cvičit</h3>
-              <div className="plan-training-content" dangerouslySetInnerHTML={{ __html: parsed.workout }} />
+              <div className="plan-training-content" dangerouslySetInnerHTML={{ __html: stripImagesFromHtml(parsed.workout) }} />
             </div>
           ) : null}
 
@@ -1007,7 +1044,7 @@ const planSectionStyles = `
   .plan-training-content p { margin: 0 0 12px; }
   .plan-training-content p:last-child { margin-bottom: 0; }
   .plan-training-content b { color: #c4b5fd; }
-  .plan-training-content img { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; }
+  .plan-training-content img { display: none; }
   .plan-validity-range {
     margin: -8px 0 12px;
     font-size: 13px;
@@ -1263,10 +1300,18 @@ const planSectionStyles = `
     align-items: center;
     justify-content: center;
   }
-  .plan-day-training-text {
-    flex: 1;
-    min-width: 0;
+  .plan-day-training-body { flex: 1; min-width: 0; }
+  .plan-day-training-text { display: block; }
+  .plan-day-training-equipment {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(71, 85, 105, 0.4);
+    font-size: 12px;
+    color: #94a3b8;
   }
+  .plan-day-equip-line { margin: 0 0 4px; line-height: 1.4; }
+  .plan-day-equip-line:last-child { margin-bottom: 0; }
+  .plan-day-equip-line strong { color: #c4b5fd; font-weight: 600; }
   .plan-day-training :global(p) { margin: 0 0 8px; }
   .plan-day-training :global(p:last-child) { margin-bottom: 0; }
   .plan-day-training :global(ul) { margin: 0; padding-left: 20px; }

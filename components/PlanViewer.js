@@ -158,18 +158,18 @@ const EXERCISE_EQUIPMENT = {
   default:  { machine: 'V posilovně požádej personál o ukázku cviku – rádi poradí.', home: 'Zkus variantu s vlastní vahou nebo s expanderem (gumou).' },
 };
 
-/** Ilustrační obrázky cviků (Unsplash) – jak cvik vypadá. */
+/** Ilustrační obrázky cviků – fotky odpovídající danému cviku (Unsplash). Při chybě se obrázek skryje. */
 const EXERCISE_IMAGE_URLS = {
-  warmup:   'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=160&h=120&fit=crop',
-  cooldown: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=160&h=120&fit=crop',
-  rest:     'https://images.unsplash.com/photo-1571019613454-1a2f803b42f0?w=160&h=120&fit=crop',
-  squat:    'https://images.unsplash.com/photo-1534368959876-26bf04f2c947?w=160&h=120&fit=crop',
-  push_up:  'https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=160&h=120&fit=crop',
-  pull_up:  'https://images.unsplash.com/photo-1581009146145-b6580a1f0b0f?w=160&h=120&fit=crop',
-  lunge:    'https://images.unsplash.com/photo-1517836351103-54377833d2f2?w=160&h=120&fit=crop',
-  plank:    'https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=160&h=120&fit=crop',
-  press:    'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=160&h=120&fit=crop',
-  default:  'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=160&h=120&fit=crop',
+  warmup:   'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=200&h=150&fit=crop', // strečink / dynamická rozcvička
+  cooldown: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=200&h=150&fit=crop', // strečink
+  rest:     'https://images.unsplash.com/photo-1571019613454-1a2f803b42f0?w=200&h=150&fit=crop', // chůze / odpočinek
+  squat:    'https://images.unsplash.com/photo-1566241142559-40f630bd52f7?w=200&h=150&fit=crop', // dřep – osoba při dřepu
+  push_up:  'https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=200&h=150&fit=crop', // kliky
+  pull_up:  'https://images.unsplash.com/photo-1605297942671-279dd0e29b15?w=200&h=150&fit=crop', // přítahy (v předklonu / shyby)
+  lunge:    'https://images.unsplash.com/photo-1517836351103-54377833d2f2?w=200&h=150&fit=crop', // výpady
+  plank:    'https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=200&h=150&fit=crop', // prkno
+  press:    'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=200&h=150&fit=crop', // bench press / tlaky
+  default:  'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=200&h=150&fit=crop',
 };
 
 /** Z textu položky tréninku vrátí typ ikony (squat, push_up, …). */
@@ -469,6 +469,7 @@ export default function PlanViewer({ plan, userName, hideHero }) {
   const [shoppingCopyDone, setShoppingCopyDone] = useState(false);
   const [shoppingSendEmail, setShoppingSendEmail] = useState({ loading: false, done: false, error: null });
   const [dayShoppingState, setDayShoppingState] = useState({}); // { dayIndex: { copyDone, email: { loading, done, error } } }
+  const [expandedTrainingKey, setExpandedTrainingKey] = useState(null); // 'dayIdx-itemIdx' – rozbalený cvik (detail Ve fitku / Doma)
   const recipeOpenIdRef = useRef(0);
   const recipeCacheRef = useRef(new Map()); // dish -> html, 5 min TTL
 
@@ -751,23 +752,65 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                                 const iconType = getExerciseIconType(item.text);
                                 const equipment = EXERCISE_EQUIPMENT[iconType] || EXERCISE_EQUIPMENT.default;
                                 const imageUrl = iconType !== 'total' && (EXERCISE_IMAGE_URLS[iconType] || EXERCISE_IMAGE_URLS.default);
+                                const itemKey = `training-${di}-${idx}`;
+                                const isExpanded = expandedTrainingKey === itemKey;
+                                const hasDetail = (equipment.machine || equipment.home) && iconType !== 'total';
                                 return (
-                                  <li key={idx} className="plan-day-training-item">
+                                  <li key={idx} className={`plan-day-training-item ${isExpanded ? 'plan-day-training-item-expanded' : ''}`}>
                                     <span className="plan-day-training-icon" aria-hidden title="Jak cvičit">
                                       <ExerciseIcon type={iconType} />
                                     </span>
                                     {imageUrl && (
-                                      <img src={imageUrl} alt="" className="plan-day-training-illustration" width={160} height={120} loading="lazy" />
+                                      <img
+                                        src={imageUrl}
+                                        alt=""
+                                        className="plan-day-training-illustration"
+                                        width={160}
+                                        height={120}
+                                        loading="lazy"
+                                        onError={(e) => { e.target.style.display = 'none'; }}
+                                      />
                                     )}
                                     <div className="plan-day-training-body">
-                                      <span className="plan-day-training-text" dangerouslySetInnerHTML={{ __html: item.innerHTML }} />
-                                      {(equipment.machine || equipment.home) && (
+                                      {hasDetail ? (
+                                        <button
+                                          type="button"
+                                          className="plan-day-training-header-btn"
+                                          onClick={() => setExpandedTrainingKey((k) => (k === itemKey ? null : itemKey))}
+                                          aria-expanded={isExpanded}
+                                        >
+                                          <span className="plan-day-training-text" dangerouslySetInnerHTML={{ __html: item.innerHTML }} />
+                                          <span className="plan-day-training-toggle-hint">
+                                            {isExpanded ? ' ▼ Skrýt detail' : ' ▶ Jak na to, stroje ve fitku a varianta doma'}
+                                          </span>
+                                        </button>
+                                      ) : (
+                                        <span className="plan-day-training-text" dangerouslySetInnerHTML={{ __html: item.innerHTML }} />
+                                      )}
+                                      {!isExpanded && (equipment.machine || equipment.home) && (
                                         <div className="plan-day-training-equipment">
                                           {equipment.machine && (
                                             <p className="plan-day-equip-line"><strong>Ve fitku:</strong> {equipment.machine}</p>
                                           )}
                                           {equipment.home && (
                                             <p className="plan-day-equip-line"><strong>Doma:</strong> {equipment.home}</p>
+                                          )}
+                                        </div>
+                                      )}
+                                      {isExpanded && hasDetail && (
+                                        <div className="plan-day-training-detail">
+                                          <p className="plan-day-training-detail-title">Jak cvik provést</p>
+                                          {equipment.machine && (
+                                            <div className="plan-day-training-detail-block">
+                                              <strong>Ve fitku – jaký stroj použít:</strong>
+                                              <p>{equipment.machine}</p>
+                                            </div>
+                                          )}
+                                          {equipment.home && (
+                                            <div className="plan-day-training-detail-block">
+                                              <strong>Doma – alternativa:</strong>
+                                              <p>{equipment.home}</p>
+                                            </div>
                                           )}
                                         </div>
                                       )}
@@ -1428,7 +1471,47 @@ const planSectionStyles = `
     border: 1px solid rgba(71, 85, 105, 0.4);
   }
   .plan-day-training-body { flex: 1; min-width: 0; }
+  .plan-day-training-header-btn {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .plan-day-training-header-btn:hover .plan-day-training-toggle-hint { color: #c4b5fd; }
   .plan-day-training-text { display: block; }
+  .plan-day-training-toggle-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    color: #64748b;
+  }
+  .plan-day-training-detail {
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: rgba(30, 41, 59, 0.6);
+    border-radius: 10px;
+    border: 1px solid rgba(71, 85, 105, 0.5);
+  }
+  .plan-day-training-detail-title {
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #e2e8f0;
+  }
+  .plan-day-training-detail-block {
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: #cbd5e1;
+  }
+  .plan-day-training-detail-block:last-child { margin-bottom: 0; }
+  .plan-day-training-detail-block strong { display: block; margin-bottom: 4px; color: #a78bfa; font-size: 12px; }
+  .plan-day-training-detail-block p { margin: 0; line-height: 1.5; }
   .plan-day-training-equipment {
     margin-top: 8px;
     padding-top: 8px;

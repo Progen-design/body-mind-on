@@ -606,6 +606,7 @@ export default function PlanViewer({ plan, userName, hideHero }) {
               >
                 <div className="plan-recipe-modal-header">
                   <h3>{recipeModal.hasRecipe ? `Recept: ${recipeModal.title}` : recipeModal.title}</h3>
+                  <span className="plan-recipe-portion-label">Na 1 porci</span>
                   <button type="button" className="plan-recipe-modal-close" onClick={() => setRecipeModal(null)} aria-label="Zavřít">×</button>
                 </div>
                 {recipeModal.loading ? (
@@ -1157,6 +1158,17 @@ const planSectionStyles = `
     justify-content: space-between;
     padding: 18px 20px;
     border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .plan-recipe-portion-label {
+    position: absolute;
+    top: 14px;
+    right: 44px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    background: rgba(255,255,255,0.08);
+    padding: 4px 10px;
+    border-radius: 8px;
   }
   .plan-recipe-modal-header h3 {
     margin: 0;

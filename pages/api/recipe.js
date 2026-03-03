@@ -24,13 +24,13 @@ export default async function handler(req, res) {
         {
           role: 'system',
           content: `Jsi kuchařský asistent. Odpovídej pouze v češtině. Pro zadané jídlo vrať stručný recept v tomto HTML formátu (nic jiného):
-<p><b>Suroviny:</b> odrážkový seznam surovin s přibližným množstvím (např. 2 ks, 100 g).</p>
-<p><b>Postup:</b> krátké číslované kroky (3–6 kroků), jak jídlo připravit.</p>
-Nepoužívej markdown, pouze <p>, <b>, <ul>, <li>. Žádný úvod ani závěr.`,
+<p><b>Suroviny:</b> odrážkový seznam surovin – vždy množství na 1 porci (pro jednoho strávníka). Např. 1 ks kuřecího prsa (cca 120–150 g), 1 menší brambor (80 g), 1 lžíce oleje. U masa, příloh a zeleniny uváděj rozumné množství pro jednu porci.</p>
+<p><b>Postup:</b> krátké číslované kroky (3–6 kroků), jak jídlo připravit pro 1 porci.</p>
+Důležité: všechny suroviny a postup musí být výhradně na jednu porci. Nepoužívej markdown, pouze <p>, <b>, <ul>, <li>. Žádný úvod ani závěr.`,
         },
         {
           role: 'user',
-          content: `Napiš stručný recept pro toto jídlo: ${dish}`,
+          content: `Napiš stručný recept na 1 porci pro toto jídlo: ${dish}`,
         },
       ],
     });

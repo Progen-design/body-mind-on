@@ -49,7 +49,7 @@ NEDOPORUČENÉ POTRAVINY (nikdy nezařazuj do jídelníčku ani nákupního sezn
 • Vysoce rafinované sacharidy: bílé pečivo, sladké cereálie, klasické těstoviny z bílé mouky, sušenky, dorty, sladké snídaňové kaše
 Poznámka: tofu a tempeh jsou u vegan povolené; u standard/vegetarian preferuj živočišné zdroje.
 
-JÍDELNÍČEK: 7 dní, 3 jídla denně. Stručné názvy + krátký popis v závorce, žádné receptové postupy ani dlouhé seznamy. Sestavuj pouze z DOPORUČENÝCH POTRAVIN, respektuj diet_type.
+JÍDELNÍČEK: 7 dní, 3 jídla denně. Stručné názvy + krátký popis v závorce, žádné receptové postupy ani dlouhé seznamy. Sestavuj pouze z DOPORUČENÝCH POTRAVIN, respektuj diet_type. Pokud v plánu uvádíš recepty (Suroviny, Postup), vždy množství a postup na 1 porci.
 
 Vegan zdroje: tofu, tempeh, luštěniny, čočka, fazole, cizrna, quinoa, rostlinné proteiny, ořechy, semínka. Nikdy syrovátka ani živočišné proteiny.
 

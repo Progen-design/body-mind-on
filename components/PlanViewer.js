@@ -480,6 +480,7 @@ export default function PlanViewer({ plan, userName, hideHero }) {
   const [shoppingSendEmail, setShoppingSendEmail] = useState({ loading: false, done: false, error: null });
   const [dayShoppingState, setDayShoppingState] = useState({}); // { dayIndex: { copyDone, email: { loading, done, error } } }
   const [expandedTrainingKey, setExpandedTrainingKey] = useState(null); // 'dayIdx-itemIdx' – rozbalený cvik (detail Ve fitku / Doma)
+  const [expandedDays, setExpandedDays] = useState(null); // null = dnes rozbalený; Set(di) = které dny jsou rozbalené
   const recipeOpenIdRef = useRef(0);
   const recipeCacheRef = useRef(new Map()); // dish -> html, 5 min TTL
 
@@ -672,11 +673,27 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                 </p>
               )}
               <div className="plan-days">
-                {displayedDays.map((day, di) => (
-                  <div key={di} className={`plan-day-card ${day._placeholder ? 'plan-day-placeholder' : ''} ${day.isToday ? 'plan-day-today' : ''}`}>
-                    <h4 className="plan-day-name">
-                      {day.dayName}{day.dateStr ? ` (${day.dateStr})` : ''}{day.isToday ? ' – dnes' : ''}
-                    </h4>
+                {displayedDays.map((day, di) => {
+                  const isDayExpanded = expandedDays === null ? day.isToday : expandedDays.has(di);
+                  const toggleDay = () => {
+                    setExpandedDays((prev) => {
+                      const todayIdx = displayedDays.findIndex((d) => d.isToday);
+                      const next = new Set(prev === null ? [todayIdx >= 0 ? todayIdx : 0] : Array.from(prev));
+                      if (next.has(di)) next.delete(di);
+                      else next.add(di);
+                      return next;
+                    });
+                  };
+                  return (
+                  <div key={di} className={`plan-day-card ${day._placeholder ? 'plan-day-placeholder' : ''} ${day.isToday ? 'plan-day-today' : ''} ${isDayExpanded ? 'plan-day-expanded' : ''}`}>
+                    <button type="button" className="plan-day-header-btn" onClick={toggleDay} aria-expanded={isDayExpanded}>
+                      <h4 className="plan-day-name">
+                        {day.dayName}{day.dateStr ? ` (${day.dateStr})` : ''}{day.isToday ? ' – dnes' : ''}
+                      </h4>
+                      <span className="plan-day-chevron" aria-hidden>{isDayExpanded ? '▼' : '▶'}</span>
+                    </button>
+                    {isDayExpanded && (
+                    <>
                     <div className="plan-meals">
                       {day._placeholder && day.meals.length === 0 ? (
                         <p className="plan-day-placeholder-msg">V plánu chybí – vygeneruj nový plán pro kompletní jídelníček.</p>
@@ -755,14 +772,13 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                       const trainingItems = parseTrainingItems(day.trainingHtml);
                       return (
                         <div className="plan-day-training">
-                          <p className="plan-day-training-heading"><strong>Tréninkový plán</strong></p>
+                          <h3 className="plan-day-training-title">Tréninkový plán</h3>
                           <p className="plan-day-training-intro">Po rozkliknutí cviku se zobrazí, jak cvik provést a obě varianty – <strong>ve fitku</strong> (jaký stroj) i <strong>doma</strong> (alternativa).</p>
                           {trainingItems ? (
                             <ul className="plan-day-training-list">
                               {trainingItems.map((item, idx) => {
                                 const iconType = getExerciseIconType(item.text);
                                 const equipment = EXERCISE_EQUIPMENT[iconType] || EXERCISE_EQUIPMENT.default;
-                                const imageUrl = iconType !== 'total' && (EXERCISE_IMAGE_URLS[iconType] || EXERCISE_IMAGE_URLS.default);
                                 const itemKey = `training-${di}-${idx}`;
                                 const isExpanded = expandedTrainingKey === itemKey;
                                 const hasDetail = (equipment.machine || equipment.home) && iconType !== 'total';
@@ -771,17 +787,6 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                                     <span className="plan-day-training-icon" aria-hidden title="Jak cvičit">
                                       <ExerciseIcon type={iconType} />
                                     </span>
-                                    {imageUrl && (
-                                      <img
-                                        src={imageUrl}
-                                        alt=""
-                                        className="plan-day-training-illustration"
-                                        width={160}
-                                        height={120}
-                                        loading="lazy"
-                                        onError={(e) => { e.target.style.display = 'none'; }}
-                                      />
-                                    )}
                                     <div className="plan-day-training-body">
                                       {hasDetail ? (
                                         <button
@@ -903,8 +908,11 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                         </div>
                       );
                     })()}
+                    </>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1412,6 +1420,19 @@ const planSectionStyles = `
     text-align: center;
     margin: 0;
   }
+  .plan-day-header-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    text-align: left;
+  }
+  .plan-day-header-btn:hover { background: rgba(255,255,255,0.03); }
   .plan-day-name {
     margin: 0;
     padding: 14px 18px;
@@ -1420,7 +1441,14 @@ const planSectionStyles = `
     color: #c4b5fd;
     background: rgba(139, 92, 255, 0.1);
     border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex: 1;
   }
+  .plan-day-chevron {
+    padding: 14px 18px;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+  .plan-day-expanded .plan-day-chevron { color: #c4b5fd; }
   .plan-meals {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -1437,10 +1465,13 @@ const planSectionStyles = `
     line-height: 1.5;
     color: #cbd5e1;
   }
-  .plan-day-training-heading {
+  .plan-day-training-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #e9d5ff;
     margin: 0 0 6px;
-    font-size: 15px;
-    color: #e2e8f0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(139, 92, 255, 0.3);
   }
   .plan-day-training-intro {
     margin: 0 0 14px;
@@ -1469,14 +1500,6 @@ const planSectionStyles = `
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-  .plan-day-training-illustration {
-    flex-shrink: 0;
-    width: 100px;
-    height: 75px;
-    object-fit: cover;
-    border-radius: 8px;
-    border: 1px solid rgba(71, 85, 105, 0.4);
   }
   .plan-day-training-body { flex: 1; min-width: 0; }
   .plan-day-training-header-btn {

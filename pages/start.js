@@ -155,12 +155,12 @@ export default function Start() {
           </h1>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto">
             {step === 0
-              ? "Registruješ se jako trenér, nebo jako uživatel, který chce cvičit?"
+              ? "Vyber si program nebo se zaregistruj jako trenér."
               : "Vyzkoušej systém bez rizika – AI ti zdarma připraví osobní plán tréninku, jídelníček i regeneraci."}
           </p>
         </section>
 
-        {/* KROK 0: Výběr role – trenér vs. klient (stejná karta vizuálně) */}
+        {/* KROK 0: Výběr – trenér + všechny 3 programy (stejná karta vizuálně) */}
         {step === 0 && (
           <div className="role-cards-wrap">
             <Link href="/trener" className="role-card role-card-trainer" aria-label="Registrace jako trenér">
@@ -168,11 +168,21 @@ export default function Start() {
               <strong className="role-title">Jsem trenér</strong>
               <p className="role-desc">Přidávám tréninky, vedu klienty, mám přístup ke kalendáři a plánům.</p>
             </Link>
-            <button type="button" onClick={() => setStep(1)} className="role-card role-card-client" aria-label="Registrace jako klient – chci cvičit">
-              <span className="role-emoji">🏋️</span>
-              <strong className="role-title">Chci cvičit</strong>
-              <p className="role-desc">Jsem klient – chci plán, jídelníček a sledovat svůj progres.</p>
+            <button type="button" onClick={() => setStep(1)} className="role-card role-card-start" aria-label="Registrace do START programu">
+              <span className="role-emoji">🚀</span>
+              <strong className="role-title">START</strong>
+              <p className="role-desc">Zdarma – AI plán, jídelníček a základní sledování progresu.</p>
             </button>
+            <Link href="/on-club" className="role-card role-card-onclub" aria-label="Registrace do ON Clubu">
+              <span className="role-emoji">⚡</span>
+              <strong className="role-title">ON Club</strong>
+              <p className="role-desc">Habit tracker, AI plán, tréninky a statistiky.</p>
+            </Link>
+            <Link href="/chci-vip" className="role-card role-card-vip" aria-label="Registrace do VIP Coaching">
+              <span className="role-emoji">👑</span>
+              <strong className="role-title">VIP Coaching</strong>
+              <p className="role-desc">Plný přístup, osobní coaching a prémiová podpora.</p>
+            </Link>
           </div>
         )}
 
@@ -389,22 +399,22 @@ export default function Start() {
 
       <style jsx>{`
         .role-cards-wrap {
-          display: flex;
-          flex-wrap: wrap;
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
           gap: 20px;
-          justify-content: center;
-          align-items: stretch;
-          max-width: 32rem;
+          max-width: 56rem;
           margin: 0 auto;
+          align-items: stretch;
+        }
+        @media (max-width: 640px) {
+          .role-cards-wrap { grid-template-columns: 1fr; }
         }
         .role-card {
           display: flex;
           flex-direction: column;
           align-items: center;
           text-align: center;
-          flex: 1;
-          min-width: 240px;
-          min-height: 220px;
+          min-height: 200px;
           padding: 28px 24px;
           border-radius: 16px;
           border: 2px solid #475569;
@@ -425,6 +435,14 @@ export default function Start() {
         .role-card-trainer:hover {
           border-color: #a78bfa;
           box-shadow: 0 4px 20px rgba(167, 139, 250, 0.2);
+        }
+        .role-card-onclub:hover {
+          border-color: #f59e0b;
+          box-shadow: 0 4px 20px rgba(245, 158, 11, 0.2);
+        }
+        .role-card-vip:hover {
+          border-color: #eab308;
+          box-shadow: 0 4px 20px rgba(234, 179, 8, 0.2);
         }
         .role-emoji { font-size: 2.5rem; margin-bottom: 12px; }
         .role-title { display: block; font-size: 1.25rem; margin-bottom: 8px; color: #e2e8f0; }

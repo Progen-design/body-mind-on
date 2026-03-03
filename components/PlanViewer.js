@@ -121,6 +121,125 @@ function recipeContentOnly(html) {
   return html;
 }
 
+/** Z HTML bloku „Trénink tento den“ vytáhne položky <li> (pro zobrazení s figurinami). */
+function parseTrainingItems(html) {
+  if (!html || typeof html !== 'string') return null;
+  const liRe = /<li[^>]*>([\s\S]*?)<\/li>/gi;
+  const items = [];
+  let m;
+  while ((m = liRe.exec(html)) !== null) {
+    const inner = m[1];
+    items.push({
+      innerHTML: inner,
+      text: inner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
+    });
+  }
+  return items.length ? items : null;
+}
+
+/** Z textu položky tréninku vrátí typ ikony (squat, push_up, …). */
+function getExerciseIconType(text) {
+  const t = (text || '').toLowerCase();
+  if (/trénink celkem|trenink celkem|celkem\s*\d+\s*min/i.test(t)) return 'total';
+  if (/rozcvička|warm-up|rozcvicka/i.test(t)) return 'warmup';
+  if (/závěr|zaver|strečink|strecink|cool-down/i.test(t) && !/rozcvička|rozcvicka/i.test(t)) return 'cooldown';
+  if (/odpočinek|odpocinek|procházka|prochazka|chůze|chuze/i.test(t)) return 'rest';
+  if (/dřepy|drep|squat/i.test(t)) return 'squat';
+  if (/kliky|klik|push-up|push up/i.test(t)) return 'push_up';
+  if (/přítahy|pritah|pull-up|pull up|shyby/i.test(t)) return 'pull_up';
+  if (/výpady|vypad|lunge/i.test(t)) return 'lunge';
+  if (/prkno|plank|core|břicho|bricho|břicha|bricha|ab\s|abs/i.test(t)) return 'plank';
+  if (/tlak|press|bench/i.test(t)) return 'press';
+  return 'default';
+}
+
+/** Figurina cviku (ikonka) – jednoduchá stick-figure, naznačuje provedení. */
+function ExerciseIcon({ type, className = '' }) {
+  const w = 32;
+  const h = 32;
+  const stroke = 'currentColor';
+  const fill = 'none';
+  const common = { width: w, height: h, viewBox: `0 0 ${w} ${h}`, fill, stroke, strokeWidth: 1.4, strokeLinecap: 'round', strokeLinejoin: 'round' };
+  switch (type) {
+    case 'warmup':
+      return (
+        <svg {...common} className={className} aria-hidden>
+          <circle cx="16" cy="7" r="3" />
+          <path d="M16 11v3M14 14l2 8 2-4 2 4 2-8" />
+          <path d="M12 18h8" />
+        </svg>
+      );
+    case 'squat':
+      return (
+        <svg {...common} className={className} aria-hidden>
+          <circle cx="16" cy="6" r="3" />
+          <path d="M16 10v1M12 11l-1 10 2 1 3-6 2 6 2-1-1-10M16 11l-2 5 2 5 2-5" />
+        </svg>
+      );
+    case 'push_up':
+      return (
+        <svg {...common} className={className} aria-hidden>
+          <path d="M6 22l3-5h14l3 5M9 17V9l6 2v6M15 17V9l6 2v6" />
+          <circle cx="16" cy="6" r="2.5" />
+        </svg>
+      );
+    case 'pull_up':
+      return (
+        <svg {...common} className={className} aria-hidden>
+          <path d="M4 5h24M16 5v12l-3 4-3-4V5" />
+          <circle cx="16" cy="10" r="2.5" />
+        </svg>
+      );
+    case 'lunge':
+      return (
+        <svg {...common} className={className} aria-hidden>
+          <circle cx="16" cy="6" r="3" />
+          <path d="M16 10v1M15 11l-3 11 2 1 2-6 2 6 2-1-3-11" />
+        </svg>
+      );
+    case 'plank':
+      return (
+        <svg {...common} className={className} aria-hidden>
+          <path d="M5 18h22M7 18l2-5 6 0 2 5M15 13V8" />
+        </svg>
+      );
+    case 'press':
+      return (
+        <svg {...common} className={className} aria-hidden>
+          <circle cx="16" cy="8" r="2.5" />
+          <path d="M16 11v2M12 13l4 6 4-6M16 13v6" />
+        </svg>
+      );
+    case 'cooldown':
+      return (
+        <svg {...common} className={className} aria-hidden>
+          <circle cx="16" cy="10" r="3" />
+          <path d="M16 14v6M12 17h8" />
+        </svg>
+      );
+    case 'rest':
+      return (
+        <svg {...common} className={className} aria-hidden>
+          <circle cx="14" cy="10" r="3" />
+          <path d="M17 20l2-3 1 2 2-3" />
+        </svg>
+      );
+    case 'total':
+      return (
+        <svg {...common} className={className} aria-hidden>
+          <circle cx="16" cy="16" r="10" />
+          <path d="M16 10v6l4 2" />
+        </svg>
+      );
+    default:
+      return (
+        <svg {...common} className={className} aria-hidden>
+          <path d="M14 8l2 2 4-4M10 16l-2 4 4 2 6-8" />
+        </svg>
+      );
+  }
+}
+
 /** Fallback: sestaví nákupní seznam z bloků Suroviny v receptech */
 function buildShoppingListFromRecipes(recipes) {
   if (!Array.isArray(recipes) || recipes.length === 0) return [];
@@ -567,9 +686,28 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                         );
                       })}
                     </div>
-                    {day.trainingHtml && (
-                      <div className="plan-day-training" dangerouslySetInnerHTML={{ __html: day.trainingHtml }} />
-                    )}
+                    {day.trainingHtml && (() => {
+                      const trainingItems = parseTrainingItems(day.trainingHtml);
+                      return (
+                        <div className="plan-day-training">
+                          <p className="plan-day-training-heading"><strong>Tréninkový plán</strong></p>
+                          {trainingItems ? (
+                            <ul className="plan-day-training-list">
+                              {trainingItems.map((item, idx) => (
+                                <li key={idx} className="plan-day-training-item">
+                                  <span className="plan-day-training-icon" aria-hidden>
+                                    <ExerciseIcon type={getExerciseIconType(item.text)} />
+                                  </span>
+                                  <span className="plan-day-training-text" dangerouslySetInnerHTML={{ __html: item.innerHTML }} />
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <div dangerouslySetInnerHTML={{ __html: day.trainingHtml }} />
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 ))}
               </div>
@@ -1098,6 +1236,36 @@ const planSectionStyles = `
     font-size: 14px;
     line-height: 1.5;
     color: #cbd5e1;
+  }
+  .plan-day-training-heading {
+    margin: 0 0 10px;
+    font-size: 15px;
+    color: #e2e8f0;
+  }
+  .plan-day-training-list {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+  }
+  .plan-day-training-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .plan-day-training-item:last-child { margin-bottom: 0; }
+  .plan-day-training-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .plan-day-training-text {
+    flex: 1;
+    min-width: 0;
   }
   .plan-day-training :global(p) { margin: 0 0 8px; }
   .plan-day-training :global(p:last-child) { margin-bottom: 0; }

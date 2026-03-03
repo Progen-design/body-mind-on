@@ -132,10 +132,10 @@ export default function OnClubPage() {
       <main className="container py-12 text-white">
         <section className="onclub-hero text-center mb-10">
           <h1 className="onclub-hero-title">
-            ON Club – Tvůj osobní AI trenér vždy po ruce
+            ON Club – program s denními návyky a AI plánem
           </h1>
           <p className="onclub-hero-desc">
-            Vše ze START + osobní AI trenér 24/7, adaptivní plán dle výsledků, motivační komunita a video konzultace s experty.
+            Denní návyky, AI plán (jídelníček a trénink), záznam tréninků a statistiky.
           </p>
         </section>
 

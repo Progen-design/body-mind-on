@@ -4,8 +4,16 @@ import { supabaseServer } from '../../lib/supabaseServer';
 const WORKOUT_TYPE_LABELS = {
   silovy: 'Silový',
   kardio: 'Kardio',
+  beh: 'Běh',
+  kolo: 'Kolo',
+  chuze: 'Chůze',
+  plavani: 'Plavání',
   strečink: 'Strečink',
   joga: 'Jóga',
+  nordic_walking: 'Nordic walking',
+  brusleni: 'Bruslení',
+  lyzovani: 'Lyžování',
+  sauna: 'Sauna',
   ostatni: 'Ostatní',
 };
 

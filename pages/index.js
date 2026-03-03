@@ -140,15 +140,14 @@ export default function Home() {
             <div className="price-card price-card-featured">
               <span className="badge">Doporučeno</span>
               <h3>ON Club</h3>
-              <p className="price-desc">Tvůj osobní AI trenér vždy po ruce.</p>
+              <p className="price-desc">Program s denními návyky, AI plánem a statistikami.</p>
               <div className="price-value">1 499 Kč/měsíc</div>
               <ul>
                 <li>VŠE ze START +</li>
-                <li>Osobní AI trenér 24/7</li>
-                <li>Adaptivní plán dle výsledků</li>
-                <li>Motivační komunita</li>
-                <li>Video konzultace s experty</li>
-                <li>Detailní statistiky a analýzy</li>
+                <li>Denní návyky (habit tracker)</li>
+                <li>AI plán – jídelníček a trénink</li>
+                <li>Záznam tréninků a aktivit</li>
+                <li>Statistiky a přehled progresu</li>
               </ul>
               <a href={`${APP_URL}/start?plan=club`} className="btn btn-primary">Připojit se k ON Clubu</a>
             </div>

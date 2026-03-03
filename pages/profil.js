@@ -23,8 +23,16 @@ const PROGRAM_LABELS = {
 const WORKOUT_TYPES = [
   { id: 'silovy', label: 'Silový', emoji: '🏋️' },
   { id: 'kardio', label: 'Kardio', emoji: '🏃' },
+  { id: 'beh', label: 'Běh', emoji: '👟' },
+  { id: 'kolo', label: 'Kolo', emoji: '🚴' },
+  { id: 'chuze', label: 'Chůze', emoji: '🚶' },
+  { id: 'plavani', label: 'Plavání', emoji: '🏊' },
   { id: 'strečink', label: 'Strečink', emoji: '🧘' },
   { id: 'joga', label: 'Jóga', emoji: '🪷' },
+  { id: 'nordic_walking', label: 'Nordic walking', emoji: '🥢' },
+  { id: 'brusleni', label: 'Bruslení', emoji: '⛸️' },
+  { id: 'lyzovani', label: 'Lyžování', emoji: '🎿' },
+  { id: 'sauna', label: 'Sauna', emoji: '🧖' },
   { id: 'ostatni', label: 'Ostatní', emoji: '✨' },
 ];
 
@@ -35,12 +43,20 @@ const WORKOUT_DIFFICULTY_OPTIONS = [
   { id: 'too_hard', label: 'Příliš náročné' },
 ];
 
-// Odhad kcal/min dle typu (orientační; zdroje: běh ~8, silový 4–7, strečink/jóga nižší)
+// Odhad kcal/min dle typu (orientační)
 const KCAL_PER_MIN_BY_TYPE = {
   silovy: 5,
   kardio: 8,
+  beh: 10,
+  kolo: 7,
+  chuze: 4,
+  plavani: 10,
   strečink: 2.5,
   joga: 3,
+  nordic_walking: 6,
+  brusleni: 8,
+  lyzovani: 8,
+  sauna: 1.5,
   ostatni: 4,
 };
 
@@ -1285,7 +1301,7 @@ export default function Profil() {
                 </span>
                 <div>
                   <div className="membership-tier-label">
-                    {program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP Coaching' : 'Start'}
+                    {program === 'ON_CLUB' ? 'Program ON Club' : program === 'VIP' ? 'Program VIP Coaching' : 'Program Start'}
                   </div>
                   <div className="membership-tier-sub">
                     {program === 'VIP' && 'Plný přístup · Osobní coaching · Prémiová podpora'}
@@ -1470,8 +1486,8 @@ export default function Profil() {
                 <p>
                   <strong>Tvůj plán je připraven.</strong>{' '}
                   V plánu níže máš jídelníček a detailní tréninkový návod (rozcvička, cviky, progrese).{' '}
-                  {program === 'ON_CLUB' && 'Jsi v ON Clubu – zapiš první trénink, sleduj denní návyky nebo se podívej na dnešní jídlo.'}
-                  {program === 'VIP' && 'Jsi VIP – zapiš první trénink, sleduj denní návyky nebo se podívej na dnešní jídlo.'}
+                  {program === 'ON_CLUB' && 'Jsi v programu ON Club – zapiš první trénink, sleduj denní návyky nebo se podívej na dnešní jídlo.'}
+                  {program === 'VIP' && 'Jsi v programu VIP – zapiš první trénink, sleduj denní návyky nebo se podívej na dnešní jídlo.'}
                   {program !== 'ON_CLUB' && program !== 'VIP' && 'První krok: zapiš svůj první trénink nebo se podívej na dnešní jídlo v plánu níže.'}
                 </p>
               </div>
@@ -1777,8 +1793,8 @@ export default function Profil() {
             {!profile?.can_create_calendar_events && (
             <section className="card card-accent center progress-section">
               <h2 className="section-head">Tvůj progres</h2>
-              <p className="progress-lead">Všechny hodnoty vycházejí jen z tréninků a z tvého nastavení (výchozí váha, cíl, výška). Ruční váha do výpočtu nezasahuje. Na výsledky má vliv i strava a denní návyky (zdravé i zlozvyky).</p>
-              <p className="progress-period-hint">Hodnoty vycházejí ze <strong>všech</strong> zapsaných tréninků od začátku. Odhad váhy a spálené kcal níže jsou celkové.</p>
+              <p className="progress-lead">Hodnoty vycházejí z <strong>zapsaných tréninků</strong> a z tvého nastavení (výchozí váha, cíl, výška). Ruční váha do výpočtu nezasahuje. Odhad váhy dále zohledňuje <strong>denní návyky</strong> (zdravé i zlozvyky) z tohoto týdne – čím víc zdravých a míň zlozvyků, tím lépe pro odhad.</p>
+              <p className="progress-period-hint">Tréninky: ze <strong>všech</strong> zapsaných od začátku. Návyky: z vyplněných polí v „Denní návyky“ za aktuální týden. Spálené kcal a odhad váhy níže jsou celkové a navazují na sebe.</p>
 
               <p className="progress-dates">Období od začátku: <strong>{periodStartFormatted}</strong> – <strong>{periodEndFormatted}</strong></p>
               <div className="progress-activity">

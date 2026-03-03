@@ -204,6 +204,14 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
 
   const recommendation = getRecommendation();
 
+  const chartData = useMemo(() => {
+    const maxCount = Math.max(1, positiveHabits.length);
+    return days.map((dateStr) => {
+      const count = (positiveHabits || []).filter((h) => getCompleted(h.id, dateStr)).length;
+      return { dateStr, count, isToday: dateStr === todayStr, pct: (count / maxCount) * 100 };
+    });
+  }, [days, todayStr, positiveHabits, allLogs]);
+
   if (positiveHabits.length === 0 && negativeHabits.length === 0) {
     return (
       <section className="habit-tracker">
@@ -330,37 +338,59 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         </div>
       ) : (
         <>
-          <div className="hg-scroll">
-            <div className="hg-grid" style={{ gridTemplateColumns: gridCols, columnGap: GAP, rowGap: '6px' }}>
+          <div className="ht-content">
+            <div className="hg-scroll">
+              <div className="hg-grid" style={{ gridTemplateColumns: gridCols, columnGap: GAP, rowGap: '6px' }}>
 
-              {/* Date header row */}
-              <div className="hg-corner" />
-              {days.map((d) => (
-                <div key={d} className={`hg-hdr-cell ${d === todayStr ? 'today' : ''}`}>
-                  <span className="hg-hdr-day">{new Date(d + 'T12:00:00Z').toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' }).replace(' ', '')}</span>
-                  {d === todayStr && <span className="hg-hdr-today">Dnes</span>}
-                </div>
-              ))}
-
-              {/* Positive habits */}
-              {positiveHabits.length > 0 && (
-                <>
-                  <div className="hg-section-bar pos" style={{ gridColumn: `1 / span ${days.length + 1}` }}>
-                    <span className="hg-section-dot" />ZDRAVÉ NÁVYKY
+                {/* Date header row */}
+                <div className="hg-corner" />
+                {days.map((d) => (
+                  <div key={d} className={`hg-hdr-cell ${d === todayStr ? 'today' : ''}`}>
+                    <span className="hg-hdr-day">{new Date(d + 'T12:00:00Z').toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' }).replace(' ', '')}</span>
+                    {d === todayStr && <span className="hg-hdr-today">Dnes</span>}
                   </div>
-                  {positiveHabits.map((h) => renderHabitRow(h, false))}
-                </>
-              )}
+                ))}
 
-              {/* Negative habits */}
-              {negativeHabits.length > 0 && (
-                <>
-                  <div className="hg-section-bar neg" style={{ gridColumn: `1 / span ${days.length + 1}` }}>
-                    <span className="hg-section-dot neg" />ZLOZVYKY
+                {/* Positive habits */}
+                {positiveHabits.length > 0 && (
+                  <>
+                    <div className="hg-section-bar pos" style={{ gridColumn: `1 / span ${days.length + 1}` }}>
+                      <span className="hg-section-dot" />ZDRAVÉ NÁVYKY
+                    </div>
+                    {positiveHabits.map((h) => renderHabitRow(h, false))}
+                  </>
+                )}
+
+                {/* Negative habits */}
+                {negativeHabits.length > 0 && (
+                  <>
+                    <div className="hg-section-bar neg" style={{ gridColumn: `1 / span ${days.length + 1}` }}>
+                      <span className="hg-section-dot neg" />ZLOZVYKY
+                    </div>
+                    {negativeHabits.map((h) => renderHabitRow(h, true))}
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="ht-chart-wrap">
+              <p className="ht-chart-title">Splněné návyky po dnech</p>
+              <div className="ht-chart-bars">
+                {chartData.map(({ dateStr, count, isToday, pct }) => (
+                  <div key={dateStr} className={`ht-chart-bar ${isToday ? 'today' : ''}`}>
+                    <div className="ht-chart-bar-fill" style={{ height: `${pct}%` }} title={`${count} splněno`} />
+                    <span className="ht-chart-bar-value">{count}</span>
                   </div>
-                  {negativeHabits.map((h) => renderHabitRow(h, true))}
-                </>
-              )}
+                ))}
+              </div>
+              <div className="ht-chart-labels">
+                {chartData.map(({ dateStr, isToday }) => (
+                  <span key={dateStr} className={`ht-chart-label ${isToday ? 'today' : ''}`}>
+                    {new Date(dateStr + 'T12:00:00Z').toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' }).replace(' ', '')}
+                    {isToday && ' (dnes)'}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -374,6 +404,58 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
 
       <style jsx>{`
         .habit-tracker { margin-bottom: 48px; }
+
+        .ht-content {
+          display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap;
+        }
+        .hg-scroll { flex: 1; min-width: 280px; }
+
+        .ht-chart-wrap {
+          flex-shrink: 0;
+          width: 280px;
+          padding: 20px;
+          border-radius: 20px;
+          background: linear-gradient(160deg, rgba(22,32,55,0.98) 0%, rgba(10,15,30,0.98) 100%);
+          border: 1px solid rgba(255,255,255,0.08);
+          box-shadow: 0 20px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.02) inset;
+        }
+        .ht-chart-title {
+          margin: 0 0 16px; font-size: 0.8125rem; font-weight: 700; color: #94a3b8;
+          letter-spacing: 0.02em; text-transform: uppercase;
+        }
+        .ht-chart-bars {
+          display: flex; align-items: flex-end; justify-content: space-between; gap: 6px;
+          height: 120px; margin-bottom: 10px;
+        }
+        .ht-chart-bar {
+          flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px;
+        }
+        .ht-chart-bar-fill {
+          width: 100%; max-width: 28px; min-height: 4px;
+          border-radius: 8px 8px 0 0;
+          background: linear-gradient(180deg, #34d399, #10b981);
+          box-shadow: 0 0 12px rgba(52,211,153,0.4);
+          transition: height 0.35s ease-out;
+        }
+        .ht-chart-bar.today .ht-chart-bar-fill {
+          background: linear-gradient(180deg, #a78bfa, #7c3aed);
+          box-shadow: 0 0 14px rgba(167,139,250,0.5);
+        }
+        .ht-chart-bar-value {
+          font-size: 0.75rem; font-weight: 700; color: #cbd5e1;
+        }
+        .ht-chart-bar.today .ht-chart-bar-value { color: #c4b5fd; }
+        .ht-chart-labels {
+          display: flex; justify-content: space-between; gap: 6px;
+          font-size: 0.6875rem; color: #64748b; font-weight: 500;
+        }
+        .ht-chart-label { flex: 1; min-width: 0; text-align: center; }
+        .ht-chart-label.today { color: #a78bfa; font-weight: 600; }
+
+        @media (max-width: 720px) {
+          .ht-content { flex-direction: column; }
+          .ht-chart-wrap { width: 100%; }
+        }
 
         /* ── Top header ── */
         .ht-top {

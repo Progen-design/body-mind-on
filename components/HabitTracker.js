@@ -455,15 +455,17 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         }
         .hg-emoji { font-size: 1.3rem; flex-shrink: 0; line-height: 1; margin-top: 2px; }
         .hg-name-wrap {
-          display: flex; flex-direction: column; gap: 2px;
+          display: flex; flex-direction: column; gap: 4px;
           min-width: 0; overflow: hidden;
         }
         .hg-name {
-          font-size: 0.875rem; font-weight: 600; color: #cbd5e1;
-          line-height: 1.3;
+          font-size: 0.9375rem; font-weight: 600; color: #e2e8f0;
+          line-height: 1.3; display: block;
         }
         .hg-hint {
-          font-size: 0.6875rem; color: #94a3b8; font-weight: 400; line-height: 1.25;
+          display: block;
+          font-size: 0.75rem; color: #94a3b8; font-weight: 400; line-height: 1.35;
+          font-family: inherit;
         }
 
         /* ── Habit cell – CRITICAL: reset button defaults ── */

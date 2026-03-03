@@ -143,20 +143,21 @@ function parseTrainingItems(html) {
   return items.length ? items : null;
 }
 
-/** Stroj / vybavení ve fitku a domácí alternativa – vždy obě varianty, srozumitelné i bez trenéra. */
+/** Stroj / vybavení ve fitku a domácí alternativa – vždy obě varianty, srozumitelné bez trenéra. Nikdy neuvádět poradit se s někým. */
 const EXERCISE_EQUIPMENT = {
   warmup:   { machine: 'Lehké kardio na páse, rotopedu nebo orbitreku. Pak dynamický strečink: kroužení ramen, kyčlí, kolen – stejně jako doma.', home: 'Lehké kardio: chůze, běh na místě, kolo. Dynamický strečink: kroužení ramen, kyčlí, kolen.' },
   cooldown: { machine: 'Strečink na zemi nebo vestoje – stejné cviky jako doma. V posilovně můžeš využít podložku a klidnější koutek.', home: 'Strečink na zemi nebo vestoje – hamstringy, záda, ramena, přední strana stehen.' },
   rest:     { machine: 'Procházka na pásu nebo lehké protažení v klidu. Můžeš zůstat na místě a dýchat.', home: 'Procházka venku nebo na místě, lehké protažení.' },
-  squat:    { machine: 'V posilovně: stroj na dřepy (nohy tlačíš proti plošině), nebo dřep s osou za hlavou. Personál ti ukáže nastavení.', home: 'Dřepy s vlastní vahou, s lahví vody nebo závažím. Židle jako opora – sedni si a vstaň (opakuj).' },
-  push_up:  { machine: 'V posilovně: tlaky na hrudník na lavici (ležíš, tlačíš nahoru tyč nebo činky). Personál ti ukáže stroj nebo lavici.', home: 'Kliky na zemi (na kolenou snazší), kliky o zeď nebo o stůl. Roztahovače (gumy) mezi dveřmi.' },
-  pull_up:  { machine: 'V posilovně: přítahy k hrudníku (táhneš tyč nebo rukojeti k sobě vsedě), nebo shyby na hrazdě. Personál ti ukáže stroj.', home: 'Přítahy s expanderem (gumou) ke dveřím. Inverzní řady pod stolem – chyť se stolu a přitáhni hrudník.' },
-  lunge:    { machine: 'Výpady v prostoru s činkami v rukou nebo na stroji. V posilovně můžeš držet závaží; personál poradí.', home: 'Výpady v prostoru s vlastní vahou nebo s lahví / činkami. Držet se židle pro stabilitu.' },
+  squat:    { machine: 'V posilovně: stroj na dřepy (nohy tlačíš proti plošině), nebo dřep s osou za hlavou – nastavení výšky opory podle své výšky.', home: 'Dřepy s vlastní vahou, s lahví vody nebo závažím. Židle jako opora – sedni si a vstaň (opakuj).' },
+  push_up:  { machine: 'V posilovně: tlaky na hrudník na lavici (ležíš na zádech, tlačíš tyč nebo činky nahoru od hrudníku). Lavice s tyčí je obvykle u stěny.', home: 'Kliky na zemi (na kolenou snazší), kliky o zeď nebo o stůl. Roztahovače (gumy) mezi dveřmi.' },
+  pull_up:  { machine: 'V posilovně: přítahy k hrudníku vsedě (táhneš tyč nebo rukojeti k sobě), nebo shyby na hrazdě – hrazda je nad hlavou, přitáhni se až brada nad úroveň rukou.', home: 'Přítahy s expanderem (gumou) ke dveřím. Inverzní řady pod stolem – chyť se stolu a přitáhni hrudník.' },
+  lunge:    { machine: 'Výpady v prostoru s činkami v rukou (po jedné v každé ruce) nebo jen s vlastní vahou. Kroky vpřed, koleno zadní nohy jde k zemi.', home: 'Výpady v prostoru s vlastní vahou nebo s lahví / činkami. Držet se židle pro stabilitu.' },
   plank:    { machine: 'Prkno na zemi v posilovně – stejně jako doma: opora na předloktích nebo dlaních, tělo v rovině. Můžeš na kolenou zjednodušit.', home: 'Prkno na předloktí nebo na dlaních. Můžeš na kolenou zjednodušit.' },
   superman: { machine: 'Superman na zemi v posilovně – stejně jako doma: lehni na břicho, paže i nohy natažené. Zvedni hrudník, ruce i nohy mírně nad zem a chvíli drž, pak pomalu polož. Opakuj.', home: 'Lehni na břicho, ruce i nohy natažené. Zvedni hrudník, ruce a nohy mírně nad zem, chvíli vydrž a pomalu polož. Cvičíš jen s vlastní vahou na podlaze.' },
-  press:    { machine: 'V posilovně: tlaky na hrudník na lavici (ležíš, tlačíš nahoru). Personál ti ukáže stroj nebo lavici s činkami.', home: 'Kliky, tlaky s expanderem, tlaky s lahvemi nebo činkami vleže na zemi.' },
+  press:    { machine: 'V posilovně: tlaky na hrudník na lavici (ležíš na zádech, tlačíš tyč nebo činky nahoru). Lavice s tyčí je typicky u zdi.', home: 'Kliky, tlaky s expanderem, tlaky s lahvemi nebo činkami vleže na zemi.' },
+  deadlift: { machine: 'Mrtvý tah: stoj, osa nebo činky před stehny. Záda rovná, mírný podřep, chyť osu, zvedni do stoje (výdech při zvedání). V posilovně použij osu na zemi nebo trap bar (šestiúhelníková osa).', home: 'Mrtvý tah s činkami nebo lahvemi: stoj, záda rovná, mírný předklon a pokrčení kolen, zvedni závaží do stoje. Výdech při zvedání.' },
   total:    { machine: null, home: null },
-  default:  { machine: 'V posilovně požádej personál o ukázku cviku – rádi poradí.', home: 'Zkus variantu s vlastní vahou nebo s expanderem (gumou).' },
+  default:  { machine: 'V posilovně: podle názvu cviku – stroj na nohy (plošina), lavice na tlaky, tyč nebo kladka na přítahy. Doma: varianta s vlastní vahou nebo expanderem (gumou).', home: 'Zkus variantu s vlastní vahou nebo s expanderem (gumou).' },
 };
 
 /** Ilustrační obrázky cviků – fotky odpovídající danému cviku (Unsplash). Při chybě se obrázek skryje. */
@@ -171,6 +172,7 @@ const EXERCISE_IMAGE_URLS = {
   plank:    'https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=200&h=150&fit=crop', // prkno
   superman: 'https://images.unsplash.com/photo-1571019613454-1a2f803b42f0?w=200&h=150&fit=crop', // superman / záda v leže
   press:    'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=200&h=150&fit=crop', // bench press / tlaky
+  deadlift: 'https://images.unsplash.com/photo-1534368959876-26bf04f2c947?w=200&h=150&fit=crop', // mrtvý tah
   default:  'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=200&h=150&fit=crop',
 };
 
@@ -186,6 +188,7 @@ function getExerciseIconType(text) {
   if (/přítahy|pritah|pull-up|pull up|shyby/i.test(t)) return 'pull_up';
   if (/výpady|vypad|lunge/i.test(t)) return 'lunge';
   if (/superman/i.test(t)) return 'superman'; // před plank – popis často obsahuje „břicho“, nesmí spadnout na plank
+  if (/mrtvý tah|mrtvy tah|deadlift/i.test(t)) return 'deadlift';
   if (/prkno|plank|core|břicho|bricho|břicha|bricha|ab\s|abs/i.test(t)) return 'plank';
   if (/tlak|press|bench/i.test(t)) return 'press';
   return 'default';
@@ -253,6 +256,14 @@ function ExerciseIcon({ type, className = '' }) {
         <svg {...common} className={className} aria-hidden>
           <circle cx="16" cy="8" r="2.5" />
           <path d="M16 11v2M12 13l4 6 4-6M16 13v6" />
+        </svg>
+      );
+    case 'deadlift':
+      return (
+        <svg {...common} className={className} aria-hidden>
+          <circle cx="16" cy="6" r="2.5" />
+          <path d="M16 9v4M14 13l-2 8 2 1 4-6 2 6 2-1-2-8" />
+          <path d="M12 21h8" />
         </svg>
       );
     case 'cooldown':

@@ -565,16 +565,14 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         }
         .hg-emoji { font-size: 1.3rem; flex-shrink: 0; line-height: 1; margin-top: 2px; }
         .hg-name-wrap {
-          display: flex; flex-direction: column; gap: 4px;
-          min-width: 0; overflow: hidden;
+          display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px;
+          min-width: 0; overflow: hidden; line-height: 1.35;
         }
         .hg-name {
           font-size: 0.9375rem; font-weight: 600; color: #e2e8f0;
-          line-height: 1.3; display: block;
         }
         .hg-hint {
-          display: block;
-          font-size: 0.75rem; color: #94a3b8; font-weight: 400; line-height: 1.35;
+          font-size: 0.75rem; color: #94a3b8; font-weight: 400;
           font-family: inherit;
         }
 

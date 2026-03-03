@@ -184,6 +184,7 @@ function parsePlanHtml(html) {
             const dayName = (el.textContent || '').trim();
             if (dayNames.some((d) => dayName.includes(d))) {
               const meals = [];
+              let trainingHtml = '';
               let next = el.nextElementSibling;
               while (next && next.tagName !== 'H4' && next.tagName !== 'H3') {
                 if (next.tagName === 'P') {
@@ -191,11 +192,21 @@ function parsePlanHtml(html) {
                   const mealType = bold ? bold.textContent.replace(/:\s*$/, '').trim() : '';
                   const rest = (next.textContent || '').replace(bold?.textContent || '', '').replace(/^:\s*/, '').trim();
                   const isMeal = mealTypes.some((m) => norm(mealType).includes(norm(m)));
+                  const isTrainingBlock = /Trénink tento den|trenink tento den/i.test(mealType || '');
                   if (isMeal && (mealType || rest)) meals.push({ type: mealType || 'Jídlo', text: rest, fullHtml: next.innerHTML });
+                  if (isTrainingBlock) {
+                    trainingHtml = next.outerHTML || '';
+                    next = next.nextElementSibling;
+                    while (next && next.tagName !== 'H4' && next.tagName !== 'H3') {
+                      trainingHtml += next.outerHTML || '';
+                      next = next.nextElementSibling;
+                    }
+                    continue;
+                  }
                 }
                 next = next.nextElementSibling;
               }
-              result.days.push({ dayName, meals });
+              result.days.push({ dayName, meals, trainingHtml: trainingHtml || null });
             }
           }
           el = el.tagName === 'H3' ? null : el.nextElementSibling;
@@ -556,6 +567,9 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                         );
                       })}
                     </div>
+                    {day.trainingHtml && (
+                      <div className="plan-day-training" dangerouslySetInnerHTML={{ __html: day.trainingHtml }} />
+                    )}
                   </div>
                 ))}
               </div>
@@ -1075,6 +1089,20 @@ const planSectionStyles = `
     gap: 16px;
     padding: 16px;
   }
+  .plan-day-training {
+    margin: 0 16px 16px;
+    padding: 14px 16px;
+    background: rgba(30, 41, 59, 0.5);
+    border-radius: 12px;
+    border: 1px solid rgba(71, 85, 105, 0.5);
+    font-size: 14px;
+    line-height: 1.5;
+    color: #cbd5e1;
+  }
+  .plan-day-training :global(p) { margin: 0 0 8px; }
+  .plan-day-training :global(p:last-child) { margin-bottom: 0; }
+  .plan-day-training :global(ul) { margin: 0; padding-left: 20px; }
+  .plan-day-training :global(li) { margin-bottom: 4px; }
   .plan-meal-card {
     background: rgba(0,0,0,0.15);
     border-radius: 14px;

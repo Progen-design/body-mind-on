@@ -143,6 +143,25 @@ function parseTrainingItems(html) {
   return items.length ? items : null;
 }
 
+/** Zakázané fráze – nikdy je nezobrazovat žádnému klientovi. Při výskytu se použije safe fallback. */
+const FORBIDDEN_EQUIPMENT_PHRASES = [
+  'personál', 'poradí', 'požádej', 'ukáže', 'ukázku', 'rádi poradí', 'poraď se', 'konzultac', 'trenér ti',
+];
+
+/**
+ * Vrátí bezpečné texty pro zobrazení (pro všechny klienty stejně).
+ * Pokud machine nebo home obsahují zakázanou frázi, nahradí se výchozím obecným textem.
+ */
+function getSafeEquipment(iconType) {
+  const raw = EXERCISE_EQUIPMENT[iconType] || EXERCISE_EQUIPMENT.default;
+  const def = EXERCISE_EQUIPMENT.default;
+  const hasForbidden = (s) => typeof s === 'string' && FORBIDDEN_EQUIPMENT_PHRASES.some((phrase) => s.toLowerCase().includes(phrase));
+  return {
+    machine: hasForbidden(raw.machine) ? def.machine : (raw.machine ?? def.machine),
+    home: hasForbidden(raw.home) ? def.home : (raw.home ?? def.home),
+  };
+}
+
 /** Stroj / vybavení ve fitku a domácí alternativa – vždy obě varianty, srozumitelné bez trenéra. Nikdy neuvádět poradit se s někým. */
 const EXERCISE_EQUIPMENT = {
   warmup:   { machine: 'Lehké kardio na páse, rotopedu nebo orbitreku. Pak dynamický strečink: kroužení ramen, kyčlí, kolen – stejně jako doma.', home: 'Lehké kardio: chůze, běh na místě, kolo. Dynamický strečink: kroužení ramen, kyčlí, kolen.' },
@@ -156,6 +175,7 @@ const EXERCISE_EQUIPMENT = {
   superman: { machine: 'Superman na zemi v posilovně – stejně jako doma: lehni na břicho, paže i nohy natažené. Zvedni hrudník, ruce i nohy mírně nad zem a chvíli drž, pak pomalu polož. Opakuj.', home: 'Lehni na břicho, ruce i nohy natažené. Zvedni hrudník, ruce a nohy mírně nad zem, chvíli vydrž a pomalu polož. Cvičíš jen s vlastní vahou na podlaze.' },
   press:    { machine: 'V posilovně: tlaky na hrudník na lavici (ležíš na zádech, tlačíš tyč nebo činky nahoru). Lavice s tyčí je typicky u zdi.', home: 'Kliky, tlaky s expanderem, tlaky s lahvemi nebo činkami vleže na zemi.' },
   deadlift: { machine: 'Mrtvý tah: stoj, osa nebo činky před stehny. Záda rovná, mírný podřep, chyť osu, zvedni do stoje (výdech při zvedání). V posilovně použij osu na zemi nebo trap bar (šestiúhelníková osa).', home: 'Mrtvý tah s činkami nebo lahvemi: stoj, záda rovná, mírný předklon a pokrčení kolen, zvedni závaží do stoje. Výdech při zvedání.' },
+  rdl:      { machine: 'Rumunský mrtvý tah: stoj s činkami nebo osou před stehny. Lehce pokrčená kolena, záda rovná. Předklon v kyčlích (hinge), posun zadečku vzad, pocit tahu v hamstringách; návrat do stoje. V posilovně osa nebo jednoručky.', home: 'Rumunský mrtvý tah s činkami nebo lahvemi: předklon v kyčlích, kolena lehce pokrčená, záda rovná, tah v zadní straně stehen – návrat do stoje.' },
   total:    { machine: null, home: null },
   default:  { machine: 'V posilovně: podle názvu cviku – stroj na nohy (plošina), lavice na tlaky, tyč nebo kladka na přítahy. Doma: varianta s vlastní vahou nebo expanderem (gumou).', home: 'Zkus variantu s vlastní vahou nebo s expanderem (gumou).' },
 };
@@ -173,6 +193,7 @@ const EXERCISE_IMAGE_URLS = {
   superman: 'https://images.unsplash.com/photo-1571019613454-1a2f803b42f0?w=200&h=150&fit=crop', // superman / záda v leže
   press:    'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=200&h=150&fit=crop', // bench press / tlaky
   deadlift: 'https://images.unsplash.com/photo-1534368959876-26bf04f2c947?w=200&h=150&fit=crop', // mrtvý tah
+  rdl:      'https://images.unsplash.com/photo-1534368959876-26bf04f2c947?w=200&h=150&fit=crop', // rumunský mrtvý tah
   default:  'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=200&h=150&fit=crop',
 };
 
@@ -185,12 +206,15 @@ function getExerciseIconType(text) {
   if (/odpočinek|odpocinek|procházka|prochazka|chůze|chuze/i.test(t)) return 'rest';
   if (/dřepy|drep|squat/i.test(t)) return 'squat';
   if (/kliky|klik|push-up|push up/i.test(t)) return 'push_up';
-  if (/přítahy|pritah|pull-up|pull up|shyby/i.test(t)) return 'pull_up';
+  if (/přítahy|pritah|pull-up|pull up|shyby|předklonu|predklonu|row/i.test(t)) return 'pull_up';
   if (/výpady|vypad|lunge/i.test(t)) return 'lunge';
   if (/superman/i.test(t)) return 'superman'; // před plank – popis často obsahuje „břicho“, nesmí spadnout na plank
+  if (/rumunský mrtvý|rumunsky mrtvy|romanian deadlift|rdl/i.test(t)) return 'rdl'; // před deadlift – RDL je jiný cvik (hinge, hamstringy)
   if (/mrtvý tah|mrtvy tah|deadlift/i.test(t)) return 'deadlift';
-  if (/prkno|plank|core|břicho|bricho|břicha|bricha|ab\s|abs/i.test(t)) return 'plank';
-  if (/tlak|press|bench/i.test(t)) return 'press';
+  if (/hip thrust|good morning|goodmorning/i.test(t)) return 'rdl'; // hinge cviky – podobný návod jako RDL
+  if (/prkno|plank|core|břicho|bricho|břicha|bricha|ab\s|abs|zvedání nohou|zvedani nohou|leg raise/i.test(t)) return 'plank';
+  if (/tlak|press|bench|tlaky na ramen|overhead|military press|ohp/i.test(t)) return 'press';
+  if (/leg press|nohy na plošin|plošin/i.test(t)) return 'squat'; // stroj na nohy – podobný kontext jako dřep
   return 'default';
 }
 
@@ -259,6 +283,7 @@ function ExerciseIcon({ type, className = '' }) {
         </svg>
       );
     case 'deadlift':
+    case 'rdl':
       return (
         <svg {...common} className={className} aria-hidden>
           <circle cx="16" cy="6" r="2.5" />
@@ -789,7 +814,7 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                             <ul className="plan-day-training-list">
                               {trainingItems.map((item, idx) => {
                                 const iconType = getExerciseIconType(item.text);
-                                const equipment = EXERCISE_EQUIPMENT[iconType] || EXERCISE_EQUIPMENT.default;
+                                const equipment = getSafeEquipment(iconType);
                                 const itemKey = `training-${di}-${idx}`;
                                 const isExpanded = expandedTrainingKey === itemKey;
                                 const hasDetail = (equipment.machine || equipment.home) && iconType !== 'total';

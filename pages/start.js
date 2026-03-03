@@ -160,22 +160,15 @@ export default function Start() {
           </p>
         </section>
 
-        {/* KROK 0: Výběr role – trenér vs. klient */}
+        {/* KROK 0: Výběr role – trenér vs. klient (stejná karta vizuálně) */}
         {step === 0 && (
-          <div className="max-w-2xl mx-auto flex flex-col sm:flex-row gap-4 justify-center items-stretch">
-            <Link
-              href="/trener"
-              className="role-card role-card-trainer"
-            >
+          <div className="role-cards-wrap">
+            <Link href="/trener" className="role-card role-card-trainer" aria-label="Registrace jako trenér">
               <span className="role-emoji">👤</span>
               <strong className="role-title">Jsem trenér</strong>
               <p className="role-desc">Přidávám tréninky, vedu klienty, mám přístup ke kalendáři a plánům.</p>
             </Link>
-            <button
-              type="button"
-              onClick={() => setStep(1)}
-              className="role-card role-card-client"
-            >
+            <button type="button" onClick={() => setStep(1)} className="role-card role-card-client" aria-label="Registrace jako klient – chci cvičit">
               <span className="role-emoji">🏋️</span>
               <strong className="role-title">Chci cvičit</strong>
               <p className="role-desc">Jsem klient – chci plán, jídelníček a sledovat svůj progres.</p>
@@ -395,25 +388,44 @@ export default function Start() {
       <Footer />
 
       <style jsx>{`
+        .role-cards-wrap {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 20px;
+          justify-content: center;
+          align-items: stretch;
+          max-width: 32rem;
+          margin: 0 auto;
+        }
         .role-card {
           display: flex;
           flex-direction: column;
           align-items: center;
           text-align: center;
+          flex: 1;
+          min-width: 240px;
+          min-height: 220px;
           padding: 28px 24px;
           border-radius: 16px;
-          border: 2px solid #334155;
+          border: 2px solid #475569;
           background: #121212;
           cursor: pointer;
-          transition: border-color 0.2s, background 0.2s;
+          transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
           text-decoration: none;
           color: inherit;
+          font: inherit;
+          box-sizing: border-box;
         }
+        button.role-card { margin: 0; }
         .role-card:hover {
           border-color: #0ea5e9;
           background: #1a1a2e;
+          box-shadow: 0 4px 20px rgba(14, 165, 233, 0.15);
         }
-        .role-card-trainer:hover { border-color: #a78bfa; }
+        .role-card-trainer:hover {
+          border-color: #a78bfa;
+          box-shadow: 0 4px 20px rgba(167, 139, 250, 0.2);
+        }
         .role-emoji { font-size: 2.5rem; margin-bottom: 12px; }
         .role-title { display: block; font-size: 1.25rem; margin-bottom: 8px; color: #e2e8f0; }
         .role-desc { font-size: 0.9rem; color: #94a3b8; margin: 0; line-height: 1.5; }

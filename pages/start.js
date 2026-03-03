@@ -285,9 +285,9 @@ export default function Start() {
                 <p className="step3-hint step3-hint-empty" aria-hidden> </p>
                 <select name="worktype" className="step3-select" value={formData.worktype} onChange={handleChange} required>
                   <option value="">Vyber</option>
-                  <option value="office_it">Kancelář / IT</option>
-                  <option value="manual">Manuální</option>
-                  <option value="kombinovana">Kombinovaná</option>
+                  <option value="office_it">Sedavé zaměstnání</option>
+                  <option value="manual">Aktivní zaměstnání</option>
+                  <option value="kombinovana">Kombinované</option>
                 </select>
               </div>
               <div className="step3-field">

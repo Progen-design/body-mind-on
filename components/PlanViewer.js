@@ -153,6 +153,7 @@ const EXERCISE_EQUIPMENT = {
   pull_up:  { machine: 'V posilovně: přítahy k hrudníku (táhneš tyč nebo rukojeti k sobě vsedě), nebo shyby na hrazdě. Personál ti ukáže stroj.', home: 'Přítahy s expanderem (gumou) ke dveřím. Inverzní řady pod stolem – chyť se stolu a přitáhni hrudník.' },
   lunge:    { machine: 'Výpady v prostoru s činkami v rukou nebo na stroji. V posilovně můžeš držet závaží; personál poradí.', home: 'Výpady v prostoru s vlastní vahou nebo s lahví / činkami. Držet se židle pro stabilitu.' },
   plank:    { machine: 'Prkno na zemi v posilovně – stejně jako doma: opora na předloktích nebo dlaních, tělo v rovině. Můžeš na kolenou zjednodušit.', home: 'Prkno na předloktí nebo na dlaních. Můžeš na kolenou zjednodušit.' },
+  superman: { machine: 'Superman na zemi v posilovně – stejně jako doma: lehni na břicho, paže i nohy natažené. Zvedni hrudník, ruce i nohy mírně nad zem a chvíli drž, pak pomalu polož. Opakuj.', home: 'Lehni na břicho, ruce i nohy natažené. Zvedni hrudník, ruce a nohy mírně nad zem, chvíli vydrž a pomalu polož. Cvičíš jen s vlastní vahou na podlaze.' },
   press:    { machine: 'V posilovně: tlaky na hrudník na lavici (ležíš, tlačíš nahoru). Personál ti ukáže stroj nebo lavici s činkami.', home: 'Kliky, tlaky s expanderem, tlaky s lahvemi nebo činkami vleže na zemi.' },
   total:    { machine: null, home: null },
   default:  { machine: 'V posilovně požádej personál o ukázku cviku – rádi poradí.', home: 'Zkus variantu s vlastní vahou nebo s expanderem (gumou).' },
@@ -168,6 +169,7 @@ const EXERCISE_IMAGE_URLS = {
   pull_up:  'https://images.unsplash.com/photo-1605297942671-279dd0e29b15?w=200&h=150&fit=crop', // přítahy (v předklonu / shyby)
   lunge:    'https://images.unsplash.com/photo-1517836351103-54377833d2f2?w=200&h=150&fit=crop', // výpady
   plank:    'https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=200&h=150&fit=crop', // prkno
+  superman: 'https://images.unsplash.com/photo-1571019613454-1a2f803b42f0?w=200&h=150&fit=crop', // superman / záda v leže
   press:    'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=200&h=150&fit=crop', // bench press / tlaky
   default:  'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=200&h=150&fit=crop',
 };
@@ -183,6 +185,7 @@ function getExerciseIconType(text) {
   if (/kliky|klik|push-up|push up/i.test(t)) return 'push_up';
   if (/přítahy|pritah|pull-up|pull up|shyby/i.test(t)) return 'pull_up';
   if (/výpady|vypad|lunge/i.test(t)) return 'lunge';
+  if (/superman/i.test(t)) return 'superman'; // před plank – popis často obsahuje „břicho“, nesmí spadnout na plank
   if (/prkno|plank|core|břicho|bricho|břicha|bricha|ab\s|abs/i.test(t)) return 'plank';
   if (/tlak|press|bench/i.test(t)) return 'press';
   return 'default';
@@ -236,6 +239,13 @@ function ExerciseIcon({ type, className = '' }) {
       return (
         <svg {...common} className={className} aria-hidden>
           <path d="M5 18h22M7 18l2-5 6 0 2 5M15 13V8" />
+        </svg>
+      );
+    case 'superman':
+      return (
+        <svg {...common} className={className} aria-hidden>
+          <ellipse cx="16" cy="18" rx="10" ry="4" />
+          <path d="M8 14l4-6 4 2 4-2 4 6M16 8v4" />
         </svg>
       );
     case 'press':

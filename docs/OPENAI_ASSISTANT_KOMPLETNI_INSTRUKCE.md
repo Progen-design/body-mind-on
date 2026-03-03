@@ -110,12 +110,12 @@ Do sekce Trénink nepřidávej obrázky – v aplikaci se zobrazuje jen text.
 
 <h3>Suplementace</h3> <ul><li>dle diet_type</li></ul>
 <h3>Regenerace</h3> <ul><li>Spánek 7–9 h</li><li>Voda 2–3 l</li><li>Protahování po tréninku</li></ul>
-<h3>Mindset na tento týden</h3> <p>... (krátká motivace / tip).</p>
-<h3>Nákupní seznam</h3> <ul><li>položky</li></ul>
+<h3>Mindset na tento týden</h3> <p><b>💬 Citát týdne:</b> jeden silný motivační citát (v uvozovkách, do 15 slov)</p><p><b>🎯 Focus tohoto týdne:</b> jedno konkrétní téma (výživa, trénink, spánek nebo stres – jedna věta)</p><p><b>💪 Výzva pro tebe:</b> jedna konkrétní akce nebo zvyk na tento týden (jedna věta)</p>
+<h3>Nákupní seznam</h3> <ul><li>položky s množstvím</li><li>...</li></ul> (sloučený seznam z jídel, bez duplicit, sůl/olej na konci)
 
 ---
 
-Po vygenerování zkontroluj: u každého dne je blok „Trénink tento den“ s body – u tréninkových dnů první bod s celkovou délkou (Trénink celkem: X min), rozcvička a závěr s délkou, každý cvik s „sérií×opakování – cca X min (provedení)“; objem a délka přizpůsobeny cíli (redukce/nabírání/udržování) a frekvenci; u netréninkových jeden bod Odpočinek / Lehká procházka; sekce Trénink obsahuje alespoň progresi a bezpečnost.
+Po vygenerování zkontroluj: u každého dne je blok „Trénink tento den“ s body – u tréninkových dnů první bod s celkovou délkou (Trénink celkem: X min), rozcvička a závěr s délkou, každý cvik s „sérií×opakování – cca X min (provedení)“; objem a délka přizpůsobeny cíli (redukce/nabírání/udržování) a frekvenci; u netréninkových jeden bod Odpočinek / Lehká procházka; sekce Trénink obsahuje alespoň progresi a bezpečnost; Nákupní seznam a Mindset na tento týden (citát, focus, výzva) jsou v html; čistý JSON.
 
 ---
 

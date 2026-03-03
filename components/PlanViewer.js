@@ -143,19 +143,33 @@ function parseTrainingItems(html) {
   return items.length ? items : null;
 }
 
-/** Stroj / vybavení ve fitku a domácí alternativa pro každý typ cviku (laik může cvičit i doma). */
+/** Stroj / vybavení ve fitku a domácí alternativa – vždy obě varianty, srozumitelné i bez trenéra. */
 const EXERCISE_EQUIPMENT = {
-  warmup:   { machine: null, home: 'Lehké kardio: chůze, běh na místě, kolo. Dynamický strečink: kroužení ramen, kyčlí, kolen.' },
-  cooldown: { machine: null, home: 'Strečink na zemi nebo vestoje – hamstringy, záda, ramena, kvadricepsy.' },
-  rest:     { machine: null, home: 'Procházka venku nebo na pásu, lehké protažení.' },
-  squat:    { machine: 'Smithův stroj, leg press, nebo osa (back squat)', home: 'Dřepy s vlastní vahou, s lahví vody nebo kettlebell. Židle jako opora (sit-to-stand).' },
-  push_up:  { machine: 'Bench press, multipress, nebo jednoručky', home: 'Kliky na zemi (na kolenou snazší), kliky o zeď nebo o stůl. Roztahovače (expander).' },
-  pull_up:  { machine: 'Stroj na přítahy, shybovací hrazda, kladka', home: 'Přítahy s expanderem ke dveřím. Inverzní řady pod stolem. Gumy na nohy.' },
-  lunge:    { machine: 'Volné váhy (činky), multipress', home: 'Výpady v prostoru s vlastní vahou nebo s lahví / činkami. Držet se židle pro stabilitu.' },
-  plank:    { machine: null, home: 'Prkno na předloktí nebo na dlaních. Můžete na kolenou zjednodušit.' },
-  press:    { machine: 'Bench press, multipress, jednoručky', home: 'Kliky, tlaky s expanderem, tlaky s lahvemi nebo činkami vleže na zemi.' },
+  warmup:   { machine: 'Lehké kardio na páse, rotopedu nebo orbitreku. Pak dynamický strečink: kroužení ramen, kyčlí, kolen – stejně jako doma.', home: 'Lehké kardio: chůze, běh na místě, kolo. Dynamický strečink: kroužení ramen, kyčlí, kolen.' },
+  cooldown: { machine: 'Strečink na zemi nebo vestoje – stejné cviky jako doma. V posilovně můžeš využít podložku a klidnější koutek.', home: 'Strečink na zemi nebo vestoje – hamstringy, záda, ramena, přední strana stehen.' },
+  rest:     { machine: 'Procházka na pásu nebo lehké protažení v klidu. Můžeš zůstat na místě a dýchat.', home: 'Procházka venku nebo na místě, lehké protažení.' },
+  squat:    { machine: 'V posilovně: stroj na dřepy (nohy tlačíš proti plošině), nebo dřep s osou za hlavou. Personál ti ukáže nastavení.', home: 'Dřepy s vlastní vahou, s lahví vody nebo závažím. Židle jako opora – sedni si a vstaň (opakuj).' },
+  push_up:  { machine: 'V posilovně: tlaky na hrudník na lavici (ležíš, tlačíš nahoru tyč nebo činky). Personál ti ukáže stroj nebo lavici.', home: 'Kliky na zemi (na kolenou snazší), kliky o zeď nebo o stůl. Roztahovače (gumy) mezi dveřmi.' },
+  pull_up:  { machine: 'V posilovně: přítahy k hrudníku (táhneš tyč nebo rukojeti k sobě vsedě), nebo shyby na hrazdě. Personál ti ukáže stroj.', home: 'Přítahy s expanderem (gumou) ke dveřím. Inverzní řady pod stolem – chyť se stolu a přitáhni hrudník.' },
+  lunge:    { machine: 'Výpady v prostoru s činkami v rukou nebo na stroji. V posilovně můžeš držet závaží; personál poradí.', home: 'Výpady v prostoru s vlastní vahou nebo s lahví / činkami. Držet se židle pro stabilitu.' },
+  plank:    { machine: 'Prkno na zemi v posilovně – stejně jako doma: opora na předloktích nebo dlaních, tělo v rovině. Můžeš na kolenou zjednodušit.', home: 'Prkno na předloktí nebo na dlaních. Můžeš na kolenou zjednodušit.' },
+  press:    { machine: 'V posilovně: tlaky na hrudník na lavici (ležíš, tlačíš nahoru). Personál ti ukáže stroj nebo lavici s činkami.', home: 'Kliky, tlaky s expanderem, tlaky s lahvemi nebo činkami vleže na zemi.' },
   total:    { machine: null, home: null },
-  default:  { machine: 'Dle typu cviku – v posilovně požádej o ukázku.', home: 'Hledej variantu s vlastní vahou nebo expanderem.' },
+  default:  { machine: 'V posilovně požádej personál o ukázku cviku – rádi poradí.', home: 'Zkus variantu s vlastní vahou nebo s expanderem (gumou).' },
+};
+
+/** Ilustrační obrázky cviků (Unsplash) – jak cvik vypadá. */
+const EXERCISE_IMAGE_URLS = {
+  warmup:   'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=160&h=120&fit=crop',
+  cooldown: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=160&h=120&fit=crop',
+  rest:     'https://images.unsplash.com/photo-1571019613454-1a2f803b42f0?w=160&h=120&fit=crop',
+  squat:    'https://images.unsplash.com/photo-1534368959876-26bf04f2c947?w=160&h=120&fit=crop',
+  push_up:  'https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=160&h=120&fit=crop',
+  pull_up:  'https://images.unsplash.com/photo-1581009146145-b6580a1f0b0f?w=160&h=120&fit=crop',
+  lunge:    'https://images.unsplash.com/photo-1517836351103-54377833d2f2?w=160&h=120&fit=crop',
+  plank:    'https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=160&h=120&fit=crop',
+  press:    'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=160&h=120&fit=crop',
+  default:  'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=160&h=120&fit=crop',
 };
 
 /** Z textu položky tréninku vrátí typ ikony (squat, push_up, …). */
@@ -267,7 +281,6 @@ function buildShoppingListFromRecipes(recipes) {
   const seen = new Set();
   const out = [];
   const surovinyRe = /suroviny\s*:?\s*<\/b>\s*([\s\S]*?)(?=<p\s*><b>|$)/gi;
-  const listRe = /<li[^>]*>([^<]*)<\/li>/gi;
   recipes.forEach((r) => {
     const content = r.content || '';
     const match = surovinyRe.exec(content);
@@ -280,6 +293,25 @@ function buildShoppingListFromRecipes(recipes) {
     });
   });
   return out;
+}
+
+/** Vrátí recepty odpovídající seznamu názvů/textů jídel (pro daný den). */
+function getRecipesForDay(recipes, mealFullTexts) {
+  if (!Array.isArray(recipes) || !Array.isArray(mealFullTexts)) return [];
+  const matched = [];
+  mealFullTexts.forEach((mealFullText) => {
+    const mealStart = (mealFullText || '').replace(/\s*\(.*$/, '').trim().slice(0, 35);
+    const r = recipes.find((rec) => {
+      const rn = (rec.name || '').toLowerCase();
+      const mt = (mealFullText || '').toLowerCase();
+      if (mt.includes(rn)) return true;
+      const startWords = mealStart.toLowerCase().split(/\s+/).slice(0, 4).join(' ');
+      if (startWords.length >= 5 && rn.includes(startWords)) return true;
+      return false;
+    });
+    if (r && !matched.includes(r)) matched.push(r);
+  });
+  return matched;
 }
 
 function parsePlanHtml(html) {
@@ -436,6 +468,7 @@ export default function PlanViewer({ plan, userName, hideHero }) {
   const [swapModal, setSwapModal] = useState(null); // { dayIndex, mealIndex, dishQuery, loading, html }
   const [shoppingCopyDone, setShoppingCopyDone] = useState(false);
   const [shoppingSendEmail, setShoppingSendEmail] = useState({ loading: false, done: false, error: null });
+  const [dayShoppingState, setDayShoppingState] = useState({}); // { dayIndex: { copyDone, email: { loading, done, error } } }
   const recipeOpenIdRef = useRef(0);
   const recipeCacheRef = useRef(new Map()); // dish -> html, 5 min TTL
 
@@ -717,11 +750,15 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                               {trainingItems.map((item, idx) => {
                                 const iconType = getExerciseIconType(item.text);
                                 const equipment = EXERCISE_EQUIPMENT[iconType] || EXERCISE_EQUIPMENT.default;
+                                const imageUrl = iconType !== 'total' && (EXERCISE_IMAGE_URLS[iconType] || EXERCISE_IMAGE_URLS.default);
                                 return (
                                   <li key={idx} className="plan-day-training-item">
                                     <span className="plan-day-training-icon" aria-hidden title="Jak cvičit">
                                       <ExerciseIcon type={iconType} />
                                     </span>
+                                    {imageUrl && (
+                                      <img src={imageUrl} alt="" className="plan-day-training-illustration" width={160} height={120} loading="lazy" />
+                                    )}
                                     <div className="plan-day-training-body">
                                       <span className="plan-day-training-text" dangerouslySetInnerHTML={{ __html: item.innerHTML }} />
                                       {(equipment.machine || equipment.home) && (
@@ -742,6 +779,83 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                           ) : (
                             <div dangerouslySetInnerHTML={{ __html: day.trainingHtml }} />
                           )}
+                        </div>
+                      );
+                    })()}
+                    {(() => {
+                      const dayMealTexts = (day.meals || []).map((meal, mi) => {
+                        const overrideKey = `${day.originalIndex ?? di}_${mi}`;
+                        const override = mealOverrides[overrideKey];
+                        return override ? `${meal.type || ''} ${override.title || ''}`.trim() : `${meal.type || ''} ${meal.text || ''}`.trim();
+                      });
+                      const dayRecipes = getRecipesForDay(parsed?.recipes || [], dayMealTexts);
+                      const dayList = buildShoppingListFromRecipes(dayRecipes);
+                      const dayKey = day.originalIndex ?? di;
+                      const dayState = dayShoppingState[dayKey] || { copyDone: false, email: { loading: false, done: false, error: null } };
+                      if (dayList.length === 0) return null;
+                      const copyAndOpenDay = () => {
+                        const text = dayList.join('\n');
+                        if (navigator.clipboard?.writeText) {
+                          navigator.clipboard.writeText(text).then(() => {
+                            setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), copyDone: true } }));
+                            setTimeout(() => setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), copyDone: false } })), 3000);
+                          });
+                        }
+                        window.open('https://www.rohlik.cz/', '_blank', 'noopener,noreferrer');
+                      };
+                      const handleSendEmailDay = async () => {
+                        setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: true, done: false, error: null } } }));
+                        try {
+                          const { data: { session } } = await supabase.auth.getSession();
+                          const token = session?.access_token;
+                          if (!token) {
+                            setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: false, error: 'Pro odeslání e-mailem se přihlas.' } } }));
+                            return;
+                          }
+                          const res = await fetch('/api/send-shopping-list', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                            body: JSON.stringify({ items: dayList }),
+                          });
+                          const data = await res.json();
+                          if (!res.ok) {
+                            setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: false, error: data.error || 'Nepodařilo odeslat.' } } }));
+                            return;
+                          }
+                          setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: true, error: null } } }));
+                          setTimeout(() => setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { ...(s[dayKey]?.email || {}), done: false } } })), 4000);
+                        } catch (e) {
+                          setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: false, error: 'Chyba připojení.' } } }));
+                        }
+                      };
+                      const handleShareWhatsAppDay = () => {
+                        const text = dayList.join('\n');
+                        const dayLabel = (day.dayName || 'Den') + (day.dateStr ? ` (${day.dateStr})` : '');
+                        const url = `https://wa.me/?text=${encodeURIComponent('🛒 Suroviny na tento den – ' + dayLabel + '\n\n' + text)}`;
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      };
+                      return (
+                        <div className="plan-day-shopping-actions plan-order-ingredients">
+                          <div className="plan-shopping-actions">
+                            <button type="button" className="plan-btn-order" onClick={copyAndOpenDay}>
+                              🛒 Objednat suroviny (tento den)
+                            </button>
+                            <button type="button" className="plan-btn-share" onClick={handleSendEmailDay} disabled={dayState.email.loading}>
+                              {dayState.email.loading ? 'Odesílám…' : '✉️ Poslat e-mailem'}
+                            </button>
+                            <button type="button" className="plan-btn-share" onClick={handleShareWhatsAppDay}>
+                              📱 Sdílet WhatsApp
+                            </button>
+                          </div>
+                          {dayState.copyDone && <span className="plan-copy-hint">Seznam zkopírován do schránky</span>}
+                          {dayState.email.done && <span className="plan-copy-hint plan-copy-success">Odesláno na e-mail</span>}
+                          {dayState.email.error && <span className="plan-copy-hint plan-copy-error">{dayState.email.error}</span>}
+                          <p className="plan-order-links">
+                            Seznam se zkopíruje a otevře se <a href="https://www.rohlik.cz/" target="_blank" rel="noopener noreferrer">Rohlík.cz</a>.
+                            Můžeš ho vložit v nákupním seznamu (Ctrl+V). Případně nákup vyřídíš na{' '}
+                            <a href="https://www.kosik.cz/" target="_blank" rel="noopener noreferrer">Košík.cz</a> nebo{' '}
+                            <a href="https://shop.billa.cz/" target="_blank" rel="noopener noreferrer">Billa e-shop</a>.
+                          </p>
                         </div>
                       );
                     })()}
@@ -1074,6 +1188,11 @@ const planSectionStyles = `
     padding-top: 16px;
     border-top: 1px solid rgba(139, 92, 255, 0.25);
   }
+  .plan-day-shopping-actions {
+    margin: 12px 16px 16px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(71, 85, 105, 0.4);
+  }
   .plan-shopping-actions {
     display: flex;
     flex-wrap: wrap;
@@ -1299,6 +1418,14 @@ const planSectionStyles = `
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+  .plan-day-training-illustration {
+    flex-shrink: 0;
+    width: 100px;
+    height: 75px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid rgba(71, 85, 105, 0.4);
   }
   .plan-day-training-body { flex: 1; min-width: 0; }
   .plan-day-training-text { display: block; }

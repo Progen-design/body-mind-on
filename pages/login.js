@@ -87,6 +87,11 @@ export default function Login() {
       <Header />
       <main className="container" style={{ maxWidth: 420, margin: '48px auto', padding: '0 16px' }}>
         <h1 style={{ marginBottom: 8 }}>Přihlášení</h1>
+        {router.query.registered === '1' && (
+          <div className="login-registered-msg" style={{ marginBottom: 20, padding: 14, background: 'rgba(34, 197, 94, 0.12)', border: '1px solid rgba(34, 197, 94, 0.4)', borderRadius: 10, color: '#86efac', fontSize: 14, lineHeight: 1.5 }}>
+            Registrace dokončena. Přihlaste se e-mailem a heslem. Odkaz na plán a přístup do profilu najdete také v e-mailu.
+          </div>
+        )}
         <p className="muted" style={{ marginBottom: 24 }}>
           Zadej e-mail a heslo, které máš z registrace (poslali jsme ti je e-mailem).
         </p>

@@ -1,5 +1,6 @@
 // /pages/on-club.js – Registrace ON Club (stejná grafika jako START)
 import { useState, useMemo } from "react";
+import { useRouter } from "next/router";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import HabitSelection from "../components/HabitSelection";
@@ -8,7 +9,9 @@ import { getSuggestedHabits } from "../lib/habits";
 const MAX_STEP = 4;
 
 export default function OnClubPage() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -79,7 +82,8 @@ export default function OnClubPage() {
       setStatus("❌ Hesla se neshodují.");
       return;
     }
-    setStatus("⏳ Odesílám... (může trvat až minutu – generuje se plán a e-mail)");
+    setIsSubmitting(true);
+    setStatus("⏳ Generuji plán a odesílám e-mail… Může to trvat až minutu.");
 
     try {
       const cleanedData = normalizeData(formData);
@@ -103,7 +107,11 @@ export default function OnClubPage() {
         if (result.planSent === false) {
           setStatus("⚠️ " + (result.message || "Údaje uloženy, ale e-mail s plánem se nepodařilo odeslat. Zkontroluj spam nebo napiš na info@bodyandmindon.cz."));
         } else {
-          setStatus("✅ " + (result.message || "Údaje byly uloženy a plán byl odeslán na e-mail."));
+          setStatus("✅ Účet je vytvořen. Přesměrování na přihlášení…");
+          setTimeout(() => {
+            router.push("/login?registered=1");
+          }, 1500);
+          return;
         }
         setFormData({ name: "", email: "", password: "", passwordConfirm: "", gender: "", age: "", height: "", weight: "", activity: "", stress: "", worktype: "", goal: "", frequency: "", diet_type: "", dietary_restrictions: "", notes: "", program: "ON_CLUB" });
         setSelectedHabits([]);
@@ -113,6 +121,8 @@ export default function OnClubPage() {
       }
     } catch (err) {
       setStatus("❌ Chyba připojení: " + (err.message || "Zkuste to znovu za chvíli."));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -120,11 +130,11 @@ export default function OnClubPage() {
     <>
       <Header />
       <main className="container py-12 text-white">
-        <section className="text-center mb-10">
-          <h1 className="text-4xl font-extrabold mb-3 text-sky-400">
+        <section className="onclub-hero text-center mb-10">
+          <h1 className="onclub-hero-title">
             ON Club – Tvůj osobní AI trenér vždy po ruce
           </h1>
-          <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+          <p className="onclub-hero-desc">
             Vše ze START + osobní AI trenér 24/7, adaptivní plán dle výsledků, motivační komunita a video konzultace s experty.
           </p>
         </section>
@@ -135,7 +145,7 @@ export default function OnClubPage() {
               <span key={s} className={s === step ? "active" : s < step ? "done" : ""} aria-hidden>{s}</span>
             ))}
           </div>
-          <p className="progress-label">Krok {step} z {MAX_STEP} {step === 4 ? '· Vyber denní návyky' : ''}</p>
+          <p className="progress-label">Krok {step} z {MAX_STEP}{step === 4 ? " – Vyber denní návyky" : ""}</p>
         </div>
 
         <form
@@ -277,7 +287,8 @@ export default function OnClubPage() {
               </details>
               <div className="habit-step">
                 <h3 className="habit-step-title">Vyber si denní návyky k sledování</h3>
-                <p className="habit-step-desc">Vyber alespoň jeden – v profilu pak uvidíš habit tracker a budeš si je moci odškrtávat.</p>
+                <p className="habit-step-desc">V profilu uvidíš habit tracker a budeš si každý den odškrtávat, co jsi zvládl. Vyber alespoň jeden návyk – některé jsou předvybrané podle tvých odpovědí.</p>
+                <p className="habit-step-tip">Doporučujeme 3–7 návyků – méně je často lépe udržitelné.</p>
                 <HabitSelection selectedIds={selectedHabits} onChange={setSelectedHabits} />
                 {selectedHabits.length === 0 && <p className="habit-step-hint">Vyber alespoň jeden návyk pro pokračování.</p>}
               </div>
@@ -295,8 +306,8 @@ export default function OnClubPage() {
                 Pokračovat
               </button>
             ) : (
-              <button type="submit" className="btn-submit btn-submit-large" disabled={!canProceedStep4()}>
-                Připojit se k ON Clubu
+              <button type="submit" className="btn-submit btn-submit-large" disabled={!canProceedStep4() || isSubmitting}>
+                {isSubmitting ? "Generuji plán…" : "Připojit se k ON Clubu"}
               </button>
             )}
           </div>
@@ -307,6 +318,21 @@ export default function OnClubPage() {
       <Footer />
 
       <style jsx>{`
+        .onclub-hero { max-width: 36rem; margin-left: auto; margin-right: auto; }
+        .onclub-hero-title {
+          font-size: clamp(1.75rem, 4vw, 2.25rem);
+          font-weight: 700;
+          letter-spacing: -0.02em;
+          line-height: 1.25;
+          color: #38bdf8;
+          margin: 0 0 12px;
+        }
+        .onclub-hero-desc {
+          font-size: 1.0625rem;
+          line-height: 1.6;
+          color: #cbd5e1;
+          margin: 0;
+        }
         .progress-bar-wrap { text-align: center; }
         .progress-dots { display: flex; justify-content: center; gap: 12px; margin-bottom: 8px; }
         .progress-dots span {
@@ -315,7 +341,7 @@ export default function OnClubPage() {
         }
         .progress-dots span.active { background: #0ea5e9; color: #fff; }
         .progress-dots span.done { background: #22c55e; color: #fff; }
-        .progress-label { font-size: 13px; color: #64748b; margin: 0; }
+        .progress-label { font-size: 14px; color: #94a3b8; margin: 0; font-weight: 500; }
         .step3-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px 32px; }
         @media (max-width: 640px) { .step3-grid { grid-template-columns: 1fr; } }
         .step3-field { display: flex; flex-direction: column; min-height: 88px; }
@@ -333,11 +359,12 @@ export default function OnClubPage() {
         .btn-back:hover { background: #1a1a1a; border-color: #6b7280; }
         .btn-submit { padding: 12px 28px; border-radius: 10px; border: none; background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
         .btn-submit:hover:not(:disabled) { opacity: 0.9; }
-        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-submit:disabled { opacity: 0.55; cursor: not-allowed; background: #475569; }
         .btn-submit-large { padding: 14px 32px; font-size: 16px; }
         .habit-step { margin-bottom: 0; }
-        .habit-step-title { margin: 0 0 8px; font-size: 18px; font-weight: 600; color: #e2e8f0; }
-        .habit-step-desc { margin: 0 0 16px; font-size: 14px; color: #94a3b8; line-height: 1.5; }
+        .habit-step-title { margin: 0 0 10px; font-size: 1.25rem; font-weight: 600; color: #f1f5f9; letter-spacing: -0.01em; }
+        .habit-step-desc { margin: 0 0 8px; font-size: 15px; color: #94a3b8; line-height: 1.55; }
+        .habit-step-tip { margin: 0 0 20px; font-size: 13px; color: #64748b; font-style: italic; }
         .habit-step-hint { margin: 12px 0 0; font-size: 13px; color: #f87171; }
       `}</style>
     </>

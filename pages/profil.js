@@ -173,6 +173,9 @@ export default function Profil() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState('');
   const avatarInputRef = useRef(null);
+  const [avatarCrop, setAvatarCrop] = useState({ open: false, src: null, file: null, offset: { x: 0, y: 0 }, size: { w: 0, h: 0 }, dragStart: null });
+  const avatarCropImageRef = useRef(null);
+  const avatarCropContainerRef = useRef(null);
   const [calendarWeekStart, setCalendarWeekStart] = useState(() => {
     const monday = getMondayOfWeek(new Date());
     return getLocalDateStr(monday);
@@ -755,43 +758,124 @@ export default function Profil() {
     }
   }
 
-  async function handleAvatarUpload(e) {
+  function openAvatarCropModal(file) {
+    const src = URL.createObjectURL(file);
+    setAvatarError('');
+    setAvatarCrop({ open: true, src, file, offset: { x: 0, y: 0 }, size: { w: 0, h: 0 }, dragStart: null });
+  }
+
+  function closeAvatarCropModal() {
+    if (avatarCrop.src) URL.revokeObjectURL(avatarCrop.src);
+    setAvatarCrop({ open: false, src: null, file: null, offset: { x: 0, y: 0 }, size: { w: 0, h: 0 }, dragStart: null });
+  }
+
+  function onAvatarCropImageLoad() {
+    const img = avatarCropImageRef.current;
+    if (img && img.naturalWidth) {
+      setAvatarCrop((c) => ({ ...c, size: { w: img.naturalWidth, h: img.naturalHeight } }));
+    }
+  }
+
+  function avatarCropDragStart(e) {
+    if (e.button !== 0) return;
+    setAvatarCrop((c) => ({ ...c, dragStart: { x: e.clientX - c.offset.x, y: e.clientY - c.offset.y } }));
+  }
+  function avatarCropDragMove(e) {
+    if (avatarCrop.dragStart == null) return;
+    setAvatarCrop((c) => ({
+      ...c,
+      offset: { x: e.clientX - c.dragStart.x, y: e.clientY - c.dragStart.y },
+    }));
+  }
+  function avatarCropDragEnd() {
+    setAvatarCrop((c) => ({ ...c, dragStart: null }));
+  }
+
+  useEffect(() => {
+    if (!avatarCrop.open || !avatarCrop.dragStart) return;
+    const onMove = (e) => avatarCropDragMove(e);
+    const onUp = () => avatarCropDragEnd();
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [avatarCrop.open, avatarCrop.dragStart]);
+
+  function getAvatarCropBlob(callback) {
+    const img = avatarCropImageRef.current;
+    const { size, offset } = avatarCrop;
+    if (!img || !size.w || !size.h) return callback(null);
+    const box = 300;
+    const cropSize = Math.min(size.w, size.h);
+    const centerX = size.w * (0.5 + (offset.x / box) * 0.5);
+    const centerY = size.h * (0.5 + (offset.y / box) * 0.5);
+    let sx = centerX - cropSize / 2;
+    let sy = centerY - cropSize / 2;
+    sx = Math.max(0, Math.min(size.w - cropSize, sx));
+    sy = Math.max(0, Math.min(size.h - cropSize, sy));
+    const out = 400;
+    const canvas = document.createElement('canvas');
+    canvas.width = out;
+    canvas.height = out;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, sx, sy, cropSize, cropSize, 0, 0, out, out);
+    canvas.toBlob((blob) => callback(blob), 'image/jpeg', 0.88);
+  }
+
+  async function confirmAvatarCropAndUpload() {
+    getAvatarCropBlob(async (blob) => {
+      if (!blob || !session?.user?.id) {
+        closeAvatarCropModal();
+        return;
+      }
+      closeAvatarCropModal();
+      setAvatarError('');
+      setUploadingAvatar(true);
+      try {
+        const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+        const path = `${session.user.id}/${Date.now()}.jpg`;
+        const { error: uploadErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+        if (uploadErr) {
+          setAvatarError(uploadErr.message || 'Nahrání se nepodařilo.');
+          return;
+        }
+        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+        const avatarUrl = urlData?.publicUrl || null;
+        if (!avatarUrl) {
+          setAvatarError('Nepodařilo se získat odkaz na obrázek.');
+          return;
+        }
+        const res = await fetch('/api/profile-settings', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ avatar_url: avatarUrl }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          setAvatarError(json.error || 'Uložení se nepodařilo.');
+          return;
+        }
+        setProfile((p) => (p?.user ? { ...p, user: { ...p.user, avatar_url: avatarUrl }, _updated: Date.now() } : p));
+        setToast({ message: 'Profilový obrázek byl uložen.', type: 'success' });
+      } catch (err) {
+        setAvatarError(err.message || 'Chyba při nahrávání.');
+      } finally {
+        setUploadingAvatar(false);
+      }
+    });
+  }
+
+  function handleAvatarUpload(e) {
     const file = e.target?.files?.[0];
     if (!file || !session?.user?.id) return;
     e.target.value = '';
-    setAvatarError('');
-    setUploadingAvatar(true);
-    try {
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/, 'jpg');
-      const path = `${session.user.id}/${Date.now()}.${ext}`;
-      const { error: uploadErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
-      if (uploadErr) {
-        setAvatarError(uploadErr.message || 'Nahrání se nepodařilo.');
-        return;
-      }
-      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
-      const avatarUrl = urlData?.publicUrl || null;
-      if (!avatarUrl) {
-        setAvatarError('Nepodařilo se získat odkaz na obrázek.');
-        return;
-      }
-      const res = await fetch('/api/profile-settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ avatar_url: avatarUrl }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        setAvatarError(json.error || 'Uložení se nepodařilo.');
-        return;
-      }
-      setProfile((p) => (p?.user ? { ...p, user: { ...p.user, avatar_url: avatarUrl }, _updated: Date.now() } : p));
-      setToast({ message: 'Profilový obrázek byl uložen.', type: 'success' });
-    } catch (err) {
-      setAvatarError(err.message || 'Chyba při nahrávání.');
-    } finally {
-      setUploadingAvatar(false);
+    if (!file.type.startsWith('image/')) {
+      setAvatarError('Vyber obrázek (JPEG, PNG, GIF nebo WebP).');
+      return;
     }
+    openAvatarCropModal(file);
   }
 
   if (!session && !loading) return null;
@@ -1102,6 +1186,38 @@ export default function Profil() {
             </button>
             {avatarError && <p className="hero-avatar-error" role="alert">{avatarError}</p>}
           </div>
+
+          {avatarCrop.open && avatarCrop.src && (
+            <div className="avatar-crop-overlay" onClick={closeAvatarCropModal}>
+              <div className="avatar-crop-modal" onClick={(e) => e.stopPropagation()}>
+                <h3 className="avatar-crop-title">Uprav obrázek</h3>
+                <p className="avatar-crop-hint">Posuň obrázek pro výběr oblasti. Ořízne se na čtverec a zmenší pro nahrání.</p>
+                <div
+                  className="avatar-crop-box"
+                  ref={avatarCropContainerRef}
+                  onMouseDown={avatarCropDragStart}
+                  onMouseLeave={avatarCropDragEnd}
+                >
+                  <img
+                    ref={avatarCropImageRef}
+                    src={avatarCrop.src}
+                    alt=""
+                    className="avatar-crop-img"
+                    style={{
+                      objectPosition: `${50 + (avatarCrop.offset.x / 300) * 50}% ${50 + (avatarCrop.offset.y / 300) * 50}%`,
+                    }}
+                    onLoad={onAvatarCropImageLoad}
+                    draggable={false}
+                  />
+                </div>
+                <div className="avatar-crop-actions">
+                  <button type="button" className="avatar-crop-btn-cancel" onClick={closeAvatarCropModal}>Zrušit</button>
+                  <button type="button" className="avatar-crop-btn-confirm" onClick={confirmAvatarCropAndUpload} disabled={!avatarCrop.size.w}>Oříznout a nahrát</button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <p className="hero-intro">
             {profile?.can_create_calendar_events ? 'Trenér' : (PROGRAM_LABELS[program] || PROGRAM_LABELS.START).greeting}
             {!profile?.can_create_calendar_events && (program === 'ON_CLUB' || program === 'VIP') && (
@@ -2122,6 +2238,28 @@ export default function Profil() {
         .hero-avatar-change:hover:not(:disabled) { color: #e2e8f0; }
         .hero-avatar-change:disabled { opacity: 0.7; cursor: wait; }
         .hero-avatar-error { margin: 0; font-size: 13px; color: #fca5a5; }
+        .avatar-crop-overlay {
+          position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center;
+          z-index: 9999; padding: 20px; box-sizing: border-box;
+        }
+        .avatar-crop-modal {
+          background: #1e1e2e; border: 1px solid #334155; border-radius: 16px; padding: 24px; max-width: 360px; width: 100%;
+        }
+        .avatar-crop-title { margin: 0 0 8px; font-size: 1.25rem; font-weight: 600; color: #f1f5f9; }
+        .avatar-crop-hint { margin: 0 0 20px; font-size: 13px; color: #94a3b8; line-height: 1.5; }
+        .avatar-crop-box {
+          width: 300px; height: 300px; border-radius: 50%; overflow: hidden; margin: 0 auto 20px;
+          background: #0f0f0f; cursor: move; position: relative; flex-shrink: 0;
+        }
+        .avatar-crop-img {
+          width: 100%; height: 100%; object-fit: cover; display: block; user-select: none; pointer-events: none;
+        }
+        .avatar-crop-actions { display: flex; gap: 12px; justify-content: flex-end; }
+        .avatar-crop-btn-cancel { padding: 10px 20px; border-radius: 10px; border: 1px solid #475569; background: transparent; color: #94a3b8; font-size: 14px; cursor: pointer; }
+        .avatar-crop-btn-cancel:hover { background: #1e293b; color: #e2e8f0; }
+        .avatar-crop-btn-confirm { padding: 10px 20px; border-radius: 10px; border: none; background: #0ea5e9; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .avatar-crop-btn-confirm:hover:not(:disabled) { background: #0284c7; }
+        .avatar-crop-btn-confirm:disabled { opacity: 0.6; cursor: not-allowed; }
         .hero-intro {
           margin: 0 0 6px;
           font-size: 18px;

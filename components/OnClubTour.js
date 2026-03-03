@@ -12,7 +12,7 @@ export default function OnClubTour({ onClose }) {
     },
     {
       title: 'Pozitivní návyky',
-      content: 'Trénink, denní pohyb, mobilita, meditace, dechové cvičení, kvalitní spánek, digitální detox, zdravá strava, pitný režim, studená sprcha, čtení, vděčnost. Klikni na návyk pro označení „splněno“ ✓.',
+      content: 'Trénink, denní pohyb, mobilita, meditace, dechové cvičení, kvalitní spánek, digitální detox, zdravá strava, pitný režim, studená sprcha. Klikni na návyk pro označení „splněno“ ✓.',
       position: 'center',
     },
     {

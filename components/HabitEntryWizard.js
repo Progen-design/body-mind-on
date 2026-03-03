@@ -109,6 +109,7 @@ export default function HabitEntryWizard({ program, session, bodyMetrics, userHa
 
           {isSelectionStep && (
             <div className="habit-wizard-selection">
+              <p className="habit-wizard-recommendation">Doporučujeme vybrat 3–7 návyků – méně je často lépe udržitelné.</p>
               <div className="habit-wizard-group">
                 <h4 className="habit-wizard-group-title">Pozitivní návyky</h4>
                 <div className="habit-wizard-checkboxes">
@@ -297,6 +298,13 @@ export default function HabitEntryWizard({ program, session, bodyMetrics, userHa
           margin: 12px 0 0;
           font-size: 13px;
           color: #f87171;
+        }
+
+        .habit-wizard-recommendation {
+          margin: 0 0 16px;
+          font-size: 13px;
+          color: #94a3b8;
+          font-style: italic;
         }
 
         .habit-wizard-progress {

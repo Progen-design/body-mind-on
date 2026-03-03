@@ -52,9 +52,9 @@ Návrh řešení (jako odborník na fitness a analýzu dat), aby **všechna zobr
    - doplnit v `getExerciseIconType()` rozpoznání názvu (regex),
    - doplnit v `EXERCISE_EQUIPMENT` nový klíč s přesným textem pro fitko i doma.
 
-2. **Kontrolní seznam před vydáním**  
-   - Projít všechny klíče v `EXERCISE_EQUIPMENT`: u každého ověřit, že text odpovídá cviku a že tam není „personál / poradí / požádej“.
-   - Ověřit, že v `getExerciseIconType` jsou pokryté všechny cviky, které se v plánech reálně vyskytují (např. z ukázkových plánů nebo z AI výstupů).
+2. **Automatická kontrola v kódu (bez ručního ověřování)**  
+   - Aplikace **vždy ověřuje** shodu textu s cvikem: v `getSafeEquipment()` se pro každý typ cviku kontroluje, že text obsahuje příslušná klíčová slova (`EQUIPMENT_MUST_MATCH_KEYWORDS`). Pokud ne, zobrazí se bezpečný výchozí text. Žádné ruční ověřování u každého cviku není potřeba – systém to zajišťuje sám.  
+   - Při úpravě nebo přidávání záznamů do `EXERCISE_EQUIPMENT` je potřeba doplnit odpovídající klíčová slova do `EQUIPMENT_MUST_MATCH_KEYWORDS`, aby kontrola dál fungovala.
 
 3. **Jediný zdroj pravdy**  
    Texty k cvikům pouze v `EXERCISE_EQUIPMENT`. Nekopírovat návody do AI promptů; AI generuje jen **názvy cviků a parametry** (série×opakování, minuty, krátký popis provedení). Konkrétní „jak na to ve fitku / doma“ vždy z této tabulky.

@@ -149,17 +149,44 @@ const FORBIDDEN_EQUIPMENT_PHRASES = [
 ];
 
 /**
+ * Pro každý typ cviku: slova, která musí být v textu, aby byl považován za odpovídající.
+ * Systém tím automaticky ověřuje, že zobrazený návod odpovídá cviku – žádné ruční kontroly.
+ */
+const EQUIPMENT_MUST_MATCH_KEYWORDS = {
+  warmup:   ['kardio', 'strečink', 'rozcvič', 'kroužení', 'dynamický'],
+  cooldown: ['strečink', 'hamstringy', 'záda', 'ramena', 'protažení'],
+  rest:     ['procházka', 'odpočinek', 'protažení', 'dýchat'],
+  squat:    ['dřep', 'plošin', 'nohy', 'sed', 'opor'],
+  push_up:  ['kliky', 'tlaky', 'hrudník', 'lavice', 'tlačíš'],
+  pull_up:  ['přítahy', 'shyby', 'hrazda', 'přitáhnout', 'táhneš'],
+  lunge:    ['výpad', 'koleno', 'krok', 'činkami'],
+  plank:    ['prkno', 'předloktí', 'dlaních', 'tělo v rovině'],
+  superman: ['superman', 'břicho', 'lehni', 'zvedni', 'natažené'],
+  press:    ['tlaky', 'lavice', 'hrudník', 'činky', 'tlačíš'],
+  deadlift: ['mrtvý tah', 'osa', 'zvedni', 'záda rovná', 'trap bar'],
+  rdl:      ['rumunský', 'hamstringy', 'kyčlích', 'hinge', 'předklon'],
+};
+
+/**
  * Vrátí bezpečné texty pro zobrazení (pro všechny klienty stejně).
- * Pokud machine nebo home obsahují zakázanou frázi, nahradí se výchozím obecným textem.
+ * 1) Zakázané fráze → vždy fallback.
+ * 2) Ověření shody: text musí obsahovat alespoň jedno klíčové slovo daného cviku, jinak fallback.
+ * Tím je vždy ověřeno, že návod odpovídá cviku – bez ruční kontroly.
  */
 function getSafeEquipment(iconType) {
   const raw = EXERCISE_EQUIPMENT[iconType] || EXERCISE_EQUIPMENT.default;
   const def = EXERCISE_EQUIPMENT.default;
   const hasForbidden = (s) => typeof s === 'string' && FORBIDDEN_EQUIPMENT_PHRASES.some((phrase) => s.toLowerCase().includes(phrase));
-  return {
-    machine: hasForbidden(raw.machine) ? def.machine : (raw.machine ?? def.machine),
-    home: hasForbidden(raw.home) ? def.home : (raw.home ?? def.home),
+  const keywords = EQUIPMENT_MUST_MATCH_KEYWORDS[iconType];
+  const textMatchesExercise = (s) => {
+    if (!keywords || keywords.length === 0) return true;
+    if (typeof s !== 'string' || !s.trim()) return false;
+    const lower = s.toLowerCase();
+    return keywords.some((kw) => lower.includes(kw.toLowerCase()));
   };
+  const safeMachine = (hasForbidden(raw.machine) || !textMatchesExercise(raw.machine)) ? def.machine : (raw.machine ?? def.machine);
+  const safeHome = (hasForbidden(raw.home) || !textMatchesExercise(raw.home)) ? def.home : (raw.home ?? def.home);
+  return { machine: safeMachine, home: safeHome };
 }
 
 /** Stroj / vybavení ve fitku a domácí alternativa – vždy obě varianty, srozumitelné bez trenéra. Nikdy neuvádět poradit se s někým. */

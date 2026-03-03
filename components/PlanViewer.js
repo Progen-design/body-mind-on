@@ -746,6 +746,7 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                       return (
                         <div className="plan-day-training">
                           <p className="plan-day-training-heading"><strong>Tréninkový plán</strong></p>
+                          <p className="plan-day-training-intro">Po rozkliknutí cviku se zobrazí, jak cvik provést a obě varianty – <strong>ve fitku</strong> (jaký stroj) i <strong>doma</strong> (alternativa).</p>
                           {trainingItems ? (
                             <ul className="plan-day-training-list">
                               {trainingItems.map((item, idx) => {
@@ -781,21 +782,11 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                                         >
                                           <span className="plan-day-training-text" dangerouslySetInnerHTML={{ __html: item.innerHTML }} />
                                           <span className="plan-day-training-toggle-hint">
-                                            {isExpanded ? ' ▼ Skrýt detail' : ' ▶ Jak na to, stroje ve fitku a varianta doma'}
+                                            {isExpanded ? ' ▼ Skrýt detail' : 'Jak na to – stroje ve fitku a varianta doma'}
                                           </span>
                                         </button>
                                       ) : (
                                         <span className="plan-day-training-text" dangerouslySetInnerHTML={{ __html: item.innerHTML }} />
-                                      )}
-                                      {!isExpanded && (equipment.machine || equipment.home) && (
-                                        <div className="plan-day-training-equipment">
-                                          {equipment.machine && (
-                                            <p className="plan-day-equip-line"><strong>Ve fitku:</strong> {equipment.machine}</p>
-                                          )}
-                                          {equipment.home && (
-                                            <p className="plan-day-equip-line"><strong>Doma:</strong> {equipment.home}</p>
-                                          )}
-                                        </div>
                                       )}
                                       {isExpanded && hasDetail && (
                                         <div className="plan-day-training-detail">
@@ -1437,10 +1428,17 @@ const planSectionStyles = `
     color: #cbd5e1;
   }
   .plan-day-training-heading {
-    margin: 0 0 10px;
+    margin: 0 0 6px;
     font-size: 15px;
     color: #e2e8f0;
   }
+  .plan-day-training-intro {
+    margin: 0 0 14px;
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.5;
+  }
+  .plan-day-training-intro strong { color: #c4b5fd; }
   .plan-day-training-list {
     margin: 0;
     padding-left: 0;
@@ -1483,13 +1481,23 @@ const planSectionStyles = `
     text-align: left;
     cursor: pointer;
   }
-  .plan-day-training-header-btn:hover .plan-day-training-toggle-hint { color: #c4b5fd; }
+  .plan-day-training-header-btn:hover .plan-day-training-toggle-hint {
+    background: rgba(124, 58, 237, 0.35);
+    border-color: rgba(167, 139, 253, 0.6);
+    color: #e9d5ff;
+  }
   .plan-day-training-text { display: block; }
   .plan-day-training-toggle-hint {
-    display: block;
-    margin-top: 4px;
-    font-size: 11px;
-    color: #64748b;
+    display: inline-block;
+    margin-top: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #c4b5fd;
+    background: rgba(124, 58, 237, 0.25);
+    border: 1px solid rgba(139, 92, 255, 0.45);
+    border-radius: 10px;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
   }
   .plan-day-training-detail {
     margin-top: 12px;

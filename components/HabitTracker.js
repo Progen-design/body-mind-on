@@ -212,6 +212,9 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     });
   }, [days, todayStr, positiveHabits, allLogs]);
 
+  const chartMaxY = Math.max(1, positiveHabits.length);
+  const CHART_BAR_HEIGHT_PX = 140;
+
   if (positiveHabits.length === 0 && negativeHabits.length === 0) {
     return (
       <section className="habit-tracker">
@@ -375,13 +378,27 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
 
             <div className="ht-chart-wrap">
               <p className="ht-chart-title">Splněné návyky po dnech</p>
-              <div className="ht-chart-bars">
-                {chartData.map(({ dateStr, count, isToday, pct }) => (
-                  <div key={dateStr} className={`ht-chart-bar ${isToday ? 'today' : ''}`}>
-                    <div className="ht-chart-bar-fill" style={{ height: `${pct}%` }} title={`${count} splněno`} />
-                    <span className="ht-chart-bar-value">{count}</span>
-                  </div>
-                ))}
+              <div className="ht-chart-inner">
+                <div className="ht-chart-y-axis">
+                  {Array.from({ length: chartMaxY + 1 }, (_, i) => chartMaxY - i).map((n) => (
+                    <span key={n} className="ht-chart-y-tick">{n}</span>
+                  ))}
+                </div>
+                <div className="ht-chart-bars" style={{ height: `${CHART_BAR_HEIGHT_PX}px` }}>
+                  {chartData.map(({ dateStr, count, isToday }) => {
+                    const barHeightPx = count > 0 ? Math.max(8, (count / chartMaxY) * CHART_BAR_HEIGHT_PX) : 0;
+                    return (
+                      <div key={dateStr} className={`ht-chart-bar ${isToday ? 'today' : ''}`}>
+                        <div
+                          className="ht-chart-bar-fill"
+                          style={{ height: `${barHeightPx}px` }}
+                          title={`${count} splněno`}
+                        />
+                        <span className="ht-chart-bar-value">{count}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
               <div className="ht-chart-labels">
                 {chartData.map(({ dateStr, isToday }) => (
@@ -420,22 +437,33 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           box-shadow: 0 20px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.02) inset;
         }
         .ht-chart-title {
-          margin: 0 0 16px; font-size: 0.8125rem; font-weight: 700; color: #94a3b8;
+          margin: 0 0 12px; font-size: 0.8125rem; font-weight: 700; color: #94a3b8;
           letter-spacing: 0.02em; text-transform: uppercase;
         }
+        .ht-chart-inner {
+          display: flex; align-items: stretch; gap: 8px; margin-bottom: 10px;
+        }
+        .ht-chart-y-axis {
+          display: flex; flex-direction: column; justify-content: space-between;
+          height: 140px; padding: 0 4px 0 0;
+          font-size: 0.6875rem; font-weight: 700; color: #64748b;
+          text-align: right; line-height: 1;
+        }
+        .ht-chart-y-tick { flex-shrink: 0; }
         .ht-chart-bars {
           display: flex; align-items: flex-end; justify-content: space-between; gap: 6px;
-          height: 120px; margin-bottom: 10px;
+          flex: 1; min-height: 140px;
         }
         .ht-chart-bar {
-          flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px;
+          flex: 1; min-width: 0; height: 100%;
+          display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px;
         }
         .ht-chart-bar-fill {
-          width: 100%; max-width: 28px; min-height: 4px;
+          width: 100%; max-width: 32px; min-width: 6px;
           border-radius: 8px 8px 0 0;
           background: linear-gradient(180deg, #34d399, #10b981);
           box-shadow: 0 0 12px rgba(52,211,153,0.4);
-          transition: height 0.35s ease-out;
+          transition: height 0.4s ease-out;
         }
         .ht-chart-bar.today .ht-chart-bar-fill {
           background: linear-gradient(180deg, #a78bfa, #7c3aed);

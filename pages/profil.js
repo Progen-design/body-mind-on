@@ -17,9 +17,9 @@ import { getHabitById } from '../lib/habits';
 import { normalizeOccupationForForm } from '../lib/preferenceConstants';
 
 const PROGRAM_LABELS = {
-  START: { greeting: 'Ahoj', subtitle: 'Každý trénink, každé měření.' },
-  ON_CLUB: { greeting: 'Vítej v ON Clubu', subtitle: 'Jsi členem ON Clubu – sleduj návyky, tréninky a svůj progres.' },
-  VIP: { greeting: 'Vítej v VIP', subtitle: 'Jsi VIP člen – máš přístup ke všem funkcím včetně habit trackeru.' },
+  START: { subtitle: 'Každý trénink, každé měření.' },
+  ON_CLUB: { subtitle: 'Sleduj návyky, tréninky a svůj progres.' },
+  VIP: { subtitle: 'Máš přístup ke všem funkcím včetně habit trackeru.' },
 };
 
 const WORKOUT_TYPES = [
@@ -1342,18 +1342,13 @@ export default function Profil() {
             </div>
           )}
 
-          {(profile?.can_create_calendar_events || (program === 'ON_CLUB' || program === 'VIP')) && (
-            <p className="hero-intro">
-              {profile?.can_create_calendar_events ? 'Trenér' : (PROGRAM_LABELS[program] || PROGRAM_LABELS.START).greeting}
-              {!profile?.can_create_calendar_events && (program === 'ON_CLUB' || program === 'VIP') && (
-                <span className="hero-program-badge">{program === 'ON_CLUB' ? 'ON Club' : 'VIP'}</span>
-              )}
-            </p>
+          {profile?.can_create_calendar_events && (
+            <p className="hero-intro">Trenér</p>
           )}
           <h1 className="hero-name">
             Ahoj, <span>{firstName}</span>
           </h1>
-          <p className="hero-sub">{profile?.can_create_calendar_events ? 'Přehled klientů a kalendář tréninků.' : (PROGRAM_LABELS[program] || PROGRAM_LABELS.START).subtitle}</p>
+          <p className="hero-sub">{profile?.can_create_calendar_events ? 'Přehled klientů a kalendář tréninků.' : (PROGRAM_LABELS[program] || { subtitle: 'Každý trénink, každé měření.' }).subtitle}</p>
           {!loading && !error && !profile?.can_create_calendar_events && (
             <div className="hero-strip">
               <div className="hero-stat">
@@ -1410,9 +1405,7 @@ export default function Profil() {
                   {program === 'VIP' ? '👑' : program === 'ON_CLUB' ? '⚡' : '🚀'}
                 </span>
                 <div>
-                  <div className="membership-tier-label">
-                    {program === 'ON_CLUB' ? 'Program ON Club' : program === 'VIP' ? 'Program VIP Coaching' : 'Program Start'}
-                  </div>
+                  <div className="membership-tier-label">Tvé členství</div>
                   <div className="membership-tier-sub">
                     {program === 'VIP' && 'Plný přístup · Osobní coaching · Prémiová podpora'}
                     {program === 'ON_CLUB' && 'Habit tracker · AI plán · Tréninky · Statistiky'}
@@ -1615,9 +1608,7 @@ export default function Profil() {
                 <p>
                   <strong>Tvůj plán je připraven.</strong>{' '}
                   V plánu níže máš jídelníček a detailní tréninkový návod (rozcvička, cviky, progrese).{' '}
-                  {program === 'ON_CLUB' && 'Jsi v programu ON Club – zapiš první trénink, sleduj denní návyky nebo se podívej na dnešní jídlo.'}
-                  {program === 'VIP' && 'Jsi v programu VIP – zapiš první trénink, sleduj denní návyky nebo se podívej na dnešní jídlo.'}
-                  {program !== 'ON_CLUB' && program !== 'VIP' && 'První krok: zapiš svůj první trénink nebo se podívej na dnešní jídlo v plánu níže.'}
+                  Zapiš první trénink, sleduj denní návyky nebo se podívej na dnešní jídlo v plánu níže.
                 </p>
               </div>
             )}

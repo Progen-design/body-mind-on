@@ -105,14 +105,32 @@ export default async function handler(req, res) {
     if (b.foods_to_avoid !== undefined) updates.foods_to_avoid = (b.foods_to_avoid || '').trim() || null;
 
     if (Object.keys(updates).length > 0) {
-      const { error: updateErr } = await supabaseServer
-        .from('body_metrics')
-        .update(updates)
-        .eq('id', latest.id);
+      let toUpdate = { ...updates };
+      let updateErr = null;
+      let result = await supabaseServer.from('body_metrics').update(toUpdate).eq('id', latest.id);
+      updateErr = result.error;
+
+      if (updateErr && updateErr.message && (updateErr.message.includes('foods_to_avoid') && (updateErr.message.includes('does not exist') || updateErr.message.includes('neexistuje')))) {
+        delete toUpdate.foods_to_avoid;
+        if (Object.keys(toUpdate).length > 0) {
+          result = await supabaseServer.from('body_metrics').update(toUpdate).eq('id', latest.id);
+          updateErr = result.error;
+        }
+      }
 
       if (updateErr) {
         console.error('[profile-preferences] body_metrics update:', updateErr);
-        return res.status(500).json({ error: 'Nepodařilo se uložit preference.' });
+        const msg = updateErr.message || '';
+        const friendly =
+          msg.includes('foods_to_avoid') && (msg.includes('does not exist') || msg.includes('neexistuje'))
+            ? 'Databáze ještě nemá sloupec pro potraviny k vynechání – spusť migraci 20260320_body_metrics_foods_to_avoid.sql v Supabase.'
+            : msg.includes('violates check constraint') || msg.includes('check constraint')
+            ? 'Neplatná hodnota v jednom z polí (aktivita, typ práce, cíl). Zkus znovu vybrat z nabídky.'
+            : null;
+        return res.status(500).json({
+          error: friendly || 'Nepodařilo se uložit preference.',
+          detail: process.env.NODE_ENV === 'development' ? msg : undefined,
+        });
       }
     }
 

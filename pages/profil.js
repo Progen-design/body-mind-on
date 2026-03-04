@@ -1234,12 +1234,14 @@ export default function Profil() {
             </div>
           )}
 
-          <p className="hero-intro">
-            {profile?.can_create_calendar_events ? 'Trenér' : (PROGRAM_LABELS[program] || PROGRAM_LABELS.START).greeting}
-            {!profile?.can_create_calendar_events && (program === 'ON_CLUB' || program === 'VIP') && (
-              <span className="hero-program-badge">{program === 'ON_CLUB' ? 'ON Club' : 'VIP'}</span>
-            )}
-          </p>
+          {(profile?.can_create_calendar_events || (program === 'ON_CLUB' || program === 'VIP')) && (
+            <p className="hero-intro">
+              {profile?.can_create_calendar_events ? 'Trenér' : (PROGRAM_LABELS[program] || PROGRAM_LABELS.START).greeting}
+              {!profile?.can_create_calendar_events && (program === 'ON_CLUB' || program === 'VIP') && (
+                <span className="hero-program-badge">{program === 'ON_CLUB' ? 'ON Club' : 'VIP'}</span>
+              )}
+            </p>
+          )}
           <h1 className="hero-name">
             Ahoj, <span>{firstName}</span>
           </h1>

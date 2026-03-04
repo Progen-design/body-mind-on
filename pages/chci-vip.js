@@ -137,28 +137,28 @@ export default function ChciVipPage() {
 
         <form
           onSubmit={step < MAX_STEP ? (e) => { e.preventDefault(); handleNext(); } : handleSubmit}
-          className="max-w-3xl mx-auto bg-[#121212] p-8 rounded-2xl shadow-lg border border-[#222] space-y-6"
+          className="reg-form reg-form-card max-w-3xl mx-auto space-y-6"
         >
           {step === 1 && (
             <>
               <div className="row grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="label block mb-2 text-gray-400">Jméno a příjmení</label>
-                  <input name="name" className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" value={formData.name} onChange={handleChange} placeholder="Jan Novák" required />
+                  <label className="reg-label">Jméno a příjmení</label>
+                  <input name="name" className="reg-input" value={formData.name} onChange={handleChange} placeholder="Jan Novák" required />
                 </div>
                 <div>
-                  <label className="label block mb-2 text-gray-400">E-mail</label>
-                  <input name="email" type="email" className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" value={formData.email} onChange={handleChange} placeholder="jan@example.com" required />
+                  <label className="reg-label">E-mail</label>
+                  <input name="email" type="email" className="reg-input" value={formData.email} onChange={handleChange} placeholder="jan@example.com" required />
                 </div>
               </div>
               <div className="row grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="label block mb-2 text-gray-400">Heslo (min. 6 znaků)</label>
-                  <input name="password" type="password" className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" value={formData.password} onChange={handleChange} placeholder="Zvol si heslo pro přístup do profilu" minLength={6} required />
+                  <label className="reg-label">Heslo (min. 6 znaků)</label>
+                  <input name="password" type="password" className="reg-input" value={formData.password} onChange={handleChange} placeholder="Zvol si heslo pro přístup do profilu" minLength={6} required />
                 </div>
                 <div>
-                  <label className="label block mb-2 text-gray-400">Heslo znovu</label>
-                  <input name="passwordConfirm" type="password" className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" value={formData.passwordConfirm} onChange={handleChange} placeholder="Zadej heslo znovu" minLength={6} required />
+                  <label className="reg-label">Heslo znovu</label>
+                  <input name="passwordConfirm" type="password" className="reg-input" value={formData.passwordConfirm} onChange={handleChange} placeholder="Zadej heslo znovu" minLength={6} required />
                 </div>
               </div>
             </>
@@ -167,24 +167,24 @@ export default function ChciVipPage() {
           {step === 2 && (
             <div className="row grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="label block mb-2 text-gray-400">Pohlaví</label>
-                <select name="gender" className="select w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" value={formData.gender} onChange={handleChange} required>
+                <label className="reg-label">Pohlaví</label>
+                <select name="gender" className="reg-input" value={formData.gender} onChange={handleChange} required>
                   <option value="">Vyber</option>
                   <option value="male">Muž</option>
                   <option value="female">Žena</option>
                 </select>
               </div>
               <div>
-                <label className="label block mb-2 text-gray-400">Věk</label>
-                <input name="age" type="number" className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" value={formData.age} onChange={handleChange} placeholder="30" required />
+                <label className="reg-label">Věk</label>
+                <input name="age" type="number" className="reg-input" value={formData.age} onChange={handleChange} placeholder="30" required />
               </div>
               <div>
-                <label className="label block mb-2 text-gray-400">Výška (cm)</label>
-                <input name="height" type="number" className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" value={formData.height} onChange={handleChange} placeholder="180" required />
+                <label className="reg-label">Výška (cm)</label>
+                <input name="height" type="number" className="reg-input" value={formData.height} onChange={handleChange} placeholder="180" required />
               </div>
               <div>
-                <label className="label block mb-2 text-gray-400">Váha (kg)</label>
-                <input name="weight" type="number" className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" value={formData.weight} onChange={handleChange} placeholder="80" required />
+                <label className="reg-label">Váha (kg)</label>
+                <input name="weight" type="number" className="reg-input" value={formData.weight} onChange={handleChange} placeholder="80" required />
               </div>
             </div>
           )}
@@ -194,7 +194,7 @@ export default function ChciVipPage() {
               <div className="step3-field">
                 <label className="step3-label">Úroveň aktivity</label>
                 <p className="step3-hint">Pomůže nám nastavit denní kalorie a intenzitu tréninku.</p>
-                <select name="activity" className="step3-select" value={formData.activity} onChange={handleChange} required>
+                <select name="activity" className="step3-select reg-input" value={formData.activity} onChange={handleChange} required>
                   <option value="">Vyber</option>
                   <option value="sedavy">Nízká</option>
                   <option value="stredne">Střední</option>
@@ -204,7 +204,7 @@ export default function ChciVipPage() {
               <div className="step3-field">
                 <label className="step3-label">Míra stresu</label>
                 <p className="step3-hint step3-hint-empty" aria-hidden> </p>
-                <select name="stress" className="step3-select" value={formData.stress} onChange={handleChange} required>
+                <select name="stress" className="step3-select reg-input" value={formData.stress} onChange={handleChange} required>
                   <option value="">Vyber</option>
                   <option value="low">Nízká</option>
                   <option value="medium">Střední</option>
@@ -214,7 +214,7 @@ export default function ChciVipPage() {
               <div className="step3-field">
                 <label className="step3-label">Typ práce</label>
                 <p className="step3-hint step3-hint-empty" aria-hidden> </p>
-                <select name="worktype" className="step3-select" value={formData.worktype} onChange={handleChange} required>
+                <select name="worktype" className="step3-select reg-input" value={formData.worktype} onChange={handleChange} required>
                   <option value="">Vyber</option>
                   <option value="office_it">Sedavé zaměstnání</option>
                   <option value="manual">Aktivní zaměstnání</option>
@@ -224,7 +224,7 @@ export default function ChciVipPage() {
               <div className="step3-field">
                 <label className="step3-label">Cíl</label>
                 <p className="step3-hint">Podle cíle upravíme kalorie a makra (redukce / udržení / nárůst).</p>
-                <select name="goal" className="step3-select" value={formData.goal} onChange={handleChange} required>
+                <select name="goal" className="step3-select reg-input" value={formData.goal} onChange={handleChange} required>
                   <option value="">Vyber</option>
                   <option value="redukce">Redukce hmotnosti</option>
                   <option value="nabirani_svaly">Nárůst svalů</option>
@@ -234,7 +234,7 @@ export default function ChciVipPage() {
               <div className="step3-field step3-field-full">
                 <label className="step3-label">Frekvence cvičení</label>
                 <p className="step3-hint step3-hint-empty" aria-hidden> </p>
-                <select name="frequency" className="step3-select" value={formData.frequency} onChange={(e) => setFormData({ ...formData, frequency: e.target.value.replace("–", "-") })} required>
+                <select name="frequency" className="step3-select reg-input" value={formData.frequency} onChange={(e) => setFormData({ ...formData, frequency: e.target.value.replace("–", "-") })} required>
                   <option value="">Vyber</option>
                   <option value="1-2x týdně">1–2x týdně</option>
                   <option value="2-3x týdně">2–3x týdně</option>
@@ -255,8 +255,8 @@ export default function ChciVipPage() {
               </div>
               <div className="diet-section-body">
                 <div>
-                  <label className="label block mb-2 text-gray-500 text-sm">Typ stravy (volitelné)</label>
-                  <select name="diet_type" className="select w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" value={formData.diet_type} onChange={handleChange}>
+                  <label className="reg-label">Typ stravy (volitelné)</label>
+                  <select name="diet_type" className="reg-input" value={formData.diet_type} onChange={handleChange}>
                     <option value="">Žádná preference</option>
                     <option value="vegetarian">Vegetarián</option>
                     <option value="vegan">Vegan</option>
@@ -268,12 +268,12 @@ export default function ChciVipPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="label block mb-2 text-gray-500 text-sm">Co nejí – alergie, intolerance (volitelné)</label>
-                  <textarea name="dietary_restrictions" className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" rows="2" value={formData.dietary_restrictions} onChange={handleChange} placeholder="např. ořechy, mléko, lepek…" />
+                  <label className="reg-label">Co nejí – alergie, intolerance (volitelné)</label>
+                  <textarea name="dietary_restrictions" className="reg-input" rows="2" value={formData.dietary_restrictions} onChange={handleChange} placeholder="např. ořechy, mléko, lepek…" />
                 </div>
                 <div>
-                  <label className="label block mb-2 text-gray-500 text-sm">Potraviny k vynechání z jídelníčku (volitelné)</label>
-                  <textarea name="foods_to_avoid" className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" rows="2" value={formData.foods_to_avoid} onChange={handleChange} placeholder="např. avokádo, brokolice, banány – konkrétní potraviny, které nemají být v plánu" />
+                  <label className="reg-label">Potraviny k vynechání z jídelníčku (volitelné)</label>
+                  <textarea name="foods_to_avoid" className="reg-input" rows="2" value={formData.foods_to_avoid} onChange={handleChange} placeholder="např. avokádo, brokolice, banány – konkrétní potraviny, které nemají být v plánu" />
                 </div>
               </div>
             </div>
@@ -326,11 +326,7 @@ export default function ChciVipPage() {
         .step3-label { display: block; font-size: 14px; font-weight: 500; color: #94a3b8; margin-bottom: 4px; }
         .step3-hint { font-size: 12px; color: #64748b; margin: 0 0 8px; line-height: 1.4; min-height: 16px; }
         .step3-hint-empty { visibility: hidden; margin-bottom: 8px; }
-        .step3-select {
-          width: 100%; padding: 12px 14px; border-radius: 10px; background: #0f0f0f;
-          border: 1px solid #374151; color: #fff; font-size: 15px; margin-top: auto;
-        }
-        .step3-select:focus { outline: none; border-color: #0ea5e9; box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2); }
+        .step3-select { width: 100%; margin-top: auto; }
         .form-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 28px; margin-top: 8px; border-top: 1px solid #222; }
         .btn-back { padding: 12px 24px; border-radius: 10px; border: 1px solid #4b5563; background: transparent; color: #d1d5db; font-size: 15px; font-weight: 500; cursor: pointer; transition: background 0.2s, border-color 0.2s; }
         .btn-back:hover { background: #1a1a1a; border-color: #6b7280; }
@@ -363,6 +359,7 @@ export default function ChciVipPage() {
         .diet-section-body { padding: 20px; }
         .diet-section-body > div { margin-bottom: 16px; }
         .diet-section-body > div:last-child { margin-bottom: 0; }
+        .diet-section-body .reg-label { color: #94a3b8; }
       `}</style>
     </>
   );

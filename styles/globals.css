@@ -145,6 +145,87 @@ main { padding: 40px 0; }
 }
 .input::placeholder { color: #8a8a91; }
 
+/* ---- Registrační formuláře (START, ON Club, VIP) – jednotný wow efekt ---- */
+.reg-form {
+  --reg-input-bg: rgba(15, 23, 42, 0.85);
+  --reg-input-border: rgba(71, 85, 105, 0.5);
+  --reg-input-focus-border: rgba(14, 165, 233, 0.8);
+  --reg-input-focus-glow: rgba(14, 165, 233, 0.25);
+  --reg-input-text: #f1f5f9;
+  --reg-input-placeholder: #64748b;
+}
+
+.reg-form .reg-input,
+.reg-form input.reg-input,
+.reg-form select.reg-input,
+.reg-form textarea.reg-input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--reg-input-border);
+  background: var(--reg-input-bg);
+  color: var(--reg-input-text);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.reg-form .reg-input::placeholder,
+.reg-form input.reg-input::placeholder,
+.reg-form textarea.reg-input::placeholder {
+  color: var(--reg-input-placeholder);
+}
+
+.reg-form .reg-input:focus,
+.reg-form input.reg-input:focus,
+.reg-form select.reg-input:focus,
+.reg-form textarea.reg-input:focus {
+  border-color: var(--reg-input-focus-border);
+  box-shadow: 0 0 0 3px var(--reg-input-focus-glow), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+/* Přepis autofill – aby pole zůstala tmavá a jednotná */
+.reg-form .reg-input:-webkit-autofill,
+.reg-form .reg-input:-webkit-autofill:hover,
+.reg-form .reg-input:-webkit-autofill:focus,
+.reg-form .reg-input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--reg-input-text) !important;
+  -webkit-box-shadow: 0 0 0 30px rgba(15, 23, 42, 0.95) inset !important;
+  box-shadow: 0 0 0 30px rgba(15, 23, 42, 0.95) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.reg-form .reg-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #94a3b8;
+  margin-bottom: 8px;
+  letter-spacing: 0.01em;
+}
+
+/* Formulářová karta – glassmorphism */
+.reg-form-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(30, 41, 59, 0.4) 100%);
+  border: 1px solid rgba(71, 85, 105, 0.4);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+@media (max-width: 640px) {
+  .reg-form-card { padding: 24px; border-radius: 16px; }
+}
+
+/* Tlačítko Pokračovat – jemný glow při hover */
+.reg-form .btn-submit:not(:disabled):hover {
+  box-shadow: 0 0 24px rgba(14, 165, 233, 0.35);
+}
+
 .row { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 768px){ .row { grid-template-columns: 1fr; } }
 

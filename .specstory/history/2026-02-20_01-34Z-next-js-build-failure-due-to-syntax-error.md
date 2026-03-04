@@ -36461,33 +36461,812 @@ dej to do produkce
 
 _**Agent (model default, mode Agent)**_
 
+<think><details><summary>Thought Process</summary>
 
+The user wants to deploy to production.
+</details></think>
 
 ---
+
+
 
 
 
 ---
 
 <tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
-<details><summary>Tool use: **run_terminal_command_v2**</summary>
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd "C:\Users\prikopa\Documents\GitHub\body-mind-on"; npm run deploy 2>&1</summary>
 
+```bash
+cd "C:\Users\prikopa\Documents\GitHub\body-mind-on"; npm run deploy 2>&1
+```
+
+```
+
+&gt; body-mind-on@1.0.0 deploy
+&gt; git add -A &amp;&amp; git commit -m "Deploy: automatické úpravy" &amp;&amp; git push origin main
+
+[main 5c6399e] Deploy: automatické úpravy
+ 2 files changed, 732 insertions(+), 12 deletions(-)
+warning: in the working copy of 'components/Header.js', LF will be replaced by CRLF the next time Git touches it
+To https://github.com/Progen-design/body-mind-on.git
+   417bcb0..5c6399e  main -&gt; main
+
+```
 </details>
 </tool-use>
 
 ---
 
+<think><details><summary>Thought Process</summary>
 
+Deploy completed successfully.
+</details></think>
 
 ---
 
 
+Hotovo. Změny jsou na `main`, Vercel nasadí novou verzi sám.
 
 ---
 
 _**User**_
 
 po ulozeni udaji mi to pise chybu :  zjisti proc 
+
+---
+
+_**Agent (model default, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+
+The user is getting "Nepodařilo se uložit preference." (Failed to save preferences) when trying to save the preferences modal. I need to find where this error is shown and trace back to the API and any validation that could cause the save to fail.
+
+Let me search for this error message and the profile-preferences flow.
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "Nepodařilo se uložit preference|preferencesError|handleSavePreferences",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on",
+  "caseInsensitive": false
+}
+```
+Additional data:
+
+```json
+{
+  "isPruned": true,
+  "pattern": "Nepodařilo se uložit preference|preferencesError|handleSavePreferences",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on",
+  "outputMode": "content",
+  "totalFiles": 2,
+  "totalMatches": 5,
+  "topFiles": [
+    {
+      "uri": "pages\\api\\profile-preferences.js",
+      "matchCount": 1
+    },
+    {
+      "uri": "pages\\profil.js",
+      "matchCount": 4
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\api\profile-preferences.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+The "Nepodařilo se uložit preference." is returned only when `updateErr` is set - i.e. when the body_metrics UPDATE fails. So the Supabase update is failing. Possible causes:
+
+1. **RLS (Row Level Security)** - the user might not have UPDATE permission on body_metrics for their row
+2. **Column constraint** - e.g. body_metrics might have a check constraint that rejects some of our normalized values
+3. **Missing column** - we might be updating a column that doesn't exist (e.g. foods_to_avoid was added in a migration - if the migration wasn't run, the column might not exist)
+4. **user_id** - the row might be identified by id but the row might have been created without user_id (old START flow) - so the row exists but maybe RLS checks user_id and the row has user_id = null?
+
+Let me check: the API loads body_metrics with .eq('user_id', userId), so we only get rows where user_id matches. Then we update by latest.id. So the row does have user_id set (otherwise it wouldn't be returned by the query... unless the select is done with a service role that bypasses RLS and returns all rows? No, we're filtering by user_id in the query.
+
+Actually wait - in body_metrics, when do we set user_id? On registration via POST /api/body-metrics, we set payload.user_id = authResult.userId. So for logged-in users the row has user_id. But what if the user registered via START and the account was created but the body_metrics row was inserted with user_id from createAuthUserIfNew - so it should have user_id.
+
+One more possibility: **body_metrics** table might have a constraint on occupation (body_metrics_occupation_check) or other columns. Let me check the body-metrics API for what values are allowed. We have OCCUPATION_WHITELIST - if we send something that normalizes to a value not in the DB enum/check, the update could fail.
+
+Let me search for body_metrics constraints and the update payload we send.
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "body_metrics|occupation|check",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\supabase\\migrations",
+  "caseInsensitive": false
+}
+```
+Additional data:
+
+```json
+{
+  "isPruned": true,
+  "pattern": "body_metrics|occupation|check",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\supabase\\migrations",
+  "outputMode": "content",
+  "totalFiles": 2,
+  "totalMatches": 8,
+  "topFiles": [
+    {
+      "uri": "supabase\\migrations\\20260321_body_metrics_frequency_sync.sql",
+      "matchCount": 6
+    },
+    {
+      "uri": "supabase/migrations/20260320_body_metrics_foods_to_avoid.sql",
+      "matchCount": 2
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\profil.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+The frontend sends occupation from preferencesForm.occupation. The profile-preferences API normalizes it with normalizeOccupation which returns values from OCCUPATION_WHITELIST or 'other'. The body-metrics.js had a comment about body_metrics_occupation_check - so there might be a CHECK constraint on the occupation column. Let me search for that.
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "occupation|body_metrics",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\supabase",
+  "caseInsensitive": false
+}
+```
+Additional data:
+
+```json
+{
+  "isPruned": true,
+  "pattern": "occupation|body_metrics",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\supabase",
+  "outputMode": "content",
+  "totalFiles": 2,
+  "totalMatches": 8,
+  "topFiles": [
+    {
+      "uri": "supabase\\migrations\\20260321_body_metrics_frequency_sync.sql",
+      "matchCount": 6
+    },
+    {
+      "uri": "supabase/migrations/20260320_body_metrics_foods_to_avoid.sql",
+      "matchCount": 2
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\lib\habits.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+The habits are valid - they're from ALL_HABIT_IDS. So the issue is likely:
+1. body_metrics UPDATE failing - maybe RLS policy requires something we're not satisfying
+2. Or a column doesn't exist in production (e.g. foods_to_avoid) - the migration might not have been run
+3. Or a CHECK constraint on activity, occupation, goal, stress_level - we're sending normalized values
+
+Let me add better error logging so we return the actual Supabase error to the client (at least in development or as a more specific message). And let me check if we're sending any value that could be invalid.
+
+Actually - one common issue: **supabaseServer** might be using the anon key, and RLS might allow SELECT for the user's rows but not UPDATE. Or the service role might be used. Let me check supabaseServer.
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\lib\supabaseServer.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "body_metrics|update|\\.update",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\pages\\api",
+  "caseInsensitive": false
+}
+```
+Additional data:
+
+```json
+{
+  "isPruned": true,
+  "pattern": "body_metrics|update|\\.update",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\pages\\api",
+  "outputMode": "content",
+  "totalFiles": 15,
+  "totalMatches": 51,
+  "topFiles": [
+    {
+      "uri": "pages/api/my-metrics.js",
+      "matchCount": 2
+    },
+    {
+      "uri": "pages/api/cron/daily-digest.js",
+      "matchCount": 3
+    },
+    {
+      "uri": "pages/api/calendar/create.js",
+      "matchCount": 1
+    },
+    {
+      "uri": "pages/api/trainer/clients.js",
+      "matchCount": 4
+    },
+    {
+      "uri": "pages/api/community/topic/[id].js",
+      "matchCount": 1
+    },
+    {
+      "uri": "pages\\api\\profile-preferences.js",
+      "matchCount": 20
+    },
+    {
+      "uri": "pages/api/body-metrics.js",
+      "matchCount": 4
+    },
+    {
+      "uri": "pages\\api\\body-metrics.js",
+      "matchCount": 4
+    },
+    {
+      "uri": "pages/api/quick-weight.js",
+      "matchCount": 2
+    },
+    {
+      "uri": "pages/api/community/index.js",
+      "matchCount": 1
+    },
+    {
+      "uri": "pages/api/trainer-schedule.js",
+      "matchCount": 1
+    },
+    {
+      "uri": "pages/api/delete-account.js",
+      "matchCount": 1
+    },
+    {
+      "uri": "pages/api/profile-settings.js",
+      "matchCount": 3
+    },
+    {
+      "uri": "pages/api/profile.js",
+      "matchCount": 3
+    },
+    {
+      "uri": "pages/api/auth/google-calendar/callback.js",
+      "matchCount": 1
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+So we use SERVICE_ROLE_KEY - RLS is bypassed. So the update should work unless:
+1. The column doesn't exist (e.g. foods_to_avoid in production DB not migrated)
+2. A CHECK constraint fails - e.g. body_metrics_occupation_check - we need to ensure occupation is one of the allowed values. The whitelist is ['office_it', 'manual', 'driver', 'warehouse', 'healthcare', 'teacher_sales', 'gastronomy', 'other']. normalizeOccupation returns one of these. So that should be fine.
+3. Maybe activity or goal or stress_level have check constraints with different allowed values?
+
+Let me return the actual error message from Supabase to the client (so the user or we can see it), and also ensure we don't send columns that might not exist. I'll add the error detail to the response so we can debug. And I'll make the API more resilient: if foods_to_avoid doesn't exist, the update would fail - we could try building updates only with known-safe fields, but that's fragile. Better: return the actual updateErr.message in the API response (at least in development) so we see "column foods_to_avoid does not exist" or "violates check constraint" etc.
+
+I'll update the API to return a more specific error when the body_metrics update fails, so we can see the real reason. I'll include updateErr.message in the response for 500.
+</details></think>
+
+---
+
+
+Vracíme skutečnou chybu ze Supabase do odpovědi API, abychom zjistili příčinu. Kontroluji další možné příčiny:
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "body_metrics_|CHECK|constraint",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on",
+  "glob": "*.sql",
+  "caseInsensitive": false
+}
+```
+Additional data:
+
+```json
+{
+  "isPruned": true,
+  "pattern": "body_metrics_|CHECK|constraint",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on",
+  "outputMode": "content",
+  "totalFiles": 7,
+  "totalMatches": 14,
+  "topFiles": [
+    {
+      "uri": "supabase/migrations/20260228_community_posts.sql",
+      "matchCount": 2
+    },
+    {
+      "uri": "supabase/migrations/20250221_create_user_habits.sql",
+      "matchCount": 1
+    },
+    {
+      "uri": "supabase/migrations/20250220_create_habit_logs.sql",
+      "matchCount": 1
+    },
+    {
+      "uri": "supabase/migrations/20260220_create_memberships.sql",
+      "matchCount": 3
+    },
+    {
+      "uri": "supabase/migrations/20260228_community_forum_categories_replies.sql",
+      "matchCount": 2
+    },
+    {
+      "uri": "supabase/migrations/20250219_create_workouts.sql",
+      "matchCount": 1
+    },
+    {
+      "uri": "supabase/migrations/20260228_profiles_avatars.sql",
+      "matchCount": 4
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\api\profile-preferences.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+There's no body_metrics table creation in the migrations I found - the table might have been created elsewhere or in Supabase dashboard. The comment in body-metrics.js says "body_metrics_occupation_check" - so the DB likely has a check constraint. If the production DB doesn't have the foods_to_avoid column (migration 20260320 not run), then .update(updates) with foods_to_avoid would fail with "column ... does not exist".
+
+I'll do two things:
+1. Return the actual Supabase error message in the API response (so the user sees e.g. "column \"foods_to_avoid\" of relation \"body_metrics\" does not exist" or a constraint error). We can return it in a way that's safe for production - e.g. include it in a debug field or as the main error. For now I'll append a short hint if we have updateErr.message (e.g. "Nepodařilo se uložit preference. (detail: ...)").
+2. Make the update resilient: only include foods_to_avoid in updates if we're sure the column exists, OR try updating without foods_to_avoid if the first update fails. The cleanest approach is to not send foods_to_avoid if the migration might not be run - but then we'd never save it. Better: return the real error so the user can run the migration. And optionally, exclude foods_to_avoid from updates and add a separate try/catch or check - too complex. Let me just improve error reporting first.
+
+Actually re-reading the user message - they want to know WHY it fails. So returning the actual error to the client will help. I'll add errorDetail or include the message in the JSON so the frontend can show "Nepodařilo se uložit preference. (Sloupec foods_to_avoid v tabulce body_metrics neexistuje – spusť migraci.)" or the raw message for debugging. Let me return updateErr.message in the response so the UI can show it (or we log it and show a generic message). Showing technical errors to end users isn't ideal - so I'll map common errors to friendly messages and also log the raw one. For example:
+- if updateErr.message includes "foods_to_avoid" and "does not exist" -> "Chybí aktualizace databáze. Napište nám na info@..."
+- else return generic + in development or a debug flag return the raw message
+
+Or simpler: return res.status(500).json({ error: 'Nepodařilo se uložit preference.', detail: updateErr?.message || null }); and in the frontend show error + (detail if present). So the user sees the detail and can tell us. Let me do that.
+</details></think>
+
+---
+
+
+Přidávám vrácení skutečné chyby z API a ošetření případu, kdy v DB chybí sloupec (např. `foods_to_avoid` nebyl namigrován).
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\api\profile-preferences.js</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+Now make the update resilient: if the column foods_to_avoid doesn't exist, we could omit it from updates. That way the save works even without the migration, and we just don't save that one field. Let me add a fallback: first try with all updates; if we get "column ... does not exist" for foods_to_avoid, retry without foods_to_avoid. That way production works even before migration.
+</details></think>
+
+---
+
+
+Přidávám odolnost: pokud chybí sloupec `foods_to_avoid`, provedeme update bez něj.
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\api\profile-preferences.js</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+Now update the frontend to show the `detail` if present so we can see the error in dev. And show the backend's `error` message which might now be more specific.
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\profil.js</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+Actually showing (detail) to the user might be too technical. Let me show only json.error to the user - the API now returns a friendly message. And we can keep detail for development. So revert the frontend to just use json.error - the API already returns friendly messages. I'll revert the profil.js change and only show the error, not detail (detail is for dev in the response, we don't need to show it in UI unless we want to help support).
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\profil.js</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+Supabase client returns { data, error } from .update(), not a direct result. Let me check - in Supabase JS v2, the signature is:
+.from('body_metrics').update(updates).eq('id', latest.id) returns a Promise that resolves to { data, error }. So we need to destructure properly. Let me fix the profile-preferences - we're assigning result = await ... and then result.error. So result is { data, error }. That's correct. But we're doing let result = await supabaseServer... and then updateErr = result.error. Then we check updateErr and if it's the foods_to_avoid case we delete and retry. But then we do result = await ... again and updateErr = result.error. So after retry, updateErr might be null. Good. One issue: the first result might not have .error in the same shape - let me check Supabase. Actually the Supabase client returns { data, error } where error is an object with .message, .code, etc. So we're good.
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+
+Parameters:
+
+```json
+{
+  "paths": [
+    "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\pages\\api\\profile-preferences.js"
+  ]
+}
+```
+Result:
+
+```json
+{
+  "linterErrorsByFile": [
+    {
+      "relativeWorkspacePath": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\pages\\api\\profile-preferences.js"
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+Let me double-check the retry logic. We have:
+let toUpdate = { ...updates };
+let result = await supabaseServer.from('body_metrics').update(toUpdate).eq('id', latest.id);
+updateErr = result.error;
+
+If the error is about foods_to_avoid column not existing, we delete toUpdate.foods_to_avoid and retry. But we're mutating toUpdate which was a copy of updates - so we're good. After delete, toUpdate might be empty if updates only had foods_to_avoid - then Object.keys(toUpdate).length === 0 and we don't retry. So we'd still have updateErr set and return 500 with the friendly message. Good.
+</details></think>
+
+---
+
+
+Úpravy jsou hotové. Shrnutí:
+
+## Proč to padalo a co je změněno
+
+1. **Pravděpodobná příčina**  
+   Chyba „Nepodařilo se uložit preference.“ vzniká při selhání **UPDATE** do tabulky `body_metrics`. Časté důvody:
+   - **Chybí sloupec `foods_to_avoid`** – v produkci nebyla spuštěna migrace `20260320_body_metrics_foods_to_avoid.sql`.
+   - **CHECK constraint** – hodnota v některém z polí (aktivita, typ práce, cíl) nevyhovuje omezení v DB.
+
+2. **Úpravy v API** (`pages/api/profile-preferences.js`)
+   - **Fallback při chybějícím sloupci:** pokud chyba z DB zmiňuje neexistující sloupec `foods_to_avoid`, API zkusí uložit znovu **bez** pole `foods_to_avoid`. Zbytek preferencí (návyky, aktivita, cíl, strava atd.) se uloží.
+   - **Lepší hlášení chyb:** místo obecné fráze vrací konkrétní zprávy:
+     - chybí sloupec pro „potraviny k vynechání“ → návod spustit migraci;
+     - porušení check constraint → „Neplatná hodnota v jednom z polí (aktivita, typ práce, cíl). Zkus znovu vybrat z nabídky.“;
+     - v režimu vývoje se v odpovědi posílá i technický `detail` (pro debugging).
+
+3. **Co udělat u tebe**
+   - **Spusť migraci** v Supabase (SQL Editor nebo `supabase db push`), aby existoval sloupec `foods_to_avoid`:
+     - soubor: `supabase/migrations/20260320_body_metrics_foods_to_avoid.sql`
+   - Po nasazení těchto úprav zkus znovu uložit preference.  
+   - Pokud to stále nebude fungovat, v **Vercel logs** (nebo v konzoli serveru) uvidíš u `[profile-preferences] body_metrics update:` přesnou chybu z Supabase (např. název sloupce nebo constraintu), podle které se dá dohledat další příčina.
+
+Chceš to teď nasadit do produkce (deploy)?
+
+---
+
+_**User**_
+
+dej to do produkce 
+
+---
+
+_**Agent (model default, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+
+The user wants to deploy to production. I'll run the deploy command.
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd "C:\Users\prikopa\Documents\GitHub\body-mind-on"; npm run deploy 2>&1</summary>
+
+```bash
+cd "C:\Users\prikopa\Documents\GitHub\body-mind-on"; npm run deploy 2>&1
+```
+
+```
+
+&gt; body-mind-on@1.0.0 deploy
+&gt; git add -A &amp;&amp; git commit -m "Deploy: automatické úpravy" &amp;&amp; git push origin main
+
+[main c18c3bb] Deploy: automatické úpravy
+ 2 files changed, 228 insertions(+), 33 deletions(-)
+warning: in the working copy of 'pages/profil.js', LF will be replaced by CRLF the next time Git touches it
+To https://github.com/Progen-design/body-mind-on.git
+   5c6399e..c18c3bb  main -&gt; main
+
+```
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+Deploy completed successfully.
+</details></think>
+
+---
+
+
+Hotovo. Změny jsou na `main`, Vercel nasadí novou verzi sám. Po nasazení by mělo ukládání preferencí fungovat i když v DB chybí sloupec `foods_to_avoid` (uloží se zbytek). Pro plnou funkci „potravin k vynechání“ spusť v Supabase migraci `20260320_body_metrics_foods_to_avoid.sql`.
+
+---
+
+_**User**_
+
+tohle je ta chyba co to pise pri ukladani takto cele zkontroluj 
+
+---
+
+_**Agent (model default, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+
+The user is showing a console error. The key finding from the image description is:
+
+**PATCH request to `https://app.bodymindandco.cz/api/profile/preferences` returns HTTP 404 Not Found**
+
+So the URL being called is `/api/profile/preferences` but in our codebase the API route is at `/api/profile-preferences` (with a hyphen, not a slash). So the frontend is calling the wrong URL!
+
+Let me verify:
+- Our API file is at: pages/api/profile-preferences.js
+- In Next.js, that would be exposed as: /api/profile-preferences
+- The client is calling: /api/profile/preferences (with a slash between profile and preferences)
+
+So the fix is to ensure the frontend calls `/api/profile-preferences` not `/api/profile/preferences`. Let me search for where we make this fetch call.
+</details></think>
+
+---
+
+
+Kontroluji volanou URL: konzole ukazuje PATCH na `/api/profile/preferences` (se lomítkem), API je pravděpodobně na `/api/profile-preferences`.
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "profile/preferences|profile-preferences",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on",
+  "caseInsensitive": false
+}
+```
+Additional data:
+
+```json
+{
+  "isPruned": true,
+  "pattern": "profile/preferences|profile-preferences",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on",
+  "outputMode": "content",
+  "totalFiles": 3,
+  "totalMatches": 60,
+  "topFiles": [
+    {
+      "uri": ".specstory\\history\\2026-02-20_01-34Z-next-js-build-failure-due-to-syntax-error.md",
+      "matchCount": 53
+    },
+    {
+      "uri": "pages\\profil.js",
+      "matchCount": 1
+    },
+    {
+      "uri": "pages\\api\\profile-preferences.js",
+      "matchCount": 6
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
 
 ---
 

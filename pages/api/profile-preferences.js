@@ -6,13 +6,12 @@ import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation } from '../../lib/preferenceConstants';
 
 function normalizeActivity(v) {
-  if (!v) return null;
+  if (!v || typeof v !== 'string') return null;
   const t = String(v).toLowerCase().trim();
   if (['sedavy', 'lehce', 'stredne', 'velmi', 'extra'].includes(t)) return t;
-  if (t === 'nízká' || (t.includes('nízk') && !t.includes('střed'))) return 'sedavy';
-  if (t.includes('lehce') || t.includes('lehk')) return 'sedavy';
-  if (t.includes('střed')) return 'stredne';
-  if (t.includes('vysok') || t.includes('extra')) return 'velmi';
+  if (t === 'nízká' || t === 'nizka' || (t.includes('nízk') && !t.includes('střed')) || t.includes('lehce') || t.includes('lehk')) return 'sedavy';
+  if (t === 'střední' || t === 'stredni' || t.includes('střed')) return 'stredne';
+  if (t === 'vysoká' || t === 'vysoka' || t.includes('vysok') || t.includes('extra')) return 'velmi';
   return 'stredne';
 }
 
@@ -27,12 +26,12 @@ function normalizeStress(v) {
 }
 
 function normalizeGoal(v) {
-  if (!v) return null;
+  if (!v || typeof v !== 'string') return null;
   const t = String(v).toLowerCase().trim();
   if (['redukce', 'nabirani_svaly', 'udrzovani'].includes(t)) return t;
   if (t.includes('reduk') || t.includes('hmotnosti')) return 'redukce';
-  if (t.includes('sval') || t.includes('nárůst')) return 'nabirani_svaly';
-  if (t.includes('zdrav') || t.includes('udrž') || t.includes('životní')) return 'udrzovani';
+  if (t.includes('sval') || t.includes('nárůst') || t.includes('narust')) return 'nabirani_svaly';
+  if (t.includes('zdrav') || t.includes('udrž') || t.includes('udrz') || t.includes('životní') || t.includes('zivotni')) return 'udrzovani';
   return 'udrzovani';
 }
 

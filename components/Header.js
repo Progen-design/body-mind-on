@@ -109,11 +109,12 @@ export default function Header() {
 
       <style jsx>{`
         .header {
-          background: #0b0b0f;
-          border-bottom: 1px solid #222;
-          padding: 16px 24px;
+          background: linear-gradient(180deg, #1a1625 0%, #0f0d14 100%);
+          border-bottom: 1px solid rgba(139, 92, 255, 0.25);
+          padding: 14px 24px;
           padding-left: max(16px, env(safe-area-inset-left));
           padding-right: max(16px, env(safe-area-inset-right));
+          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
         }
         @media (max-width: 640px) {
           .header { padding: 12px 16px; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
@@ -125,7 +126,7 @@ export default function Header() {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 12px;
+          gap: 16px;
           width: 100%;
         }
 
@@ -134,6 +135,7 @@ export default function Header() {
           color: #fff;
           text-decoration: none;
           flex-shrink: 0;
+          font-weight: 600;
         }
         @media (max-width: 480px) {
           .logo { font-size: 1rem; }
@@ -141,21 +143,29 @@ export default function Header() {
 
         nav {
           display: flex;
+          align-items: center;
           gap: 20px;
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
+          white-space: nowrap;
           justify-content: flex-end;
+          min-width: 0;
+        }
+        @media (max-width: 768px) {
+          nav { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+          nav::-webkit-scrollbar { height: 3px; }
+          nav::-webkit-scrollbar-thumb { background: rgba(139, 92, 255, 0.4); border-radius: 3px; }
         }
         @media (max-width: 640px) {
-          nav { gap: 12px; }
+          nav { gap: 14px; font-size: 14px; }
         }
-        @media (max-width: 380px) {
-          nav { gap: 8px; }
+        @media (max-width: 480px) {
+          nav { gap: 10px; font-size: 13px; }
         }
 
         nav a {
-          color: #ccc;
+          color: #c4b5fd;
           text-decoration: none;
-          transition: color 0.3s;
+          transition: color 0.2s;
         }
 
         nav a:hover {
@@ -171,7 +181,7 @@ export default function Header() {
           padding: 0 6px;
           background: none;
           border: none;
-          color: #ccc;
+          color: #c4b5fd;
           font-size: inherit;
           font-family: inherit;
           cursor: pointer;
@@ -252,13 +262,13 @@ export default function Header() {
         .nav-logout {
           background: none;
           border: none;
-          color: #ccc;
+          color: #c4b5fd;
           font-size: inherit;
           cursor: pointer;
           padding: 0;
           font-family: inherit;
           text-decoration: none;
-          transition: color 0.3s;
+          transition: color 0.2s;
         }
         .nav-logout:hover {
           color: #fff;

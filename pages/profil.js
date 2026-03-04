@@ -1863,7 +1863,21 @@ export default function Profil() {
             )}
 
             {/* MŮJ PLÁN (jen klienti) */}
-            {!profile?.can_create_calendar_events && currentPlan && <PlanViewer plan={currentPlan} userName={userName} hideHero />}
+            {!profile?.can_create_calendar_events && currentPlan && (
+              <PlanViewer
+                plan={currentPlan}
+                userName={userName}
+                hideHero
+                dietaryPreferences={(() => {
+                  const lm = profile?.body_metrics?.[0];
+                  if (!lm) return '';
+                  const parts = [];
+                  if (lm.dietary_restrictions?.trim()) parts.push(lm.dietary_restrictions.trim());
+                  if (lm.foods_to_avoid?.trim()) parts.push(lm.foods_to_avoid.trim());
+                  return parts.join('. ');
+                })()}
+              />
+            )}
 
             {/* Historie tréninků (jen klienti) */}
             {!profile?.can_create_calendar_events && (

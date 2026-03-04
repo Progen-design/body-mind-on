@@ -28,6 +28,7 @@ export default function OnClubPage() {
     frequency: "",
     diet_type: "",
     dietary_restrictions: "",
+    foods_to_avoid: "",
     notes: "",
     program: "ON_CLUB",
   });
@@ -113,7 +114,7 @@ export default function OnClubPage() {
           }, 1500);
           return;
         }
-        setFormData({ name: "", email: "", password: "", passwordConfirm: "", gender: "", age: "", height: "", weight: "", activity: "", stress: "", worktype: "", goal: "", frequency: "", diet_type: "", dietary_restrictions: "", notes: "", program: "ON_CLUB" });
+        setFormData({ name: "", email: "", password: "", passwordConfirm: "", gender: "", age: "", height: "", weight: "", activity: "", stress: "", worktype: "", goal: "", frequency: "", diet_type: "", dietary_restrictions: "", foods_to_avoid: "", notes: "", program: "ON_CLUB" });
         setSelectedHabits([]);
         setStep(1);
       } else {
@@ -282,6 +283,10 @@ export default function OnClubPage() {
                   <div>
                     <label className="label block mb-2 text-gray-500 text-sm">Co nejí – alergie, intolerance (volitelné)</label>
                     <textarea name="dietary_restrictions" className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" rows="2" value={formData.dietary_restrictions} onChange={handleChange} placeholder="např. ořechy, mléko, lepek…" />
+                  </div>
+                  <div>
+                    <label className="label block mb-2 text-gray-500 text-sm">Potraviny k vynechání z jídelníčku (volitelné)</label>
+                    <textarea name="foods_to_avoid" className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" rows="2" value={formData.foods_to_avoid} onChange={handleChange} placeholder="např. avokádo, brokolice, banány – konkrétní potraviny, které nemají být v plánu" />
                   </div>
                 </div>
               </details>

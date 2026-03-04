@@ -22,6 +22,7 @@ export default async function handler(req, res) {
     // Strava a omezení – volitelná pole (null při prázdných)
     const dietType = b.diet_type?.trim() || null;
     const dietaryRestrictions = b.dietary_restrictions?.trim() || null;
+    const foodsToAvoid = b.foods_to_avoid?.trim() || null;
     const dietLabels = {
       vegetarian: 'Vegetarián',
       vegan: 'Vegan',
@@ -35,6 +36,7 @@ export default async function handler(req, res) {
     const notesParts = [];
     if (dietLabel) notesParts.push('Typ stravy: ' + dietLabel);
     if (dietaryRestrictions) notesParts.push('Co nejí: ' + dietaryRestrictions);
+    if (foodsToAvoid) notesParts.push('Potraviny k vynechání: ' + foodsToAvoid);
     const notesFinal = notesParts.length ? notesParts.join('. ') : (b.notes?.trim() || null);
 
     const payload = {
@@ -52,6 +54,7 @@ export default async function handler(req, res) {
       weekly_sessions_user: getWeeklySessions(b.frequency || b.freq_choice),
       diet_type: dietType || null,
       dietary_restrictions: dietaryRestrictions || null,
+      foods_to_avoid: foodsToAvoid || null,
       notes: notesFinal,
       program: b.program || 'START',
       created_at: new Date().toISOString(),

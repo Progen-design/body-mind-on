@@ -23,6 +23,7 @@ export default async function handler(req, res) {
       weekly_sessions,
       diet_type,
       dietary_restrictions,
+      foods_to_avoid,
       notes,
       preferences,
     } = req.body || {}
@@ -40,6 +41,7 @@ export default async function handler(req, res) {
       weekly_sessions,
       diet_type: diet_type ?? null,
       dietary_restrictions: dietary_restrictions ?? preferences ?? null,
+      foods_to_avoid: foods_to_avoid ?? null,
       notes,
     })
 

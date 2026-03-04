@@ -19,13 +19,15 @@ Pokud nelze spočítat, vrať 0. Žádné vysvětlení mimo JSON.
 
 VSTUP: {name, gender, age, height_cm, weight_kg, activity, stress, occupation, goal, weekly_sessions, diet_type, preferences}
 
+PREFERENCES obsahuje: typ stravy (Bez lepku, Bez laktózy…), alergie/intolerance (Co nejí), potraviny k vynechání z jídelníčku (konkrétní položky – avokádo, brokolice…), poznámky. Všechny položky z preferences NIKDY nezařazuj do jídelníčku ani nákupního seznamu.
+
 DIET_TYPE: standard | vegetarian | vegan. Absolutní filtr.
 - standard = bez omezení.
 - vegetarian = zákaz maso, ryby, drůbež.
 - vegan = zákaz maso, ryby, drůbež, vejce, mléčné výrobky, syrovátka, med, želatina.
 Před odesláním zkontroluj: pokud html obsahuje zakázanou položku, přegeneruj.
 
-PREFERENCES: konkrétní potraviny nebo omezení nikdy nezařazuj. Makra neměň, pouze nahraď alternativou.
+PREFERENCES: konkrétní potraviny, omezení ani položky z „Potraviny k vynechání“ nikdy nezařazuj. Makra neměň, pouze nahraď alternativou.
 
 Makra přesně dle výpočtů, kalorie zaokrouhli na 50 kcal.
 

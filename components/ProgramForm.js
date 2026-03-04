@@ -10,6 +10,7 @@ export default function ProgramForm({ planType }) {
     weight: "",
     diet_type: "",
     dietary_restrictions: "",
+    foods_to_avoid: "",
     notes: "",
   });
 
@@ -174,6 +175,17 @@ export default function ProgramForm({ planType }) {
               name="dietary_restrictions"
               placeholder="např. ořechy, mléko, lepek…"
               value={form.dietary_restrictions}
+              onChange={handleChange}
+              rows={2}
+              className="p-4 w-full rounded-xl bg-neutral-800 border border-neutral-700 focus:ring-2 focus:ring-green-400"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-500 mb-1">Potraviny k vynechání z jídelníčku (volitelné)</label>
+            <textarea
+              name="foods_to_avoid"
+              placeholder="např. avokádo, brokolice, banány – konkrétní potraviny, které nemají být v plánu"
+              value={form.foods_to_avoid}
               onChange={handleChange}
               rows={2}
               className="p-4 w-full rounded-xl bg-neutral-800 border border-neutral-700 focus:ring-2 focus:ring-green-400"

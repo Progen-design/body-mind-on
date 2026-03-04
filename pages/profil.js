@@ -258,6 +258,9 @@ export default function Profil() {
           program: data.program || 'START',
           membershipStatus: data.membershipStatus || 'active',
           membershipSince: data.membershipSince || null,
+          trialEndsAt: data.trialEndsAt || null,
+          isTrialExpired: data.isTrialExpired === true,
+          daysUntilTrialEnd: data.daysUntilTrialEnd != null ? data.daysUntilTrialEnd : null,
           can_create_calendar_events: data.can_create_calendar_events === true,
           _updated: Date.now(),
         };
@@ -744,6 +747,7 @@ export default function Profil() {
       }
       const payload = {};
       if (settingsForm.goal_weight_kg !== '') payload.goal_weight_kg = Number(settingsForm.goal_weight_kg);
+      payload.daily_email = settingsForm.daily_email !== false;
       const res = await fetch('/api/profile-settings', {
         ...fetchOptions,
         method: 'PATCH',
@@ -757,7 +761,7 @@ export default function Profil() {
       if (res.ok && json.ok) {
         setProfile((p) => ({
           ...p,
-          user: p?.user ? { ...p.user, ...(json.user_metadata || {}) } : { ...json.user_metadata },
+          user: p?.user ? { ...p.user, ...(json.user_metadata || {}), ...(json.daily_email !== undefined && { daily_email: json.daily_email }) } : { ...json.user_metadata, ...(json.daily_email !== undefined && { daily_email: json.daily_email }) },
           _updated: Date.now(),
         }));
         setShowSettingsModal(false);
@@ -898,7 +902,7 @@ export default function Profil() {
 
   // Všechny parametry se přepočítají při každé změně profile (trénink, váha)
   // Použít _updated timestamp jako závislost, aby se vždy přepočítalo při změně
-  const { program, membershipStatus, membershipSince, metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName, firstName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, periodStartFormatted, periodEndFormatted, thisWeekDates, startWeightDate, lastWeightDate, habitAdjustedWeight, hasHabitData, positiveDone, negativeDone, habitCorrectionKg } = useMemo(() => {
+  const { program, membershipStatus, membershipSince, trialEndsAt, isTrialExpired, daysUntilTrialEnd, metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName, firstName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, periodStartFormatted, periodEndFormatted, thisWeekDates, startWeightDate, lastWeightDate, habitAdjustedWeight, hasHabitData, positiveDone, negativeDone, habitCorrectionKg } = useMemo(() => {
     // Zajistit, že máme vždy nové reference na pole pro správnou detekci změn
     // A SORT podle data - nejnovější první
     const m = profile?.body_metrics 
@@ -1002,11 +1006,17 @@ export default function Profil() {
     const program = profile?.program || 'START';
     const membershipStatus = profile?.membershipStatus || 'active';
     const membershipSince = profile?.membershipSince || null;
+    const trialEndsAt = profile?.trialEndsAt || null;
+    const isTrialExpired = profile?.isTrialExpired === true;
+    const daysUntilTrialEnd = profile?.daysUntilTrialEnd != null ? profile.daysUntilTrialEnd : null;
 
     return {
       program,
       membershipStatus,
       membershipSince,
+      trialEndsAt,
+      isTrialExpired,
+      daysUntilTrialEnd,
       metrics: m,
       workouts: w,
       latestMetric: latest,
@@ -1325,6 +1335,25 @@ export default function Profil() {
             </div>
             )}
 
+            {/* START trial banner – vypršení nebo brzké vypršení */}
+            {!profile?.can_create_calendar_events && program === 'START' && (isTrialExpired || (daysUntilTrialEnd != null && daysUntilTrialEnd >= 0 && daysUntilTrialEnd <= 2)) && (
+              <div className={`trial-banner trial-banner--${isTrialExpired ? 'expired' : 'soon'}`}>
+                {isTrialExpired ? (
+                  <>
+                    <p className="trial-banner-text">Tvůj 7denní START program vypršel. Pro pokračování si vyber ON Club nebo VIP.</p>
+                    <div className="trial-banner-actions">
+                      <a href="/on-club" className="trial-banner-btn">ON Club</a>
+                      <a href="/chci-vip" className="trial-banner-btn trial-banner-btn--vip">VIP Coaching</a>
+                    </div>
+                  </>
+                ) : (
+                  <p className="trial-banner-text">
+                    Tvůj START program vyprší za {daysUntilTrialEnd === 0 ? 'dnes' : daysUntilTrialEnd === 1 ? '1 den' : `${daysUntilTrialEnd} dny`}. Připoj se k <a href="/on-club">ON Clubu</a> pro plný přístup.
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Trenér: Moji klienti */}
             {profile?.can_create_calendar_events && (
               <>
@@ -1565,7 +1594,7 @@ export default function Profil() {
                   <span className="btn-emoji">🏋️</span>
                   Zapsat trénink
                 </button>
-                <button type="button" onClick={() => { setShowSettingsModal(true); setSettingsError(''); setSettingsForm({ start_weight_kg: '', goal_weight_kg: goalWeight ?? '', height_cm: '' }); }} className="btn-secondary btn-weight">
+                <button type="button" onClick={() => { setShowSettingsModal(true); setSettingsError(''); setSettingsForm({ start_weight_kg: '', goal_weight_kg: goalWeight ?? '', height_cm: '', daily_email: profile?.user?.daily_email !== false }); }} className="btn-secondary btn-weight">
                   <span className="btn-emoji">📋</span>
                   Nastavení pro výpočet
                   <span className="btn-sublabel">Cílová váha pro odhad do cíle</span>
@@ -2116,6 +2145,10 @@ export default function Profil() {
                   <form onSubmit={handleSaveSettings}>
                     <label>Cílová váha (kg)</label>
                     <input type="number" min={30} max={300} step={0.1} placeholder="např. 75" value={settingsForm.goal_weight_kg} onChange={(e) => setSettingsForm((f) => ({ ...f, goal_weight_kg: e.target.value }))} />
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '16px', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={settingsForm.daily_email !== false} onChange={(e) => setSettingsForm((f) => ({ ...f, daily_email: e.target.checked }))} />
+                      <span>Posílat denní přehled e-mailem</span>
+                    </label>
                     {settingsError && <p className="modal-error" role="alert">{settingsError}</p>}
                     {savingSettings && (
                       <div className="modal-loading">
@@ -2349,6 +2382,49 @@ export default function Profil() {
           background: linear-gradient(135deg, rgba(180,130,20,0.18), rgba(234,179,8,0.10));
           border-color: rgba(234,179,8,0.45);
           box-shadow: 0 4px 20px rgba(180,130,20,0.18);
+        }
+        .trial-banner {
+          margin-bottom: 20px;
+          padding: 16px 20px;
+          border-radius: 12px;
+          border: 1px solid;
+        }
+        .trial-banner--expired {
+          background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(185,28,28,0.08));
+          border-color: rgba(239,68,68,0.4);
+        }
+        .trial-banner--soon {
+          background: linear-gradient(135deg, rgba(234,179,8,0.15), rgba(180,130,20,0.08));
+          border-color: rgba(234,179,8,0.4);
+        }
+        .trial-banner-text {
+          margin: 0 0 12px;
+          font-size: 15px;
+          color: #e2e8f0;
+          line-height: 1.5;
+        }
+        .trial-banner-text:last-child { margin-bottom: 0; }
+        .trial-banner-text a { color: #a78bfa; text-decoration: none; }
+        .trial-banner-text a:hover { text-decoration: underline; }
+        .trial-banner-actions {
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .trial-banner-btn {
+          display: inline-block;
+          padding: 10px 20px;
+          border-radius: 10px;
+          font-weight: 600;
+          font-size: 14px;
+          text-decoration: none;
+          background: linear-gradient(135deg, #7c3aed, #6d28d9);
+          color: #fff;
+          border: none;
+        }
+        .trial-banner-btn:hover { opacity: 0.9; }
+        .trial-banner-btn--vip {
+          background: linear-gradient(135deg, #ca8a04, #a16207);
         }
         .membership-card-left {
           display: flex;

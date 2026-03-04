@@ -47,6 +47,8 @@ export default async function handler(req, res) {
       console.error('[google-calendar callback] insert error:', insertErr);
       return res.redirect(302, getProfilRedirect('save_failed'));
     }
+    // Po úspěšném propojení kalendáře vymazat stav alertu (aby se mohl znovu poslat při budoucím problému)
+    await supabaseServer.from('trainer_alert_state').delete().eq('key', 'last_trainer_calendar_alert');
     return res.redirect(302, getProfilRedirect('connected'));
   } catch (err) {
     console.error('[google-calendar callback]', err);

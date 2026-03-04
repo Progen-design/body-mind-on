@@ -117,14 +117,21 @@ export default async function handler(req, res) {
 
     // Uložit tier členství do tabulky memberships (upsert – aktualizovat pokud existuje)
     if (payload.user_id) {
+      const program = payload.program || 'START';
+      const startedAt = payload.created_at || new Date().toISOString();
+      const isStart = program === 'START';
+      const trialEndsAt = isStart
+        ? new Date(new Date(startedAt).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        : null;
       const { error: memErr } = await supabaseServer
         .from('memberships')
         .upsert([{
           user_id: payload.user_id,
-          tier: payload.program || 'START',
-          status: 'active',
-          started_at: payload.created_at,
-          notes: `Registrace přes ${payload.program || 'START'} formulář`,
+          tier: program,
+          status: isStart ? 'trial' : 'active',
+          started_at: startedAt,
+          trial_ends_at: trialEndsAt,
+          notes: `Registrace přes ${program} formulář`,
           updated_at: new Date().toISOString(),
         }], { onConflict: 'user_id' });
       if (memErr) {

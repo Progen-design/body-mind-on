@@ -20,6 +20,7 @@ export default async function handler(req, res) {
     const goal_weight_kg = body.goal_weight_kg != null ? Number(body.goal_weight_kg) : null;
     const height_cm = body.height_cm != null ? Number(body.height_cm) : null;
     const avatar_url = typeof body.avatar_url === 'string' ? body.avatar_url.trim() || null : null;
+    const daily_email = body.daily_email === false ? false : body.daily_email === true ? true : undefined;
 
     if (start_weight_kg != null && (start_weight_kg < 30 || start_weight_kg > 300)) {
       return res.status(400).json({ error: 'Výchozí váha musí být mezi 30 a 300 kg.' });
@@ -49,13 +50,17 @@ export default async function handler(req, res) {
       }
     }
 
-    if (avatar_url !== undefined) {
+    const profileUpdates = { id: user.id, updated_at: new Date().toISOString() };
+    if (avatar_url !== undefined) profileUpdates.avatar_url = avatar_url;
+    if (daily_email !== undefined) profileUpdates.daily_email = daily_email;
+
+    if (avatar_url !== undefined || daily_email !== undefined) {
       const { error: profileErr } = await supabaseServer
         .from('profiles')
-        .upsert({ id: user.id, avatar_url, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+        .upsert(profileUpdates, { onConflict: 'id' });
       if (profileErr) {
         console.error('[profile-settings] profiles upsert error:', profileErr);
-        return res.status(500).json({ error: 'Nepodařilo se uložit avatar.' });
+        return res.status(500).json({ error: 'Nepodařilo se uložit nastavení.' });
       }
     }
 
@@ -63,6 +68,7 @@ export default async function handler(req, res) {
       ok: true,
       user_metadata: nextMeta,
       ...(avatar_url !== undefined && { avatar_url }),
+      ...(daily_email !== undefined && { daily_email }),
     });
   } catch (err) {
     console.error('[profile-settings] ERROR:', err);

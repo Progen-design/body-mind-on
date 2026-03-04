@@ -56,7 +56,7 @@ export default async function handler(req, res) {
         .order('sort_order', { ascending: true }),
       supabaseServer
         .from('memberships')
-        .select('tier, status, started_at')
+        .select('tier, status, started_at, trial_ends_at')
         .eq('user_id', userId)
         .limit(1)
         .maybeSingle(),
@@ -66,7 +66,7 @@ export default async function handler(req, res) {
         .eq('user_id', userId)
         .gte('log_date', weekStartStr)
         .lte('log_date', weekEndStr),
-      supabaseServer.from('profiles').select('avatar_url').eq('id', userId).maybeSingle(),
+      supabaseServer.from('profiles').select('avatar_url, daily_email').eq('id', userId).maybeSingle(),
     ]);
 
     const bodyMetrics = (metricsRes.status === 'fulfilled' && metricsRes.value?.data) ? metricsRes.value.data : [];
@@ -83,6 +83,11 @@ export default async function handler(req, res) {
     })();
     const membershipStatus = membershipData?.status || 'active';
     const membershipSince = membershipData?.started_at || null;
+    const trialEndsAt = membershipData?.trial_ends_at || null;
+    const isTrialExpired = program === 'START' && trialEndsAt && new Date(trialEndsAt) < now;
+    const daysUntilTrialEnd = program === 'START' && trialEndsAt
+      ? Math.ceil((new Date(trialEndsAt) - now) / (24 * 60 * 60 * 1000))
+      : null;
     if (workoutsRes.status === 'rejected') {
       console.warn('[profile] workouts fetch failed (table may not exist):', workoutsRes.reason?.message);
     }
@@ -128,12 +133,16 @@ export default async function handler(req, res) {
       program,
       membershipStatus,
       membershipSince,
+      trialEndsAt: trialEndsAt || undefined,
+      isTrialExpired: isTrialExpired || undefined,
+      daysUntilTrialEnd: daysUntilTrialEnd != null ? daysUntilTrialEnd : undefined,
       can_create_calendar_events: canCreateCalendarEvents,
       user: {
         id: user.id,
         email: user.email,
         name: meta.name || null,
         avatar_url: profileRow?.avatar_url || null,
+        daily_email: profileRow?.daily_email !== false,
         start_weight_kg: meta.start_weight_kg != null ? Number(meta.start_weight_kg) : null,
         goal_weight_kg: meta.goal_weight_kg != null ? Number(meta.goal_weight_kg) : null,
         height_cm: meta.height_cm != null ? Number(meta.height_cm) : null,

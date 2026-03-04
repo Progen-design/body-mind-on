@@ -593,8 +593,12 @@ export default function PlanViewer({ plan, userName, hideHero }) {
   }
 
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const todayStr = today.toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
-  const isValid = plan.valid_until ? new Date(plan.valid_until) >= today : true;
+  const isValid = plan.valid_until ? new Date(plan.valid_until + 'T23:59:59') >= today : true;
+  const validUntilDate = plan.valid_until ? new Date(plan.valid_until + 'T12:00:00') : null;
+  const daysUntilExpiry = validUntilDate ? Math.ceil((validUntilDate - today) / (24 * 60 * 60 * 1000)) : null;
+  const planExpiresSoon = isValid && daysUntilExpiry != null && daysUntilExpiry >= 0 && daysUntilExpiry <= 2;
   const showGraphical = parsed && (parsed.personal?.length > 0 || parsed.days?.length > 0);
 
   // Dynamicky zobrazit dny od dneška do konce platnosti (ne pevný týden od pondělí)
@@ -630,8 +634,14 @@ export default function PlanViewer({ plan, userName, hideHero }) {
       )}
 
       {!isValid && (
-        <p className="plan-expired">
-          ⚠️ Tento plán již vypršel. Vygeneruj si nový plán.
+        <div className="plan-expired">
+          <p>⚠️ Tento plán již vypršel.</p>
+          <p><a href="/start">Vygeneruj si nový plán</a></p>
+        </div>
+      )}
+      {planExpiresSoon && (
+        <p className="plan-expires-soon">
+          Plán vyprší {daysUntilExpiry === 0 ? 'dnes' : daysUntilExpiry === 1 ? 'zítra' : `za ${daysUntilExpiry} dny`} ({plan.valid_until ? new Date(plan.valid_until).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' }) : ''}). Pro nový plán přejdi na <a href="/start">stránku START</a>.
         </p>
       )}
 
@@ -1245,6 +1255,22 @@ const planSectionStyles = `
     margin-bottom: 20px;
     font-size: 14px;
   }
+  .plan-expired p { margin: 0 0 8px; }
+  .plan-expired p:last-child { margin-bottom: 0; }
+  .plan-expired a { color: #a78bfa; text-decoration: none; }
+  .plan-expired a:hover { text-decoration: underline; }
+  .plan-expires-soon {
+    background: rgba(234, 179, 8, 0.15);
+    border: 1px solid rgba(234, 179, 8, 0.4);
+    color: #fde68a;
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .plan-expires-soon a { color: #a78bfa; text-decoration: none; }
+  .plan-expires-soon a:hover { text-decoration: underline; }
 
   .plan-block {
     margin-bottom: 32px;

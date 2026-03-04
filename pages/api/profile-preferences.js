@@ -43,13 +43,14 @@ function normalizeGoal(v) {
   return 'udrzovani';
 }
 
+/** Canonical hodnoty (shodné s option value ve formulářích): 1-2x týdně | 2-3x týdně | 4-5x týdně */
 function normalizeFrequency(v) {
   if (!v) return null;
   const t = String(v).toLowerCase();
-  if (t.includes('1') && (t.includes('2') || t.includes('–'))) return '1–2x týdně';
-  if (t.includes('2') && t.includes('3')) return '2–3x týdně';
-  if (t.includes('4') || t.includes('5')) return '4–5x týdně';
-  return '2–3x týdně';
+  if (t.includes('1') && (t.includes('2') || t.includes('-') || t.includes('–'))) return '1-2x týdně';
+  if (t.includes('2') && t.includes('3')) return '2-3x týdně';
+  if (t.includes('4') || t.includes('5')) return '4-5x týdně';
+  return '2-3x týdně';
 }
 
 export default async function handler(req, res) {
@@ -93,9 +94,11 @@ export default async function handler(req, res) {
     }
     if (b.goal !== undefined) updates.goal = normalizeGoal(b.goal) ?? latest.goal;
     if (b.freq_choice !== undefined || b.frequency !== undefined) {
-      const freq = b.freq_choice ?? b.frequency;
-      updates.freq_choice = normalizeFrequency(freq) ?? latest.freq_choice;
-      updates.weekly_sessions_user = freq?.includes('1') ? 1 : freq?.includes('4') ? 5 : 3;
+      const canonicalFreq = normalizeFrequency(b.freq_choice ?? b.frequency) ?? latest.freq_choice;
+      if (canonicalFreq) {
+        updates.freq_choice = canonicalFreq;
+        updates.weekly_sessions_user = canonicalFreq.includes('1') ? 1 : canonicalFreq.includes('4') ? 5 : 3;
+      }
     }
     if (b.diet_type !== undefined) updates.diet_type = (b.diet_type || '').trim() || null;
     if (b.dietary_restrictions !== undefined) updates.dietary_restrictions = (b.dietary_restrictions || '').trim() || null;

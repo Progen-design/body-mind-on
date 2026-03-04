@@ -270,13 +270,14 @@ function normalizeGoal(v) {
   return 'udrzovani';
 }
 
+/** Canonical hodnoty (shodné s option value ve formulářích): 1-2x týdně | 2-3x týdně | 4-5x týdně */
 function normalizeFrequency(v) {
   if (!v) return null;
   const t = v.toLowerCase();
-  if (t.includes('1') || t.includes('0')) return '1–2x týdně';
-  if (t.includes('2') && t.includes('3')) return '2–3x týdně';
-  if (t.includes('4') || t.includes('5')) return '4–5x týdně';
-  return '2–3x týdně';
+  if (t.includes('1') || t.includes('0')) return '1-2x týdně';
+  if (t.includes('2') && t.includes('3')) return '2-3x týdně';
+  if (t.includes('4') || t.includes('5')) return '4-5x týdně';
+  return '2-3x týdně';
 }
 
 function getWeeklySessions(v) {

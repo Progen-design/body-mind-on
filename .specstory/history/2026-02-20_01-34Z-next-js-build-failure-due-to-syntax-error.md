@@ -12,7 +12,7 @@ Obrazky odeber, tak aby to vypadlo stejne
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -659,7 +659,7 @@ dej to do produkce
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -744,7 +744,7 @@ tedka potrebujii aby jsi se soustredil na data, ktera tam davas :  napriklad nik
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -1460,7 +1460,7 @@ ddej to do produkce
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -1721,7 +1721,7 @@ tady je potreba aby ty denni navyky ktere jsou jako nadpis, "Trénink" tak vysve
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -2240,7 +2240,7 @@ dej to do produkce
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -2346,7 +2346,7 @@ tento blok chci dat uplne az na konec
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -2736,7 +2736,7 @@ ne chci aby cely ten blok byl presunut dolu nic nechci aby tam zustalo a to se v
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -2796,7 +2796,7 @@ takto cele vem a dej to na konec stranky profilu
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -3010,7 +3010,7 @@ dej to do produkce
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -3067,7 +3067,7 @@ chci aby jsi mi navrhnul reseni, jako odbornik na fitnes a analyzu dat, tak aby 
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -3315,7 +3315,7 @@ _**User**_
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -3960,7 +3960,7 @@ dej to do produkce a taky mi rekni k cemu je tento soubor ? RAVDIVOST_DAT_TRENIN
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -4085,7 +4085,7 @@ nechci u kazdeho cviku neco overovat musio to byt vzdy overeno tebou, ze to odpo
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -4336,7 +4336,7 @@ dej to do produkce a a taky jsem zadal do asistenta nove instrukce posilam ti je
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -4500,7 +4500,7 @@ takze je neco potreba upravt nebo ne ?
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -4539,7 +4539,7 @@ takze tedka kdyz se zaregistuji tak v trenikovem planu nebude uz nic co by neodp
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -4592,7 +4592,7 @@ je tam dost veci co se opakuje , obrazek 1 a 2 tam jsou veci ktre jsou stejny, n
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -4741,7 +4741,7 @@ ja chci jen aby ten trenink odpovidal tomu co mu generuje a zadne vymysli,. taky
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -4860,7 +4860,7 @@ je to tam nahrano --- takze muzeme pokracovat dal a muzes to dat na produkci
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -4966,7 +4966,7 @@ zkus to tedka udelat responzivni pro telefony, tak aby to bylo graficky privetiv
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -5904,7 +5904,7 @@ ok dej to do produkce
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -6015,7 +6015,7 @@ potrebuji pripravit pruvodni email, pro koiuenty na testovani abychom od inich m
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -6462,7 +6462,7 @@ ne to dej pryc to nechci tam.
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -6511,7 +6511,7 @@ MYslel jsem aby jsi mi ppomohl vymyslet vymysslt email, ktersy potom poslu pres 
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -6580,7 +6580,7 @@ To-do's from the plan have already been created. Do not create them again. Mark 
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -6649,7 +6649,7 @@ jeste bych tam dal, aby k tomu co nefunguje pripojili nejlepe obrazek, tak abych
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 
@@ -6731,7 +6731,7 @@ potrebuji aby jsi prosel kompletne cely tento projekt. s ohledem na to jak to ma
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 
 
@@ -7500,7 +7500,7 @@ je tam 2x ahoj uprav to v tom profilu
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 
 
@@ -7654,7 +7654,7 @@ dej do produkce
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 **Deploying to production**
@@ -7808,7 +7808,7 @@ dej do produkce
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 
 
@@ -7945,7 +7945,7 @@ To-do's from the plan have already been created. Do not create them again. Mark 
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 **Implementing start trial**
@@ -9660,7 +9660,7 @@ Soubory: components/PlanViewer.js, lib/dailyDigest.js.
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 
 
@@ -10069,7 +10069,7 @@ Soubory: nová migrace, pages/api/cron/daily-digest.js, pages/profil.js nebo nov
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 
 
@@ -10273,7 +10273,7 @@ Error: Failed to run sql query: ERROR: 42601: syntax error at or near "supabase"
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 
 
@@ -10390,7 +10390,7 @@ _**User**_
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 
 
@@ -10424,7 +10424,7 @@ tak to tak nastav aby to bylo v tech 8 hodin
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 **Setting cron schedule**
@@ -10486,7 +10486,7 @@ dej to do produkce
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 
 
@@ -10700,7 +10700,7 @@ Když se klikne na alternativu, tak tam není nazev jidla, ale jen ze je to vece
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 
 
@@ -10998,7 +10998,7 @@ a neni potreba ab y byl upraven openAI asistenta t?
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 **Clarifying assistant usage**
@@ -11028,7 +11028,7 @@ ok tak to dej do produkce
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 
 
@@ -11160,7 +11160,7 @@ potrebuji aby tam byla i moznost, jaké potraviny nemel v jidelnicku a to take z
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 
 
@@ -24075,7 +24075,7 @@ pokracuj
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 
 
@@ -24560,7 +24560,7 @@ vsechno jsem udelal tak to aplikuj do produkce
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 
 
@@ -24740,7 +24740,7 @@ _**User**_
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 
 
@@ -25261,7 +25261,7 @@ dej to do produkce
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 
 
@@ -25429,7 +25429,7 @@ tedka potrebuji aby bylo mozne primo v profilu menit co je na obrazku 1 a 2  asi
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 **Updating profile UI**
@@ -33470,7 +33470,7 @@ ok dej to do produkce, ale je potreba aby se poslal email, ze uzivatel zmenil sv
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 **Updating email logic**
@@ -33891,7 +33891,7 @@ ja to nechtel tady ale uplne nahore po rozkliknuti profilu, ale nech to tam, jen
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 <think><details><summary>Thought Process</summary>
 **Reorganizing UI elements**
@@ -34235,7 +34235,7 @@ dej to do produkce a rovnou se poodivej proc tento udaj po rozkliknuti neni vypl
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 
 
@@ -35147,7 +35147,7 @@ tohle chce udelat graficky prehledne muj profil dej pryc to je zbytecny jen chci
 
 ---
 
-_**Agent (model composer-1.5, mode Agent)**_
+_**Agent (model default, mode Agent)**_
 
 
 
@@ -35194,6 +35194,408 @@ _**Agent (model composer-1.5, mode Agent)**_
 </details>
 
 </tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+**Adding nav classes**
+
+I added nav-profil-item-icon and nav-profil-item-text classes for structuring the profile dropdown trigger. </details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+
+Parameters:
+
+```json
+{
+  "paths": [
+    "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\components\\Header.js"
+  ]
+}
+```
+Result:
+
+```json
+{
+  "linterErrorsByFile": [
+    {
+      "relativeWorkspacePath": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\components\\Header.js"
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+Provedl jsem změny:
+
+1. **Odebrání „Můj profil“** – položka je z dropdownu odstraněna.
+2. **Větší písmo** – font v dropdownu je 16px místo 14px.
+3. **Zarovnání řádku** – položka používá `display: flex` a `align-items: center`, takže emoji a text jsou na jedné linii.
+4. **Větší padding** – 14px 18px pro lepší čitelnost.
+
+---
+
+_**User**_
+
+dej to do produkce 
+
+---
+
+_**Agent (model default, mode Agent)**_
+
+
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd "C:\Users\prikopa\Documents\GitHub\body-mind-on"; npm run deploy 2>&1</summary>
+
+```bash
+cd "C:\Users\prikopa\Documents\GitHub\body-mind-on"; npm run deploy 2>&1
+```
+
+```
+
+&gt; body-mind-on@1.0.0 deploy
+&gt; git add -A &amp;&amp; git commit -m "Deploy: automatické úpravy" &amp;&amp; git push origin main
+
+[main 23fd2c7] Deploy: automatické úpravy
+ 2 files changed, 754 insertions(+), 110 deletions(-)
+warning: in the working copy of 'components/Header.js', LF will be replaced by CRLF the next time Git touches it
+To https://github.com/Progen-design/body-mind-on.git
+   00095cc..23fd2c7  main -&gt; main
+
+```
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+Nasazení je hotové. Změny jsou pushnuté na `main`. Pokud máš Vercel napojené na GitHub, nasazení proběhne automaticky.
+
+---
+
+_**User**_
+
+dale chci aby v databazi byl poradek a taky aby hodnoty byli na jednom miste 1. Oprava Frekvence cvičení
+Příčina: V databázi je frekvence uložená buď jako text v freq_choice (např. „2–3x týdně“), nebo jako číslo v weekly_sessions_user (1, 3, 5). Formulář používal jen freq_choice, takže u starších záznamů s pouze weekly_sessions_user zůstalo pole prázdné.
+Řešení: Přidal jsem funkci getFreqFromMetrics, která:
+použije freq_choice, pokud existuje,
+jinak převede weekly_sessions_user na text:
+1 → „1–2x týdně“
+3 → „2–3x týdně“
+5 → „4–5x týdně“
+Tato logika platí pro oba způsoby otevření modalu (dropdown v hlavičce i tlačítko na profilu).
+
+---
+
+_**Agent (model default, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+
+The user wants to clean up the database and have values in one place. Currently frequency is stored in two places:
+1. `freq_choice` - text like "2–3x týdně"
+2. `weekly_sessions_user` - number 1, 3, or 5
+
+They want order in the database and values in one place. So the approach would be:
+
+1. **Decide on single source of truth**: Either store only `freq_choice` (text) and derive `weekly_sessions_user` when needed, or store only `weekly_sessions_user` (number) and derive text in the UI. Storing text is more human-readable in DB and matches what the form shows; the number is used for logic (e.g. generatePlan). So we could:
+   - Option A: Keep `freq_choice` as canonical, always set `weekly_sessions_user` from it when saving (so both stay in sync, but we consider freq_choice the source).
+   - Option B: Keep only one column - e.g. only `freq_choice` and compute the number in code when needed; or only `weekly_sessions_user` and compute text in UI.
+
+2. **Migration**: Update existing rows that have only `weekly_sessions_user` (or only `freq_choice`) so that both are populated consistently. Then in the app, when saving we always set both from one source (e.g. from the selected text we set both freq_choice and weekly_sessions_user).
+
+Let me look at where these columns are used to understand the best approach.
+
+From earlier grep:
+- body_metrics insert: both freq_choice and weekly_sessions_user are set (from normalizeFrequency and getWeeklySessions)
+- profile API returns body_metrics as-is (select *)
+- generatePlan uses: bm.freq_choice ?? bm.frequency ?? bm.weekly_sessions
+- profile-preferences API: updates both freq_choice and weekly_sessions_user from the incoming freq value
+
+So the codebase already writes both. The issue is historical data where maybe only one was set. The user wants:
+1. "poradek v databazi" - order/consistency in the database
+2. "hodnoty na jednom miste" - values in one place
+
+So the clean approach:
+1. **Single source of truth in app**: We treat the TEXT (`freq_choice`) as the canonical value for display and for storage. The number `weekly_sessions_user` is derived from it (for API/generatePlan use).
+2. **Migration**: Backfill missing `freq_choice` from `weekly_sessions_user` (and optionally backfill missing `weekly_sessions_user` from `freq_choice`) so all rows are consistent.
+3. **When saving**: Always set both from the one user-facing value (the text choice). So when we save preferences or body-metrics, we set freq_choice from form and weekly_sessions_user = derived number.
+
+I'll:
+1. Add a Supabase migration that:
+   - Backfills `freq_choice` where it's null/empty from `weekly_sessions_user` (1→'1-2x týdně', 3→'2-3x týdně', 5→'4-5x týdně')
+   - Optionally backfills `weekly_sessions_user` where null from `freq_choice` (so both columns are in sync)
+2. Ensure in the app we always write both when saving (profile-preferences and body-metrics already do; quick-weight copies from latest). So no app code change needed for writes if we consider freq_choice the source and always derive weekly_sessions_user.
+
+Let me check the body_metrics table structure and the profile-preferences/body-metrics write logic again.
+</details></think>
+
+---
+
+
+Sjednotíme frekvenci v DB: jedna zdrojová hodnota a doplnění chybějících polí. Kontroluji strukturu a místa zápisu.
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "freq_choice|weekly_sessions_user",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\pages\\api",
+  "caseInsensitive": false
+}
+```
+Additional data:
+
+```json
+{
+  "isPruned": true,
+  "pattern": "freq_choice|weekly_sessions_user",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\pages\\api",
+  "outputMode": "content",
+  "totalFiles": 3,
+  "totalMatches": 8,
+  "topFiles": [
+    {
+      "uri": "pages/api/body-metrics.js",
+      "matchCount": 2
+    },
+    {
+      "uri": "pages\\api\\profile-preferences.js",
+      "matchCount": 4
+    },
+    {
+      "uri": "pages/api/quick-weight.js",
+      "matchCount": 2
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\api\body-metrics.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="generic" data-tool-name="glob_file_search">
+<details>
+<summary>Tool use: **glob_file_search** • Searched codebase "undefined" • **17** results in **1** directory</summary>
+
+Directory: **C:\Users\prikopa\Documents\GitHub\body-mind-on\supabase\migrations** (17 files)
+
+| File |
+|------|
+| `../supabase/migrations/20260228_community_forum_categories_replies.sql` |
+| `../supabase/migrations/20250219_fix_workouts_workout_name.sql` |
+| `../supabase/migrations/20260228_profiles_avatars.sql` |
+| `../supabase/migrations/20260220_create_memberships.sql` |
+| `../supabase/migrations/20250219_fix_workouts_schema.sql` |
+| `../supabase/migrations/20260320_body_metrics_foods_to_avoid.sql` |
+| `../supabase/migrations/20250219_create_workouts.sql` |
+| `../supabase/migrations/20260306_trainer_alert_state.sql` |
+| `../supabase/migrations/20260306_memberships_trial_ends_at.sql` |
+| `../supabase/migrations/20260228_community_posts.sql` |
+| `../supabase/migrations/20250220_create_habit_logs.sql` |
+| `../supabase/migrations/20260220_workouts_perceived_difficulty.sql` |
+| `../supabase/migrations/20250219_fix_workouts_user_id_fkey.sql` |
+| `../supabase/migrations/20260306_profiles_daily_email.sql` |
+| `../supabase/migrations/20250221_create_user_habits.sql` |
+| `../supabase/migrations/20260221_trainer_calendar_tokens.sql` |
+| `../supabase/migrations/20250219_fix_workouts_duration.sql` |
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+I see that:
+1. `normalizeFrequency` returns '1–2x týdně' (with en-dash), '2–3x týdně', '4–5x týdně'. The dropdown in profil.js uses "1-2x týdně" (hyphen). Let me check - in body-metrics.js line 275: `if (t.includes('1') || t.includes('0')) return '1–2x týdně';` - that's en-dash. In profil.js the options are value="1-2x týdně" with hyphen. So we might have inconsistency. I'll use the same as in the form for the migration (hyphen is fine, or we could use the same character as normalizeFrequency).
+
+2. getWeeklySessions: includes('1') -> 1, includes('2') -> 3, includes('4') -> 5, else 3. So we need migration to set freq_choice from weekly_sessions_user: 1 -> '1-2x týdně', 3 -> '2-3x týdně', 5 -> '4-5x týdně'. And optionally set weekly_sessions_user from freq_choice where it's null.
+
+Let me check the exact strings used in the app (profil.js dropdown):
+- "1-2x týdně"
+- "2-3x týdně"
+- "4-5x týdně"
+
+And normalizeFrequency returns:
+- '1–2x týdně' (en-dash)
+- '2–3x týdně'
+- '4–5x týdně'
+
+So there might be two different dashes. Let me check - in JS often - (hyphen-minus U+002D) vs – (en-dash U+2013). The form values use hyphen. So when we save from form we get "1-2x týdně", and normalizeFrequency("1-2x týdně") returns '1–2x týdně' because t.includes('1') is true. So the DB might have en-dash from body-metrics. The dropdown option value is hyphen. So when we read from DB we have freq_choice possibly with en-dash - and the select option value is hyphen, so they might not match! Let me check getFreqFromMetrics - it returns lm.freq_choice as-is, or derives from weekly_sessions_user as '1-2x týdně' (hyphen). So if DB has en-dash, the select would show empty because value doesn't match. So we have a bug - either normalizeFrequency should return hyphen to match the form, or the form options should use en-dash. For the migration I'll use the same strings as the form (hyphen) so everything is consistent. And we could update normalizeFrequency to use hyphen for consistency. Let me check normalizeFrequency again - it returns '1–2x týdně' with en-dash. So the DB could have en-dash. The dropdown in profil has value="1-2x týdně" with hyphen. So when we load from DB with en-dash, the select doesn't match. That could be another reason for empty frequency! So for "values in one place" we should:
+1. Pick one canonical string format - use hyphen "1-2x týdně" everywhere (form and DB).
+2. Migration: update all body_metrics set freq_choice = ... where weekly_sessions_user is set and (freq_choice is null or freq_choice = ''). Use hyphen. And set weekly_sessions_user from freq_choice where it's null.
+3. In normalizeFrequency use hyphen so new saves are consistent.
+
+Let me read the profil dropdown again to see exact option values.
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "1-2x|2-3x|4-5x|1–2x|2–3x|4–5x",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on",
+  "glob": "*.{js,ts,sql}",
+  "caseInsensitive": false
+}
+```
+Additional data:
+
+```json
+{
+  "isPruned": true,
+  "pattern": "1-2x|2-3x|4-5x|1–2x|2–3x|4–5x",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on",
+  "outputMode": "content",
+  "totalFiles": 11,
+  "totalMatches": 34,
+  "topFiles": [
+    {
+      "uri": "components/ProgramForm.js",
+      "matchCount": 1
+    },
+    {
+      "uri": "pages/on-club.js",
+      "matchCount": 3
+    },
+    {
+      "uri": "pages\\start.js",
+      "matchCount": 3
+    },
+    {
+      "uri": "pages\\chci-vip.js",
+      "matchCount": 3
+    },
+    {
+      "uri": "components\\ProgramForm.js",
+      "matchCount": 1
+    },
+    {
+      "uri": "pages/chci-vip.js",
+      "matchCount": 3
+    },
+    {
+      "uri": "pages/api/body-metrics.js",
+      "matchCount": 4
+    },
+    {
+      "uri": "pages\\on-club.js",
+      "matchCount": 3
+    },
+    {
+      "uri": "pages/start.js",
+      "matchCount": 3
+    },
+    {
+      "uri": "pages\\api\\profile-preferences.js",
+      "matchCount": 4
+    },
+    {
+      "uri": "pages\\profil.js",
+      "matchCount": 6
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\supabase\migrations\20260320_body_metrics_foods_to_avoid.sql</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+So we have:
+- Form option **values** are hyphen: "1-2x týdně", "2-3x týdně", "4-5x týdně"
+- body-metrics.js normalizeFrequency returns **en-dash**: '1–2x týdně' etc. So when we save from START form we send frequency "1-2x týdně", normalizeFrequency gets it and returns '1–2x týdně' - so DB gets en-dash! And when we load in profil, getFreqFromMetrics returns lm.freq_choice which is en-dash, but the select value is hyphen - so they don't match and the dropdown shows empty. So we need to:
+1. Use one canonical format everywhere - hyphen (value in forms) so DB stores hyphen.
+2. Migration: backfill freq_choice from weekly_sessions_user using hyphen; and normalize existing freq_choice to hyphen (replace en-dash with hyphen) so all DB values are "1-2x týdně" etc.
+3. In body-metrics and profile-preferences normalizeFrequency should return hyphen to match.
+
+Let me implement:
+1. Migration SQL: 
+   - UPDATE body_metrics SET freq_choice = CASE weekly_sessions_user WHEN 1 THEN '1-2x týdně' WHEN 5 THEN '4-5x týdně' ELSE '2-3x týdně' END WHERE (freq_choice IS NULL OR freq_choice = '') AND weekly_sessions_user IS NOT NULL;
+   - UPDATE body_metrics SET weekly_sessions_user = CASE WHEN freq_choice LIKE '%1%' AND (freq_choice LIKE '%2%' OR freq_choice LIKE '%-%') THEN 1 WHEN freq_choice LIKE '%4%' OR freq_choice LIKE '%5%' THEN 5 ELSE 3 END WHERE weekly_sessions_user IS NULL AND freq_choice IS NOT NULL AND freq_choice != '';
+   - Normalize existing freq_choice to hyphen: UPDATE body_metrics SET freq_choice = replace(replace(replace(freq_choice, '–', '-'), '−', '-'), '—', '-') WHERE freq_choice IS NOT NULL AND (freq_choice LIKE '%–%' OR freq_choice LIKE '%−%' OR freq_choice LIKE '%—%');
+   Actually the replace: we want to normalize en-dash to hyphen. In PostgreSQL the en-dash is Unicode. </details></think>
 
 ---
 

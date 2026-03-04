@@ -84,9 +84,9 @@ export default function Header() {
                   <span className="nav-profil-chevron" aria-hidden>▼</span>
                 </button>
                 {profileOpen && (
-                  <div className="nav-profil-dropdown">
-                    <Link href="/profil?edit=preferences" onClick={() => setProfileOpen(false)} className="nav-profil-dropdown-item">
-                      <span className="nav-profil-item-icon">✏️</span>
+                  <div className="nav-profil-dropdown" role="menu">
+                    <Link href="/profil?edit=preferences" onClick={() => setProfileOpen(false)} className="nav-profil-dropdown-item" role="menuitem">
+                      <span className="nav-profil-item-icon" aria-hidden>✏️</span>
                       <span className="nav-profil-item-text">Upravit preference</span>
                     </Link>
                   </div>
@@ -162,19 +162,20 @@ export default function Header() {
           color: #fff;
         }
 
-        .nav-profil-wrap { position: relative; }
+        .nav-profil-wrap { position: relative; display: inline-flex; align-items: center; }
         .nav-profil-trigger {
           display: inline-flex;
           align-items: center;
           gap: 8px;
+          min-height: 44px;
+          padding: 0 6px;
           background: none;
           border: none;
           color: #ccc;
           font-size: inherit;
-          cursor: pointer;
-          padding: 0 4px;
           font-family: inherit;
-          transition: color 0.3s;
+          cursor: pointer;
+          transition: color 0.2s ease;
         }
         .nav-profil-trigger:hover { color: #fff; }
         .nav-profil-chevron { font-size: 10px; opacity: 0.7; transition: transform 0.2s; }
@@ -183,26 +184,51 @@ export default function Header() {
           position: absolute;
           top: 100%;
           right: 0;
-          margin-top: 8px;
-          min-width: 200px;
-          background: #1a1a2e;
-          border: 1px solid #333;
-          border-radius: 12px;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+          margin-top: 10px;
+          min-width: 220px;
+          background: linear-gradient(180deg, #1e1e32 0%, #1a1a2e 100%);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 14px;
+          box-shadow: 0 12px 32px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.03) inset;
           overflow: hidden;
           z-index: 100;
+          animation: nav-dropdown-in 0.2s ease-out;
+        }
+        @keyframes nav-dropdown-in {
+          from { opacity: 0; transform: translateY(-6px); }
+          to { opacity: 1; transform: translateY(0); }
         }
         .nav-profil-dropdown-item {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
           padding: 14px 18px;
-          color: #e2e8f0;
+          color: #e8ecf4;
           text-decoration: none;
-          font-size: 16px;
-          transition: background 0.2s;
+          font-size: 15px;
+          font-weight: 500;
+          line-height: 1.35;
+          letter-spacing: 0.01em;
+          transition: background 0.2s ease, color 0.2s ease;
         }
-        .nav-profil-dropdown-item:hover { background: #252540; color: #fff; }
+        .nav-profil-dropdown-item:hover {
+          background: rgba(255,255,255,0.06);
+          color: #fff;
+        }
+        .nav-profil-item-icon {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
+          flex-shrink: 0;
+          font-size: 1rem;
+          line-height: 1;
+        }
+        .nav-profil-item-text {
+          flex: 1;
+          white-space: nowrap;
+        }
         .nav-avatar, .nav-avatar-placeholder {
           width: 28px;
           height: 28px;

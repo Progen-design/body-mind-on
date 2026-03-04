@@ -9,6 +9,7 @@ import WelcomeTour from '../components/WelcomeTour';
 import PlanViewer, { parsePlanHtml } from '../components/PlanViewer';
 import HabitTracker from '../components/HabitTracker';
 import HabitEntryWizard from '../components/HabitEntryWizard';
+import HabitSelection from '../components/HabitSelection';
 import Toast from '../components/Toast';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
@@ -162,10 +163,13 @@ export default function Profil() {
 
   const [showWorkoutModal, setShowWorkoutModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [workoutError, setWorkoutError] = useState('');
   const [savingWorkout, setSavingWorkout] = useState(false);
   const [settingsError, setSettingsError] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
+  const [preferencesError, setPreferencesError] = useState('');
+  const [savingPreferences, setSavingPreferences] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showWelcomeTour, setShowWelcomeTour] = useState(false);
   const [showHabitEntryWizard, setShowHabitEntryWizard] = useState(false);
@@ -213,6 +217,18 @@ export default function Profil() {
     start_weight_kg: '',
     goal_weight_kg: '',
     height_cm: '',
+  });
+
+  const [preferencesForm, setPreferencesForm] = useState({
+    activity: '',
+    stress_level: '',
+    occupation: '',
+    goal: '',
+    freq_choice: '',
+    diet_type: '',
+    dietary_restrictions: '',
+    foods_to_avoid: '',
+    selected_habits: [],
   });
 
   const profileRef = useRef(null);
@@ -775,6 +791,57 @@ export default function Profil() {
       setSettingsError(err.message || 'Chyba připojení');
     } finally {
       setSavingSettings(false);
+    }
+  }
+
+  async function handleSavePreferences(e) {
+    e.preventDefault();
+    setPreferencesError('');
+    setSavingPreferences(true);
+    try {
+      const { data: { session: fresh } } = await supabase.auth.refreshSession();
+      const token = fresh?.access_token ?? session?.access_token;
+      if (!token) {
+        setPreferencesError('Session vypršela. Obnov stránku.');
+        return;
+      }
+      if (preferencesForm.selected_habits.length === 0) {
+        setPreferencesError('Vyber alespoň jeden návyk.');
+        return;
+      }
+      const res = await fetch('/api/profile-preferences', {
+        ...fetchOptions,
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          activity: preferencesForm.activity || undefined,
+          stress_level: preferencesForm.stress_level || undefined,
+          occupation: preferencesForm.occupation || preferencesForm.worktype || undefined,
+          goal: preferencesForm.goal || undefined,
+          freq_choice: preferencesForm.freq_choice || preferencesForm.frequency || undefined,
+          diet_type: preferencesForm.diet_type || undefined,
+          dietary_restrictions: preferencesForm.dietary_restrictions || undefined,
+          foods_to_avoid: preferencesForm.foods_to_avoid || undefined,
+          selected_habits: preferencesForm.selected_habits,
+        }),
+      });
+      const json = await res.json();
+      if (res.ok && json.ok) {
+        setShowPreferencesModal(false);
+        setToast({ message: json.message || 'Preference uloženy a plán přegenerován.', type: 'success' });
+        lastMutatedAtRef.current = Date.now();
+        const result = await refetchProfile(token, profile);
+        if (result?.ok) setProfile((prev) => ({ ...prev, _updated: Date.now() }));
+      } else {
+        setPreferencesError(json.error || 'Nepodařilo se uložit.');
+      }
+    } catch (err) {
+      setPreferencesError(err.message || 'Chyba připojení');
+    } finally {
+      setSavingPreferences(false);
     }
   }
 
@@ -1599,6 +1666,33 @@ export default function Profil() {
                   Nastavení pro výpočet
                   <span className="btn-sublabel">Cílová váha pro odhad do cíle</span>
                 </button>
+                {!profile?.can_create_calendar_events && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const lm = profile?.body_metrics?.[0];
+                      setPreferencesError('');
+                      setPreferencesForm({
+                        activity: lm?.activity ?? '',
+                        stress_level: lm?.stress_level ?? '',
+                        occupation: lm?.occupation ?? '',
+                        goal: lm?.goal ?? '',
+                        freq_choice: lm?.freq_choice ?? '',
+                        frequency: lm?.freq_choice ?? '',
+                        diet_type: lm?.diet_type ?? '',
+                        dietary_restrictions: lm?.dietary_restrictions ?? '',
+                        foods_to_avoid: lm?.foods_to_avoid ?? '',
+                        selected_habits: (profile?.user_habits || []).map((h) => h.habit_id).filter(Boolean),
+                      });
+                      setShowPreferencesModal(true);
+                    }}
+                    className="btn-secondary"
+                  >
+                    <span className="btn-emoji">✏️</span>
+                    Upravit preference
+                    <span className="btn-sublabel">Aktivita, cíl, strava, návyky – přegeneruje plán</span>
+                  </button>
+                )}
               </div>
             </section>
             </>
@@ -2145,6 +2239,114 @@ export default function Profil() {
                         ) : (
                           'Uložit'
                         )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+            {showPreferencesModal && (
+              <div className="modal-overlay" onClick={() => { if (!savingPreferences) { setShowPreferencesModal(false); setPreferencesError(''); } }}>
+                <div className="modal modal-preferences" onClick={(e) => e.stopPropagation()}>
+                  <h3>Upravit preference</h3>
+                  <p className="modal-hint">Změny uložíme a <strong>přegenerujeme tvůj AI plán</strong>. Zapsané tréninky zůstanou zachovány.</p>
+                  <form onSubmit={handleSavePreferences}>
+                    <div className="preferences-section">
+                      <h4 className="preferences-section-title">Aktivita a cíl</h4>
+                      <div className="preferences-grid">
+                        <div>
+                          <label>Úroveň aktivity</label>
+                          <select value={preferencesForm.activity} onChange={(e) => setPreferencesForm((f) => ({ ...f, activity: e.target.value }))}>
+                            <option value="">Vyber</option>
+                            <option value="sedavy">Nízká</option>
+                            <option value="lehce">Lehce aktivní</option>
+                            <option value="stredne">Střední</option>
+                            <option value="velmi">Vysoká</option>
+                            <option value="extra">Extra aktivní</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label>Míra stresu</label>
+                          <select value={preferencesForm.stress_level} onChange={(e) => setPreferencesForm((f) => ({ ...f, stress_level: e.target.value }))}>
+                            <option value="">Vyber</option>
+                            <option value="low">Nízká</option>
+                            <option value="medium">Střední</option>
+                            <option value="high">Vysoká</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label>Typ práce</label>
+                          <select value={preferencesForm.occupation} onChange={(e) => setPreferencesForm((f) => ({ ...f, occupation: e.target.value }))}>
+                            <option value="">Vyber</option>
+                            <option value="office_it">Sedavé zaměstnání</option>
+                            <option value="manual">Aktivní zaměstnání</option>
+                            <option value="teacher_sales">Kombinované</option>
+                            <option value="driver">Řidič</option>
+                            <option value="warehouse">Sklad</option>
+                            <option value="healthcare">Zdravotnictví</option>
+                            <option value="gastronomy">Gastronomie</option>
+                            <option value="other">Jiné</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label>Cíl</label>
+                          <select value={preferencesForm.goal} onChange={(e) => setPreferencesForm((f) => ({ ...f, goal: e.target.value }))}>
+                            <option value="">Vyber</option>
+                            <option value="redukce">Redukce hmotnosti</option>
+                            <option value="nabirani_svaly">Nárůst svalů</option>
+                            <option value="udrzovani">Zdravý životní styl</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label>Frekvence cvičení</label>
+                          <select value={preferencesForm.freq_choice || preferencesForm.frequency} onChange={(e) => setPreferencesForm((f) => ({ ...f, freq_choice: e.target.value, frequency: e.target.value }))}>
+                            <option value="">Vyber</option>
+                            <option value="1-2x týdně">1–2x týdně</option>
+                            <option value="2-3x týdně">2–3x týdně</option>
+                            <option value="4-5x týdně">4–5x týdně</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="preferences-section">
+                      <h4 className="preferences-section-title">Strava a omezení</h4>
+                      <div>
+                        <label>Typ stravy</label>
+                        <select value={preferencesForm.diet_type} onChange={(e) => setPreferencesForm((f) => ({ ...f, diet_type: e.target.value }))}>
+                          <option value="">Žádná preference</option>
+                          <option value="vegetarian">Vegetarián</option>
+                          <option value="vegan">Vegan</option>
+                          <option value="gluten_free">Bez lepku</option>
+                          <option value="lactose_free">Bez laktózy</option>
+                          <option value="paleo">Paleo</option>
+                          <option value="low_carb">Nízkosacharidová</option>
+                          <option value="other">Jiné</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label>Co nejí – alergie, intolerance</label>
+                        <textarea rows={2} placeholder="např. ořechy, mléko, lepek…" value={preferencesForm.dietary_restrictions} onChange={(e) => setPreferencesForm((f) => ({ ...f, dietary_restrictions: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label>Potraviny k vynechání z jídelníčku</label>
+                        <textarea rows={2} placeholder="např. avokádo, brokolice, banány…" value={preferencesForm.foods_to_avoid} onChange={(e) => setPreferencesForm((f) => ({ ...f, foods_to_avoid: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div className="preferences-section">
+                      <h4 className="preferences-section-title">Denní návyky</h4>
+                      <HabitSelection selectedIds={preferencesForm.selected_habits} onChange={(ids) => setPreferencesForm((f) => ({ ...f, selected_habits: ids }))} />
+                    </div>
+                    {preferencesError && <p className="modal-error" role="alert">{preferencesError}</p>}
+                    {savingPreferences && (
+                      <div className="modal-loading">
+                        <div className="loading-spinner"></div>
+                        <span>Ukládám a přegenerovávám plán… Může to trvat až minutu.</span>
+                      </div>
+                    )}
+                    <div className="modal-actions">
+                      <button type="button" onClick={() => { if (!savingPreferences) { setShowPreferencesModal(false); setPreferencesError(''); } }} disabled={savingPreferences}>Zrušit</button>
+                      <button type="submit" disabled={savingPreferences || preferencesForm.selected_habits.length === 0} className={savingPreferences ? 'loading' : ''}>
+                        {savingPreferences ? (<><span className="button-spinner"></span> Ukládám…</>) : 'Uložit a přegenerovat plán'}
                       </button>
                     </div>
                   </form>
@@ -3320,6 +3522,15 @@ export default function Profil() {
           width: 100%;
           border: 1px solid #333;
         }
+        .modal-preferences { max-width: 520px; max-height: 90vh; overflow-y: auto; }
+        .preferences-section { margin-bottom: 24px; }
+        .preferences-section:last-of-type { margin-bottom: 0; }
+        .preferences-section-title { margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #e2e8f0; }
+        .preferences-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+        @media (max-width: 480px) { .preferences-grid { grid-template-columns: 1fr; } }
+        .preferences-section .modal label { margin-top: 8px; }
+        .preferences-section .modal label:first-child { margin-top: 0; }
+        .preferences-section textarea { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #444; background: #0f0f1a; color: #fff; font-family: inherit; resize: vertical; }
         .modal h3 { margin: 0 0 20px; }
         .modal label { display: block; margin: 12px 0 4px; color: #94a3b8; font-size: 14px; }
         .modal input, .modal select {

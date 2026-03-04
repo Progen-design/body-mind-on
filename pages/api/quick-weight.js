@@ -27,13 +27,17 @@ export default async function handler(req, res) {
       ? new Date(dateStr).toISOString()
       : new Date().toISOString();
 
-    const { data: latest } = await supabaseServer
+    const { data: latest, error: latestErr } = await supabaseServer
       .from('body_metrics')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
+
+    if (latestErr || !latest) {
+      return res.status(400).json({ error: 'Nejprve dokonči registraci (zadej výšku a váhu).' });
+    }
 
     const row = {
       user_id: user.id,

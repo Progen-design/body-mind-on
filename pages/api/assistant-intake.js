@@ -83,6 +83,7 @@ export default async function handler(req, res) {
         frequency: data.frequency,
         diet_type: data.diet_type ?? null,
         dietary_restrictions: data.dietary_restrictions ?? data.preferences ?? null,
+        foods_to_avoid: data.foods_to_avoid ?? null,
         notes: data.notes,
       },
       { loginUrl, existingAccount: true }

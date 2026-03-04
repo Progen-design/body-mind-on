@@ -4,7 +4,7 @@ import { generatePlanForEmail } from '../../lib/generatePlan';
 import { createAuthUserIfNew } from '../../lib/authHelpers';
 import { getClientIp, isRateLimited } from '../../lib/rateLimit';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
-import { normalizeOccupation } from '../../lib/preferenceConstants';
+import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getWeeklySessions } from '../../lib/preferenceConstants';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -221,52 +221,4 @@ function normalizeGender(v) {
   if (t.includes('muž') || t === 'm') return 'male';
   if (t.includes('žena') || t === 'f') return 'female';
   return null;
-}
-
-function normalizeActivity(v) {
-  if (!v) return null;
-  const t = v.toString().toLowerCase().trim();
-  const known = ['sedavy', 'lehce', 'stredne', 'velmi', 'extra'];
-  if (known.includes(t)) return t;
-  if (t.includes('nízk')) return 'lehce';
-  if (t.includes('střed')) return 'stredne';
-  if (t.includes('vysok')) return 'velmi';
-  return 'stredne';
-}
-
-function normalizeStress(v) {
-  if (!v) return null;
-  const t = v.toString().toLowerCase().trim();
-  if (t === 'low' || t === 'medium' || t === 'high') return t;
-  if (t.includes('nízk')) return 'low';
-  if (t.includes('střed')) return 'medium';
-  if (t.includes('vysok')) return 'high';
-  return 'medium';
-}
-
-function normalizeGoal(v) {
-  if (!v) return null;
-  const t = v.toString().toLowerCase().trim();
-  if (t === 'redukce' || t === 'nabirani_svaly' || t === 'udrzovani') return t;
-  if (t.includes('reduk')) return 'redukce';
-  if (t.includes('sval')) return 'nabirani_svaly';
-  return 'udrzovani';
-}
-
-/** Canonical hodnoty (shodné s option value ve formulářích): 1-2x týdně | 2-3x týdně | 4-5x týdně */
-function normalizeFrequency(v) {
-  if (!v) return null;
-  const t = v.toLowerCase();
-  if (t.includes('1') || t.includes('0')) return '1-2x týdně';
-  if (t.includes('2') && t.includes('3')) return '2-3x týdně';
-  if (t.includes('4') || t.includes('5')) return '4-5x týdně';
-  return '2-3x týdně';
-}
-
-function getWeeklySessions(v) {
-  if (!v) return 3;
-  if (v.includes('1')) return 1;
-  if (v.includes('2')) return 3;
-  if (v.includes('4')) return 5;
-  return 3;
 }

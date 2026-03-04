@@ -3,47 +3,7 @@
 import { supabaseServer } from '../../lib/supabaseServer';
 import { generatePlanForEmail } from '../../lib/generatePlan';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
-import { normalizeOccupation } from '../../lib/preferenceConstants';
-
-function normalizeActivity(v) {
-  if (!v || typeof v !== 'string') return null;
-  const t = String(v).toLowerCase().trim();
-  if (['sedavy', 'lehce', 'stredne', 'velmi', 'extra'].includes(t)) return t;
-  if (t === 'nízká' || t === 'nizka' || (t.includes('nízk') && !t.includes('střed')) || t.includes('lehce') || t.includes('lehk')) return 'sedavy';
-  if (t === 'střední' || t === 'stredni' || t.includes('střed')) return 'stredne';
-  if (t === 'vysoká' || t === 'vysoka' || t.includes('vysok') || t.includes('extra')) return 'velmi';
-  return 'stredne';
-}
-
-function normalizeStress(v) {
-  if (!v) return null;
-  const t = String(v).toLowerCase().trim();
-  if (['low', 'medium', 'high'].includes(t)) return t;
-  if (t.includes('nízk')) return 'low';
-  if (t.includes('střed')) return 'medium';
-  if (t.includes('vysok')) return 'high';
-  return 'medium';
-}
-
-function normalizeGoal(v) {
-  if (!v || typeof v !== 'string') return null;
-  const t = String(v).toLowerCase().trim();
-  if (['redukce', 'nabirani_svaly', 'udrzovani'].includes(t)) return t;
-  if (t.includes('reduk') || t.includes('hmotnosti')) return 'redukce';
-  if (t.includes('sval') || t.includes('nárůst') || t.includes('narust')) return 'nabirani_svaly';
-  if (t.includes('zdrav') || t.includes('udrž') || t.includes('udrz') || t.includes('životní') || t.includes('zivotni')) return 'udrzovani';
-  return 'udrzovani';
-}
-
-/** Canonical hodnoty (shodné s option value ve formulářích): 1-2x týdně | 2-3x týdně | 4-5x týdně */
-function normalizeFrequency(v) {
-  if (!v) return null;
-  const t = String(v).toLowerCase();
-  if (t.includes('1') && (t.includes('2') || t.includes('-') || t.includes('–'))) return '1-2x týdně';
-  if (t.includes('2') && t.includes('3')) return '2-3x týdně';
-  if (t.includes('4') || t.includes('5')) return '4-5x týdně';
-  return '2-3x týdně';
-}
+import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency } from '../../lib/preferenceConstants';
 
 export default async function handler(req, res) {
   if (req.method !== 'PATCH' && req.method !== 'POST') {

@@ -3,6 +3,7 @@
 // POST → vrátí personalizovaný plán jako HTML blok
 
 import { generatePlan } from '../../lib/generatePlan'
+import { getClientIp, isRateLimited } from '../../lib/rateLimit'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -10,6 +11,11 @@ export default async function handler(req, res) {
   }
 
   try {
+    const ip = getClientIp(req)
+    if (isRateLimited(`generate-plan:${ip}`, 5, 10 * 60 * 1000)) {
+      res.setHeader('Retry-After', '600')
+      return res.status(429).json({ ok: false, error: 'Příliš mnoho požadavků. Zkus to prosím za chvíli znovu.' })
+    }
     const {
       name,
       gender,

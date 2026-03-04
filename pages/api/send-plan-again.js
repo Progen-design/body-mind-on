@@ -20,12 +20,22 @@ export default async function handler(req, res) {
     const email = user.email?.toLowerCase();
     if (!email) return res.status(400).json({ error: 'Uživatel nemá e-mail' });
 
-    const { data: plans } = await supabaseServer
+    let { data: plans } = await supabaseServer
       .from('ai_generated_plans')
       .select('id, plan_html, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1);
+
+    if (!plans?.length && email) {
+      const { data: plansByEmail } = await supabaseServer
+        .from('ai_generated_plans')
+        .select('id, plan_html, created_at')
+        .eq('email', email)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      plans = plansByEmail;
+    }
 
     const plan = plans?.[0];
     const planHtml = plan?.plan_html;

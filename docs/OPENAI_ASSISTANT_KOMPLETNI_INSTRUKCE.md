@@ -17,7 +17,14 @@ Volitelně (pro aplikaci): "mindset_tip": "jedna věta", "shopping_list": ["polo
 
 Pokud nelze spočítat, vrať 0. Žádné vysvětlení mimo JSON.
 
-VSTUP: {name, gender, age, height_cm, weight_kg, activity, stress, occupation, goal, weekly_sessions, diet_type, preferences}
+VSTUP (JSON z aplikace): {name, gender, age, height_cm, weight_kg, activity, stress, occupation, goal, weekly_sessions, diet_type, preferences}
+
+Hodnoty vstupu (canonical – aplikace je normalizuje před odesláním):
+- activity: sedavy (nízká) | stredne (střední) | velmi (vysoká)
+- stress: low | medium | high
+- occupation: office_it (sedavé) | manual (aktivní) | teacher_sales (kombinované)
+- goal: redukce | nabirani_svaly | udrzovani
+- weekly_sessions: 1 (1–2× týdně) | 3 (2–3×) | 5 (4–5×)
 
 PREFERENCES obsahuje: typ stravy (Bez lepku, Bez laktózy…), alergie/intolerance (Co nejí), potraviny k vynechání z jídelníčku (konkrétní položky – avokádo, brokolice…), poznámky. Všechny položky z preferences NIKDY nezařazuj do jídelníčku ani nákupního seznamu.
 

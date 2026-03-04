@@ -185,12 +185,12 @@ export default function Header() {
           top: 100%;
           right: 0;
           margin-top: 10px;
-          min-width: 220px;
-          background: linear-gradient(180deg, #1e1e32 0%, #1a1a2e 100%);
-          border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 14px;
-          box-shadow: 0 12px 32px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.03) inset;
-          overflow: hidden;
+          min-width: 240px;
+          padding: 10px;
+          background: #1a1a2e;
+          border: 1px solid #334155;
+          border-radius: 20px;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.4);
           z-index: 100;
           animation: nav-dropdown-in 0.2s ease-out;
         }
@@ -203,27 +203,32 @@ export default function Header() {
           align-items: center;
           gap: 12px;
           padding: 14px 18px;
-          color: #e8ecf4;
+          color: #e2e8f0;
           text-decoration: none;
           font-size: 15px;
           font-weight: 500;
           line-height: 1.35;
-          letter-spacing: 0.01em;
-          transition: background 0.2s ease, color 0.2s ease;
+          border-radius: 12px;
+          background: rgba(255,255,255,0.03);
+          border: 1px solid transparent;
+          transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
         }
         .nav-profil-dropdown-item:hover {
           background: rgba(255,255,255,0.06);
+          border-color: rgba(148,163,184,0.2);
           color: #fff;
         }
         .nav-profil-item-icon {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          width: 24px;
-          height: 24px;
+          width: 28px;
+          height: 28px;
           flex-shrink: 0;
           font-size: 1rem;
           line-height: 1;
+          border-radius: 50%;
+          background: rgba(124,58,237,0.2);
         }
         .nav-profil-item-text {
           flex: 1;

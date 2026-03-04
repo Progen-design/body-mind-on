@@ -35595,7 +35595,722 @@ Let me implement:
    - UPDATE body_metrics SET freq_choice = CASE weekly_sessions_user WHEN 1 THEN '1-2x týdně' WHEN 5 THEN '4-5x týdně' ELSE '2-3x týdně' END WHERE (freq_choice IS NULL OR freq_choice = '') AND weekly_sessions_user IS NOT NULL;
    - UPDATE body_metrics SET weekly_sessions_user = CASE WHEN freq_choice LIKE '%1%' AND (freq_choice LIKE '%2%' OR freq_choice LIKE '%-%') THEN 1 WHEN freq_choice LIKE '%4%' OR freq_choice LIKE '%5%' THEN 5 ELSE 3 END WHERE weekly_sessions_user IS NULL AND freq_choice IS NOT NULL AND freq_choice != '';
    - Normalize existing freq_choice to hyphen: UPDATE body_metrics SET freq_choice = replace(replace(replace(freq_choice, '–', '-'), '−', '-'), '—', '-') WHERE freq_choice IS NOT NULL AND (freq_choice LIKE '%–%' OR freq_choice LIKE '%−%' OR freq_choice LIKE '%—%');
-   Actually the replace: we want to normalize en-dash to hyphen. In PostgreSQL the en-dash is Unicode. </details></think>
+   Actually the replace: we want to normalize en-dash to hyphen. In PostgreSQL the en-dash is Unicode. Let me use: UPDATE ... SET freq_choice = CASE freq_choice WHEN '1–2x týdně' THEN '1-2x týdně' WHEN '2–3x týdně' THEN '2-3x týdně' WHEN '4–5x týdně' THEN '4-5x týdně' ELSE trim(replace(replace(freq_choice, E'\u2013', '-'), E'\u2212', '-')) END WHERE freq_choice IS NOT NULL; 
+   Simpler: just set the three known values. UPDATE body_metrics SET freq_choice = '1-2x týdně' WHERE freq_choice IN ('1–2x týdně', '1-2x týdně'); UPDATE body_metrics SET freq_choice = '2-3x týdně' WHERE freq_choice IN ('2–3x týdně', '2-3x týdně'); UPDATE body_metrics SET freq_choice = '4-5x týdně' WHERE freq_choice IN ('4–5x týdně', '4-5x týdně');
+   That way we normalize to hyphen.
+
+2. In code: body-metrics.js normalizeFrequency return hyphen. profile-preferences.js normalizeFrequency return hyphen. Then getFreqFromMetrics in profil.js already returns hyphen for the derived case; for freq_choice we just use it as-is - after migration all DB values will be hyphen.
+
+Let me also add a comment in the migration that freq_choice is the canonical value and weekly_sessions_user is derived (or we keep both in sync). The user said "hodnoty na jednom miste" - so one place. We could:
+- Keep both columns but always set both from one source (freq_choice text). Migration syncs them. Code always writes both.
+- Or drop one column - but that would require more code changes (generatePlan, etc. use both). So keeping both but synced is simpler.
+
+Implementing.
+</details></think>
+
+---
+
+
+Kontroluji `profile-preferences` normalizaci a vytvořím migraci a sjednocení formátu (pomlčka vs. en-dash).
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\api\profile-preferences.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+I see that profile-preferences sets weekly_sessions_user from freq (the raw input) with includes('1') and includes('4'). So when we have normalized freq_choice '1–2x týdně' (en-dash), the update stores that. And when we set weekly_sessions_user we use the raw b.freq_choice which might be '1-2x týdně' from the form - so includes('1') is true. So the number is correct. The issue is only that DB stores en-dash and form sends hyphen, so when we read back we don't match.
+
+Plan:
+1. **Canonical format**: Use hyphen "1-2x týdně" everywhere (form values, DB, API responses). So normalizeFrequency in both body-metrics and profile-preferences should return hyphen.
+2. **Migration**: 
+   - Backfill freq_choice from weekly_sessions_user where freq_choice is null/empty (using hyphen).
+   - Normalize existing freq_choice to hyphen (replace en-dash variants).
+   - Backfill weekly_sessions_user from freq_choice where weekly_sessions_user is null.
+3. **getFreqFromMetrics** can stay - it already returns hyphen when deriving from weekly_sessions_user; when reading freq_choice from DB, after migration it will be hyphen so no change needed. We could also normalize when reading (accept both) but after migration everything is hyphen.
+
+Let me write the migration and update the two normalizeFrequency functions.
+</details></think>
+
+---
+
+
+Provádím: 1) migraci DB – sjednocení a doplnění frekvence, 2) sjednocení formátu na pomlčku v API.
+
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="todo_write">
+<details><summary>Tool use: **todo_write** • Todo List</summary>
+
+- [-] Migration: sync freq_choice + weekly_sessions_user
+- [ ] Canonical format hyphen in body-metrics + profile-preferences
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\api\body-metrics.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+I'll use hyphen in normalizeFrequency so the canonical value in DB is "1-2x týdně" (ASCII hyphen). The migration will:
+1. Normalize existing freq_choice that have en-dash to hyphen (so '1–2x týdně' -> '1-2x týdně')
+2. Backfill freq_choice from weekly_sessions_user where freq_choice is null or empty
+3. Backfill weekly_sessions_user from freq_choice where weekly_sessions_user is null
+
+In PostgreSQL, en-dash is U+2013. We can do:
+UPDATE body_metrics SET freq_choice = '1-2x týdně' WHERE freq_choice = '1–2x týdně' OR freq_choice = '1-2x týdně';
+etc. Or use replace: UPDATE body_metrics SET freq_choice = replace(freq_choice, E'\u2013', '-') WHERE freq_choice IS NOT NULL;
+But \u2013 in a string in SQL might need CHR(8211) in PostgreSQL. Let me use: replace(freq_choice, chr(8211), '-')
+Actually in PostgreSQL it's CHR(2013) for en-dash? No - Unicode 2013 is en-dash. In PostgreSQL chr() takes ASCII. For Unicode we need something else. In PostgreSQL we can use E'\u2013' in some versions or U&'\2013'. Let me try: update body_metrics set freq_choice = replace(freq_choice, U&'\2013', '-') where freq_choice is not null;  Actually that might not work. Simpler: just match the three known Czech strings. We might have stored '1–2x týdně' (with en-dash). So: UPDATE body_metrics SET freq_choice = '1-2x týdně' WHERE freq_choice IS NOT NULL AND (freq_choice LIKE '1%2x%' OR freq_choice = '1-2x týdně'); 
+Actually the safest is to do CASE: 
+UPDATE body_metrics SET freq_choice = CASE 
+  WHEN freq_choice ~ '1.*2' OR freq_choice = '1-2x týdně' THEN '1-2x týdně'
+  WHEN freq_choice ~ '2.*3' OR freq_choice = '2-3x týdně' THEN '2-3x týdně'
+  WHEN freq_choice ~ '4.*5' OR freq_choice = '4-5x týdně' THEN '4-5x týdně'
+  ELSE '2-3x týdně'
+END WHERE freq_choice IS NOT NULL AND freq_choice != '';
+
+That might overwrite weird values with default. Or we could only normalize the known en-dash forms:
+UPDATE body_metrics SET freq_choice = '1-2x týdně' WHERE freq_choice IN ('1–2x týdně', '1-2x týdně');
+But in SQL file we need to type the en-dash. In UTF-8 file we can literally put the character. Let me use literal replacement in migration: replace(freq_choice, chr(8211), '-'). In PostgreSQL, for Unicode: select chr(8211); gives ? or the character. Actually in PostgreSQL chr(int) only accepts 0-127 in older versions; in newer PostgreSQL chr(8211) might work. Let me check - in PostgreSQL 9+ chr(8211) returns the Unicode character. So we can do: UPDATE body_metrics SET freq_choice = replace(freq_choice, chr(8211), '-') WHERE freq_choice IS NOT NULL AND freq_choice LIKE '%' || chr(8211) || '%';
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: C:\Users\prikopa\Documents\GitHub\body-mind-on\supabase\migrations\20260321_body_metrics_frequency_sync.sql</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+PostgreSQL regex ~ '1' would match any row with '1' in it, so '2-3x' wouldn't match, '1-2x' would. For "1-2x" we need 1 and (2 or -). So freq_choice ~ '1' AND (freq_choice ~ '2' OR freq_choice ~ '-') - but '4-5x' also contains '4' and '-'. So order matters: first check for 1-2 (1 and 2), then 4 or 5, else 3. Let me refine:
+  WHEN freq_choice LIKE '%1%' AND (freq_choice LIKE '%2%' OR freq_choice LIKE '%-%') THEN 1  -- 1-2x
+  WHEN freq_choice LIKE '%4%' OR freq_choice LIKE '%5%' THEN 5
+  ELSE 3
+But '1-2x' contains both 1 and 2, so that's correct. And we want to avoid matching '2-3x' for the first condition - '2-3x' has 2 but not 1 in the sense of "1-2". So "1-2x" has 1 and 2. "2-3x" has 2 and 3. "4-5x" has 4 and 5. So:
+  WHEN freq_choice LIKE '%1%' AND freq_choice LIKE '%2%' THEN 1  -- 1-2x
+  WHEN freq_choice LIKE '%4%' OR freq_choice LIKE '%5%' THEN 5
+  ELSE 3
+That's cleaner. Let me update the migration.
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: C:\Users\prikopa\Documents\GitHub\body-mind-on\supabase\migrations\20260321_body_metrics_frequency_sync.sql</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\api\body-metrics.js</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\api\profile-preferences.js</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+profile-preferences also sets weekly_sessions_user from the raw input: updates.weekly_sessions_user = freq?.includes('1') ? 1 : freq?.includes('4') ? 5 : 3; So when we pass '1-2x týdně', includes('1') is true -> 1. Good. When we pass '4-5x týdně', includes('4') is true -> 5. Good. So we're good. Let me also ensure that when we update, we set weekly_sessions_user from the normalized freq_choice so it's always in sync. Currently we set updates.freq_choice = normalizeFrequency(freq) and updates.weekly_sessions_user from raw freq. So after normalizeFrequency we have canonical text; we could set weekly_sessions_user from that to be consistent: e.g. helper getWeeklySessions(normalizeFrequency(freq) ?? latest.freq_choice). Actually the current logic is: freq = b.freq_choice ?? b.frequency, then updates.freq_choice = normalizeFrequency(freq) ?? latest.freq_choice, and updates.weekly_sessions_user = freq?.includes('1') ? 1 : freq?.includes('4') ? 5 : 3. So weekly_sessions_user is derived from the raw input. If we instead derive from the normalized value we'd have one place: const canonicalFreq = normalizeFrequency(freq) ?? latest.freq_choice; updates.freq_choice = canonicalFreq; updates.weekly_sessions_user = canonicalFreq?.includes('1') ? 1 : canonicalFreq?.includes('4') ? 5 : 3; That way both are always from the same canonical value. Let me do that in profile-preferences.
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\api\profile-preferences.js</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="todo_write">
+<details><summary>Tool use: **todo_write** • Todo List</summary>
+
+- [x] Migration: sync freq_choice + weekly_sessions_user
+- [x] Canonical format hyphen in body-metrics + profile-preferences
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+lib/generatePlan.js uses bm.freq_choice ?? bm.frequency ?? bm.weekly_sessions - so it can read any of these. After migration we'll have both freq_choice and weekly_sessions_user. No change needed there. getFreqFromMetrics in profil.js uses freq_choice first, then weekly_sessions_user - so after migration freq_choice will be set and in canonical form. Good.
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd "C:\Users\prikopa\Documents\GitHub\body-mind-on"; npm run build 2>&1</summary>
+
+```bash
+cd "C:\Users\prikopa\Documents\GitHub\body-mind-on"; npm run build 2>&1
+```
+
+```
+
+&gt; body-mind-on@1.0.0 build
+&gt; next build
+
+  ▲ Next.js 14.2.5
+  - Environments: .env
+
+   Linting and checking validity of types ...
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Collecting page data ...
+   Generating static pages (0/19) ...
+   Generating static pages (4/19) 
+   Generating static pages (9/19) 
+   Generating static pages (14/19) 
+ ✓ Generating static pages (19/19)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (pages)                             Size     First Load JS
+┌ ○ /                                     7.87 kB         141 kB
+├   /_app                                 0 B            79.3 kB
+├ ○ /404                                  180 B          79.5 kB
+├ ƒ /admin                                2.29 kB        81.6 kB
+├ ƒ /api/assistant-intake                 0 B            79.3 kB
+├ ƒ /api/auth/google-calendar/callback    0 B            79.3 kB
+├ ƒ /api/auth/google-calendar/connect     0 B            79.3 kB
+├ ƒ /api/body-metrics                     0 B            79.3 kB
+├ ƒ /api/calendar/create                  0 B            79.3 kB
+├ ƒ /api/community                        0 B            79.3 kB
+├ ƒ /api/community/categories             0 B            79.3 kB
+├ ƒ /api/community/reply                  0 B            79.3 kB
+├ ƒ /api/community/topic/[id]             0 B            79.3 kB
+├ ƒ /api/cron/daily-digest                0 B            79.3 kB
+├ ƒ /api/delete-account                   0 B            79.3 kB
+├ ƒ /api/generate-plan                    0 B            79.3 kB
+├ ƒ /api/habits                           0 B            79.3 kB
+├ ƒ /api/my-metrics                       0 B            79.3 kB
+├ ƒ /api/profile                          0 B            79.3 kB
+├ ƒ /api/profile-preferences              0 B            79.3 kB
+├ ƒ /api/profile-settings                 0 B            79.3 kB
+├ ƒ /api/quick-weight                     0 B            79.3 kB
+├ ƒ /api/recipe                           0 B            79.3 kB
+├ ƒ /api/send-plan-again                  0 B            79.3 kB
+├ ƒ /api/send-shopping-list               0 B            79.3 kB
+├ ƒ /api/sessions                         0 B            79.3 kB
+├ ƒ /api/trainer-schedule                 0 B            79.3 kB
+├ ƒ /api/trainer/clients                  0 B            79.3 kB
+├ ƒ /api/user-habits                      0 B            79.3 kB
+├ ƒ /api/workouts                         0 B            79.3 kB
+├ ○ /club                                 309 B          79.6 kB
+├ ○ /dashboard                            314 B          79.6 kB
+├ ○ /chci-vip                             4.89 kB         142 kB
+├ ○ /komunita                             6.09 kB         139 kB
+├ ○ /komunita/tema/[id]                   5.08 kB         138 kB
+├ ○ /login                                4.25 kB         137 kB
+├ ○ /on-club                              5.38 kB         143 kB
+├ ○ /onboarding                           351 B          79.7 kB
+├ ○ /pricing                              4.52 kB         138 kB
+├ ○ /profil                               58.2 kB         196 kB
+├ ○ /register                             344 B          79.7 kB
+├ ○ /signup                               3.33 kB         136 kB
+├ ○ /start                                5.66 kB         143 kB
+├ ○ /training                             886 B          80.2 kB
+├ ○ /trener                               4.38 kB         137 kB
+└ ○ /vip                                  311 B          79.6 kB
++ First Load JS shared by all             81 kB
+  ├ chunks/framework-ecc4130bc7a58a64.js  45.2 kB
+  ├ chunks/main-cff3560ce5c0b92a.js       32.1 kB
+  └ other shared chunks (total)           3.79 kB
+
+ƒ Middleware                              26.8 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+```
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+Build passed. Let me give the user a short summary and remind them to run the migration on Supabase.
+</details></think>
+
+---
+
+
+Shrnutí změn:
+
+## 1. Migrace DB – `supabase/migrations/20260321_body_metrics_frequency_sync.sql`
+
+- **Canonická hodnota:** `freq_choice` (text) je jediný zdroj pravdy, `weekly_sessions_user` (1/3/5) se z něj vždy odvozuje.
+- **Kroky migrace:**
+  1. **Normalizace** – všechny výskyty en-pomlčky (U+2013) v `freq_choice` se nahradí obyčejnou pomlčkou (hyphen), aby formát odpovídal formulářům (`1-2x týdně`, `2-3x týdně`, `4-5x týdně`).
+  2. **Doplnění `freq_choice`** – u řádků, kde chybí, se doplní z `weekly_sessions_user`: 1→`1-2x týdně`, 3→`2-3x týdně`, 5→`4-5x týdně`.
+  3. **Doplnění `weekly_sessions_user`** – u řádků, kde chybí, se doplní z `freq_choice` (podle obsahu řetězce).
+- V migraci jsou i `COMMENT` pro oba sloupce.
+
+## 2. API – jeden formát (pomlčka)
+
+- **`pages/api/body-metrics.js`** – `normalizeFrequency()` vrací vždy `1-2x týdně` / `2-3x týdně` / `4-5x týdně` (s pomlčkou).
+- **`pages/api/profile-preferences.js`** – stejný formát; při zápisu se z canonical `freq_choice` dopočítá `weekly_sessions_user` (1/3/5), takže obě hodnoty zůstanou v sync.
+
+## 3. Co je potřeba udělat u tebe
+
+Migraci je potřeba spustit na Supabase (lokálně nebo na projektu):
+
+```bash
+npx supabase db push
+```
+
+nebo v Supabase Dashboard → SQL Editor spustit obsah souboru  
+`supabase/migrations/20260321_body_metrics_frequency_sync.sql`.
+
+Po spuštění migrace budou v DB jen hodnoty s pomlčkou a oba sloupce budou vzájemně doplněné a konzistentní.
+
+---
+
+_**User**_
+
+chci aby ty texty byli v jedne rovine, tak aby ty upravy preference byli dynamicke. jako zamer se na to, ze to musi pusob vabne a super. 
+
+---
+
+_**Agent (model default, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+
+The user wants:
+1. The texts to be on one level/line ("v jedne rovine")
+2. The "Upravit preference" to be dynamic
+3. Focus on making it look attractive and great ("pusob vabne a super")
+
+So they want better alignment of the dropdown content and a more polished, dynamic look for the "Upravit preference" item. Let me look at the Header component and the dropdown styling to improve alignment and make it more visually appealing.
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\components\Header.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+The user wants:
+1. Texts on one level - so the trigger (Profil + avatar + chevron) and the dropdown item (Upravit preference) should align visually; and within the dropdown item, icon and text should be perfectly aligned on one baseline.
+2. Dynamic - maybe a subtle animation when opening, or transition
+3. Attractive/super look - polish the dropdown: baseline alignment, maybe a subtle gradient or better hover, ensure icon and text are vertically centered on the same line
+
+I'll:
+1. Ensure nav items (including the trigger) are all aligned on the same baseline - they already use align-items: center. The dropdown is positioned below. So "v jedne rovine" might mean the dropdown item's content (icon + text) should be on one clean line - we have flex align-items: center. Maybe the icon (emoji) has different line-height - I'll set explicit line-height and align-items: center on the item, and make the icon a fixed size so it doesn't shift the line.
+2. Make the dropdown feel more dynamic: add a quick open animation (opacity + transform), smooth transition.
+3. Polish: slightly nicer shadow, maybe very subtle border or gradient on hover, consistent padding so the text line is clear.
+</details></think>
+
+---
+
+
+Upravím dropdown: sjednotím výšku řádku (ikona + text v jedné rovině), přidám jemnou animaci otevření a vylepším vzhled.
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: C:\Users\prikopa\Documents\GitHub\body-mind-on\components\Header.js</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: C:\Users\prikopa\Documents\GitHub\body-mind-on\components\Header.js</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+Now let me also align the trigger button with the rest of the nav - ensure the same min-height and alignment so "Profil" sits on the same baseline as "Jak to funguje", "Ceník", "Komunita", "Odhlásit se". The nav has min-height: 44px and align-items: center for nav a and .nav-logout. The .nav-profil-trigger doesn't have min-height - I'll add it so the whole row is one line.
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: C:\Users\prikopa\Documents\GitHub\body-mind-on\components\Header.js</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+Good. Let me verify there are no lint errors.
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+
+Parameters:
+
+```json
+{
+  "paths": [
+    "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\components\\Header.js"
+  ]
+}
+```
+Result:
+
+```json
+{
+  "linterErrorsByFile": [
+    {
+      "relativeWorkspacePath": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\components\\Header.js"
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+All good. I've made:
+1. Trigger (Profil) same min-height 44px as other nav items so the whole top row is aligned
+2. Dropdown item: icon in a fixed 24x24 box so emoji and text sit on one clean baseline; flex align-items: center; line-height 1.35 for text
+3. Animation: dropdown opens with a short fade + slide (nav-dropdown-in)
+4. Polish: gradient background, softer border, nicer shadow, font-weight 500, letter-spacing, smooth hover
+</details></think>
+
+---
+
+
+Změny v hlavičce a dropdownu:
+
+## 1. **Jedna rovina**
+- **Horní řádek:** Tlačítko „Profil“ má stejné `min-height: 44px` jako ostatní položky (Jak to funguje, Ceník, Komunita, Odhlásit se), takže jsou všechny v jedné výškové linii.
+- **Položka dropdownu:** Ikona je v pevném boxu 24×24 px s `inline-flex` a `align-items: center`, text má `line-height: 1.35` – ikona a „Upravit preference“ jsou na jedné vizuální řádce.
+
+## 2. **Dynamika**
+- Při otevření dropdownu běží krátká animace **nav-dropdown-in** (0,2 s): mírný posun shora a zfade-in, takže menu nepůsobí „skokem“.
+
+## 3. **Vzhled**
+- Dropdown: jemný **gradient** (`#1e1e32` → `#1a1a2e`), tenký světlý okraj a vnitřní stín.
+- Položka: **font-weight: 500**, mírné **letter-spacing**, při hoveru lehké zesvětlení pozadí a bílá barva textu.
+- Ikona má vlastní vyhrazený prostor, takže se řádek neposouvá a působí čistě.
+
+Chceš to teď nasadit do produkce, nebo něco doladit (barvy, délka animace, velikost písma)?
+
+---
+
+_**User**_
+
+nasad 
+
+---
+
+_**Agent (model default, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+
+The user wants to deploy ("nasad" = deploy in Czech).
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd "C:\Users\prikopa\Documents\GitHub\body-mind-on"; npm run deploy 2>&1</summary>
+
+```bash
+cd "C:\Users\prikopa\Documents\GitHub\body-mind-on"; npm run deploy 2>&1
+```
+
+```
+
+&gt; body-mind-on@1.0.0 deploy
+&gt; git add -A &amp;&amp; git commit -m "Deploy: automatické úpravy" &amp;&amp; git push origin main
+
+[main 417bcb0] Deploy: automatické úpravy
+ 5 files changed, 545 insertions(+), 80 deletions(-)
+ create mode 100644 supabase/migrations/20260321_body_metrics_frequency_sync.sql
+warning: in the working copy of 'components/Header.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'pages/api/body-metrics.js', LF will be replaced by CRLF the next time Git touches it
+To https://github.com/Progen-design/body-mind-on.git
+   23fd2c7..417bcb0  main -&gt; main
+
+```
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+Deploy succeeded. Push to main completed.
+</details></think>
+
+---
+
+
+Nasazení je hotové. Změny jsou na `main`; pokud máš napojený Vercel, build a deploy proběhnou automaticky.
+
+---
+
+_**User**_
+
+porad to tam neni aplikovane a je to rozhazene :  chci aby ta grafika odpovidala grafice v profilu tak at to je stejne a zaoblene tvary 
+
+---
+
+_**Agent (model default, mode Agent)**_
+
+
+
+---
+
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+Status: **loading**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+Status: **loading**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_file_v2">
+<details>
+<summary>Tool use: **read_file_v2**</summary>
+
+Status: **loading**
+
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_file_v2">
+<details>
+<summary>Tool use: **read_file_v2**</summary>
+
+Status: **loading**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_file_v2">
+<details>
+<summary>Tool use: **read_file_v2**</summary>
+
+Status: **loading**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_file_v2">
+<details>
+<summary>Tool use: **read_file_v2**</summary>
+
+Status: **loading**
+
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: C:\Users\prikopa\Documents\GitHub\body-mind-on\components\Header.js</summary>
+
+Status: **loading**
+
+</details>
+
+</tool-use>
+
+---
+
+
+
+---
+
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+Status: **loading**
+
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
 
 ---
 

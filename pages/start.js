@@ -151,7 +151,7 @@ export default function Start() {
     <>
       <Header />
       <main className="app-page container py-12 text-white">
-        <section className="text-center mb-10">
+        <section className="text-center mb-6">
           <h1 className="text-4xl font-extrabold mb-3 text-sky-400">
             {step === 0 ? "Registrace" : "START Program – Začni zdarma"}
           </h1>
@@ -165,7 +165,8 @@ export default function Start() {
         {/* KROK 0: Výběr – 3 programy (trenér je v horní liště Pro trenéry) */}
         {step === 0 && (
           <div className="role-cards-wrap">
-            <button type="button" onClick={() => setStep(1)} className="role-card role-card-start" aria-label="Registrace do START programu">
+            <button type="button" onClick={() => setStep(1)} className="role-card role-card-start role-card-recommended" aria-label="Registrace do START programu">
+              <span className="role-badge">Doporučeno</span>
               <span className="role-emoji">🚀</span>
               <strong className="role-title">START</strong>
               <p className="role-desc">Zdarma – AI plán, jídelníček a základní sledování progresu.</p>
@@ -404,21 +405,21 @@ export default function Start() {
         .role-cards-wrap {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 20px;
-          max-width: 56rem;
+          gap: 16px;
+          max-width: 720px;
           margin: 0 auto;
           align-items: stretch;
         }
         @media (max-width: 768px) {
-          .role-cards-wrap { grid-template-columns: 1fr; }
+          .role-cards-wrap { grid-template-columns: 1fr; max-width: 360px; }
         }
         .role-card {
           display: flex;
           flex-direction: column;
           align-items: center;
           text-align: center;
-          min-height: 200px;
-          padding: 28px 24px;
+          min-height: 160px;
+          padding: 20px 16px;
           border-radius: 16px;
           border: 2px solid #475569;
           background: #121212;
@@ -428,8 +429,9 @@ export default function Start() {
           color: inherit;
           font: inherit;
           box-sizing: border-box;
+          position: relative;
         }
-        button.role-card { margin: 0; }
+        button.role-card, a.role-card { margin: 0; }
         .role-card:hover {
           border-color: #0ea5e9;
           background: #1a1a2e;
@@ -443,9 +445,33 @@ export default function Start() {
           border-color: #eab308;
           box-shadow: 0 4px 20px rgba(234, 179, 8, 0.2);
         }
-        .role-emoji { font-size: 2.5rem; margin-bottom: 12px; }
-        .role-title { display: block; font-size: 1.25rem; margin-bottom: 8px; color: #e2e8f0; }
-        .role-desc { font-size: 0.9rem; color: #94a3b8; margin: 0; line-height: 1.5; }
+        .role-card-recommended {
+          border-color: rgba(139, 92, 255, 0.6);
+          background: rgba(30, 27, 75, 0.5);
+          box-shadow: 0 0 0 1px rgba(139, 92, 255, 0.3), 0 4px 20px rgba(139, 92, 255, 0.15);
+        }
+        .role-card-recommended:hover {
+          border-color: #a78bfa;
+          background: rgba(49, 46, 129, 0.6);
+          box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.4), 0 6px 24px rgba(139, 92, 255, 0.25);
+        }
+        .role-badge {
+          position: absolute;
+          top: -10px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: linear-gradient(135deg, #7c3aed, #9b5cff);
+          color: #fff;
+          font-size: 11px;
+          font-weight: 700;
+          padding: 4px 12px;
+          border-radius: 20px;
+          white-space: nowrap;
+          box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+        }
+        .role-emoji { font-size: 2rem; margin-bottom: 8px; }
+        .role-title { display: block; font-size: 1.15rem; margin-bottom: 6px; color: #e2e8f0; }
+        .role-desc { font-size: 0.85rem; color: #94a3b8; margin: 0; line-height: 1.45; }
         .progress-bar-wrap { text-align: center; }
         .progress-dots { display: flex; justify-content: center; gap: 12px; margin-bottom: 8px; }
         .progress-dots span {

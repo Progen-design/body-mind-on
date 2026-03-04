@@ -14,6 +14,7 @@ import Toast from '../components/Toast';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
 import { getHabitById } from '../lib/habits';
+import { normalizeOccupationForForm } from '../lib/preferenceConstants';
 
 const PROGRAM_LABELS = {
   START: { greeting: 'Ahoj', subtitle: 'Každý trénink, každé měření.' },
@@ -375,7 +376,7 @@ export default function Profil() {
       setPreferencesForm({
         activity: lm?.activity ?? '',
         stress_level: lm?.stress_level ?? '',
-        occupation: lm?.occupation ?? '',
+        occupation: normalizeOccupationForForm(lm?.occupation) || '',
         goal: lm?.goal ?? '',
         freq_choice: freq,
         frequency: freq,
@@ -1706,7 +1707,7 @@ export default function Profil() {
                       setPreferencesForm({
                         activity: lm?.activity ?? '',
                         stress_level: lm?.stress_level ?? '',
-                        occupation: lm?.occupation ?? '',
+                        occupation: normalizeOccupationForForm(lm?.occupation) || '',
                         goal: lm?.goal ?? '',
                         freq_choice: freq,
                         frequency: freq,
@@ -2312,11 +2313,6 @@ export default function Profil() {
                             <option value="office_it">Sedavé zaměstnání</option>
                             <option value="manual">Aktivní zaměstnání</option>
                             <option value="teacher_sales">Kombinované</option>
-                            <option value="driver">Řidič</option>
-                            <option value="warehouse">Sklad</option>
-                            <option value="healthcare">Zdravotnictví</option>
-                            <option value="gastronomy">Gastronomie</option>
-                            <option value="other">Jiné</option>
                           </select>
                         </div>
                         <div>

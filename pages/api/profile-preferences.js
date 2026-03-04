@@ -3,8 +3,7 @@
 import { supabaseServer } from '../../lib/supabaseServer';
 import { generatePlanForEmail } from '../../lib/generatePlan';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
-
-const OCCUPATION_WHITELIST = ['office_it', 'manual', 'driver', 'warehouse', 'healthcare', 'teacher_sales', 'gastronomy', 'other'];
+import { normalizeOccupation } from '../../lib/preferenceConstants';
 
 function normalizeActivity(v) {
   if (!v) return null;
@@ -24,14 +23,6 @@ function normalizeStress(v) {
   if (t.includes('střed')) return 'medium';
   if (t.includes('vysok')) return 'high';
   return 'medium';
-}
-
-function normalizeOccupation(v) {
-  if (!v) return null;
-  const t = String(v).toLowerCase().trim();
-  if (OCCUPATION_WHITELIST.includes(t)) return t;
-  if (t.includes('kombin')) return 'teacher_sales';
-  return 'other';
 }
 
 function normalizeGoal(v) {
@@ -90,7 +81,7 @@ export default async function handler(req, res) {
     if (b.activity !== undefined) updates.activity = normalizeActivity(b.activity) ?? latest.activity;
     if (b.stress_level !== undefined) updates.stress_level = normalizeStress(b.stress_level) ?? latest.stress_level;
     if (b.occupation !== undefined || b.worktype !== undefined) {
-      updates.occupation = normalizeOccupation(b.occupation ?? b.worktype) ?? latest.occupation;
+      updates.occupation = normalizeOccupation(b.occupation ?? b.worktype) ?? normalizeOccupation(latest.occupation) ?? null;
     }
     if (b.goal !== undefined) updates.goal = normalizeGoal(b.goal) ?? latest.goal;
     if (b.freq_choice !== undefined || b.frequency !== undefined) {

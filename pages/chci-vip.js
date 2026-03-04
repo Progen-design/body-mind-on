@@ -218,7 +218,7 @@ export default function ChciVipPage() {
                   <option value="">Vyber</option>
                   <option value="office_it">Sedavé zaměstnání</option>
                   <option value="manual">Aktivní zaměstnání</option>
-                  <option value="kombinovana">Kombinované</option>
+                  <option value="teacher_sales">Kombinované</option>
                 </select>
               </div>
               <div className="step3-field">

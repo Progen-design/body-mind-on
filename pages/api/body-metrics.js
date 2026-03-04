@@ -4,6 +4,7 @@ import { generatePlanForEmail } from '../../lib/generatePlan';
 import { createAuthUserIfNew } from '../../lib/authHelpers';
 import { getClientIp, isRateLimited } from '../../lib/rateLimit';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
+import { normalizeOccupation } from '../../lib/preferenceConstants';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -241,24 +242,6 @@ function normalizeStress(v) {
   if (t.includes('střed')) return 'medium';
   if (t.includes('vysok')) return 'high';
   return 'medium';
-}
-
-/** Hodnoty povolené v DB (body_metrics_occupation_check). Pokud neznámá → other. */
-const OCCUPATION_WHITELIST = ['office_it', 'manual', 'driver', 'warehouse', 'healthcare', 'teacher_sales', 'gastronomy', 'other'];
-
-function normalizeOccupation(v) {
-  if (!v) return null;
-  const t = v.toString().toLowerCase().trim();
-  if (OCCUPATION_WHITELIST.includes(t)) return t;
-  if (t.includes('it') || t.includes('kancel')) return 'office_it';
-  if (t.includes('manu')) return 'manual';
-  if (t.includes('kombin')) return 'teacher_sales';
-  if (t.includes('řidič') || t.includes('ridic')) return 'driver';
-  if (t.includes('sklad')) return 'warehouse';
-  if (t.includes('zdrav') || t.includes('health')) return 'healthcare';
-  if (t.includes('učitel') || t.includes('ucitel') || t.includes('prodej')) return 'teacher_sales';
-  if (t.includes('gastro') || t.includes('restau')) return 'gastronomy';
-  return 'other';
 }
 
 function normalizeGoal(v) {

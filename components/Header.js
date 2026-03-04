@@ -1,7 +1,7 @@
 // /components/Header.js – na main doméně marketing, na app registrace/profil; při přihlášení jen Odhlásit se
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
 
 const MAIN_SITE = process.env.NEXT_PUBLIC_MAIN_SITE_URL || "https://bodyandmindon.cz";
@@ -44,6 +44,16 @@ export default function Header() {
 
   const isRegistrationPage = ["/start", "/on-club", "/chci-vip"].includes(router.pathname);
   const showLoggedInNav = session && !isRegistrationPage;
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
+    }
+    if (profileOpen) document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [profileOpen]);
 
   return (
     <header className="header">
@@ -57,14 +67,33 @@ export default function Header() {
           {showLoggedInNav ? (
             <>
               <Link href="/komunita">Komunita</Link>
-              <Link href="/profil" className="nav-profil-link">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="" className="nav-avatar" />
-                ) : (
-                  <span className="nav-avatar-placeholder">?</span>
+              <div className="nav-profil-wrap" ref={profileRef} data-open={profileOpen || undefined}>
+                <button
+                  type="button"
+                  onClick={() => setProfileOpen((v) => !v)}
+                  className="nav-profil-trigger"
+                  aria-expanded={profileOpen}
+                  aria-haspopup="true"
+                >
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="" className="nav-avatar" />
+                  ) : (
+                    <span className="nav-avatar-placeholder">?</span>
+                  )}
+                  Profil
+                  <span className="nav-profil-chevron" aria-hidden>▼</span>
+                </button>
+                {profileOpen && (
+                  <div className="nav-profil-dropdown">
+                    <Link href="/profil?edit=preferences" onClick={() => setProfileOpen(false)} className="nav-profil-dropdown-item">
+                      ✏️ Upravit preference
+                    </Link>
+                    <Link href="/profil" onClick={() => setProfileOpen(false)} className="nav-profil-dropdown-item">
+                      📋 Můj profil
+                    </Link>
+                  </div>
                 )}
-                Profil
-              </Link>
+              </div>
               <button type="button" onClick={handleLogout} className="nav-logout">
                 Odhlásit se
               </button>
@@ -135,11 +164,45 @@ export default function Header() {
           color: #fff;
         }
 
-        .nav-profil-link {
+        .nav-profil-wrap { position: relative; }
+        .nav-profil-trigger {
           display: inline-flex;
           align-items: center;
           gap: 8px;
+          background: none;
+          border: none;
+          color: #ccc;
+          font-size: inherit;
+          cursor: pointer;
+          padding: 0 4px;
+          font-family: inherit;
+          transition: color 0.3s;
         }
+        .nav-profil-trigger:hover { color: #fff; }
+        .nav-profil-chevron { font-size: 10px; opacity: 0.7; transition: transform 0.2s; }
+        .nav-profil-wrap[data-open] .nav-profil-chevron { transform: rotate(180deg); }
+        .nav-profil-dropdown {
+          position: absolute;
+          top: 100%;
+          right: 0;
+          margin-top: 8px;
+          min-width: 200px;
+          background: #1a1a2e;
+          border: 1px solid #333;
+          border-radius: 12px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+          overflow: hidden;
+          z-index: 100;
+        }
+        .nav-profil-dropdown-item {
+          display: block;
+          padding: 12px 16px;
+          color: #e2e8f0;
+          text-decoration: none;
+          font-size: 14px;
+          transition: background 0.2s;
+        }
+        .nav-profil-dropdown-item:hover { background: #252540; color: #fff; }
         .nav-avatar, .nav-avatar-placeholder {
           width: 28px;
           height: 28px;

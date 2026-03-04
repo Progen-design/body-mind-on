@@ -544,7 +544,7 @@ function parsePlanHtml(html) {
 }
 
 export { parsePlanHtml };
-export default function PlanViewer({ plan, userName, hideHero }) {
+export default function PlanViewer({ plan, userName, hideHero, dietaryPreferences = '' }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [parsed, setParsed] = useState(null);
   const [recipeModal, setRecipeModal] = useState(null); // { title, content, anchorRect, hasRecipe, openId? }
@@ -558,12 +558,14 @@ export default function PlanViewer({ plan, userName, hideHero }) {
   const recipeOpenIdRef = useRef(0);
   const recipeCacheRef = useRef(new Map()); // dish -> html, 5 min TTL
 
-  const getRecipeForDish = (dishName) => {
-    const key = (dishName || '').trim().toLowerCase().slice(0, 120);
-    if (!key) return Promise.resolve(null);
+  const getRecipeForDish = (dishName, avoid = '') => {
+    const key = ((dishName || '').trim().toLowerCase().slice(0, 120)) + (avoid ? '|' + avoid.slice(0, 80) : '');
+    if (!(dishName || '').trim()) return Promise.resolve(null);
     const cached = recipeCacheRef.current.get(key);
     if (cached && cached.html != null && Date.now() - (cached.at || 0) < 5 * 60 * 1000) return Promise.resolve(cached.html);
-    return fetch('/api/recipe?dish=' + encodeURIComponent((dishName || '').trim().slice(0, 150)))
+    let url = '/api/recipe?dish=' + encodeURIComponent((dishName || '').trim().slice(0, 150));
+    if (avoid && typeof avoid === 'string' && avoid.trim()) url += '&avoid=' + encodeURIComponent(avoid.trim().slice(0, 300));
+    return fetch(url)
       .then((res) => res.json())
       .then((data) => {
         const html = data.ok && data.html ? data.html : null;
@@ -826,7 +828,7 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                         const handleSwap = () => {
                           const dishQuery = `${meal.type || 'Jídlo'} alternativa, do 500 kcal`.slice(0, 150);
                           setSwapModal({ dayIndex: day.originalIndex ?? di, mealIndex: mi, dishQuery, mealType: meal.type || 'Jídlo', loading: true, html: null });
-                          getRecipeForDish(dishQuery).then((html) => {
+                          getRecipeForDish(dishQuery, dietaryPreferences).then((html) => {
                             setSwapModal((prev) => prev ? { ...prev, loading: false, html: html || '' } : null);
                           });
                         };

@@ -7,6 +7,7 @@ export default async function handler(req, res) {
   }
 
   const dish = (req.query.dish || '').trim();
+  const avoid = (req.query.avoid || '').trim().slice(0, 300);
   if (!dish || dish.length > 200) {
     return res.status(400).json({ error: 'Zadej název jídla (parametr dish)' });
   }
@@ -16,14 +17,17 @@ export default async function handler(req, res) {
   }
 
   const isAlternativeRequest = /alternativa|do\s*\d+\s*kcal/i.test(dish);
+  const avoidInstruction = avoid
+    ? ` DŮLEŽITÉ: Uživatel tyto potraviny nejí nebo je nechce v jídelníčku – NIKDY je nepoužívej: ${avoid}. Nahraď jinými vhodnými surovinami.`
+    : '';
 
   const systemContent = isAlternativeRequest
-    ? `Jsi kuchařský asistent. Odpovídej pouze v češtině. Uživatel chce alternativu jídla – vymysli KONKRÉTNÍ jídlo (ne obecný popis). Vrať recept v tomto HTML formátu (nic jiného):
+    ? `Jsi kuchařský asistent. Odpovídej pouze v češtině. Uživatel chce alternativu jídla – vymysli KONKRÉTNÍ jídlo (ne obecný popis).${avoidInstruction} Vrať recept v tomto HTML formátu (nic jiného):
 <p><b>Jídlo:</b> [konkrétní název jídla, např. Grilovaný pstruh se zeleninovým salátem nebo Kuřecí salát s avokádem]</p>
 <p><b>Suroviny:</b> odrážkový seznam surovin – množství na 1 porci.</p>
 <p><b>Postup:</b> krátké číslované kroky (3–6 kroků).</p>
 Důležité: první řádek musí obsahovat <b>Jídlo:</b> s konkrétním názvem. Nepoužívej markdown, pouze <p>, <b>, <ul>, <li>.`
-    : `Jsi kuchařský asistent. Odpovídej pouze v češtině. Pro zadané jídlo vrať stručný recept v tomto HTML formátu (nic jiného):
+    : `Jsi kuchařský asistent. Odpovídej pouze v češtině.${avoidInstruction} Pro zadané jídlo vrať stručný recept v tomto HTML formátu (nic jiného):
 <p><b>Suroviny:</b> odrážkový seznam surovin – vždy množství na 1 porci (pro jednoho strávníka). Např. 1 ks kuřecího prsa (cca 120–150 g), 1 menší brambor (80 g), 1 lžíce oleje. U masa, příloh a zeleniny uváděj rozumné množství pro jednu porci.</p>
 <p><b>Postup:</b> krátké číslované kroky (3–6 kroků), jak jídlo připravit pro 1 porci.</p>
 Důležité: všechny suroviny a postup musí být výhradně na jednu porci. Nepoužívej markdown, pouze <p>, <b>, <ul>, <li>. Žádný úvod ani závěr.`;

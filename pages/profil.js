@@ -359,6 +359,36 @@ export default function Profil() {
     };
   }, [router]);
 
+  const getFreqFromMetrics = (lm) => {
+    if (lm?.freq_choice) return lm.freq_choice;
+    const w = lm?.weekly_sessions_user;
+    if (w === 1) return '1-2x týdně';
+    if (w === 5) return '4-5x týdně';
+    if (w === 3) return '2-3x týdně';
+    return '';
+  };
+
+  useEffect(() => {
+    if (router.query.edit === 'preferences' && profile && !profile?.can_create_calendar_events) {
+      const lm = profile?.body_metrics?.[0];
+      const freq = getFreqFromMetrics(lm);
+      setPreferencesForm({
+        activity: lm?.activity ?? '',
+        stress_level: lm?.stress_level ?? '',
+        occupation: lm?.occupation ?? '',
+        goal: lm?.goal ?? '',
+        freq_choice: freq,
+        frequency: freq,
+        diet_type: lm?.diet_type ?? '',
+        dietary_restrictions: lm?.dietary_restrictions ?? '',
+        foods_to_avoid: lm?.foods_to_avoid ?? '',
+        selected_habits: (profile?.user_habits || []).map((h) => h.habit_id).filter(Boolean),
+      });
+      setShowPreferencesModal(true);
+      router.replace('/profil', undefined, { shallow: true });
+    }
+  }, [router.query.edit, profile]);
+
   useEffect(() => {
     if (!session?.access_token || loading) return;
     const interval = setInterval(async () => {
@@ -1671,14 +1701,15 @@ export default function Profil() {
                     type="button"
                     onClick={() => {
                       const lm = profile?.body_metrics?.[0];
+                      const freq = getFreqFromMetrics(lm);
                       setPreferencesError('');
                       setPreferencesForm({
                         activity: lm?.activity ?? '',
                         stress_level: lm?.stress_level ?? '',
                         occupation: lm?.occupation ?? '',
                         goal: lm?.goal ?? '',
-                        freq_choice: lm?.freq_choice ?? '',
-                        frequency: lm?.freq_choice ?? '',
+                        freq_choice: freq,
+                        frequency: freq,
                         diet_type: lm?.diet_type ?? '',
                         dietary_restrictions: lm?.dietary_restrictions ?? '',
                         foods_to_avoid: lm?.foods_to_avoid ?? '',

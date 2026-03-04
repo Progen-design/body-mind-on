@@ -9,9 +9,10 @@ function normalizeActivity(v) {
   if (!v) return null;
   const t = String(v).toLowerCase().trim();
   if (['sedavy', 'lehce', 'stredne', 'velmi', 'extra'].includes(t)) return t;
-  if (t.includes('nízk')) return 'lehce';
+  if (t === 'nízká' || (t.includes('nízk') && !t.includes('střed'))) return 'sedavy';
+  if (t.includes('lehce') || t.includes('lehk')) return 'sedavy';
   if (t.includes('střed')) return 'stredne';
-  if (t.includes('vysok')) return 'velmi';
+  if (t.includes('vysok') || t.includes('extra')) return 'velmi';
   return 'stredne';
 }
 
@@ -29,8 +30,9 @@ function normalizeGoal(v) {
   if (!v) return null;
   const t = String(v).toLowerCase().trim();
   if (['redukce', 'nabirani_svaly', 'udrzovani'].includes(t)) return t;
-  if (t.includes('reduk')) return 'redukce';
-  if (t.includes('sval')) return 'nabirani_svaly';
+  if (t.includes('reduk') || t.includes('hmotnosti')) return 'redukce';
+  if (t.includes('sval') || t.includes('nárůst')) return 'nabirani_svaly';
+  if (t.includes('zdrav') || t.includes('udrž') || t.includes('životní')) return 'udrzovani';
   return 'udrzovani';
 }
 

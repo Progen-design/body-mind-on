@@ -14,7 +14,7 @@ import Toast from '../components/Toast';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
 import { getHabitById } from '../lib/habits';
-import { normalizeOccupationForForm } from '../lib/preferenceConstants';
+import { normalizeOccupationForForm, activityToFormLabel, goalToFormLabel } from '../lib/preferenceConstants';
 
 const PROGRAM_LABELS = {
   START: { subtitle: 'Každý trénink, každé měření.' },
@@ -381,10 +381,10 @@ export default function Profil() {
       const lm = profile?.body_metrics?.[0];
       const freq = getFreqFromMetrics(lm);
       setPreferencesForm({
-        activity: lm?.activity ?? '',
+        activity: activityToFormLabel(lm?.activity) || '',
         stress_level: lm?.stress_level ?? '',
         occupation: normalizeOccupationForForm(lm?.occupation) || '',
-        goal: lm?.goal ?? '',
+        goal: goalToFormLabel(lm?.goal) || '',
         freq_choice: freq,
         frequency: freq,
         diet_type: lm?.diet_type ?? '',
@@ -1703,10 +1703,10 @@ export default function Profil() {
                       const freq = getFreqFromMetrics(lm);
                       setPreferencesError('');
                       setPreferencesForm({
-                        activity: lm?.activity ?? '',
+                        activity: activityToFormLabel(lm?.activity) || '',
                         stress_level: lm?.stress_level ?? '',
                         occupation: normalizeOccupationForForm(lm?.occupation) || '',
-                        goal: lm?.goal ?? '',
+                        goal: goalToFormLabel(lm?.goal) || '',
                         freq_choice: freq,
                         frequency: freq,
                         diet_type: lm?.diet_type ?? '',
@@ -2285,14 +2285,12 @@ export default function Profil() {
                       <h4 className="preferences-section-title">Aktivita a cíl</h4>
                       <div className="preferences-grid">
                         <div>
-                          <label>Úroveň aktivity</label>
+                          <label>Úroveň aktivity <span className="label-hint">(současný stav)</span></label>
                           <select value={preferencesForm.activity} onChange={(e) => setPreferencesForm((f) => ({ ...f, activity: e.target.value }))}>
                             <option value="">Vyber</option>
-                            <option value="sedavy">Nízká</option>
-                            <option value="lehce">Lehce aktivní</option>
-                            <option value="stredne">Střední</option>
-                            <option value="velmi">Vysoká</option>
-                            <option value="extra">Extra aktivní</option>
+                            <option value="Nízká">Nízká</option>
+                            <option value="Střední">Střední</option>
+                            <option value="Vysoká">Vysoká</option>
                           </select>
                         </div>
                         <div>
@@ -2308,18 +2306,18 @@ export default function Profil() {
                           <label>Typ práce</label>
                           <select value={preferencesForm.occupation} onChange={(e) => setPreferencesForm((f) => ({ ...f, occupation: e.target.value }))}>
                             <option value="">Vyber</option>
-                            <option value="office_it">Sedavé zaměstnání</option>
-                            <option value="manual">Aktivní zaměstnání</option>
-                            <option value="teacher_sales">Kombinované</option>
+                            <option value="Sedavé zaměstnání">Sedavé zaměstnání</option>
+                            <option value="Aktivní zaměstnání">Aktivní zaměstnání</option>
+                            <option value="Kombinované">Kombinované</option>
                           </select>
                         </div>
                         <div>
                           <label>Cíl</label>
                           <select value={preferencesForm.goal} onChange={(e) => setPreferencesForm((f) => ({ ...f, goal: e.target.value }))}>
                             <option value="">Vyber</option>
-                            <option value="redukce">Redukce hmotnosti</option>
-                            <option value="nabirani_svaly">Nárůst svalů</option>
-                            <option value="udrzovani">Zdravý životní styl</option>
+                            <option value="Redukce hmotnosti">Redukce hmotnosti</option>
+                            <option value="Nárůst svalů">Nárůst svalů</option>
+                            <option value="Zdravý životní styl">Zdravý životní styl</option>
                           </select>
                         </div>
                         <div>
@@ -3558,6 +3556,7 @@ export default function Profil() {
         .preferences-section textarea { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #444; background: #0f0f1a; color: #fff; font-family: inherit; resize: vertical; }
         .modal h3 { margin: 0 0 20px; }
         .modal label { display: block; margin: 12px 0 4px; color: #94a3b8; font-size: 14px; }
+        .label-hint { font-weight: 400; color: #64748b; font-size: 12px; }
         .modal input, .modal select {
           width: 100%;
           padding: 10px 12px;

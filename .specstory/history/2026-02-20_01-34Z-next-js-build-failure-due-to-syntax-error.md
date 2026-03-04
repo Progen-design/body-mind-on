@@ -37270,3 +37270,371 @@ Status: **completed**
 
 ---
 
+<think><details><summary>Thought Process</summary>
+
+In pages/profil.js line 842 we have:
+`const res = await fetch('/api/profile-preferences', {`
+
+So our code correctly uses `/api/profile-preferences` (with hyphen). But the user's console shows the request going to `https://app.bodymindandco.cz/api/profile/preferences` (with slash). So either:
+
+1. The production deployment has different code (old version that had /api/profile/preferences)?
+2. There's another place in the code that calls /api/profile/preferences?
+3. The domain is different - user said app.bodymindandco.cz but we've been deploying to Progen-design/body-mind-on - maybe they have two deployments and the one at bodymindandco.cz is an older copy or different repo?
+
+Let me search for "profile/preferences" (with slash) in the codebase to see if we have that anywhere.
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "/api/profile/|profile/preferences",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on",
+  "glob": "*.{js,ts,tsx,jsx}",
+  "caseInsensitive": false
+}
+```
+Additional data:
+
+```json
+{
+  "isPruned": true,
+  "pattern": "/api/profile/|profile/preferences",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on",
+  "outputMode": "content",
+  "totalFiles": 0,
+  "totalMatches": 0,
+  "topFiles": []
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\profil.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+Our code uses `/api/profile-preferences` (correct). The user's screenshot shows the request to `https://app.bodymindandco.cz/api/profile/preferences` - so either:
+1. The deployed version on bodymindandco.cz is old and had a different URL
+2. Or there's something rewriting the URL (unlikely)
+3. Or the user is looking at a different project (bodymindandco.cz vs bodyandmindon.cz)
+
+Regardless, the fix is to make the app work even if someone has the wrong URL. We have two options:
+A) Add a route that accepts both: Next.js doesn't easily support two routes for the same handler. We could add pages/api/profile/preferences.js that re-exports or redirects - but that would be a new file pages/api/profile/preferences.js. In Next.js, that would create the route /api/profile/preferences. So we can add that file and have it call the same logic or redirect to the correct API. Actually the simplest is to add a catch-all or a separate API route at /api/profile/preferences that just forwards to the same logic. The cleanest way is to create pages/api/profile/preferences.js that does a simple re-export of the handler from profile-preferences.js. Let me check - in Next.js, API routes are files under pages/api. So we have pages/api/profile-preferences.js -> /api/profile-preferences. To get /api/profile/preferences we need a folder pages/api/profile/ and a file preferences.js inside it, so pages/api/profile/preferences.js -> /api/profile/preferences. So I'll create that file and it can simply import and export the handler from '../profile-preferences' or we duplicate the handler. The simplest is to re-export so we don't duplicate code.
+</details></think>
+
+---
+
+
+Kontroluji strukturu API: v kódu je správně `/api/profile-preferences`, ale prohlížeč volá `/api/profile/preferences` (se lomítkem) → 404. Přidávám route `/api/profile/preferences`, která předá požadavek stávajícímu handleru.
+
+
+---
+
+<tool-use data-tool-type="generic" data-tool-name="glob_file_search">
+<details>
+<summary>Tool use: **glob_file_search** • Searched codebase "undefined" • **27** results in **1** directory</summary>
+
+Directory: **C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\api** (27 files)
+
+| File |
+|------|
+| `../pages/api/user-habits.js` |
+| `../pages/api/sessions.js` |
+| `../pages/api/profile-settings.js` |
+| `../pages/api/community/index.js` |
+| `../pages/api/cron/daily-digest.js` |
+| `../pages/api/body-metrics.js` |
+| `../pages/api/community/topic/[id].js` |
+| `../pages\api\body-metrics.js` |
+| `../pages/api/generate-plan.js` |
+| `../pages/api/trainer/clients.js` |
+| `../pages/api/recipe.js` |
+| `../pages/api/community/categories.js` |
+| `../pages/api/auth/google-calendar/connect.js` |
+| `../pages/api/my-metrics.js` |
+| `../pages/api/assistant-intake.js` |
+| `../pages/api/send-shopping-list.js` |
+| `../pages/api/habits.js` |
+| `../pages/api/trainer-schedule.js` |
+| `../pages/api/workouts.js` |
+| `../pages/api/community/reply.js` |
+| `../pages/api/auth/google-calendar/callback.js` |
+| `../pages\api\profile-preferences.js` |
+| `../pages/api/calendar/create.js` |
+| `../pages/api/delete-account.js` |
+| `../pages/api/send-plan-again.js` |
+| `../pages/api/quick-weight.js` |
+| `../pages/api/profile.js` |
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+So we have pages/api/profile.js (GET profile) but no pages/api/profile/ folder. So the URL /api/profile/preferences would need pages/api/profile/preferences.js. I'll create that file and re-export the handler from profile-preferences.js so both URLs work.
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\api\profile-preferences.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+I'll create pages/api/profile/preferences.js that re-exports the default handler from the profile-preferences module. That way /api/profile/preferences will work and we don't duplicate code.
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\api\profile\preferences.js</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+Wait - the user's app is on app.bodymindandco.cz. So maybe their frontend is built from a different branch or an old build that had the URL with a slash? Or maybe there's a proxy that adds the slash? Anyway, now we have both routes. Let me also double-check that our frontend really uses the hyphenated URL - we already confirmed it does. So after deploy, both will work:
+- /api/profile-preferences (what we use in code)
+- /api/profile/preferences (what the user's browser was calling - 404 before, now will work)
+
+Let me verify the re-export works in Next.js - we're exporting the default from a relative path '../profile-preferences'. That should work.
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+
+Parameters:
+
+```json
+{
+  "paths": [
+    "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\pages\\api\\profile\\preferences.js"
+  ]
+}
+```
+Result:
+
+```json
+{
+  "linterErrorsByFile": [
+    {
+      "relativeWorkspacePath": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\pages\\api\\profile\\preferences.js"
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+Good. Let me also ensure the frontend consistently uses the canonical URL so we don't rely on the alias. Let me check if there's any place that could generate /api/profile/preferences - maybe fetchOptions or some base URL?
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "fetchOptions|baseURL|api/",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\pages\\profil.js",
+  "contextBefore": 0,
+  "contextAfter": 0,
+  "caseInsensitive": false
+}
+```
+Additional data:
+
+```json
+{
+  "isPruned": true,
+  "pattern": "fetchOptions|baseURL|api/",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\pages\\profil.js",
+  "outputMode": "content",
+  "totalFiles": 1,
+  "totalMatches": 20,
+  "topFiles": [
+    {
+      "uri": "pages\\profil.js",
+      "matchCount": 20
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+Our code uses '/api/profile-preferences'. So the 404 the user sees might be from:
+1. An old cached build on app.bodymindandco.cz that still had /api/profile/preferences
+2. Or a different codebase deployed there
+3. Or a service worker / cache returning old JS
+
+By adding the alias route /api/profile/preferences we fix the 404 regardless. I'll summarize for the user.
+</details></think>
+
+---
+
+
+Chyba je v tom, že prohlížeč volá **`/api/profile/preferences`** (s lomítkem), zatímco v projektu je route **`/api/profile-preferences`** (s pomlčkou). U té první URL Next.js nic nemá, takže dostaneš **404**.
+
+V repozitáři už voláš správně `/api/profile-preferences`. Na **app.bodymindandco.cz** tak může běžet starší build nebo jiná konfigurace, která stále používá URL se lomítkem.
+
+**Úprava:** Přidal jsem druhou route tak, aby fungovaly **obě** adresy:
+
+- **`pages/api/profile/preferences.js`** – nový soubor, který jen předává požadavek do stávajícího handleru v `profile-preferences.js`.
+
+Po nasazení budou fungovat:
+
+- `PATCH /api/profile-preferences`
+- `PATCH /api/profile/preferences`
+
+Ukládání by pak mělo projít bez 404. Můžu připravit i krátký postup na deploy (např. `npm run deploy`), pokud ho chceš.
+
+---
+
+_**User**_
+
+dej to do produkce
+
+---
+
+_**Agent (model default, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+
+The user wants to deploy to production.
+</details></think>
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd "C:\Users\prikopa\Documents\GitHub\body-mind-on"; npm run deploy 2>&1</summary>
+
+```bash
+cd "C:\Users\prikopa\Documents\GitHub\body-mind-on"; npm run deploy 2>&1
+```
+
+```
+
+&gt; body-mind-on@1.0.0 deploy
+&gt; git add -A &amp;&amp; git commit -m "Deploy: automatické úpravy" &amp;&amp; git push origin main
+
+[main 8a38d81] Deploy: automatické úpravy
+ 2 files changed, 782 insertions(+), 1 deletion(-)
+ create mode 100644 pages/api/profile/preferences.js
+To https://github.com/Progen-design/body-mind-on.git
+   c18c3bb..8a38d81  main -&gt; main
+
+```
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+
+Deploy completed successfully. The new route /api/profile/preferences is now in the repo and will be deployed.
+</details></think>
+
+---
+
+
+Hotovo. Změny jsou na `main`, včetně nové route `/api/profile/preferences`. Po dokončení buildu na Vercelu by ukládání preferencí mělo fungovat i na adrese s lomítkem.
+
+---
+
+_**User**_
+
+https://app.bodyandmindon.cz/login tato stranka by mella byt reprezentativni a musi byt graficky stejna jako ty ostatni . bary stejne jako jsou v profilu :  obrazek 2 https://app.bodyandmindon.cz/profil 
+
+---
+

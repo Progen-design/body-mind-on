@@ -74,8 +74,14 @@ export default function Login() {
     return (
       <>
         <Header />
-        <main className="container" style={{ maxWidth: 420, margin: '48px auto', padding: '0 16px', textAlign: 'center' }}>
-          <p className="muted">Načítám…</p>
+        <main className="login-page">
+          <div className="login-hero">
+            <h2 className="login-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
+            <span className="login-hero-badge">Přihlášení</span>
+          </div>
+          <div className="login-content">
+            <p className="login-loading">Načítám…</p>
+          </div>
         </main>
         <Footer />
       </>
@@ -85,49 +91,196 @@ export default function Login() {
   return (
     <>
       <Header />
-      <main className="container" style={{ maxWidth: 420, margin: '48px auto', padding: '0 16px' }}>
-        <h1 style={{ marginBottom: 8 }}>Přihlášení</h1>
-        {router.query.registered === '1' && (
-          <div className="login-registered-msg" style={{ marginBottom: 20, padding: 14, background: 'rgba(34, 197, 94, 0.12)', border: '1px solid rgba(34, 197, 94, 0.4)', borderRadius: 10, color: '#86efac', fontSize: 14, lineHeight: 1.5 }}>
-            Registrace dokončena. Přihlaste se e-mailem a heslem. Odkaz na plán a přístup do profilu najdete také v e-mailu.
-          </div>
-        )}
-        <p className="muted" style={{ marginBottom: 24 }}>
-          Zadej e-mail a heslo, které máš z registrace (poslali jsme ti je e-mailem).
-        </p>
-        <form onSubmit={handleSubmit} className="form">
-          <div>
-            <label className="label block mb-2 text-gray-400">E-mail</label>
-            <input
-              type="email"
-              className="input w-full"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="jan@example.com"
-              required
-            />
-          </div>
-          <div>
-            <label className="label block mb-2 text-gray-400">Heslo</label>
-            <input
-              type="password"
-              className="input w-full"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-            />
-          </div>
-          <button type="submit" className="btn submit" disabled={loading}>
-            {loading ? 'Přihlašuji…' : 'Přihlásit se'}
-          </button>
-          {message && <p style={{ color: 'var(--error, #e74c3c)', marginTop: 12 }}>{message}</p>}
-        </form>
-        <p className="muted" style={{ marginTop: 24, fontSize: 14 }}>
-          Nemáš účet? <Link href="/start">Registruj se ve START programu</Link> – dostaneš plán a přihlašovací údaje e-mailem.
-        </p>
+      <main className="login-page">
+        <div className="login-hero">
+          <h2 className="login-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
+          <span className="login-hero-badge">Přihlášení</span>
+        </div>
+        <div className="login-content">
+          {router.query.registered === '1' && (
+            <div className="login-registered-msg">
+              Registrace dokončena. Přihlaste se e-mailem a heslem. Odkaz na plán a přístup do profilu najdete také v e-mailu.
+            </div>
+          )}
+          <p className="login-hint">
+            Zadej e-mail a heslo, které máš z registrace (poslali jsme ti je e-mailem).
+          </p>
+          <form onSubmit={handleSubmit} className="login-form">
+            <div className="login-field">
+              <label className="login-label">E-mail</label>
+              <input
+                type="email"
+                className="login-input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="jan@example.com"
+                required
+              />
+            </div>
+            <div className="login-field">
+              <label className="login-label">Heslo</label>
+              <input
+                type="password"
+                className="login-input"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            <button type="submit" className="login-submit" disabled={loading}>
+              {loading ? 'Přihlašuji…' : 'Přihlásit se'}
+            </button>
+            {message && <p className="login-error" role="alert">{message}</p>}
+          </form>
+          <p className="login-footer-hint">
+            Nemáš účet? <Link href="/start">Registruj se ve START programu</Link> – dostaneš plán a přihlašovací údaje e-mailem.
+          </p>
+        </div>
       </main>
       <Footer />
+
+      <style jsx>{`
+        .login-page {
+          min-height: 100vh;
+          padding: 0 20px 100px;
+          background: radial-gradient(circle at 30% 0%, #1c1333, #0b0b15 60%), #0a0a0f;
+          color: #fff;
+          font-family: Inter, sans-serif;
+        }
+        .login-hero {
+          text-align: center;
+          padding: 28px 24px 32px;
+          margin: 0 -20px 32px -20px;
+          background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4c1d95 100%);
+          border-radius: 0 0 20px 20px;
+          position: relative;
+          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+        }
+        .login-hero::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.5), transparent);
+        }
+        .login-hero-title {
+          margin: 0 0 12px;
+          font-size: 22px;
+          font-weight: 700;
+          color: #fff;
+          text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+        }
+        .login-hero-badge {
+          display: inline-block;
+          background: rgba(255, 255, 255, 0.35);
+          color: #fff;
+          padding: 8px 18px;
+          border-radius: 20px;
+          font-size: 13px;
+          font-weight: 600;
+          border: 1px solid rgba(255, 255, 255, 0.4);
+          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+        }
+        .login-content {
+          max-width: 420px;
+          margin: 0 auto;
+        }
+        .login-loading {
+          text-align: center;
+          color: #94a3b8;
+          margin: 0;
+        }
+        .login-registered-msg {
+          margin-bottom: 20px;
+          padding: 14px;
+          background: rgba(34, 197, 94, 0.12);
+          border: 1px solid rgba(34, 197, 94, 0.4);
+          border-radius: 12px;
+          color: #86efac;
+          font-size: 14px;
+          line-height: 1.5;
+        }
+        .login-hint {
+          color: #94a3b8;
+          margin: 0 0 24px;
+          font-size: 15px;
+          line-height: 1.5;
+        }
+        .login-form {
+          display: grid;
+          gap: 18px;
+        }
+        .login-field {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .login-label {
+          font-size: 14px;
+          color: #94a3b8;
+        }
+        .login-input {
+          width: 100%;
+          padding: 12px 14px;
+          border-radius: 12px;
+          border: 1px solid #334155;
+          background: #0f0f1a;
+          color: #fff;
+          font-size: 16px;
+          box-sizing: border-box;
+        }
+        .login-input::placeholder {
+          color: #64748b;
+        }
+        .login-input:focus {
+          outline: none;
+          border-color: rgba(139, 92, 255, 0.6);
+          box-shadow: 0 0 0 2px rgba(139, 92, 255, 0.2);
+        }
+        .login-submit {
+          margin-top: 8px;
+          padding: 14px 24px;
+          border-radius: 12px;
+          border: none;
+          background: linear-gradient(135deg, #7c3aed, #9b5cff);
+          color: #fff;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: opacity 0.2s;
+        }
+        .login-submit:hover:not(:disabled) {
+          opacity: 0.95;
+        }
+        .login-submit:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+        .login-error {
+          color: #f87171;
+          font-size: 14px;
+          margin: 0;
+          padding: 10px 12px;
+          background: rgba(239, 68, 68, 0.15);
+          border-radius: 8px;
+        }
+        .login-footer-hint {
+          margin-top: 24px;
+          font-size: 14px;
+          color: #94a3b8;
+          line-height: 1.5;
+        }
+        .login-footer-hint a {
+          color: #a78bfa;
+          text-decoration: underline;
+        }
+        .login-footer-hint a:hover {
+          color: #c4b5fd;
+        }
+      `}</style>
     </>
   );
 }

@@ -310,6 +310,19 @@ export default function Home() {
         .faq-list dd { margin: 0; color: #a1a1aa; line-height: 1.6; font-size: 0.95rem; }
         .cta-final { padding: 80px 24px; }
         .cta-final .btn { margin-top: 16px; }
+
+        @media (max-width: 640px) {
+          .hero { padding: 60px 16px 50px; }
+          .hero h1 { font-size: 1.75rem; }
+          .subtitle { font-size: 1.15rem; }
+          .buttons { gap: 12px; }
+          .btn { padding: 12px 20px; min-height: 44px; box-sizing: border-box; }
+          .btn-large { padding: 14px 24px; font-size: 1rem; }
+          .section { padding: 48px 16px; }
+          .section h2 { font-size: 1.5rem; }
+          .value-block { padding: 20px 20px; margin-left: 12px; margin-right: 12px; }
+          .cta-final { padding: 48px 16px; }
+        }
       `}</style>
     </>
   );

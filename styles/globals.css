@@ -25,6 +25,10 @@
 
 /* ---- Base ---- */
 * { box-sizing: border-box; }
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
 html, body {
   margin: 0;
   padding: 0;
@@ -34,14 +38,24 @@ html, body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 a { color: inherit; text-decoration: none; }
 a:hover { opacity: .9; }
+
+/* Touch-friendly minimum (44px) for tap targets – use .tap-target on buttons/links */
+.tap-target { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 10px 16px; }
 
 .container { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
 @media (max-width: 480px){ .container { padding: 0 14px; } }
 
 main { padding: 40px 0; }
+@media (max-width: 640px) { main { padding: 24px 0; } }
+@media (max-width: 380px) { main { padding: 20px 0; } }
 
 /* ---- Focus & Utilities ---- */
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 10px; }
@@ -57,9 +71,12 @@ main { padding: 40px 0; }
   box-shadow: 0 4px 16px rgba(0,0,0,.25);
 }
 .nav { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+@media (max-width: 640px) { .nav { height: 56px; gap: 12px; } }
 .brand { display: flex; align-items: center; gap: 12px; font-weight: 600; letter-spacing: .2px; white-space: nowrap; }
 .brand img { height: 28px; }
+@media (max-width: 480px) { .brand img { height: 24px; } }
 .menu { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+@media (max-width: 640px) { .menu { gap: 12px; } }
 
 .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 12px; background: linear-gradient(90deg, var(--accent), var(--accent-600)); color:#fff; border:none; cursor:pointer; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
@@ -80,6 +97,9 @@ main { padding: 40px 0; }
   transition: transform .2s, border-color .2s, box-shadow .2s;
   display: flex; flex-direction: column; min-height: 100%;
   cursor: pointer;
+}
+@media (max-width: 640px) {
+  .card { padding: 18px 16px; border-radius: 14px; }
 }
 .card:hover { transform: translateY(-4px); box-shadow: 0 10px 24px rgba(0,0,0,.25); }
 .card.selected { border-color: var(--accent); }

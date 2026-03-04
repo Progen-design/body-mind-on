@@ -3448,6 +3448,36 @@ export default function Profil() {
           margin: 0 4px;
         }
         .error-banner span { color: #888; }
+
+        @media (max-width: 640px) {
+          .progress-section, .progress-detail-end { padding: 18px 16px; margin-left: -4px; margin-right: -4px; border-radius: 14px; }
+          .progress-lead, .progress-period-hint { font-size: 14px; line-height: 1.5; }
+          .progress-dates { font-size: 14px; margin-bottom: 16px; }
+          .progress-activity { gap: 16px 24px; padding: 18px 14px; margin-bottom: 20px; }
+          .progress-big-num { font-size: 22px; }
+          .progress-big-label { font-size: 12px; }
+          .progress-calc { padding: 14px 16px; margin: 16px 0 12px; }
+          .progress-calc-line { font-size: 13px; }
+          .body-figures-row { gap: 16px; margin: 20px 0 10px; flex-direction: column; }
+          .body-figure-arrow { transform: rotate(90deg); }
+          .kpis-bar { padding: 14px 12px; gap: 0 8px; }
+          .kpi-item { min-width: 72px; padding: 6px 4px; }
+          .kpis-bar .kpi-num { font-size: 16px; }
+          .kpis-bar .kpi-label, .kpis-bar .kpi-sub { font-size: 11px; }
+          .kpi-divider { min-height: 40px; }
+          .section-head { font-size: 1.25rem; }
+          .modal-overlay { padding: 12px; align-items: flex-end; }
+          .modal { max-width: 100%; border-radius: 16px 16px 0 0; padding: 24px 20px; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+          .hero-name { font-size: 28px; }
+          .hero-intro { font-size: 16px; }
+          .hero-sub { font-size: 14px; }
+          .membership-card { flex-direction: column; align-items: flex-start; padding: 14px 16px; }
+          .action-buttons { gap: 10px; }
+        }
+        @media (max-width: 380px) {
+          .progress-big-num { font-size: 20px; }
+          .kpi-item { min-width: 64px; }
+        }
       `}</style>
     </>
   );

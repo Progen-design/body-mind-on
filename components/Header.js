@@ -85,6 +85,11 @@ export default function Header() {
           background: #0b0b0f;
           border-bottom: 1px solid #222;
           padding: 16px 24px;
+          padding-left: max(16px, env(safe-area-inset-left));
+          padding-right: max(16px, env(safe-area-inset-right));
+        }
+        @media (max-width: 640px) {
+          .header { padding: 12px 16px; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
         }
 
         .container {
@@ -93,17 +98,31 @@ export default function Header() {
           display: flex;
           justify-content: space-between;
           align-items: center;
+          gap: 12px;
+          width: 100%;
         }
 
         .logo {
           font-size: 1.2rem;
           color: #fff;
           text-decoration: none;
+          flex-shrink: 0;
+        }
+        @media (max-width: 480px) {
+          .logo { font-size: 1rem; }
         }
 
         nav {
           display: flex;
           gap: 20px;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+        @media (max-width: 640px) {
+          nav { gap: 12px; }
+        }
+        @media (max-width: 380px) {
+          nav { gap: 8px; }
         }
 
         nav a {
@@ -149,6 +168,15 @@ export default function Header() {
         }
         .nav-logout:hover {
           color: #fff;
+        }
+        nav a, .nav-logout {
+          min-height: 44px;
+          display: inline-flex;
+          align-items: center;
+          padding: 0 4px;
+        }
+        @media (max-width: 640px) {
+          nav a { font-size: 14px; }
         }
       `}</style>
     </header>

@@ -1966,7 +1966,18 @@ const planSectionStyles = `
   @media (max-width: 640px) {
     .plan-hero { padding: 20px 16px 24px; margin-left: -16px; margin-right: -16px; }
     .plan-hero-title { font-size: 18px; }
-    .plan-cards-grid { grid-template-columns: repeat(2, 1fr); }
-    .plan-meals { grid-template-columns: 1fr; }
+    .plan-cards-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .plan-meals { grid-template-columns: 1fr; gap: 16px; }
+    .plan-day-training-list { padding-left: 0; }
+    .plan-day-training-item { padding: 12px 0; }
+    .plan-day-training-detail { padding: 12px 10px; }
+    .plan-day-training-toggle-hint { padding: 10px 12px; font-size: 12px; min-height: 44px; box-sizing: border-box; display: inline-flex; align-items: center; }
+    .plan-recipe-modal-overlay { padding: 10px; align-items: center; }
+    .plan-recipe-modal { max-width: 100%; max-height: 90vh; border-radius: 16px; }
+    .plan-recipe-modal-header { padding: 14px 16px; }
+  }
+  @media (max-width: 380px) {
+    .plan-cards-grid { grid-template-columns: 1fr; }
+    .plan-hero-title { font-size: 16px; }
   }
 `;

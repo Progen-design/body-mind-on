@@ -8,6 +8,8 @@ export default class MyDocument extends Document {
     return (
       <Html lang="cs">
         <Head>
+          <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+          <meta name="mobile-web-app-capable" content="yes" />
           <link rel="canonical" href={APP_URL} />
           <meta property="og:url" content={APP_URL} />
           <meta property="og:site_name" content="Body & Mind ON" />

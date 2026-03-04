@@ -15,23 +15,31 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: 'Služba receptů není nakonfigurována' });
   }
 
+  const isAlternativeRequest = /alternativa|do\s*\d+\s*kcal/i.test(dish);
+
+  const systemContent = isAlternativeRequest
+    ? `Jsi kuchařský asistent. Odpovídej pouze v češtině. Uživatel chce alternativu jídla – vymysli KONKRÉTNÍ jídlo (ne obecný popis). Vrať recept v tomto HTML formátu (nic jiného):
+<p><b>Jídlo:</b> [konkrétní název jídla, např. Grilovaný pstruh se zeleninovým salátem nebo Kuřecí salát s avokádem]</p>
+<p><b>Suroviny:</b> odrážkový seznam surovin – množství na 1 porci.</p>
+<p><b>Postup:</b> krátké číslované kroky (3–6 kroků).</p>
+Důležité: první řádek musí obsahovat <b>Jídlo:</b> s konkrétním názvem. Nepoužívej markdown, pouze <p>, <b>, <ul>, <li>.`
+    : `Jsi kuchařský asistent. Odpovídej pouze v češtině. Pro zadané jídlo vrať stručný recept v tomto HTML formátu (nic jiného):
+<p><b>Suroviny:</b> odrážkový seznam surovin – vždy množství na 1 porci (pro jednoho strávníka). Např. 1 ks kuřecího prsa (cca 120–150 g), 1 menší brambor (80 g), 1 lžíce oleje. U masa, příloh a zeleniny uváděj rozumné množství pro jednu porci.</p>
+<p><b>Postup:</b> krátké číslované kroky (3–6 kroků), jak jídlo připravit pro 1 porci.</p>
+Důležité: všechny suroviny a postup musí být výhradně na jednu porci. Nepoužívej markdown, pouze <p>, <b>, <ul>, <li>. Žádný úvod ani závěr.`;
+
+  const userContent = isAlternativeRequest
+    ? `Vymysli konkrétní jídlo jako alternativu: ${dish}. Napiš recept na 1 porci. První řádek musí být <p><b>Jídlo:</b> [název tvého konkrétního jídla]</p>`
+    : `Napiš stručný recept na 1 porci pro toto jídlo: ${dish}`;
+
   try {
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       temperature: 0.4,
       max_tokens: 450,
       messages: [
-        {
-          role: 'system',
-          content: `Jsi kuchařský asistent. Odpovídej pouze v češtině. Pro zadané jídlo vrať stručný recept v tomto HTML formátu (nic jiného):
-<p><b>Suroviny:</b> odrážkový seznam surovin – vždy množství na 1 porci (pro jednoho strávníka). Např. 1 ks kuřecího prsa (cca 120–150 g), 1 menší brambor (80 g), 1 lžíce oleje. U masa, příloh a zeleniny uváděj rozumné množství pro jednu porci.</p>
-<p><b>Postup:</b> krátké číslované kroky (3–6 kroků), jak jídlo připravit pro 1 porci.</p>
-Důležité: všechny suroviny a postup musí být výhradně na jednu porci. Nepoužívej markdown, pouze <p>, <b>, <ul>, <li>. Žádný úvod ani závěr.`,
-        },
-        {
-          role: 'user',
-          content: `Napiš stručný recept na 1 porci pro toto jídlo: ${dish}`,
-        },
+        { role: 'system', content: systemContent },
+        { role: 'user', content: userContent },
       ],
     });
 

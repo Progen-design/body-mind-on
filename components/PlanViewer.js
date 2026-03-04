@@ -127,6 +127,17 @@ function recipeContentOnly(html) {
   return html;
 }
 
+/** Z receptu HTML vyextrahuje název jídla (např. z <b>Jídlo:</b> Grilovaný pstruh). */
+function extractMealNameFromRecipeHtml(html) {
+  if (!html || typeof html !== 'string') return null;
+  const m = html.match(/<b>\s*Jídlo\s*:\s*<\/b>\s*([^<]+)/i);
+  if (m && m[1]) {
+    const name = m[1].replace(/\s+/g, ' ').trim();
+    return name.length > 2 ? name : null;
+  }
+  return null;
+}
+
 /** Z HTML bloku „Trénink tento den“ vytáhne položky <li> (pro zobrazení s figurinami). */
 function parseTrainingItems(html) {
   if (!html || typeof html !== 'string') return null;
@@ -814,7 +825,7 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                         };
                         const handleSwap = () => {
                           const dishQuery = `${meal.type || 'Jídlo'} alternativa, do 500 kcal`.slice(0, 150);
-                          setSwapModal({ dayIndex: day.originalIndex ?? di, mealIndex: mi, dishQuery, loading: true, html: null });
+                          setSwapModal({ dayIndex: day.originalIndex ?? di, mealIndex: mi, dishQuery, mealType: meal.type || 'Jídlo', loading: true, html: null });
                           getRecipeForDish(dishQuery).then((html) => {
                             setSwapModal((prev) => prev ? { ...prev, loading: false, html: html || '' } : null);
                           });
@@ -1055,7 +1066,7 @@ export default function PlanViewer({ plan, userName, hideHero }) {
             <div className="plan-recipe-modal-overlay" onClick={() => setSwapModal(null)}>
               <div className="plan-recipe-modal plan-recipe-modal-dynamic" onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'min(520px, calc(100vw - 24px))', maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#1a1a2e', borderRadius: '16px', border: '1px solid #333', zIndex: 10001 }}>
                 <div className="plan-recipe-modal-header">
-                  <h3>Alternativa: {swapModal.dishQuery}</h3>
+                  <h3>Alternativa: {swapModal.loading ? swapModal.dishQuery : (extractMealNameFromRecipeHtml(swapModal.html) || swapModal.dishQuery)}</h3>
                   <button type="button" className="plan-recipe-modal-close" onClick={() => setSwapModal(null)} aria-label="Zavřít">×</button>
                 </div>
                 {swapModal.loading ? (
@@ -1068,7 +1079,8 @@ export default function PlanViewer({ plan, userName, hideHero }) {
                     <div className="plan-recipe-modal-body" dangerouslySetInnerHTML={{ __html: swapModal.html || '<p>Recept se nepodařilo načíst.</p>' }} />
                     <div className="plan-recipe-modal-actions">
                       <button type="button" className="plan-recipe-modal-replace-btn" onClick={() => {
-                        setMealOverrides((o) => ({ ...o, [`${swapModal.dayIndex}_${swapModal.mealIndex}`]: { title: swapModal.dishQuery, content: swapModal.html } }));
+                        const mealName = extractMealNameFromRecipeHtml(swapModal.html) || `${swapModal.mealType || 'Náhrada'} alternativa`;
+                        setMealOverrides((o) => ({ ...o, [`${swapModal.dayIndex}_${swapModal.mealIndex}`]: { title: mealName, content: swapModal.html } }));
                         setSwapModal(null);
                       }}>
                         Nahradit toto jídlo v plánu

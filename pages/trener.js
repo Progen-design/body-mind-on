@@ -60,15 +60,17 @@ export default function Trener() {
   return (
     <>
       <Header />
-      <main className="trener-main">
-        <section className="trener-section">
+      <main className="app-page container py-12 text-white">
+        <section className="trener-hero text-center mb-10">
           <h1 className="trener-title">Registrace pro trenéry</h1>
           <p className="trener-lead">
             Jako trenér můžeš v aplikaci přidávat plánované tréninky, propojit kalendář (info@) a vést klienty. Po registraci se přihlas a v profilu propoj Google Kalendář (Admin → Propojit kalendář).
           </p>
+        </section>
 
+        <div className="trener-form-wrap">
           {success ? (
-            <div className="trener-success">
+            <div className="trener-success-card">
               <p className="trener-success-text">Účet byl vytvořen.</p>
               <Link href="/login" className="trener-btn trener-btn-primary">
                 Přihlásit se
@@ -129,110 +131,46 @@ export default function Trener() {
           )}
 
           <p className="trener-back">
-            <Link href="/start">← Zpět na výběr (trenér / klient)</Link>
+            <Link href="/start">← Zpět na výběr programů</Link>
           </p>
-        </section>
+        </div>
       </main>
-      <Footer />
 
       <style jsx>{`
-        .trener-main {
-          min-height: 70vh;
-          padding: 48px 16px;
-        }
-        .trener-section {
-          max-width: 420px;
-          margin: 0 auto;
-          background: #121212;
+        .trener-hero { text-align: center; margin-bottom: 40px; }
+        .trener-title { font-size: 1.75rem; font-weight: 700; color: #38bdf8; margin: 0 0 12px; }
+        .trener-lead { font-size: 1rem; color: #94a3b8; max-width: 42rem; margin: 0 auto; line-height: 1.5; }
+        .trener-form-wrap { max-width: 32rem; margin: 0 auto; }
+        .trener-success-card, .trener-form {
+          background: #121212; padding: 32px; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
           border: 1px solid #222;
-          border-radius: 16px;
-          padding: 32px;
         }
-        .trener-title {
-          font-size: 1.5rem;
-          font-weight: 700;
-          color: #e2e8f0;
-          margin: 0 0 12px;
-        }
-        .trener-lead {
-          font-size: 14px;
-          color: #94a3b8;
-          line-height: 1.5;
-          margin: 0 0 24px;
-        }
-        .trener-form {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-        .trener-field {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-        .trener-label {
-          font-size: 13px;
-          color: #94a3b8;
-        }
+        .trener-success-card { text-align: center; }
+        .trener-success-text { font-size: 1.125rem; color: #86efac; margin: 0 0 24px; }
+        .trener-form { display: flex; flex-direction: column; gap: 24px; }
+        .trener-field { display: flex; flex-direction: column; gap: 6px; }
+        .trener-label { font-size: 14px; color: #94a3b8; }
         .trener-input {
-          padding: 12px 14px;
-          border-radius: 10px;
-          border: 1px solid #374151;
-          background: #0f0f0f;
-          color: #fff;
-          font-size: 15px;
+          width: 100%; padding: 12px 14px; border-radius: 10px; background: #0f0f0f;
+          border: 1px solid #374151; color: #fff; font-size: 15px;
         }
-        .trener-input:focus {
-          outline: none;
-          border-color: #a78bfa;
-        }
-        .trener-message {
-          font-size: 14px;
-          color: #f87171;
-          margin: 0;
-        }
+        .trener-input:focus { outline: none; border-color: #0ea5e9; box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2); }
+        .trener-message { font-size: 14px; color: #f87171; margin: 0; }
         .trener-btn {
-          padding: 14px 24px;
-          border-radius: 10px;
-          font-size: 15px;
-          font-weight: 600;
-          cursor: pointer;
-          text-align: center;
-          text-decoration: none;
-          display: inline-block;
+          padding: 14px 24px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer;
+          text-align: center; text-decoration: none; display: inline-block; border: none;
         }
         .trener-btn-primary {
-          background: #7c3aed;
-          color: #fff;
-          border: none;
+          background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff;
+          transition: opacity 0.2s;
         }
-        .trener-btn-primary:hover:not(:disabled) {
-          background: #6d28d9;
-        }
-        .trener-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-        .trener-success {
-          text-align: center;
-          padding: 20px 0;
-        }
-        .trener-success-text {
-          color: #86efac;
-          margin: 0 0 16px;
-        }
-        .trener-back {
-          margin-top: 24px;
-          font-size: 14px;
-        }
-        .trener-back a {
-          color: #94a3b8;
-          text-decoration: none;
-        }
-        .trener-back a:hover {
-          color: #c4b5fd;
-        }
+        .trener-btn-primary:hover:not(:disabled) { opacity: 0.9; }
+        .trener-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .trener-back { margin-top: 24px; text-align: center; font-size: 14px; }
+        .trener-back a { color: #94a3b8; text-decoration: none; }
+        .trener-back a:hover { color: #c4b5fd; }
       `}</style>
+      <Footer />
     </>
   );
 }

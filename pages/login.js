@@ -74,7 +74,7 @@ export default function Login() {
     return (
       <>
         <Header />
-        <main className="login-page">
+        <main className="login-page app-page">
           <div className="login-hero">
             <h2 className="login-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
             <span className="login-hero-badge">Přihlášení</span>
@@ -91,7 +91,7 @@ export default function Login() {
   return (
     <>
       <Header />
-      <main className="login-page">
+      <main className="login-page app-page">
         <div className="login-hero">
           <h2 className="login-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
           <span className="login-hero-badge">Přihlášení</span>

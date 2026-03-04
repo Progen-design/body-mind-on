@@ -150,26 +150,21 @@ export default function Start() {
   return (
     <>
       <Header />
-      <main className="container py-12 text-white">
+      <main className="app-page container py-12 text-white">
         <section className="text-center mb-10">
           <h1 className="text-4xl font-extrabold mb-3 text-sky-400">
             {step === 0 ? "Registrace" : "START Program – Začni zdarma"}
           </h1>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto">
             {step === 0
-              ? "Vyber si program nebo se zaregistruj jako trenér."
+              ? "Vyber si program."
               : "Vyzkoušej systém bez rizika – AI ti zdarma připraví osobní plán tréninku, jídelníček i regeneraci."}
           </p>
         </section>
 
-        {/* KROK 0: Výběr – trenér + všechny 3 programy (stejná karta vizuálně) */}
+        {/* KROK 0: Výběr – 3 programy (trenér je v horní liště Pro trenéry) */}
         {step === 0 && (
           <div className="role-cards-wrap">
-            <Link href="/trener" className="role-card role-card-trainer" aria-label="Registrace jako trenér">
-              <span className="role-emoji">👤</span>
-              <strong className="role-title">Jsem trenér</strong>
-              <p className="role-desc">Přidávám tréninky, vedu klienty, mám přístup ke kalendáři a plánům.</p>
-            </Link>
             <button type="button" onClick={() => setStep(1)} className="role-card role-card-start" aria-label="Registrace do START programu">
               <span className="role-emoji">🚀</span>
               <strong className="role-title">START</strong>
@@ -408,13 +403,13 @@ export default function Start() {
       <style jsx>{`
         .role-cards-wrap {
           display: grid;
-          grid-template-columns: repeat(2, 1fr);
+          grid-template-columns: repeat(3, 1fr);
           gap: 20px;
           max-width: 56rem;
           margin: 0 auto;
           align-items: stretch;
         }
-        @media (max-width: 640px) {
+        @media (max-width: 768px) {
           .role-cards-wrap { grid-template-columns: 1fr; }
         }
         .role-card {
@@ -439,10 +434,6 @@ export default function Start() {
           border-color: #0ea5e9;
           background: #1a1a2e;
           box-shadow: 0 4px 20px rgba(14, 165, 233, 0.15);
-        }
-        .role-card-trainer:hover {
-          border-color: #a78bfa;
-          box-shadow: 0 4px 20px rgba(167, 139, 250, 0.2);
         }
         .role-card-onclub:hover {
           border-color: #f59e0b;

@@ -130,7 +130,7 @@ export default function OnClubPage() {
   return (
     <>
       <Header />
-      <main className="container py-12 text-white">
+      <main className="app-page container py-12 text-white">
         <section className="onclub-hero text-center mb-10">
           <h1 className="onclub-hero-title">
             ON Club – program s denními návyky a AI plánem

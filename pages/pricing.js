@@ -9,6 +9,7 @@ export default function PricingPage() {
     <>
       <Header />
 
+      <main className="app-page">
       <section className="pricing-page">
         <h1>Ceník</h1>
         <p className="intro">
@@ -25,6 +26,7 @@ export default function PricingPage() {
           <Link href="/chci-vip">Chci VIP přístup</Link>
         </p>
       </section>
+      </main>
       <Footer />
 
       <style jsx>{`

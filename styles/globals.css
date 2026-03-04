@@ -23,6 +23,13 @@
   --profil-accent-light: #a78bfa;
 }
 
+/* ---- App pages (start, login, trener, on-club, chci-vip) – jednotný vzhled ---- */
+.app-page {
+  min-height: 100vh;
+  background: radial-gradient(circle at 30% 0%, #1c1333, #0b0b15 60%), #0a0a0f;
+  color: #fff;
+}
+
 /* ---- Base ---- */
 * { box-sizing: border-box; }
 html {

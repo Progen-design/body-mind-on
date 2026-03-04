@@ -101,11 +101,21 @@ export default async function handler(req, res) {
       let result = await supabaseServer.from('body_metrics').update(toUpdate).eq('id', latest.id);
       updateErr = result.error;
 
-      if (updateErr && updateErr.message && (updateErr.message.includes('foods_to_avoid') && (updateErr.message.includes('does not exist') || updateErr.message.includes('neexistuje')))) {
-        delete toUpdate.foods_to_avoid;
-        if (Object.keys(toUpdate).length > 0) {
-          result = await supabaseServer.from('body_metrics').update(toUpdate).eq('id', latest.id);
-          updateErr = result.error;
+      // Retry bez volitelných sloupců, pokud DB nemá novější migraci
+      const columnMissing = updateErr?.message && (
+        /does not exist|neexistuje|column.*not found/i.test(updateErr.message)
+      );
+      if (updateErr && columnMissing) {
+        const optionalCols = ['foods_to_avoid', 'dietary_restrictions'];
+        for (const col of optionalCols) {
+          if (col in toUpdate) {
+            delete toUpdate[col];
+            if (Object.keys(toUpdate).length > 0) {
+              result = await supabaseServer.from('body_metrics').update(toUpdate).eq('id', latest.id);
+              updateErr = result.error;
+              if (!updateErr) break;
+            }
+          }
         }
       }
 
@@ -113,9 +123,9 @@ export default async function handler(req, res) {
         console.error('[profile-preferences] body_metrics update:', updateErr);
         const msg = updateErr.message || '';
         const friendly =
-          msg.includes('foods_to_avoid') && (msg.includes('does not exist') || msg.includes('neexistuje'))
-            ? 'Databáze ještě nemá sloupec pro potraviny k vynechání – spusť migraci 20260320_body_metrics_foods_to_avoid.sql v Supabase.'
-            : msg.includes('violates check constraint') || msg.includes('check constraint')
+          /foods_to_avoid|dietary_restrictions/i.test(msg) && /does not exist|neexistuje/i.test(msg)
+            ? 'Databáze ještě nemá sloupec – spusť migraci 20260320_body_metrics_foods_to_avoid.sql v Supabase.'
+            : /violates check constraint|check constraint/i.test(msg)
             ? 'Neplatná hodnota v jednom z polí (aktivita, typ práce, cíl). Zkus znovu vybrat z nabídky.'
             : null;
         return res.status(500).json({

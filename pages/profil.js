@@ -360,9 +360,16 @@ export default function Profil() {
     };
   }, [router]);
 
+  /** Normalizuje freq_choice/weekly_sessions_user na hodnotu pro select (1-2x | 2-3x | 4-5x týdně). */
   const getFreqFromMetrics = (lm) => {
-    if (lm?.freq_choice) return lm.freq_choice;
-    const w = lm?.weekly_sessions_user;
+    const fc = lm?.freq_choice;
+    if (fc && typeof fc === 'string') {
+      const t = fc.replace(/\u2013/g, '-').trim().toLowerCase();
+      if ((t.includes('1') && t.includes('2')) || t === '1-2x týdně') return '1-2x týdně';
+      if ((t.includes('2') && t.includes('3')) || t === '2-3x týdně') return '2-3x týdně';
+      if ((t.includes('4') || t.includes('5')) || t === '4-5x týdně') return '4-5x týdně';
+    }
+    const w = Number(lm?.weekly_sessions_user);
     if (w === 1) return '1-2x týdně';
     if (w === 5) return '4-5x týdně';
     if (w === 3) return '2-3x týdně';

@@ -41,6 +41,7 @@ export default function ProgramForm({ planType }) {
         frequency: '2-3x týdně',
         diet_type: form.diet_type?.trim() || null,
         dietary_restrictions: form.dietary_restrictions?.trim() || null,
+        foods_to_avoid: form.foods_to_avoid?.trim() || null,
         notes: form.notes?.trim() || null,
         program: planType || 'START',
       };
@@ -145,12 +146,15 @@ export default function ProgramForm({ planType }) {
         />
       </div>
 
-      <details className="mt-6 rounded-xl bg-neutral-800 border-2 border-green-400/50 overflow-hidden group">
-        <summary className="flex items-center justify-between gap-2 cursor-pointer list-none p-4 text-white font-bold text-base hover:bg-neutral-700/50 select-none">
-          <span>Strava a omezení (volitelné)</span>
-          <span className="text-sm transition group-open:rotate-180" aria-hidden>▼</span>
-        </summary>
-        <div className="px-4 pb-4 pt-0 space-y-4 border-t border-neutral-700">
+      <div className="mt-6 rounded-xl overflow-hidden diet-section-program">
+        <div className="diet-section-program-header">
+          <span className="diet-section-program-icon">🥗</span>
+          <div>
+            <h3 className="diet-section-program-title">Strava a omezení (volitelné)</h3>
+            <p className="diet-section-program-desc">Abychom do jídelníčku nezařadili to, co nejíš.</p>
+          </div>
+        </div>
+        <div className="px-4 pb-4 pt-0 space-y-4 diet-section-program-body">
           <div>
             <label className="block text-sm text-gray-500 mb-1">Typ stravy (volitelné)</label>
             <select
@@ -192,9 +196,28 @@ export default function ProgramForm({ planType }) {
             />
           </div>
         </div>
-      </details>
+      </div>
 
       {error && <p className="mt-4 text-red-400 text-sm">{error}</p>}
+      <style jsx>{`
+        .diet-section-program {
+          background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(6, 78, 59, 0.06) 100%);
+          border: 1px solid rgba(34, 197, 94, 0.35);
+          box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.1), 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+        .diet-section-program-header {
+          display: flex;
+          align-items: flex-start;
+          gap: 14px;
+          padding: 18px 20px;
+          background: rgba(34, 197, 94, 0.06);
+          border-bottom: 1px solid rgba(34, 197, 94, 0.2);
+        }
+        .diet-section-program-icon { font-size: 28px; line-height: 1; }
+        .diet-section-program-title { margin: 0; font-size: 1.1rem; font-weight: 700; color: #4ade80; letter-spacing: -0.02em; }
+        .diet-section-program-desc { margin: 4px 0 0; font-size: 13px; color: #94a3b8; line-height: 1.4; }
+        .diet-section-program-body { padding: 16px 20px 20px; }
+      `}</style>
       <button
         type="submit"
         disabled={loading}

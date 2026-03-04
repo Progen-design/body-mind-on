@@ -323,13 +323,15 @@ export default function Start() {
 
           {/* KROK 4: Strava a omezení (volitelné) */}
           {step === 4 && (
-            <details open className="group border border-sky-500/50 rounded-lg bg-[#0f0f0f] overflow-hidden">
-              <summary className="flex items-center justify-between gap-2 cursor-pointer list-none p-3.5 text-white font-bold text-base hover:bg-[#1a1a2e] select-none">
-                <span>Strava a omezení (volitelné)</span>
-                <span className="text-sm transition group-open:rotate-180" aria-hidden>▼</span>
-              </summary>
-              <p className="text-xs text-gray-500 px-3.5 pb-2">Abychom do jídelníčku nezařadili to, co nejíš.</p>
-              <div className="px-3 pb-3 pt-0 space-y-4 border-t border-gray-700/50">
+            <div className="diet-section">
+              <div className="diet-section-header">
+                <span className="diet-section-icon">🥗</span>
+                <div>
+                  <h3 className="diet-section-title">Strava a omezení (volitelné)</h3>
+                  <p className="diet-section-desc">Abychom do jídelníčku nezařadili to, co nejíš.</p>
+                </div>
+              </div>
+              <div className="diet-section-body">
                 <div>
                   <label className="label block mb-2 text-gray-500 text-sm">Typ stravy (volitelné)</label>
                   <select name="diet_type" className="select w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" value={formData.diet_type} onChange={handleChange}>
@@ -352,7 +354,7 @@ export default function Start() {
                   <textarea name="foods_to_avoid" className="input w-full p-3 rounded-lg bg-[#0f0f0f] border border-gray-700 text-white" rows="2" value={formData.foods_to_avoid} onChange={handleChange} placeholder="např. avokádo, brokolice, banány – konkrétní potraviny, které nemají být v plánu" />
                 </div>
               </div>
-            </details>
+            </div>
           )}
 
           {/* KROK 5: Výběr návyků */}
@@ -549,6 +551,28 @@ export default function Start() {
         .habit-step { margin-bottom: 0; }
         .habit-step-title { margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #e2e8f0; }
         .habit-step-hint { margin: 12px 0 0; font-size: 13px; color: #f87171; }
+        .diet-section {
+          margin-bottom: 24px;
+          border-radius: 14px;
+          overflow: hidden;
+          background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(6, 78, 59, 0.06) 100%);
+          border: 1px solid rgba(14, 165, 233, 0.35);
+          box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.1), 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+        .diet-section-header {
+          display: flex;
+          align-items: flex-start;
+          gap: 14px;
+          padding: 18px 20px;
+          background: rgba(14, 165, 233, 0.06);
+          border-bottom: 1px solid rgba(14, 165, 233, 0.2);
+        }
+        .diet-section-icon { font-size: 28px; line-height: 1; }
+        .diet-section-title { margin: 0; font-size: 1.1rem; font-weight: 700; color: #38bdf8; letter-spacing: -0.02em; }
+        .diet-section-desc { margin: 4px 0 0; font-size: 13px; color: #94a3b8; line-height: 1.4; }
+        .diet-section-body { padding: 20px; }
+        .diet-section-body > div { margin-bottom: 16px; }
+        .diet-section-body > div:last-child { margin-bottom: 0; }
       `}</style>
     </>
   );

@@ -86,10 +86,8 @@ export default function Header() {
                 {profileOpen && (
                   <div className="nav-profil-dropdown">
                     <Link href="/profil?edit=preferences" onClick={() => setProfileOpen(false)} className="nav-profil-dropdown-item">
-                      ✏️ Upravit preference
-                    </Link>
-                    <Link href="/profil" onClick={() => setProfileOpen(false)} className="nav-profil-dropdown-item">
-                      📋 Můj profil
+                      <span className="nav-profil-item-icon">✏️</span>
+                      <span className="nav-profil-item-text">Upravit preference</span>
                     </Link>
                   </div>
                 )}
@@ -195,11 +193,13 @@ export default function Header() {
           z-index: 100;
         }
         .nav-profil-dropdown-item {
-          display: block;
-          padding: 12px 16px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 14px 18px;
           color: #e2e8f0;
           text-decoration: none;
-          font-size: 14px;
+          font-size: 16px;
           transition: background 0.2s;
         }
         .nav-profil-dropdown-item:hover { background: #252540; color: #fff; }

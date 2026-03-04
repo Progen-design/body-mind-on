@@ -34243,17 +34243,7 @@ _**Agent (model composer-1.5, mode Agent)**_
 
 
 
----
 
-<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
-<details>
-<summary>Tool use: **ripgrep_raw_search**</summary>
-
-Status: **loading**
-
-
-</details>
-</tool-use>
 
 ---
 
@@ -34261,115 +34251,111 @@ Status: **loading**
 <details>
 <summary>Tool use: **ripgrep_raw_search**</summary>
 
-Status: **loading**
 
+Parameters:
 
-</details>
-</tool-use>
+```json
+{
+  "pattern": "Frekvence cvičení|freq_choice|frequency",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on",
+  "caseInsensitive": false
+}
+```
+Additional data:
 
----
-
-<tool-use data-tool-type="unknown" data-tool-name="glob_file_search">
-<details>
-<summary>Tool use: **glob_file_search**</summary>
-
-Status: **loading**
-
-
-</details>
-</tool-use>
-
----
-
-
-
----
-
-
-
----
-
-<tool-use data-tool-type="unknown" data-tool-name="read_file_v2">
-<details>
-<summary>Tool use: **read_file_v2**</summary>
-
-Status: **loading**
-
-
-</details>
-</tool-use>
-
----
-
-<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
-<details>
-<summary>Tool use: **ripgrep_raw_search**</summary>
-
-Status: **loading**
-
-
-</details>
-</tool-use>
-
----
-
-<tool-use data-tool-type="unknown" data-tool-name="read_file_v2">
-<details>
-<summary>Tool use: **read_file_v2**</summary>
-
-Status: **loading**
-
-
-</details>
-</tool-use>
-
----
-
-
-
----
-
-
-
----
-
-<tool-use data-tool-type="unknown" data-tool-name="read_file_v2">
-<details>
-<summary>Tool use: **read_file_v2**</summary>
-
-Status: **loading**
-
-
-</details>
-</tool-use>
-
----
-
-<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
-<details>
-<summary>Tool use: **ripgrep_raw_search**</summary>
-
-Status: **loading**
-
-
-</details>
-</tool-use>
-
----
-
-
-
----
-
-
-
----
-
-<tool-use data-tool-type="unknown" data-tool-name="read_file_v2">
-<details>
-<summary>Tool use: **read_file_v2**</summary>
-
-Status: **loading**
+```json
+{
+  "isPruned": true,
+  "pattern": "Frekvence cvičení|freq_choice|frequency",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on",
+  "outputMode": "content",
+  "totalFiles": 23,
+  "totalMatches": 238,
+  "topFiles": [
+    {
+      "uri": ".specstory/history/2026-02-26_00-51Z-celková-analýza-projektu-body-mind-on.md",
+      "matchCount": 7
+    },
+    {
+      "uri": "lib\\generatePlan.js",
+      "matchCount": 5
+    },
+    {
+      "uri": "pages\\profil.js",
+      "matchCount": 8
+    },
+    {
+      "uri": "pages/api/assistant-intake.js",
+      "matchCount": 2
+    },
+    {
+      "uri": ".specstory/history/2026-02-19_01-29Z-profile-and-training-plan.md",
+      "matchCount": 33
+    },
+    {
+      "uri": "pages/api/body-metrics.js",
+      "matchCount": 2
+    },
+    {
+      "uri": "pages\\start.js",
+      "matchCount": 8
+    },
+    {
+      "uri": ".specstory/history/2026-02-20_01-34Z-next-js-build-failure-due-to-syntax-error.md",
+      "matchCount": 25
+    },
+    {
+      "uri": "components\\ProgramForm.js",
+      "matchCount": 1
+    },
+    {
+      "uri": "FLOW_START_DOTAZNIK.md",
+      "matchCount": 3
+    },
+    {
+      "uri": ".specstory/history/2026-02-26_02-10Z-codebase-exploration-for-membership-tiers.md",
+      "matchCount": 59
+    },
+    {
+      "uri": "lib/generatePlan.js",
+      "matchCount": 5
+    },
+    {
+      "uri": "pages/chci-vip.js",
+      "matchCount": 6
+    },
+    {
+      "uri": "pages/api/quick-weight.js",
+      "matchCount": 1
+    },
+    {
+      "uri": ".specstory/history/2026-02-23_22-52Z-body-mind-on-project-overview.md",
+      "matchCount": 17
+    },
+    {
+      "uri": "pages/start.js",
+      "matchCount": 8
+    },
+    {
+      "uri": "pages\\on-club.js",
+      "matchCount": 6
+    },
+    {
+      "uri": "pages\\api\\profile-preferences.js",
+      "matchCount": 3
+    },
+    {
+      "uri": ".specstory\\history\\2026-02-20_01-34Z-next-js-build-failure-due-to-syntax-error.md",
+      "matchCount": 25
+    },
+    {
+      "uri": "pages\\chci-vip.js",
+      "matchCount": 6
+    }
+  ]
+}
+```
+Status: **completed**
 
 
 </details>
@@ -34381,8 +34367,51 @@ Status: **loading**
 <details>
 <summary>Tool use: **ripgrep_raw_search**</summary>
 
-Status: **loading**
 
+Parameters:
+
+```json
+{
+  "pattern": "preferencesForm|setPreferencesForm",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\pages\\profil.js",
+  "caseInsensitive": false
+}
+```
+Additional data:
+
+```json
+{
+  "isPruned": true,
+  "pattern": "preferencesForm|setPreferencesForm",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\pages\\profil.js",
+  "outputMode": "content",
+  "totalFiles": 1,
+  "totalMatches": 23,
+  "topFiles": [
+    {
+      "uri": "pages\\profil.js",
+      "matchCount": 23
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="generic" data-tool-name="glob_file_search">
+<details>
+<summary>Tool use: **glob_file_search** • Searched codebase "undefined" • **1** result in **1** directory</summary>
+
+Directory: **C:\Users\prikopa\Documents\GitHub\body-mind-on** (1 file)
+
+| File |
+|------|
+| `../vercel.json` |
 
 </details>
 </tool-use>
@@ -34395,46 +34424,12 @@ Status: **loading**
 
 
 
----
-
-<tool-use data-tool-type="unknown" data-tool-name="read_file_v2">
-<details>
-<summary>Tool use: **read_file_v2**</summary>
-
-Status: **loading**
-
-
-</details>
-</tool-use>
-
----
-
-<tool-use data-tool-type="unknown" data-tool-name="read_file_v2">
-<details>
-<summary>Tool use: **read_file_v2**</summary>
-
-Status: **loading**
-
-
-</details>
-</tool-use>
-
----
-
 
 
 ---
 
-
-
----
-
-<tool-use data-tool-type="unknown" data-tool-name="read_file_v2">
-<details>
-<summary>Tool use: **read_file_v2**</summary>
-
-Status: **loading**
-
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\profil.js</summary>
 
 </details>
 </tool-use>
@@ -34445,7 +34440,133 @@ Status: **loading**
 <details>
 <summary>Tool use: **ripgrep_raw_search**</summary>
 
-Status: **loading**
+
+Parameters:
+
+```json
+{
+  "pattern": "weekly_sessions|freq_choice|frequency",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\pages\\api",
+  "caseInsensitive": false
+}
+```
+Additional data:
+
+```json
+{
+  "isPruned": true,
+  "pattern": "weekly_sessions|freq_choice|frequency",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\pages\\api",
+  "outputMode": "content",
+  "totalFiles": 5,
+  "totalMatches": 12,
+  "topFiles": [
+    {
+      "uri": "pages/api/quick-weight.js",
+      "matchCount": 2
+    },
+    {
+      "uri": "pages/api/body-metrics.js",
+      "matchCount": 2
+    },
+    {
+      "uri": "pages/api/generate-plan.js",
+      "matchCount": 2
+    },
+    {
+      "uri": "pages/api/assistant-intake.js",
+      "matchCount": 2
+    },
+    {
+      "uri": "pages\\api\\profile-preferences.js",
+      "matchCount": 4
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\vercel.json</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\api\profile.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "body_metrics|freq|weekly",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\lib",
+  "caseInsensitive": false
+}
+```
+Additional data:
+
+```json
+{
+  "isPruned": true,
+  "pattern": "body_metrics|freq|weekly",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\lib",
+  "outputMode": "content",
+  "totalFiles": 5,
+  "totalMatches": 23,
+  "topFiles": [
+    {
+      "uri": "lib/assistantInstructions.js",
+      "matchCount": 2
+    },
+    {
+      "uri": "lib/dailyDigest.js",
+      "matchCount": 1
+    },
+    {
+      "uri": "lib/habits.js",
+      "matchCount": 2
+    },
+    {
+      "uri": "lib/generatePlan.js",
+      "matchCount": 9
+    },
+    {
+      "uri": "lib\\generatePlan.js",
+      "matchCount": 9
+    }
+  ]
+}
+```
+Status: **completed**
 
 
 </details>
@@ -34457,24 +34578,215 @@ Status: **loading**
 
 ---
 
+
+
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\api\body-metrics.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "weekly_sessions_user|freq_choice",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on",
+  "caseInsensitive": false
+}
+```
+Additional data:
+
+```json
+{
+  "isPruned": true,
+  "pattern": "weekly_sessions_user|freq_choice",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on",
+  "outputMode": "content",
+  "totalFiles": 13,
+  "totalMatches": 102,
+  "topFiles": [
+    {
+      "uri": "FLOW_START_DOTAZNIK.md",
+      "matchCount": 1
+    },
+    {
+      "uri": ".specstory/history/2026-02-23_22-52Z-body-mind-on-project-overview.md",
+      "matchCount": 8
+    },
+    {
+      "uri": "pages/api/body-metrics.js",
+      "matchCount": 2
+    },
+    {
+      "uri": "pages/api/quick-weight.js",
+      "matchCount": 2
+    },
+    {
+      "uri": "lib/generatePlan.js",
+      "matchCount": 3
+    },
+    {
+      "uri": "pages\\profil.js",
+      "matchCount": 7
+    },
+    {
+      "uri": "pages\\api\\profile-preferences.js",
+      "matchCount": 4
+    },
+    {
+      "uri": ".specstory\\history\\2026-02-20_01-34Z-next-js-build-failure-due-to-syntax-error.md",
+      "matchCount": 6
+    },
+    {
+      "uri": ".specstory/history/2026-02-20_01-34Z-next-js-build-failure-due-to-syntax-error.md",
+      "matchCount": 6
+    },
+    {
+      "uri": ".specstory/history/2026-02-26_02-10Z-codebase-exploration-for-membership-tiers.md",
+      "matchCount": 36
+    },
+    {
+      "uri": "lib\\generatePlan.js",
+      "matchCount": 3
+    },
+    {
+      "uri": ".specstory/history/2026-02-26_00-51Z-celková-analýza-projektu-body-mind-on.md",
+      "matchCount": 3
+    },
+    {
+      "uri": ".specstory/history/2026-02-19_01-29Z-profile-and-training-plan.md",
+      "matchCount": 21
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\api\body-metrics.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\profil.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\profil.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "setShowPreferencesModal\\(true\\)",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\pages\\profil.js",
+  "caseInsensitive": false
+}
+```
+Additional data:
+
+```json
+{
+  "isPruned": true,
+  "pattern": "setShowPreferencesModal\\(true\\)",
+  "path": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\pages\\profil.js",
+  "outputMode": "content",
+  "totalFiles": 1,
+  "totalMatches": 2,
+  "topFiles": [
+    {
+      "uri": "pages\\profil.js",
+      "matchCount": 2
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+Přidávám fallback pro `weekly_sessions_user` (1, 3, 5) a nasazuji do produkce.
 
 
 ---
 
 <tool-use data-tool-type="task" data-tool-name="todo_write">
-<details><summary>Tool use: **todo_write** • Error parsing todo list data</summary>
+<details><summary>Tool use: **todo_write** • Todo List</summary>
+
+- [-] Fix Frekvence cvičení - fallback z weekly_sessions_user
+- [ ] Deploy to production
 
 </details>
 </tool-use>
 
 ---
 
-<tool-use data-tool-type="unknown" data-tool-name="read_file_v2">
-<details>
-<summary>Tool use: **read_file_v2**</summary>
-
-Status: **loading**
-
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\package.json</summary>
 
 </details>
 </tool-use>
@@ -34484,6 +34796,8 @@ Status: **loading**
 
 
 ---
+
+
 
 
 
@@ -34493,8 +34807,6 @@ Status: **loading**
 
 <details><summary>Tool use: **edit_file_v2** • Edit file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\profil.js</summary>
 
-Status: **loading**
-
 </details>
 
 </tool-use>
@@ -34505,8 +34817,6 @@ Status: **loading**
 
 <details><summary>Tool use: **edit_file_v2** • Edit file: C:\Users\prikopa\Documents\GitHub\body-mind-on\pages\profil.js</summary>
 
-Status: **loading**
-
 </details>
 
 </tool-use>
@@ -34519,18 +34829,37 @@ Status: **loading**
 
 
 
+
+
 ---
 
 <tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
-<details><summary>Tool use: **run_terminal_command_v2**</summary>
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd "C:\Users\prikopa\Documents\GitHub\body-mind-on" && npm run build 2>&1</summary>
 
+```bash
+cd "C:\Users\prikopa\Documents\GitHub\body-mind-on" && npm run build 2>&1
+```
+
+```
+At C:\Users\prikopa\AppData\Local\Temp\ps-script-060966cc-1575-4754-8482-acb26049c9d5.ps1:88 char:53
++ cd "C:\Users\prikopa\Documents\GitHub\body-mind-on" &amp;&amp; npm run build  ...
++                                                     ~~
+The token '&amp;&amp;' is not a valid statement separator in this version.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : InvalidEndOfLine
+ 
+
+```
 </details>
 </tool-use>
 
 ---
 
 <tool-use data-tool-type="task" data-tool-name="todo_write">
-<details><summary>Tool use: **todo_write** • Error parsing todo list data</summary>
+<details><summary>Tool use: **todo_write** • Todo List</summary>
+
+- [x] Fix Frekvence cvičení - fallback z weekly_sessions_user
+- [ ] Deploy to production
 
 </details>
 </tool-use>
@@ -34543,12 +34872,327 @@ Status: **loading**
 
 
 
+
+
 ---
 
 <tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
-<details><summary>Tool use: **run_terminal_command_v2**</summary>
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd "C:\Users\prikopa\Documents\GitHub\body-mind-on"; npm run build 2>&1</summary>
+
+```bash
+cd "C:\Users\prikopa\Documents\GitHub\body-mind-on"; npm run build 2>&1
+```
+
+```
+
+&gt; body-mind-on@1.0.0 build
+&gt; next build
+
+  ▲ Next.js 14.2.5
+  - Environments: .env
+
+   Linting and checking validity of types ...
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Collecting page data ...
+   Generating static pages (0/19) ...
+   Generating static pages (4/19) 
+   Generating static pages (9/19) 
+   Generating static pages (14/19) 
+ ✓ Generating static pages (19/19)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (pages)                             Size     First Load JS
+┌ ○ /                                     7.86 kB         141 kB
+├   /_app                                 0 B            79.3 kB
+├ ○ /404                                  180 B          79.5 kB
+├ ƒ /admin                                2.29 kB        81.6 kB
+├ ƒ /api/assistant-intake                 0 B            79.3 kB
+├ ƒ /api/auth/google-calendar/callback    0 B            79.3 kB
+├ ƒ /api/auth/google-calendar/connect     0 B            79.3 kB
+├ ƒ /api/body-metrics                     0 B            79.3 kB
+├ ƒ /api/calendar/create                  0 B            79.3 kB
+├ ƒ /api/community                        0 B            79.3 kB
+├ ƒ /api/community/categories             0 B            79.3 kB
+├ ƒ /api/community/reply                  0 B            79.3 kB
+├ ƒ /api/community/topic/[id]             0 B            79.3 kB
+├ ƒ /api/cron/daily-digest                0 B            79.3 kB
+├ ƒ /api/delete-account                   0 B            79.3 kB
+├ ƒ /api/generate-plan                    0 B            79.3 kB
+├ ƒ /api/habits                           0 B            79.3 kB
+├ ƒ /api/my-metrics                       0 B            79.3 kB
+├ ƒ /api/profile                          0 B            79.3 kB
+├ ƒ /api/profile-preferences              0 B            79.3 kB
+├ ƒ /api/profile-settings                 0 B            79.3 kB
+├ ƒ /api/quick-weight                     0 B            79.3 kB
+├ ƒ /api/recipe                           0 B            79.3 kB
+├ ƒ /api/send-plan-again                  0 B            79.3 kB
+├ ƒ /api/send-shopping-list               0 B            79.3 kB
+├ ƒ /api/sessions                         0 B            79.3 kB
+├ ƒ /api/trainer-schedule                 0 B            79.3 kB
+├ ƒ /api/trainer/clients                  0 B            79.3 kB
+├ ƒ /api/user-habits                      0 B            79.3 kB
+├ ƒ /api/workouts                         0 B            79.3 kB
+├ ○ /club                                 309 B          79.6 kB
+├ ○ /dashboard                            314 B          79.6 kB
+├ ○ /chci-vip                             4.89 kB         142 kB
+├ ○ /komunita                             6.08 kB         139 kB
+├ ○ /komunita/tema/[id]                   5.07 kB         138 kB
+├ ○ /login                                4.24 kB         137 kB
+├ ○ /on-club                              5.38 kB         143 kB
+├ ○ /onboarding                           351 B          79.7 kB
+├ ○ /pricing                              4.5 kB          138 kB
+├ ○ /profil                               58.2 kB         196 kB
+├ ○ /register                             344 B          79.7 kB
+├ ○ /signup                               3.33 kB         136 kB
+├ ○ /start                                5.66 kB         143 kB
+├ ○ /training                             886 B          80.2 kB
+├ ○ /trener                               4.37 kB         137 kB
+└ ○ /vip                                  311 B          79.6 kB
++ First Load JS shared by all             81 kB
+  ├ chunks/framework-ecc4130bc7a58a64.js  45.2 kB
+  ├ chunks/main-cff3560ce5c0b92a.js       32.1 kB
+  └ other shared chunks (total)           3.79 kB
+
+ƒ Middleware                              26.8 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+```
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="todo_write">
+<details><summary>Tool use: **todo_write** • Todo List</summary>
+
+- [x] Fix Frekvence cvičení - fallback z weekly_sessions_user
+- [-] Deploy to production
 
 </details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd "C:\Users\prikopa\Documents\GitHub\body-mind-on"; git status</summary>
+
+```bash
+cd "C:\Users\prikopa\Documents\GitHub\body-mind-on"; git status
+```
+
+```
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add/rm &lt;file&gt;..." to update what will be committed)
+  (use "git restore &lt;file&gt;..." to discard changes in working directory)
+	modified:   .specstory/history/2026-02-20_01-34Z-next-js-build-failure-due-to-syntax-error.md
+	modified:   components/Header.js
+	modified:   components/PlanViewer.js
+	deleted:    docs/ANALYZA_HABIT_TRACKER_GRID.md
+	deleted:    docs/ANALYZA_KONCEPTU_A_ZPETNA_VAZBA.md
+	deleted:    docs/ANALYZA_PODOBNE_WEBY_OBJEDNAVKA_SUROVIN.md
+	deleted:    docs/ASISTENT_OPENAI_JIDELNICEK.md
+	deleted:    docs/DENNI_EMAIL_CRON.md
+	deleted:    docs/DOPORUCENE_A_NEDOPORUCENE_POTRAVINY.md
+	deleted:    docs/HABIT_TRACKER_NAVRH.md
+	deleted:    docs/IMPLEMENTACE_VSECHNO_NAJEDNOU.md
+	deleted:    docs/OPENAI_ASSISTANT_ANALYZA.md
+	deleted:    docs/OPENAI_ASSISTANT_INSTRUKCE.md
+	deleted:    docs/PROFIL_ANALYZA_A_NAVRH.md
+	deleted:    docs/PROFIL_VYPOCETY_A_OPENAI.md
+	deleted:    docs/PRUZKUM_A_NAPADY_NA_VYLEPSENI.md
+	deleted:    docs/SUPABASE_BODY_METRICS.md
+	deleted:    docs/VYHODNOCENI_A_PRISTUP_DALE.md
+	deleted:    docs/WORKOUTS_SCHEMA_ROZBOR.md
+	modified:   pages/api/recipe.js
+	modified:   pages/profil.js
+
+Untracked files:
+  (use "git add &lt;file&gt;..." to include in what will be committed)
+	.specstory/history/2026-02-26_21-05Z-body-mind-on-project-structure-overview.md
+	.specstory/history/2026-03-04_20-20Z-body-mind-on-project-structure-overview.md
+	docs/EMAIL_TESTOVACI_KLIENTI.md
+	docs/NAVRHY_VYLEPSENI_AUTOMATIZACE.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+```
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd "C:\Users\prikopa\Documents\GitHub\body-mind-on"; npm run deploy 2>&1</summary>
+
+```bash
+cd "C:\Users\prikopa\Documents\GitHub\body-mind-on"; npm run deploy 2>&1
+```
+
+```
+
+&gt; body-mind-on@1.0.0 deploy
+&gt; git add -A &amp;&amp; git commit -m "Deploy: automatické úpravy" &amp;&amp; git push origin main
+
+[main 00095cc] Deploy: automatické úpravy
+ 25 files changed, 27529 insertions(+), 83621 deletions(-)
+ create mode 100644 .specstory/history/2026-02-26_21-05Z-body-mind-on-project-structure-overview.md
+ create mode 100644 .specstory/history/2026-03-04_20-20Z-body-mind-on-project-structure-overview.md
+ delete mode 100644 docs/ANALYZA_HABIT_TRACKER_GRID.md
+ delete mode 100644 docs/ANALYZA_KONCEPTU_A_ZPETNA_VAZBA.md
+ delete mode 100644 docs/ANALYZA_PODOBNE_WEBY_OBJEDNAVKA_SUROVIN.md
+ delete mode 100644 docs/ASISTENT_OPENAI_JIDELNICEK.md
+ delete mode 100644 docs/DENNI_EMAIL_CRON.md
+ delete mode 100644 docs/DOPORUCENE_A_NEDOPORUCENE_POTRAVINY.md
+ create mode 100644 docs/EMAIL_TESTOVACI_KLIENTI.md
+ delete mode 100644 docs/HABIT_TRACKER_NAVRH.md
+ delete mode 100644 docs/IMPLEMENTACE_VSECHNO_NAJEDNOU.md
+ create mode 100644 docs/NAVRHY_VYLEPSENI_AUTOMATIZACE.md
+ delete mode 100644 docs/OPENAI_ASSISTANT_ANALYZA.md
+ delete mode 100644 docs/OPENAI_ASSISTANT_INSTRUKCE.md
+ delete mode 100644 docs/PROFIL_ANALYZA_A_NAVRH.md
+ delete mode 100644 docs/PROFIL_VYPOCETY_A_OPENAI.md
+ delete mode 100644 docs/PRUZKUM_A_NAPADY_NA_VYLEPSENI.md
+ delete mode 100644 docs/SUPABASE_BODY_METRICS.md
+ delete mode 100644 docs/VYHODNOCENI_A_PRISTUP_DALE.md
+ delete mode 100644 docs/WORKOUTS_SCHEMA_ROZBOR.md
+warning: in the working copy of 'components/Header.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'pages/profil.js', LF will be replaced by CRLF the next time Git touches it
+To https://github.com/Progen-design/body-mind-on.git
+   48941d0..00095cc  main -&gt; main
+
+```
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="todo_write">
+<details><summary>Tool use: **todo_write** • Todo List</summary>
+
+- [x] Fix Frekvence cvičení - fallback z weekly_sessions_user
+- [x] Deploy to production
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+Provedl jsem obě věci:
+
+## 1. Oprava Frekvence cvičení
+
+Příčina: V databázi je frekvence uložená buď jako text v `freq_choice` (např. „2–3x týdně“), nebo jako číslo v `weekly_sessions_user` (1, 3, 5). Formulář používal jen `freq_choice`, takže u starších záznamů s pouze `weekly_sessions_user` zůstalo pole prázdné.
+
+**Řešení:** Přidal jsem funkci `getFreqFromMetrics`, která:
+- použije `freq_choice`, pokud existuje,
+- jinak převede `weekly_sessions_user` na text:
+  - 1 → „1–2x týdně“
+  - 3 → „2–3x týdně“
+  - 5 → „4–5x týdně“
+
+Tato logika platí pro oba způsoby otevření modalu (dropdown v hlavičce i tlačítko na profilu).
+
+## 2. Nasazení do produkce
+
+Změny jsou commitnuté a pushnuté na `main`. Pokud máš Vercel napojené na GitHub, nasazení proběhne automaticky.
+
+---
+
+_**User**_
+
+tohle chce udelat graficky prehledne muj profil dej pryc to je zbytecny jen chci aby to bylo vetsi pismem a napriklad i ten vrchni radek, byl stejny v rovine
+
+---
+
+_**Agent (model composer-1.5, mode Agent)**_
+
+
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: C:\Users\prikopa\Documents\GitHub\body-mind-on\components\Header.js</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: C:\Users\prikopa\Documents\GitHub\body-mind-on\components\Header.js</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: C:\Users\prikopa\Documents\GitHub\body-mind-on\components\Header.js</summary>
+
+</details>
+
 </tool-use>
 
 ---

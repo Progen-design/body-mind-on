@@ -15,7 +15,7 @@ export const PRICING = [
     id: 'on-club',
     name: 'ON Club',
     priceCzk: 1499,
-    badge: 'Doporučeno ⭐',
+    badge: 'Doporučeno',
     subtitle: 'Tvůj osobní AI trenér vždy po ruce.',
     features: [
       'VŠE ze START +',

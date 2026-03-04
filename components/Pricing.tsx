@@ -5,7 +5,7 @@ export default function Pricing({ minimal = false }) {
     <section className="pricing">
       <div className="grid">
         {PRICING.map(t => (
-          <article key={t.id} className="card">
+          <article key={t.id} className={`card card-${t.id} ${t.badge ? 'card-recommended' : ''}`}>
             {t.badge && <span className="badge">{t.badge}</span>}
             <h3>{t.name}</h3>
             {t.subtitle && <p className="sub">{t.subtitle}</p>}

@@ -234,6 +234,7 @@ export default function Profil() {
 
   const profileRef = useRef(null);
   const lastMutatedAtRef = useRef(0);
+  const workoutDateInputRef = useRef(null);
   useEffect(() => { profileRef.current = profile; }, [profile]);
 
   const fetchOptions = { cache: 'no-store' };
@@ -2216,7 +2217,28 @@ export default function Profil() {
                   <h3>Zapsat trénink</h3>
                   <form onSubmit={handleAddWorkout}>
                     <label>Datum</label>
-                    <input type="date" value={workoutForm.workout_date} onChange={(e) => setWorkoutForm((f) => ({ ...f, workout_date: e.target.value }))} required />
+                    <div className="modal-date-wrap">
+                      <input
+                        ref={workoutDateInputRef}
+                        type="date"
+                        id="workout-date-input"
+                        value={workoutForm.workout_date}
+                        onChange={(e) => setWorkoutForm((f) => ({ ...f, workout_date: e.target.value }))}
+                        min={getLocalDateStr(new Date(Date.now() - 365 * 24 * 60 * 60 * 1000))}
+                        max={getLocalDateStr(new Date())}
+                        required
+                        className="modal-date-input"
+                      />
+                      <button
+                        type="button"
+                        className="modal-date-calendar-btn"
+                        onClick={() => { try { workoutDateInputRef.current?.showPicker?.(); } catch (_) { workoutDateInputRef.current?.focus(); } }}
+                        title="Otevřít kalendář"
+                        aria-label="Otevřít kalendář"
+                      >
+                        📅
+                      </button>
+                    </div>
                     <label>Typ</label>
                     <select value={workoutForm.workout_type} onChange={(e) => setWorkoutForm((f) => ({ ...f, workout_type: e.target.value }))}>
                       {WORKOUT_TYPES.map((t) => (
@@ -3557,6 +3579,34 @@ export default function Profil() {
           color: #fff;
           font-size: 16px;
           box-sizing: border-box;
+        }
+        .modal-date-wrap {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .modal-date-input {
+          flex: 1;
+          min-width: 0;
+        }
+        .modal-date-calendar-btn {
+          flex-shrink: 0;
+          width: 44px;
+          height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 10px;
+          border: 1px solid #444;
+          background: #0f0f1a;
+          color: #c4b5fd;
+          font-size: 1.25rem;
+          cursor: pointer;
+          transition: background 0.2s, border-color 0.2s;
+        }
+        .modal-date-calendar-btn:hover {
+          background: rgba(139, 92, 255, 0.2);
+          border-color: rgba(139, 92, 255, 0.4);
         }
         .modal-hint { color: #64748b; font-size: 13px; margin: 12px 0; }
         .workout-difficulty-options {

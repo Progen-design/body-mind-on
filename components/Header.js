@@ -78,7 +78,7 @@ export default function Header() {
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="" className="nav-avatar" />
                   ) : (
-                    <span className="nav-avatar-placeholder">?</span>
+                    <span className="nav-avatar-placeholder" aria-hidden />
                   )}
                   Profil
                   <span className="nav-profil-chevron" aria-hidden>▼</span>

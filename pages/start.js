@@ -1,6 +1,4 @@
 import { useState, useMemo } from "react";
-import Link from "next/link";
-import { useRouter } from "next/router";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import HabitSelection from "../components/HabitSelection";
@@ -9,8 +7,7 @@ import { getSuggestedHabits } from "../lib/habits";
 const MAX_STEP = 5;
 
 export default function Start() {
-  const router = useRouter();
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -153,40 +150,15 @@ export default function Start() {
       <main className="app-page container py-12 text-white">
         <section className="text-center mb-6">
           <h1 className="text-4xl font-extrabold mb-3 text-sky-400">
-            {step === 0 ? "Registrace" : "START Program – Začni zdarma"}
+            START Program – Začni zdarma
           </h1>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-            {step === 0
-              ? "Vyber si program."
-              : "Vyzkoušej systém bez rizika – AI ti zdarma připraví osobní plán tréninku, jídelníček i regeneraci."}
+            Vyzkoušej systém bez rizika – AI ti zdarma připraví osobní plán tréninku, jídelníček i regeneraci.
           </p>
         </section>
 
-        {/* KROK 0: Výběr – 3 programy (trenér je v horní liště Pro trenéry) */}
-        {step === 0 && (
-          <div className="role-cards-wrap">
-            <button type="button" onClick={() => setStep(1)} className="role-card role-card-start role-card-recommended" aria-label="Registrace do START programu">
-              <span className="role-badge">Doporučeno</span>
-              <span className="role-emoji">🚀</span>
-              <strong className="role-title">START</strong>
-              <p className="role-desc">Zdarma – AI plán, jídelníček a základní sledování progresu.</p>
-            </button>
-            <Link href="/on-club" className="role-card role-card-onclub" aria-label="Registrace do ON Clubu">
-              <span className="role-emoji">⚡</span>
-              <strong className="role-title">ON Club</strong>
-              <p className="role-desc">Habit tracker, AI plán, tréninky a statistiky.</p>
-            </Link>
-            <Link href="/chci-vip" className="role-card role-card-vip" aria-label="Registrace do VIP Coaching">
-              <span className="role-emoji">👑</span>
-              <strong className="role-title">VIP Coaching</strong>
-              <p className="role-desc">Plný přístup, osobní coaching a prémiová podpora.</p>
-            </Link>
-          </div>
-        )}
-
-        {/* Progress bar – jen když už nejsme na výběru role */}
-        {step > 0 && (
-          <div className="progress-bar-wrap max-w-3xl mx-auto mb-8">
+        {/* Progress bar */}
+        <div className="progress-bar-wrap max-w-3xl mx-auto mb-8">
             <div className="progress-dots">
               {[1, 2, 3, 4, 5].map((s) => (
                 <span key={s} className={s === step ? "active" : s < step ? "done" : ""} aria-hidden>
@@ -196,9 +168,7 @@ export default function Start() {
             </div>
             <p className="progress-label">Krok {step} z {MAX_STEP}</p>
           </div>
-        )}
 
-        {step > 0 && (
         <form
           onSubmit={step < MAX_STEP ? (e) => { e.preventDefault(); handleNext(); } : handleSubmit}
           className="reg-form reg-form-card max-w-3xl mx-auto space-y-6"
@@ -397,7 +367,6 @@ export default function Start() {
 
           {status && <p className="center mt-4 text-lg text-gray-300">{status}</p>}
         </form>
-        )}
       </main>
       <Footer />
 

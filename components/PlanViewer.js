@@ -379,6 +379,49 @@ function buildShoppingListFromRecipes(recipes) {
   return out;
 }
 
+/** Z textu jídla (např. "Míchaná vejce na ghí, batáty (3 vejce, 1 lžíce ghí, 200 g batátů)") vrátí pole surovin. */
+function getIngredientsFromMealText(mealText) {
+  if (!mealText || typeof mealText !== 'string') return [];
+  let t = mealText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  t = t.replace(/^(Snídaně|Oběd|Večeře|Svačina)\s*/i, '').trim();
+  const out = [];
+  const parenMatches = t.match(/\(([^)]+)\)/g);
+  if (parenMatches && parenMatches.length) {
+    parenMatches.forEach((s) => {
+      const inner = s.replace(/^\(|\)$/g, '').trim();
+      inner.split(/[,;]|\s+a\s+/).forEach((part) => {
+        const item = part.trim();
+        if (item) out.push(item);
+      });
+    });
+  }
+  if (out.length === 0 && t) {
+    t.split(/[,;]/).forEach((part) => {
+      const item = part.trim();
+      if (item) out.push(item);
+    });
+  }
+  return out;
+}
+
+/** Sestaví nákupní seznam jen z jídel daného dne (suroviny z textu jídel – závorky, čárky). Žádný fallback. */
+function buildDayShoppingListFromMeals(meals, mealOverrides, dayKey) {
+  if (!Array.isArray(meals) || meals.length === 0) return [];
+  const seen = new Set();
+  const out = [];
+  meals.forEach((meal, mi) => {
+    const overrideKey = `${dayKey}_${mi}`;
+    const override = mealOverrides[overrideKey];
+    const mealFullText = override ? `${meal.type || ''} ${override.title || ''}`.trim() : `${meal.type || ''} ${meal.text || ''}`.trim();
+    const items = getIngredientsFromMealText(mealFullText);
+    items.forEach((item) => {
+      const n = item.toLowerCase().slice(0, 80);
+      if (n && !seen.has(n)) { seen.add(n); out.push(item); }
+    });
+  });
+  return out;
+}
+
 /** Vrátí recepty odpovídající seznamu názvů/textů jídel (pro daný den). */
 function getRecipesForDay(recipes, mealFullTexts) {
   if (!Array.isArray(recipes) || !Array.isArray(mealFullTexts)) return [];
@@ -857,14 +900,8 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                       })}
                     </div>
                     {(() => {
-                      const dayMealTexts = (day.meals || []).map((meal, mi) => {
-                        const overrideKey = `${day.originalIndex ?? di}_${mi}`;
-                        const override = mealOverrides[overrideKey];
-                        return override ? `${meal.type || ''} ${override.title || ''}`.trim() : `${meal.type || ''} ${meal.text || ''}`.trim();
-                      });
-                      const dayRecipes = getRecipesForDay(parsed?.recipes || [], dayMealTexts);
-                      const dayList = buildShoppingListFromRecipes(dayRecipes);
                       const dayKey = day.originalIndex ?? di;
+                      const dayList = buildDayShoppingListFromMeals(day.meals || [], mealOverrides, dayKey);
                       const dayState = dayShoppingState[dayKey] || { copyDone: false, email: { loading: false, done: false, error: null } };
                       if (dayList.length === 0) return null;
                       const copyAndOpenDay = () => {
@@ -905,7 +942,7 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                       const handleShareWhatsAppDay = () => {
                         const text = dayList.join('\n');
                         const dayLabel = (day.dayName || 'Den') + (day.dateStr ? ` (${day.dateStr})` : '');
-                        const url = `https://wa.me/?text=${encodeURIComponent('🛒 Suroviny na tento den – ' + dayLabel + '\n\n' + text)}`;
+                        const url = `https://wa.me/?text=${encodeURIComponent('🛒 Suroviny na tento den – ' + dayLabel + ':\n\n' + text)}`;
                         window.open(url, '_blank', 'noopener,noreferrer');
                       };
                       return (
@@ -1104,13 +1141,7 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
             const fullList = parsed.shoppingList?.length ? parsed.shoppingList : buildShoppingListFromRecipes(parsed.recipes);
             const dayIndex = shoppingFilter === 'week' ? null : Number(shoppingFilter);
             const selectedDay = dayIndex != null && !Number.isNaN(dayIndex) ? displayedDays.find((d) => (d.originalIndex ?? -1) === dayIndex) : null;
-            const dayMealTexts = selectedDay ? (selectedDay.meals || []).map((meal, mi) => {
-              const overrideKey = `${selectedDay.originalIndex ?? 0}_${mi}`;
-              const override = mealOverrides[overrideKey];
-              return override ? `${meal.type || ''} ${override.title || ''}`.trim() : `${meal.type || ''} ${meal.text || ''}`.trim();
-            }) : [];
-            const dayRecipes = selectedDay ? getRecipesForDay(parsed?.recipes || [], dayMealTexts) : [];
-            const dayList = selectedDay ? buildShoppingListFromRecipes(dayRecipes) : [];
+            const dayList = selectedDay ? buildDayShoppingListFromMeals(selectedDay.meals || [], mealOverrides, selectedDay.originalIndex ?? 0) : [];
             const list = shoppingFilter === 'week' ? fullList : dayList;
             const copyAndOpen = () => {
               const text = list.join('\n');
@@ -1213,7 +1244,9 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                         </div>
                       </>
                     ) : (
-                      <p className="plan-shopping-empty-day">Pro vybraný den nemáme suroviny z receptů – zvol „Celý týden“ nebo jiný den.</p>
+                      <p className="plan-shopping-empty-day">
+                        {shoppingFilter === 'week' ? 'Nákupní seznam zatím není k dispozici.' : 'Pro vybraný den nejsou v plánu vypsané suroviny (závorky u jídel).'}
+                      </p>
                     )}
                   </div>
                 </details>
@@ -1443,6 +1476,12 @@ const planSectionStyles = `
     margin: 12px 16px 16px;
     padding-top: 12px;
     border-top: 1px solid rgba(71, 85, 105, 0.4);
+  }
+  .plan-shopping-day-fallback-hint,
+  .plan-shopping-day-fallback-note {
+    margin: 0 0 10px;
+    font-size: 13px;
+    color: #94a3b8;
   }
   .plan-shopping-actions {
     display: flex;

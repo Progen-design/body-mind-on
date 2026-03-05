@@ -1,5 +1,6 @@
 // /pages/api/send-plan-again.js – pošle aktuální plán znovu na e-mail přihlášeného uživatele
 import { supabaseServer } from '../../lib/supabaseServer';
+import { requireActiveMembership } from '../../lib/membershipHelpers';
 import { sendPlanEmail } from '../../lib/mail';
 
 const loginUrl = process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')}/login` : 'https://app.bodyandmindon.cz/login';
@@ -16,6 +17,11 @@ export default async function handler(req, res) {
 
     const { data: { user }, error: userErr } = await supabaseServer.auth.getUser(token);
     if (userErr || !user) return res.status(401).json({ error: 'Neplatná session' });
+
+    const membershipCheck = await requireActiveMembership(user.id);
+    if (!membershipCheck.allowed) {
+      return res.status(membershipCheck.status || 403).json({ error: membershipCheck.error });
+    }
 
     const email = user.email?.toLowerCase();
     if (!email) return res.status(400).json({ error: 'Uživatel nemá e-mail' });

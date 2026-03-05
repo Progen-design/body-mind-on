@@ -5,12 +5,8 @@ const STRIPE_SCRIPT = 'https://js.stripe.com/v3/pricing-table.js';
 export default function PricingTable() {
   const containerRef = useRef(null);
 
-  const publishableKey =
-    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
-    'pk_test_51T7PxYPTu5plCL9P4KDRUIyryyHN4OKl976aR2tODDpFI0vqjJ5nvBUiHVV3gUxmZp6DmrIqR9GnsvMbSJstaXFq00tzAEIQ4w';
-  const pricingTableId =
-    process.env.NEXT_PUBLIC_STRIPE_PRICING_TABLE_ID ||
-    'prctbl_1T7jsPPTu5plCL9PZeP3DcCi';
+  const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+  const pricingTableId = process.env.NEXT_PUBLIC_STRIPE_PRICING_TABLE_ID;
 
   useEffect(() => {
     if (!containerRef.current || !publishableKey || !pricingTableId) return;

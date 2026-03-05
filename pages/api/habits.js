@@ -1,5 +1,6 @@
 // /pages/api/habits.js
 import { supabaseServer } from '../../lib/supabaseServer';
+import { requireActiveMembership } from '../../lib/membershipHelpers';
 import { isValidHabitId } from '../../lib/habits';
 
 function getAuthUser(req) {
@@ -28,6 +29,13 @@ export default async function handler(req, res) {
       return res.status(userResult.status).json({ error: userResult.error });
     }
     const { user } = userResult;
+
+    if (req.method === 'POST' || req.method === 'DELETE') {
+      const membershipCheck = await requireActiveMembership(user.id);
+      if (!membershipCheck.allowed) {
+        return res.status(membershipCheck.status || 403).json({ error: membershipCheck.error });
+      }
+    }
 
     if (req.method === 'GET') {
       const { from, to, habit_ids } = req.query;

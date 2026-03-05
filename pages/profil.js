@@ -498,6 +498,14 @@ export default function Profil() {
     }
   }, [router.query?.calendar]);
 
+  // Toast po úspěšné platbě (redirect ze Stripe)
+  useEffect(() => {
+    if (router.query?.payment === 'success') {
+      setToast({ message: 'Platba proběhla. Tvůj přístup bude aktivní během chvíle.', type: 'success' });
+      router.replace('/profil', undefined, { shallow: true });
+    }
+  }, [router.query?.payment]);
+
   async function handleCalendarEventSubmit(e) {
     e.preventDefault();
     if (!session?.access_token || calendarEventSubmit.loading) return;

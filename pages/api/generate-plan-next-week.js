@@ -1,6 +1,7 @@
 // POST /api/generate-plan-next-week – vygeneruje náhled jídelníčku na příští týden (s označenými jídly)
 // Následující plán navazuje na aktuální: začíná den po valid_until (např. aktuální končí 11.3 → další od 12.3).
 import { supabaseServer } from '../../lib/supabaseServer';
+import { requireActiveMembership } from '../../lib/membershipHelpers';
 import { generatePlanForEmail, getNextPlanRangeFromCurrentPlan, getNextWeekRange } from '../../lib/generatePlan';
 import { getClientIp, isRateLimited } from '../../lib/rateLimit';
 
@@ -22,6 +23,11 @@ export default async function handler(req, res) {
 
     const { data: { user }, error: userErr } = await supabaseServer.auth.getUser(token);
     if (userErr || !user) return res.status(401).json({ error: 'Neplatná session' });
+
+    const membershipCheck = await requireActiveMembership(user.id);
+    if (!membershipCheck.allowed) {
+      return res.status(membershipCheck.status || 403).json({ error: membershipCheck.error });
+    }
 
     const email = user.email?.toLowerCase();
     if (!email) return res.status(400).json({ error: 'Chybí e-mail.' });

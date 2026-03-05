@@ -1,5 +1,6 @@
 // /pages/api/send-shopping-list.js – pošle nákupní seznam na e-mail přihlášeného uživatele
 import { supabaseServer } from '../../lib/supabaseServer';
+import { requireActiveMembership } from '../../lib/membershipHelpers';
 import { sendShoppingListEmail } from '../../lib/mail';
 
 export default async function handler(req, res) {
@@ -14,6 +15,11 @@ export default async function handler(req, res) {
 
     const { data: { user }, error: userErr } = await supabaseServer.auth.getUser(token);
     if (userErr || !user) return res.status(401).json({ error: 'Neplatná session' });
+
+    const membershipCheck = await requireActiveMembership(user.id);
+    if (!membershipCheck.allowed) {
+      return res.status(membershipCheck.status || 403).json({ error: membershipCheck.error });
+    }
 
     const email = user.email?.toLowerCase();
     if (!email) return res.status(400).json({ error: 'Uživatel nemá e-mail' });

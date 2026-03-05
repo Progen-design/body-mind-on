@@ -1,5 +1,6 @@
 // /pages/api/workouts.js
 import { supabaseServer } from '../../lib/supabaseServer';
+import { requireActiveMembership } from '../../lib/membershipHelpers';
 
 const WORKOUT_TYPE_LABELS = {
   silovy: 'Silový',
@@ -43,6 +44,13 @@ export default async function handler(req, res) {
       return res.status(userResult.status).json({ error: userResult.error });
     }
     const { user } = userResult;
+
+    if (req.method === 'POST' || req.method === 'DELETE') {
+      const membershipCheck = await requireActiveMembership(user.id);
+      if (!membershipCheck.allowed) {
+        return res.status(membershipCheck.status || 403).json({ error: membershipCheck.error });
+      }
+    }
 
     if (req.method === 'GET') {
       const { from, to, limit } = req.query;

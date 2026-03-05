@@ -26,7 +26,7 @@ export default function HabitSelection({ selectedIds = [], onChange }) {
                 onChange={() => toggle(h.id)}
               />
               <span className="habit-selection-emoji">{h.emoji}</span>
-              <span>{h.label}</span>
+              <span><strong>{h.label}</strong>{h.description && <span className="habit-selection-hint"> ({h.description})</span>}</span>
             </label>
           ))}
         </div>
@@ -42,7 +42,7 @@ export default function HabitSelection({ selectedIds = [], onChange }) {
                 onChange={() => toggle(h.id)}
               />
               <span className="habit-selection-emoji">{h.emoji}</span>
-              <span>{h.label}</span>
+              <span><strong>{h.label}</strong>{h.description && <span className="habit-selection-hint"> ({h.description})</span>}</span>
             </label>
           ))}
         </div>
@@ -98,6 +98,12 @@ export default function HabitSelection({ selectedIds = [], onChange }) {
         }
         .habit-selection-emoji {
           font-size: 18px;
+        }
+
+        .habit-selection-hint {
+          font-size: 0.75rem;
+          color: #64748b;
+          font-weight: 400;
         }
       `}</style>
     </div>

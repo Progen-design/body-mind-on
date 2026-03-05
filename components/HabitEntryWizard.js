@@ -121,7 +121,7 @@ export default function HabitEntryWizard({ program, session, bodyMetrics, userHa
                         onChange={() => toggleHabit(h.id)}
                       />
                       <span className="habit-wizard-checkbox-emoji">{h.emoji}</span>
-                      <span className="habit-wizard-checkbox-label">{h.label}</span>
+                      <span className="habit-wizard-checkbox-label"><strong>{h.label}</strong>{h.description && <span className="habit-wizard-checkbox-hint"> ({h.description})</span>}</span>
                     </label>
                   ))}
                 </div>
@@ -137,7 +137,7 @@ export default function HabitEntryWizard({ program, session, bodyMetrics, userHa
                         onChange={() => toggleHabit(h.id)}
                       />
                       <span className="habit-wizard-checkbox-emoji">{h.emoji}</span>
-                      <span className="habit-wizard-checkbox-label">{h.label}</span>
+                      <span className="habit-wizard-checkbox-label"><strong>{h.label}</strong>{h.description && <span className="habit-wizard-checkbox-hint"> ({h.description})</span>}</span>
                     </label>
                   ))}
                 </div>
@@ -288,6 +288,12 @@ export default function HabitEntryWizard({ program, session, bodyMetrics, userHa
 
         .habit-wizard-checkbox-emoji {
           font-size: 18px;
+        }
+
+        .habit-wizard-checkbox-hint {
+          font-size: 0.75rem;
+          color: #64748b;
+          font-weight: 400;
         }
 
         .habit-wizard-group-negative .habit-wizard-checkbox {

@@ -288,7 +288,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
       <div key={`lbl-${h.id}`} className="hg-label">
         <span className="hg-emoji" aria-hidden="true">{h.emoji}</span>
         <div className="hg-name-wrap">
-          <span className="hg-name">{h.label}</span>
+          <span className="hg-name"><strong>{h.label}</strong></span>
           {h.description && <span className="hg-hint"> ({h.description})</span>}
         </div>
       </div>

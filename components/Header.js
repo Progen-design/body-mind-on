@@ -39,8 +39,8 @@ export default function Header() {
   }
 
   const homeHref = isApp ? MAIN_SITE : "/";
-  const jakHref = isApp ? `${MAIN_SITE}/#jak-to-funguje` : "/#jak-to-funguje";
-  const cenikHref = isApp ? `${MAIN_SITE}/#cenik` : "/#cenik";
+  const jakToFungujeUrl = "https://gamma.app/docs/8imen0seu9h3125#card-mfzse8ia5u4lf3k";
+  const registraceUrl = "https://gamma.app/docs/8imen0seu9h3125#card-pnjildktpojs3bo";
 
   const isRegistrationPage = ["/start", "/on-club", "/chci-vip"].includes(router.pathname);
   const showLoggedInNav = session && !isRegistrationPage;
@@ -62,8 +62,7 @@ export default function Header() {
           <strong>Body & Mind ON</strong>
         </a>
         <nav>
-          <a href={jakHref}>Jak to funguje</a>
-          <a href={cenikHref}>Ceník</a>
+          <a href={jakToFungujeUrl} target="_blank" rel="noopener noreferrer">Jak to funguje</a>
           {showLoggedInNav ? (
             <>
               <Link href="/komunita">Komunita</Link>
@@ -99,7 +98,7 @@ export default function Header() {
           ) : (
             <>
               <Link href="/trener">Pro trenéry</Link>
-              <Link href="/start">Registrace</Link>
+              <a href={registraceUrl} target="_blank" rel="noopener noreferrer">Registrace</a>
               <Link href="/profil">Profil</Link>
               <Link href="/login">Přihlášení</Link>
             </>

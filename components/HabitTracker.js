@@ -213,7 +213,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   }, [days, todayStr, positiveHabits, allLogs]);
 
   const chartMaxY = Math.max(1, positiveHabits.length);
-  const CHART_BAR_HEIGHT_PX = 140;
+  const CHART_BAR_HEIGHT_PX = 200;
 
   if (positiveHabits.length === 0 && negativeHabits.length === 0) {
     return (
@@ -423,21 +423,21 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         .habit-tracker { margin-bottom: 48px; }
 
         .ht-content {
-          display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap;
+          display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap;
         }
         .hg-scroll { flex: 1; min-width: 280px; }
 
         .ht-chart-wrap {
           flex-shrink: 0;
-          width: 280px;
-          padding: 20px;
+          width: 380px;
+          padding: 24px;
           border-radius: 20px;
           background: linear-gradient(160deg, rgba(22,32,55,0.98) 0%, rgba(10,15,30,0.98) 100%);
           border: 1px solid rgba(255,255,255,0.08);
           box-shadow: 0 20px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.02) inset;
         }
         .ht-chart-title {
-          margin: 0 0 12px; font-size: 0.8125rem; font-weight: 700; color: #94a3b8;
+          margin: 0 0 14px; font-size: 0.875rem; font-weight: 700; color: #94a3b8;
           letter-spacing: 0.02em; text-transform: uppercase;
         }
         .ht-chart-inner {
@@ -445,21 +445,21 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         }
         .ht-chart-y-axis {
           display: flex; flex-direction: column; justify-content: space-between;
-          height: 140px; padding: 0 4px 0 0;
+          height: 200px; padding: 0 4px 0 0;
           font-size: 0.6875rem; font-weight: 700; color: #64748b;
           text-align: right; line-height: 1;
         }
         .ht-chart-y-tick { flex-shrink: 0; }
         .ht-chart-bars {
-          display: flex; align-items: flex-end; justify-content: space-between; gap: 6px;
-          flex: 1; min-height: 140px;
+          display: flex; align-items: flex-end; justify-content: space-between; gap: 8px;
+          flex: 1; min-height: 200px;
         }
         .ht-chart-bar {
           flex: 1; min-width: 0; height: 100%;
           display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px;
         }
         .ht-chart-bar-fill {
-          width: 100%; max-width: 32px; min-width: 6px;
+          width: 100%; max-width: 40px; min-width: 8px;
           border-radius: 8px 8px 0 0;
           background: linear-gradient(180deg, #34d399, #10b981);
           box-shadow: 0 0 12px rgba(52,211,153,0.4);
@@ -470,14 +470,14 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           box-shadow: 0 0 14px rgba(167,139,250,0.5);
         }
         .ht-chart-bar-value {
-          font-size: 0.75rem; font-weight: 700; color: #cbd5e1;
+          font-size: 0.8125rem; font-weight: 700; color: #cbd5e1;
         }
         .ht-chart-bar.today .ht-chart-bar-value { color: #c4b5fd; }
         .ht-chart-labels {
           display: flex; justify-content: space-between; gap: 6px;
           font-size: 0.6875rem; color: #64748b; font-weight: 500;
         }
-        .ht-chart-label { flex: 1; min-width: 0; text-align: center; }
+        .ht-chart-label { flex: 1; min-width: 0; text-align: center; font-size: 0.75rem; }
         .ht-chart-label.today { color: #a78bfa; font-weight: 600; }
 
         @media (max-width: 720px) {

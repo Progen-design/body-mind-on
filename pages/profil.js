@@ -1497,7 +1497,24 @@ export default function Profil() {
                     <div className="trial-banner-stripe">
                       <PricingTable />
                     </div>
-                    <p className="trial-banner-text trial-banner-text--small">Nebo si vyber <a href="/on-club">ON Club</a> či <a href="/chci-vip">VIP Coaching</a>.</p>
+                    <div className="trial-banner-upgrade">
+                      <p className="trial-banner-upgrade-headline">Nebo zvol vyšší program – víc benefitů, víc výsledků</p>
+                      <div className="trial-banner-upgrade-cards">
+                        <a href="/on-club" className="trial-upgrade-card trial-upgrade-card--club">
+                          <span className="trial-upgrade-badge">Doporučeno</span>
+                          <h3 className="trial-upgrade-title">ON Club</h3>
+                          <p className="trial-upgrade-subtitle">AI trenér 24/7, habit tracker, komunita a video konzultace</p>
+                          <span className="trial-upgrade-price">1 499 Kč/měsíc</span>
+                          <span className="trial-upgrade-cta">Připojit se k ON Clubu →</span>
+                        </a>
+                        <a href="/chci-vip" className="trial-upgrade-card trial-upgrade-card--vip">
+                          <h3 className="trial-upgrade-title">VIP Coaching</h3>
+                          <p className="trial-upgrade-subtitle">Elitní lidský kouč, týdenní 1:1 konzultace, strategie na míru</p>
+                          <span className="trial-upgrade-price">3 999 Kč/měsíc</span>
+                          <span className="trial-upgrade-cta">Chci VIP přístup →</span>
+                        </a>
+                      </div>
+                    </div>
                   </>
                 ) : (
                   <p className="trial-banner-text">
@@ -2745,6 +2762,55 @@ export default function Profil() {
         .trial-banner-text a:hover { text-decoration: underline; }
         .trial-banner-text--small { font-size: 13px; color: #94a3b8; margin-top: 12px; }
         .trial-banner-stripe { margin: 16px 0; max-width: 500px; }
+        .trial-banner-upgrade { margin-top: 28px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.12); }
+        .trial-banner-upgrade-headline {
+          font-size: 17px; font-weight: 700; color: #f1f5f9; margin: 0 0 20px; text-align: center; letter-spacing: 0.02em;
+        }
+        .trial-banner-upgrade-cards {
+          display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 720px; margin: 0 auto;
+        }
+        @media (max-width: 640px) {
+          .trial-banner-upgrade-cards { grid-template-columns: 1fr; }
+        }
+        .trial-upgrade-card {
+          display: block; text-decoration: none; padding: 24px 20px; border-radius: 16px; border: 2px solid transparent;
+          transition: transform 0.2s ease, box-shadow 0.2s ease; position: relative; text-align: center;
+        }
+        .trial-upgrade-card:hover {
+          transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.35);
+        }
+        .trial-upgrade-card--club {
+          background: linear-gradient(145deg, rgba(124,58,237,0.35), rgba(109,40,217,0.2));
+          border-color: rgba(167,139,250,0.5);
+          box-shadow: 0 8px 24px rgba(124,58,237,0.25);
+        }
+        .trial-upgrade-card--club:hover { box-shadow: 0 12px 32px rgba(124,58,237,0.4); }
+        .trial-upgrade-card--vip {
+          background: linear-gradient(145deg, rgba(202,138,4,0.35), rgba(161,98,7,0.2));
+          border-color: rgba(253,224,71,0.45);
+          box-shadow: 0 8px 24px rgba(202,138,4,0.25);
+        }
+        .trial-upgrade-card--vip:hover { box-shadow: 0 12px 32px rgba(202,138,4,0.4); }
+        .trial-upgrade-badge {
+          position: absolute; top: 12px; right: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+          letter-spacing: 0.06em; color: #c4b5fd; background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px;
+        }
+        .trial-upgrade-title {
+          font-size: 22px; font-weight: 800; color: #fff; margin: 0 0 8px; letter-spacing: 0.02em;
+        }
+        .trial-upgrade-subtitle {
+          font-size: 13px; color: rgba(255,255,255,0.88); line-height: 1.45; margin: 0 0 16px; min-height: 2.9em;
+        }
+        .trial-upgrade-price {
+          display: block; font-size: 18px; font-weight: 700; color: #fbbf24; margin-bottom: 12px;
+        }
+        .trial-upgrade-card--club .trial-upgrade-price { color: #c4b5fd; }
+        .trial-upgrade-cta {
+          display: inline-block; font-size: 14px; font-weight: 600; color: #fff;
+          padding: 10px 18px; border-radius: 10px; background: rgba(255,255,255,0.2);
+          transition: background 0.2s ease;
+        }
+        .trial-upgrade-card:hover .trial-upgrade-cta { background: rgba(255,255,255,0.3); }
         .trial-banner-actions {
           display: flex;
           gap: 12px;

@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "migrate:trainer-calendar": "node scripts/run-trainer-calendar-migration.js",
+    "test:expired-trial": "node scripts/set-expired-trial-for-test.js",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

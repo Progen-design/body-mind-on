@@ -222,7 +222,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   }, [days, todayStr, positiveHabits, negativeHabits, allLogs]);
 
   const chartMaxY = Math.max(1, positiveHabits.length + negativeHabits.length);
-  const CHART_BAR_HEIGHT_PX = 280;
+  const CHART_BAR_HEIGHT_PX = 360;
 
   if (positiveHabits.length === 0 && negativeHabits.length === 0) {
     return (
@@ -456,8 +456,8 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
 
         .ht-chart-wrap {
           flex-shrink: 0;
-          width: 480px;
-          padding: 28px;
+          width: 580px;
+          padding: 32px;
           border-radius: 20px;
           background: linear-gradient(160deg, rgba(22,32,55,0.98) 0%, rgba(10,15,30,0.98) 100%);
           border: 1px solid rgba(255,255,255,0.08);
@@ -472,14 +472,14 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         }
         .ht-chart-y-axis {
           display: flex; flex-direction: column; justify-content: space-between;
-          height: 280px; padding: 0 4px 0 0;
+          height: 360px; padding: 0 4px 0 0;
           font-size: 0.6875rem; font-weight: 700; color: #64748b;
           text-align: right; line-height: 1;
         }
         .ht-chart-y-tick { flex-shrink: 0; }
         .ht-chart-bars {
-          display: flex; align-items: flex-end; justify-content: space-between; gap: 10px;
-          flex: 1; min-height: 280px;
+          display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;
+          flex: 1; min-height: 360px;
         }
         .ht-chart-bar {
           flex: 1; min-width: 0; height: 100%;
@@ -487,7 +487,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         }
         .ht-chart-bar-stack {
           display: flex; flex-direction: column-reverse; align-items: center; justify-content: flex-end;
-          width: 100%; max-width: 44px; min-width: 10px; height: 100%; gap: 1px;
+          width: 100%; max-width: 52px; min-width: 12px; height: 100%; gap: 2px;
         }
         .ht-chart-bar-fill {
           width: 100%; min-height: 4px;
@@ -614,10 +614,10 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           min-width: 0; overflow: hidden; line-height: 1.35;
         }
         .hg-name {
-          font-size: 0.9375rem; font-weight: 700; color: #e2e8f0;
+          font-size: 1rem; font-weight: 800; color: #f1f5f9;
         }
         .hg-hint {
-          font-size: 0.6875rem; color: #94a3b8; font-weight: 400;
+          font-size: 0.625rem; color: #64748b; font-weight: 400; opacity: 0.95;
           font-family: inherit;
         }
 

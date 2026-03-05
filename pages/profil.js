@@ -177,6 +177,7 @@ export default function Profil() {
   const [toast, setToast] = useState({ message: '', type: 'success' });
   const [showAllWorkouts, setShowAllWorkouts] = useState(false);
   const [sendingPlan, setSendingPlan] = useState(false);
+  const [generatingNextWeek, setGeneratingNextWeek] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [mindsetTipFromPlan, setMindsetTipFromPlan] = useState('');
@@ -1187,6 +1188,34 @@ export default function Profil() {
     profile?.habit_summary_7d?.negativeDone,
   ]);
 
+  async function handleGenerateNextWeek() {
+    setGeneratingNextWeek(true);
+    try {
+      const { data: { session: fresh } } = await supabase.auth.refreshSession();
+      const token = fresh?.access_token ?? session?.access_token;
+      if (!token) {
+        setToast({ message: 'Session vypršela. Přihlas se znovu.', type: 'error' });
+        return;
+      }
+      const res = await fetch('/api/generate-plan-next-week', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (res.ok && json.ok) {
+        setToast({ message: 'Jídelníček na příští týden vygenerován. Zkontroluj náhled níže.', type: 'success' });
+        const result = await refetchProfile(token);
+        if (result?.ok) setProfile((prev) => ({ ...prev, _updated: Date.now() }));
+      } else {
+        setToast({ message: json.error || 'Nepodařilo vygenerovat plán.', type: 'error' });
+      }
+    } catch (err) {
+      setToast({ message: 'Chyba připojení.', type: 'error' });
+    } finally {
+      setGeneratingNextWeek(false);
+    }
+  }
+
   async function handleSendPlanAgain() {
     setSendingPlan(true);
     try {
@@ -1256,6 +1285,20 @@ export default function Profil() {
     if (stillValid) return stillValid;
     // 3) Fallback: nejnovější plán
     return profile.plans[0];
+  }, [profile?.plans]);
+
+  // Plán na příští týden (valid_from > dnes) – pro ověření označených jídel
+  const nextPlan = useMemo(() => {
+    if (!profile?.plans || !Array.isArray(profile.plans)) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const future = profile.plans.filter((p) => {
+      const from = p.valid_from ? new Date(p.valid_from) : null;
+      return from && from > today;
+    });
+    if (future.length === 0) return null;
+    future.sort((a, b) => (a.valid_from || '').localeCompare(b.valid_from || ''));
+    return future[0];
   }, [profile?.plans]);
 
   useEffect(() => {
@@ -1681,6 +1724,11 @@ export default function Profil() {
                   {sendingPlan ? 'Odesílám…' : '📧 Poslat plán znovu'}
                 </button>
               )}
+              {(membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired)) && currentPlan && (
+                <button type="button" onClick={handleGenerateNextWeek} disabled={generatingNextWeek} className="btn-send-plan btn-next-week" title="Vygeneruje náhled jídelníčku na příští týden včetně označených jídel – ověříš, že se zahrnou">
+                  {generatingNextWeek ? 'Generuji…' : '📅 Náhled příštího týdne'}
+                </button>
+              )}
             </div>
 
             {/* RYCHLÉ AKCE – výrazný pruh (jen klienti) */}
@@ -1959,7 +2007,33 @@ export default function Profil() {
                   if (lm.foods_to_avoid?.trim()) parts.push(lm.foods_to_avoid.trim());
                   return parts.join('. ');
                 })()}
+                onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
+                canPinMeals={membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired)}
               />
+            )}
+
+            {/* Náhled jídelníčku na příští týden – ověření označených jídel */}
+            {!profile?.can_create_calendar_events && nextPlan && (
+              <details className="card plan-next-week-preview" open>
+                <summary className="plan-next-week-summary">
+                  📅 Náhled příštího týdne ({nextPlan.valid_from && new Date(nextPlan.valid_from).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short' })} – {nextPlan.valid_until && new Date(nextPlan.valid_until).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short', year: 'numeric' })})
+                </summary>
+                <PlanViewer
+                  plan={nextPlan}
+                  userName={userName}
+                  hideHero
+                  dietaryPreferences={(() => {
+                    const lm = profile?.body_metrics?.[0];
+                    if (!lm) return '';
+                    const parts = [];
+                    if (lm.dietary_restrictions?.trim()) parts.push(lm.dietary_restrictions.trim());
+                    if (lm.foods_to_avoid?.trim()) parts.push(lm.foods_to_avoid.trim());
+                    return parts.join('. ');
+                  })()}
+                  onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
+                  canPinMeals={false}
+                />
+              </details>
             )}
 
             {/* Historie tréninků (jen klienti) */}
@@ -2904,6 +2978,21 @@ export default function Profil() {
         }
         .btn-refresh:hover:not(:disabled), .btn-send-plan:hover:not(:disabled) { background: rgba(255,255,255,0.1); color: #c4b5fd; }
         .btn-refresh:disabled, .btn-send-plan:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-next-week { border-color: rgba(155, 92, 255, 0.5); color: #c4b5fd; }
+
+        .plan-next-week-preview { margin-bottom: 24px; }
+        .plan-next-week-summary {
+          padding: 14px 18px;
+          cursor: pointer;
+          font-weight: 600;
+          color: #c4b5fd;
+          font-size: 15px;
+          list-style: none;
+          border-radius: 12px;
+          background: rgba(124, 58, 237, 0.12);
+        }
+        .plan-next-week-summary::-webkit-details-marker { display: none; }
+        .plan-next-week-preview[open] .plan-next-week-summary { border-radius: 12px 12px 0 0; }
 
         .actions-block {
           margin-bottom: 32px;

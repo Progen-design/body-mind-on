@@ -587,12 +587,24 @@ function parsePlanHtml(html) {
 }
 
 export { parsePlanHtml };
-export default function PlanViewer({ plan, userName, hideHero, dietaryPreferences = '' }) {
+const MAX_MEAL_TEXT_LEN = 200;
+function normalizeMealTextForPin(text) {
+  if (!text || typeof text !== 'string') return '';
+  let s = String(text).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  s = s.replace(/\s*\([^)]*\)\s*$/g, '').trim();
+  if (s.length > MAX_MEAL_TEXT_LEN) s = s.slice(0, MAX_MEAL_TEXT_LEN);
+  return s.normalize('NFD').replace(/\p{Diacritic}/gu, '');
+}
+
+export default function PlanViewer({ plan, userName, hideHero, dietaryPreferences = '', canPinMeals = true, onToast }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [parsed, setParsed] = useState(null);
   const [recipeModal, setRecipeModal] = useState(null); // { title, content, anchorRect, hasRecipe, openId? }
   const [mealOverrides, setMealOverrides] = useState({}); // { "di_mi": { title, content } }
   const [swapModal, setSwapModal] = useState(null); // { dayIndex, mealIndex, dishQuery, loading, html }
+  const [mealPins, setMealPins] = useState([]); // { meal_type, meal_text }[]
+  const [mealPinsLoading, setMealPinsLoading] = useState(false);
+  const [pinToastMsg, setPinToastMsg] = useState(null); // lokální toast pro pin
   const [shoppingCopyDone, setShoppingCopyDone] = useState(false);
   const [shoppingSendEmail, setShoppingSendEmail] = useState({ loading: false, done: false, error: null });
   const [dayShoppingState, setDayShoppingState] = useState({}); // { dayIndex: { copyDone, email: { loading, done, error } } }
@@ -627,6 +639,64 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
       setParsed(null);
     }
   }, [plan?.plan_html]);
+
+  useEffect(() => {
+    if (!plan?.plan_html || typeof document === 'undefined') return;
+    let cancelled = false;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token || cancelled) return;
+      setMealPinsLoading(true);
+      try {
+        const res = await fetch('/api/meal-pins', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (cancelled) return;
+        const data = await res.json();
+        if (data.pins) setMealPins(data.pins);
+      } catch {
+        if (!cancelled) setMealPins([]);
+      } finally {
+        if (!cancelled) setMealPinsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [plan?.plan_html]);
+
+  const isPinned = (mealType, mealText) => {
+    const norm = normalizeMealTextForPin(mealText);
+    return mealPins.some((p) => (p.meal_type || '').trim() === (mealType || '').trim() && normalizeMealTextForPin(p.meal_text) === norm);
+  };
+
+  const handleTogglePin = async (mealType, mealText, toastKey) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      (onToast || (() => {}))({ message: 'Pro označení jídla se přihlas.', type: 'error' });
+      setPinToastMsg({ message: 'Pro označení jídla se přihlas.', type: 'error', key: toastKey });
+      setTimeout(() => setPinToastMsg(null), 3000);
+      return;
+    }
+    const pinned = isPinned(mealType, mealText);
+    try {
+      const res = await fetch('/api/meal-pins', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: pinned ? 'remove' : 'add', meal_type: mealType, meal_text: mealText }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Chyba');
+      if (data.pins) setMealPins(data.pins);
+      const msg = pinned ? 'Odebráno z dalšího týdne.' : 'Přidáno do dalšího týdne.';
+      if (onToast) onToast({ message: msg, type: 'success' });
+      setPinToastMsg({ message: msg, type: 'success', key: toastKey });
+      setTimeout(() => setPinToastMsg(null), 2500);
+    } catch (e) {
+      const msg = e.message || 'Nepodařilo uložit.';
+      if (onToast) onToast({ message: msg, type: 'error' });
+      setPinToastMsg({ message: msg, type: 'error', key: toastKey });
+      setTimeout(() => setPinToastMsg(null), 3000);
+    }
+  };
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -877,6 +947,8 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                             setSwapModal((prev) => prev ? { ...prev, loading: false, html: html || '' } : null);
                           });
                         };
+                        const mealTextForPin = override ? (override.title || '') : (meal.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().replace(/\s*\([^)]*\)\s*$/g, '').trim();
+                        const mealPinned = isPinned(meal.type || '', mealTextForPin);
                         return (
                           <div key={mi} className="plan-meal-card">
                             <button type="button" className="plan-meal-image-wrap" onClick={openRecipe} title="Klikni pro zobrazení receptu">
@@ -893,7 +965,22 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                               <p className="plan-meal-text">
                                 {override ? (override.title || 'Náhrada') : <span dangerouslySetInnerHTML={{ __html: meal.text || meal.fullHtml }} />}
                               </p>
-                              <button type="button" className="plan-meal-swap" onClick={(e) => { e.stopPropagation(); handleSwap(); }}>Nahradit jiným</button>
+                              <div className="plan-meal-actions">
+                                <button type="button" className="plan-meal-swap" onClick={(e) => { e.stopPropagation(); handleSwap(); }}>Nahradit jiným</button>
+                                {canPinMeals && (
+                                  <button
+                                    type="button"
+                                    className={`plan-meal-pin ${mealPinned ? 'plan-meal-pin-active' : ''}`}
+                                    onClick={(e) => { e.stopPropagation(); handleTogglePin(meal.type || '', mealTextForPin, overrideKey); }}
+                                    title="Přidá toto jídlo do dalšího týdne – při příštím generování plánu ho AI zahrne."
+                                  >
+                                    {mealPinned ? '✓ Zahrnuto do dalšího týdne' : 'Zahrnout do dalšího týdne'}
+                                  </button>
+                                )}
+                              </div>
+                              {pinToastMsg?.key === overrideKey && (
+                                <span className={`plan-pin-toast plan-pin-toast-${pinToastMsg.type || 'success'}`}>{pinToastMsg.message}</span>
+                              )}
                             </div>
                           </div>
                         );
@@ -1976,6 +2063,12 @@ const planSectionStyles = `
   .plan-meal-text :global(b) {
     color: #e9d5ff;
   }
+  .plan-meal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
   .plan-meal-swap {
     font-size: 11px;
     color: #94a3b8;
@@ -1986,6 +2079,27 @@ const planSectionStyles = `
     cursor: pointer;
   }
   .plan-meal-swap:hover { color: #c4b5fd; border-color: rgba(139, 92, 255, 0.5); }
+  .plan-meal-pin {
+    font-size: 11px;
+    color: #94a3b8;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 4px 10px;
+    cursor: pointer;
+  }
+  .plan-meal-pin:hover { color: #22c55e; border-color: rgba(34, 197, 94, 0.5); }
+  .plan-meal-pin-active {
+    color: #22c55e;
+    border-color: rgba(34, 197, 94, 0.5);
+  }
+  .plan-pin-toast {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #22c55e;
+  }
+  .plan-pin-toast-error { color: #f87171; }
   .plan-export-row { padding-top: 0; }
   .plan-export-btn {
     padding: 10px 18px;

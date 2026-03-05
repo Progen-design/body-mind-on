@@ -2118,9 +2118,9 @@ export default function Profil() {
             {!profile?.can_create_calendar_events && (
             <section className="card card-accent center progress-section progress-detail-end">
               <h2 className="section-head">Tvůj progres</h2>
-              <p className="progress-lead">Hodnoty vycházejí z <strong>zapsaných tréninků</strong> a z tvého nastavení (výchozí váha, cíl, výška). Ruční váha do výpočtu nezasahuje. Odhad váhy dále zohledňuje <strong>denní návyky</strong> (zdravé i zlozvyky) z tohoto týdne – čím víc zdravých a míň zlozvyků, tím lépe pro odhad.</p>
-              <p className="progress-period-hint">Tréninky: ze <strong>všech</strong> zapsaných od začátku. Návyky: z vyplněných polí v „Denní návyky“ za aktuální týden. Spálené kcal a odhad váhy níže jsou celkové a navazují na sebe.</p>
-              <p className="progress-dates">Období od začátku: <strong>{periodStartFormatted}</strong> – <strong>{periodEndFormatted}</strong></p>
+              <p className="progress-lead">Odhad z <strong>tréninků</strong> a nastavení (váha, cíl, výška). Ruční váha se nepočítá. <strong>Návyky</strong> tento týden odhad upravují – víc zdravých = lepší odhad.</p>
+              <p className="progress-period-hint">Tréninky od začátku, návyky z aktuálního týdne. Čísla níže jsou součet.</p>
+              <p className="progress-dates">Období: <strong>{periodStartFormatted}</strong> – <strong>{periodEndFormatted}</strong></p>
               <div className="progress-activity">
                 <div className="progress-activity-main">
                   <span className="progress-big-num">{workouts?.length ?? 0}</span>
@@ -2136,19 +2136,19 @@ export default function Profil() {
                 </div>
               </div>
               {(workoutsThisWeek?.length ?? 0) > 0 && (
-                <p className="progress-dates-detail">Tento týden ({weekStartFormatted} – {weekEndFormatted}): {workoutsThisWeek?.length ?? 0} tréninků, {totalMinutesThisWeek ?? 0} min. Dny s tréninkem: {thisWeekDates?.join(', ') || '—'}</p>
+                <p className="progress-dates-detail">Tento týden ({weekStartFormatted}–{weekEndFormatted}): {workoutsThisWeek?.length ?? 0} tréninků, {totalMinutesThisWeek ?? 0} min. Dny: {thisWeekDates?.join(', ') || '—'}</p>
               )}
               {workouts.length === 0 && (
-                <p className="progress-empty-hint">Zatím nemáš zapsané tréninky. Po přidání tréninků („Zapsat trénink“) se zde objeví odhad spálených kcal a vliv na váhu.</p>
+                <p className="progress-empty-hint">Zapiš tréninky – zde se pak objeví odhad kcal a váhy.</p>
               )}
               {workouts.length > 0 && (workoutsThisWeek?.length ?? 0) === 0 && (
-                <p className="progress-total-hint">V tomto týdnu zatím žádný trénink. Celkem máš <strong>{workouts.length}</strong> tréninků, <strong>{totalMinutes ?? 0}</strong> minut – odhad váhy níže vychází z těchto dat.</p>
+                <p className="progress-total-hint">Tento týden zatím žádný trénink. Celkem <strong>{workouts.length}</strong> tréninků, <strong>{totalMinutes ?? 0}</strong> min.</p>
               )}
               {workoutTrend && (
                 <p className="progress-trend-hint">
-                  {workoutTrend === '↑' && 'Víc tréninků než minulý týden. '}
-                  {workoutTrend === '↓' && 'Méně než minulý týden – zkus přidat. '}
-                  {workoutTrend === '→' && 'Stejný počet jako minulý týden. '}
+                  {workoutTrend === '↑' && 'Víc než minulý týden. '}
+                  {workoutTrend === '↓' && 'Méně než minulý týden. '}
+                  {workoutTrend === '→' && 'Stejně jako minulý týden. '}
                   Minulý týden: {lastWeekCount} tréninků, {lastWeekMinutes} min.
                 </p>
               )}
@@ -2156,17 +2156,17 @@ export default function Profil() {
                 <>
                   <div className="progress-calc">
                     <p className="progress-calc-line">
-                      Spáleno celkem odhad <strong>~{Math.round(estimatedCaloriesAll)} kcal</strong> ≈ úbytek <strong>~{estimatedKgLostTotal.toFixed(1)} kg</strong> (při 7700 kcal/kg).
+                      <strong>~{Math.round(estimatedCaloriesAll)} kcal</strong> ≈ úbytek <strong>~{estimatedKgLostTotal.toFixed(1)} kg</strong> (7700 kcal/kg).
                     </p>
                     {estimatedCurrentWeightRounded != null && (
                       <>
                         <p className="progress-calc-line">
-                          Odhadovaná váha z tréninků: <strong>{estimatedCurrentWeightRounded} kg</strong>
+                          Z tréninků: <strong>{estimatedCurrentWeightRounded} kg</strong>
                           {startWeight != null && ` (výchozí ${startWeight} kg)`}.
                         </p>
                         {hasHabitData && habitAdjustedWeight != null && (
                           <p className="progress-calc-line progress-habit-line">
-                            S ohledem na návyky tohoto týdne ({positiveDone}× zdravé, {negativeDone}× zlozvyky): <strong>{habitAdjustedWeight} kg</strong>. Zdravé návyky odhad zlepšují, zlozvyky zhoršují.
+                            S návyky ({positiveDone}× zdravé, {negativeDone}× zlozvyky): <strong>{habitAdjustedWeight} kg</strong>.
                           </p>
                         )}
                       </>
@@ -2175,7 +2175,7 @@ export default function Profil() {
                       <p className="progress-calc-line">
                         Do cíle <strong>{goalWeight} kg</strong> zbývá <strong>{(estimatedCurrentWeight - goalWeight).toFixed(1)} kg</strong>
                         {weeksToGoal != null && weeksToGoal > 0 && (
-                          <> · Při tempu tohoto týdne odhad <strong>{weeksToGoal.toFixed(0)} týdnů</strong></>
+                          <> · odhad <strong>{weeksToGoal.toFixed(0)} týdnů</strong></>
                         )}.
                       </p>
                     )}
@@ -2205,7 +2205,7 @@ export default function Profil() {
                 </>
               ) : (
                 <p className="empty-progress">
-                  Výchozí váha a výška jsou z registrace (Start). V <strong>„Nastavení pro výpočet“</strong> můžeš doplnit cílovou váhu – odhad zhubnutí se počítá jen z tréninků.
+                  Váha a výška z registrace. Cílovou váhu doplň v <strong>„Nastavení pro výpočet“</strong> – odhad jen z tréninků.
                 </p>
               )}
             </section>

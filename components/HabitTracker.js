@@ -205,15 +205,24 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   const recommendation = getRecommendation();
 
   const chartData = useMemo(() => {
-    const maxCount = Math.max(1, positiveHabits.length);
+    const totalHabitsCount = positiveHabits.length + negativeHabits.length;
+    const maxCount = Math.max(1, totalHabitsCount);
     return days.map((dateStr) => {
-      const count = (positiveHabits || []).filter((h) => getCompleted(h.id, dateStr)).length;
-      return { dateStr, count, isToday: dateStr === todayStr, pct: (count / maxCount) * 100 };
+      const posCount = (positiveHabits || []).filter((h) => getCompleted(h.id, dateStr)).length;
+      const negCount = (negativeHabits || []).filter((h) => getCompleted(h.id, dateStr)).length;
+      return {
+        dateStr,
+        posCount,
+        negCount,
+        count: posCount + negCount,
+        isToday: dateStr === todayStr,
+        pct: ((posCount + negCount) / maxCount) * 100,
+      };
     });
-  }, [days, todayStr, positiveHabits, allLogs]);
+  }, [days, todayStr, positiveHabits, negativeHabits, allLogs]);
 
-  const chartMaxY = Math.max(1, positiveHabits.length);
-  const CHART_BAR_HEIGHT_PX = 200;
+  const chartMaxY = Math.max(1, positiveHabits.length + negativeHabits.length);
+  const CHART_BAR_HEIGHT_PX = 280;
 
   if (positiveHabits.length === 0 && negativeHabits.length === 0) {
     return (
@@ -280,7 +289,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         <span className="hg-emoji" aria-hidden="true">{h.emoji}</span>
         <div className="hg-name-wrap">
           <span className="hg-name">{h.label}</span>
-          {h.description && <span className="hg-hint">({h.description})</span>}
+          {h.description && <span className="hg-hint"> ({h.description})</span>}
         </div>
       </div>
       {days.map((dateStr) => {
@@ -377,7 +386,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
             </div>
 
             <div className="ht-chart-wrap">
-              <p className="ht-chart-title">Splněné návyky po dnech</p>
+              <p className="ht-chart-title">Zdravé návyky (zelená) a zlozvyky (červená) po dnech</p>
               <div className="ht-chart-inner">
                 <div className="ht-chart-y-axis">
                   {Array.from({ length: chartMaxY + 1 }, (_, i) => chartMaxY - i).map((n) => (
@@ -385,16 +394,34 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
                   ))}
                 </div>
                 <div className="ht-chart-bars" style={{ height: `${CHART_BAR_HEIGHT_PX}px` }}>
-                  {chartData.map(({ dateStr, count, isToday }) => {
-                    const barHeightPx = count > 0 ? Math.max(8, (count / chartMaxY) * CHART_BAR_HEIGHT_PX) : 0;
+                  {chartData.map(({ dateStr, posCount, negCount, count, isToday }) => {
+                    const totalPx = count > 0 ? Math.max(8, (count / chartMaxY) * CHART_BAR_HEIGHT_PX) : 0;
+                    const posPx = count > 0 ? (posCount / count) * totalPx : 0;
+                    const negPx = totalPx - posPx;
                     return (
                       <div key={dateStr} className={`ht-chart-bar ${isToday ? 'today' : ''}`}>
-                        <div
-                          className="ht-chart-bar-fill"
-                          style={{ height: `${barHeightPx}px` }}
-                          title={`${count} splněno`}
-                        />
-                        <span className="ht-chart-bar-value">{count}</span>
+                        <div className="ht-chart-bar-stack">
+                          {posPx > 0 && (
+                            <div
+                              className="ht-chart-bar-fill pos"
+                              style={{ height: `${posPx}px` }}
+                              title={`${posCount} zdravé splněno`}
+                            />
+                          )}
+                          {negPx > 0 && (
+                            <div
+                              className="ht-chart-bar-fill neg"
+                              style={{ height: `${negPx}px` }}
+                              title={`${negCount} zlozvyků`}
+                            />
+                          )}
+                        </div>
+                        <span className="ht-chart-bar-value">
+                          {posCount > 0 && <span className="ht-bar-pos">{posCount}</span>}
+                          {posCount > 0 && negCount > 0 && <span className="ht-bar-sep">/</span>}
+                          {negCount > 0 && <span className="ht-bar-neg">{negCount}</span>}
+                          {count === 0 && '0'}
+                        </span>
                       </div>
                     );
                   })}
@@ -429,8 +456,8 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
 
         .ht-chart-wrap {
           flex-shrink: 0;
-          width: 380px;
-          padding: 24px;
+          width: 480px;
+          padding: 28px;
           border-radius: 20px;
           background: linear-gradient(160deg, rgba(22,32,55,0.98) 0%, rgba(10,15,30,0.98) 100%);
           border: 1px solid rgba(255,255,255,0.08);
@@ -445,34 +472,52 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         }
         .ht-chart-y-axis {
           display: flex; flex-direction: column; justify-content: space-between;
-          height: 200px; padding: 0 4px 0 0;
+          height: 280px; padding: 0 4px 0 0;
           font-size: 0.6875rem; font-weight: 700; color: #64748b;
           text-align: right; line-height: 1;
         }
         .ht-chart-y-tick { flex-shrink: 0; }
         .ht-chart-bars {
-          display: flex; align-items: flex-end; justify-content: space-between; gap: 8px;
-          flex: 1; min-height: 200px;
+          display: flex; align-items: flex-end; justify-content: space-between; gap: 10px;
+          flex: 1; min-height: 280px;
         }
         .ht-chart-bar {
           flex: 1; min-width: 0; height: 100%;
-          display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px;
+          display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px;
+        }
+        .ht-chart-bar-stack {
+          display: flex; flex-direction: column-reverse; align-items: center; justify-content: flex-end;
+          width: 100%; max-width: 44px; min-width: 10px; height: 100%; gap: 1px;
         }
         .ht-chart-bar-fill {
-          width: 100%; max-width: 40px; min-width: 8px;
-          border-radius: 8px 8px 0 0;
-          background: linear-gradient(180deg, #34d399, #10b981);
-          box-shadow: 0 0 12px rgba(52,211,153,0.4);
+          width: 100%; min-height: 4px;
+          border-radius: 6px 6px 0 0;
           transition: height 0.4s ease-out;
         }
-        .ht-chart-bar.today .ht-chart-bar-fill {
+        .ht-chart-bar-fill.pos {
+          background: linear-gradient(180deg, #34d399, #10b981);
+          box-shadow: 0 0 12px rgba(52,211,153,0.4);
+        }
+        .ht-chart-bar-fill.neg {
+          background: linear-gradient(180deg, #f87171, #dc2626);
+          box-shadow: 0 0 10px rgba(248,113,113,0.35);
+        }
+        .ht-chart-bar.today .ht-chart-bar-fill.pos {
           background: linear-gradient(180deg, #a78bfa, #7c3aed);
           box-shadow: 0 0 14px rgba(167,139,250,0.5);
+        }
+        .ht-chart-bar.today .ht-chart-bar-fill.neg {
+          background: linear-gradient(180deg, #f472b6, #ec4899);
+          box-shadow: 0 0 12px rgba(244,114,182,0.4);
         }
         .ht-chart-bar-value {
           font-size: 0.8125rem; font-weight: 700; color: #cbd5e1;
         }
-        .ht-chart-bar.today .ht-chart-bar-value { color: #c4b5fd; }
+        .ht-chart-bar-value .ht-bar-pos { color: #34d399; }
+        .ht-chart-bar-value .ht-bar-neg { color: #f87171; }
+        .ht-chart-bar-value .ht-bar-sep { color: #64748b; margin: 0 1px; font-weight: 400; }
+        .ht-chart-bar.today .ht-chart-bar-value .ht-bar-pos { color: #a78bfa; }
+        .ht-chart-bar.today .ht-chart-bar-value .ht-bar-neg { color: #f472b6; }
         .ht-chart-labels {
           display: flex; justify-content: space-between; gap: 6px;
           font-size: 0.6875rem; color: #64748b; font-weight: 500;
@@ -569,10 +614,10 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           min-width: 0; overflow: hidden; line-height: 1.35;
         }
         .hg-name {
-          font-size: 0.9375rem; font-weight: 600; color: #e2e8f0;
+          font-size: 0.9375rem; font-weight: 700; color: #e2e8f0;
         }
         .hg-hint {
-          font-size: 0.75rem; color: #94a3b8; font-weight: 400;
+          font-size: 0.6875rem; color: #94a3b8; font-weight: 400;
           font-family: inherit;
         }
 

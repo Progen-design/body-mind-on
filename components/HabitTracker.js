@@ -631,16 +631,16 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         }
         .hg-emoji { font-size: 1.3rem; flex-shrink: 0; line-height: 1; margin-top: 2px; }
         .hg-name-wrap {
-          display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px;
-          min-width: 0; overflow: hidden; line-height: 1.35;
+          display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px;
+          min-width: 0; overflow: hidden; line-height: 1.35; font-size: 1rem;
         }
         .hg-name {
-          font-size: 1rem; font-weight: 700; color: #f1f5f9;
+          font-size: 1em; font-weight: 700; color: #f1f5f9;
         }
         .hg-name strong { font-weight: 700; }
         .hg-hint {
-          font-size: 0.5625rem; color: #64748b; font-weight: 400;
-          font-family: inherit; line-height: 1.3;
+          font-size: 0.55em; color: #64748b; font-weight: 400;
+          font-family: inherit; line-height: 1.35;
         }
 
         /* ── Habit cell – CRITICAL: reset button defaults ── */

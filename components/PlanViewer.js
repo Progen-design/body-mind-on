@@ -553,6 +553,8 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
   const [shoppingCopyDone, setShoppingCopyDone] = useState(false);
   const [shoppingSendEmail, setShoppingSendEmail] = useState({ loading: false, done: false, error: null });
   const [dayShoppingState, setDayShoppingState] = useState({}); // { dayIndex: { copyDone, email: { loading, done, error } } }
+  const [shoppingFilter, setShoppingFilter] = useState('week'); // 'week' | day originalIndex (number)
+  const [shoppingListOpen, setShoppingListOpen] = useState(false); // rozbalovací sekce
   const [expandedTrainingKey, setExpandedTrainingKey] = useState(null); // 'dayIdx-itemIdx' – rozbalený cvik (detail Ve fitku / Doma)
   const [expandedDays, setExpandedDays] = useState(null); // null = dnes rozbalený; Set(di) = které dny jsou rozbalené
   const recipeOpenIdRef = useRef(0);
@@ -1097,9 +1099,19 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
 
           {/* Mindset se vykresluje v profil.js hned pod Tvé milníky */}
 
-          {/* Nákupní seznam na týden (z plánu nebo fallback z receptů) */}
+          {/* Nákupní seznam – rozbalovací, filtr Celý týden / konkrétní den */}
           {(() => {
-            const list = parsed.shoppingList?.length ? parsed.shoppingList : buildShoppingListFromRecipes(parsed.recipes);
+            const fullList = parsed.shoppingList?.length ? parsed.shoppingList : buildShoppingListFromRecipes(parsed.recipes);
+            const dayIndex = shoppingFilter === 'week' ? null : Number(shoppingFilter);
+            const selectedDay = dayIndex != null && !Number.isNaN(dayIndex) ? displayedDays.find((d) => (d.originalIndex ?? -1) === dayIndex) : null;
+            const dayMealTexts = selectedDay ? (selectedDay.meals || []).map((meal, mi) => {
+              const overrideKey = `${selectedDay.originalIndex ?? 0}_${mi}`;
+              const override = mealOverrides[overrideKey];
+              return override ? `${meal.type || ''} ${override.title || ''}`.trim() : `${meal.type || ''} ${meal.text || ''}`.trim();
+            }) : [];
+            const dayRecipes = selectedDay ? getRecipesForDay(parsed?.recipes || [], dayMealTexts) : [];
+            const dayList = selectedDay ? buildShoppingListFromRecipes(dayRecipes) : [];
+            const list = shoppingFilter === 'week' ? fullList : dayList;
             const copyAndOpen = () => {
               const text = list.join('\n');
               if (navigator.clipboard?.writeText) {
@@ -1137,41 +1149,76 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
             };
             const handleShareWhatsApp = () => {
               const text = list.join('\n');
-              const url = `https://wa.me/?text=${encodeURIComponent('🛒 Nákupní seznam Body & Mind ON:\n\n' + text)}`;
+              const label = shoppingFilter === 'week' ? 'Nákupní seznam Body & Mind ON' : `Suroviny – ${selectedDay?.dayName || ''}${selectedDay?.dateStr ? ` (${selectedDay.dateStr})` : ''}`;
+              const url = `https://wa.me/?text=${encodeURIComponent('🛒 ' + label + ':\n\n' + text)}`;
               window.open(url, '_blank', 'noopener,noreferrer');
             };
-            return list.length > 0 ? (
-              <div className="plan-block">
-                <h3 className="plan-block-title">Nákupní seznam na týden</h3>
-                <ul className="plan-shopping-list">
-                  {list.map((item, i) => (
-                    <li key={i}>{item}</li>
-                  ))}
-                </ul>
-                <div className="plan-order-ingredients">
-                  <div className="plan-shopping-actions">
-                    <button type="button" className="plan-btn-order" onClick={copyAndOpen}>
-                      🛒 Objednat suroviny
-                    </button>
-                    <button type="button" className="plan-btn-share" onClick={handleSendEmail} disabled={shoppingSendEmail.loading}>
-                      {shoppingSendEmail.loading ? 'Odesílám…' : '✉️ Poslat e-mailem'}
-                    </button>
-                    <button type="button" className="plan-btn-share" onClick={handleShareWhatsApp}>
-                      📱 Sdílet WhatsApp
-                    </button>
+            const hasAnyList = fullList.length > 0 || displayedDays.some((d) => {
+              const texts = (d.meals || []).map((m) => `${m.type || ''} ${m.text || ''}`.trim());
+              return buildShoppingListFromRecipes(getRecipesForDay(parsed?.recipes || [], texts)).length > 0;
+            });
+            if (!hasAnyList) return null;
+            return (
+              <div className="plan-block plan-shopping-block">
+                <details className="plan-shopping-details" open={shoppingListOpen} onToggle={(e) => setShoppingListOpen(e.target.open)}>
+                  <summary className="plan-shopping-summary">
+                    <span className="plan-block-title">Nákupní seznam na týden</span>
+                    <span className="plan-shopping-chevron" aria-hidden>{shoppingListOpen ? '▼' : '▶'}</span>
+                  </summary>
+                  <div className="plan-shopping-inner">
+                    <div className="plan-shopping-filter-wrap">
+                      <label htmlFor="shopping-filter" className="plan-shopping-filter-label">Zobrazit:</label>
+                      <select
+                        id="shopping-filter"
+                        className="plan-shopping-filter"
+                        value={shoppingFilter}
+                        onChange={(e) => setShoppingFilter(e.target.value)}
+                      >
+                        <option value="week">Celý týden</option>
+                        {displayedDays.map((d) => (
+                          <option key={d.originalIndex ?? d.dayName} value={d.originalIndex ?? 0}>
+                            {d.dayName}{d.dateStr ? ` (${d.dateStr})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {list.length > 0 ? (
+                      <>
+                        <ul className="plan-shopping-list">
+                          {list.map((item, i) => (
+                            <li key={i}>{item}</li>
+                          ))}
+                        </ul>
+                        <div className="plan-order-ingredients">
+                          <div className="plan-shopping-actions">
+                            <button type="button" className="plan-btn-order" onClick={copyAndOpen}>
+                              🛒 Objednat suroviny
+                            </button>
+                            <button type="button" className="plan-btn-share" onClick={handleSendEmail} disabled={shoppingSendEmail.loading}>
+                              {shoppingSendEmail.loading ? 'Odesílám…' : '✉️ Poslat e-mailem'}
+                            </button>
+                            <button type="button" className="plan-btn-share" onClick={handleShareWhatsApp}>
+                              📱 Sdílet WhatsApp
+                            </button>
+                          </div>
+                          {shoppingCopyDone && <span className="plan-copy-hint">Seznam zkopírován do schránky</span>}
+                          {shoppingSendEmail.done && <span className="plan-copy-hint plan-copy-success">Odesláno na e-mail</span>}
+                          {shoppingSendEmail.error && <span className="plan-copy-hint plan-copy-error">{shoppingSendEmail.error}</span>}
+                          <p className="plan-order-links">
+                            Seznam se zkopíruje a otevře se <a href="https://www.rohlik.cz/" target="_blank" rel="noopener noreferrer">Rohlík.cz</a>.
+                            Můžeš ho vložit v nákupním seznamu (Ctrl+V). Případně nákup vyřídíš na{' '}
+                            <a href="https://www.kosik.cz/" target="_blank" rel="noopener noreferrer">Košík.cz</a> nebo{' '}
+                            <a href="https://shop.billa.cz/" target="_blank" rel="noopener noreferrer">Billa e-shop</a>.
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="plan-shopping-empty-day">Pro vybraný den nemáme suroviny z receptů – zvol „Celý týden“ nebo jiný den.</p>
+                    )}
                   </div>
-                  {shoppingCopyDone && <span className="plan-copy-hint">Seznam zkopírován do schránky</span>}
-                  {shoppingSendEmail.done && <span className="plan-copy-hint plan-copy-success">Odesláno na e-mail</span>}
-                  {shoppingSendEmail.error && <span className="plan-copy-hint plan-copy-error">{shoppingSendEmail.error}</span>}
-                  <p className="plan-order-links">
-                    Seznam se zkopíruje a otevře se <a href="https://www.rohlik.cz/" target="_blank" rel="noopener noreferrer">Rohlík.cz</a>.
-                    Můžeš ho vložit v nákupním seznamu (Ctrl+V). Případně nákup vyřídíš na{' '}
-                    <a href="https://www.kosik.cz/" target="_blank" rel="noopener noreferrer">Košík.cz</a> nebo{' '}
-                    <a href="https://shop.billa.cz/" target="_blank" rel="noopener noreferrer">Billa e-shop</a>.
-                  </p>
-                </div>
+                </details>
               </div>
-            ) : null;
+            );
           })()}
 
           {/* Tréninkový plán – viditelný blok (jeden z hlavních bodů plánu) */}
@@ -1325,6 +1372,55 @@ const planSectionStyles = `
   }
   .plan-mindset-block { background: rgba(139, 92, 255, 0.08); border-radius: 12px; padding: 16px; }
   .plan-mindset-text { margin: 0; color: #e9d5ff; line-height: 1.5; }
+  .plan-shopping-block { margin-bottom: 32px; }
+  .plan-shopping-details {
+    border: 1px solid rgba(139, 92, 255, 0.25);
+    border-radius: 12px;
+    background: rgba(30, 41, 59, 0.4);
+  }
+  .plan-shopping-summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #e9d5ff;
+    user-select: none;
+  }
+  .plan-shopping-summary::-webkit-details-marker { display: none; }
+  .plan-shopping-summary:hover { background: rgba(139, 92, 255, 0.1); border-radius: 12px; }
+  .plan-shopping-chevron { font-size: 12px; opacity: 0.8; }
+  .plan-shopping-inner { padding: 0 18px 18px; }
+  .plan-shopping-filter-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .plan-shopping-filter-label {
+    font-size: 14px;
+    color: #94a3b8;
+    margin: 0;
+  }
+  .plan-shopping-filter {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(139, 92, 255, 0.4);
+    background: rgba(15, 15, 26, 0.9);
+    color: #e2e8f0;
+    font-size: 14px;
+    min-width: 180px;
+  }
+  .plan-shopping-empty-day {
+    margin: 0;
+    padding: 12px 0;
+    color: #94a3b8;
+    font-size: 14px;
+  }
   .plan-shopping-list {
     list-style: none;
     margin: 0;

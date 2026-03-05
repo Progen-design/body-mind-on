@@ -50,14 +50,29 @@ export default async function handler(req, res) {
       }
     }
 
-    const profileUpdates = { id: user.id, updated_at: new Date().toISOString() };
+    const profileUpdates = { id: user.id };
     if (avatar_url !== undefined) profileUpdates.avatar_url = avatar_url;
     if (daily_email !== undefined) profileUpdates.daily_email = daily_email;
 
     if (avatar_url !== undefined || daily_email !== undefined) {
-      const { error: profileErr } = await supabaseServer
-        .from('profiles')
-        .upsert(profileUpdates, { onConflict: 'id' });
+      let toUpsert = { ...profileUpdates, updated_at: new Date().toISOString() };
+      let profileErr = null;
+      let result = await supabaseServer.from('profiles').upsert(toUpsert, { onConflict: 'id' });
+      profileErr = result.error;
+
+      if (profileErr && /does not exist|column.*not found|neexistuje/i.test(profileErr.message)) {
+        delete toUpsert.updated_at;
+        result = await supabaseServer.from('profiles').upsert(toUpsert, { onConflict: 'id' });
+        profileErr = result.error;
+      }
+      if (profileErr && /does not exist|column.*not found|neexistuje/i.test(profileErr?.message)) {
+        delete toUpsert.daily_email;
+        if (Object.keys(toUpsert).length > 1) {
+          result = await supabaseServer.from('profiles').upsert(toUpsert, { onConflict: 'id' });
+          profileErr = result.error;
+        }
+      }
+
       if (profileErr) {
         console.error('[profile-settings] profiles upsert error:', profileErr);
         return res.status(500).json({ error: 'Nepodařilo se uložit nastavení.' });

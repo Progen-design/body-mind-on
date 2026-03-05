@@ -100,7 +100,8 @@ export default async function handler(req, res) {
           error: 'S tímto e-mailem už máš účet. Přihlas se nebo obnov heslo na app.bodyandmindon.cz.',
         });
       }
-      payload.user_id = null;
+      const userMessage = toUserFriendlyAuthError(authResult.error);
+      return res.status(400).json({ error: userMessage });
     } else {
       payload.user_id = authResult.userId;
       loginPassword = authResult.password ?? null;
@@ -208,6 +209,20 @@ export default async function handler(req, res) {
 /* ==============================
    Pomocné funkce
 ============================== */
+
+/** Převádí chyby z auth (Supabase) na srozumitelné české hlášky pro uživatele. */
+function toUserFriendlyAuthError(message) {
+  if (!message || typeof message !== 'string') return 'Nepodařilo se vytvořit účet. Zkontroluj údaje a zkus to znovu.';
+  const m = message.toLowerCase();
+  if (m.includes('password') && (m.includes('least') || m.includes('6') || m.includes('length')))
+    return 'Heslo je příliš slabé. Zadej alespoň 6 znaků, lépe kombinaci písmen a číslic.';
+  if (m.includes('weak') || m.includes('strength') || m.includes('secure'))
+    return 'Heslo je příliš slabé. Zkus kombinaci písmen a číslic, alespoň 6 znaků.';
+  if (m.includes('email') && (m.includes('invalid') || m.includes('valid')))
+    return 'Zadej platnou e-mailovou adresu.';
+  if (m.includes('already') || m.includes('registered')) return 'S tímto e-mailem už máš účet. Přihlas se nebo obnov heslo na app.bodyandmindon.cz.';
+  return 'Nepodařilo se vytvořit účet. Zkontroluj údaje (heslo alespoň 6 znaků) a zkus to znovu.';
+}
 
 function toNum(v) {
   const n = Number(v);

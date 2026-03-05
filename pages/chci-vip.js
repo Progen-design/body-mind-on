@@ -106,7 +106,7 @@ export default function ChciVipPage() {
         setSelectedHabits([]);
         setStep(1);
       } else {
-        setStatus("❌ Chyba: " + (result.error || result.message || "Nepodařilo se odeslat."));
+        setStatus("❌ " + (result.error || result.message || "Nepodařilo se odeslat."));
       }
     } catch (err) {
       setStatus("❌ Chyba připojení: " + (err.message || "Zkuste to znovu za chvíli."));
@@ -155,6 +155,7 @@ export default function ChciVipPage() {
                 <div>
                   <label className="reg-label">Heslo (min. 6 znaků)</label>
                   <input name="password" type="password" className="reg-input" value={formData.password} onChange={handleChange} placeholder="Zvol si heslo pro přístup do profilu" minLength={6} required />
+                  <p className="text-sm text-gray-400 mt-1">Alespoň 6 znaků; lépe kombinace písmen a číslic.</p>
                 </div>
                 <div>
                   <label className="reg-label">Heslo znovu</label>

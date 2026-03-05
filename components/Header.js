@@ -1,7 +1,7 @@
 // /components/Header.js – na main doméně marketing, na app registrace/profil; při přihlášení jen Odhlásit se
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 
 const MAIN_SITE = process.env.NEXT_PUBLIC_MAIN_SITE_URL || "https://bodyandmindon.cz";
@@ -44,16 +44,6 @@ export default function Header() {
 
   const isRegistrationPage = ["/start", "/on-club", "/chci-vip"].includes(router.pathname);
   const showLoggedInNav = session && !isRegistrationPage;
-  const [profileOpen, setProfileOpen] = useState(false);
-  const profileRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
-    }
-    if (profileOpen) document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, [profileOpen]);
 
   return (
     <header className="header">
@@ -66,31 +56,14 @@ export default function Header() {
           {showLoggedInNav ? (
             <>
               <Link href="/komunita">Komunita</Link>
-              <div className="nav-profil-wrap" ref={profileRef} data-open={profileOpen || undefined}>
-                <button
-                  type="button"
-                  onClick={() => setProfileOpen((v) => !v)}
-                  className="nav-profil-trigger"
-                  aria-expanded={profileOpen}
-                  aria-haspopup="true"
-                >
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt="" className="nav-avatar" />
-                  ) : (
-                    <span className="nav-avatar-placeholder" aria-hidden />
-                  )}
-                  Profil
-                  <span className="nav-profil-chevron" aria-hidden>▼</span>
-                </button>
-                {profileOpen && (
-                  <div className="nav-profil-dropdown" role="menu">
-                    <Link href="/profil?edit=preferences" onClick={() => setProfileOpen(false)} className="nav-profil-dropdown-item" role="menuitem">
-                      <span className="nav-profil-item-icon" aria-hidden>✏️</span>
-                      <span className="nav-profil-item-text">Upravit preference</span>
-                    </Link>
-                  </div>
+              <Link href="/profil" className="nav-profil-link">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="nav-avatar" />
+                ) : (
+                  <span className="nav-avatar-placeholder" aria-hidden />
                 )}
-              </div>
+                Profil
+              </Link>
               <button type="button" onClick={handleLogout} className="nav-logout">
                 Odhlásit se
               </button>
@@ -171,78 +144,19 @@ export default function Header() {
           color: #fff;
         }
 
-        .nav-profil-wrap { position: relative; display: inline-flex; align-items: center; }
-        .nav-profil-trigger {
+        .nav-profil-link {
           display: inline-flex;
           align-items: center;
           gap: 8px;
           min-height: 44px;
           padding: 0 6px;
-          background: none;
-          border: none;
           color: #c4b5fd;
+          text-decoration: none;
           font-size: inherit;
           font-family: inherit;
-          cursor: pointer;
           transition: color 0.2s ease;
         }
-        .nav-profil-trigger:hover { color: #fff; }
-        .nav-profil-chevron { font-size: 10px; opacity: 0.7; transition: transform 0.2s; }
-        .nav-profil-wrap[data-open] .nav-profil-chevron { transform: rotate(180deg); }
-        .nav-profil-dropdown {
-          position: absolute;
-          top: 100%;
-          right: 0;
-          margin-top: 10px;
-          min-width: 240px;
-          padding: 10px;
-          background: #1a1a2e;
-          border: 1px solid #334155;
-          border-radius: 20px;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-          z-index: 100;
-          animation: nav-dropdown-in 0.2s ease-out;
-        }
-        @keyframes nav-dropdown-in {
-          from { opacity: 0; transform: translateY(-6px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .nav-profil-dropdown-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 14px 18px;
-          color: #e2e8f0;
-          text-decoration: none;
-          font-size: 15px;
-          font-weight: 500;
-          line-height: 1.35;
-          border-radius: 12px;
-          background: rgba(255,255,255,0.03);
-          border: 1px solid transparent;
-          transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-        }
-        .nav-profil-dropdown-item:hover {
-          background: rgba(255,255,255,0.06);
-          border-color: rgba(148,163,184,0.2);
-          color: #fff;
-        }
-        .nav-profil-item-icon {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 28px;
-          height: 28px;
-          flex-shrink: 0;
-          font-size: 1rem;
-          line-height: 1;
-          border-radius: 50%;
-          background: rgba(124,58,237,0.2);
-        }
-        .nav-profil-item-text {
-          flex: 1;
-          white-space: nowrap;
-        }
+        .nav-profil-link:hover { color: #fff; }
         .nav-avatar, .nav-avatar-placeholder {
           width: 28px;
           height: 28px;

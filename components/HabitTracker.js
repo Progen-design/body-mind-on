@@ -524,12 +524,12 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           box-shadow: 0 0 10px rgba(248,113,113,0.35);
         }
         .ht-chart-bar.today .ht-chart-bar-fill.pos {
-          background: linear-gradient(180deg, #a78bfa, #7c3aed);
-          box-shadow: 0 0 14px rgba(167,139,250,0.5);
+          background: linear-gradient(180deg, #34d399, #10b981);
+          box-shadow: 0 0 14px rgba(52,211,153,0.6), 0 0 0 2px rgba(255,255,255,0.4);
         }
         .ht-chart-bar.today .ht-chart-bar-fill.neg {
-          background: linear-gradient(0deg, #f472b6, #ec4899);
-          box-shadow: 0 0 12px rgba(244,114,182,0.4);
+          background: linear-gradient(0deg, #f87171, #dc2626);
+          box-shadow: 0 0 14px rgba(248,113,113,0.6), 0 0 0 2px rgba(255,255,255,0.4);
         }
         .ht-chart-bar-value {
           font-size: 0.625rem; font-weight: 600; color: #94a3b8;
@@ -537,14 +537,14 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         .ht-chart-bar-value .ht-bar-pos { color: #34d399; }
         .ht-chart-bar-value .ht-bar-neg { color: #f87171; }
         .ht-chart-bar-value .ht-bar-sep { color: #64748b; margin: 0 1px; font-weight: 400; }
-        .ht-chart-bar.today .ht-chart-bar-value .ht-bar-pos { color: #a78bfa; }
-        .ht-chart-bar.today .ht-chart-bar-value .ht-bar-neg { color: #f472b6; }
+        .ht-chart-bar.today .ht-chart-bar-value .ht-bar-pos { color: #34d399; }
+        .ht-chart-bar.today .ht-chart-bar-value .ht-bar-neg { color: #f87171; }
         .ht-chart-labels {
           display: flex; justify-content: space-between; gap: 6px;
           font-size: 0.5625rem; color: #64748b; font-weight: 500;
         }
         .ht-chart-label { flex: 1; min-width: 0; text-align: center; font-size: 0.625rem; }
-        .ht-chart-label.today { color: #a78bfa; font-weight: 600; }
+        .ht-chart-label.today { color: #34d399; font-weight: 700; }
 
         @media (max-width: 720px) {
           .ht-content { flex-direction: column; }
@@ -635,11 +635,12 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           min-width: 0; overflow: hidden; line-height: 1.35;
         }
         .hg-name {
-          font-size: 1rem; font-weight: 800; color: #f1f5f9;
+          font-size: 1rem; font-weight: 700; color: #f1f5f9;
         }
+        .hg-name strong { font-weight: 700; }
         .hg-hint {
-          font-size: 0.625rem; color: #64748b; font-weight: 400; opacity: 0.95;
-          font-family: inherit;
+          font-size: 0.5625rem; color: #64748b; font-weight: 400;
+          font-family: inherit; line-height: 1.3;
         }
 
         /* ── Habit cell – CRITICAL: reset button defaults ── */

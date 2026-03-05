@@ -221,8 +221,16 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     });
   }, [days, todayStr, positiveHabits, negativeHabits, allLogs]);
 
-  const chartMaxY = Math.max(1, positiveHabits.length + negativeHabits.length);
+  const chartMaxVal = useMemo(() => {
+    let maxPos = 0, maxNeg = 0;
+    chartData.forEach(({ posCount, negCount }) => {
+      if (posCount > maxPos) maxPos = posCount;
+      if (negCount > maxNeg) maxNeg = negCount;
+    });
+    return Math.max(1, maxPos, maxNeg);
+  }, [chartData]);
   const CHART_BAR_HEIGHT_PX = 360;
+  const HALF_CHART_PX = CHART_BAR_HEIGHT_PX / 2;
 
   if (positiveHabits.length === 0 && negativeHabits.length === 0) {
     return (
@@ -389,38 +397,41 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
               <p className="ht-chart-title">Zdravé návyky (zelená) a zlozvyky (červená) po dnech</p>
               <div className="ht-chart-inner">
                 <div className="ht-chart-y-axis">
-                  {Array.from({ length: chartMaxY + 1 }, (_, i) => chartMaxY - i).map((n) => (
+                  {Array.from({ length: 2 * chartMaxVal + 1 }, (_, i) => chartMaxVal - i).map((n) => (
                     <span key={n} className="ht-chart-y-tick">{n}</span>
                   ))}
                 </div>
                 <div className="ht-chart-bars" style={{ height: `${CHART_BAR_HEIGHT_PX}px` }}>
-                  {chartData.map(({ dateStr, posCount, negCount, count, isToday }) => {
-                    const totalPx = count > 0 ? Math.max(8, (count / chartMaxY) * CHART_BAR_HEIGHT_PX) : 0;
-                    const posPx = count > 0 ? (posCount / count) * totalPx : 0;
-                    const negPx = totalPx - posPx;
+                  {chartData.map(({ dateStr, posCount, negCount, isToday }) => {
+                    const posPx = Math.max(0, (posCount / chartMaxVal) * HALF_CHART_PX);
+                    const negPx = Math.max(0, (negCount / chartMaxVal) * HALF_CHART_PX);
                     return (
                       <div key={dateStr} className={`ht-chart-bar ${isToday ? 'today' : ''}`}>
-                        <div className="ht-chart-bar-stack">
-                          {posPx > 0 && (
-                            <div
-                              className="ht-chart-bar-fill pos"
-                              style={{ height: `${posPx}px` }}
-                              title={`${posCount} zdravé splněno`}
-                            />
-                          )}
-                          {negPx > 0 && (
-                            <div
-                              className="ht-chart-bar-fill neg"
-                              style={{ height: `${negPx}px` }}
-                              title={`${negCount} zlozvyků`}
-                            />
-                          )}
+                        <div className="ht-chart-bar-diverging">
+                          <div className="ht-chart-bar-half ht-chart-bar-top">
+                            {posPx > 0 && (
+                              <div
+                                className="ht-chart-bar-fill pos"
+                                style={{ height: `${posPx}px` }}
+                                title={`${posCount} zdravé splněno`}
+                              />
+                            )}
+                          </div>
+                          <div className="ht-chart-bar-half ht-chart-bar-bottom">
+                            {negPx > 0 && (
+                              <div
+                                className="ht-chart-bar-fill neg"
+                                style={{ height: `${negPx}px` }}
+                                title={`${negCount} zlozvyků`}
+                              />
+                            )}
+                          </div>
                         </div>
                         <span className="ht-chart-bar-value">
                           {posCount > 0 && <span className="ht-bar-pos">{posCount}</span>}
-                          {posCount > 0 && negCount > 0 && <span className="ht-bar-sep">/</span>}
+                          {posCount > 0 && negCount > 0 && <span className="ht-bar-sep"> / </span>}
                           {negCount > 0 && <span className="ht-bar-neg">{negCount}</span>}
-                          {count === 0 && '0'}
+                          {posCount === 0 && negCount === 0 && '0'}
                         </span>
                       </div>
                     );
@@ -464,42 +475,52 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           box-shadow: 0 20px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.02) inset;
         }
         .ht-chart-title {
-          margin: 0 0 14px; font-size: 0.875rem; font-weight: 700; color: #94a3b8;
+          margin: 0 0 10px; font-size: 0.6875rem; font-weight: 700; color: #94a3b8;
           letter-spacing: 0.02em; text-transform: uppercase;
         }
         .ht-chart-inner {
-          display: flex; align-items: stretch; gap: 8px; margin-bottom: 10px;
+          display: flex; align-items: stretch; gap: 6px; margin-bottom: 6px;
         }
         .ht-chart-y-axis {
           display: flex; flex-direction: column; justify-content: space-between;
           height: 360px; padding: 0 4px 0 0;
-          font-size: 0.6875rem; font-weight: 700; color: #64748b;
+          font-size: 0.5625rem; font-weight: 600; color: #64748b;
           text-align: right; line-height: 1;
         }
         .ht-chart-y-tick { flex-shrink: 0; }
         .ht-chart-bars {
-          display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;
+          display: flex; align-items: stretch; justify-content: space-between; gap: 10px;
           flex: 1; min-height: 360px;
         }
         .ht-chart-bar {
           flex: 1; min-width: 0; height: 100%;
-          display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px;
+          display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px;
         }
-        .ht-chart-bar-stack {
-          display: flex; flex-direction: column-reverse; align-items: center; justify-content: flex-end;
-          width: 100%; max-width: 52px; min-width: 12px; height: 100%; gap: 2px;
+        .ht-chart-bar-diverging {
+          display: flex; flex-direction: column; justify-content: center;
+          width: 100%; max-width: 52px; min-width: 12px; height: 100%;
+        }
+        .ht-chart-bar-half {
+          flex: 1; display: flex; flex-direction: column; min-height: 0;
+        }
+        .ht-chart-bar-top {
+          justify-content: flex-end;
+        }
+        .ht-chart-bar-bottom {
+          justify-content: flex-start;
         }
         .ht-chart-bar-fill {
           width: 100%; min-height: 4px;
-          border-radius: 6px 6px 0 0;
           transition: height 0.4s ease-out;
         }
         .ht-chart-bar-fill.pos {
+          border-radius: 6px 6px 0 0;
           background: linear-gradient(180deg, #34d399, #10b981);
           box-shadow: 0 0 12px rgba(52,211,153,0.4);
         }
         .ht-chart-bar-fill.neg {
-          background: linear-gradient(180deg, #f87171, #dc2626);
+          border-radius: 0 0 6px 6px;
+          background: linear-gradient(0deg, #f87171, #dc2626);
           box-shadow: 0 0 10px rgba(248,113,113,0.35);
         }
         .ht-chart-bar.today .ht-chart-bar-fill.pos {
@@ -507,11 +528,11 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           box-shadow: 0 0 14px rgba(167,139,250,0.5);
         }
         .ht-chart-bar.today .ht-chart-bar-fill.neg {
-          background: linear-gradient(180deg, #f472b6, #ec4899);
+          background: linear-gradient(0deg, #f472b6, #ec4899);
           box-shadow: 0 0 12px rgba(244,114,182,0.4);
         }
         .ht-chart-bar-value {
-          font-size: 0.8125rem; font-weight: 700; color: #cbd5e1;
+          font-size: 0.625rem; font-weight: 600; color: #94a3b8;
         }
         .ht-chart-bar-value .ht-bar-pos { color: #34d399; }
         .ht-chart-bar-value .ht-bar-neg { color: #f87171; }
@@ -520,9 +541,9 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         .ht-chart-bar.today .ht-chart-bar-value .ht-bar-neg { color: #f472b6; }
         .ht-chart-labels {
           display: flex; justify-content: space-between; gap: 6px;
-          font-size: 0.6875rem; color: #64748b; font-weight: 500;
+          font-size: 0.5625rem; color: #64748b; font-weight: 500;
         }
-        .ht-chart-label { flex: 1; min-width: 0; text-align: center; font-size: 0.75rem; }
+        .ht-chart-label { flex: 1; min-width: 0; text-align: center; font-size: 0.625rem; }
         .ht-chart-label.today { color: #a78bfa; font-weight: 600; }
 
         @media (max-width: 720px) {

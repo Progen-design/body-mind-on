@@ -2780,20 +2780,20 @@ export default function Profil() {
           transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.35);
         }
         .trial-upgrade-card--club {
-          background: linear-gradient(145deg, rgba(124,58,237,0.35), rgba(109,40,217,0.2));
-          border-color: rgba(167,139,250,0.5);
-          box-shadow: 0 8px 24px rgba(124,58,237,0.25);
+          background: rgba(24,24,36,0.95);
+          border-color: rgba(34,197,94,0.5);
+          box-shadow: 0 8px 24px rgba(34,197,94,0.2);
         }
-        .trial-upgrade-card--club:hover { box-shadow: 0 12px 32px rgba(124,58,237,0.4); }
+        .trial-upgrade-card--club:hover { box-shadow: 0 12px 32px rgba(34,197,94,0.35); }
         .trial-upgrade-card--vip {
-          background: linear-gradient(145deg, rgba(202,138,4,0.35), rgba(161,98,7,0.2));
-          border-color: rgba(253,224,71,0.45);
-          box-shadow: 0 8px 24px rgba(202,138,4,0.25);
+          background: rgba(24,24,36,0.95);
+          border-color: rgba(239,68,68,0.5);
+          box-shadow: 0 8px 24px rgba(239,68,68,0.2);
         }
-        .trial-upgrade-card--vip:hover { box-shadow: 0 12px 32px rgba(202,138,4,0.4); }
+        .trial-upgrade-card--vip:hover { box-shadow: 0 12px 32px rgba(239,68,68,0.35); }
         .trial-upgrade-badge {
           position: absolute; top: 12px; right: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase;
-          letter-spacing: 0.06em; color: #c4b5fd; background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px;
+          letter-spacing: 0.06em; color: #fff; background: linear-gradient(90deg, #1e40af, #0ea5e9); padding: 4px 10px; border-radius: 20px;
         }
         .trial-upgrade-title {
           font-size: 22px; font-weight: 800; color: #fff; margin: 0 0 8px; letter-spacing: 0.02em;
@@ -2802,15 +2802,19 @@ export default function Profil() {
           font-size: 13px; color: rgba(255,255,255,0.88); line-height: 1.45; margin: 0 0 16px; min-height: 2.9em;
         }
         .trial-upgrade-price {
-          display: block; font-size: 18px; font-weight: 700; color: #fbbf24; margin-bottom: 12px;
+          display: block; font-size: 18px; font-weight: 700; margin-bottom: 12px;
         }
-        .trial-upgrade-card--club .trial-upgrade-price { color: #c4b5fd; }
+        .trial-upgrade-card--club .trial-upgrade-price { color: #22c55e; }
+        .trial-upgrade-card--vip .trial-upgrade-price { color: #ef4444; }
         .trial-upgrade-cta {
           display: inline-block; font-size: 14px; font-weight: 600; color: #fff;
-          padding: 10px 18px; border-radius: 10px; background: rgba(255,255,255,0.2);
-          transition: background 0.2s ease;
+          padding: 10px 18px; border-radius: 10px;
+          transition: filter 0.2s ease, box-shadow 0.2s ease;
         }
-        .trial-upgrade-card:hover .trial-upgrade-cta { background: rgba(255,255,255,0.3); }
+        .trial-upgrade-card--club .trial-upgrade-cta { background: #22c55e; }
+        .trial-upgrade-card--club:hover .trial-upgrade-cta { filter: brightness(1.1); box-shadow: 0 0 16px rgba(34,197,94,0.5); }
+        .trial-upgrade-card--vip .trial-upgrade-cta { background: #dc2626; }
+        .trial-upgrade-card--vip:hover .trial-upgrade-cta { filter: brightness(1.1); box-shadow: 0 0 16px rgba(239,68,68,0.5); }
         .trial-banner-actions {
           display: flex;
           gap: 12px;

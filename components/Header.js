@@ -40,7 +40,7 @@ export default function Header() {
 
   const homeHref = isApp ? MAIN_SITE : "/";
   const jakToFungujeUrl = "https://gamma.app/docs/8imen0seu9h3125#card-mfzse8ia5u4lf3k";
-  const registraceUrl = "https://gamma.app/docs/8imen0seu9h3125#card-pnjildktpojs3bo";
+  const registraceUrl = "https://bodyandmindon.cz/#card-pnjildktpojs3bo";
 
   const isRegistrationPage = ["/start", "/on-club", "/chci-vip"].includes(router.pathname);
   const showLoggedInNav = session && !isRegistrationPage;

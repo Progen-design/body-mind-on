@@ -1944,48 +1944,6 @@ export default function Profil() {
             />
             )}
 
-            {/* TVŮJ PROGRES – nahoře, nejdůležitější (jen klienti) */}
-            {!profile?.can_create_calendar_events && (
-            <section className="card card-accent center progress-section">
-              <h2 className="section-head">Tvůj progres</h2>
-              <p className="progress-lead">Hodnoty vycházejí z <strong>zapsaných tréninků</strong> a z tvého nastavení (výchozí váha, cíl, výška). Ruční váha do výpočtu nezasahuje. Odhad váhy dále zohledňuje <strong>denní návyky</strong> (zdravé i zlozvyky) z tohoto týdne – čím víc zdravých a míň zlozvyků, tím lépe pro odhad.</p>
-              <p className="progress-period-hint">Tréninky: ze <strong>všech</strong> zapsaných od začátku. Návyky: z vyplněných polí v „Denní návyky“ za aktuální týden. Spálené kcal a odhad váhy níže jsou celkové a navazují na sebe.</p>
-
-              <p className="progress-dates">Období od začátku: <strong>{periodStartFormatted}</strong> – <strong>{periodEndFormatted}</strong></p>
-              <div className="progress-activity">
-                <div className="progress-activity-main">
-                  <span className="progress-big-num">{workouts?.length ?? 0}</span>
-                  <span className="progress-big-label">celkem tréninků</span>
-                </div>
-                <div className="progress-activity-main">
-                  <span className="progress-big-num">{totalMinutes ?? 0}</span>
-                  <span className="progress-big-label">celkem minut v pohybu</span>
-                </div>
-                <div className="progress-activity-main">
-                  <span className="progress-big-num">~{Math.round(estimatedCaloriesAll ?? 0)}</span>
-                  <span className="progress-big-label">celkem kcal (odhad)</span>
-                </div>
-              </div>
-              {(workoutsThisWeek?.length ?? 0) > 0 && (
-                <p className="progress-dates-detail">Tento týden ({weekStartFormatted} – {weekEndFormatted}): {workoutsThisWeek?.length ?? 0} tréninků, {totalMinutesThisWeek ?? 0} min. Dny s tréninkem: {thisWeekDates?.join(', ') || '—'}</p>
-              )}
-              {workouts.length === 0 && (
-                <p className="progress-empty-hint">Zatím nemáš zapsané tréninky. Po přidání tréninků („Zapsat trénink“) se zde objeví odhad spálených kcal a vliv na váhu.</p>
-              )}
-              {workouts.length > 0 && (workoutsThisWeek?.length ?? 0) === 0 && (
-                <p className="progress-total-hint">V tomto týdnu zatím žádný trénink. Celkem máš <strong>{workouts.length}</strong> tréninků, <strong>{totalMinutes ?? 0}</strong> minut – odhad váhy níže vychází z těchto dat.</p>
-              )}
-              {workoutTrend && (
-                <p className="progress-trend-hint">
-                  {workoutTrend === '↑' && 'Víc tréninků než minulý týden. '}
-                  {workoutTrend === '↓' && 'Méně než minulý týden – zkus přidat. '}
-                  {workoutTrend === '→' && 'Stejný počet jako minulý týden. '}
-                  Minulý týden: {lastWeekCount} tréninků, {lastWeekMinutes} min.
-                </p>
-              )}
-            </section>
-            )}
-
             {/* MŮJ PLÁN (jen klienti) */}
             {!profile?.can_create_calendar_events && currentPlan && (
               <PlanViewer
@@ -2156,9 +2114,44 @@ export default function Profil() {
             </section>
             )}
 
-            {/* Detailní odhad váhy – celý blok na konec stránky profilu (jen klienti) */}
+            {/* TVŮJ PROGRES – celý blok sjednocený na úplný konec profilu (jen klienti) */}
             {!profile?.can_create_calendar_events && (
             <section className="card card-accent center progress-section progress-detail-end">
+              <h2 className="section-head">Tvůj progres</h2>
+              <p className="progress-lead">Hodnoty vycházejí z <strong>zapsaných tréninků</strong> a z tvého nastavení (výchozí váha, cíl, výška). Ruční váha do výpočtu nezasahuje. Odhad váhy dále zohledňuje <strong>denní návyky</strong> (zdravé i zlozvyky) z tohoto týdne – čím víc zdravých a míň zlozvyků, tím lépe pro odhad.</p>
+              <p className="progress-period-hint">Tréninky: ze <strong>všech</strong> zapsaných od začátku. Návyky: z vyplněných polí v „Denní návyky“ za aktuální týden. Spálené kcal a odhad váhy níže jsou celkové a navazují na sebe.</p>
+              <p className="progress-dates">Období od začátku: <strong>{periodStartFormatted}</strong> – <strong>{periodEndFormatted}</strong></p>
+              <div className="progress-activity">
+                <div className="progress-activity-main">
+                  <span className="progress-big-num">{workouts?.length ?? 0}</span>
+                  <span className="progress-big-label">celkem tréninků</span>
+                </div>
+                <div className="progress-activity-main">
+                  <span className="progress-big-num">{totalMinutes ?? 0}</span>
+                  <span className="progress-big-label">celkem minut v pohybu</span>
+                </div>
+                <div className="progress-activity-main">
+                  <span className="progress-big-num">~{Math.round(estimatedCaloriesAll ?? 0)}</span>
+                  <span className="progress-big-label">celkem kcal (odhad)</span>
+                </div>
+              </div>
+              {(workoutsThisWeek?.length ?? 0) > 0 && (
+                <p className="progress-dates-detail">Tento týden ({weekStartFormatted} – {weekEndFormatted}): {workoutsThisWeek?.length ?? 0} tréninků, {totalMinutesThisWeek ?? 0} min. Dny s tréninkem: {thisWeekDates?.join(', ') || '—'}</p>
+              )}
+              {workouts.length === 0 && (
+                <p className="progress-empty-hint">Zatím nemáš zapsané tréninky. Po přidání tréninků („Zapsat trénink“) se zde objeví odhad spálených kcal a vliv na váhu.</p>
+              )}
+              {workouts.length > 0 && (workoutsThisWeek?.length ?? 0) === 0 && (
+                <p className="progress-total-hint">V tomto týdnu zatím žádný trénink. Celkem máš <strong>{workouts.length}</strong> tréninků, <strong>{totalMinutes ?? 0}</strong> minut – odhad váhy níže vychází z těchto dat.</p>
+              )}
+              {workoutTrend && (
+                <p className="progress-trend-hint">
+                  {workoutTrend === '↑' && 'Víc tréninků než minulý týden. '}
+                  {workoutTrend === '↓' && 'Méně než minulý týden – zkus přidat. '}
+                  {workoutTrend === '→' && 'Stejný počet jako minulý týden. '}
+                  Minulý týden: {lastWeekCount} tréninků, {lastWeekMinutes} min.
+                </p>
+              )}
               {startWeight != null || goalWeight != null ? (
                 <>
                   <div className="progress-calc">

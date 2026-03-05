@@ -1,9 +1,12 @@
 // /pages/profil.js – Modern Premium Profil (real-time update, refetch on focus, timeout 15s)
 
 import { useState, useEffect, useMemo, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+
+const PricingTable = dynamic(() => import('../components/PricingTable'), { ssr: false });
 import BodyFigure from '../components/BodyFigure';
 import WelcomeTour from '../components/WelcomeTour';
 import PlanViewer, { parsePlanHtml } from '../components/PlanViewer';
@@ -1482,11 +1485,11 @@ export default function Profil() {
               <div className={`trial-banner trial-banner--${isTrialExpired ? 'expired' : 'soon'}`}>
                 {isTrialExpired ? (
                   <>
-                    <p className="trial-banner-text">Tvůj 7denní START program vypršel. Pro pokračování si vyber ON Club nebo VIP.</p>
-                    <div className="trial-banner-actions">
-                      <a href="/on-club" className="trial-banner-btn">ON Club</a>
-                      <a href="/chci-vip" className="trial-banner-btn trial-banner-btn--vip">VIP Coaching</a>
+                    <p className="trial-banner-text">Tvůj 7denní START program vypršel. Pro pokračování zaplať předplatné 499 Kč/měsíc.</p>
+                    <div className="trial-banner-stripe">
+                      <PricingTable />
                     </div>
+                    <p className="trial-banner-text trial-banner-text--small">Nebo si vyber <a href="/on-club">ON Club</a> či <a href="/chci-vip">VIP Coaching</a>.</p>
                   </>
                 ) : (
                   <p className="trial-banner-text">
@@ -2732,6 +2735,8 @@ export default function Profil() {
         .trial-banner-text:last-child { margin-bottom: 0; }
         .trial-banner-text a { color: #a78bfa; text-decoration: none; }
         .trial-banner-text a:hover { text-decoration: underline; }
+        .trial-banner-text--small { font-size: 13px; color: #94a3b8; margin-top: 12px; }
+        .trial-banner-stripe { margin: 16px 0; max-width: 500px; }
         .trial-banner-actions {
           display: flex;
           gap: 12px;

@@ -1,11 +1,8 @@
 import { useState, useMemo } from "react";
-import dynamic from "next/dynamic";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import HabitSelection from "../components/HabitSelection";
 import { getSuggestedHabits } from "../lib/habits";
-
-const PricingTable = dynamic(() => import("../components/PricingTable"), { ssr: false });
 
 const MAX_STEP = 5;
 
@@ -372,10 +369,6 @@ export default function Start() {
           {status && <p className="center mt-4 text-lg text-gray-300">{status}</p>}
         </form>
 
-        <section className="stripe-section mt-16 max-w-3xl mx-auto">
-          <h2 className="stripe-heading">Nebo zaplať přes Stripe – 7 dní zdarma, pak 499 Kč/měsíc</h2>
-          <PricingTable />
-        </section>
       </main>
       <Footer />
 
@@ -555,8 +548,6 @@ export default function Start() {
         .diet-section-body > div { margin-bottom: 16px; }
         .diet-section-body > div:last-child { margin-bottom: 0; }
         .diet-section-body .reg-label { color: #94a3b8; }
-        .stripe-section { margin-top: 48px; padding-top: 32px; border-top: 1px solid #222; }
-        .stripe-heading { font-size: 1rem; font-weight: 600; color: #94a3b8; margin: 0 0 20px; text-align: center; }
       `}</style>
     </>
   );

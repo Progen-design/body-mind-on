@@ -1,7 +1,7 @@
 // POST /api/generate-plan-next-week – vygeneruje náhled jídelníčku na příští týden (s označenými jídly)
-// Pro přihlášené uživatele s platným členstvím. Umožňuje ověřit, že označená jídla se zahrnou.
+// Následující plán navazuje na aktuální: začíná den po valid_until (např. aktuální končí 11.3 → další od 12.3).
 import { supabaseServer } from '../../lib/supabaseServer';
-import { generatePlanForEmail, getNextWeekRange } from '../../lib/generatePlan';
+import { generatePlanForEmail, getNextPlanRangeFromCurrentPlan, getNextWeekRange } from '../../lib/generatePlan';
 import { getClientIp, isRateLimited } from '../../lib/rateLimit';
 
 export default async function handler(req, res) {
@@ -26,7 +26,22 @@ export default async function handler(req, res) {
     const email = user.email?.toLowerCase();
     if (!email) return res.status(400).json({ error: 'Chybí e-mail.' });
 
-    const { from, until, startDate } = getNextWeekRange();
+    // Plán s nejpozdějším valid_until (aktuální nebo už vygenerovaný náhled) – následující naváže na něj
+    const todayStr = new Date().toISOString().split('T')[0];
+    const { data: plans } = await supabaseServer
+      .from('ai_generated_plans')
+      .select('valid_from, valid_until')
+      .eq('user_id', user.id)
+      .gte('valid_until', todayStr)
+      .order('valid_until', { ascending: false })
+      .limit(1);
+
+    const lastPlan = plans?.[0];
+    const { from, until, startDate } = lastPlan?.valid_until
+      ? getNextPlanRangeFromCurrentPlan(lastPlan.valid_until)
+      : getNextWeekRange();
+
+    console.log('[generate-plan-next-week] lastPlan valid_until:', lastPlan?.valid_until, '→ next from:', from, 'until:', until);
 
     const result = await generatePlanForEmail(email, {
       mealsOnly: true,

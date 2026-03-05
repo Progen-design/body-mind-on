@@ -739,13 +739,14 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
     now.setHours(0, 0, 0, 0);
     const diffDays = Math.round((now - start) / 86400000);
     const dayIndex = Math.max(0, Math.min(days.length - 1, diffDays));
+    const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     return days.slice(dayIndex).map((day, i) => {
       const origIdx = dayIndex + i;
       const dateIso = addDaysToDateStr(plan.valid_from, origIdx);
       return {
         ...day,
         dateStr: formatDayLabel(dateIso),
-        isToday: i === 0,
+        isToday: dateIso === todayIso,
         originalIndex: origIdx,
       };
     });

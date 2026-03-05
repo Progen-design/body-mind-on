@@ -856,6 +856,83 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                         );
                       })}
                     </div>
+                    {(() => {
+                      const dayMealTexts = (day.meals || []).map((meal, mi) => {
+                        const overrideKey = `${day.originalIndex ?? di}_${mi}`;
+                        const override = mealOverrides[overrideKey];
+                        return override ? `${meal.type || ''} ${override.title || ''}`.trim() : `${meal.type || ''} ${meal.text || ''}`.trim();
+                      });
+                      const dayRecipes = getRecipesForDay(parsed?.recipes || [], dayMealTexts);
+                      const dayList = buildShoppingListFromRecipes(dayRecipes);
+                      const dayKey = day.originalIndex ?? di;
+                      const dayState = dayShoppingState[dayKey] || { copyDone: false, email: { loading: false, done: false, error: null } };
+                      if (dayList.length === 0) return null;
+                      const copyAndOpenDay = () => {
+                        const text = dayList.join('\n');
+                        if (navigator.clipboard?.writeText) {
+                          navigator.clipboard.writeText(text).then(() => {
+                            setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), copyDone: true } }));
+                            setTimeout(() => setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), copyDone: false } })), 3000);
+                          });
+                        }
+                        window.open('https://www.rohlik.cz/', '_blank', 'noopener,noreferrer');
+                      };
+                      const handleSendEmailDay = async () => {
+                        setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: true, done: false, error: null } } }));
+                        try {
+                          const { data: { session } } = await supabase.auth.getSession();
+                          const token = session?.access_token;
+                          if (!token) {
+                            setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: false, error: 'Pro odeslání e-mailem se přihlas.' } } }));
+                            return;
+                          }
+                          const res = await fetch('/api/send-shopping-list', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                            body: JSON.stringify({ items: dayList }),
+                          });
+                          const data = await res.json();
+                          if (!res.ok) {
+                            setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: false, error: data.error || 'Nepodařilo odeslat.' } } }));
+                            return;
+                          }
+                          setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: true, error: null } } }));
+                          setTimeout(() => setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { ...(s[dayKey]?.email || {}), done: false } } })), 4000);
+                        } catch (e) {
+                          setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: false, error: 'Chyba připojení.' } } }));
+                        }
+                      };
+                      const handleShareWhatsAppDay = () => {
+                        const text = dayList.join('\n');
+                        const dayLabel = (day.dayName || 'Den') + (day.dateStr ? ` (${day.dateStr})` : '');
+                        const url = `https://wa.me/?text=${encodeURIComponent('🛒 Suroviny na tento den – ' + dayLabel + '\n\n' + text)}`;
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      };
+                      return (
+                        <div className="plan-day-shopping-actions plan-order-ingredients">
+                          <div className="plan-shopping-actions">
+                            <button type="button" className="plan-btn-order" onClick={copyAndOpenDay}>
+                              🛒 Objednat suroviny
+                            </button>
+                            <button type="button" className="plan-btn-share" onClick={handleSendEmailDay} disabled={dayState.email.loading}>
+                              {dayState.email.loading ? 'Odesílám…' : '✉️ Poslat e-mailem'}
+                            </button>
+                            <button type="button" className="plan-btn-share" onClick={handleShareWhatsAppDay}>
+                              📱 Sdílet WhatsApp
+                            </button>
+                          </div>
+                          {dayState.copyDone && <span className="plan-copy-hint">Seznam zkopírován do schránky</span>}
+                          {dayState.email.done && <span className="plan-copy-hint plan-copy-success">Odesláno na e-mail</span>}
+                          {dayState.email.error && <span className="plan-copy-hint plan-copy-error">{dayState.email.error}</span>}
+                          <p className="plan-order-links">
+                            Seznam se zkopíruje a otevře se <a href="https://www.rohlik.cz/" target="_blank" rel="noopener noreferrer">Rohlík.cz</a>.
+                            Můžeš ho vložit v nákupním seznamu (Ctrl+V). Případně nákup vyřídíš na{' '}
+                            <a href="https://www.kosik.cz/" target="_blank" rel="noopener noreferrer">Košík.cz</a> nebo{' '}
+                            <a href="https://shop.billa.cz/" target="_blank" rel="noopener noreferrer">Billa e-shop</a>.
+                          </p>
+                        </div>
+                      );
+                    })()}
                     {day.trainingHtml && (() => {
                       const trainingItems = parseTrainingItems(day.trainingHtml);
                       return (
@@ -916,83 +993,6 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                           ) : (
                             <div dangerouslySetInnerHTML={{ __html: day.trainingHtml }} />
                           )}
-                        </div>
-                      );
-                    })()}
-                    {(() => {
-                      const dayMealTexts = (day.meals || []).map((meal, mi) => {
-                        const overrideKey = `${day.originalIndex ?? di}_${mi}`;
-                        const override = mealOverrides[overrideKey];
-                        return override ? `${meal.type || ''} ${override.title || ''}`.trim() : `${meal.type || ''} ${meal.text || ''}`.trim();
-                      });
-                      const dayRecipes = getRecipesForDay(parsed?.recipes || [], dayMealTexts);
-                      const dayList = buildShoppingListFromRecipes(dayRecipes);
-                      const dayKey = day.originalIndex ?? di;
-                      const dayState = dayShoppingState[dayKey] || { copyDone: false, email: { loading: false, done: false, error: null } };
-                      if (dayList.length === 0) return null;
-                      const copyAndOpenDay = () => {
-                        const text = dayList.join('\n');
-                        if (navigator.clipboard?.writeText) {
-                          navigator.clipboard.writeText(text).then(() => {
-                            setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), copyDone: true } }));
-                            setTimeout(() => setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), copyDone: false } })), 3000);
-                          });
-                        }
-                        window.open('https://www.rohlik.cz/', '_blank', 'noopener,noreferrer');
-                      };
-                      const handleSendEmailDay = async () => {
-                        setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: true, done: false, error: null } } }));
-                        try {
-                          const { data: { session } } = await supabase.auth.getSession();
-                          const token = session?.access_token;
-                          if (!token) {
-                            setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: false, error: 'Pro odeslání e-mailem se přihlas.' } } }));
-                            return;
-                          }
-                          const res = await fetch('/api/send-shopping-list', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                            body: JSON.stringify({ items: dayList }),
-                          });
-                          const data = await res.json();
-                          if (!res.ok) {
-                            setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: false, error: data.error || 'Nepodařilo odeslat.' } } }));
-                            return;
-                          }
-                          setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: true, error: null } } }));
-                          setTimeout(() => setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { ...(s[dayKey]?.email || {}), done: false } } })), 4000);
-                        } catch (e) {
-                          setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: false, error: 'Chyba připojení.' } } }));
-                        }
-                      };
-                      const handleShareWhatsAppDay = () => {
-                        const text = dayList.join('\n');
-                        const dayLabel = (day.dayName || 'Den') + (day.dateStr ? ` (${day.dateStr})` : '');
-                        const url = `https://wa.me/?text=${encodeURIComponent('🛒 Suroviny na tento den – ' + dayLabel + '\n\n' + text)}`;
-                        window.open(url, '_blank', 'noopener,noreferrer');
-                      };
-                      return (
-                        <div className="plan-day-shopping-actions plan-order-ingredients">
-                          <div className="plan-shopping-actions">
-                            <button type="button" className="plan-btn-order" onClick={copyAndOpenDay}>
-                              🛒 Objednat suroviny (tento den)
-                            </button>
-                            <button type="button" className="plan-btn-share" onClick={handleSendEmailDay} disabled={dayState.email.loading}>
-                              {dayState.email.loading ? 'Odesílám…' : '✉️ Poslat e-mailem'}
-                            </button>
-                            <button type="button" className="plan-btn-share" onClick={handleShareWhatsAppDay}>
-                              📱 Sdílet WhatsApp
-                            </button>
-                          </div>
-                          {dayState.copyDone && <span className="plan-copy-hint">Seznam zkopírován do schránky</span>}
-                          {dayState.email.done && <span className="plan-copy-hint plan-copy-success">Odesláno na e-mail</span>}
-                          {dayState.email.error && <span className="plan-copy-hint plan-copy-error">{dayState.email.error}</span>}
-                          <p className="plan-order-links">
-                            Seznam se zkopíruje a otevře se <a href="https://www.rohlik.cz/" target="_blank" rel="noopener noreferrer">Rohlík.cz</a>.
-                            Můžeš ho vložit v nákupním seznamu (Ctrl+V). Případně nákup vyřídíš na{' '}
-                            <a href="https://www.kosik.cz/" target="_blank" rel="noopener noreferrer">Košík.cz</a> nebo{' '}
-                            <a href="https://shop.billa.cz/" target="_blank" rel="noopener noreferrer">Billa e-shop</a>.
-                          </p>
                         </div>
                       );
                     })()}

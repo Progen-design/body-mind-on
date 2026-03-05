@@ -2118,8 +2118,6 @@ export default function Profil() {
             {!profile?.can_create_calendar_events && (
             <section className="card card-accent center progress-section progress-detail-end">
               <h2 className="section-head">Tvůj progres</h2>
-              <p className="progress-lead">Odhad z <strong>tréninků</strong> a nastavení (váha, cíl, výška). Ruční váha se nepočítá. <strong>Návyky</strong> tento týden odhad upravují – víc zdravých = lepší odhad.</p>
-              <p className="progress-period-hint">Tréninky od začátku, návyky z aktuálního týdne. Čísla níže jsou součet.</p>
               <p className="progress-dates">Období: <strong>{periodStartFormatted}</strong> – <strong>{periodEndFormatted}</strong></p>
               <div className="progress-activity">
                 <div className="progress-activity-main">
@@ -2156,7 +2154,7 @@ export default function Profil() {
                 <>
                   <div className="progress-calc">
                     <p className="progress-calc-line">
-                      <strong>~{Math.round(estimatedCaloriesAll)} kcal</strong> ≈ úbytek <strong>~{estimatedKgLostTotal.toFixed(1)} kg</strong> (7700 kcal/kg).
+                      <strong>~{Math.round(estimatedCaloriesAll)} kcal</strong> ≈ úbytek <strong>~{estimatedKgLostTotal.toFixed(1)} kg</strong>.
                     </p>
                     {estimatedCurrentWeightRounded != null && (
                       <>
@@ -2205,7 +2203,7 @@ export default function Profil() {
                 </>
               ) : (
                 <p className="empty-progress">
-                  Váha a výška z registrace. Cílovou váhu doplň v <strong>„Nastavení pro výpočet“</strong> – odhad jen z tréninků.
+                  Cílovou váhu doplň v <strong>„Nastavení pro výpočet“</strong>.
                 </p>
               )}
             </section>

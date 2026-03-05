@@ -120,13 +120,16 @@ export default async function handler(req, res) {
       }
     }
 
-    // Přegenerovat plán a odeslat e-mail s novým plánem – workouty zůstávají nedotčeny
+    // Přegenerovat plán a odeslat e-mail – při změně jen stravy jen jídelníček, ne tréninkový rozvrh
+    const dietOnlyKeys = ['diet_type', 'dietary_restrictions', 'foods_to_avoid'];
+    const onlyDietChanged = Object.keys(updates).length > 0 && Object.keys(updates).every((k) => dietOnlyKeys.includes(k));
     const bmOverride = { ...latest, ...updates, email };
     let planRegenerated = false;
     try {
       const result = await generatePlanForEmail(email, {
         bmOverride,
         planChangeContext: true,
+        mealsOnly: onlyDietChanged,
       });
       planRegenerated = result?.ok === true;
     } catch (e) {

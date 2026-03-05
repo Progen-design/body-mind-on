@@ -2292,7 +2292,7 @@ export default function Profil() {
               <div className="modal-overlay" onClick={() => { if (!savingPreferences) { setShowPreferencesModal(false); setPreferencesError(''); } }}>
                 <div className="modal modal-preferences" onClick={(e) => e.stopPropagation()}>
                   <h3>Upravit preference</h3>
-                  <p className="modal-hint">Změny uložíme a <strong>přegenerujeme tvůj AI plán</strong>. Zapsané tréninky zůstanou zachovány.</p>
+                  <p className="modal-hint">Změny uložíme a podle toho přegenerujeme plán. Při změně <strong>jen stravy</strong> (typ stravy, co nejí) se změní pouze <strong>jídelníček</strong> – rozvrh tréninků (který den odpočinek, který trénink) zůstane. Při změně aktivity nebo cíle se přegeneruje celý plán. Zapsané tréninky zůstanou zachovány.</p>
                   <form onSubmit={handleSavePreferences}>
                     <div className="preferences-section">
                       <h4 className="preferences-section-title">Aktivita a cíl</h4>

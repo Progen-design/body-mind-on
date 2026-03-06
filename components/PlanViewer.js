@@ -916,7 +916,16 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                     </button>
                     {isDayExpanded && (
                     <>
-                    <div className="plan-meals">
+                    <nav className="plan-day-nav" aria-label="Sekce dne">
+                      <a href={`#plan-day-${di}-meals`} className="plan-day-nav-link" onClick={(e) => { e.preventDefault(); document.getElementById(`plan-day-${di}-meals`)?.scrollIntoView({ behavior: 'smooth' }); }}>Jídelníček</a>
+                      {day.trainingHtml && (
+                        <>
+                          <span className="plan-day-nav-sep" aria-hidden>|</span>
+                          <a href={`#plan-day-${di}-training`} className="plan-day-nav-link" onClick={(e) => { e.preventDefault(); document.getElementById(`plan-day-${di}-training`)?.scrollIntoView({ behavior: 'smooth' }); }}>Trénink</a>
+                        </>
+                      )}
+                    </nav>
+                    <div id={`plan-day-${di}-meals`} className="plan-meals">
                       {day._placeholder && day.meals.length === 0 ? (
                         <p className="plan-day-placeholder-msg">V plánu chybí – vygeneruj nový plán pro kompletní jídelníček.</p>
                       ) : null}
@@ -1107,7 +1116,7 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                     {day.trainingHtml && (() => {
                       const trainingItems = parseTrainingItems(day.trainingHtml);
                       return (
-                        <div className="plan-day-training">
+                        <div id={`plan-day-${di}-training`} className="plan-day-training">
                           <h3 className="plan-day-training-title">Tréninkový plán</h3>
                           <p className="plan-day-training-intro">Po rozkliknutí cviku se zobrazí, jak cvik provést a obě varianty – <strong>ve fitku</strong> (jaký stroj) i <strong>doma</strong> (alternativa).</p>
                           {trainingItems ? (
@@ -1837,6 +1846,22 @@ const planSectionStyles = `
     color: #94a3b8;
   }
   .plan-day-expanded .plan-day-chevron { color: #c4b5fd; }
+  .plan-day-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-wrap: wrap;
+  }
+  .plan-day-nav-link {
+    color: #a78bfa;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .plan-day-nav-link:hover { color: #c4b5fd; text-decoration: underline; }
+  .plan-day-nav-sep { color: #64748b; font-size: 12px; }
   .plan-meals {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

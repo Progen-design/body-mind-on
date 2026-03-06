@@ -1363,6 +1363,9 @@ export default function Profil() {
       )}
       <Header />
       <main className="page">
+        <div className="page-bg-decor" aria-hidden>
+          <span className="page-bg-orb page-bg-orb--center" />
+        </div>
         {/* Členství + osobní plán v jedné bublině – jen pro klienty */}
         {!loading && !error && !profile?.can_create_calendar_events && (
           <>
@@ -2714,14 +2717,63 @@ export default function Profil() {
         .page {
           min-height: 100vh;
           padding: 60px 20px 100px;
-          background: radial-gradient(
-              circle at 30% 0%,
-              #1c1333,
-              #0b0b15 60%
-            ),
-            #0a0a0f;
+          background: #0a0a0f;
           color: #fff;
           font-family: Inter, sans-serif;
+          position: relative;
+          overflow-x: hidden;
+        }
+        .page-bg-decor {
+          position: fixed;
+          inset: 0;
+          pointer-events: none;
+          z-index: 0;
+          overflow: hidden;
+          background-image:
+            linear-gradient(180deg, rgba(10,10,15,0.94) 0%, rgba(10,10,15,0.88) 50%, rgba(10,10,15,0.92) 100%),
+            url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1920&q=80');
+          background-size: cover;
+          background-position: center;
+        }
+        .page-bg-decor::before,
+        .page-bg-decor::after {
+          content: '';
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(120px);
+          opacity: 0.35;
+        }
+        .page-bg-decor::before {
+          width: 550px;
+          height: 550px;
+          background: radial-gradient(circle, rgba(139, 92, 255, 0.5) 0%, transparent 65%);
+          top: -180px;
+          right: -120px;
+        }
+        .page-bg-decor::after {
+          width: 450px;
+          height: 450px;
+          background: radial-gradient(circle, rgba(34, 197, 94, 0.2) 0%, transparent 65%);
+          bottom: -120px;
+          left: -100px;
+        }
+        .page-bg-orb {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(80px);
+          opacity: 0.25;
+        }
+        .page-bg-orb--center {
+          width: 350px;
+          height: 350px;
+          background: radial-gradient(circle, rgba(124, 58, 237, 0.4) 0%, transparent 70%);
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+        }
+        .page > *:not(.page-bg-decor) {
+          position: relative;
+          z-index: 1;
         }
 
         .profile-membership-plan-card {

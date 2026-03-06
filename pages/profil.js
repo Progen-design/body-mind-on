@@ -1343,7 +1343,72 @@ export default function Profil() {
       )}
       <Header />
       <main className="page">
-        {/* Hlavní cíl plánu úplně nahoře – jen pro klienty, ne pro trenéra */}
+        {/* Členství + trial / platba úplně nahoře – jen pro klienty */}
+        {!loading && !error && !profile?.can_create_calendar_events && (
+          <>
+            <div className={`membership-card membership-card--${(program || 'START').toLowerCase().replace('_', '-')}`}>
+              <div className="membership-card-left">
+                <span className="membership-icon">
+                  {program === 'VIP' ? '👑' : program === 'ON_CLUB' ? '⚡' : '🚀'}
+                </span>
+                <div>
+                  <div className="membership-tier-label">Tvé členství</div>
+                  <div className="membership-tier-sub">
+                    {program === 'VIP' && 'Plný přístup · Osobní coaching · Prémiová podpora'}
+                    {program === 'ON_CLUB' && 'Habit tracker · AI plán · Tréninky · Statistiky'}
+                    {program !== 'VIP' && program !== 'ON_CLUB' && 'AI plán · Jídelníček · Základní sledování'}
+                  </div>
+                </div>
+              </div>
+              <div className="membership-card-right">
+                <span className={`membership-status-badge membership-status--${membershipStatus}`}>
+                  {membershipStatus === 'active' ? 'Aktivní' : membershipStatus === 'trial' ? 'Zkušební' : membershipStatus === 'cancelled' ? 'Zrušeno' : 'Neaktivní'}
+                </span>
+                {membershipSince && (
+                  <span className="membership-since">
+                    od {new Date(membershipSince).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </span>
+                )}
+              </div>
+            </div>
+            {program === 'START' && (isTrialExpired || (daysUntilTrialEnd != null && daysUntilTrialEnd >= 0 && daysUntilTrialEnd <= 2)) && (
+              <div className={`trial-banner trial-banner--${isTrialExpired ? 'expired' : 'soon'}`}>
+                {isTrialExpired ? (
+                  <>
+                    <p className="trial-banner-text">Tvůj 7denní START program vypršel. Pro pokračování zaplať předplatné 499 Kč/měsíc.</p>
+                    <div className="trial-banner-stripe">
+                      <PricingTable />
+                    </div>
+                    <div className="trial-banner-upgrade">
+                      <p className="trial-banner-upgrade-headline">Nebo zvol vyšší program – víc benefitů, víc výsledků</p>
+                      <div className="trial-banner-upgrade-cards">
+                        <a href="/on-club" className="trial-upgrade-card trial-upgrade-card--club">
+                          <span className="trial-upgrade-badge">Doporučeno</span>
+                          <h3 className="trial-upgrade-title">ON Club</h3>
+                          <p className="trial-upgrade-subtitle">AI trenér 24/7, habit tracker, komunita a video konzultace</p>
+                          <span className="trial-upgrade-price">1 499 Kč/měsíc</span>
+                          <span className="trial-upgrade-cta">Připojit se k ON Clubu →</span>
+                        </a>
+                        <a href="/chci-vip" className="trial-upgrade-card trial-upgrade-card--vip">
+                          <h3 className="trial-upgrade-title">VIP Coaching</h3>
+                          <p className="trial-upgrade-subtitle">Elitní lidský kouč, týdenní 1:1 konzultace, strategie na míru</p>
+                          <span className="trial-upgrade-price">3 999 Kč/měsíc</span>
+                          <span className="trial-upgrade-cta">Chci VIP přístup →</span>
+                        </a>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <p className="trial-banner-text">
+                    Tvůj START program vyprší za {daysUntilTrialEnd === 0 ? 'dnes' : daysUntilTrialEnd === 1 ? '1 den' : `${daysUntilTrialEnd} dny`}. Připoj se k <a href="/on-club">ON Clubu</a> pro plný přístup.
+                  </p>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Hlavní cíl plánu – jen pro klienty, ne pro trenéra */}
         {!profile?.can_create_calendar_events && (currentPlan || program === 'ON_CLUB' || program === 'VIP') && (
           <div className="plan-goal-hero">
             <h2 className="plan-goal-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
@@ -1459,71 +1524,6 @@ export default function Profil() {
 
         {!loading && !error && (
           <>
-            {/* Membership karta – tier badge (jen pro klienty, trenér ji nepotřebuje) */}
-            {!profile?.can_create_calendar_events && (
-            <div className={`membership-card membership-card--${(program || 'START').toLowerCase().replace('_', '-')}`}>
-              <div className="membership-card-left">
-                <span className="membership-icon">
-                  {program === 'VIP' ? '👑' : program === 'ON_CLUB' ? '⚡' : '🚀'}
-                </span>
-                <div>
-                  <div className="membership-tier-label">Tvé členství</div>
-                  <div className="membership-tier-sub">
-                    {program === 'VIP' && 'Plný přístup · Osobní coaching · Prémiová podpora'}
-                    {program === 'ON_CLUB' && 'Habit tracker · AI plán · Tréninky · Statistiky'}
-                    {program !== 'VIP' && program !== 'ON_CLUB' && 'AI plán · Jídelníček · Základní sledování'}
-                  </div>
-                </div>
-              </div>
-              <div className="membership-card-right">
-                <span className={`membership-status-badge membership-status--${membershipStatus}`}>
-                  {membershipStatus === 'active' ? 'Aktivní' : membershipStatus === 'trial' ? 'Zkušební' : membershipStatus === 'cancelled' ? 'Zrušeno' : 'Neaktivní'}
-                </span>
-                {membershipSince && (
-                  <span className="membership-since">
-                    od {new Date(membershipSince).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </span>
-                )}
-              </div>
-            </div>
-            )}
-
-            {/* START trial banner – vypršení nebo brzké vypršení */}
-            {!profile?.can_create_calendar_events && program === 'START' && (isTrialExpired || (daysUntilTrialEnd != null && daysUntilTrialEnd >= 0 && daysUntilTrialEnd <= 2)) && (
-              <div className={`trial-banner trial-banner--${isTrialExpired ? 'expired' : 'soon'}`}>
-                {isTrialExpired ? (
-                  <>
-                    <p className="trial-banner-text">Tvůj 7denní START program vypršel. Pro pokračování zaplať předplatné 499 Kč/měsíc.</p>
-                    <div className="trial-banner-stripe">
-                      <PricingTable />
-                    </div>
-                    <div className="trial-banner-upgrade">
-                      <p className="trial-banner-upgrade-headline">Nebo zvol vyšší program – víc benefitů, víc výsledků</p>
-                      <div className="trial-banner-upgrade-cards">
-                        <a href="/on-club" className="trial-upgrade-card trial-upgrade-card--club">
-                          <span className="trial-upgrade-badge">Doporučeno</span>
-                          <h3 className="trial-upgrade-title">ON Club</h3>
-                          <p className="trial-upgrade-subtitle">AI trenér 24/7, habit tracker, komunita a video konzultace</p>
-                          <span className="trial-upgrade-price">1 499 Kč/měsíc</span>
-                          <span className="trial-upgrade-cta">Připojit se k ON Clubu →</span>
-                        </a>
-                        <a href="/chci-vip" className="trial-upgrade-card trial-upgrade-card--vip">
-                          <h3 className="trial-upgrade-title">VIP Coaching</h3>
-                          <p className="trial-upgrade-subtitle">Elitní lidský kouč, týdenní 1:1 konzultace, strategie na míru</p>
-                          <span className="trial-upgrade-price">3 999 Kč/měsíc</span>
-                          <span className="trial-upgrade-cta">Chci VIP přístup →</span>
-                        </a>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <p className="trial-banner-text">
-                    Tvůj START program vyprší za {daysUntilTrialEnd === 0 ? 'dnes' : daysUntilTrialEnd === 1 ? '1 den' : `${daysUntilTrialEnd} dny`}. Připoj se k <a href="/on-club">ON Clubu</a> pro plný přístup.
-                  </p>
-                )}
-              </div>
-            )}
-
             {/* Trenér: Moji klienti */}
             {profile?.can_create_calendar_events && (
               <>
@@ -2739,6 +2739,9 @@ export default function Profil() {
         }
         .trial-banner {
           margin-bottom: 20px;
+          margin-left: auto;
+          margin-right: auto;
+          max-width: 720px;
           padding: 16px 20px;
           border-radius: 12px;
           border: 1px solid;
@@ -2761,7 +2764,7 @@ export default function Profil() {
         .trial-banner-text a { color: #a78bfa; text-decoration: none; }
         .trial-banner-text a:hover { text-decoration: underline; }
         .trial-banner-text--small { font-size: 13px; color: #94a3b8; margin-top: 12px; }
-        .trial-banner-stripe { margin: 16px 0; max-width: 500px; }
+        .trial-banner-stripe { margin: 16px auto; max-width: 560px; display: flex; justify-content: center; }
         .trial-banner-upgrade { margin-top: 28px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.12); }
         .trial-banner-upgrade-headline {
           font-size: 17px; font-weight: 700; color: #f1f5f9; margin: 0 0 20px; text-align: center; letter-spacing: 0.02em;

@@ -54,7 +54,8 @@ export default function Start() {
     return formData.gender && formData.age && formData.height && formData.weight;
   };
   const canProceedStep3 = () => {
-    return formData.activity && formData.stress && formData.worktype && formData.goal && formData.frequency;
+    return formData.activity && formData.stress && formData.worktype && formData.goal && formData.frequency
+      && Array.isArray(formData.workout_days) && formData.workout_days.length >= 1;
   };
   const canProceedStep5 = () => selectedHabits.length > 0;
 
@@ -289,7 +290,7 @@ export default function Start() {
               </div>
               <div className="step3-field step3-field-full">
                 <label className="step3-label">Cvičím v tyto dny</label>
-                <p className="step3-hint">Vyber dny, kdy chceš mít trénink v plánu. Ostatní dny budou odpočinek nebo lehká procházka.</p>
+                <p className="step3-hint">Vyber dny, kdy chceš mít trénink v plánu – počet by měl odpovídat frekvenci (1–2× = 1–2 dny, 2–3× = 2–3 dny, 4–5× = 4–5 dní). Ostatní dny budou odpočinek nebo lehká procházka.</p>
                 <div className="reg-workout-days">
                   {[{ v: 1, label: "Po" }, { v: 2, label: "Út" }, { v: 3, label: "St" }, { v: 4, label: "Čt" }, { v: 5, label: "Pá" }, { v: 6, label: "So" }, { v: 0, label: "Ne" }].map(({ v, label }) => (
                     <label key={v} className="reg-workout-day-check">
@@ -307,6 +308,9 @@ export default function Start() {
                     </label>
                   ))}
                 </div>
+                {Array.isArray(formData.workout_days) && formData.workout_days.length === 0 && (
+                  <p className="step3-hint step3-hint-error" role="alert">Vyber alespoň jeden den pro trénink.</p>
+                )}
               </div>
             </div>
           )}
@@ -505,6 +509,7 @@ export default function Start() {
           min-height: 16px;
         }
         .step3-hint-empty { visibility: hidden; margin-bottom: 8px; }
+        .step3-hint-error { color: #f87171; margin-top: 6px; }
         .step3-select { width: 100%; margin-top: auto; }
         .reg-workout-days { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 8px; }
         .reg-workout-day-check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; color: #e2e8f0; margin: 0; }

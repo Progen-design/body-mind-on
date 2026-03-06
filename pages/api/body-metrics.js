@@ -40,6 +40,10 @@ export default async function handler(req, res) {
     if (foodsToAvoid) notesParts.push('Potraviny k vynechání: ' + foodsToAvoid);
     const notesFinal = notesParts.length ? notesParts.join('. ') : (b.notes?.trim() || null);
 
+    const wd = b.workout_days;
+    const workoutDaysStr = Array.isArray(wd) && wd.length > 0
+      ? wd.filter((n) => Number.isFinite(Number(n)) && n >= 0 && n <= 6).join(',')
+      : null;
     const payload = {
       email: b.email?.trim()?.toLowerCase() || null,
       name: b.name?.trim() || null,
@@ -53,6 +57,7 @@ export default async function handler(req, res) {
       goal: normalizeGoal(b.goal),
       freq_choice: normalizeFrequency(b.frequency || b.freq_choice),
       weekly_sessions_user: getWeeklySessions(b.frequency || b.freq_choice),
+      workout_days: workoutDaysStr,
       diet_type: dietType || null,
       dietary_restrictions: dietaryRestrictions || null,
       foods_to_avoid: foodsToAvoid || null,
@@ -169,6 +174,7 @@ export default async function handler(req, res) {
         existingAccount,
         loginUnavailable: payload.user_id == null,
         userChosePassword,
+        targetStartDate: new Date(),
       });
     } catch (e) {
       console.error('⚠️ Chyba při generování AI plánu:', e);

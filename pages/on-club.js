@@ -26,6 +26,7 @@ export default function OnClubPage() {
     worktype: "",
     goal: "",
     frequency: "",
+    workout_days: [],
     diet_type: "",
     dietary_restrictions: "",
     foods_to_avoid: "",
@@ -114,7 +115,7 @@ export default function OnClubPage() {
           }, 1500);
           return;
         }
-        setFormData({ name: "", email: "", password: "", passwordConfirm: "", gender: "", age: "", height: "", weight: "", activity: "", stress: "", worktype: "", goal: "", frequency: "", diet_type: "", dietary_restrictions: "", foods_to_avoid: "", notes: "", program: "ON_CLUB" });
+        setFormData({ name: "", email: "", password: "", passwordConfirm: "", gender: "", age: "", height: "", weight: "", activity: "", stress: "", worktype: "", goal: "", frequency: "", workout_days: [], diet_type: "", dietary_restrictions: "", foods_to_avoid: "", notes: "", program: "ON_CLUB" });
         setSelectedHabits([]);
         setStep(1);
       } else {
@@ -256,6 +257,27 @@ export default function OnClubPage() {
                   <option value="4-5x týdně">4–5x týdně</option>
                 </select>
               </div>
+              <div className="step3-field step3-field-full">
+                <label className="step3-label">Cvičím v tyto dny</label>
+                <p className="step3-hint">Vyber dny, kdy chceš mít trénink v plánu. Ostatní dny budou odpočinek nebo lehká procházka.</p>
+                <div className="reg-workout-days">
+                  {[{ v: 1, label: "Po" }, { v: 2, label: "Út" }, { v: 3, label: "St" }, { v: 4, label: "Čt" }, { v: 5, label: "Pá" }, { v: 6, label: "So" }, { v: 0, label: "Ne" }].map(({ v, label }) => (
+                    <label key={v} className="reg-workout-day-check">
+                      <input
+                        type="checkbox"
+                        checked={formData.workout_days.includes(v)}
+                        onChange={(e) => {
+                          const next = e.target.checked
+                            ? [...formData.workout_days, v].sort((a, b) => a - b)
+                            : formData.workout_days.filter((d) => d !== v);
+                          setFormData((f) => ({ ...f, workout_days: next }));
+                        }}
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
@@ -358,6 +380,9 @@ export default function OnClubPage() {
         .step3-hint { font-size: 12px; color: #64748b; margin: 0 0 8px; line-height: 1.4; min-height: 16px; }
         .step3-hint-empty { visibility: hidden; margin-bottom: 8px; }
         .step3-select { width: 100%; margin-top: auto; }
+        .reg-workout-days { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 8px; }
+        .reg-workout-day-check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; color: #e2e8f0; margin: 0; }
+        .reg-workout-day-check input { width: 18px; height: 18px; accent-color: #7c3aed; }
         .form-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 28px; margin-top: 8px; border-top: 1px solid #222; }
         .btn-back { padding: 12px 24px; border-radius: 10px; border: 1px solid #4b5563; background: transparent; color: #d1d5db; font-size: 15px; font-weight: 500; cursor: pointer; transition: background 0.2s, border-color 0.2s; }
         .btn-back:hover { background: #1a1a1a; border-color: #6b7280; }

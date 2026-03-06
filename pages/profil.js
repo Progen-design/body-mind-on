@@ -2073,14 +2073,15 @@ export default function Profil() {
               </div>
             </div>
 
-            {/* Souhrn návyků tento týden – bublina (ON_CLUB/VIP) */}
-            {!profile?.can_create_calendar_events && (program === 'ON_CLUB' || program === 'VIP') && profile?.user_habits?.length > 0 && (
-            <div className="profile-bubble" id="navyky-tyden">
-              <button type="button" id="profile-bubble-header-navyky-tyden" className="profile-bubble-header" onClick={() => toggleProfileSection('navyky-tyden')} aria-expanded={profileOpenSections.has('navyky-tyden')} aria-controls="profile-bubble-body-navyky-tyden">
-                <span className="profile-bubble-title">Návyky tento týden</span>
-                <span className={`profile-bubble-chevron ${profileOpenSections.has('navyky-tyden') ? 'open' : ''}`} aria-hidden>▼</span>
+            {/* Denní návyky – bublina (souhrn + tracker + graf v jednom) */}
+            {!profile?.can_create_calendar_events && (
+            <div className="profile-bubble" id="denni-navyky">
+              <button type="button" id="profile-bubble-header-denni-navyky" className="profile-bubble-header" onClick={() => toggleProfileSection('denni-navyky')} aria-expanded={profileOpenSections.has('denni-navyky')} aria-controls="profile-bubble-body-denni-navyky">
+                <span className="profile-bubble-title">Denní návyky</span>
+                <span className={`profile-bubble-chevron ${profileOpenSections.has('denni-navyky') ? 'open' : ''}`} aria-hidden>▼</span>
               </button>
-              <div id="profile-bubble-body-navyky-tyden" role="region" aria-labelledby="profile-bubble-header-navyky-tyden" className="profile-bubble-body" data-open={profileOpenSections.has('navyky-tyden')}>
+              <div id="profile-bubble-body-denni-navyky" role="region" aria-labelledby="profile-bubble-header-denni-navyky" className="profile-bubble-body" data-open={profileOpenSections.has('denni-navyky')}>
+            {(program === 'ON_CLUB' || program === 'VIP') && profile?.user_habits?.length > 0 && (
               <div className="habit-summary-card">
                 <h3 className="habit-summary-title">Návyky tento týden</h3>
                 <div className="habit-summary-row">
@@ -2093,18 +2094,7 @@ export default function Profil() {
                 </div>
                 <p className="habit-summary-note">Odhad váhy v profilu vychází z tréninků. Na výsledky má vliv i strava a to, jak plníš zdravé návyky a vyhýbáš se zlozvykům.</p>
               </div>
-              </div>
-            </div>
             )}
-
-            {/* Denní návyky – bublina (jen pro klienty) */}
-            {!profile?.can_create_calendar_events && (
-            <div className="profile-bubble" id="denni-navyky">
-              <button type="button" id="profile-bubble-header-denni-navyky" className="profile-bubble-header" onClick={() => toggleProfileSection('denni-navyky')} aria-expanded={profileOpenSections.has('denni-navyky')} aria-controls="profile-bubble-body-denni-navyky">
-                <span className="profile-bubble-title">Denní návyky</span>
-                <span className={`profile-bubble-chevron ${profileOpenSections.has('denni-navyky') ? 'open' : ''}`} aria-hidden>▼</span>
-              </button>
-              <div id="profile-bubble-body-denni-navyky" role="region" aria-labelledby="profile-bubble-header-denni-navyky" className="profile-bubble-body" data-open={profileOpenSections.has('denni-navyky')}>
             <HabitTracker
               session={session}
               userHabits={profile?.user_habits}

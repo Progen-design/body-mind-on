@@ -2817,9 +2817,9 @@ export default function Profil() {
         .profile-quick-nav-account {
           margin-left: auto;
           display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 4px;
+          flex-direction: row;
+          align-items: center;
+          gap: 8px;
         }
         .profile-quick-nav-btn {
           padding: 8px 14px;

@@ -1366,6 +1366,20 @@ export default function Profil() {
         <div className="page-bg-decor" aria-hidden>
           <span className="page-bg-orb page-bg-orb--center" />
         </div>
+        {!loading && !error && (
+          <header className="profile-welcome">
+            <h1 className="profile-welcome-title">
+              {(() => {
+                const h = new Date().getHours();
+                const greeting = h < 12 ? 'Krásné ráno' : h < 18 ? 'Krásné odpoledne' : 'Dobrý večer';
+                return <>{greeting}, <span>{firstName}</span></>;
+              })()}
+            </h1>
+            <p className="profile-welcome-sub">
+              {profile?.can_create_calendar_events ? 'Přehled klientů a kalendář tréninků.' : 'Sleduj návyky, tréninky a svůj progres.'}
+            </p>
+          </header>
+        )}
         {/* Členství + osobní plán v jedné bublině – jen pro klienty */}
         {!loading && !error && !profile?.can_create_calendar_events && (
           <>
@@ -1575,10 +1589,6 @@ export default function Profil() {
           {profile?.can_create_calendar_events && (
             <p className="hero-intro">Trenér</p>
           )}
-          <h1 className="hero-name">
-            Ahoj, <span>{firstName}</span>
-          </h1>
-          <p className="hero-sub">{profile?.can_create_calendar_events ? 'Přehled klientů a kalendář tréninků.' : (PROGRAM_LABELS[program] || { subtitle: 'Každý trénink, každé měření.' }).subtitle}</p>
           {!loading && !error && profile?.can_create_calendar_events && (
             <div className="hero-strip">
               <div className="hero-stat">
@@ -2812,6 +2822,32 @@ export default function Profil() {
         .page > *:not(.page-bg-decor) {
           position: relative;
           z-index: 1;
+        }
+
+        .profile-welcome {
+          text-align: center;
+          margin-bottom: 24px;
+          padding: 0 16px;
+        }
+        .profile-welcome-title {
+          margin: 0 0 8px;
+          font-size: 32px;
+          font-weight: 700;
+          color: #fff;
+          letter-spacing: -0.02em;
+          line-height: 1.2;
+        }
+        .profile-welcome-title > span {
+          background: linear-gradient(90deg, #9b5cff, #00cfff);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+        .profile-welcome-sub {
+          margin: 0;
+          font-size: 16px;
+          color: #94a3b8;
+          line-height: 1.5;
         }
 
         .profile-membership-plan-card {
@@ -4538,9 +4574,9 @@ export default function Profil() {
           .section-head { font-size: 1.25rem; }
           .modal-overlay { padding: 12px; align-items: flex-end; }
           .modal { max-width: 100%; border-radius: 16px 16px 0 0; padding: 24px 20px; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
-          .hero-name { font-size: 28px; }
+          .profile-welcome-title { font-size: 26px; }
+          .profile-welcome-sub { font-size: 14px; }
           .hero-intro { font-size: 16px; }
-          .hero-sub { font-size: 14px; }
           .membership-card { flex-direction: column; align-items: flex-start; padding: 14px 16px; }
           .profile-membership-plan-card { padding: 14px 16px 20px; }
           .membership-card-row { flex-direction: column; align-items: flex-start; }

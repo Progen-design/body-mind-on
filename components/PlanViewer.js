@@ -1003,18 +1003,21 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                               setDayShoppingState((s) => ({ ...s, [key]: { ...(s[key] || {}), copyDone: !!done, copyError: errorMsg || undefined } }));
                             } catch (_) {}
                           };
-                          (async () => {
-                            try {
-                              if (navigator.clipboard?.writeText && text) {
-                                await navigator.clipboard.writeText(text);
-                                safeSetCopyDone(true);
-                                setTimeout(() => safeSetCopyDone(false), 3000);
+                          // Odložit na další tick – po přihlášení první klik nesmí běžet během auth/load updatu
+                          setTimeout(() => {
+                            (async () => {
+                              try {
+                                if (navigator.clipboard?.writeText && text) {
+                                  await navigator.clipboard.writeText(text);
+                                  safeSetCopyDone(true);
+                                  setTimeout(() => safeSetCopyDone(false), 3000);
+                                }
+                              } catch (_) {
+                                safeSetCopyDone(false, 'Seznam se nepodařilo zkopírovat – vlož položky ručně ze seznamu níže (Ctrl+V na Rohlíku).');
+                                setTimeout(() => safeSetCopyDone(false, null), 6000);
                               }
-                            } catch (_) {
-                              safeSetCopyDone(false, 'Seznam se nepodařilo zkopírovat – vlož položky ručně ze seznamu níže (Ctrl+V na Rohlíku).');
-                              setTimeout(() => safeSetCopyDone(false, null), 6000);
-                            }
-                          })().catch(() => {});
+                            })().catch(() => {});
+                          }, 0);
                         } catch (_) {}
                       };
                       const handleSendEmailDay = async () => {
@@ -1251,19 +1254,22 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
               try {
                 const text = Array.isArray(list) ? list.join('\n') : '';
                 window.open('https://www.rohlik.cz/', '_blank', 'noopener,noreferrer');
-                (async () => {
-                  try {
-                    if (navigator.clipboard?.writeText && text) {
-                      await navigator.clipboard.writeText(text);
-                      setShoppingCopyDone(true);
-                      setShoppingCopyError(null);
-                      setTimeout(() => setShoppingCopyDone(false), 3000);
+                // Odložit na další tick – po přihlášení první klik nesmí běžet během auth/load updatu
+                setTimeout(() => {
+                  (async () => {
+                    try {
+                      if (navigator.clipboard?.writeText && text) {
+                        await navigator.clipboard.writeText(text);
+                        setShoppingCopyDone(true);
+                        setShoppingCopyError(null);
+                        setTimeout(() => setShoppingCopyDone(false), 3000);
+                      }
+                    } catch (_) {
+                      setShoppingCopyError('Seznam se nepodařilo zkopírovat – vlož položky ručně ze seznamu níže (Ctrl+V na Rohlíku).');
+                      setTimeout(() => setShoppingCopyError(null), 6000);
                     }
-                  } catch (_) {
-                    setShoppingCopyError('Seznam se nepodařilo zkopírovat – vlož položky ručně ze seznamu níže (Ctrl+V na Rohlíku).');
-                    setTimeout(() => setShoppingCopyError(null), 6000);
-                  }
-                })().catch(() => {});
+                  })().catch(() => {});
+                }, 0);
               } catch (_) {}
             };
             const handleSendEmail = async () => {

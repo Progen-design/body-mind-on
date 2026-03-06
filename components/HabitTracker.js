@@ -1,5 +1,5 @@
 // components/HabitTracker.js – Denní návyky (dnes + dny dopředu, jen dnes editovatelné)
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { POSITIVE_HABITS, NEGATIVE_HABITS, getHabitById } from '../lib/habits';
 
 function toDateStr(date) {
@@ -32,6 +32,8 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
   const [toggling, setToggling] = useState(null);
+  const scrollContainerRef = useRef(null);
+  const todayColRef = useRef(null);
 
   const buildHabitsLists = useCallback((uh) => {
     let list = [];
@@ -116,6 +118,14 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   useEffect(() => {
     loadLogs();
   }, [loadLogs]);
+
+  useEffect(() => {
+    if (loading || fetchError) return;
+    const el = todayColRef.current;
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [loading, fetchError]);
 
   const getCompleted = (habitId, dateStr) => {
     const log = (allLogs || []).find((l) => l.habit_id === habitId && l.log_date === dateStr);
@@ -374,13 +384,13 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
       ) : (
         <>
           <div className="ht-content">
-            <div className="hg-scroll">
+            <div className="hg-scroll" ref={scrollContainerRef}>
               <div className="hg-grid" style={{ gridTemplateColumns: gridCols, columnGap: GAP, rowGap: '6px' }}>
 
                 {/* Date header row */}
                 <div className="hg-corner" />
                 {days.map((d) => (
-                  <div key={d} className={`hg-hdr-cell ${d === todayStr ? 'today' : ''}`}>
+                  <div key={d} ref={d === todayStr ? todayColRef : undefined} className={`hg-hdr-cell ${d === todayStr ? 'today' : ''}`}>
                     <span className="hg-hdr-day">{new Date(d + 'T12:00:00Z').toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' }).replace(' ', '')}</span>
                     {d === todayStr && <span className="hg-hdr-today">Dnes</span>}
                   </div>
@@ -590,12 +600,19 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
 
         /* ── Outer card ── */
         .hg-scroll {
-          overflow-x: auto; -webkit-overflow-scrolling: touch;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
           border-radius: 20px;
           background: linear-gradient(160deg, rgba(22,32,55,0.98) 0%, rgba(10,15,30,0.98) 100%);
           border: 1px solid rgba(255,255,255,0.08);
           box-shadow: 0 20px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.02) inset;
         }
+        .hg-scroll::-webkit-scrollbar { height: 8px; }
+        .hg-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); border-radius: 4px; }
+        .hg-scroll::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.5); border-radius: 4px; }
+        .hg-scroll::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.7); }
         .hg-grid {
           display: grid; padding: 18px 20px 24px; min-width: max-content;
         }

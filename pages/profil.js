@@ -1353,33 +1353,43 @@ export default function Profil() {
       )}
       <Header />
       <main className="page">
-        {/* Členství + trial / platba úplně nahoře – jen pro klienty */}
+        {/* Členství + osobní plán v jedné bublině – jen pro klienty */}
         {!loading && !error && !profile?.can_create_calendar_events && (
           <>
-            <div className={`membership-card membership-card--${(program || 'START').toLowerCase().replace('_', '-')}`}>
-              <div className="membership-card-left">
-                <span className="membership-icon">
-                  {program === 'VIP' ? '👑' : program === 'ON_CLUB' ? '⚡' : '🚀'}
-                </span>
-                <div>
-                  <div className="membership-tier-label">Tvé členství</div>
-                  <div className="membership-tier-sub">
-                    {program === 'VIP' && 'Plný přístup · Osobní coaching · Prémiová podpora'}
-                    {program === 'ON_CLUB' && 'Habit tracker · AI plán · Tréninky · Statistiky'}
-                    {program !== 'VIP' && program !== 'ON_CLUB' && 'AI plán · Jídelníček · Základní sledování'}
+            <div className={`profile-membership-plan-card membership-card--${(program || 'START').toLowerCase().replace('_', '-')}`}>
+              <div className="membership-card-row">
+                <div className="membership-card-left">
+                  <span className="membership-icon">
+                    {program === 'VIP' ? '👑' : program === 'ON_CLUB' ? '⚡' : '🚀'}
+                  </span>
+                  <div>
+                    <div className="membership-tier-label">Tvé členství</div>
+                    <div className="membership-tier-sub">
+                      {program === 'VIP' && 'Plný přístup · Osobní coaching · Prémiová podpora'}
+                      {program === 'ON_CLUB' && 'Habit tracker · AI plán · Tréninky · Statistiky'}
+                      {program !== 'VIP' && program !== 'ON_CLUB' && 'AI plán · Jídelníček · Základní sledování'}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="membership-card-right">
-                <span className={`membership-status-badge membership-status--${membershipStatus}`}>
-                  {membershipStatus === 'active' ? 'Aktivní' : membershipStatus === 'trial' ? 'Zkušební' : membershipStatus === 'cancelled' ? 'Zrušeno' : 'Neaktivní'}
-                </span>
-                {membershipSince && (
-                  <span className="membership-since">
-                    od {new Date(membershipSince).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })}
+                <div className="membership-card-right">
+                  <span className={`membership-status-badge membership-status--${membershipStatus}`}>
+                    {membershipStatus === 'active' ? 'Aktivní' : membershipStatus === 'trial' ? 'Zkušební' : membershipStatus === 'cancelled' ? 'Zrušeno' : 'Neaktivní'}
                   </span>
-                )}
+                  {membershipSince && (
+                    <span className="membership-since">
+                      od {new Date(membershipSince).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </span>
+                  )}
+                </div>
               </div>
+              {(currentPlan || program === 'ON_CLUB' || program === 'VIP') && (
+                <div className="plan-goal-in-card">
+                  <h2 className="plan-goal-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
+                  <span className="plan-goal-badge plan-goal-badge-program">
+                    {program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP' : getPlanTypeLabel(currentPlan?.plan_type) || 'START'}
+                  </span>
+                </div>
+              )}
             </div>
             {program === 'START' && (isTrialExpired || (daysUntilTrialEnd != null && daysUntilTrialEnd >= 0 && daysUntilTrialEnd <= 2)) && (
               <div className={`trial-banner trial-banner--${isTrialExpired ? 'expired' : 'soon'}`}>
@@ -1416,16 +1426,6 @@ export default function Profil() {
               </div>
             )}
           </>
-        )}
-
-        {/* Hlavní cíl plánu – jen pro klienty, ne pro trenéra */}
-        {!profile?.can_create_calendar_events && (currentPlan || program === 'ON_CLUB' || program === 'VIP') && (
-          <div className="plan-goal-hero">
-            <h2 className="plan-goal-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
-            <span className="plan-goal-badge plan-goal-badge-program">
-              {program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP' : getPlanTypeLabel(currentPlan?.plan_type) || 'START'}
-            </span>
-          </div>
         )}
 
         <section className="hero">
@@ -2602,23 +2602,41 @@ export default function Profil() {
           font-family: Inter, sans-serif;
         }
 
-        .plan-goal-hero {
-          text-align: center;
-          padding: 28px 24px 32px;
-          margin: -20px -20px 32px -20px;
-          background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4c1d95 100%);
-          border-radius: 0 0 20px 20px;
-          position: relative;
-          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+        .profile-membership-plan-card {
+          margin-bottom: 20px;
+          padding: 16px 22px 24px;
+          border-radius: 16px;
+          border: 1px solid;
+          display: flex;
+          flex-direction: column;
+          gap: 0;
         }
-        .plan-goal-hero::after {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.5), transparent);
+        .profile-membership-plan-card.membership-card--start {
+          background: linear-gradient(135deg, rgba(100,116,139,0.12), rgba(71,85,105,0.08));
+          border-color: rgba(100,116,139,0.35);
+        }
+        .profile-membership-plan-card.membership-card--on-club {
+          background: linear-gradient(135deg, rgba(109,40,217,0.18), rgba(59,130,246,0.10));
+          border-color: rgba(139,92,255,0.45);
+          box-shadow: 0 4px 20px rgba(109,40,217,0.12);
+        }
+        .profile-membership-plan-card.membership-card--vip {
+          background: linear-gradient(135deg, rgba(180,130,20,0.18), rgba(234,179,8,0.10));
+          border-color: rgba(234,179,8,0.45);
+          box-shadow: 0 4px 20px rgba(180,130,20,0.18);
+        }
+        .membership-card-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          flex-wrap: wrap;
+        }
+        .plan-goal-in-card {
+          text-align: center;
+          padding-top: 18px;
+          margin-top: 18px;
+          border-top: 1px solid rgba(255, 255, 255, 0.12);
         }
         .plan-goal-hero-title {
           margin: 0 0 12px;
@@ -4059,6 +4077,8 @@ export default function Profil() {
           .hero-intro { font-size: 16px; }
           .hero-sub { font-size: 14px; }
           .membership-card { flex-direction: column; align-items: flex-start; padding: 14px 16px; }
+          .profile-membership-plan-card { padding: 14px 16px 20px; }
+          .membership-card-row { flex-direction: column; align-items: flex-start; }
           .action-buttons { gap: 10px; }
         }
         @media (max-width: 380px) {

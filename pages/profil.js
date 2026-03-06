@@ -1379,7 +1379,7 @@ export default function Profil() {
                     <div className="membership-tier-label">Tvé členství</div>
                     <div className="profile-quick-nav">
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('denni-navyky')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('denni-navyky'); }}>Habit tracker</button>
-                      <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('muj-plan'); }}>Můj plán</button>
+                      <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('muj-plan'); }}>Jídelníček a trénink</button>
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('rychle-akce')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('rychle-akce'); }}>Tréninky</button>
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('statistiky')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('statistiky'); }}>Statistiky</button>
                     </div>
@@ -1722,7 +1722,7 @@ export default function Profil() {
                   <strong>Tvůj plán je připraven.</strong>{' '}
                   V rozbalovacích sekcích níže máš jídelníček, recepty a trénink (rozcvička, cviky, progrese).
                   <br />
-                  Rozklikni „Můj plán“ pro dnešní jídlo, „Co chceš zapsat?“ pro záznam tréninku nebo „Denní návyky“ pro sledování návyků.
+                  Rozklikni „Jídelníček a tréninkový plán“ pro dnešní jídlo, „Co chceš zapsat?“ pro záznam tréninku nebo „Denní návyky“ pro sledování návyků.
                 </p>
               </div>
             )}
@@ -2119,7 +2119,7 @@ export default function Profil() {
             {!profile?.can_create_calendar_events && currentPlan && (
             <div className="profile-bubble" id="muj-plan">
               <button type="button" id="profile-bubble-header-muj-plan" className="profile-bubble-header" onClick={() => toggleProfileSection('muj-plan')} aria-expanded={profileOpenSections.has('muj-plan')} aria-controls="profile-bubble-body-muj-plan">
-                <span className="profile-bubble-title">Můj plán</span>
+                <span className="profile-bubble-title">Jídelníček a tréninkový plán</span>
                 <span className={`profile-bubble-chevron ${profileOpenSections.has('muj-plan') ? 'open' : ''}`} aria-hidden>▼</span>
               </button>
               <div id="profile-bubble-body-muj-plan" role="region" aria-labelledby="profile-bubble-header-muj-plan" className="profile-bubble-body" data-open={profileOpenSections.has('muj-plan')}>

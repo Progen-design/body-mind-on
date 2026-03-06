@@ -771,14 +771,12 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
         </div>
       )}
 
-      {/* Navigace: Můj plán | Jídelníček | Trénink */}
+      {/* Navigace: Můj plán | Jídelníček */}
       {showGraphical && (
         <nav className="plan-nav" aria-label="Sekce plánu">
           <a href="#plan-overview" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-overview')?.scrollIntoView({ behavior: 'smooth' }); }}>Můj plán</a>
           <span className="plan-nav-sep" aria-hidden>|</span>
           <a href="#plan-jidelnicek" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-jidelnicek')?.scrollIntoView({ behavior: 'smooth' }); }}>Jídelníček</a>
-          <span className="plan-nav-sep" aria-hidden>|</span>
-          <a href="#plan-trenink" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-trenink')?.scrollIntoView({ behavior: 'smooth' }); }}>Trénink</a>
         </nav>
       )}
 
@@ -1403,13 +1401,6 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
             );
           })()}
 
-          {/* Tréninkový plán – viditelný blok (jeden z hlavních bodů plánu) */}
-          {parsed?.workout && parsed.workout.trim() ? (
-            <div id="plan-trenink" className="plan-block plan-block-training">
-              <h3 className="plan-block-title">Trénink</h3>
-              <div className="plan-training-content" dangerouslySetInnerHTML={{ __html: stripProgreseBezpecnost(stripImagesFromHtml(parsed.workout)) }} />
-            </div>
-          ) : null}
         </>
       ) : (
         <>

@@ -1382,6 +1382,10 @@ export default function Profil() {
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('muj-plan'); }}>Jídelníček a trénink</button>
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('rychle-akce')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('rychle-akce'); }}>Tréninky</button>
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('statistiky')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('statistiky'); }}>Statistiky</button>
+                      <div className="profile-quick-nav-account">
+                        <button type="button" className="profile-quick-nav-btn profile-quick-nav-btn-account" onClick={handleLogout}>Odhlásit se</button>
+                        <button type="button" className="profile-quick-nav-btn profile-quick-nav-btn-danger" onClick={() => setShowDeleteAccountModal(true)} title="Trvale smazat účet a všechna data">Zrušit profil</button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1460,6 +1464,37 @@ export default function Profil() {
               {uploadingAvatar ? 'Nahrávám…' : 'Změnit obrázek'}
             </button>
             {avatarError && <p className="hero-avatar-error" role="alert">{avatarError}</p>}
+            {!profile?.can_create_calendar_events && (
+              <button
+                type="button"
+                onClick={() => {
+                  const lm = profile?.body_metrics?.[0];
+                  const freq = getFreqFromMetrics(lm);
+                  const wdRaw = lm?.workout_days;
+                  const workoutDays = (Array.isArray(wdRaw) ? wdRaw : (typeof wdRaw === 'string' && wdRaw ? wdRaw.split(',').map((s) => Number(s.trim())) : [])).filter((n) => Number.isFinite(n) && n >= 0 && n <= 6);
+                  setPreferencesError('');
+                  setPreferencesForm({
+                    activity: activityToFormLabel(lm?.activity) || '',
+                    stress_level: lm?.stress_level ?? '',
+                    occupation: normalizeOccupationForForm(lm?.occupation) || '',
+                    goal: goalToFormLabel(lm?.goal) || '',
+                    freq_choice: freq,
+                    frequency: freq,
+                    workout_days: workoutDays,
+                    diet_type: lm?.diet_type ?? '',
+                    dietary_restrictions: lm?.dietary_restrictions ?? '',
+                    foods_to_avoid: lm?.foods_to_avoid ?? '',
+                    selected_habits: (profile?.user_habits || []).map((h) => h.habit_id).filter(Boolean),
+                  });
+                  setShowPreferencesModal(true);
+                }}
+                className="hero-prefs-btn"
+              >
+                <span className="hero-prefs-emoji">✏️</span>
+                Upravit preference
+                <span className="hero-prefs-sublabel">Aktivita, cíl, strava, návyky – přegeneruje plán</span>
+              </button>
+            )}
           </div>
 
           {avatarCrop.open && avatarCrop.src && (
@@ -1516,19 +1551,12 @@ export default function Profil() {
               </div>
             </div>
           )}
-          <div className="hero-actions">
-            <button onClick={handleLogout} className="logout">
-              Odhlásit se
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowDeleteAccountModal(true)}
-              className="logout logout-danger"
-              title="Trvale smazat účet a všechna data"
-            >
-              Zrušit profil
-            </button>
-          </div>
+          {profile?.can_create_calendar_events && (
+            <div className="hero-actions">
+              <button onClick={handleLogout} className="logout">Odhlásit se</button>
+              <button type="button" onClick={() => setShowDeleteAccountModal(true)} className="logout logout-danger" title="Trvale smazat účet a všechna data">Zrušit profil</button>
+            </div>
+          )}
         </section>
 
         {loading && <p className="loading">Načítám tvůj profil…</p>}
@@ -1832,37 +1860,6 @@ export default function Profil() {
                   Nastavení pro výpočet
                   <span className="btn-sublabel">Cílová váha pro odhad do cíle</span>
                 </button>
-                {!profile?.can_create_calendar_events && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const lm = profile?.body_metrics?.[0];
-                      const freq = getFreqFromMetrics(lm);
-                      const wdRaw = lm?.workout_days;
-                      const workoutDays = (Array.isArray(wdRaw) ? wdRaw : (typeof wdRaw === 'string' && wdRaw ? wdRaw.split(',').map((s) => Number(s.trim())) : [])).filter((n) => Number.isFinite(n) && n >= 0 && n <= 6);
-                      setPreferencesError('');
-                      setPreferencesForm({
-                        activity: activityToFormLabel(lm?.activity) || '',
-                        stress_level: lm?.stress_level ?? '',
-                        occupation: normalizeOccupationForForm(lm?.occupation) || '',
-                        goal: goalToFormLabel(lm?.goal) || '',
-                        freq_choice: freq,
-                        frequency: freq,
-                        workout_days: workoutDays,
-                        diet_type: lm?.diet_type ?? '',
-                        dietary_restrictions: lm?.dietary_restrictions ?? '',
-                        foods_to_avoid: lm?.foods_to_avoid ?? '',
-                        selected_habits: (profile?.user_habits || []).map((h) => h.habit_id).filter(Boolean),
-                      });
-                      setShowPreferencesModal(true);
-                    }}
-                    className="btn-secondary"
-                  >
-                    <span className="btn-emoji">✏️</span>
-                    Upravit preference
-                    <span className="btn-sublabel">Aktivita, cíl, strava, návyky – přegeneruje plán</span>
-                  </button>
-                )}
               </div>
             </section>
               </div>
@@ -2812,8 +2809,17 @@ export default function Profil() {
         .profile-quick-nav {
           display: flex;
           flex-wrap: wrap;
+          align-items: center;
           gap: 8px;
           margin-top: 8px;
+          width: 100%;
+        }
+        .profile-quick-nav-account {
+          margin-left: auto;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 4px;
         }
         .profile-quick-nav-btn {
           padding: 8px 14px;
@@ -2829,6 +2835,15 @@ export default function Profil() {
         .profile-quick-nav-btn:hover {
           background: rgba(255, 255, 255, 0.15);
           border-color: rgba(255, 255, 255, 0.35);
+        }
+        .profile-quick-nav-btn-danger {
+          border-color: rgba(239, 68, 68, 0.5);
+          color: #fca5a5;
+          font-size: 12px;
+        }
+        .profile-quick-nav-btn-danger:hover {
+          background: rgba(239, 68, 68, 0.15);
+          border-color: rgba(239, 68, 68, 0.7);
         }
         .plan-goal-in-card {
           text-align: center;
@@ -2988,6 +3003,29 @@ export default function Profil() {
         .hero-avatar-change:hover:not(:disabled) { color: #e2e8f0; }
         .hero-avatar-change:disabled { opacity: 0.7; cursor: wait; }
         .hero-avatar-error { margin: 0; font-size: 13px; color: #fca5a5; }
+        .hero-prefs-btn {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
+          margin-top: 12px;
+          padding: 12px 20px;
+          border-radius: 12px;
+          border: 1px solid rgba(139, 92, 255, 0.4);
+          background: linear-gradient(135deg, rgba(109, 40, 217, 0.2), rgba(59, 130, 246, 0.1));
+          color: #e2e8f0;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          text-align: center;
+          transition: background 0.2s, border-color 0.2s;
+        }
+        .hero-prefs-btn:hover {
+          background: linear-gradient(135deg, rgba(109, 40, 217, 0.3), rgba(59, 130, 246, 0.15));
+          border-color: rgba(139, 92, 255, 0.6);
+        }
+        .hero-prefs-emoji { font-size: 16px; }
+        .hero-prefs-sublabel { font-size: 11px; font-weight: 400; color: #94a3b8; }
         .avatar-crop-overlay {
           position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center;
           z-index: 9999; padding: 20px; box-sizing: border-box;
@@ -3180,6 +3218,12 @@ export default function Profil() {
           display: flex;
           align-items: center;
           gap: 14px;
+          flex: 1;
+          min-width: 0;
+        }
+        .membership-card-left > div {
+          flex: 1;
+          min-width: 0;
         }
         .membership-icon {
           font-size: 28px;

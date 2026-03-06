@@ -1429,6 +1429,22 @@ export default function Profil() {
                         {program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP' : getPlanTypeLabel(currentPlan?.plan_type) || 'START'}
                       </span>
                     </div>
+                    {!loading && !error && (
+                      <div className="plan-goal-stats">
+                        <div className="plan-goal-stat">
+                          <span className="plan-goal-stat-value">{workoutsThisWeek?.length ?? 0} {workoutTrend ? <span className="trend-arrow" title={workoutTrend === '↑' ? 'Víc než minulý týden' : workoutTrend === '↓' ? 'Méně než minulý týden' : 'Stejně'}>{workoutTrend}</span> : null}</span>
+                          <span className="plan-goal-stat-label">Tréninků tento týden</span>
+                        </div>
+                        <div className="plan-goal-stat">
+                          <span className="plan-goal-stat-value">{totalMinutesThisWeek ?? 0} min</span>
+                          <span className="plan-goal-stat-label">V pohybu</span>
+                        </div>
+                        <div className="plan-goal-stat">
+                          <span className="plan-goal-stat-value">{(hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : estimatedCurrentWeight) != null ? `${(hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : estimatedCurrentWeight).toFixed(1)} kg` : '—'}</span>
+                          <span className="plan-goal-stat-label">{hasHabitData ? 'Odhad (tréninky + návyky)' : 'Odhad z tréninků'}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1563,7 +1579,7 @@ export default function Profil() {
             Ahoj, <span>{firstName}</span>
           </h1>
           <p className="hero-sub">{profile?.can_create_calendar_events ? 'Přehled klientů a kalendář tréninků.' : (PROGRAM_LABELS[program] || { subtitle: 'Každý trénink, každé měření.' }).subtitle}</p>
-          {!loading && !error && !profile?.can_create_calendar_events && (
+          {!loading && !error && profile?.can_create_calendar_events && (
             <div className="hero-strip">
               <div className="hero-stat">
                 <span className="hero-stat-value">{workoutsThisWeek?.length ?? 0} {workoutTrend ? <span className="trend-arrow" title={workoutTrend === '↑' ? 'Víc než minulý týden' : workoutTrend === '↓' ? 'Méně než minulý týden' : 'Stejně'}>{workoutTrend}</span> : null}</span>
@@ -2942,6 +2958,35 @@ export default function Profil() {
           text-align: center;
           flex: 1;
           min-width: 200px;
+        }
+        .plan-goal-stats {
+          display: flex;
+          align-items: center;
+          gap: 24px;
+          flex-wrap: wrap;
+          padding: 12px 20px;
+          background: rgba(0, 0, 0, 0.2);
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .plan-goal-stat {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
+          min-width: 80px;
+        }
+        .plan-goal-stat-value {
+          font-size: 18px;
+          font-weight: 700;
+          color: #fff;
+        }
+        .plan-goal-stat-value .trend-arrow { color: #fbbf24; }
+        .plan-goal-stat-label {
+          font-size: 11px;
+          color: #94a3b8;
+          text-align: center;
+          line-height: 1.2;
         }
         .plan-goal-hero-title {
           margin: 0 0 12px;

@@ -1367,17 +1367,27 @@ export default function Profil() {
           <span className="page-bg-orb page-bg-orb--center" />
         </div>
         {!loading && !error && (
-          <header className="profile-welcome">
-            <h1 className="profile-welcome-title">
-              {(() => {
-                const h = new Date().getHours();
-                const greeting = h < 12 ? 'Krásné ráno' : h < 18 ? 'Krásné odpoledne' : 'Dobrý večer';
-                return <>{greeting}, <span>{firstName}</span></>;
-              })()}
-            </h1>
-            <p className="profile-welcome-sub">
-              {profile?.can_create_calendar_events ? 'Přehled klientů a kalendář tréninků.' : 'Sleduj návyky, tréninky a svůj progres.'}
-            </p>
+          <header className={`profile-welcome ${(!profile?.can_create_calendar_events && (currentPlan || program === 'ON_CLUB' || program === 'VIP')) ? '' : 'profile-welcome--centered'}`}>
+            {!profile?.can_create_calendar_events && (currentPlan || program === 'ON_CLUB' || program === 'VIP') && (
+              <div className="profile-welcome-plan">
+                <h2 className="profile-welcome-plan-title">Tvůj osobní AI plán Body & Mind ON</h2>
+                <span className="plan-goal-badge plan-goal-badge-program">
+                  {program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP' : getPlanTypeLabel(currentPlan?.plan_type) || 'START'}
+                </span>
+              </div>
+            )}
+            <div className="profile-welcome-greeting">
+              <h1 className="profile-welcome-title">
+                {(() => {
+                  const h = new Date().getHours();
+                  const greeting = h < 12 ? 'Krásné ráno' : h < 18 ? 'Krásné odpoledne' : 'Dobrý večer';
+                  return <>{greeting}, <span>{firstName}</span></>;
+                })()}
+              </h1>
+              <p className="profile-welcome-sub">
+                {profile?.can_create_calendar_events ? 'Přehled klientů a kalendář tréninků.' : 'Sleduj návyky, tréninky a svůj progres.'}
+              </p>
+            </div>
           </header>
         )}
         {/* Členství + osobní plán v jedné bublině – jen pro klienty */}
@@ -1436,12 +1446,6 @@ export default function Profil() {
                         {uploadingAvatar ? 'Nahrávám…' : 'Změnit obrázek'}
                       </button>
                       {avatarError && <p className="plan-goal-avatar-error" role="alert">{avatarError}</p>}
-                    </div>
-                    <div className="plan-goal-text-col">
-                      <h2 className="plan-goal-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
-                      <span className="plan-goal-badge plan-goal-badge-program">
-                        {program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP' : getPlanTypeLabel(currentPlan?.plan_type) || 'START'}
-                      </span>
                     </div>
                     {!loading && !error && (
                       <div className="plan-goal-stats">
@@ -2825,9 +2829,36 @@ export default function Profil() {
         }
 
         .profile-welcome {
-          text-align: center;
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          gap: 40px;
+          flex-wrap: wrap;
           margin-bottom: 24px;
           padding: 0 16px;
+        }
+        .profile-welcome.profile-welcome--centered {
+          justify-content: center;
+          text-align: center;
+        }
+        .profile-welcome.profile-welcome--centered .profile-welcome-greeting { text-align: center; }
+        .profile-welcome-plan {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+        }
+        .profile-welcome-plan-title {
+          margin: 0;
+          font-size: 20px;
+          font-weight: 700;
+          color: #fff;
+          text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+          line-height: 1.3;
+          text-align: left;
+        }
+        .profile-welcome-greeting {
+          text-align: left;
         }
         .profile-welcome-title {
           margin: 0 0 8px;

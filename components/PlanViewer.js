@@ -723,6 +723,9 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const todayIsoStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const planFromStr = (plan.valid_from || '').split('T')[0];
+  const isFuturePlan = !!planFromStr && planFromStr > todayIsoStr;
   const todayStr = today.toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
   const isValid = plan.valid_until ? new Date(plan.valid_until + 'T23:59:59') >= today : true;
   const validUntilDate = plan.valid_until ? new Date(plan.valid_until + 'T12:00:00') : null;
@@ -747,7 +750,7 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
       return {
         ...day,
         dateStr: formatDayLabel(dateIso),
-        isToday: dateIso === todayIso,
+        isToday: dateIso === todayIso && !isFuturePlan,
         originalIndex: origIdx,
       };
     });
@@ -808,14 +811,16 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
             </div>
           )}
 
-          {/* Dnes banner */}
-          <div className="plan-today-banner">
-            <span className="plan-today-emoji">📅</span>
-            <div>
-              <h3>Dnes ({todayStr})</h3>
-              <p>Podívej se do jídelníčku a na tréninkový plán (jak cvičit, rozcvička, cviky) níže.</p>
+          {/* Dnes banner – jen u aktuálního plánu, ne u náhledu příštího týdne */}
+          {!isFuturePlan && (
+            <div className="plan-today-banner">
+              <span className="plan-today-emoji">📅</span>
+              <div>
+                <h3>Dnes ({todayStr})</h3>
+                <p>Podívej se do jídelníčku a na tréninkový plán (jak cvičit, rozcvička, cviky) níže.</p>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Export jídelníčku – PDF s češtinou a obrázky */}
           {displayedDays?.length > 0 && (
@@ -877,7 +882,7 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
               )}
               <div className="plan-days">
                 {displayedDays.map((day, di) => {
-                  const isDayExpanded = expandedDays === null ? day.isToday : expandedDays.has(di);
+                  const isDayExpanded = expandedDays === null ? (day.isToday || (isFuturePlan && di === 0)) : expandedDays.has(di);
                   const toggleDay = () => {
                     setExpandedDays((prev) => {
                       const todayIdx = displayedDays.findIndex((d) => d.isToday);
@@ -1401,13 +1406,15 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
         </>
       ) : (
         <>
-          <div className="plan-today-banner">
-            <span className="plan-today-emoji">📅</span>
-            <div>
-              <h3>Dnes ({todayStr})</h3>
-              <p>Podívej se do svého plánu níže.</p>
+          {!isFuturePlan && (
+            <div className="plan-today-banner">
+              <span className="plan-today-emoji">📅</span>
+              <div>
+                <h3>Dnes ({todayStr})</h3>
+                <p>Podívej se do svého plánu níže.</p>
+              </div>
             </div>
-          </div>
+          )}
           <div className="plan-expandable">
             <button type="button" className="plan-toggle" onClick={() => setIsExpanded(!isExpanded)}>
               {isExpanded ? '▼ Skrýt celý plán' : '▶ Zobrazit celý plán'}

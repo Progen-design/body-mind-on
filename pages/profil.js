@@ -1308,14 +1308,14 @@ export default function Profil() {
     return profile.plans[0];
   }, [profile?.plans]);
 
-  // Plán na příští týden (valid_from > dnes) – pro ověření označených jídel
+  // Plán na příští týden (valid_from až po dnešním datu – porovnání jen datum, ne čas kvůli timezone)
   const nextPlan = useMemo(() => {
     if (!profile?.plans || !Array.isArray(profile.plans)) return null;
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     const future = profile.plans.filter((p) => {
-      const from = p.valid_from ? new Date(p.valid_from) : null;
-      return from && from > today;
+      const fromStr = (p.valid_from || '').split('T')[0];
+      return fromStr && fromStr > todayStr;
     });
     if (future.length === 0) return null;
     future.sort((a, b) => (a.valid_from || '').localeCompare(b.valid_from || ''));

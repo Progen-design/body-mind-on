@@ -230,11 +230,13 @@ export default function Profil() {
     occupation: '',
     goal: '',
     freq_choice: '',
+    workout_days: [],
     diet_type: '',
     dietary_restrictions: '',
     foods_to_avoid: '',
     selected_habits: [],
   });
+  const WORKOUT_DAY_LABELS = [{ v: 1, label: 'Po' }, { v: 2, label: 'Út' }, { v: 3, label: 'St' }, { v: 4, label: 'Čt' }, { v: 5, label: 'Pá' }, { v: 6, label: 'So' }, { v: 0, label: 'Ne' }];
 
   const profileRef = useRef(null);
   const lastMutatedAtRef = useRef(0);
@@ -880,6 +882,7 @@ export default function Profil() {
           occupation: preferencesForm.occupation || preferencesForm.worktype || undefined,
           goal: preferencesForm.goal || undefined,
           freq_choice: preferencesForm.freq_choice || preferencesForm.frequency || undefined,
+          workout_days: Array.isArray(preferencesForm.workout_days) && preferencesForm.workout_days.length > 0 ? preferencesForm.workout_days : undefined,
           diet_type: preferencesForm.diet_type || undefined,
           dietary_restrictions: preferencesForm.dietary_restrictions || undefined,
           foods_to_avoid: preferencesForm.foods_to_avoid || undefined,
@@ -1785,6 +1788,8 @@ export default function Profil() {
                     onClick={() => {
                       const lm = profile?.body_metrics?.[0];
                       const freq = getFreqFromMetrics(lm);
+                      const wdRaw = lm?.workout_days;
+                      const workoutDays = (Array.isArray(wdRaw) ? wdRaw : (typeof wdRaw === 'string' && wdRaw ? wdRaw.split(',').map((s) => Number(s.trim())) : [])).filter((n) => Number.isFinite(n) && n >= 0 && n <= 6);
                       setPreferencesError('');
                       setPreferencesForm({
                         activity: activityToFormLabel(lm?.activity) || '',
@@ -1793,6 +1798,7 @@ export default function Profil() {
                         goal: goalToFormLabel(lm?.goal) || '',
                         freq_choice: freq,
                         frequency: freq,
+                        workout_days: workoutDays,
                         diet_type: lm?.diet_type ?? '',
                         dietary_restrictions: lm?.dietary_restrictions ?? '',
                         foods_to_avoid: lm?.foods_to_avoid ?? '',
@@ -1820,6 +1826,12 @@ export default function Profil() {
                   ? 'Tvůj rozvrh z Google Kalendáře. V každé události vidíš přiřazené klienty (účastníky). Přepínání týdnů šipkami ‹ ›.'
                   : 'Rozvrh plánovaných tréninků z kalendáře trenéra. Zdroj: info@ (Google Kalendář). Zobrazuje se vždy jeden týden (Po–Ne); v každém dnu jsou události přiřazené tobě (čas a název). Přepínání týdnů šipkami ‹ ›.'}
               </p>
+              {!profile?.can_create_calendar_events && (
+                <p className="trainer-schedule-lead trainer-schedule-lead-how">
+                  Tréninky zapisuje trenér do kalendáře; tobě přijde pozvánka na e-mail a po potvrzení se událost zobrazí zde (zelená = potvrzeno, žlutá = čeká na schválení).{' '}
+                  <a href="https://gamma.app/docs/8imen0seu9h3125#card-mfzse8ia5u4lf3k" target="_blank" rel="noopener noreferrer">Jak to funguje</a>
+                </p>
+              )}
               <p className="trainer-schedule-actions">
                 <a href="https://calendar.google.com/calendar/u/0/r" target="_blank" rel="noopener noreferrer" className="trainer-calendar-link">
                   Otevřít Google Kalendář (přidat / upravit tréninky)
@@ -2450,6 +2462,27 @@ export default function Profil() {
                             <option value="2-3x týdně">2–3x týdně</option>
                             <option value="4-5x týdně">4–5x týdně</option>
                           </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="preferences-section-title">Cvičím v tyto dny</label>
+                        <p className="preferences-workout-days-hint">Vyber dny, kdy chceš mít trénink v plánu. Ostatní dny budou odpočinek nebo lehká procházka.</p>
+                        <div className="preferences-workout-days">
+                          {WORKOUT_DAY_LABELS.map(({ v, label }) => (
+                            <label key={v} className="preferences-workout-day-check">
+                              <input
+                                type="checkbox"
+                                checked={preferencesForm.workout_days.includes(v)}
+                                onChange={(e) => {
+                                  const next = e.target.checked
+                                    ? [...preferencesForm.workout_days, v].sort((a, b) => a - b)
+                                    : preferencesForm.workout_days.filter((d) => d !== v);
+                                  setPreferencesForm((f) => ({ ...f, workout_days: next }));
+                                }}
+                              />
+                              <span>{label}</span>
+                            </label>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -3153,6 +3186,9 @@ export default function Profil() {
           color: #94a3b8;
           margin: -8px 0 16px;
         }
+        .trainer-schedule-lead-how { margin-top: -4px; }
+        .trainer-schedule-lead-how a { color: #a78bfa; text-decoration: none; }
+        .trainer-schedule-lead-how a:hover { text-decoration: underline; }
         .trainer-schedule-loading,
         .trainer-schedule-disconnected,
         .trainer-schedule-empty {
@@ -3747,6 +3783,10 @@ export default function Profil() {
         .preferences-section .modal label { margin-top: 8px; }
         .preferences-section .modal label:first-child { margin-top: 0; }
         .preferences-section textarea { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #444; background: #0f0f1a; color: #fff; font-family: inherit; resize: vertical; }
+        .preferences-workout-days-hint { margin: 4px 0 10px; font-size: 13px; color: #64748b; }
+        .preferences-workout-days { display: flex; flex-wrap: wrap; gap: 10px 16px; }
+        .preferences-workout-day-check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; color: #e2e8f0; margin: 0; }
+        .preferences-workout-day-check input { width: 18px; height: 18px; accent-color: #7c3aed; }
         .modal h3 { margin: 0 0 20px; }
         .modal label { display: block; margin: 12px 0 4px; color: #94a3b8; font-size: 14px; }
         .label-hint { font-weight: 400; color: #64748b; font-size: 12px; }

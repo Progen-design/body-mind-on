@@ -55,6 +55,12 @@ export default async function handler(req, res) {
     if (b.diet_type !== undefined) updates.diet_type = (b.diet_type || '').trim() || null;
     if (b.dietary_restrictions !== undefined) updates.dietary_restrictions = (b.dietary_restrictions || '').trim() || null;
     if (b.foods_to_avoid !== undefined) updates.foods_to_avoid = (b.foods_to_avoid || '').trim() || null;
+    if (b.workout_days !== undefined) {
+      const wd = b.workout_days;
+      updates.workout_days = Array.isArray(wd) && wd.length > 0
+        ? wd.filter((n) => Number.isFinite(Number(n)) && n >= 0 && n <= 6).join(',')
+        : null;
+    }
 
     if (Object.keys(updates).length > 0) {
       let toUpdate = { ...updates };
@@ -67,7 +73,7 @@ export default async function handler(req, res) {
         /does not exist|neexistuje|column.*not found/i.test(updateErr.message)
       );
       if (updateErr && columnMissing) {
-        const optionalCols = ['foods_to_avoid', 'dietary_restrictions'];
+        const optionalCols = ['foods_to_avoid', 'dietary_restrictions', 'workout_days'];
         for (const col of optionalCols) {
           if (col in toUpdate) {
             delete toUpdate[col];

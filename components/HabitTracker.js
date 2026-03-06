@@ -347,6 +347,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         <div>
           <h2 className="ht-title">Denní návyky</h2>
           <p className="ht-date">{todayFormatted}</p>
+          <p className="ht-hint">Odškrtnutí se ukládá pro daný den (sloupec). Po uložení uvidíš potvrzení „Splněno!“ – záznam zůstane i další den.</p>
         </div>
         <div className="ht-progress-inline">
           <span className="ht-prog-nums">{completedToday}<span className="ht-prog-sep">/</span>{totalHabits}</span>
@@ -568,6 +569,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           letter-spacing: -0.025em; color: #f8fafc;
         }
         .ht-date { margin: 0; font-size: 0.8125rem; color: #475569; font-weight: 500; text-transform: capitalize; }
+        .ht-hint { margin: 6px 0 0; font-size: 0.75rem; color: #64748b; line-height: 1.4; max-width: 320px; }
         .ht-progress-inline { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; flex-shrink: 0; }
         .ht-prog-nums { font-size: 1.125rem; font-weight: 800; color: #f8fafc; letter-spacing: -0.02em; }
         .ht-prog-sep { color: #334155; margin: 0 3px; font-weight: 400; }

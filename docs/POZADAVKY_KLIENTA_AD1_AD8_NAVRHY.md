@@ -109,15 +109,16 @@ Tlačítko „Objednat suroviny“ v `components/PlanViewer.js` volá `navigator
 | AD | Úprava |
 |----|--------|
 | Ad2 / Ad8 | Prodloužen interval refetchu (30 s → 3 min), visibility refetch až po 60 s neaktivity |
-| Ad5 | Header na mobilu – úpravy mezery / breakpointy nebo hamburger, aby se položky nepřekrývaly |
-| Ad6 | U zlozvyků v habit trackeru při „splněno“ červená barva buňky místo zelené |
-| Ad8 | „Objednat suroviny“ – ošetření chyby clipboardu, uživatelská zpráva při selhání |
+| Ad3 | Výběr cvičících dnů (Po–Ne) v preferencích; uložení do `body_metrics.workout_days`; předání do generování plánu (AI respektuje jen vybrané dny jako tréninkové). Migrace `20260309_body_metrics_workout_days.sql`. Ilustrační obrázky z „Jak to funguje“ – zatím odkaz v textu kalendáře. |
+| Ad4 | Do sekce „Kdy mám trénink?“ doplněn krátký vysvětlující text (trenér zapisuje → pozvánka e-mail → zelená/žlutá) + odkaz Jak to funguje. |
+| Ad5 | Header na mobilu – úpravy mezery / breakpointy, aby se položky nepřekrývaly. |
+| Ad6 | U zlozvyků v habit trackeru při „splněno“ červená barva buňky místo zelené. |
+| Ad7 | U sekce Denní návyky doplněna nápověda: „Odškrtnutí se ukládá pro daný den (sloupec). Po uložení uvidíš potvrzení ‚Splněno!‘ – záznam zůstane i další den.“ |
+| Ad8 | „Objednat suroviny“ – ošetření chyby clipboardu, uživatelská zpráva při selhání. |
 
 ---
 
 ## Co zůstává na vás / další krok
 
 - **Ad1:** Získat od klientky screenshot nebo upřesnění místa (kde přesně scroll a duplicita).
-- **Ad3:** Navrhnout UI pro výběr cvičících dnů + doplnit ilustrační obrázky (zdroj + umístění).
-- **Ad4:** Doplnit do sekce kalendáře krátký vysvětlující text pro klienty.
-- **Ad7:** V případě opakování ověřit ukládání a zobrazení záznamů (toast, datum, časová zóna).
+- **Ad3 (ilustrace):** Doplnit konkrétní ilustrační obrázky z „Jak to funguje“ do profilu nebo onboardingu (zdroj + umístění).

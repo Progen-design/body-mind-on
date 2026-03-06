@@ -1719,8 +1719,8 @@ export default function Profil() {
               <div className="first-action-banner">
                 <p>
                   <strong>Tvůj plán je připraven.</strong>{' '}
-                  V plánu níže máš jídelníček a detailní tréninkový návod (rozcvička, cviky, progrese).{' '}
-                  Zapiš první trénink, sleduj denní návyky nebo se podívej na dnešní jídlo v plánu níže.
+                  V rozbalovacích sekcích níže máš jídelníček, recepty a trénink (rozcvička, cviky, progrese).{' '}
+                  Rozklikni „Můj plán“ pro dnešní jídlo, „Co chceš zapsat?“ pro záznam tréninku nebo „Denní návyky“ pro sledování návyků.
                 </p>
               </div>
             )}

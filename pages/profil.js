@@ -2787,50 +2787,73 @@ export default function Profil() {
           box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
         }
 
-        /* ── Rozbalovací bubliny profilu ── */
+        /* ── Rozbalovací bubliny profilu (oválné, centrované) ── */
         .profile-bubbles {
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          align-items: center;
+          gap: 14px;
           margin-bottom: 24px;
+          padding: 0 16px;
         }
         .profile-bubble {
-          border-radius: 16px;
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          background: rgba(24, 24, 36, 0.6);
+          width: 100%;
+          max-width: 380px;
+          border-radius: 50px;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          background: linear-gradient(145deg, rgba(36, 36, 52, 0.95), rgba(24, 24, 36, 0.9));
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
           overflow: hidden;
-          transition: border-color 0.2s, box-shadow 0.2s;
+          transition: border-color 0.2s, box-shadow 0.2s, max-width 0.35s ease, border-radius 0.3s ease;
+        }
+        .profile-bubble:has(.profile-bubble-body[data-open="true"]) {
+          max-width: 100%;
+          border-radius: 20px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
         }
         .profile-bubble:hover {
-          border-color: rgba(255, 255, 255, 0.18);
+          border-color: rgba(255, 255, 255, 0.22);
+          box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
         }
         .profile-bubble-header {
           width: 100%;
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          padding: 16px 20px;
+          justify-content: center;
+          gap: 10px;
+          padding: 14px 24px;
           background: transparent;
           border: none;
           color: #f1f5f9;
-          font-size: 1.1rem;
-          font-weight: 700;
+          font-size: 1.05rem;
+          font-weight: 600;
           cursor: pointer;
-          text-align: left;
+          text-align: center;
           transition: background 0.2s;
         }
         .profile-bubble-header:hover {
-          background: rgba(255, 255, 255, 0.04);
+          background: rgba(255, 255, 255, 0.06);
         }
         .profile-bubble-title {
           flex: 1;
+          text-align: center;
+        }
+        .profile-bubble:has(.profile-bubble-body[data-open="true"]) .profile-bubble-header {
+          justify-content: space-between;
+          text-align: left;
+        }
+        .profile-bubble:has(.profile-bubble-body[data-open="true"]) .profile-bubble-title {
+          text-align: left;
         }
         .profile-bubble-chevron {
           flex-shrink: 0;
-          font-size: 0.7rem;
+          font-size: 0.65rem;
           color: #94a3b8;
+          opacity: 0.8;
           transition: transform 0.25s ease;
+        }
+        .profile-bubble:not(:has(.profile-bubble-body[data-open="true"])) .profile-bubble-chevron {
+          display: none;
         }
         .profile-bubble-chevron.open {
           transform: rotate(180deg);
@@ -2839,7 +2862,7 @@ export default function Profil() {
           max-height: 0;
           overflow: hidden;
           transition: max-height 0.4s ease-out;
-          border-top: 1px solid rgba(255, 255, 255, 0.06);
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
         }
         .profile-bubble-body[data-open="true"] {
           max-height: 5000px;

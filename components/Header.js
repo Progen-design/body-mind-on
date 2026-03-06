@@ -62,7 +62,7 @@ export default function Header() {
                 ) : (
                   <span className="nav-avatar-placeholder" aria-hidden />
                 )}
-                Profil
+                <span className="nav-profil-text">Profil</span>
               </Link>
               <button type="button" onClick={handleLogout} className="nav-logout">
                 Odhlásit se
@@ -123,15 +123,26 @@ export default function Header() {
           min-width: 0;
         }
         @media (max-width: 768px) {
-          nav { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
-          nav::-webkit-scrollbar { height: 3px; }
+          nav {
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            padding: 8px 4px 8px 8px;
+            margin: -8px -4px -8px -8px;
+            gap: 16px;
+          }
+          nav::-webkit-scrollbar { height: 4px; }
           nav::-webkit-scrollbar-thumb { background: rgba(139, 92, 255, 0.4); border-radius: 3px; }
+          nav a, .nav-logout { flex-shrink: 0; }
         }
         @media (max-width: 640px) {
-          nav { gap: 14px; font-size: 14px; }
+          nav { gap: 12px; font-size: 14px; }
+          nav a, .nav-logout { padding: 0 6px; min-height: 40px; }
         }
         @media (max-width: 480px) {
           nav { gap: 10px; font-size: 13px; }
+          .nav-profil-text { display: none; }
+          .nav-profil-link { padding: 0 8px; }
         }
 
         nav a {

@@ -402,6 +402,7 @@ export default function Profil() {
     }
   }, [router.query.edit, profile]);
 
+  // Automatické obnovení dat méně často (3 min), aby stránka ne„přeskakovala“
   useEffect(() => {
     if (!session?.access_token || loading) return;
     const interval = setInterval(async () => {
@@ -410,15 +411,21 @@ export default function Profil() {
         const token = fresh?.access_token ?? session?.access_token;
         if (token) await refetchProfile(token);
       } catch (err) {}
-    }, 30000);
+    }, 180000);
     return () => clearInterval(interval);
   }, [session, loading]);
 
+  // Refetch při návratu na záložku jen pokud byla skrytá aspoň 60 s (sníží „přeskakování“)
   useEffect(() => {
     if (!session?.access_token) return;
+    let hiddenAt = null;
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        refetchProfile(session.access_token, profileRef.current);
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now();
+      } else if (document.visibilityState === 'visible' && hiddenAt != null) {
+        const hiddenDuration = Date.now() - hiddenAt;
+        if (hiddenDuration >= 60000) refetchProfile(session.access_token, profileRef.current);
+        hiddenAt = null;
       }
     };
     document.addEventListener('visibilitychange', onVisibilityChange);
@@ -2739,9 +2746,7 @@ export default function Profil() {
         }
         .trial-banner {
           margin-bottom: 20px;
-          margin-left: auto;
-          margin-right: auto;
-          max-width: 720px;
+          width: 100%;
           padding: 16px 20px;
           border-radius: 12px;
           border: 1px solid;
@@ -2764,13 +2769,13 @@ export default function Profil() {
         .trial-banner-text a { color: #a78bfa; text-decoration: none; }
         .trial-banner-text a:hover { text-decoration: underline; }
         .trial-banner-text--small { font-size: 13px; color: #94a3b8; margin-top: 12px; }
-        .trial-banner-stripe { margin: 16px auto; max-width: 560px; display: flex; justify-content: center; }
+        .trial-banner-stripe { margin: 16px 0; width: 100%; display: flex; justify-content: center; }
         .trial-banner-upgrade { margin-top: 28px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.12); }
         .trial-banner-upgrade-headline {
           font-size: 17px; font-weight: 700; color: #f1f5f9; margin: 0 0 20px; text-align: center; letter-spacing: 0.02em;
         }
         .trial-banner-upgrade-cards {
-          display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 720px; margin: 0 auto;
+          display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%;
         }
         @media (max-width: 640px) {
           .trial-banner-upgrade-cards { grid-template-columns: 1fr; }

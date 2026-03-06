@@ -606,6 +606,7 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
   const [mealPinsLoading, setMealPinsLoading] = useState(false);
   const [pinToastMsg, setPinToastMsg] = useState(null); // lokální toast pro pin
   const [shoppingCopyDone, setShoppingCopyDone] = useState(false);
+  const [shoppingCopyError, setShoppingCopyError] = useState(null);
   const [shoppingSendEmail, setShoppingSendEmail] = useState({ loading: false, done: false, error: null });
   const [dayShoppingState, setDayShoppingState] = useState({}); // { dayIndex: { copyDone, email: { loading, done, error } } }
   const [shoppingFilter, setShoppingFilter] = useState('week'); // 'week' | day originalIndex (number)
@@ -992,13 +993,17 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                       const dayList = buildDayShoppingListFromMeals(day.meals || [], mealOverrides, dayKey);
                       const dayState = dayShoppingState[dayKey] || { copyDone: false, email: { loading: false, done: false, error: null } };
                       if (dayList.length === 0) return null;
-                      const copyAndOpenDay = () => {
+                      const copyAndOpenDay = async () => {
                         const text = dayList.join('\n');
-                        if (navigator.clipboard?.writeText) {
-                          navigator.clipboard.writeText(text).then(() => {
+                        try {
+                          if (navigator.clipboard?.writeText) {
+                            await navigator.clipboard.writeText(text);
                             setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), copyDone: true } }));
                             setTimeout(() => setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), copyDone: false } })), 3000);
-                          });
+                          }
+                        } catch (err) {
+                          setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), copyDone: false, copyError: 'Seznam se nepodařilo zkopírovat – otevři Rohlík.cz a vlož položky ručně ze seznamu níže.' } }));
+                          setTimeout(() => setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), copyError: undefined } })), 6000);
                         }
                         window.open('https://www.rohlik.cz/', '_blank', 'noopener,noreferrer');
                       };
@@ -1047,6 +1052,7 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                             </button>
                           </div>
                           {dayState.copyDone && <span className="plan-copy-hint">Seznam zkopírován do schránky</span>}
+                          {dayState.copyError && <span className="plan-copy-hint plan-copy-error">{dayState.copyError}</span>}
                           {dayState.email.done && <span className="plan-copy-hint plan-copy-success">Odesláno na e-mail</span>}
                           {dayState.email.error && <span className="plan-copy-hint plan-copy-error">{dayState.email.error}</span>}
                           <p className="plan-order-links">
@@ -1231,13 +1237,18 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
             const selectedDay = dayIndex != null && !Number.isNaN(dayIndex) ? displayedDays.find((d) => (d.originalIndex ?? -1) === dayIndex) : null;
             const dayList = selectedDay ? buildDayShoppingListFromMeals(selectedDay.meals || [], mealOverrides, selectedDay.originalIndex ?? 0) : [];
             const list = shoppingFilter === 'week' ? fullList : dayList;
-            const copyAndOpen = () => {
+            const copyAndOpen = async () => {
               const text = list.join('\n');
-              if (navigator.clipboard?.writeText) {
-                navigator.clipboard.writeText(text).then(() => {
+              try {
+                if (navigator.clipboard?.writeText) {
+                  await navigator.clipboard.writeText(text);
                   setShoppingCopyDone(true);
+                  setShoppingCopyError(null);
                   setTimeout(() => setShoppingCopyDone(false), 3000);
-                });
+                }
+              } catch (err) {
+                setShoppingCopyError('Seznam se nepodařilo zkopírovat – vlož položky ručně ze seznamu níže do Rohlík.cz.');
+                setTimeout(() => setShoppingCopyError(null), 6000);
               }
               window.open('https://www.rohlik.cz/', '_blank', 'noopener,noreferrer');
             };
@@ -1321,6 +1332,7 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                             </button>
                           </div>
                           {shoppingCopyDone && <span className="plan-copy-hint">Seznam zkopírován do schránky</span>}
+                          {shoppingCopyError && <span className="plan-copy-hint plan-copy-error">{shoppingCopyError}</span>}
                           {shoppingSendEmail.done && <span className="plan-copy-hint plan-copy-success">Odesláno na e-mail</span>}
                           {shoppingSendEmail.error && <span className="plan-copy-hint plan-copy-error">{shoppingSendEmail.error}</span>}
                           <p className="plan-order-links">

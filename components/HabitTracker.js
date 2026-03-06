@@ -258,7 +258,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   const GAP = '8px';
   const gridCols = `${LABEL_W}px repeat(${days.length}, ${CELL_W}px)`;
 
-  const getCellStyle = (completed, isToday, isFuture, busy) => {
+  const getCellStyle = (completed, isToday, isFuture, busy, isNegative) => {
     const base = {
       appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none',
       width: `${CELL_W}px`, height: '56px', padding: 0, margin: 0,
@@ -271,6 +271,13 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
       pointerEvents: isFuture ? 'none' : 'auto',
     };
     if (completed) {
+      if (isNegative) {
+        return { ...base,
+          background: 'linear-gradient(145deg, #dc2626 0%, #b91c1c 100%)',
+          boxShadow: '0 4px 18px rgba(239,68,68,0.5), 0 0 0 1px rgba(248,113,113,0.3) inset',
+          color: '#fff',
+        };
+      }
       return { ...base,
         background: 'linear-gradient(145deg, #22c55e 0%, #15803d 100%)',
         boxShadow: '0 4px 18px rgba(34,197,94,0.5), 0 0 0 1px rgba(74,222,128,0.3) inset',
@@ -314,8 +321,8 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
             disabled={isFuture || busy}
             aria-pressed={completed}
             aria-label={`${h.label}, ${formatShortDate(dateStr)}${completed ? ', splněno' : ', nesplněno'}`}
-            onMouseEnter={(e) => { if (!isFuture && !busy) { e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)'; e.currentTarget.style.boxShadow = completed ? '0 8px 24px rgba(34,197,94,0.6)' : isToday ? '0 0 0 1.5px rgba(139,92,246,0.8) inset, 0 8px 20px rgba(0,0,0,0.3)' : '0 0 0 1.5px rgba(255,255,255,0.25) inset, 0 8px 20px rgba(0,0,0,0.25)'; } }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = getCellStyle(completed, isToday, isFuture, busy).boxShadow; }}
+            onMouseEnter={(e) => { if (!isFuture && !busy) { e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)'; e.currentTarget.style.boxShadow = completed ? (isNegative ? '0 8px 24px rgba(239,68,68,0.6)' : '0 8px 24px rgba(34,197,94,0.6)') : isToday ? '0 0 0 1.5px rgba(139,92,246,0.8) inset, 0 8px 20px rgba(0,0,0,0.3)' : '0 0 0 1.5px rgba(255,255,255,0.25) inset, 0 8px 20px rgba(0,0,0,0.25)'; } }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = getCellStyle(completed, isToday, isFuture, busy, isNegative).boxShadow; }}
             onMouseDown={(e) => { if (!isFuture && !busy) e.currentTarget.style.transform = 'scale(0.9)'; }}
             onMouseUp={(e) => { if (!isFuture && !busy) e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)'; }}
           >

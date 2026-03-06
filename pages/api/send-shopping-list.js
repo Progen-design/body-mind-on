@@ -28,8 +28,9 @@ export default async function handler(req, res) {
     if (!Array.isArray(items)) {
       return res.status(400).json({ error: 'Očekává se pole položek (items)' });
     }
+    const title = typeof req.body?.title === 'string' && req.body.title.trim() ? req.body.title.trim() : null;
 
-    const result = await sendShoppingListEmail(email, items);
+    const result = await sendShoppingListEmail(email, items, title);
 
     if (!result.ok) {
       return res.status(500).json({ error: result.message || 'E-mail se nepodařilo odeslat.' });

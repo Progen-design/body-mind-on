@@ -1041,10 +1041,11 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                             setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: false, error: 'Pro odeslání e-mailem se přihlas.' } } }));
                             return;
                           }
+                          const dayLabel = (day.dayName || 'Den') + (day.dateStr ? ` (${day.dateStr})` : '');
                           const res = await fetch('/api/send-shopping-list', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                            body: JSON.stringify({ items: dayList }),
+                            body: JSON.stringify({ items: dayList, title: dayLabel }),
                           });
                           const data = await res.json();
                           if (!res.ok) {

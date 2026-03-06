@@ -994,20 +994,28 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                       const dayState = dayShoppingState[dayKey] || { copyDone: false, email: { loading: false, done: false, error: null } };
                       if (dayList.length === 0) return null;
                       const copyAndOpenDay = () => {
-                        const text = dayList.join('\n');
-                        window.open('https://www.rohlik.cz/', '_blank', 'noopener,noreferrer');
-                        (async () => {
-                          try {
-                            if (navigator.clipboard?.writeText) {
-                              await navigator.clipboard.writeText(text);
-                              setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), copyDone: true } }));
-                              setTimeout(() => setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), copyDone: false } })), 3000);
+                        try {
+                          const text = Array.isArray(dayList) ? dayList.join('\n') : '';
+                          window.open('https://www.rohlik.cz/', '_blank', 'noopener,noreferrer');
+                          const key = dayKey;
+                          const safeSetCopyDone = (done, errorMsg = null) => {
+                            try {
+                              setDayShoppingState((s) => ({ ...s, [key]: { ...(s[key] || {}), copyDone: !!done, copyError: errorMsg || undefined } }));
+                            } catch (_) {}
+                          };
+                          (async () => {
+                            try {
+                              if (navigator.clipboard?.writeText && text) {
+                                await navigator.clipboard.writeText(text);
+                                safeSetCopyDone(true);
+                                setTimeout(() => safeSetCopyDone(false), 3000);
+                              }
+                            } catch (_) {
+                              safeSetCopyDone(false, 'Seznam se nepodařilo zkopírovat – vlož položky ručně ze seznamu níže (Ctrl+V na Rohlíku).');
+                              setTimeout(() => safeSetCopyDone(false, null), 6000);
                             }
-                          } catch (err) {
-                            setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), copyDone: false, copyError: 'Seznam se nepodařilo zkopírovat – vlož položky ručně ze seznamu níže (Ctrl+V na Rohlíku).' } }));
-                            setTimeout(() => setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), copyError: undefined } })), 6000);
-                          }
-                        })();
+                          })().catch(() => {});
+                        } catch (_) {}
                       };
                       const handleSendEmailDay = async () => {
                         setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: true, done: false, error: null } } }));
@@ -1240,21 +1248,23 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
             const dayList = selectedDay ? buildDayShoppingListFromMeals(selectedDay.meals || [], mealOverrides, selectedDay.originalIndex ?? 0) : [];
             const list = shoppingFilter === 'week' ? fullList : dayList;
             const copyAndOpen = () => {
-              const text = list.join('\n');
-              window.open('https://www.rohlik.cz/', '_blank', 'noopener,noreferrer');
-              (async () => {
-                try {
-                  if (navigator.clipboard?.writeText) {
-                    await navigator.clipboard.writeText(text);
-                    setShoppingCopyDone(true);
-                    setShoppingCopyError(null);
-                    setTimeout(() => setShoppingCopyDone(false), 3000);
+              try {
+                const text = Array.isArray(list) ? list.join('\n') : '';
+                window.open('https://www.rohlik.cz/', '_blank', 'noopener,noreferrer');
+                (async () => {
+                  try {
+                    if (navigator.clipboard?.writeText && text) {
+                      await navigator.clipboard.writeText(text);
+                      setShoppingCopyDone(true);
+                      setShoppingCopyError(null);
+                      setTimeout(() => setShoppingCopyDone(false), 3000);
+                    }
+                  } catch (_) {
+                    setShoppingCopyError('Seznam se nepodařilo zkopírovat – vlož položky ručně ze seznamu níže (Ctrl+V na Rohlíku).');
+                    setTimeout(() => setShoppingCopyError(null), 6000);
                   }
-                } catch (err) {
-                  setShoppingCopyError('Seznam se nepodařilo zkopírovat – vlož položky ručně ze seznamu níže (Ctrl+V na Rohlíku).');
-                  setTimeout(() => setShoppingCopyError(null), 6000);
-                }
-              })();
+                })().catch(() => {});
+              } catch (_) {}
             };
             const handleSendEmail = async () => {
               setShoppingSendEmail({ loading: true, done: false, error: null });

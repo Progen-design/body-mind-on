@@ -230,7 +230,8 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     return Math.max(1, maxPos, maxNeg);
   }, [chartData]);
   const CHART_BAR_HEIGHT_PX = 360;
-  const HALF_CHART_PX = CHART_BAR_HEIGHT_PX / 2;
+  // Graf „do půlky“ – každá polovina (zelená/červená) má max poloviční výšku
+  const HALF_CHART_PX = Math.round(CHART_BAR_HEIGHT_PX / 4);
 
   if (positiveHabits.length === 0 && negativeHabits.length === 0) {
     return (
@@ -316,7 +317,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           <button
             key={`${h.id}-${dateStr}`}
             type="button"
-            style={getCellStyle(completed, isToday, isFuture, busy)}
+            style={getCellStyle(completed, isToday, isFuture, busy, isNegative)}
             onClick={() => !isFuture && !busy && handleToggle(h.id, dateStr)}
             disabled={isFuture || busy}
             aria-pressed={completed}
@@ -329,9 +330,15 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
             {busy ? (
               <span className="hg-spin" />
             ) : completed ? (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              isNegative ? (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" stroke="#fff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              ) : (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )
             ) : (
               <span style={{ width: '22px', height: '22px', borderRadius: '50%', border: isToday ? '2px solid rgba(167,139,250,0.65)' : '2px solid rgba(255,255,255,0.28)', display: 'block' }} />
             )}

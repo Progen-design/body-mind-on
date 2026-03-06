@@ -32,13 +32,11 @@ export default async function handler(req, res) {
     const email = user.email?.toLowerCase();
     if (!email) return res.status(400).json({ error: 'Chybí e-mail.' });
 
-    // Plán s nejpozdějším valid_until (aktuální nebo už vygenerovaný náhled) – následující naváže na něj
-    const todayStr = new Date().toISOString().split('T')[0];
+    // Plán s nejpozdějším valid_until (vždy navázat na poslední den – i když plán už skončil)
     const { data: plans } = await supabaseServer
       .from('ai_generated_plans')
       .select('valid_from, valid_until')
       .eq('user_id', user.id)
-      .gte('valid_until', todayStr)
       .order('valid_until', { ascending: false })
       .limit(1);
 

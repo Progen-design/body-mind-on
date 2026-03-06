@@ -230,8 +230,8 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     return Math.max(1, maxPos, maxNeg);
   }, [chartData]);
   const CHART_BAR_HEIGHT_PX = 360;
-  // Graf „do půlky“ – každá polovina (zelená/červená) má max poloviční výšku
-  const HALF_CHART_PX = Math.round(CHART_BAR_HEIGHT_PX / 4);
+  // 50 % / 50 % vůči dennímu plánu – horní (zdravé) a dolní (zlozvyky) polovina stejná výška i měřítko
+  const HALF_CHART_PX = Math.round(CHART_BAR_HEIGHT_PX / 2);
 
   if (positiveHabits.length === 0 && negativeHabits.length === 0) {
     return (

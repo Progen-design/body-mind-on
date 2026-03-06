@@ -991,7 +991,14 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                     {(() => {
                       const dayKey = day.originalIndex ?? di;
                       const dayList = buildDayShoppingListFromMeals(day.meals || [], mealOverrides, dayKey);
-                      const dayState = dayShoppingState[dayKey] || { copyDone: false, email: { loading: false, done: false, error: null } };
+                      const raw = dayShoppingState[dayKey];
+                      const dayState = {
+                        copyDone: raw?.copyDone ?? false,
+                        copyError: raw?.copyError ?? null,
+                        email: raw?.email && typeof raw.email === 'object'
+                          ? { loading: !!raw.email.loading, done: !!raw.email.done, error: raw.email.error ?? null }
+                          : { loading: false, done: false, error: null },
+                      };
                       if (dayList.length === 0) return null;
                       const copyAndOpenDay = () => {
                         try {

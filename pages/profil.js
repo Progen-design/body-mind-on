@@ -1801,15 +1801,11 @@ export default function Profil() {
               </>
             )}
 
-            {/* Jasná první akce – pro uživatele bez tréninku (jen klienti) */}
+            {/* Krátký tip – pro uživatele bez tréninku (jen klienti) */}
             {!profile?.can_create_calendar_events && workouts.length === 0 && currentPlan && (
               <div className="first-action-banner">
-                <p>
-                  <strong>Tvůj plán je připraven.</strong>{' '}
-                  V rozbalovacích sekcích níže máš jídelníček, recepty a trénink (rozcvička, cviky, progrese).
-                  <br />
-                  Rozklikni „Jídelníček a tréninkový plán“ pro dnešní jídlo, „Co chceš zapsat?“ pro záznam tréninku nebo „Denní návyky“ pro sledování návyků.
-                </p>
+                <p className="first-action-banner-lead">Tvůj plán je připraven.</p>
+                <p className="first-action-banner-text">Rozklikni sekce níže – <strong>Jídelníček a tréninkový plán</strong>, <strong>Co chceš zapsat?</strong> nebo <strong>Denní návyky</strong>.</p>
               </div>
             )}
 
@@ -2832,10 +2828,10 @@ export default function Profil() {
           display: flex;
           align-items: center;
           justify-content: flex-start;
-          gap: 40px;
+          gap: 48px;
           flex-wrap: wrap;
-          margin-bottom: 24px;
-          padding: 0 16px;
+          margin-bottom: 32px;
+          padding: 24px 20px 0;
         }
         .profile-welcome.profile-welcome--centered {
           justify-content: center;
@@ -2861,34 +2857,35 @@ export default function Profil() {
           text-align: left;
         }
         .profile-welcome-title {
-          margin: 0 0 8px;
-          font-size: 32px;
+          margin: 0 0 6px;
+          font-size: 28px;
           font-weight: 700;
           color: #fff;
           letter-spacing: -0.02em;
-          line-height: 1.2;
+          line-height: 1.25;
         }
         .profile-welcome-title > span {
-          background: linear-gradient(90deg, #9b5cff, #00cfff);
+          background: linear-gradient(90deg, #a78bfa, #22d3ee);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
         }
         .profile-welcome-sub {
           margin: 0;
-          font-size: 16px;
+          font-size: 15px;
           color: #94a3b8;
           line-height: 1.5;
         }
 
         .profile-membership-plan-card {
-          margin-bottom: 20px;
-          padding: 16px 22px 24px;
-          border-radius: 16px;
+          margin-bottom: 28px;
+          padding: 22px 24px 28px;
+          border-radius: 20px;
           border: 1px solid;
           display: flex;
           flex-direction: column;
           gap: 0;
+          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
         }
         .profile-membership-plan-card.membership-card--start {
           background: linear-gradient(135deg, rgba(100,116,139,0.25), rgba(71,85,105,0.18));
@@ -2957,15 +2954,15 @@ export default function Profil() {
           border-color: rgba(239, 68, 68, 0.7);
         }
         .plan-goal-in-card {
-          padding-top: 18px;
-          margin-top: 18px;
-          border-top: 1px solid rgba(255, 255, 255, 0.12);
+          padding-top: 22px;
+          margin-top: 22px;
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
         .plan-goal-row {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 24px;
+          gap: 28px;
           flex-wrap: wrap;
         }
         .plan-goal-avatar-col {
@@ -3029,11 +3026,11 @@ export default function Profil() {
         .plan-goal-stats {
           display: flex;
           align-items: center;
-          gap: 24px;
+          gap: 28px;
           flex-wrap: wrap;
-          padding: 12px 20px;
-          background: rgba(0, 0, 0, 0.2);
-          border-radius: 12px;
+          padding: 14px 24px;
+          background: rgba(255, 255, 255, 0.06);
+          border-radius: 14px;
           border: 1px solid rgba(255, 255, 255, 0.08);
         }
         .plan-goal-stat {
@@ -3088,8 +3085,8 @@ export default function Profil() {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 14px;
-          margin-bottom: 24px;
+          gap: 16px;
+          margin-bottom: 32px;
           padding: 0 16px;
         }
         .profile-bubble {
@@ -3170,7 +3167,7 @@ export default function Profil() {
 
         .hero {
           text-align: center;
-          margin-bottom: 40px;
+          margin-bottom: 48px;
         }
         .hero-avatar-wrap {
           margin-bottom: 16px;
@@ -3212,25 +3209,26 @@ export default function Profil() {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 2px;
-          margin-top: 12px;
-          padding: 12px 20px;
-          border-radius: 12px;
-          border: 1px solid rgba(139, 92, 255, 0.4);
-          background: linear-gradient(135deg, rgba(109, 40, 217, 0.2), rgba(59, 130, 246, 0.1));
+          gap: 4px;
+          margin-top: 20px;
+          padding: 14px 24px;
+          border-radius: 14px;
+          border: 1px solid rgba(139, 92, 255, 0.35);
+          background: linear-gradient(135deg, rgba(109, 40, 217, 0.18), rgba(59, 130, 246, 0.08));
           color: #e2e8f0;
-          font-size: 14px;
+          font-size: 15px;
           font-weight: 600;
           cursor: pointer;
           text-align: center;
-          transition: background 0.2s, border-color 0.2s;
+          transition: background 0.2s, border-color 0.2s, transform 0.2s;
         }
         .hero-prefs-btn:hover {
-          background: linear-gradient(135deg, rgba(109, 40, 217, 0.3), rgba(59, 130, 246, 0.15));
-          border-color: rgba(139, 92, 255, 0.6);
+          background: linear-gradient(135deg, rgba(109, 40, 217, 0.28), rgba(59, 130, 246, 0.12));
+          border-color: rgba(139, 92, 255, 0.5);
+          transform: translateY(-1px);
         }
-        .hero-prefs-emoji { font-size: 16px; }
-        .hero-prefs-sublabel { font-size: 11px; font-weight: 400; color: #94a3b8; }
+        .hero-prefs-emoji { font-size: 18px; }
+        .hero-prefs-sublabel { font-size: 12px; font-weight: 400; color: #94a3b8; }
         .avatar-crop-overlay {
           position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center;
           z-index: 9999; padding: 20px; box-sizing: border-box;
@@ -3517,20 +3515,30 @@ export default function Profil() {
           color: #64748b;
         }
         .first-action-banner {
-          margin-bottom: 24px;
-          padding: 16px 20px;
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(99, 102, 241, 0.1));
-          border: 1px solid rgba(139, 92, 255, 0.3);
-          border-radius: 12px;
+          margin-bottom: 28px;
+          padding: 20px 24px;
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(99, 102, 241, 0.08));
+          border: 1px solid rgba(139, 92, 255, 0.25);
+          border-radius: 16px;
           text-align: center;
+          max-width: 520px;
+          margin-left: auto;
+          margin-right: auto;
         }
-        .first-action-banner p {
+        .first-action-banner-lead {
+          margin: 0 0 8px;
+          font-size: 17px;
+          font-weight: 700;
+          color: #fff;
+          letter-spacing: -0.01em;
+        }
+        .first-action-banner-text {
           margin: 0;
-          font-size: 15px;
-          color: #e9d5ff;
-          line-height: 1.5;
+          font-size: 14px;
+          color: #c4b5fd;
+          line-height: 1.55;
         }
-        .first-action-banner strong { color: #fff; }
+        .first-action-banner strong { color: #e9d5ff; font-weight: 600; }
 
         .milestones-block {
           margin-bottom: 28px;
@@ -3634,24 +3642,30 @@ export default function Profil() {
 
         .toolbar {
           text-align: center;
-          margin: -8px 0 20px;
+          margin: 0 0 28px;
           display: flex;
           flex-wrap: wrap;
           justify-content: center;
-          gap: 12px;
+          gap: 10px;
         }
         .btn-refresh, .btn-send-plan {
-          padding: 8px 16px;
+          padding: 10px 18px;
           background: rgba(255,255,255,0.06);
-          border: 1px solid #444;
-          border-radius: 10px;
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: 12px;
           color: #94a3b8;
           font-size: 13px;
           cursor: pointer;
+          transition: background 0.2s, border-color 0.2s, color 0.2s;
         }
-        .btn-refresh:hover:not(:disabled), .btn-send-plan:hover:not(:disabled) { background: rgba(255,255,255,0.1); color: #c4b5fd; }
-        .btn-refresh:disabled, .btn-send-plan:disabled { opacity: 0.6; cursor: not-allowed; }
-        .btn-next-week { border-color: rgba(155, 92, 255, 0.5); color: #c4b5fd; }
+        .btn-refresh:hover:not(:disabled), .btn-send-plan:hover:not(:disabled) {
+          background: rgba(255,255,255,0.1);
+          border-color: rgba(255,255,255,0.2);
+          color: #c4b5fd;
+        }
+        .btn-refresh:disabled, .btn-send-plan:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-next-week { border-color: rgba(155, 92, 255, 0.4); color: #c4b5fd; }
+        .btn-next-week:hover:not(:disabled) { background: rgba(139, 92, 255, 0.12); }
 
         .plan-next-week-preview { margin-bottom: 24px; }
         .plan-next-week-summary {

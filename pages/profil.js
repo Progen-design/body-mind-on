@@ -1402,10 +1402,34 @@ export default function Profil() {
               </div>
               {(currentPlan || program === 'ON_CLUB' || program === 'VIP') && (
                 <div className="plan-goal-in-card">
-                  <h2 className="plan-goal-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
-                  <span className="plan-goal-badge plan-goal-badge-program">
-                    {program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP' : getPlanTypeLabel(currentPlan?.plan_type) || 'START'}
-                  </span>
+                  <div className="plan-goal-row">
+                    <div className="plan-goal-avatar-col">
+                      <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="plan-goal-avatar-btn" aria-label="Změnit profilový obrázek">
+                        {profile?.user?.avatar_url ? (
+                          <img src={profile.user.avatar_url} alt="" className="plan-goal-avatar" />
+                        ) : (
+                          <span className="plan-goal-avatar-placeholder" aria-hidden>{firstName?.charAt(0)?.toUpperCase() || '?'}</span>
+                        )}
+                      </button>
+                      <input
+                        type="file"
+                        ref={avatarInputRef}
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        className="hero-avatar-input-hidden"
+                        onChange={handleAvatarUpload}
+                      />
+                      <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="plan-goal-avatar-change">
+                        {uploadingAvatar ? 'Nahrávám…' : 'Změnit obrázek'}
+                      </button>
+                      {avatarError && <p className="plan-goal-avatar-error" role="alert">{avatarError}</p>}
+                    </div>
+                    <div className="plan-goal-text-col">
+                      <h2 className="plan-goal-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
+                      <span className="plan-goal-badge plan-goal-badge-program">
+                        {program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP' : getPlanTypeLabel(currentPlan?.plan_type) || 'START'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -1448,22 +1472,26 @@ export default function Profil() {
 
         <section className="hero">
           <div className="hero-avatar-wrap">
-            {profile?.user?.avatar_url ? (
-              <img src={profile.user.avatar_url} alt="" className="hero-avatar" />
-            ) : (
-              <span className="hero-avatar-placeholder" aria-hidden>{firstName?.charAt(0)?.toUpperCase() || '?'}</span>
+            {profile?.can_create_calendar_events && (
+              <>
+                {profile?.user?.avatar_url ? (
+                  <img src={profile.user.avatar_url} alt="" className="hero-avatar" />
+                ) : (
+                  <span className="hero-avatar-placeholder" aria-hidden>{firstName?.charAt(0)?.toUpperCase() || '?'}</span>
+                )}
+                <input
+                  type="file"
+                  ref={avatarInputRef}
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  className="hero-avatar-input-hidden"
+                  onChange={handleAvatarUpload}
+                />
+                <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="hero-avatar-change">
+                  {uploadingAvatar ? 'Nahrávám…' : 'Změnit obrázek'}
+                </button>
+                {avatarError && <p className="hero-avatar-error" role="alert">{avatarError}</p>}
+              </>
             )}
-            <input
-              type="file"
-              ref={avatarInputRef}
-              accept="image/jpeg,image/png,image/gif,image/webp"
-              className="hero-avatar-input-hidden"
-              onChange={handleAvatarUpload}
-            />
-            <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="hero-avatar-change">
-              {uploadingAvatar ? 'Nahrávám…' : 'Změnit obrázek'}
-            </button>
-            {avatarError && <p className="hero-avatar-error" role="alert">{avatarError}</p>}
             {!profile?.can_create_calendar_events && (
               <button
                 type="button"
@@ -2846,10 +2874,74 @@ export default function Profil() {
           border-color: rgba(239, 68, 68, 0.7);
         }
         .plan-goal-in-card {
-          text-align: center;
           padding-top: 18px;
           margin-top: 18px;
           border-top: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .plan-goal-row {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 24px;
+          flex-wrap: wrap;
+        }
+        .plan-goal-avatar-col {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+        .plan-goal-avatar-btn {
+          width: 72px;
+          height: 72px;
+          border-radius: 50%;
+          border: 2px solid rgba(148, 163, 184, 0.4);
+          padding: 0;
+          overflow: hidden;
+          background: none;
+          cursor: pointer;
+          transition: border-color 0.2s, transform 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .plan-goal-avatar-btn:hover {
+          border-color: rgba(196, 181, 253, 0.7);
+          transform: scale(1.02);
+        }
+        .plan-goal-avatar {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .plan-goal-avatar-placeholder {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, #4a3b6c, #3d2e5c);
+          color: #c4b5fd;
+          font-size: 28px;
+          font-weight: 600;
+        }
+        .plan-goal-avatar-change {
+          font-size: 12px;
+          color: #94a3b8;
+          background: none;
+          border: none;
+          cursor: pointer;
+          text-decoration: underline;
+          padding: 0;
+        }
+        .plan-goal-avatar-change:hover:not(:disabled) { color: #c4b5fd; }
+        .plan-goal-avatar-change:disabled { opacity: 0.7; cursor: wait; }
+        .plan-goal-avatar-error { margin: 0; font-size: 12px; color: #fca5a5; }
+        .plan-goal-text-col {
+          text-align: center;
+          flex: 1;
+          min-width: 200px;
         }
         .plan-goal-hero-title {
           margin: 0 0 12px;
@@ -2857,6 +2949,7 @@ export default function Profil() {
           font-weight: 700;
           color: #fff;
           text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+          line-height: 1.3;
         }
         .plan-goal-badge {
           display: inline-block;

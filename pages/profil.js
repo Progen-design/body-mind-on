@@ -2709,7 +2709,7 @@ export default function Profil() {
         .page {
           min-height: 100vh;
           padding: 60px 20px 100px;
-          background: #0a0a0f;
+          background: transparent;
           color: #fff;
           font-family: Inter, sans-serif;
           position: relative;
@@ -2718,11 +2718,16 @@ export default function Profil() {
         .page-bg-decor {
           position: fixed;
           inset: 0;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
           pointer-events: none;
           z-index: 0;
           overflow: hidden;
+          background-color: #0a0a0f;
           background-image:
-            linear-gradient(180deg, rgba(10,10,15,0.94) 0%, rgba(10,10,15,0.88) 50%, rgba(10,10,15,0.92) 100%),
+            linear-gradient(180deg, rgba(10,10,15,0.75) 0%, rgba(10,10,15,0.65) 50%, rgba(10,10,15,0.78) 100%),
             url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1920&q=80');
           background-size: cover;
           background-position: center;
@@ -2778,16 +2783,22 @@ export default function Profil() {
           gap: 0;
         }
         .profile-membership-plan-card.membership-card--start {
-          background: linear-gradient(135deg, rgba(100,116,139,0.12), rgba(71,85,105,0.08));
+          background: linear-gradient(135deg, rgba(100,116,139,0.25), rgba(71,85,105,0.18));
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
           border-color: rgba(100,116,139,0.35);
         }
         .profile-membership-plan-card.membership-card--on-club {
-          background: linear-gradient(135deg, rgba(109,40,217,0.18), rgba(59,130,246,0.10));
+          background: linear-gradient(135deg, rgba(109,40,217,0.28), rgba(59,130,246,0.18));
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
           border-color: rgba(139,92,255,0.45);
           box-shadow: 0 4px 20px rgba(109,40,217,0.12);
         }
         .profile-membership-plan-card.membership-card--vip {
-          background: linear-gradient(135deg, rgba(180,130,20,0.18), rgba(234,179,8,0.10));
+          background: linear-gradient(135deg, rgba(180,130,20,0.28), rgba(234,179,8,0.18));
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
           border-color: rgba(234,179,8,0.45);
           box-shadow: 0 4px 20px rgba(180,130,20,0.18);
         }
@@ -2865,9 +2876,11 @@ export default function Profil() {
           width: 100%;
           max-width: 380px;
           border-radius: 50px;
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          background: linear-gradient(145deg, rgba(36, 36, 52, 0.95), rgba(24, 24, 36, 0.9));
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          background: linear-gradient(145deg, rgba(36, 36, 52, 0.55), rgba(24, 24, 36, 0.5));
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
           overflow: hidden;
           transition: border-color 0.2s, box-shadow 0.2s, max-width 0.35s ease, border-radius 0.3s ease;
         }

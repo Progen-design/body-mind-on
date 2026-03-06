@@ -111,6 +111,12 @@ function stripImagesFromHtml(html) {
   return html.replace(/<img[^>]*>/gi, '').trim();
 }
 
+/** Odstraní blok „Progrese a bezpečnost“ z tréninkového HTML (duplicitní k denním cílům). */
+function stripProgreseBezpecnost(html) {
+  if (!html || typeof html !== 'string') return html;
+  return html.replace(/<p[^>]*>[\s\S]*?Progrese a bezpečnost[\s\S]*?<\/p>/gi, '').trim();
+}
+
 function recipeContentOnly(html) {
   if (!html || typeof html !== 'string') return html;
   const lower = html.toLowerCase();
@@ -597,7 +603,6 @@ function normalizeMealTextForPin(text) {
 }
 
 export default function PlanViewer({ plan, userName, hideHero, dietaryPreferences = '', canPinMeals = true, onToast }) {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [parsed, setParsed] = useState(null);
   const [recipeModal, setRecipeModal] = useState(null); // { title, content, anchorRect, hasRecipe, openId? }
   const [mealOverrides, setMealOverrides] = useState({}); // { "di_mi": { title, content } }
@@ -1402,19 +1407,9 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
           {parsed?.workout && parsed.workout.trim() ? (
             <div id="plan-trenink" className="plan-block plan-block-training">
               <h3 className="plan-block-title">Trénink</h3>
-              <div className="plan-training-content" dangerouslySetInnerHTML={{ __html: stripImagesFromHtml(parsed.workout) }} />
+              <div className="plan-training-content" dangerouslySetInnerHTML={{ __html: stripProgreseBezpecnost(stripImagesFromHtml(parsed.workout)) }} />
             </div>
           ) : null}
-
-          {/* Regenerace, Suplementace, Mindset – zbytek v rozbalovacím celém plánu */}
-          <div className="plan-expandable">
-            <button type="button" className="plan-toggle" onClick={() => setIsExpanded(!isExpanded)}>
-              {isExpanded ? '▼ Skrýt celý plán (trénink, regenerace, původní text)' : '▶ Zobrazit celý plán'}
-            </button>
-            {isExpanded && (
-              <div className="plan-full-content" dangerouslySetInnerHTML={{ __html: plan.plan_html }} />
-            )}
-          </div>
         </>
       ) : (
         <>
@@ -1427,14 +1422,6 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
               </div>
             </div>
           )}
-          <div className="plan-expandable">
-            <button type="button" className="plan-toggle" onClick={() => setIsExpanded(!isExpanded)}>
-              {isExpanded ? '▼ Skrýt celý plán' : '▶ Zobrazit celý plán'}
-            </button>
-            {isExpanded && (
-              <div className="plan-full-content" dangerouslySetInnerHTML={{ __html: plan.plan_html }} />
-            )}
-          </div>
         </>
       )}
 

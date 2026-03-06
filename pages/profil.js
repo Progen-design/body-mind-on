@@ -1377,10 +1377,11 @@ export default function Profil() {
                   </span>
                   <div>
                     <div className="membership-tier-label">Tvé členství</div>
-                    <div className="membership-tier-sub">
-                      {program === 'VIP' && 'Plný přístup · Osobní coaching · Prémiová podpora'}
-                      {program === 'ON_CLUB' && 'Habit tracker · AI plán · Tréninky · Statistiky'}
-                      {program !== 'VIP' && program !== 'ON_CLUB' && 'AI plán · Jídelníček · Základní sledování'}
+                    <div className="profile-quick-nav">
+                      <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('denni-navyky')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('denni-navyky'); }}>Habit tracker</button>
+                      <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('muj-plan'); }}>Můj plán</button>
+                      <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('rychle-akce')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('rychle-akce'); }}>Tréninky</button>
+                      <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('statistiky')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('statistiky'); }}>Statistiky</button>
                     </div>
                   </div>
                 </div>
@@ -2806,6 +2807,27 @@ export default function Profil() {
           justify-content: space-between;
           gap: 16px;
           flex-wrap: wrap;
+        }
+        .profile-quick-nav {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-top: 8px;
+        }
+        .profile-quick-nav-btn {
+          padding: 8px 14px;
+          border-radius: 8px;
+          border: 1px solid rgba(255, 255, 255, 0.25);
+          background: rgba(255, 255, 255, 0.08);
+          color: #e2e8f0;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.2s, border-color 0.2s;
+        }
+        .profile-quick-nav-btn:hover {
+          background: rgba(255, 255, 255, 0.15);
+          border-color: rgba(255, 255, 255, 0.35);
         }
         .plan-goal-in-card {
           text-align: center;

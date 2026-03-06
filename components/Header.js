@@ -39,7 +39,6 @@ export default function Header() {
   }
 
   const homeHref = isApp ? MAIN_SITE : "/";
-  const jakToFungujeUrl = "https://gamma.app/docs/8imen0seu9h3125#card-mfzse8ia5u4lf3k";
   const registraceUrl = "https://bodyandmindon.cz/#card-pnjildktpojs3bo";
 
   const isRegistrationPage = ["/start", "/on-club", "/chci-vip"].includes(router.pathname);
@@ -52,7 +51,6 @@ export default function Header() {
           <strong>Body & Mind ON</strong>
         </a>
         <nav>
-          <a href={jakToFungujeUrl} target="_blank" rel="noopener noreferrer">Jak to funguje</a>
           {showLoggedInNav ? (
             <>
               <Link href="/komunita">Komunita</Link>

@@ -1828,8 +1828,7 @@ export default function Profil() {
               </p>
               {!profile?.can_create_calendar_events && (
                 <p className="trainer-schedule-lead trainer-schedule-lead-how">
-                  Tréninky zapisuje trenér do kalendáře; tobě přijde pozvánka na e-mail a po potvrzení se událost zobrazí zde (zelená = potvrzeno, žlutá = čeká na schválení).{' '}
-                  <a href="https://gamma.app/docs/8imen0seu9h3125#card-mfzse8ia5u4lf3k" target="_blank" rel="noopener noreferrer">Jak to funguje</a>
+                  Tréninky zapisuje trenér do kalendáře; tobě přijde pozvánka na e-mail a po potvrzení se událost zobrazí zde (zelená = potvrzeno, žlutá = čeká na schválení).
                 </p>
               )}
               <p className="trainer-schedule-actions">

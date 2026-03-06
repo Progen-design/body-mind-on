@@ -757,13 +757,24 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
   })();
 
   return (
-    <section className="card plan-section plan-section-premium">
+    <section id="plan-overview" className="card plan-section plan-section-premium">
       {/* Hero nadpis (lze skrýt, když je vykreslen nahoře na stránce) */}
       {!hideHero && (
         <div className="plan-hero">
           <h2 className="plan-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
           {plan.plan_type && <span className="plan-badge">{getPlanTypeLabel(plan.plan_type)}</span>}
         </div>
+      )}
+
+      {/* Navigace: Můj plán | Jídelníček | Trénink */}
+      {showGraphical && (
+        <nav className="plan-nav" aria-label="Sekce plánu">
+          <a href="#plan-overview" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-overview')?.scrollIntoView({ behavior: 'smooth' }); }}>Můj plán</a>
+          <span className="plan-nav-sep" aria-hidden>|</span>
+          <a href="#plan-jidelnicek" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-jidelnicek')?.scrollIntoView({ behavior: 'smooth' }); }}>Jídelníček</a>
+          <span className="plan-nav-sep" aria-hidden>|</span>
+          <a href="#plan-trenink" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-trenink')?.scrollIntoView({ behavior: 'smooth' }); }}>Trénink</a>
+        </nav>
       )}
 
       {!isValid && (
@@ -873,8 +884,8 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
 
           {/* Jídelníček – od dneška dál (dynamicky podle aktuálního dne) */}
           {displayedDays?.length > 0 && (
-            <div className="plan-block">
-              <h3 className="plan-block-title">Jídelníček od dneška</h3>
+            <div id="plan-jidelnicek" className="plan-block">
+              <h3 className="plan-block-title">Jídelníček</h3>
               {plan.valid_from && plan.valid_until && (
                 <p className="plan-validity-range">
                   Platnost plánu: {new Date(plan.valid_from).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' })} – {new Date(plan.valid_until).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' })}
@@ -1389,8 +1400,8 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
 
           {/* Tréninkový plán – viditelný blok (jeden z hlavních bodů plánu) */}
           {parsed?.workout && parsed.workout.trim() ? (
-            <div className="plan-block plan-block-training">
-              <h3 className="plan-block-title">🏋️ Tréninkový plán – jak cvičit</h3>
+            <div id="plan-trenink" className="plan-block plan-block-training">
+              <h3 className="plan-block-title">Trénink</h3>
               <div className="plan-training-content" dangerouslySetInnerHTML={{ __html: stripImagesFromHtml(parsed.workout) }} />
             </div>
           ) : null}
@@ -1473,6 +1484,32 @@ const planSectionStyles = `
     font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
+  }
+
+  .plan-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    background: rgba(30, 41, 59, 0.5);
+    border-radius: 12px;
+    border: 1px solid rgba(139, 92, 255, 0.25);
+  }
+  .plan-nav-item {
+    color: #c4b5fd;
+    font-weight: 600;
+    font-size: 15px;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .plan-nav-item:hover {
+    color: #e9d5ff;
+  }
+  .plan-nav-sep {
+    color: rgba(148, 163, 184, 0.6);
+    font-size: 14px;
   }
 
   .plan-expired {

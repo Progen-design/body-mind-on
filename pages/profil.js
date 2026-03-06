@@ -209,6 +209,16 @@ export default function Profil() {
   const [loadingClients, setLoadingClients] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [showFullClientCard, setShowFullClientCard] = useState(false);
+  const [profileOpenSections, setProfileOpenSections] = useState(new Set(['rychle-akce', 'muj-plan', 'moji-klienti']));
+
+  const toggleProfileSection = (id) => {
+    setProfileOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const [workoutForm, setWorkoutForm] = useState({
     workout_date: '',
@@ -1534,9 +1544,16 @@ export default function Profil() {
 
         {!loading && !error && (
           <>
-            {/* Trenér: Moji klienti */}
+            {/* Trenér: Moji klienti – bublina */}
             {profile?.can_create_calendar_events && (
               <>
+              <div className="profile-bubbles">
+              <div className="profile-bubble" id="moji-klienti">
+                <button type="button" id="profile-bubble-header-moji-klienti" className="profile-bubble-header" onClick={() => toggleProfileSection('moji-klienti')} aria-expanded={profileOpenSections.has('moji-klienti')} aria-controls="profile-bubble-body-moji-klienti">
+                  <span className="profile-bubble-title">Moji klienti</span>
+                  <span className={`profile-bubble-chevron ${profileOpenSections.has('moji-klienti') ? 'open' : ''}`} aria-hidden>▼</span>
+                </button>
+                <div id="profile-bubble-body-moji-klienti" role="region" aria-labelledby="profile-bubble-header-moji-klienti" className="profile-bubble-body" data-open={profileOpenSections.has('moji-klienti')}>
               <section className="card trainer-clients-section">
                 <h2 className="section-head">Moji klienti</h2>
                 {loadingClients ? (
@@ -1578,6 +1595,9 @@ export default function Profil() {
                   </div>
                 )}
               </section>
+                </div>
+              </div>
+              </div>
 
               {/* Modal karta klienta */}
               {selectedClient && (
@@ -1702,8 +1722,33 @@ export default function Profil() {
               </div>
             )}
 
-            {/* Tvé milníky (jen pro klienty) */}
             {!profile?.can_create_calendar_events && (
+            <div className="toolbar">
+              <button type="button" onClick={handleRefresh} disabled={refreshing} className="btn-refresh" title="Obnovit data">
+                {refreshing ? 'Obnovuji…' : '🔄 Obnovit'}
+              </button>
+              {currentPlan && (
+                <button type="button" onClick={handleSendPlanAgain} disabled={sendingPlan} className="btn-send-plan" title="Poslat plán znovu na e-mail">
+                  {sendingPlan ? 'Odesílám…' : '📧 Poslat plán znovu'}
+                </button>
+              )}
+              {(membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired)) && currentPlan && (
+                <button type="button" onClick={handleGenerateNextWeek} disabled={generatingNextWeek} className="btn-send-plan btn-next-week" title="Vygeneruje náhled jídelníčku na příští týden včetně označených jídel – ověříš, že se zahrnou">
+                  {generatingNextWeek ? 'Generuji…' : '📅 Náhled příštího týdne'}
+                </button>
+              )}
+            </div>
+            )}
+
+            {/* Sjednocený kontejner bublin – pro trenéra i klienta */}
+            <div className="profile-bubbles">
+            {!profile?.can_create_calendar_events && (
+            <div className="profile-bubble" id="milniky">
+              <button type="button" id="profile-bubble-header-milniky" className="profile-bubble-header" onClick={() => toggleProfileSection('milniky')} aria-expanded={profileOpenSections.has('milniky')} aria-controls="profile-bubble-body-milniky">
+                <span className="profile-bubble-title">Tvé milníky</span>
+                <span className={`profile-bubble-chevron ${profileOpenSections.has('milniky') ? 'open' : ''}`} aria-hidden>▼</span>
+              </button>
+              <div id="profile-bubble-body-milniky" role="region" aria-labelledby="profile-bubble-header-milniky" className="profile-bubble-body" data-open={profileOpenSections.has('milniky')}>
             <section className="milestones-block">
               <h2 className="section-head">Tvé milníky</h2>
               <div className="milestones-list">
@@ -1735,10 +1780,18 @@ export default function Profil() {
                 </div>
               </div>
             </section>
+              </div>
+            </div>
             )}
 
-            {/* Mindset na tento týden (jen klienti) */}
+            {/* Mindset na tento týden (jen klienti) – bublina */}
             {!profile?.can_create_calendar_events && mindsetTipFromPlan && (
+            <div className="profile-bubble" id="mindset">
+              <button type="button" id="profile-bubble-header-mindset" className="profile-bubble-header" onClick={() => toggleProfileSection('mindset')} aria-expanded={profileOpenSections.has('mindset')} aria-controls="profile-bubble-body-mindset">
+                <span className="profile-bubble-title">Mindset na tento týden</span>
+                <span className={`profile-bubble-chevron ${profileOpenSections.has('mindset') ? 'open' : ''}`} aria-hidden>▼</span>
+              </button>
+              <div id="profile-bubble-body-mindset" role="region" aria-labelledby="profile-bubble-header-mindset" className="profile-bubble-body" data-open={profileOpenSections.has('mindset')}>
               <div className="mindset-block">
                 <div className="mindset-header">
                   <span className="mindset-icon">🧠</span>
@@ -1749,27 +1802,19 @@ export default function Profil() {
                   dangerouslySetInnerHTML={{ __html: mindsetTipFromPlan }}
                 />
               </div>
+              </div>
+            </div>
             )}
 
             {!profile?.can_create_calendar_events && (
             <>
-            <div className="toolbar">
-              <button type="button" onClick={handleRefresh} disabled={refreshing} className="btn-refresh" title="Obnovit data">
-                {refreshing ? 'Obnovuji…' : '🔄 Obnovit'}
+            {/* RYCHLÉ AKCE – bublina (jen klienti) */}
+            <div className="profile-bubble" id="rychle-akce">
+              <button type="button" id="profile-bubble-header-rychle-akce" className="profile-bubble-header" onClick={() => toggleProfileSection('rychle-akce')} aria-expanded={profileOpenSections.has('rychle-akce')} aria-controls="profile-bubble-body-rychle-akce">
+                <span className="profile-bubble-title">Co chceš zapsat?</span>
+                <span className={`profile-bubble-chevron ${profileOpenSections.has('rychle-akce') ? 'open' : ''}`} aria-hidden>▼</span>
               </button>
-              {currentPlan && (
-                <button type="button" onClick={handleSendPlanAgain} disabled={sendingPlan} className="btn-send-plan" title="Poslat plán znovu na e-mail">
-                  {sendingPlan ? 'Odesílám…' : '📧 Poslat plán znovu'}
-                </button>
-              )}
-              {(membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired)) && currentPlan && (
-                <button type="button" onClick={handleGenerateNextWeek} disabled={generatingNextWeek} className="btn-send-plan btn-next-week" title="Vygeneruje náhled jídelníčku na příští týden včetně označených jídel – ověříš, že se zahrnou">
-                  {generatingNextWeek ? 'Generuji…' : '📅 Náhled příštího týdne'}
-                </button>
-              )}
-            </div>
-
-            {/* RYCHLÉ AKCE – výrazný pruh (jen klienti) */}
+              <div id="profile-bubble-body-rychle-akce" role="region" aria-labelledby="profile-bubble-header-rychle-akce" className="profile-bubble-body" data-open={profileOpenSections.has('rychle-akce')}>
             <section className="actions-block">
               <h2 className="actions-title">Co chceš zapsat?</h2>
               <div className="action-buttons">
@@ -1815,10 +1860,18 @@ export default function Profil() {
                 )}
               </div>
             </section>
+              </div>
+            </div>
             </>
             )}
 
-            {/* Plánované tréninky – z kalendáře trenéra (info@) */}
+            {/* Kdy mám trénink? / Můj kalendář – bublina (pro oba) */}
+            <div className="profile-bubble" id="kalendar">
+              <button type="button" id="profile-bubble-header-kalendar" className="profile-bubble-header" onClick={() => toggleProfileSection('kalendar')} aria-expanded={profileOpenSections.has('kalendar')} aria-controls="profile-bubble-body-kalendar">
+                <span className="profile-bubble-title">{profile?.can_create_calendar_events ? 'Můj kalendář tréninků' : 'Kdy mám trénink?'}</span>
+                <span className={`profile-bubble-chevron ${profileOpenSections.has('kalendar') ? 'open' : ''}`} aria-hidden>▼</span>
+              </button>
+              <div id="profile-bubble-body-kalendar" role="region" aria-labelledby="profile-bubble-header-kalendar" className="profile-bubble-body" data-open={profileOpenSections.has('kalendar')}>
             <section className="card trainer-schedule-section">
               <h2 className="section-head">{profile?.can_create_calendar_events ? 'Můj kalendář tréninků' : 'Kdy mám trénink?'}</h2>
               <p className="trainer-schedule-lead">
@@ -2012,9 +2065,17 @@ export default function Profil() {
               );
               })()}
             </section>
+              </div>
+            </div>
 
-            {/* Souhrn návyků tento týden – propojení s profilem (trenér nepotřebuje denní návyky) */}
+            {/* Souhrn návyků tento týden – bublina (ON_CLUB/VIP) */}
             {!profile?.can_create_calendar_events && (program === 'ON_CLUB' || program === 'VIP') && profile?.user_habits?.length > 0 && (
+            <div className="profile-bubble" id="navyky-tyden">
+              <button type="button" id="profile-bubble-header-navyky-tyden" className="profile-bubble-header" onClick={() => toggleProfileSection('navyky-tyden')} aria-expanded={profileOpenSections.has('navyky-tyden')} aria-controls="profile-bubble-body-navyky-tyden">
+                <span className="profile-bubble-title">Návyky tento týden</span>
+                <span className={`profile-bubble-chevron ${profileOpenSections.has('navyky-tyden') ? 'open' : ''}`} aria-hidden>▼</span>
+              </button>
+              <div id="profile-bubble-body-navyky-tyden" role="region" aria-labelledby="profile-bubble-header-navyky-tyden" className="profile-bubble-body" data-open={profileOpenSections.has('navyky-tyden')}>
               <div className="habit-summary-card">
                 <h3 className="habit-summary-title">Návyky tento týden</h3>
                 <div className="habit-summary-row">
@@ -2027,20 +2088,36 @@ export default function Profil() {
                 </div>
                 <p className="habit-summary-note">Odhad váhy v profilu vychází z tréninků. Na výsledky má vliv i strava a to, jak plníš zdravé návyky a vyhýbáš se zlozvykům.</p>
               </div>
+              </div>
+            </div>
             )}
 
-            {/* Denní návyky (jen pro klienty, trenér nepotřebuje) */}
+            {/* Denní návyky – bublina (jen pro klienty) */}
             {!profile?.can_create_calendar_events && (
+            <div className="profile-bubble" id="denni-navyky">
+              <button type="button" id="profile-bubble-header-denni-navyky" className="profile-bubble-header" onClick={() => toggleProfileSection('denni-navyky')} aria-expanded={profileOpenSections.has('denni-navyky')} aria-controls="profile-bubble-body-denni-navyky">
+                <span className="profile-bubble-title">Denní návyky</span>
+                <span className={`profile-bubble-chevron ${profileOpenSections.has('denni-navyky') ? 'open' : ''}`} aria-hidden>▼</span>
+              </button>
+              <div id="profile-bubble-body-denni-navyky" role="region" aria-labelledby="profile-bubble-header-denni-navyky" className="profile-bubble-body" data-open={profileOpenSections.has('denni-navyky')}>
             <HabitTracker
               session={session}
               userHabits={profile?.user_habits}
               onToast={(t) => setToast({ message: t.message, type: t.type })}
               onHabitSaved={() => refetchProfile(session?.access_token)}
             />
+              </div>
+            </div>
             )}
 
-            {/* MŮJ PLÁN (jen klienti) */}
+            {/* MŮJ PLÁN – bublina (jen klienti) */}
             {!profile?.can_create_calendar_events && currentPlan && (
+            <div className="profile-bubble" id="muj-plan">
+              <button type="button" id="profile-bubble-header-muj-plan" className="profile-bubble-header" onClick={() => toggleProfileSection('muj-plan')} aria-expanded={profileOpenSections.has('muj-plan')} aria-controls="profile-bubble-body-muj-plan">
+                <span className="profile-bubble-title">Můj plán</span>
+                <span className={`profile-bubble-chevron ${profileOpenSections.has('muj-plan') ? 'open' : ''}`} aria-hidden>▼</span>
+              </button>
+              <div id="profile-bubble-body-muj-plan" role="region" aria-labelledby="profile-bubble-header-muj-plan" className="profile-bubble-body" data-open={profileOpenSections.has('muj-plan')}>
               <PlanViewer
                 plan={currentPlan}
                 userName={userName}
@@ -2056,10 +2133,18 @@ export default function Profil() {
                 onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
                 canPinMeals={membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired)}
               />
+              </div>
+            </div>
             )}
 
-            {/* Náhled jídelníčku na příští týden – ověření označených jídel */}
+            {/* Náhled příštího týdne – bublina */}
             {!profile?.can_create_calendar_events && nextPlan && (
+            <div className="profile-bubble" id="nahled-tyden">
+              <button type="button" id="profile-bubble-header-nahled-tyden" className="profile-bubble-header" onClick={() => toggleProfileSection('nahled-tyden')} aria-expanded={profileOpenSections.has('nahled-tyden')} aria-controls="profile-bubble-body-nahled-tyden">
+                <span className="profile-bubble-title">Náhled příštího týdne</span>
+                <span className={`profile-bubble-chevron ${profileOpenSections.has('nahled-tyden') ? 'open' : ''}`} aria-hidden>▼</span>
+              </button>
+              <div id="profile-bubble-body-nahled-tyden" role="region" aria-labelledby="profile-bubble-header-nahled-tyden" className="profile-bubble-body" data-open={profileOpenSections.has('nahled-tyden')}>
               <details className="card plan-next-week-preview" open>
                 <summary className="plan-next-week-summary">
                   📅 Náhled příštího týdne ({nextPlan.valid_from && new Date(nextPlan.valid_from).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short' })} – {nextPlan.valid_until && new Date(nextPlan.valid_until).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short', year: 'numeric' })})
@@ -2080,10 +2165,18 @@ export default function Profil() {
                   canPinMeals={false}
                 />
               </details>
+              </div>
+            </div>
             )}
 
-            {/* Historie tréninků (jen klienti) */}
+            {/* Historie tréninků – bublina (jen klienti) */}
             {!profile?.can_create_calendar_events && (
+            <div className="profile-bubble" id="historie">
+              <button type="button" id="profile-bubble-header-historie" className="profile-bubble-header" onClick={() => toggleProfileSection('historie')} aria-expanded={profileOpenSections.has('historie')} aria-controls="profile-bubble-body-historie">
+                <span className="profile-bubble-title">Historie tréninků</span>
+                <span className={`profile-bubble-chevron ${profileOpenSections.has('historie') ? 'open' : ''}`} aria-hidden>▼</span>
+              </button>
+              <div id="profile-bubble-body-historie" role="region" aria-labelledby="profile-bubble-header-historie" className="profile-bubble-body" data-open={profileOpenSections.has('historie')}>
             <section className="card history-section">
               <h2 className="section-head">Historie tréninků</h2>
               {workouts.length === 0 ? (
@@ -2113,10 +2206,18 @@ export default function Profil() {
                 </>
               )}
             </section>
+              </div>
+            </div>
             )}
 
-            {/* KPI – horizontální pruh (jen klienti) */}
+            {/* Statistiky – bublina (jen klienti) */}
             {!profile?.can_create_calendar_events && (
+            <div className="profile-bubble" id="statistiky">
+              <button type="button" id="profile-bubble-header-statistiky" className="profile-bubble-header" onClick={() => toggleProfileSection('statistiky')} aria-expanded={profileOpenSections.has('statistiky')} aria-controls="profile-bubble-body-statistiky">
+                <span className="profile-bubble-title">Statistiky</span>
+                <span className={`profile-bubble-chevron ${profileOpenSections.has('statistiky') ? 'open' : ''}`} aria-hidden>▼</span>
+              </button>
+              <div id="profile-bubble-body-statistiky" role="region" aria-labelledby="profile-bubble-header-statistiky" className="profile-bubble-body" data-open={profileOpenSections.has('statistiky')}>
             <section className="kpi-section">
               <h2 className="section-head">Statistiky</h2>
               <div className="kpis-bar">
@@ -2148,10 +2249,18 @@ export default function Profil() {
                 </div>
               </div>
             </section>
+              </div>
+            </div>
             )}
 
-            {/* GRAF VÁHY (jen klienti) */}
+            {/* Vývoj váhy – bublina (jen klienti) */}
             {!profile?.can_create_calendar_events && (
+            <div className="profile-bubble" id="vyvoj-vahy">
+              <button type="button" id="profile-bubble-header-vyvoj-vahy" className="profile-bubble-header" onClick={() => toggleProfileSection('vyvoj-vahy')} aria-expanded={profileOpenSections.has('vyvoj-vahy')} aria-controls="profile-bubble-body-vyvoj-vahy">
+                <span className="profile-bubble-title">Vývoj váhy</span>
+                <span className={`profile-bubble-chevron ${profileOpenSections.has('vyvoj-vahy') ? 'open' : ''}`} aria-hidden>▼</span>
+              </button>
+              <div id="profile-bubble-body-vyvoj-vahy" role="region" aria-labelledby="profile-bubble-header-vyvoj-vahy" className="profile-bubble-body" data-open={profileOpenSections.has('vyvoj-vahy')}>
             <section className="card chart-section">
               <h2 className="section-head">Vývoj váhy</h2>
               {(chartWeightData || []).length >= 1 ? (
@@ -2233,10 +2342,18 @@ export default function Profil() {
                 <p className="chart-empty">Graf se naplní automaticky podle zapsaných tréninků (výchozí váha z registrace). Zapiš tréninky a uvidíš odhad vývoje váhy.</p>
               )}
             </section>
+              </div>
+            </div>
             )}
 
-            {/* TVŮJ PROGRES – celý blok sjednocený na úplný konec profilu (jen klienti) */}
+            {/* Tvůj progres – bublina (jen klienti) */}
             {!profile?.can_create_calendar_events && (
+            <div className="profile-bubble" id="progres">
+              <button type="button" id="profile-bubble-header-progres" className="profile-bubble-header" onClick={() => toggleProfileSection('progres')} aria-expanded={profileOpenSections.has('progres')} aria-controls="profile-bubble-body-progres">
+                <span className="profile-bubble-title">Tvůj progres</span>
+                <span className={`profile-bubble-chevron ${profileOpenSections.has('progres') ? 'open' : ''}`} aria-hidden>▼</span>
+              </button>
+              <div id="profile-bubble-body-progres" role="region" aria-labelledby="profile-bubble-header-progres" className="profile-bubble-body" data-open={profileOpenSections.has('progres')}>
             <section className="card card-accent center progress-section progress-detail-end">
               <h2 className="section-head">Tvůj progres</h2>
               <p className="progress-dates">Období: <strong>{periodStartFormatted}</strong> – <strong>{periodEndFormatted}</strong></p>
@@ -2328,7 +2445,12 @@ export default function Profil() {
                 </p>
               )}
             </section>
+              </div>
+            </div>
             )}
+
+            </div>
+            {/* konec profile-bubbles */}
 
             {/* Modaly */}
             {showWorkoutModal && (
@@ -2663,6 +2785,66 @@ export default function Profil() {
           padding: 8px 18px;
           border: 1px solid rgba(255, 255, 255, 0.4);
           box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* ── Rozbalovací bubliny profilu ── */
+        .profile-bubbles {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          margin-bottom: 24px;
+        }
+        .profile-bubble {
+          border-radius: 16px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          background: rgba(24, 24, 36, 0.6);
+          overflow: hidden;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .profile-bubble:hover {
+          border-color: rgba(255, 255, 255, 0.18);
+        }
+        .profile-bubble-header {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 16px 20px;
+          background: transparent;
+          border: none;
+          color: #f1f5f9;
+          font-size: 1.1rem;
+          font-weight: 700;
+          cursor: pointer;
+          text-align: left;
+          transition: background 0.2s;
+        }
+        .profile-bubble-header:hover {
+          background: rgba(255, 255, 255, 0.04);
+        }
+        .profile-bubble-title {
+          flex: 1;
+        }
+        .profile-bubble-chevron {
+          flex-shrink: 0;
+          font-size: 0.7rem;
+          color: #94a3b8;
+          transition: transform 0.25s ease;
+        }
+        .profile-bubble-chevron.open {
+          transform: rotate(180deg);
+        }
+        .profile-bubble-body {
+          max-height: 0;
+          overflow: hidden;
+          transition: max-height 0.4s ease-out;
+          border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .profile-bubble-body[data-open="true"] {
+          max-height: 5000px;
+          padding: 0 20px 20px;
+          box-sizing: border-box;
         }
 
         .hero {

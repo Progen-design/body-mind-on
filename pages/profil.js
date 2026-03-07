@@ -1536,6 +1536,9 @@ export default function Profil() {
                     </div>
                     <div className="profile-hero-copy">
                       <p className="profile-hero-welcome">Vítej v našem klubu ADPO.</p>
+                      <p className="profile-hero-program">
+                        Jsi v programu {program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP' : (getPlanTypeLabel(currentPlan?.plan_type) || 'START')}.
+                      </p>
                       <h1 className="profile-hero-title">
                         <span>{firstName}</span>
                       </h1>
@@ -1569,7 +1572,6 @@ export default function Profil() {
                     {program === 'VIP' ? '👑' : program === 'ON_CLUB' ? '⚡' : '🚀'}
                   </span>
                   <div className="membership-card-nav-wrap">
-                    <div className="membership-tier-label">Tvé členství</div>
                     <nav className="profile-quick-nav" aria-label="Rychlá navigace">
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('denni-navyky')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('denni-navyky'); }}>Habit tracker</button>
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('muj-plan'); }}>Jídelníček a trénink</button>
@@ -3157,6 +3159,13 @@ export default function Profil() {
           color: #c4b5fd;
           letter-spacing: 0;
         }
+        .profile-hero-program {
+          margin: 0 0 8px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #e9d5ff;
+          opacity: 0.9;
+        }
         .profile-hero-title {
           margin: 0 0 10px;
           font-size: clamp(30px, 4vw, 42px);
@@ -3234,7 +3243,7 @@ export default function Profil() {
           flex-wrap: nowrap;
           align-items: center;
           gap: 8px;
-          margin-top: 10px;
+          margin-top: 0;
           width: 100%;
           overflow-x: auto;
           overflow-y: hidden;

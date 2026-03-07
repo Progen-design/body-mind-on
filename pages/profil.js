@@ -65,9 +65,96 @@ const KCAL_PER_MIN_BY_TYPE = {
   ostatni: 4,
 };
 
+const WORKOUT_DISTANCE_KCAL_PER_KM = {
+  beh: 60,
+  kolo: 30,
+  chuze: 35,
+  nordic_walking: 45,
+  brusleni: 50,
+  lyzovani: 55,
+};
+
+const WORKOUT_DISTANCE_PACE_MIN_PER_KM = {
+  beh: 6.5,
+  kolo: 3.3,
+  chuze: 12,
+  nordic_walking: 10,
+  brusleni: 5,
+  lyzovani: 6,
+};
+
+function parseWorkoutMetaFromNotes(rawNotes) {
+  const notes = typeof rawNotes === 'string' ? rawNotes : '';
+  const marker = /\n?\[BMO_META\](\{[\s\S]*\})$/;
+  const m = notes.match(marker);
+  if (!m) return { userNotes: notes.trim(), meta: {} };
+  try {
+    const meta = JSON.parse(m[1]) || {};
+    return { userNotes: notes.replace(marker, '').trim(), meta };
+  } catch (_) {
+    return { userNotes: notes.trim(), meta: {} };
+  }
+}
+
+function serializeWorkoutNotesWithMeta(userNotes, meta) {
+  const clean = (userNotes || '').trim();
+  const normalizedMeta = {};
+  Object.entries(meta || {}).forEach(([key, value]) => {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric) && numeric > 0) {
+      normalizedMeta[key] = numeric;
+    }
+  });
+  if (Object.keys(normalizedMeta).length === 0) return clean;
+  const payload = `${clean}\n[BMO_META]${JSON.stringify(normalizedMeta)}`.trim();
+  return payload;
+}
+
+function getWorkoutDistanceKm(workout) {
+  const type = (workout?.workout_type || 'ostatni').toLowerCase();
+  const { meta } = parseWorkoutMetaFromNotes(workout?.notes);
+  if (type === 'plavani') {
+    const meters = Number(meta?.distance_m) || 0;
+    return meters > 0 ? meters / 1000 : 0;
+  }
+  const km = Number(meta?.distance_km) || 0;
+  return km > 0 ? km : 0;
+}
+
+function getWorkoutDurationMinutes(workout) {
+  const explicit = Number(workout?.duration_min) || 0;
+  if (explicit > 0) return explicit;
+  const type = (workout?.workout_type || 'ostatni').toLowerCase();
+  const km = getWorkoutDistanceKm(workout);
+  const pace = WORKOUT_DISTANCE_PACE_MIN_PER_KM[type];
+  if (km > 0 && pace) return Math.round(km * pace);
+  return 0;
+}
+
+function getWorkoutDetailLabel(workout) {
+  const type = (workout?.workout_type || 'ostatni').toLowerCase();
+  const { meta } = parseWorkoutMetaFromNotes(workout?.notes);
+  if (type === 'plavani') {
+    const meters = Number(meta?.distance_m) || 0;
+    if (meters > 0) return `${meters} m`;
+  }
+  const km = Number(meta?.distance_km) || 0;
+  if (km > 0) return `${km.toFixed(km < 10 ? 1 : 0)} km`;
+  return '';
+}
+
 function estimatedCalories(workout) {
   const type = (workout.workout_type || 'ostatni').toLowerCase();
-  const min = Number(workout.duration_min) || 0;
+  const km = getWorkoutDistanceKm(workout);
+  if (km > 0) {
+    if (type === 'plavani') {
+      // Orientační výdej: cca 10 kcal / 100 m plavání.
+      return Math.round(km * 1000 * 0.1);
+    }
+    const perKm = WORKOUT_DISTANCE_KCAL_PER_KM[type];
+    if (perKm) return Math.round(km * perKm);
+  }
+  const min = getWorkoutDurationMinutes(workout);
   const kcalPerMin = KCAL_PER_MIN_BY_TYPE[type] ?? KCAL_PER_MIN_BY_TYPE.ostatni;
   return Math.round(min * kcalPerMin);
 }
@@ -224,6 +311,8 @@ export default function Profil() {
     workout_date: '',
     workout_type: 'silovy',
     duration_min: 45,
+    distance_km: '',
+    distance_m: '',
     notes: '',
     perceived_difficulty: '',
   });
@@ -252,6 +341,11 @@ export default function Profil() {
   const lastMutatedAtRef = useRef(0);
   const workoutDateInputRef = useRef(null);
   useEffect(() => { profileRef.current = profile; }, [profile]);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
+  }, []);
 
   const fetchOptions = { cache: 'no-store' };
 
@@ -444,6 +538,15 @@ export default function Profil() {
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   }, [session?.access_token]);
 
+  useEffect(() => {
+    if (!showWorkoutModal || typeof window === 'undefined') return;
+    const raf = requestAnimationFrame(() => {
+      const modalEl = document.querySelector('.modal-overlay .modal');
+      modalEl?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [showWorkoutModal]);
+
   // Habit wizard jen pro ON Club a VIP; průvodce (tour) jen pro ON Club a VIP – START to mít nesmí (přidaná hodnota)
   useEffect(() => {
     if (!loading && session && !error && profile) {
@@ -486,9 +589,9 @@ export default function Profil() {
     let cancelled = false;
     setLoadingSchedule(true);
     const monday = getMondayOfWeek(new Date());
-    const mondayStr = monday.toISOString().slice(0, 10);
+    const mondayStr = getLocalDateStr(monday);
     const from = dateStrAddDays(mondayStr, -14);
-    const to = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const to = getLocalDateStr(new Date(Date.now() + 90 * 24 * 60 * 60 * 1000));
     fetch(`${typeof window !== 'undefined' ? '' : ''}/api/trainer-schedule?from=${from}&to=${to}`, {
       headers: { Authorization: `Bearer ${session.access_token}` },
     })
@@ -626,7 +729,13 @@ export default function Profil() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(workoutForm),
+        body: JSON.stringify({
+          ...workoutForm,
+          notes: serializeWorkoutNotesWithMeta(workoutForm.notes, {
+            distance_km: workoutForm.distance_km ? Number(workoutForm.distance_km) : null,
+            distance_m: workoutForm.distance_m ? Number(workoutForm.distance_m) : null,
+          }),
+        }),
       });
 
       const json = await res.json();
@@ -655,7 +764,15 @@ export default function Profil() {
         });
         
         // Zavřít modal a resetovat formulář OKAMŽITĚ
-        setWorkoutForm({ workout_date: getLocalDateStr(new Date()), workout_type: 'silovy', duration_min: 45, notes: '', perceived_difficulty: '' });
+        setWorkoutForm({
+          workout_date: getLocalDateStr(new Date()),
+          workout_type: 'silovy',
+          duration_min: 45,
+          distance_km: '',
+          distance_m: '',
+          notes: '',
+          perceived_difficulty: '',
+        });
         setShowWorkoutModal(false);
         if (fresh) setSession(fresh);
         
@@ -1070,22 +1187,22 @@ export default function Profil() {
     const daysSinceWeekStart = (now.getDay() - regDow + 7) % 7;
     const weekStart = new Date(now);
     weekStart.setDate(now.getDate() - daysSinceWeekStart);
-    const weekStartStr = weekStart.toISOString().split('T')[0];
+    const weekStartStr = getLocalDateStr(weekStart);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
-    const weekEndStr = weekEnd.toISOString().split('T')[0];
+    const weekEndStr = getLocalDateStr(weekEnd);
     const getDate = (x) => (x.workout_date || '').toString().slice(0, 10);
     const thisWeek = w.filter((x) => getDate(x) >= weekStartStr);
     const thisWeekDates = [...new Set(thisWeek.map((x) => getDate(x)))].sort().map((d) => formatShortDate(d));
-    const minWeek = thisWeek.reduce((s, x) => s + (Number(x.duration_min) || 0), 0);
+    const minWeek = thisWeek.reduce((s, x) => s + getWorkoutDurationMinutes(x), 0);
     const kcalWeek = thisWeek.reduce((s, x) => s + estimatedCalories(x), 0);
-    const minTotal = w.reduce((s, x) => s + (Number(x.duration_min) || 0), 0);
+    const minTotal = w.reduce((s, x) => s + getWorkoutDurationMinutes(x), 0);
     const kcalTotal = w.reduce((s, x) => s + estimatedCalories(x), 0);
     const lastWeekStart = new Date(weekStart);
     lastWeekStart.setDate(lastWeekStart.getDate() - 7);
-    const lastWeekStartStr = lastWeekStart.toISOString().split('T')[0];
+    const lastWeekStartStr = getLocalDateStr(lastWeekStart);
     const lastWeek = w.filter((x) => getDate(x) >= lastWeekStartStr && getDate(x) < weekStartStr);
-    const lastWeekMin = lastWeek.reduce((s, x) => s + (Number(x.duration_min) || 0), 0);
+    const lastWeekMin = lastWeek.reduce((s, x) => s + getWorkoutDurationMinutes(x), 0);
     const workoutTrend = lastWeek.length > 0 || thisWeek.length > 0
       ? (thisWeek.length > lastWeek.length ? '↑' : thisWeek.length < lastWeek.length ? '↓' : '→')
       : null;
@@ -1298,7 +1415,6 @@ export default function Profil() {
       return null;
     }
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
     // 1) Plány, jejichž interval (valid_from, valid_until) obsahuje dnes
     const containingToday = profile.plans.filter((p) => {
       const from = p.valid_from ? new Date(p.valid_from) : null;
@@ -1750,16 +1866,26 @@ export default function Profil() {
                       {selectedClient.last_workout && !showFullClientCard && (
                         <div className="trainer-client-modal-section">
                           <h4 className="trainer-client-modal-section-title">Detail posledního tréninku</h4>
+                          {(() => {
+                            const minutes = getWorkoutDurationMinutes(selectedClient.last_workout);
+                            const detailLabel = getWorkoutDetailLabel(selectedClient.last_workout);
+                            const { userNotes } = parseWorkoutMetaFromNotes(selectedClient.last_workout.notes);
+                            return (
                           <dl className="trainer-client-dl trainer-client-dl-compact">
                             <dt>Datum</dt><dd>{formatDate(selectedClient.last_workout.workout_date)}</dd>
                             <dt>Typ</dt><dd>{selectedClient.last_workout.workout_name || selectedClient.last_workout.workout_type || '—'}</dd>
-                            {selectedClient.last_workout.duration_min != null && (
-                              <><dt>Délka</dt><dd>{selectedClient.last_workout.duration_min} min</dd></>
+                            {minutes > 0 && (
+                              <><dt>Délka</dt><dd>{minutes} min</dd></>
                             )}
-                            {selectedClient.last_workout.notes && (
-                              <><dt>Poznámka</dt><dd>{selectedClient.last_workout.notes}</dd></>
+                            {detailLabel && (
+                              <><dt>Objem</dt><dd>{detailLabel}</dd></>
+                            )}
+                            {userNotes && (
+                              <><dt>Poznámka</dt><dd>{userNotes}</dd></>
                             )}
                           </dl>
+                            );
+                          })()}
                         </div>
                       )}
                       {showFullClientCard && (
@@ -1799,14 +1925,19 @@ export default function Profil() {
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    {selectedClient.last_workouts.map((w, i) => (
-                                      <tr key={`${w.workout_date}-${i}`}>
-                                        <td>{formatDate(w.workout_date)}</td>
-                                        <td>{w.workout_name || w.workout_type || '—'}</td>
-                                        <td>{w.duration_min != null ? `${w.duration_min} min` : '—'}</td>
-                                        <td className="trainer-client-workout-notes">{w.notes || '—'}</td>
-                                      </tr>
-                                    ))}
+                                    {selectedClient.last_workouts.map((w, i) => {
+                                      const minutes = getWorkoutDurationMinutes(w);
+                                      const detailLabel = getWorkoutDetailLabel(w);
+                                      const { userNotes } = parseWorkoutMetaFromNotes(w.notes);
+                                      return (
+                                        <tr key={`${w.workout_date}-${i}`}>
+                                          <td>{formatDate(w.workout_date)}</td>
+                                          <td>{w.workout_name || w.workout_type || '—'}</td>
+                                          <td>{minutes > 0 ? `${minutes} min${detailLabel ? ` / ${detailLabel}` : ''}` : (detailLabel || '—')}</td>
+                                          <td className="trainer-client-workout-notes">{userNotes || '—'}</td>
+                                        </tr>
+                                      );
+                                    })}
                                   </tbody>
                                 </table>
                               </div>
@@ -2250,19 +2381,25 @@ export default function Profil() {
               ) : (
                 <>
                   <ul className="workout-list" key={`workouts-${profile?._updated ?? 0}`}>
-                    {(showAllWorkouts ? workouts : workouts.slice(0, 3)).map((w, idx) => (
-                      <li key={w.id ?? `w-${idx}-${w.workout_date}`} className="workout-item">
-                        <span className="workout-icon">{WORKOUT_TYPES.find((t) => t.id === (w.workout_type || '').toLowerCase())?.emoji || '🏋️'}</span>
-                        <div className="workout-info">
-                          <strong>{WORKOUT_TYPES.find((t) => t.id === (w.workout_type || '').toLowerCase())?.label || w.workout_name || 'Trénink'}</strong>
-                          <span className="workout-meta">
-                            {formatShortDate(w.workout_date)} · {(Number(w.duration_min) || 0)} min
-                            {w.notes ? ` · ${w.notes}` : ''}
-                          </span>
-                        </div>
-                        <button type="button" onClick={() => handleDeleteWorkout(w.id)} className="workout-delete" title="Smazat">✕</button>
-                      </li>
-                    ))}
+                    {(showAllWorkouts ? workouts : workouts.slice(0, 3)).map((w, idx) => {
+                      const { userNotes } = parseWorkoutMetaFromNotes(w.notes);
+                      const minutes = getWorkoutDurationMinutes(w);
+                      const detailLabel = getWorkoutDetailLabel(w);
+                      return (
+                        <li key={w.id ?? `w-${idx}-${w.workout_date}`} className="workout-item">
+                          <span className="workout-icon">{WORKOUT_TYPES.find((t) => t.id === (w.workout_type || '').toLowerCase())?.emoji || '🏋️'}</span>
+                          <div className="workout-info">
+                            <strong>{WORKOUT_TYPES.find((t) => t.id === (w.workout_type || '').toLowerCase())?.label || w.workout_name || 'Trénink'}</strong>
+                            <span className="workout-meta">
+                              {formatShortDate(w.workout_date)} · {minutes} min
+                              {detailLabel ? ` · ${detailLabel}` : ''}
+                              {userNotes ? ` · ${userNotes}` : ''}
+                            </span>
+                          </div>
+                          <button type="button" onClick={() => handleDeleteWorkout(w.id)} className="workout-delete" title="Smazat">✕</button>
+                        </li>
+                      );
+                    })}
                   </ul>
                   {workouts.length > 3 && (
                     <button type="button" className="workout-expand-btn" onClick={() => setShowAllWorkouts((v) => !v)}>
@@ -2548,13 +2685,47 @@ export default function Profil() {
                       </button>
                     </div>
                     <label>Typ</label>
-                    <select value={workoutForm.workout_type} onChange={(e) => setWorkoutForm((f) => ({ ...f, workout_type: e.target.value }))}>
+                    <select
+                      value={workoutForm.workout_type}
+                      onChange={(e) => setWorkoutForm((f) => ({
+                        ...f,
+                        workout_type: e.target.value,
+                        distance_m: e.target.value === 'plavani' ? f.distance_m : '',
+                        distance_km: ['beh', 'kolo', 'chuze', 'nordic_walking', 'brusleni', 'lyzovani'].includes(e.target.value) ? f.distance_km : '',
+                      }))}
+                    >
                       {WORKOUT_TYPES.map((t) => (
                         <option key={t.id} value={t.id}>{t.emoji} {t.label}</option>
                       ))}
                     </select>
                     <label>Délka (min)</label>
                     <input type="number" min={1} value={workoutForm.duration_min} onChange={(e) => setWorkoutForm((f) => ({ ...f, duration_min: Number(e.target.value) || 0 }))} />
+                    {workoutForm.workout_type === 'plavani' && (
+                      <>
+                        <label>Počet metrů</label>
+                        <input
+                          type="number"
+                          min={25}
+                          step={25}
+                          value={workoutForm.distance_m}
+                          onChange={(e) => setWorkoutForm((f) => ({ ...f, distance_m: e.target.value }))}
+                          placeholder="např. 1000"
+                        />
+                      </>
+                    )}
+                    {['beh', 'kolo', 'chuze', 'nordic_walking', 'brusleni', 'lyzovani'].includes(workoutForm.workout_type) && (
+                      <>
+                        <label>Vzdálenost (km)</label>
+                        <input
+                          type="number"
+                          min={0.1}
+                          step={0.1}
+                          value={workoutForm.distance_km}
+                          onChange={(e) => setWorkoutForm((f) => ({ ...f, distance_km: e.target.value }))}
+                          placeholder="např. 5.5"
+                        />
+                      </>
+                    )}
                     <label>Poznámka (volitelné)</label>
                     <input type="text" value={workoutForm.notes} onChange={(e) => setWorkoutForm((f) => ({ ...f, notes: e.target.value }))} placeholder="např. nohy" />
                     <label>Jak náročné to pro tebe bylo?</label>
@@ -2783,6 +2954,9 @@ export default function Profil() {
           background: transparent;
           color: #fff;
           font-family: Inter, sans-serif;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+          text-rendering: optimizeLegibility;
           position: relative;
           overflow-x: hidden;
         }
@@ -2870,8 +3044,8 @@ export default function Profil() {
           border-radius: 18px;
           background: linear-gradient(145deg, rgba(19, 24, 40, 0.72), rgba(33, 26, 56, 0.58));
           border: 1px solid rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(14px);
-          -webkit-backdrop-filter: blur(14px);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
           box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
           min-width: 280px;
         }
@@ -2891,7 +3065,6 @@ export default function Profil() {
           font-size: 18px;
           font-weight: 700;
           color: #fff;
-          text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
           line-height: 1.3;
           text-align: left;
         }
@@ -2901,8 +3074,8 @@ export default function Profil() {
           border-radius: 18px;
           background: linear-gradient(145deg, rgba(16, 20, 34, 0.68), rgba(30, 26, 50, 0.54));
           border: 1px solid rgba(255, 255, 255, 0.08);
-          backdrop-filter: blur(14px);
-          -webkit-backdrop-filter: blur(14px);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
           box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
           flex: 1;
           min-width: 280px;
@@ -3192,8 +3365,8 @@ export default function Profil() {
           border-radius: 50px;
           border: 1px solid rgba(255, 255, 255, 0.18);
           background: linear-gradient(145deg, rgba(36, 36, 52, 0.55), rgba(24, 24, 36, 0.5));
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
+          backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(6px);
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
           overflow: hidden;
           transition: border-color 0.2s, box-shadow 0.2s, max-width 0.35s ease, border-radius 0.3s ease;
@@ -4432,10 +4605,10 @@ export default function Profil() {
           inset: 0;
           background: rgba(0,0,0,0.7);
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           justify-content: center;
           z-index: 1000;
-          padding: 20px;
+          padding: 56px 20px 20px;
         }
         .modal {
           background: #1a1a2e;
@@ -4444,6 +4617,8 @@ export default function Profil() {
           max-width: 400px;
           width: 100%;
           border: 1px solid #333;
+          max-height: calc(100vh - 96px);
+          overflow-y: auto;
         }
         .modal-preferences { max-width: 520px; max-height: 90vh; overflow-y: auto; }
         .preferences-section { margin-bottom: 24px; }
@@ -4726,8 +4901,8 @@ export default function Profil() {
           .kpis-bar .kpi-label, .kpis-bar .kpi-sub { font-size: 11px; }
           .kpi-divider { min-height: 40px; }
           .section-head { font-size: 1.25rem; }
-          .modal-overlay { padding: 12px; align-items: flex-end; }
-          .modal { max-width: 100%; border-radius: 16px 16px 0 0; padding: 24px 20px; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+          .modal-overlay { padding: 16px 12px 12px; align-items: flex-start; }
+          .modal { max-width: 100%; border-radius: 16px; padding: 24px 20px; padding-bottom: max(24px, env(safe-area-inset-bottom)); max-height: calc(100vh - 28px); }
           .profile-welcome { flex-direction: column; align-items: stretch; text-align: center; gap: 14px; padding-top: 0; }
           .profile-welcome-plan { align-items: flex-start; min-width: 0; }
           .profile-welcome-plan-meta { gap: 8px; }

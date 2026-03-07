@@ -1436,6 +1436,9 @@ const planSectionStyles = `
   }
   .plan-section-premium {
     overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   .plan-hero {
@@ -1460,7 +1463,6 @@ const planSectionStyles = `
     font-size: 22px;
     font-weight: 700;
     color: #fff;
-    text-shadow: 0 2px 20px rgba(0,0,0,0.2);
   }
   .plan-badge {
     display: inline-block;
@@ -1932,7 +1934,12 @@ const planSectionStyles = `
     border-color: rgba(167, 139, 253, 0.6);
     color: #e9d5ff;
   }
-  .plan-day-training-text { display: block; }
+  .plan-day-training-text {
+    display: block;
+    color: #e2e8f0;
+    line-height: 1.45;
+    font-weight: 600;
+  }
   .plan-day-training-toggle-hint {
     display: inline-block;
     margin-top: 8px;

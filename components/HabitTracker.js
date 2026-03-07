@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { POSITIVE_HABITS, NEGATIVE_HABITS, getHabitById } from '../lib/habits';
 
 function toDateStr(date) {
-  return date.toISOString().split('T')[0];
+  return getLocalDateStr(date);
 }
 /** Vrací YYYY-MM-DD v lokálním čase (ne UTC), aby „dnes“ bylo správně i po půlnoci. */
 function getLocalDateStr(d = new Date()) {
@@ -16,7 +16,7 @@ function getLocalDateStr(d = new Date()) {
 
 function formatShortDate(d) {
   if (!d) return '—';
-  const date = new Date(d + 'T12:00:00Z');
+  const date = new Date(d + 'T12:00:00');
   if (isNaN(date.getTime())) return '—';
   return date.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short' });
 }
@@ -314,8 +314,8 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
       <div key={`lbl-${h.id}`} className="hg-label">
         <span className="hg-emoji" aria-hidden="true">{h.emoji}</span>
         <div className="hg-name-wrap">
-          <span className="hg-name"><strong>{h.label}</strong></span>
-          {h.description && <span className="hg-hint"> ({h.description})</span>}
+          <span className="hg-name">{h.label}</span>
+          {h.description && <span className="hg-hint">({h.description})</span>}
         </div>
       </div>
       {days.map((dateStr) => {
@@ -391,7 +391,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
                 <div className="hg-corner" />
                 {days.map((d) => (
                   <div key={d} ref={d === todayStr ? todayColRef : undefined} className={`hg-hdr-cell ${d === todayStr ? 'today' : ''}`}>
-                    <span className="hg-hdr-day">{new Date(d + 'T12:00:00Z').toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' }).replace(' ', '')}</span>
+                    <span className="hg-hdr-day">{new Date(d + 'T12:00:00').toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' }).replace(' ', '')}</span>
                     {d === todayStr && <span className="hg-hdr-today">Dnes</span>}
                   </div>
                 ))}
@@ -466,7 +466,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
               <div className="ht-chart-labels">
                 {chartData.map(({ dateStr, isToday }) => (
                   <span key={dateStr} className={`ht-chart-label ${isToday ? 'today' : ''}`}>
-                    {new Date(dateStr + 'T12:00:00Z').toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' }).replace(' ', '')}
+                    {new Date(dateStr + 'T12:00:00').toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' }).replace(' ', '')}
                     {isToday && ' (dnes)'}
                   </span>
                 ))}
@@ -616,7 +616,13 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         .hg-grid {
           display: grid; padding: 18px 20px 24px; min-width: max-content;
         }
-        .hg-corner { height: 60px; }
+        .hg-corner {
+          height: 60px;
+          position: sticky;
+          left: 0;
+          z-index: 6;
+          background: linear-gradient(90deg, rgba(14, 19, 33, 0.96) 86%, rgba(14, 19, 33, 0));
+        }
 
         /* ── Date headers ── */
         .hg-hdr-cell {
@@ -661,19 +667,28 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         .hg-label {
           display: flex; align-items: flex-start; gap: 10px;
           min-height: 56px; padding-right: 16px; overflow: hidden;
+          position: sticky; left: 0; z-index: 5;
+          background: linear-gradient(90deg, rgba(14, 19, 33, 0.98) 86%, rgba(14, 19, 33, 0));
         }
         .hg-emoji { font-size: 1.3rem; flex-shrink: 0; line-height: 1; margin-top: 2px; }
         .hg-name-wrap {
-          display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px;
-          min-width: 0; overflow: hidden; line-height: 1.35; font-size: 1rem;
+          display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+          min-width: 0; overflow: hidden; line-height: 1.3; font-size: 1rem;
         }
         .hg-name {
-          font-size: 1em; font-weight: 700; color: #f1f5f9;
+          font-size: 0.96em; font-weight: 600; color: #f1f5f9;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
-        .hg-name strong { font-weight: 700; }
         .hg-hint {
-          font-size: 0.55em; color: #64748b; font-weight: 400;
+          font-size: 0.72em; color: #94a3b8; font-weight: 400;
           font-family: inherit; line-height: 1.35;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
 
         /* ── Habit cell – CRITICAL: reset button defaults ── */

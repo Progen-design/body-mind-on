@@ -21,7 +21,7 @@ export default function Login() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setCheckingSession(false);
-      if (session) router.replace(redirectTo);
+      if (session) router.replace(redirectTo, undefined, { scroll: true });
     }).catch(() => setCheckingSession(false));
   }, [router, redirectTo]);
 
@@ -52,7 +52,8 @@ export default function Login() {
       // Po přihlášení necháme Supabase uložit session, pak přesměrujeme
       if (data?.session) {
         await new Promise((r) => setTimeout(r, 100));
-        router.replace(redirectTo);
+        if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        router.replace(redirectTo, undefined, { scroll: true });
       } else {
         setMessage('Přihlášení se nepodařilo. Zkus to znovu.');
       }

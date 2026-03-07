@@ -322,7 +322,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         <span className="hg-emoji" aria-hidden="true">{h.emoji}</span>
         <div className="hg-name-wrap">
           <span className="hg-name">{h.label}</span>
-          {h.description && <span className="hg-hint">({h.description})</span>}
+          {h.description && <span className="hg-hint"> ({h.description})</span>}
         </div>
       </div>
       {days.map((dateStr) => {
@@ -711,23 +711,24 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         }
         .hg-emoji { font-size: 1.3rem; flex-shrink: 0; line-height: 1; margin-top: 2px; }
         .hg-name-wrap {
-          display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
-          min-width: 0; overflow: hidden; line-height: 1.3; font-size: 1rem;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          min-width: 0;
+          line-height: 1.35;
+          font-size: 1rem;
         }
         .hg-name {
-          font-size: 0.96em; font-weight: 600; color: #f1f5f9;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
+          font-size: 1em;
+          font-weight: 600;
+          color: #f1f5f9;
         }
         .hg-hint {
-          font-size: 0.72em; color: #94a3b8; font-weight: 400;
-          font-family: inherit; line-height: 1.35;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
+          font-size: 0.7em;
+          font-weight: 400;
+          color: #94a3b8;
+          font-family: inherit;
         }
 
         /* ── Habit cell – CRITICAL: reset button defaults ── */

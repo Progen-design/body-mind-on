@@ -1562,8 +1562,8 @@ export default function Profil() {
                   </span>
                   <div className="membership-card-nav-wrap">
                     <nav className="profile-quick-nav" aria-label="Rychlá navigace">
-                      <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('denni-navyky')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('denni-navyky'); }}>Habit tracker</button>
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('muj-plan'); }}>Můj plán</button>
+                      <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('denni-navyky')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('denni-navyky'); }}>Denní návyky</button>
                       <button
                         type="button"
                         className="profile-quick-nav-btn"

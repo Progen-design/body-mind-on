@@ -32,6 +32,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
   const [toggling, setToggling] = useState(null);
+  const [viewingDateStr, setViewingDateStr] = useState(null); // zobrazený den v hlavičce (dynamické); null = dnes
   const scrollContainerRef = useRef(null);
   const todayColRef = useRef(null);
 
@@ -267,9 +268,11 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   }
 
   const pct = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0;
+  const displayDateStr = viewingDateStr || todayStr;
+  const displayDateFormatted = new Date(displayDateStr + 'T12:00:00').toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
   const todayFormatted = new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
   const CELL_W = 56;
-  const LABEL_W = 210;
+  const LABEL_W = 220;
   const GAP = '8px';
   const gridCols = `${LABEL_W}px repeat(${days.length}, ${CELL_W}px)`;
 
@@ -367,8 +370,15 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
       <div className="ht-top">
         <div>
           <h2 className="ht-title">Denní návyky</h2>
-          <p className="ht-date">{todayFormatted}</p>
-          <p className="ht-hint">Odškrtnutí se ukládá pro daný den (sloupec). Po uložení uvidíš potvrzení „Splněno!“ – záznam zůstane i další den.</p>
+          <p className="ht-date">
+            {displayDateStr === todayStr ? todayFormatted : (
+              <>Zobrazený den: <strong>{displayDateFormatted}</strong>{displayDateStr > todayStr && ' (budoucí)'}</>
+            )}
+            {displayDateStr !== todayStr && (
+              <button type="button" className="ht-date-back" onClick={() => setViewingDateStr(null)}>Zpět na dnes</button>
+            )}
+          </p>
+          <p className="ht-hint">Odškrtnutí se ukládá pro daný den (sloupec). Klikni na datum v mřížce pro zobrazení toho dne. Po uložení uvidíš „Splněno!“ – záznam zůstane i další den.</p>
         </div>
         <div className="ht-progress-inline">
           <span className="ht-prog-nums">{completedToday}<span className="ht-prog-sep">/</span>{totalHabits}</span>
@@ -391,13 +401,21 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
             <div className="hg-scroll" ref={scrollContainerRef}>
               <div className="hg-grid" style={{ gridTemplateColumns: gridCols, columnGap: GAP, rowGap: '6px' }}>
 
-                {/* Date header row */}
+                {/* Date header row – kliknutím nastaví zobrazený den */}
                 <div className="hg-corner" />
                 {days.map((d) => (
-                  <div key={d} ref={d === todayStr ? todayColRef : undefined} className={`hg-hdr-cell ${d === todayStr ? 'today' : ''}`}>
+                  <button
+                    key={d}
+                    type="button"
+                    ref={d === todayStr ? todayColRef : undefined}
+                    className={`hg-hdr-cell ${d === todayStr ? 'today' : ''} ${displayDateStr === d ? 'hg-hdr-cell-selected' : ''}`}
+                    onClick={() => setViewingDateStr(d)}
+                    aria-pressed={displayDateStr === d}
+                    aria-label={`${new Date(d + 'T12:00:00').toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' })}${d === todayStr ? ', dnes' : ''}. Klikni pro zobrazení tohoto dne.`}
+                  >
                     <span className="hg-hdr-day">{new Date(d + 'T12:00:00').toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' }).replace(' ', '')}</span>
                     {d === todayStr && <span className="hg-hdr-today">Dnes</span>}
-                  </div>
+                  </button>
                 ))}
 
                 {/* Positive habits */}
@@ -589,7 +607,12 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           margin: 0 0 4px; font-size: 1.625rem; font-weight: 800;
           letter-spacing: -0.025em; color: #f8fafc;
         }
-        .ht-date { margin: 0; font-size: 0.8125rem; color: #475569; font-weight: 500; text-transform: capitalize; }
+        .ht-date { margin: 0; font-size: 0.8125rem; color: #475569; font-weight: 500; text-transform: capitalize; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .ht-date-back {
+          font-size: 0.75rem; color: #a78bfa; background: none; border: none; cursor: pointer;
+          text-decoration: underline; padding: 0; font-weight: 600;
+        }
+        .ht-date-back:hover { color: #c4b5fd; }
         .ht-hint { margin: 6px 0 0; font-size: 0.75rem; color: #64748b; line-height: 1.4; max-width: 320px; }
         .ht-progress-inline { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; flex-shrink: 0; }
         .ht-prog-nums { font-size: 1.125rem; font-weight: 800; color: #f8fafc; letter-spacing: -0.02em; }
@@ -625,10 +648,11 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           position: sticky;
           left: 0;
           z-index: 6;
-          background: linear-gradient(90deg, rgba(14, 19, 33, 0.96) 86%, rgba(14, 19, 33, 0));
+          background: rgb(14, 19, 33);
+          box-shadow: 4px 0 12px rgba(0,0,0,0.35);
         }
 
-        /* ── Date headers ── */
+        /* ── Date headers (clickable) ── */
         .hg-hdr-cell {
           height: 60px;
           display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
@@ -637,6 +661,15 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           border: 1px solid rgba(255,255,255,0.06);
           font-weight: 700; color: #475569; user-select: none;
           transition: background-color 0.2s;
+          appearance: none; -webkit-appearance: none; -moz-appearance: none;
+          padding: 0; margin: 0; cursor: pointer; font-family: inherit; font-size: inherit;
+          outline: none;
+        }
+        .hg-hdr-cell:hover { background-color: rgba(255,255,255,0.08); }
+        .hg-hdr-cell.hg-hdr-cell-selected {
+          background-color: rgba(139,92,246,0.2);
+          border-color: rgba(167,139,250,0.5);
+          color: #c4b5fd;
         }
         .hg-hdr-cell.today {
           background-color: transparent;
@@ -667,12 +700,14 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           50% { opacity: 0.5; }
         }
 
-        /* ── Habit label ── */
+        /* ── Habit label (vždy viditelné – plné pozadí, sticky) ── */
         .hg-label {
           display: flex; align-items: flex-start; gap: 10px;
           min-height: 56px; padding-right: 16px; overflow: hidden;
           position: sticky; left: 0; z-index: 5;
-          background: linear-gradient(90deg, rgba(14, 19, 33, 0.98) 86%, rgba(14, 19, 33, 0));
+          background: rgb(14, 19, 33);
+          box-shadow: 4px 0 12px rgba(0,0,0,0.35);
+          min-width: 0;
         }
         .hg-emoji { font-size: 1.3rem; flex-shrink: 0; line-height: 1; margin-top: 2px; }
         .hg-name-wrap {

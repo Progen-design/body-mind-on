@@ -556,14 +556,6 @@ export default function Profil() {
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   }, [session?.access_token]);
 
-  useEffect(() => {
-    if (!showWorkoutModal || typeof window === 'undefined') return;
-    const raf = requestAnimationFrame(() => {
-      const modalEl = document.querySelector('.modal-overlay .modal');
-      modalEl?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [showWorkoutModal]);
 
   // Habit wizard jen pro ON Club a VIP; průvodce (tour) jen pro ON Club a VIP – START to mít nesmí (přidaná hodnota)
   useEffect(() => {
@@ -1506,14 +1498,23 @@ export default function Profil() {
               {!profile?.can_create_calendar_events && (currentPlan || program === 'ON_CLUB' || program === 'VIP') && (
                 <div className="profile-hero-brand">
                   <span className="profile-hero-brand-label">Body & Mind ON</span>
-                  <span className="profile-hero-badge">
-                    {program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP' : getPlanTypeLabel(currentPlan?.plan_type) || 'START'}
+                  <span className="profile-hero-brand-welcome">
+                    Vítej v programu {program === 'ON_CLUB' ? 'ON club' : program === 'VIP' ? 'VIP' : (getPlanTypeLabel(currentPlan?.plan_type) || 'START').toLowerCase()}
                   </span>
                 </div>
               )}
               <div className="profile-hero-main">
                 {!profile?.can_create_calendar_events ? (
                   <>
+                    <div className="profile-hero-copy">
+                      <h1 className="profile-hero-title">
+                        <span>{firstName}</span>
+                      </h1>
+                      <p className="profile-hero-tagline">Sleduj návyky, tréninky a svůj progres.</p>
+                      <p className="profile-hero-date" aria-hidden>
+                        {new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' })}
+                      </p>
+                    </div>
                     <div className="profile-hero-avatar-wrap">
                       <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="profile-hero-avatar-btn" aria-label="Změnit profilový obrázek">
                         {profile?.user?.avatar_url ? (
@@ -1534,23 +1535,9 @@ export default function Profil() {
                       </button>
                       {avatarError && <p className="profile-hero-avatar-error" role="alert">{avatarError}</p>}
                     </div>
-                    <div className="profile-hero-copy">
-                      <p className="profile-hero-welcome">Vítej v našem klubu ADPO.</p>
-                      <p className="profile-hero-program">
-                        Jsi v programu {program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP' : (getPlanTypeLabel(currentPlan?.plan_type) || 'START')}.
-                      </p>
-                      <h1 className="profile-hero-title">
-                        <span>{firstName}</span>
-                      </h1>
-                      <p className="profile-hero-tagline">Sleduj návyky, tréninky a svůj progres.</p>
-                      <p className="profile-hero-date" aria-hidden>
-                        {new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' })}
-                      </p>
-                    </div>
                   </>
                 ) : (
                   <div className="profile-hero-copy">
-                    <p className="profile-hero-welcome">Vítej v našem klubu ADPO.</p>
                     <h1 className="profile-hero-title"><span>{firstName}</span></h1>
                     <p className="profile-hero-tagline">Přehled klientů a kalendář tréninků.</p>
                     <p className="profile-hero-date" aria-hidden>
@@ -3059,8 +3046,9 @@ export default function Profil() {
         }
         .profile-hero-brand {
           display: flex;
-          align-items: center;
-          gap: 12px;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 6px;
           flex-shrink: 0;
         }
         .profile-hero-brand-label {
@@ -3069,18 +3057,14 @@ export default function Profil() {
           color: rgba(255, 255, 255, 0.9);
           letter-spacing: -0.02em;
           line-height: 1.05;
+          font-family: Inter, system-ui, sans-serif;
         }
-        .profile-hero-badge {
-          display: inline-flex;
-          align-items: center;
-          padding: 6px 14px;
-          border-radius: 999px;
-          font-size: 13px;
-          font-weight: 700;
+        .profile-hero-brand-welcome {
+          font-size: 16px;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.75);
           letter-spacing: 0.01em;
-          background: rgba(255, 255, 255, 0.14);
-          color: #e2e8f0;
-          border: 1px solid rgba(255, 255, 255, 0.2);
+          font-family: Inter, system-ui, sans-serif;
         }
         .profile-hero-main {
           display: flex;
@@ -3094,6 +3078,7 @@ export default function Profil() {
           align-items: center;
           gap: 8px;
           flex-shrink: 0;
+          margin-left: auto;
         }
         .profile-hero-avatar-btn {
           width: 88px;
@@ -3144,7 +3129,7 @@ export default function Profil() {
         .profile-hero-avatar-error { margin: 0; font-size: 12px; color: #fca5a5; text-align: center; }
         .profile-hero-copy {
           min-width: 0;
-          text-align: right;
+          text-align: left;
         }
         .profile-hero--centered .profile-hero-copy { text-align: center; }
         .profile-hero-welcome {

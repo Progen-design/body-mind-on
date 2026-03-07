@@ -1983,24 +1983,6 @@ export default function Profil() {
               </div>
             )}
 
-            {!profile?.can_create_calendar_events && (
-            <div className="toolbar">
-              <button type="button" onClick={handleRefresh} disabled={refreshing} className="btn-refresh" title="Obnovit data">
-                {refreshing ? 'Obnovuji…' : '🔄 Obnovit'}
-              </button>
-              {currentPlan && (
-                <button type="button" onClick={handleSendPlanAgain} disabled={sendingPlan} className="btn-send-plan" title="Poslat plán znovu na e-mail">
-                  {sendingPlan ? 'Odesílám…' : '📧 Poslat plán znovu'}
-                </button>
-              )}
-              {(membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired)) && currentPlan && (
-                <button type="button" onClick={handleGenerateNextWeek} disabled={generatingNextWeek} className="btn-send-plan btn-next-week" title="Vygeneruje náhled jídelníčku na příští týden včetně označených jídel – ověříš, že se zahrnou">
-                  {generatingNextWeek ? 'Generuji…' : '📅 Náhled příštího týdne'}
-                </button>
-              )}
-            </div>
-            )}
-
             {/* Sjednocený kontejner bublin – pro trenéra i klienta */}
             <div className="profile-bubbles">
             {/* Můj plán – první blok pro klienta (Varianta C) */}

@@ -296,7 +296,7 @@ export default function Profil() {
   const [loadingClients, setLoadingClients] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [showFullClientCard, setShowFullClientCard] = useState(false);
-  const [profileOpenSections, setProfileOpenSections] = useState(new Set(['rychle-akce', 'muj-plan', 'moji-klienti']));
+  const [profileOpenSections, setProfileOpenSections] = useState(new Set(['muj-plan', 'moji-klienti']));
 
   const toggleProfileSection = (id) => {
     setProfileOpenSections((prev) => {
@@ -1575,12 +1575,34 @@ export default function Profil() {
                     <nav className="profile-quick-nav" aria-label="Rychlá navigace">
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('denni-navyky')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('denni-navyky'); }}>Habit tracker</button>
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('muj-plan'); }}>Jídelníček a trénink</button>
-                      <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('rychle-akce')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('rychle-akce'); }}>Tréninky</button>
+                      <button
+                        type="button"
+                        className="profile-quick-nav-btn"
+                        onClick={() => {
+                          setShowWorkoutModal(true);
+                          setWorkoutError('');
+                          setWorkoutForm((f) => ({ ...f, workout_date: getLocalDateStr(new Date()) }));
+                        }}
+                      >
+                        Tréninky
+                      </button>
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('statistiky')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('statistiky'); }}>Statistiky</button>
                     </nav>
                   </div>
                 </div>
                 <div className="membership-card-right">
+                  <button
+                    type="button"
+                    className="profile-main-workout-btn"
+                    onClick={() => {
+                      setShowWorkoutModal(true);
+                      setWorkoutError('');
+                      setWorkoutForm((f) => ({ ...f, workout_date: getLocalDateStr(new Date()) }));
+                    }}
+                  >
+                    <span className="profile-main-workout-btn-emoji" aria-hidden>🏋️</span>
+                    Zapsat trénink
+                  </button>
                   <div className="membership-status-block">
                     <span className={`membership-status-badge membership-status--${membershipStatus}`}>
                       {membershipStatus === 'active' ? 'Aktivní' : membershipStatus === 'trial' ? 'Zkušební' : membershipStatus === 'cancelled' ? 'Zrušeno' : 'Neaktivní'}
@@ -1968,7 +1990,7 @@ export default function Profil() {
             {!profile?.can_create_calendar_events && workouts.length === 0 && currentPlan && (
               <div className="first-action-banner">
                 <p className="first-action-banner-lead">Tvůj plán je připraven.</p>
-                <p className="first-action-banner-text">Rozklikni sekce níže – <strong>Jídelníček a tréninkový plán</strong>, <strong>Co chceš zapsat?</strong> nebo <strong>Denní návyky</strong>.</p>
+                <p className="first-action-banner-text">Rozklikni sekce níže – <strong>Jídelníček a tréninkový plán</strong> nebo <strong>Denní návyky</strong>. Trénink zapíšeš tlačítkem nahoře v hlavní kartě.</p>
               </div>
             )}
 
@@ -2056,33 +2078,6 @@ export default function Profil() {
             </div>
             )}
 
-            {!profile?.can_create_calendar_events && (
-            <>
-            {/* RYCHLÉ AKCE – bublina (jen klienti) */}
-            <div className="profile-bubble" id="rychle-akce">
-              <button type="button" id="profile-bubble-header-rychle-akce" className="profile-bubble-header" onClick={() => toggleProfileSection('rychle-akce')} aria-expanded={profileOpenSections.has('rychle-akce')} aria-controls="profile-bubble-body-rychle-akce">
-                <span className="profile-bubble-title">Co chceš zapsat?</span>
-                <span className={`profile-bubble-chevron ${profileOpenSections.has('rychle-akce') ? 'open' : ''}`} aria-hidden>▼</span>
-              </button>
-              <div id="profile-bubble-body-rychle-akce" role="region" aria-labelledby="profile-bubble-header-rychle-akce" className="profile-bubble-body" data-open={profileOpenSections.has('rychle-akce')}>
-            <section className="actions-block">
-              <h2 className="actions-title">Co chceš zapsat?</h2>
-              <div className="action-buttons">
-                <button type="button" onClick={() => { setShowWorkoutModal(true); setWorkoutError(''); setWorkoutForm((f) => ({ ...f, workout_date: getLocalDateStr(new Date()) })); }} className="btn-primary">
-                  <span className="btn-emoji">🏋️</span>
-                  Zapsat trénink
-                </button>
-                <button type="button" onClick={() => { setShowSettingsModal(true); setSettingsError(''); setSettingsForm({ start_weight_kg: '', goal_weight_kg: goalWeight ?? '', height_cm: '', daily_email: profile?.user?.daily_email !== false }); }} className="btn-secondary btn-weight">
-                  <span className="btn-emoji">📋</span>
-                  Nastavení pro výpočet
-                  <span className="btn-sublabel">Cílová váha pro odhad do cíle</span>
-                </button>
-              </div>
-            </section>
-              </div>
-            </div>
-            </>
-            )}
 
             {/* Kdy mám trénink? / Můj kalendář – bublina (pro oba) */}
             <div className="profile-bubble" id="kalendar">
@@ -3254,6 +3249,31 @@ export default function Profil() {
           align-items: center;
           gap: 12px;
           flex-shrink: 0;
+        }
+        .profile-main-workout-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 16px;
+          border-radius: 10px;
+          border: 1px solid rgba(139, 92, 255, 0.55);
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.92), rgba(139, 92, 246, 0.86));
+          color: #fff;
+          font-size: 13px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: transform 0.2s, filter 0.2s, box-shadow 0.2s;
+          white-space: nowrap;
+          box-shadow: 0 8px 20px rgba(109, 40, 217, 0.28);
+        }
+        .profile-main-workout-btn:hover {
+          transform: translateY(-1px);
+          filter: brightness(1.05);
+          box-shadow: 0 12px 22px rgba(109, 40, 217, 0.35);
+        }
+        .profile-main-workout-btn-emoji {
+          font-size: 14px;
+          line-height: 1;
         }
         .membership-status-block {
           display: flex;
@@ -4953,6 +4973,7 @@ export default function Profil() {
           .membership-card-row { flex-direction: column; align-items: stretch; gap: 20px; }
           .membership-card-left { flex-wrap: wrap; }
           .membership-card-right { align-items: stretch; }
+          .profile-main-workout-btn { justify-content: center; width: 100%; }
           .membership-status-block { align-items: flex-start; }
           .profile-quick-nav-account { flex-wrap: wrap; }
           .profile-quick-nav-btn { width: 100%; justify-content: center; }

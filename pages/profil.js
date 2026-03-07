@@ -1517,12 +1517,7 @@ export default function Profil() {
                       {avatarError && <p className="profile-hero-avatar-error" role="alert">{avatarError}</p>}
                     </div>
                     <div className="profile-hero-copy">
-                      <p className="profile-hero-greeting">
-                        {(() => {
-                          const h = new Date().getHours();
-                          return h < 12 ? 'Krásné ráno' : h < 18 ? 'Krásné odpoledne' : 'Dobrý večer';
-                        })()}
-                      </p>
+                      <p className="profile-hero-welcome">Vítej v našem klubu ADPO</p>
                       <h1 className="profile-hero-title">
                         <span>{firstName}</span>
                       </h1>
@@ -1534,12 +1529,7 @@ export default function Profil() {
                   </>
                 ) : (
                   <div className="profile-hero-copy">
-                    <p className="profile-hero-greeting">
-                      {(() => {
-                        const h = new Date().getHours();
-                        return h < 12 ? 'Krásné ráno' : h < 18 ? 'Krásné odpoledne' : 'Dobrý večer';
-                      })()}
-                    </p>
+                    <p className="profile-hero-welcome">Vítej v našem klubu ADPO</p>
                     <h1 className="profile-hero-title"><span>{firstName}</span></h1>
                     <p className="profile-hero-tagline">Přehled klientů a kalendář tréninků.</p>
                     <p className="profile-hero-date" aria-hidden>
@@ -3025,10 +3015,10 @@ export default function Profil() {
           z-index: 1;
         }
 
-        /* ── TOP profil: jeden hero panel (premium úvodní stránka) ── */
+        /* ── TOP profil: jeden hero panel, profil úplně napravo ── */
         .profile-hero {
           margin-bottom: 24px;
-          padding: 0 20px;
+          padding: 0 24px;
           max-width: 1180px;
           margin-left: auto;
           margin-right: auto;
@@ -3037,15 +3027,19 @@ export default function Profil() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 32px;
+          gap: 24px;
           flex-wrap: wrap;
-          padding: 32px 36px 36px;
+          padding: 28px 40px 32px 36px;
           border-radius: 24px;
-          background: linear-gradient(145deg, rgba(18, 22, 38, 0.88) 0%, rgba(28, 24, 48, 0.82) 100%);
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+          background: linear-gradient(145deg, rgba(18, 22, 38, 0.92) 0%, rgba(28, 24, 48, 0.88) 100%);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          box-shadow: 0 24px 64px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+        }
+        .profile-hero--with-program .profile-hero-main {
+          margin-left: auto;
+          flex-shrink: 0;
         }
         .profile-hero--centered .profile-hero-inner {
           justify-content: center;
@@ -3054,13 +3048,13 @@ export default function Profil() {
         .profile-hero-brand {
           display: flex;
           align-items: center;
-          gap: 14px;
+          gap: 12px;
           flex-shrink: 0;
         }
         .profile-hero-brand-label {
           font-size: 15px;
           font-weight: 600;
-          color: rgba(255, 255, 255, 0.85);
+          color: rgba(255, 255, 255, 0.9);
           letter-spacing: 0.02em;
         }
         .profile-hero-badge {
@@ -3071,15 +3065,14 @@ export default function Profil() {
           font-size: 12px;
           font-weight: 700;
           letter-spacing: 0.04em;
-          background: rgba(255, 255, 255, 0.12);
+          background: rgba(255, 255, 255, 0.14);
           color: #e2e8f0;
-          border: 1px solid rgba(255, 255, 255, 0.18);
+          border: 1px solid rgba(255, 255, 255, 0.2);
         }
         .profile-hero-main {
           display: flex;
           align-items: center;
-          gap: 28px;
-          flex: 1;
+          gap: 24px;
           min-width: 0;
         }
         .profile-hero-avatar-wrap {
@@ -3138,22 +3131,23 @@ export default function Profil() {
         .profile-hero-avatar-error { margin: 0; font-size: 12px; color: #fca5a5; text-align: center; }
         .profile-hero-copy {
           min-width: 0;
+          text-align: right;
         }
-        .profile-hero-greeting {
-          margin: 0 0 4px;
-          font-size: 14px;
+        .profile-hero--centered .profile-hero-copy { text-align: center; }
+        .profile-hero-welcome {
+          margin: 0 0 6px;
+          font-size: 15px;
           font-weight: 600;
           color: #a78bfa;
           letter-spacing: 0.02em;
-          text-transform: uppercase;
         }
         .profile-hero-title {
-          margin: 0 0 6px;
-          font-size: clamp(28px, 4.5vw, 38px);
+          margin: 0 0 8px;
+          font-size: clamp(26px, 4vw, 36px);
           font-weight: 800;
           color: #fff;
           letter-spacing: -0.03em;
-          line-height: 1.15;
+          line-height: 1.2;
         }
         .profile-hero-title > span {
           background: linear-gradient(135deg, #e9d5ff, #a78bfa);
@@ -3163,14 +3157,14 @@ export default function Profil() {
         }
         .profile-hero-tagline {
           margin: 0;
-          font-size: 16px;
+          font-size: 15px;
           color: #94a3b8;
           line-height: 1.5;
         }
         .profile-hero-date {
-          margin: 10px 0 0;
+          margin: 12px 0 0;
           font-size: 13px;
-          color: rgba(148, 163, 184, 0.8);
+          color: rgba(148, 163, 184, 0.85);
           font-weight: 500;
           text-transform: capitalize;
         }
@@ -4920,7 +4914,9 @@ export default function Profil() {
           .profile-hero { padding: 0 16px; margin-bottom: 20px; }
           .profile-hero-inner { flex-direction: column; align-items: stretch; padding: 24px 20px 28px; gap: 24px; text-align: center; }
           .profile-hero--with-program .profile-hero-brand { justify-content: center; }
-          .profile-hero-main { flex-direction: column; text-align: center; }
+          .profile-hero--with-program .profile-hero-main { margin-left: 0; }
+          .profile-hero-main { flex-direction: column; align-items: center; text-align: center; }
+          .profile-hero-copy { text-align: center; }
           .profile-hero-avatar-btn { width: 80px; height: 80px; }
           .profile-hero-avatar-placeholder { font-size: 32px; }
           .profile-hero-title { font-size: 28px; }

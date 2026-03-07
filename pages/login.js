@@ -1,6 +1,5 @@
 // /pages/login.js – Přihlášení do profilu (e-mail + heslo z registrace)
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -11,6 +10,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [checkingSession, setCheckingSession] = useState(true);
 
@@ -70,6 +70,29 @@ export default function Login() {
     }
   }
 
+  async function handleForgotPassword() {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      setMessage('Nejdřív zadej svůj e-mail a potom klikni na Zapomenuté heslo.');
+      return;
+    }
+    setResetLoading(true);
+    setMessage('');
+    try {
+      const redirectToReset = typeof window !== 'undefined' ? `${window.location.origin}/login` : undefined;
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        normalizedEmail,
+        redirectToReset ? { redirectTo: redirectToReset } : undefined
+      );
+      if (error) throw error;
+      setMessage('Odkaz pro obnovení hesla jsme poslali na tvůj e-mail.');
+    } catch (err) {
+      setMessage(err?.message || 'Nepodařilo se odeslat e-mail pro obnovu hesla.');
+    } finally {
+      setResetLoading(false);
+    }
+  }
+
   if (checkingSession) {
     return (
       <>
@@ -82,7 +105,6 @@ export default function Login() {
           <div className="login-shell">
             <div className="login-hero">
               <h2 className="login-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
-              <span className="login-hero-badge">Přihlášení</span>
               <p className="login-hero-sub">Zapni své tělo i mysl a pokračuj ve svém plánu.</p>
             </div>
             <div className="login-content">
@@ -106,7 +128,6 @@ export default function Login() {
         <div className="login-shell">
           <div className="login-hero">
             <h2 className="login-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
-            <span className="login-hero-badge">Přihlášení</span>
             <p className="login-hero-sub">Zapni své tělo i mysl a pokračuj ve svém plánu.</p>
           </div>
           <div className="login-content">
@@ -141,14 +162,14 @@ export default function Login() {
                   required
                 />
               </div>
+              <button type="button" className="login-forgot" onClick={handleForgotPassword} disabled={resetLoading || loading}>
+                {resetLoading ? 'Odesílám odkaz…' : 'Zapomenuté heslo?'}
+              </button>
               <button type="submit" className="login-submit" disabled={loading}>
                 {loading ? 'Přihlašuji…' : 'Přihlásit se'}
               </button>
               {message && <p className="login-error" role="alert">{message}</p>}
             </form>
-            <p className="login-footer-hint">
-              Nemáš účet? <Link href="/start">Registruj se ve START programu</Link> – dostaneš plán a přihlašovací údaje e-mailem.
-            </p>
           </div>
         </div>
       </main>
@@ -227,21 +248,6 @@ export default function Login() {
           line-height: 1.15;
           letter-spacing: -0.02em;
           text-shadow: 0 2px 20px rgba(0, 0, 0, 0.35);
-        }
-        .login-hero-badge {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: fit-content;
-          background: rgba(255, 255, 255, 0.22);
-          color: #fff;
-          padding: 9px 16px;
-          border-radius: 999px;
-          font-size: 13px;
-          font-weight: 700;
-          border: 1px solid rgba(255, 255, 255, 0.35);
-          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
-          margin-bottom: 16px;
         }
         .login-hero-sub {
           margin: 0;
@@ -330,6 +336,26 @@ export default function Login() {
           opacity: 0.6;
           cursor: not-allowed;
         }
+        .login-forgot {
+          justify-self: start;
+          border: none;
+          background: none;
+          color: #c4b5fd;
+          font-size: 13px;
+          font-weight: 600;
+          text-decoration: underline;
+          text-underline-offset: 2px;
+          cursor: pointer;
+          padding: 0;
+          margin-top: -2px;
+        }
+        .login-forgot:hover:not(:disabled) {
+          color: #e9d5ff;
+        }
+        .login-forgot:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
         .login-error {
           color: #fecaca;
           font-size: 14px;
@@ -338,20 +364,6 @@ export default function Login() {
           background: rgba(239, 68, 68, 0.16);
           border-radius: 10px;
           border: 1px solid rgba(248, 113, 113, 0.4);
-        }
-        .login-footer-hint {
-          margin-top: 20px;
-          font-size: 14px;
-          color: #cbd5e1;
-          line-height: 1.5;
-        }
-        .login-footer-hint a {
-          color: #c4b5fd;
-          text-decoration: underline;
-          text-underline-offset: 2px;
-        }
-        .login-footer-hint a:hover {
-          color: #e9d5ff;
         }
         @media (max-width: 900px) {
           .login-page {

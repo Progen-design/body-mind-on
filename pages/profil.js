@@ -1399,29 +1399,31 @@ export default function Profil() {
                   <span className="membership-icon">
                     {program === 'VIP' ? '👑' : program === 'ON_CLUB' ? '⚡' : '🚀'}
                   </span>
-                  <div>
+                  <div className="membership-card-nav-wrap">
                     <div className="membership-tier-label">Tvé členství</div>
-                    <div className="profile-quick-nav">
+                    <nav className="profile-quick-nav" aria-label="Rychlá navigace">
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('denni-navyky')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('denni-navyky'); }}>Habit tracker</button>
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('muj-plan'); }}>Jídelníček a trénink</button>
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('rychle-akce')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('rychle-akce'); }}>Tréninky</button>
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('statistiky')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('statistiky'); }}>Statistiky</button>
-                      <div className="profile-quick-nav-account">
-                        <button type="button" className="profile-quick-nav-btn profile-quick-nav-btn-account" onClick={handleLogout}>Odhlásit se</button>
-                        <button type="button" className="profile-quick-nav-btn profile-quick-nav-btn-danger" onClick={() => setShowDeleteAccountModal(true)} title="Trvale smazat účet a všechna data">Zrušit profil</button>
-                      </div>
-                    </div>
+                    </nav>
                   </div>
                 </div>
                 <div className="membership-card-right">
-                  <span className={`membership-status-badge membership-status--${membershipStatus}`}>
-                    {membershipStatus === 'active' ? 'Aktivní' : membershipStatus === 'trial' ? 'Zkušební' : membershipStatus === 'cancelled' ? 'Zrušeno' : 'Neaktivní'}
-                  </span>
-                  {membershipSince && (
-                    <span className="membership-since">
-                      od {new Date(membershipSince).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  <div className="membership-status-block">
+                    <span className={`membership-status-badge membership-status--${membershipStatus}`}>
+                      {membershipStatus === 'active' ? 'Aktivní' : membershipStatus === 'trial' ? 'Zkušební' : membershipStatus === 'cancelled' ? 'Zrušeno' : 'Neaktivní'}
                     </span>
-                  )}
+                    {membershipSince && (
+                      <span className="membership-since">
+                        od {new Date(membershipSince).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </span>
+                    )}
+                  </div>
+                  <div className="profile-quick-nav-account">
+                    <button type="button" className="profile-quick-nav-btn profile-quick-nav-btn-account" onClick={handleLogout}>Odhlásit se</button>
+                    <button type="button" className="profile-quick-nav-btn profile-quick-nav-btn-danger" onClick={() => setShowDeleteAccountModal(true)} title="Trvale smazat účet a všechna data">Zrušit profil</button>
+                  </div>
                 </div>
               </div>
               {(currentPlan || program === 'ON_CLUB' || program === 'VIP') && (
@@ -2909,21 +2911,37 @@ export default function Profil() {
         }
         .membership-card-row {
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           justify-content: space-between;
-          gap: 16px;
+          gap: 20px;
           flex-wrap: wrap;
+        }
+        .membership-card-nav-wrap {
+          flex: 1;
+          min-width: 0;
         }
         .profile-quick-nav {
           display: flex;
           flex-wrap: wrap;
           align-items: center;
           gap: 8px;
-          margin-top: 8px;
+          margin-top: 10px;
           width: 100%;
         }
+        .membership-card-right {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 12px;
+          flex-shrink: 0;
+        }
+        .membership-status-block {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 4px;
+        }
         .profile-quick-nav-account {
-          margin-left: auto;
           display: flex;
           flex-direction: row;
           align-items: center;
@@ -3448,12 +3466,6 @@ export default function Profil() {
         }
         .membership-card--on-club .membership-tier-sub { color: #a78bfa; }
         .membership-card--vip .membership-tier-sub { color: #ca8a04; }
-        .membership-card-right {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 4px;
-        }
         .membership-status-badge {
           font-size: 12px;
           font-weight: 600;
@@ -4601,6 +4613,7 @@ export default function Profil() {
         .error-banner span { color: #888; }
 
         @media (max-width: 640px) {
+          .page { padding: 48px 16px 80px; }
           .progress-section, .progress-detail-end { padding: 18px 16px; margin-left: -4px; margin-right: -4px; border-radius: 14px; }
           .progress-lead, .progress-period-hint { font-size: 14px; line-height: 1.5; }
           .progress-dates { font-size: 14px; margin-bottom: 16px; }
@@ -4619,12 +4632,23 @@ export default function Profil() {
           .section-head { font-size: 1.25rem; }
           .modal-overlay { padding: 12px; align-items: flex-end; }
           .modal { max-width: 100%; border-radius: 16px 16px 0 0; padding: 24px 20px; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
-          .profile-welcome-title { font-size: 26px; }
+          .profile-welcome { flex-direction: column; align-items: center; text-align: center; gap: 24px; padding-top: 16px; }
+          .profile-welcome-plan { align-items: center; }
+          .profile-welcome-plan-title { text-align: center; font-size: 18px; }
+          .profile-welcome-greeting { text-align: center; }
+          .profile-welcome-title { font-size: 24px; }
           .profile-welcome-sub { font-size: 14px; }
           .hero-intro { font-size: 16px; }
-          .membership-card { flex-direction: column; align-items: flex-start; padding: 14px 16px; }
-          .profile-membership-plan-card { padding: 14px 16px 20px; }
-          .membership-card-row { flex-direction: column; align-items: flex-start; }
+          .profile-membership-plan-card { padding: 18px 16px 22px; }
+          .membership-card-row { flex-direction: column; align-items: stretch; gap: 20px; }
+          .membership-card-left { flex-wrap: wrap; }
+          .membership-card-right { align-items: stretch; }
+          .membership-status-block { align-items: flex-start; }
+          .profile-quick-nav-account { flex-wrap: wrap; }
+          .plan-goal-row { flex-direction: column; gap: 20px; }
+          .plan-goal-stats { justify-content: center; gap: 16px; padding: 12px 16px; }
+          .plan-goal-stat { min-width: 0; }
+          .plan-goal-stat-label { font-size: 10px; }
           .action-buttons { gap: 10px; }
         }
         @media (max-width: 380px) {

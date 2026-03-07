@@ -1372,10 +1372,10 @@ export default function Profil() {
               <div className="profile-welcome-plan">
                 <h2 className="profile-welcome-plan-title">Tvůj osobní AI plán Body & Mind ON</h2>
                 <div className="profile-welcome-plan-meta">
+                  <span className="profile-welcome-plan-note">Vítej v programu</span>
                   <span className="plan-goal-badge plan-goal-badge-program">
                     {program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP' : getPlanTypeLabel(currentPlan?.plan_type) || 'START'}
                   </span>
-                  <span className="profile-welcome-plan-note">Vítej v programu</span>
                 </div>
               </div>
             )}
@@ -2779,7 +2779,7 @@ export default function Profil() {
       <style jsx>{`
         .page {
           min-height: 100vh;
-          padding: 14px 20px 100px;
+          padding: 0 20px 100px;
           background: transparent;
           color: #fff;
           font-family: Inter, sans-serif;
@@ -2851,7 +2851,7 @@ export default function Profil() {
           gap: 20px;
           flex-wrap: wrap;
           margin-bottom: 18px;
-          padding: 6px 20px 0;
+          padding: 0 20px 0;
           max-width: 1180px;
           margin-left: auto;
           margin-right: auto;
@@ -3026,7 +3026,7 @@ export default function Profil() {
           align-items: flex-start;
           justify-content: space-between;
           gap: 20px;
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
         }
         .membership-card-nav-wrap {
           flex: 1;
@@ -3034,16 +3034,18 @@ export default function Profil() {
         }
         .profile-quick-nav {
           display: flex;
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
           align-items: center;
           gap: 8px;
           margin-top: 10px;
           width: 100%;
+          overflow-x: auto;
+          overflow-y: hidden;
         }
         .membership-card-right {
           display: flex;
-          flex-direction: column;
-          align-items: flex-end;
+          flex-direction: row;
+          align-items: center;
           gap: 12px;
           flex-shrink: 0;
         }
@@ -3052,6 +3054,7 @@ export default function Profil() {
           flex-direction: column;
           align-items: flex-end;
           gap: 4px;
+          white-space: nowrap;
         }
         .profile-quick-nav-account {
           display: flex;

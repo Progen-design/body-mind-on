@@ -2,7 +2,7 @@
 import { supabaseServer } from '../../lib/supabaseServer';
 import { generatePlanForEmail } from '../../lib/generatePlan';
 import { createAuthUserIfNew } from '../../lib/authHelpers';
-import { createInitialAITasks } from '../../lib/generateAITasks';
+import { createInitialAITasks } from '../../lib/createInitialAITasks';
 import { getClientIp, isRateLimited } from '../../lib/rateLimit';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getWeeklySessions } from '../../lib/preferenceConstants';

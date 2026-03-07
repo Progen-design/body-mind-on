@@ -1465,6 +1465,37 @@ export default function Profil() {
                         </div>
                       </div>
                     )}
+                    <div className="plan-goal-actions">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const lm = profile?.body_metrics?.[0];
+                          const freq = getFreqFromMetrics(lm);
+                          const wdRaw = lm?.workout_days;
+                          const workoutDays = (Array.isArray(wdRaw) ? wdRaw : (typeof wdRaw === 'string' && wdRaw ? wdRaw.split(',').map((s) => Number(s.trim())) : [])).filter((n) => Number.isFinite(n) && n >= 0 && n <= 6);
+                          setPreferencesError('');
+                          setPreferencesForm({
+                            activity: activityToFormLabel(lm?.activity) || '',
+                            stress_level: lm?.stress_level ?? '',
+                            occupation: normalizeOccupationForForm(lm?.occupation) || '',
+                            goal: goalToFormLabel(lm?.goal) || '',
+                            freq_choice: freq,
+                            frequency: freq,
+                            workout_days: workoutDays,
+                            diet_type: lm?.diet_type ?? '',
+                            dietary_restrictions: lm?.dietary_restrictions ?? '',
+                            foods_to_avoid: lm?.foods_to_avoid ?? '',
+                            selected_habits: (profile?.user_habits || []).map((h) => h.habit_id).filter(Boolean),
+                          });
+                          setShowPreferencesModal(true);
+                        }}
+                        className="hero-prefs-btn plan-goal-prefs-btn"
+                      >
+                        <span className="hero-prefs-emoji">✏️</span>
+                        Upravit preference
+                        <span className="hero-prefs-sublabel">Aktivita, cíl, strava, návyky</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1506,7 +1537,7 @@ export default function Profil() {
           </>
         )}
 
-        <section className="hero">
+        <section className={`hero ${profile?.can_create_calendar_events ? '' : 'hero--empty'}`}>
           <div className="hero-avatar-wrap">
             {profile?.can_create_calendar_events && (
               <>
@@ -1527,37 +1558,6 @@ export default function Profil() {
                 </button>
                 {avatarError && <p className="hero-avatar-error" role="alert">{avatarError}</p>}
               </>
-            )}
-            {!profile?.can_create_calendar_events && (
-              <button
-                type="button"
-                onClick={() => {
-                  const lm = profile?.body_metrics?.[0];
-                  const freq = getFreqFromMetrics(lm);
-                  const wdRaw = lm?.workout_days;
-                  const workoutDays = (Array.isArray(wdRaw) ? wdRaw : (typeof wdRaw === 'string' && wdRaw ? wdRaw.split(',').map((s) => Number(s.trim())) : [])).filter((n) => Number.isFinite(n) && n >= 0 && n <= 6);
-                  setPreferencesError('');
-                  setPreferencesForm({
-                    activity: activityToFormLabel(lm?.activity) || '',
-                    stress_level: lm?.stress_level ?? '',
-                    occupation: normalizeOccupationForForm(lm?.occupation) || '',
-                    goal: goalToFormLabel(lm?.goal) || '',
-                    freq_choice: freq,
-                    frequency: freq,
-                    workout_days: workoutDays,
-                    diet_type: lm?.diet_type ?? '',
-                    dietary_restrictions: lm?.dietary_restrictions ?? '',
-                    foods_to_avoid: lm?.foods_to_avoid ?? '',
-                    selected_habits: (profile?.user_habits || []).map((h) => h.habit_id).filter(Boolean),
-                  });
-                  setShowPreferencesModal(true);
-                }}
-                className="hero-prefs-btn"
-              >
-                <span className="hero-prefs-emoji">✏️</span>
-                Upravit preference
-                <span className="hero-prefs-sublabel">Aktivita, cíl, strava, návyky – přegeneruje plán</span>
-              </button>
             )}
           </div>
 
@@ -2834,6 +2834,9 @@ export default function Profil() {
           flex-wrap: wrap;
           margin-bottom: 32px;
           padding: 24px 20px 0;
+          max-width: 1180px;
+          margin-left: auto;
+          margin-right: auto;
         }
         .profile-welcome.profile-welcome--centered {
           justify-content: center;
@@ -2845,6 +2848,14 @@ export default function Profil() {
           flex-direction: column;
           align-items: flex-start;
           gap: 10px;
+          padding: 20px 22px;
+          border-radius: 22px;
+          background: linear-gradient(145deg, rgba(19, 24, 40, 0.72), rgba(33, 26, 56, 0.58));
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+          min-width: 240px;
         }
         .profile-welcome-plan-title {
           margin: 0;
@@ -2857,6 +2868,15 @@ export default function Profil() {
         }
         .profile-welcome-greeting {
           text-align: left;
+          padding: 20px 24px;
+          border-radius: 22px;
+          background: linear-gradient(145deg, rgba(16, 20, 34, 0.68), rgba(30, 26, 50, 0.54));
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+          flex: 1;
+          min-width: 280px;
         }
         .profile-welcome-title {
           margin: 0 0 6px;
@@ -2888,6 +2908,9 @@ export default function Profil() {
           flex-direction: column;
           gap: 0;
           box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+          max-width: 1180px;
+          margin-left: auto;
+          margin-right: auto;
         }
         .profile-membership-plan-card.membership-card--start {
           background: linear-gradient(135deg, rgba(100,116,139,0.25), rgba(71,85,105,0.18));
@@ -2948,19 +2971,20 @@ export default function Profil() {
           gap: 8px;
         }
         .profile-quick-nav-btn {
-          padding: 8px 14px;
-          border-radius: 8px;
-          border: 1px solid rgba(255, 255, 255, 0.25);
-          background: rgba(255, 255, 255, 0.08);
+          padding: 9px 14px;
+          border-radius: 10px;
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          background: rgba(255, 255, 255, 0.07);
           color: #e2e8f0;
           font-size: 13px;
           font-weight: 500;
           cursor: pointer;
-          transition: background 0.2s, border-color 0.2s;
+          transition: background 0.2s, border-color 0.2s, transform 0.2s;
         }
         .profile-quick-nav-btn:hover {
-          background: rgba(255, 255, 255, 0.15);
-          border-color: rgba(255, 255, 255, 0.35);
+          background: rgba(255, 255, 255, 0.12);
+          border-color: rgba(255, 255, 255, 0.28);
+          transform: translateY(-1px);
         }
         .profile-quick-nav-btn-danger {
           border-color: rgba(239, 68, 68, 0.5);
@@ -2978,10 +3002,14 @@ export default function Profil() {
         }
         .plan-goal-row {
           display: flex;
-          align-items: center;
-          justify-content: center;
+          align-items: stretch;
+          justify-content: space-between;
           gap: 28px;
           flex-wrap: wrap;
+          padding: 18px 20px;
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 18px;
         }
         .plan-goal-avatar-col {
           display: flex;
@@ -2989,6 +3017,7 @@ export default function Profil() {
           align-items: center;
           gap: 8px;
           flex-shrink: 0;
+          justify-content: center;
         }
         .plan-goal-avatar-btn {
           width: 72px;
@@ -3050,6 +3079,9 @@ export default function Profil() {
           background: rgba(255, 255, 255, 0.06);
           border-radius: 14px;
           border: 1px solid rgba(255, 255, 255, 0.08);
+          flex: 1;
+          justify-content: center;
+          min-width: 280px;
         }
         .plan-goal-stat {
           display: flex;
@@ -3069,6 +3101,12 @@ export default function Profil() {
           color: #94a3b8;
           text-align: center;
           line-height: 1.2;
+        }
+        .plan-goal-actions {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 230px;
         }
         .plan-goal-hero-title {
           margin: 0 0 12px;
@@ -3106,6 +3144,9 @@ export default function Profil() {
           gap: 16px;
           margin-bottom: 32px;
           padding: 0 16px;
+          max-width: 1180px;
+          margin-left: auto;
+          margin-right: auto;
         }
         .profile-bubble {
           width: 100%;
@@ -3186,6 +3227,15 @@ export default function Profil() {
         .hero {
           text-align: center;
           margin-bottom: 48px;
+          max-width: 1180px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        .hero.hero--empty {
+          margin-bottom: 0;
+        }
+        .hero.hero--empty .hero-avatar-wrap {
+          display: none;
         }
         .hero-avatar-wrap {
           margin-bottom: 16px;
@@ -3228,7 +3278,6 @@ export default function Profil() {
           flex-direction: column;
           align-items: center;
           gap: 4px;
-          margin-top: 20px;
           padding: 14px 24px;
           border-radius: 14px;
           border: 1px solid rgba(139, 92, 255, 0.35);
@@ -3247,6 +3296,12 @@ export default function Profil() {
         }
         .hero-prefs-emoji { font-size: 18px; }
         .hero-prefs-sublabel { font-size: 12px; font-weight: 400; color: #94a3b8; }
+        .plan-goal-prefs-btn {
+          width: 100%;
+          max-width: 260px;
+          min-height: 108px;
+          justify-content: center;
+        }
         .avatar-crop-overlay {
           position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center;
           z-index: 9999; padding: 20px; box-sizing: border-box;
@@ -3659,6 +3714,9 @@ export default function Profil() {
           flex-wrap: wrap;
           justify-content: center;
           gap: 10px;
+          max-width: 1180px;
+          margin-left: auto;
+          margin-right: auto;
         }
         .btn-refresh, .btn-send-plan {
           padding: 10px 18px;
@@ -4645,10 +4703,13 @@ export default function Profil() {
           .membership-card-right { align-items: stretch; }
           .membership-status-block { align-items: flex-start; }
           .profile-quick-nav-account { flex-wrap: wrap; }
-          .plan-goal-row { flex-direction: column; gap: 20px; }
+          .profile-quick-nav-btn { width: 100%; justify-content: center; }
+          .plan-goal-row { flex-direction: column; gap: 20px; padding: 16px; }
           .plan-goal-stats { justify-content: center; gap: 16px; padding: 12px 16px; }
           .plan-goal-stat { min-width: 0; }
           .plan-goal-stat-label { font-size: 10px; }
+          .plan-goal-actions { width: 100%; min-width: 0; }
+          .plan-goal-prefs-btn { max-width: 100%; min-height: 0; }
           .action-buttons { gap: 10px; }
         }
         @media (max-width: 380px) {

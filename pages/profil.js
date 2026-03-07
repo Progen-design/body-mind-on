@@ -1535,7 +1535,7 @@ export default function Profil() {
                       {avatarError && <p className="profile-hero-avatar-error" role="alert">{avatarError}</p>}
                     </div>
                     <div className="profile-hero-copy">
-                      <p className="profile-hero-welcome">Vítej v našem klubu ADPO</p>
+                      <p className="profile-hero-welcome">Vítej v našem klubu ADPO.</p>
                       <h1 className="profile-hero-title">
                         <span>{firstName}</span>
                       </h1>
@@ -1547,7 +1547,7 @@ export default function Profil() {
                   </>
                 ) : (
                   <div className="profile-hero-copy">
-                    <p className="profile-hero-welcome">Vítej v našem klubu ADPO</p>
+                    <p className="profile-hero-welcome">Vítej v našem klubu ADPO.</p>
                     <h1 className="profile-hero-title"><span>{firstName}</span></h1>
                     <p className="profile-hero-tagline">Přehled klientů a kalendář tréninků.</p>
                     <p className="profile-hero-date" aria-hidden>
@@ -1583,11 +1583,6 @@ export default function Profil() {
                     <span className={`membership-status-badge membership-status--${membershipStatus}`}>
                       {membershipStatus === 'active' ? 'Aktivní' : membershipStatus === 'trial' ? 'Zkušební' : membershipStatus === 'cancelled' ? 'Zrušeno' : 'Neaktivní'}
                     </span>
-                    {membershipSince && (
-                      <span className="membership-since">
-                        od {new Date(membershipSince).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })}
-                      </span>
-                    )}
                   </div>
                   <div className="profile-quick-nav-account">
                     <button type="button" className="profile-quick-nav-btn profile-quick-nav-btn-account" onClick={handleLogout}>Odhlásit se</button>
@@ -3049,11 +3044,11 @@ export default function Profil() {
           flex-wrap: wrap;
           padding: 26px 34px 30px;
           border-radius: 24px;
-          background: linear-gradient(145deg, rgba(16, 20, 34, 0.92) 0%, rgba(25, 22, 44, 0.9) 55%, rgba(31, 26, 52, 0.88) 100%);
-          border: 1px solid rgba(255, 255, 255, 0.14);
-          backdrop-filter: blur(14px);
-          -webkit-backdrop-filter: blur(14px);
-          box-shadow: 0 24px 64px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+          background: linear-gradient(135deg, rgba(109,40,217,0.28), rgba(59,130,246,0.18));
+          border: 1px solid rgba(139,92,255,0.45);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          box-shadow: 0 4px 20px rgba(109,40,217,0.12);
         }
         .profile-hero--with-program .profile-hero-main {
           margin-left: auto;
@@ -3072,7 +3067,7 @@ export default function Profil() {
           flex-shrink: 0;
         }
         .profile-hero-brand-label {
-          font-size: 34px;
+          font-size: 42px;
           font-weight: 800;
           color: rgba(255, 255, 255, 0.9);
           letter-spacing: -0.02em;
@@ -3157,14 +3152,14 @@ export default function Profil() {
         .profile-hero--centered .profile-hero-copy { text-align: center; }
         .profile-hero-welcome {
           margin: 0 0 6px;
-          font-size: 17px;
+          font-size: 16px;
           font-weight: 600;
-          color: #a78bfa;
+          color: #c4b5fd;
           letter-spacing: 0;
         }
         .profile-hero-title {
           margin: 0 0 10px;
-          font-size: clamp(30px, 4.4vw, 44px);
+          font-size: clamp(30px, 4vw, 42px);
           font-weight: 800;
           color: #fff;
           letter-spacing: -0.03em;
@@ -3179,7 +3174,7 @@ export default function Profil() {
         .profile-hero-tagline {
           margin: 0;
           font-size: 16px;
-          color: #cbd5e1;
+          color: #e2e8f0;
           line-height: 1.45;
         }
         .profile-hero-date {
@@ -4935,7 +4930,7 @@ export default function Profil() {
           .profile-hero { padding: 0 16px; margin-bottom: 20px; }
           .profile-hero-inner { flex-direction: column; align-items: stretch; padding: 24px 20px 28px; gap: 24px; text-align: center; }
           .profile-hero--with-program .profile-hero-brand { justify-content: center; }
-          .profile-hero-brand-label { font-size: 30px; }
+          .profile-hero-brand-label { font-size: 34px; }
           .profile-hero--with-program .profile-hero-main { margin-left: 0; width: 100%; justify-content: center; }
           .profile-hero-main { flex-direction: column; align-items: center; text-align: center; }
           .profile-hero-copy { text-align: center; }

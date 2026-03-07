@@ -2003,6 +2003,91 @@ export default function Profil() {
 
             {/* Sjednocený kontejner bublin – pro trenéra i klienta */}
             <div className="profile-bubbles">
+            {/* Můj plán – první blok pro klienta (Varianta C) */}
+            {!profile?.can_create_calendar_events && (currentPlan || nextPlan) && (
+            <div className="profile-bubble" id="muj-plan">
+              <button type="button" id="profile-bubble-header-muj-plan" className="profile-bubble-header" onClick={() => toggleProfileSection('muj-plan')} aria-expanded={profileOpenSections.has('muj-plan')} aria-controls="profile-bubble-body-muj-plan">
+                <span className="profile-bubble-title">Můj plán</span>
+                <span className={`profile-bubble-chevron ${profileOpenSections.has('muj-plan') ? 'open' : ''}`} aria-hidden>▼</span>
+              </button>
+              <div id="profile-bubble-body-muj-plan" role="region" aria-labelledby="profile-bubble-header-muj-plan" className="profile-bubble-body" data-open={profileOpenSections.has('muj-plan')}>
+              {currentPlan && nextPlan ? (
+                <>
+                  <div className="profile-bubble-tabs" role="tablist" aria-label="Týden plánu">
+                    <button type="button" role="tab" aria-selected={planTab === 'current'} className={`profile-bubble-tab ${planTab === 'current' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setPlanTab('current')}>Tento týden</button>
+                    <button type="button" role="tab" aria-selected={planTab === 'next'} className={`profile-bubble-tab ${planTab === 'next' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setPlanTab('next')}>Příští týden</button>
+                  </div>
+                  {planTab === 'current' ? (
+                    <PlanViewer
+                      plan={currentPlan}
+                      userName={userName}
+                      hideHero
+                      dietaryPreferences={(() => {
+                        const lm = profile?.body_metrics?.[0];
+                        if (!lm) return '';
+                        const parts = [];
+                        if (lm.dietary_restrictions?.trim()) parts.push(lm.dietary_restrictions.trim());
+                        if (lm.foods_to_avoid?.trim()) parts.push(lm.foods_to_avoid.trim());
+                        return parts.join('. ');
+                      })()}
+                      onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
+                      canPinMeals={membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired)}
+                    />
+                  ) : (
+                    <PlanViewer
+                      plan={nextPlan}
+                      userName={userName}
+                      hideHero
+                      dietaryPreferences={(() => {
+                        const lm = profile?.body_metrics?.[0];
+                        if (!lm) return '';
+                        const parts = [];
+                        if (lm.dietary_restrictions?.trim()) parts.push(lm.dietary_restrictions.trim());
+                        if (lm.foods_to_avoid?.trim()) parts.push(lm.foods_to_avoid.trim());
+                        return parts.join('. ');
+                      })()}
+                      onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
+                      canPinMeals={false}
+                    />
+                  )}
+                </>
+              ) : currentPlan ? (
+                <PlanViewer
+                  plan={currentPlan}
+                  userName={userName}
+                  hideHero
+                  dietaryPreferences={(() => {
+                    const lm = profile?.body_metrics?.[0];
+                    if (!lm) return '';
+                    const parts = [];
+                    if (lm.dietary_restrictions?.trim()) parts.push(lm.dietary_restrictions.trim());
+                    if (lm.foods_to_avoid?.trim()) parts.push(lm.foods_to_avoid.trim());
+                    return parts.join('. ');
+                  })()}
+                  onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
+                  canPinMeals={membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired)}
+                />
+              ) : nextPlan ? (
+                <PlanViewer
+                  plan={nextPlan}
+                  userName={userName}
+                  hideHero
+                  dietaryPreferences={(() => {
+                    const lm = profile?.body_metrics?.[0];
+                    if (!lm) return '';
+                    const parts = [];
+                    if (lm.dietary_restrictions?.trim()) parts.push(lm.dietary_restrictions.trim());
+                    if (lm.foods_to_avoid?.trim()) parts.push(lm.foods_to_avoid.trim());
+                    return parts.join('. ');
+                  })()}
+                  onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
+                  canPinMeals={false}
+                />
+              ) : null}
+              </div>
+            </div>
+            )}
+
             {!profile?.can_create_calendar_events && (
             <div className="profile-bubble" id="milniky">
               <button type="button" id="profile-bubble-header-milniky" className="profile-bubble-header" onClick={() => toggleProfileSection('milniky')} aria-expanded={profileOpenSections.has('milniky')} aria-controls="profile-bubble-body-milniky">
@@ -2299,91 +2384,6 @@ export default function Profil() {
               onToast={(t) => setToast({ message: t.message, type: t.type })}
               onHabitSaved={() => refetchProfile(session?.access_token)}
             />
-              </div>
-            </div>
-            )}
-
-            {/* Můj plán – Varianta C: Jídelníček + Náhled příštího týdne v jednom bloku s tabs */}
-            {!profile?.can_create_calendar_events && (currentPlan || nextPlan) && (
-            <div className="profile-bubble" id="muj-plan">
-              <button type="button" id="profile-bubble-header-muj-plan" className="profile-bubble-header" onClick={() => toggleProfileSection('muj-plan')} aria-expanded={profileOpenSections.has('muj-plan')} aria-controls="profile-bubble-body-muj-plan">
-                <span className="profile-bubble-title">Můj plán</span>
-                <span className={`profile-bubble-chevron ${profileOpenSections.has('muj-plan') ? 'open' : ''}`} aria-hidden>▼</span>
-              </button>
-              <div id="profile-bubble-body-muj-plan" role="region" aria-labelledby="profile-bubble-header-muj-plan" className="profile-bubble-body" data-open={profileOpenSections.has('muj-plan')}>
-              {currentPlan && nextPlan ? (
-                <>
-                  <div className="profile-bubble-tabs" role="tablist" aria-label="Týden plánu">
-                    <button type="button" role="tab" aria-selected={planTab === 'current'} className={`profile-bubble-tab ${planTab === 'current' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setPlanTab('current')}>Tento týden</button>
-                    <button type="button" role="tab" aria-selected={planTab === 'next'} className={`profile-bubble-tab ${planTab === 'next' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setPlanTab('next')}>Příští týden</button>
-                  </div>
-                  {planTab === 'current' ? (
-                    <PlanViewer
-                      plan={currentPlan}
-                      userName={userName}
-                      hideHero
-                      dietaryPreferences={(() => {
-                        const lm = profile?.body_metrics?.[0];
-                        if (!lm) return '';
-                        const parts = [];
-                        if (lm.dietary_restrictions?.trim()) parts.push(lm.dietary_restrictions.trim());
-                        if (lm.foods_to_avoid?.trim()) parts.push(lm.foods_to_avoid.trim());
-                        return parts.join('. ');
-                      })()}
-                      onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
-                      canPinMeals={membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired)}
-                    />
-                  ) : (
-                    <PlanViewer
-                      plan={nextPlan}
-                      userName={userName}
-                      hideHero
-                      dietaryPreferences={(() => {
-                        const lm = profile?.body_metrics?.[0];
-                        if (!lm) return '';
-                        const parts = [];
-                        if (lm.dietary_restrictions?.trim()) parts.push(lm.dietary_restrictions.trim());
-                        if (lm.foods_to_avoid?.trim()) parts.push(lm.foods_to_avoid.trim());
-                        return parts.join('. ');
-                      })()}
-                      onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
-                      canPinMeals={false}
-                    />
-                  )}
-                </>
-              ) : currentPlan ? (
-                <PlanViewer
-                  plan={currentPlan}
-                  userName={userName}
-                  hideHero
-                  dietaryPreferences={(() => {
-                    const lm = profile?.body_metrics?.[0];
-                    if (!lm) return '';
-                    const parts = [];
-                    if (lm.dietary_restrictions?.trim()) parts.push(lm.dietary_restrictions.trim());
-                    if (lm.foods_to_avoid?.trim()) parts.push(lm.foods_to_avoid.trim());
-                    return parts.join('. ');
-                  })()}
-                  onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
-                  canPinMeals={membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired)}
-                />
-              ) : nextPlan ? (
-                <PlanViewer
-                  plan={nextPlan}
-                  userName={userName}
-                  hideHero
-                  dietaryPreferences={(() => {
-                    const lm = profile?.body_metrics?.[0];
-                    if (!lm) return '';
-                    const parts = [];
-                    if (lm.dietary_restrictions?.trim()) parts.push(lm.dietary_restrictions.trim());
-                    if (lm.foods_to_avoid?.trim()) parts.push(lm.foods_to_avoid.trim());
-                    return parts.join('. ');
-                  })()}
-                  onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
-                  canPinMeals={false}
-                />
-              ) : null}
               </div>
             </div>
             )}

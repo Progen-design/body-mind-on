@@ -343,9 +343,27 @@ export default function Profil() {
   useEffect(() => { profileRef.current = profile; }, [profile]);
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      const prevScrollRestoration = window.history?.scrollRestoration;
+      if (window.history && 'scrollRestoration' in window.history) {
+        window.history.scrollRestoration = 'manual';
+      }
+      const forceTop = () => window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      forceTop();
+      requestAnimationFrame(forceTop);
+      const t = setTimeout(forceTop, 120);
+      return () => {
+        clearTimeout(t);
+        if (window.history && 'scrollRestoration' in window.history && prevScrollRestoration) {
+          window.history.scrollRestoration = prevScrollRestoration;
+        }
+      };
     }
   }, []);
+  useEffect(() => {
+    if (!loading && typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
+  }, [loading]);
 
   const fetchOptions = { cache: 'no-store' };
 
@@ -3027,11 +3045,11 @@ export default function Profil() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 24px;
+          gap: 28px;
           flex-wrap: wrap;
-          padding: 28px 40px 32px 36px;
+          padding: 26px 34px 30px;
           border-radius: 24px;
-          background: linear-gradient(145deg, rgba(18, 22, 38, 0.92) 0%, rgba(28, 24, 48, 0.88) 100%);
+          background: linear-gradient(145deg, rgba(16, 20, 34, 0.92) 0%, rgba(25, 22, 44, 0.9) 55%, rgba(31, 26, 52, 0.88) 100%);
           border: 1px solid rgba(255, 255, 255, 0.14);
           backdrop-filter: blur(14px);
           -webkit-backdrop-filter: blur(14px);
@@ -3039,6 +3057,8 @@ export default function Profil() {
         }
         .profile-hero--with-program .profile-hero-main {
           margin-left: auto;
+          justify-content: flex-end;
+          width: min(620px, 100%);
           flex-shrink: 0;
         }
         .profile-hero--centered .profile-hero-inner {
@@ -3052,19 +3072,20 @@ export default function Profil() {
           flex-shrink: 0;
         }
         .profile-hero-brand-label {
-          font-size: 15px;
-          font-weight: 600;
+          font-size: 34px;
+          font-weight: 800;
           color: rgba(255, 255, 255, 0.9);
-          letter-spacing: 0.02em;
+          letter-spacing: -0.02em;
+          line-height: 1.05;
         }
         .profile-hero-badge {
           display: inline-flex;
           align-items: center;
           padding: 6px 14px;
           border-radius: 999px;
-          font-size: 12px;
+          font-size: 13px;
           font-weight: 700;
-          letter-spacing: 0.04em;
+          letter-spacing: 0.01em;
           background: rgba(255, 255, 255, 0.14);
           color: #e2e8f0;
           border: 1px solid rgba(255, 255, 255, 0.2);
@@ -3136,18 +3157,18 @@ export default function Profil() {
         .profile-hero--centered .profile-hero-copy { text-align: center; }
         .profile-hero-welcome {
           margin: 0 0 6px;
-          font-size: 15px;
+          font-size: 17px;
           font-weight: 600;
           color: #a78bfa;
-          letter-spacing: 0.02em;
+          letter-spacing: 0;
         }
         .profile-hero-title {
-          margin: 0 0 8px;
-          font-size: clamp(26px, 4vw, 36px);
+          margin: 0 0 10px;
+          font-size: clamp(30px, 4.4vw, 44px);
           font-weight: 800;
           color: #fff;
           letter-spacing: -0.03em;
-          line-height: 1.2;
+          line-height: 1.08;
         }
         .profile-hero-title > span {
           background: linear-gradient(135deg, #e9d5ff, #a78bfa);
@@ -3157,9 +3178,9 @@ export default function Profil() {
         }
         .profile-hero-tagline {
           margin: 0;
-          font-size: 15px;
-          color: #94a3b8;
-          line-height: 1.5;
+          font-size: 16px;
+          color: #cbd5e1;
+          line-height: 1.45;
         }
         .profile-hero-date {
           margin: 12px 0 0;
@@ -4914,12 +4935,14 @@ export default function Profil() {
           .profile-hero { padding: 0 16px; margin-bottom: 20px; }
           .profile-hero-inner { flex-direction: column; align-items: stretch; padding: 24px 20px 28px; gap: 24px; text-align: center; }
           .profile-hero--with-program .profile-hero-brand { justify-content: center; }
-          .profile-hero--with-program .profile-hero-main { margin-left: 0; }
+          .profile-hero-brand-label { font-size: 30px; }
+          .profile-hero--with-program .profile-hero-main { margin-left: 0; width: 100%; justify-content: center; }
           .profile-hero-main { flex-direction: column; align-items: center; text-align: center; }
           .profile-hero-copy { text-align: center; }
+          .profile-hero-welcome { font-size: 16px; }
           .profile-hero-avatar-btn { width: 80px; height: 80px; }
           .profile-hero-avatar-placeholder { font-size: 32px; }
-          .profile-hero-title { font-size: 28px; }
+          .profile-hero-title { font-size: 34px; line-height: 1.1; }
           .profile-hero-tagline { font-size: 15px; }
           .hero-intro { font-size: 16px; }
           .profile-membership-plan-card { padding: 18px 16px 22px; }

@@ -1876,23 +1876,28 @@ const planSectionStyles = `
     background: rgba(30, 41, 59, 0.5);
     border-radius: 12px;
     border: 1px solid rgba(71, 85, 105, 0.5);
-    font-size: 14px;
-    line-height: 1.5;
-    color: #cbd5e1;
+    font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #e2e8f0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   .plan-day-training-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #e9d5ff;
-    margin: 0 0 6px;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin: 0 0 8px;
     padding-bottom: 8px;
     border-bottom: 1px solid rgba(139, 92, 255, 0.3);
+    letter-spacing: -0.02em;
+    line-height: 1.3;
   }
   .plan-day-training-intro {
     margin: 0 0 14px;
-    font-size: 13px;
+    font-size: 14px;
     color: #94a3b8;
-    line-height: 1.5;
+    line-height: 1.6;
   }
   .plan-day-training-intro strong { color: #c4b5fd; }
   .plan-day-training-list {
@@ -1936,15 +1941,16 @@ const planSectionStyles = `
   }
   .plan-day-training-text {
     display: block;
-    color: #e2e8f0;
-    line-height: 1.45;
+    color: #f1f5f9;
+    line-height: 1.55;
     font-weight: 600;
+    font-size: 15px;
   }
   .plan-day-training-toggle-hint {
     display: inline-block;
     margin-top: 8px;
     padding: 8px 14px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     color: #c4b5fd;
     background: rgba(124, 58, 237, 0.25);
@@ -1961,18 +1967,19 @@ const planSectionStyles = `
   }
   .plan-day-training-detail-title {
     margin: 0 0 10px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
-    color: #e2e8f0;
+    color: #f1f5f9;
   }
   .plan-day-training-detail-block {
     margin-bottom: 10px;
-    font-size: 13px;
-    color: #cbd5e1;
+    font-size: 14px;
+    color: #e2e8f0;
+    line-height: 1.55;
   }
   .plan-day-training-detail-block:last-child { margin-bottom: 0; }
-  .plan-day-training-detail-block strong { display: block; margin-bottom: 4px; color: #a78bfa; font-size: 12px; }
-  .plan-day-training-detail-block p { margin: 0; line-height: 1.5; }
+  .plan-day-training-detail-block strong { display: block; margin-bottom: 4px; color: #a78bfa; font-size: 13px; }
+  .plan-day-training-detail-block p { margin: 0; line-height: 1.6; }
   .plan-day-training-equipment {
     margin-top: 8px;
     padding-top: 8px;

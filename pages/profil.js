@@ -1564,16 +1564,8 @@ export default function Profil() {
                     <nav className="profile-quick-nav" aria-label="Rychlá navigace">
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('muj-plan'); }}>Můj plán</button>
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('denni-navyky')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('denni-navyky'); }}>Denní návyky</button>
-                      <button
-                        type="button"
-                        className="profile-quick-nav-btn"
-                        onClick={() => {
-                          setShowWorkoutModal(true);
-                          setWorkoutError('');
-                          setWorkoutForm((f) => ({ ...f, workout_date: getLocalDateStr(new Date()) }));
-                        }}
-                      >
-                        Tréninky
+                      <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('muj-plan'); }} title="Zobrazit jídelníček a tréninkový plán">
+                        Tréninkový plán
                       </button>
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('statistiky')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('statistiky'); }}>Statistiky a progres</button>
                     </nav>

@@ -4936,7 +4936,11 @@ export default function Profil() {
         .error-banner span { color: #888; }
 
         @media (max-width: 640px) {
-          .page { padding: 8px 16px 80px; }
+          .page { padding: 0 12px 80px; width: 100%; box-sizing: border-box; }
+          .profile-hero { padding: 0; max-width: 100%; }
+          .profile-membership-plan-card { margin-left: 0; margin-right: 0; max-width: 100%; }
+          .profile-bubbles { max-width: 100%; }
+          .profile-bubble-body { padding-left: 12px; padding-right: 12px; }
           .progress-section, .progress-detail-end { padding: 18px 16px; margin-left: -4px; margin-right: -4px; border-radius: 14px; }
           .progress-lead, .progress-period-hint { font-size: 14px; line-height: 1.5; }
           .progress-dates { font-size: 14px; margin-bottom: 16px; }
@@ -4953,9 +4957,24 @@ export default function Profil() {
           .kpis-bar .kpi-label, .kpis-bar .kpi-sub { font-size: 11px; }
           .kpi-divider { min-height: 40px; }
           .section-head { font-size: 1.25rem; }
-          .modal-overlay { padding: 16px 12px 12px; align-items: flex-start; }
-          .modal { max-width: 100%; border-radius: 16px; padding: 24px 20px; padding-bottom: max(24px, env(safe-area-inset-bottom)); max-height: calc(100vh - 28px); }
-          .profile-hero { padding: 0 16px; margin-bottom: 20px; }
+          .modal-overlay { padding: 0; align-items: stretch; justify-content: flex-end; }
+          .modal {
+            max-width: 100%; width: 100%; border-radius: 16px 16px 0 0;
+            padding: 24px 20px; padding-bottom: max(28px, env(safe-area-inset-bottom));
+            max-height: 96vh; display: flex; flex-direction: column;
+          }
+          .modal form { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+          .modal .modal-actions {
+            position: sticky; bottom: 0;
+            background: #1a1a2e;
+            margin-left: -20px; margin-right: -20px; margin-bottom: -24px;
+            padding: 16px 20px max(20px, env(safe-area-inset-bottom)) 20px;
+            border-top: 1px solid #334155;
+            flex-shrink: 0;
+          }
+          .modal-preferences { max-height: 96vh; }
+          .modal-preferences form { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+          .profile-hero { margin-bottom: 20px; }
           .profile-hero-inner { flex-direction: column; align-items: stretch; padding: 24px 20px 28px; gap: 24px; text-align: center; }
           .profile-hero--with-program .profile-hero-brand { justify-content: center; }
           .profile-hero-brand-label { font-size: 34px; }
@@ -4984,7 +5003,11 @@ export default function Profil() {
           .plan-goal-prefs-btn { max-width: 100%; min-height: 0; }
           .action-buttons { gap: 10px; }
         }
+        @media (max-width: 480px) {
+          .page { padding: 0 10px 80px; }
+        }
         @media (max-width: 380px) {
+          .page { padding: 0 8px 80px; }
           .progress-big-num { font-size: 20px; }
           .kpi-item { min-width: 64px; }
         }

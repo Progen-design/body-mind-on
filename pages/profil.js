@@ -1483,64 +1483,71 @@ export default function Profil() {
           <span className="page-bg-orb page-bg-orb--center" />
         </div>
         {!loading && !error && (
-          <header className={`profile-welcome ${(!profile?.can_create_calendar_events && (currentPlan || program === 'ON_CLUB' || program === 'VIP')) ? '' : 'profile-welcome--centered'}`}>
-            {!profile?.can_create_calendar_events && (currentPlan || program === 'ON_CLUB' || program === 'VIP') && (
-              <div className="profile-welcome-plan">
-                <h2 className="profile-welcome-plan-title">Tvůj osobní AI plán Body & Mind ON</h2>
-                <div className="profile-welcome-plan-meta">
-                  <span className="profile-welcome-plan-note">Vítej v programu</span>
-                  <span className="plan-goal-badge plan-goal-badge-program">
+          <header className={`profile-hero ${(!profile?.can_create_calendar_events && (currentPlan || program === 'ON_CLUB' || program === 'VIP')) ? 'profile-hero--with-program' : 'profile-hero--centered'}`}>
+            <div className="profile-hero-inner">
+              {!profile?.can_create_calendar_events && (currentPlan || program === 'ON_CLUB' || program === 'VIP') && (
+                <div className="profile-hero-brand">
+                  <span className="profile-hero-brand-label">Body & Mind ON</span>
+                  <span className="profile-hero-badge">
                     {program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP' : getPlanTypeLabel(currentPlan?.plan_type) || 'START'}
                   </span>
                 </div>
-              </div>
-            )}
-            <div className="profile-welcome-greeting">
-              {!profile?.can_create_calendar_events ? (
-                <div className="profile-welcome-user">
-                  <div className="profile-welcome-avatar-col">
-                    <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="profile-welcome-avatar-btn" aria-label="Změnit profilový obrázek">
-                      {profile?.user?.avatar_url ? (
-                        <img src={profile.user.avatar_url} alt="" className="profile-welcome-avatar" />
-                      ) : (
-                        <span className="profile-welcome-avatar-placeholder" aria-hidden>{firstName?.charAt(0)?.toUpperCase() || '?'}</span>
-                      )}
-                    </button>
-                    <input
-                      type="file"
-                      ref={avatarInputRef}
-                      accept="image/jpeg,image/png,image/gif,image/webp"
-                      className="hero-avatar-input-hidden"
-                      onChange={handleAvatarUpload}
-                    />
-                    <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="profile-welcome-avatar-change">
-                      {uploadingAvatar ? 'Nahrávám…' : 'Změnit obrázek'}
-                    </button>
-                    {avatarError && <p className="profile-welcome-avatar-error" role="alert">{avatarError}</p>}
-                  </div>
-                  <div className="profile-welcome-copy">
-                    <h1 className="profile-welcome-title">
+              )}
+              <div className="profile-hero-main">
+                {!profile?.can_create_calendar_events ? (
+                  <>
+                    <div className="profile-hero-avatar-wrap">
+                      <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="profile-hero-avatar-btn" aria-label="Změnit profilový obrázek">
+                        {profile?.user?.avatar_url ? (
+                          <img src={profile.user.avatar_url} alt="" className="profile-hero-avatar" />
+                        ) : (
+                          <span className="profile-hero-avatar-placeholder" aria-hidden>{firstName?.charAt(0)?.toUpperCase() || '?'}</span>
+                        )}
+                      </button>
+                      <input
+                        type="file"
+                        ref={avatarInputRef}
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        className="hero-avatar-input-hidden"
+                        onChange={handleAvatarUpload}
+                      />
+                      <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="profile-hero-avatar-change">
+                        {uploadingAvatar ? 'Nahrávám…' : 'Změnit foto'}
+                      </button>
+                      {avatarError && <p className="profile-hero-avatar-error" role="alert">{avatarError}</p>}
+                    </div>
+                    <div className="profile-hero-copy">
+                      <p className="profile-hero-greeting">
+                        {(() => {
+                          const h = new Date().getHours();
+                          return h < 12 ? 'Krásné ráno' : h < 18 ? 'Krásné odpoledne' : 'Dobrý večer';
+                        })()}
+                      </p>
+                      <h1 className="profile-hero-title">
+                        <span>{firstName}</span>
+                      </h1>
+                      <p className="profile-hero-tagline">Sleduj návyky, tréninky a svůj progres.</p>
+                      <p className="profile-hero-date" aria-hidden>
+                        {new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' })}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="profile-hero-copy">
+                    <p className="profile-hero-greeting">
                       {(() => {
                         const h = new Date().getHours();
-                        const greeting = h < 12 ? 'Krásné ráno' : h < 18 ? 'Krásné odpoledne' : 'Dobrý večer';
-                        return <>{greeting}, <span>{firstName}</span></>;
+                        return h < 12 ? 'Krásné ráno' : h < 18 ? 'Krásné odpoledne' : 'Dobrý večer';
                       })()}
-                    </h1>
-                    <p className="profile-welcome-sub">Sleduj návyky, tréninky a svůj progres.</p>
+                    </p>
+                    <h1 className="profile-hero-title"><span>{firstName}</span></h1>
+                    <p className="profile-hero-tagline">Přehled klientů a kalendář tréninků.</p>
+                    <p className="profile-hero-date" aria-hidden>
+                      {new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </p>
                   </div>
-                </div>
-              ) : (
-                <>
-                  <h1 className="profile-welcome-title">
-                    {(() => {
-                      const h = new Date().getHours();
-                      const greeting = h < 12 ? 'Krásné ráno' : h < 18 ? 'Krásné odpoledne' : 'Dobrý večer';
-                      return <>{greeting}, <span>{firstName}</span></>;
-                    })()}
-                  </h1>
-                  <p className="profile-welcome-sub">Přehled klientů a kalendář tréninků.</p>
-                </>
-              )}
+                )}
+              </div>
             </div>
           </header>
         )}
@@ -3018,147 +3025,154 @@ export default function Profil() {
           z-index: 1;
         }
 
-        .profile-welcome {
-          display: flex;
-          align-items: center;
-          justify-content: flex-start;
-          gap: 20px;
-          flex-wrap: wrap;
-          margin-bottom: 18px;
-          padding: 0 20px 0;
+        /* ── TOP profil: jeden hero panel (premium úvodní stránka) ── */
+        .profile-hero {
+          margin-bottom: 24px;
+          padding: 0 20px;
           max-width: 1180px;
           margin-left: auto;
           margin-right: auto;
         }
-        .profile-welcome.profile-welcome--centered {
+        .profile-hero-inner {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 32px;
+          flex-wrap: wrap;
+          padding: 32px 36px 36px;
+          border-radius: 24px;
+          background: linear-gradient(145deg, rgba(18, 22, 38, 0.88) 0%, rgba(28, 24, 48, 0.82) 100%);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+        }
+        .profile-hero--centered .profile-hero-inner {
           justify-content: center;
           text-align: center;
         }
-        .profile-welcome.profile-welcome--centered .profile-welcome-greeting { text-align: center; }
-        .profile-welcome-plan {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 8px;
-          padding: 16px 18px;
-          border-radius: 18px;
-          background: linear-gradient(145deg, rgba(19, 24, 40, 0.72), rgba(33, 26, 56, 0.58));
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
-          min-width: 280px;
-        }
-        .profile-welcome-plan-meta {
+        .profile-hero-brand {
           display: flex;
           align-items: center;
-          gap: 12px;
-          flex-wrap: wrap;
-        }
-        .profile-welcome-plan-note {
-          font-size: 13px;
-          color: #cbd5e1;
-          font-weight: 500;
-        }
-        .profile-welcome-plan-title {
-          margin: 0;
-          font-size: 18px;
-          font-weight: 700;
-          color: #fff;
-          line-height: 1.3;
-          text-align: left;
-        }
-        .profile-welcome-greeting {
-          text-align: left;
-          padding: 16px 18px;
-          border-radius: 18px;
-          background: linear-gradient(145deg, rgba(16, 20, 34, 0.68), rgba(30, 26, 50, 0.54));
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
-          flex: 1;
-          min-width: 280px;
-        }
-        .profile-welcome-user {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-        .profile-welcome-avatar-col {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 6px;
+          gap: 14px;
           flex-shrink: 0;
         }
-        .profile-welcome-avatar-btn {
-          width: 68px;
-          height: 68px;
+        .profile-hero-brand-label {
+          font-size: 15px;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.85);
+          letter-spacing: 0.02em;
+        }
+        .profile-hero-badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 6px 14px;
+          border-radius: 999px;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          background: rgba(255, 255, 255, 0.12);
+          color: #e2e8f0;
+          border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .profile-hero-main {
+          display: flex;
+          align-items: center;
+          gap: 28px;
+          flex: 1;
+          min-width: 0;
+        }
+        .profile-hero-avatar-wrap {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+        .profile-hero-avatar-btn {
+          width: 88px;
+          height: 88px;
           border-radius: 50%;
-          border: 2px solid rgba(148, 163, 184, 0.35);
+          border: 3px solid rgba(167, 139, 250, 0.4);
           padding: 0;
           overflow: hidden;
-          background: none;
+          background: rgba(0, 0, 0, 0.2);
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: border-color 0.2s, transform 0.2s;
+          transition: border-color 0.25s, transform 0.2s, box-shadow 0.25s;
         }
-        .profile-welcome-avatar-btn:hover {
-          border-color: rgba(196, 181, 253, 0.7);
-          transform: scale(1.02);
+        .profile-hero-avatar-btn:hover {
+          border-color: rgba(196, 181, 253, 0.8);
+          transform: scale(1.03);
+          box-shadow: 0 0 32px rgba(139, 92, 246, 0.35);
         }
-        .profile-welcome-avatar,
-        .profile-welcome-avatar-placeholder {
+        .profile-hero-avatar,
+        .profile-hero-avatar-placeholder {
           width: 100%;
           height: 100%;
           object-fit: cover;
         }
-        .profile-welcome-avatar-placeholder {
+        .profile-hero-avatar-placeholder {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, #4a3b6c, #3d2e5c);
+          background: linear-gradient(135deg, #5b4d7a, #4a3b6c);
           color: #c4b5fd;
-          font-size: 28px;
-          font-weight: 600;
+          font-size: 36px;
+          font-weight: 700;
         }
-        .profile-welcome-avatar-change {
+        .profile-hero-avatar-change {
           font-size: 12px;
           color: #94a3b8;
           background: none;
           border: none;
           cursor: pointer;
           text-decoration: underline;
+          text-underline-offset: 2px;
           padding: 0;
         }
-        .profile-welcome-avatar-change:hover:not(:disabled) { color: #c4b5fd; }
-        .profile-welcome-avatar-change:disabled { opacity: 0.7; cursor: wait; }
-        .profile-welcome-avatar-error { margin: 0; font-size: 12px; color: #fca5a5; text-align: center; }
-        .profile-welcome-copy {
+        .profile-hero-avatar-change:hover:not(:disabled) { color: #c4b5fd; }
+        .profile-hero-avatar-change:disabled { opacity: 0.7; cursor: wait; }
+        .profile-hero-avatar-error { margin: 0; font-size: 12px; color: #fca5a5; text-align: center; }
+        .profile-hero-copy {
           min-width: 0;
         }
-        .profile-welcome-title {
-          margin: 0 0 6px;
-          font-size: 28px;
-          font-weight: 700;
-          color: #fff;
-          letter-spacing: -0.02em;
-          line-height: 1.25;
+        .profile-hero-greeting {
+          margin: 0 0 4px;
+          font-size: 14px;
+          font-weight: 600;
+          color: #a78bfa;
+          letter-spacing: 0.02em;
+          text-transform: uppercase;
         }
-        .profile-welcome-title > span {
-          background: linear-gradient(90deg, #a78bfa, #22d3ee);
+        .profile-hero-title {
+          margin: 0 0 6px;
+          font-size: clamp(28px, 4.5vw, 38px);
+          font-weight: 800;
+          color: #fff;
+          letter-spacing: -0.03em;
+          line-height: 1.15;
+        }
+        .profile-hero-title > span {
+          background: linear-gradient(135deg, #e9d5ff, #a78bfa);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
         }
-        .profile-welcome-sub {
+        .profile-hero-tagline {
           margin: 0;
-          font-size: 15px;
+          font-size: 16px;
           color: #94a3b8;
           line-height: 1.5;
+        }
+        .profile-hero-date {
+          margin: 10px 0 0;
+          font-size: 13px;
+          color: rgba(148, 163, 184, 0.8);
+          font-weight: 500;
+          text-transform: capitalize;
         }
 
         .profile-membership-plan-card {
@@ -3169,7 +3183,7 @@ export default function Profil() {
           display: flex;
           flex-direction: column;
           gap: 0;
-          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
           max-width: 1180px;
           margin-left: auto;
           margin-right: auto;
@@ -4903,16 +4917,14 @@ export default function Profil() {
           .section-head { font-size: 1.25rem; }
           .modal-overlay { padding: 16px 12px 12px; align-items: flex-start; }
           .modal { max-width: 100%; border-radius: 16px; padding: 24px 20px; padding-bottom: max(24px, env(safe-area-inset-bottom)); max-height: calc(100vh - 28px); }
-          .profile-welcome { flex-direction: column; align-items: stretch; text-align: center; gap: 14px; padding-top: 0; }
-          .profile-welcome-plan { align-items: flex-start; min-width: 0; }
-          .profile-welcome-plan-meta { gap: 8px; }
-          .profile-welcome-plan-title { text-align: center; font-size: 18px; }
-          .profile-welcome-greeting { text-align: left; min-width: 0; }
-          .profile-welcome-user { align-items: flex-start; }
-          .profile-welcome-avatar-col { align-items: center; }
-          .profile-welcome-avatar-btn { width: 56px; height: 56px; }
-          .profile-welcome-title { font-size: 24px; }
-          .profile-welcome-sub { font-size: 14px; }
+          .profile-hero { padding: 0 16px; margin-bottom: 20px; }
+          .profile-hero-inner { flex-direction: column; align-items: stretch; padding: 24px 20px 28px; gap: 24px; text-align: center; }
+          .profile-hero--with-program .profile-hero-brand { justify-content: center; }
+          .profile-hero-main { flex-direction: column; text-align: center; }
+          .profile-hero-avatar-btn { width: 80px; height: 80px; }
+          .profile-hero-avatar-placeholder { font-size: 32px; }
+          .profile-hero-title { font-size: 28px; }
+          .profile-hero-tagline { font-size: 15px; }
           .hero-intro { font-size: 16px; }
           .profile-membership-plan-card { padding: 18px 16px 22px; }
           .membership-card-row { flex-direction: column; align-items: stretch; gap: 20px; }

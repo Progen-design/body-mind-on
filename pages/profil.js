@@ -297,6 +297,8 @@ export default function Profil() {
   const [selectedClient, setSelectedClient] = useState(null);
   const [showFullClientCard, setShowFullClientCard] = useState(false);
   const [profileOpenSections, setProfileOpenSections] = useState(new Set(['muj-plan', 'moji-klienti']));
+  const [planTab, setPlanTab] = useState('current'); // 'current' | 'next' – Varianta C: Můj plán
+  const [statsTab, setStatsTab] = useState('overview'); // 'overview' | 'weight' | 'progress' – Varianta C: Statistiky a progres
 
   const toggleProfileSection = (id) => {
     setProfileOpenSections((prev) => {
@@ -1561,7 +1563,7 @@ export default function Profil() {
                   <div className="membership-card-nav-wrap">
                     <nav className="profile-quick-nav" aria-label="Rychlá navigace">
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('denni-navyky')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('denni-navyky'); }}>Habit tracker</button>
-                      <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('muj-plan'); }}>Jídelníček a trénink</button>
+                      <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('muj-plan'); }}>Můj plán</button>
                       <button
                         type="button"
                         className="profile-quick-nav-btn"
@@ -1573,7 +1575,7 @@ export default function Profil() {
                       >
                         Tréninky
                       </button>
-                      <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('statistiky')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('statistiky'); }}>Statistiky</button>
+                      <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('statistiky')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('statistiky'); }}>Statistiky a progres</button>
                     </nav>
                   </div>
                 </div>
@@ -2301,45 +2303,71 @@ export default function Profil() {
             </div>
             )}
 
-            {/* MŮJ PLÁN – bublina (jen klienti) */}
-            {!profile?.can_create_calendar_events && currentPlan && (
+            {/* Můj plán – Varianta C: Jídelníček + Náhled příštího týdne v jednom bloku s tabs */}
+            {!profile?.can_create_calendar_events && (currentPlan || nextPlan) && (
             <div className="profile-bubble" id="muj-plan">
               <button type="button" id="profile-bubble-header-muj-plan" className="profile-bubble-header" onClick={() => toggleProfileSection('muj-plan')} aria-expanded={profileOpenSections.has('muj-plan')} aria-controls="profile-bubble-body-muj-plan">
-                <span className="profile-bubble-title">Jídelníček a tréninkový plán</span>
+                <span className="profile-bubble-title">Můj plán</span>
                 <span className={`profile-bubble-chevron ${profileOpenSections.has('muj-plan') ? 'open' : ''}`} aria-hidden>▼</span>
               </button>
               <div id="profile-bubble-body-muj-plan" role="region" aria-labelledby="profile-bubble-header-muj-plan" className="profile-bubble-body" data-open={profileOpenSections.has('muj-plan')}>
-              <PlanViewer
-                plan={currentPlan}
-                userName={userName}
-                hideHero
-                dietaryPreferences={(() => {
-                  const lm = profile?.body_metrics?.[0];
-                  if (!lm) return '';
-                  const parts = [];
-                  if (lm.dietary_restrictions?.trim()) parts.push(lm.dietary_restrictions.trim());
-                  if (lm.foods_to_avoid?.trim()) parts.push(lm.foods_to_avoid.trim());
-                  return parts.join('. ');
-                })()}
-                onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
-                canPinMeals={membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired)}
-              />
-              </div>
-            </div>
-            )}
-
-            {/* Náhled příštího týdne – bublina */}
-            {!profile?.can_create_calendar_events && nextPlan && (
-            <div className="profile-bubble" id="nahled-tyden">
-              <button type="button" id="profile-bubble-header-nahled-tyden" className="profile-bubble-header" onClick={() => toggleProfileSection('nahled-tyden')} aria-expanded={profileOpenSections.has('nahled-tyden')} aria-controls="profile-bubble-body-nahled-tyden">
-                <span className="profile-bubble-title">Náhled příštího týdne</span>
-                <span className={`profile-bubble-chevron ${profileOpenSections.has('nahled-tyden') ? 'open' : ''}`} aria-hidden>▼</span>
-              </button>
-              <div id="profile-bubble-body-nahled-tyden" role="region" aria-labelledby="profile-bubble-header-nahled-tyden" className="profile-bubble-body" data-open={profileOpenSections.has('nahled-tyden')}>
-              <details className="card plan-next-week-preview" open>
-                <summary className="plan-next-week-summary">
-                  📅 Náhled příštího týdne ({nextPlan.valid_from && new Date(nextPlan.valid_from).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short' })} – {nextPlan.valid_until && new Date(nextPlan.valid_until).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short', year: 'numeric' })})
-                </summary>
+              {currentPlan && nextPlan ? (
+                <>
+                  <div className="profile-bubble-tabs" role="tablist" aria-label="Týden plánu">
+                    <button type="button" role="tab" aria-selected={planTab === 'current'} className={`profile-bubble-tab ${planTab === 'current' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setPlanTab('current')}>Tento týden</button>
+                    <button type="button" role="tab" aria-selected={planTab === 'next'} className={`profile-bubble-tab ${planTab === 'next' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setPlanTab('next')}>Příští týden</button>
+                  </div>
+                  {planTab === 'current' ? (
+                    <PlanViewer
+                      plan={currentPlan}
+                      userName={userName}
+                      hideHero
+                      dietaryPreferences={(() => {
+                        const lm = profile?.body_metrics?.[0];
+                        if (!lm) return '';
+                        const parts = [];
+                        if (lm.dietary_restrictions?.trim()) parts.push(lm.dietary_restrictions.trim());
+                        if (lm.foods_to_avoid?.trim()) parts.push(lm.foods_to_avoid.trim());
+                        return parts.join('. ');
+                      })()}
+                      onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
+                      canPinMeals={membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired)}
+                    />
+                  ) : (
+                    <PlanViewer
+                      plan={nextPlan}
+                      userName={userName}
+                      hideHero
+                      dietaryPreferences={(() => {
+                        const lm = profile?.body_metrics?.[0];
+                        if (!lm) return '';
+                        const parts = [];
+                        if (lm.dietary_restrictions?.trim()) parts.push(lm.dietary_restrictions.trim());
+                        if (lm.foods_to_avoid?.trim()) parts.push(lm.foods_to_avoid.trim());
+                        return parts.join('. ');
+                      })()}
+                      onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
+                      canPinMeals={false}
+                    />
+                  )}
+                </>
+              ) : currentPlan ? (
+                <PlanViewer
+                  plan={currentPlan}
+                  userName={userName}
+                  hideHero
+                  dietaryPreferences={(() => {
+                    const lm = profile?.body_metrics?.[0];
+                    if (!lm) return '';
+                    const parts = [];
+                    if (lm.dietary_restrictions?.trim()) parts.push(lm.dietary_restrictions.trim());
+                    if (lm.foods_to_avoid?.trim()) parts.push(lm.foods_to_avoid.trim());
+                    return parts.join('. ');
+                  })()}
+                  onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
+                  canPinMeals={membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired)}
+                />
+              ) : nextPlan ? (
                 <PlanViewer
                   plan={nextPlan}
                   userName={userName}
@@ -2355,7 +2383,7 @@ export default function Profil() {
                   onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
                   canPinMeals={false}
                 />
-              </details>
+              ) : null}
               </div>
             </div>
             )}
@@ -2407,16 +2435,22 @@ export default function Profil() {
             </div>
             )}
 
-            {/* Statistiky – bublina (jen klienti) */}
+            {/* Statistiky a progres – Varianta C: Statistiky + Vývoj váhy + Tvůj progres v jednom bloku s tabs */}
             {!profile?.can_create_calendar_events && (
             <div className="profile-bubble" id="statistiky">
               <button type="button" id="profile-bubble-header-statistiky" className="profile-bubble-header" onClick={() => toggleProfileSection('statistiky')} aria-expanded={profileOpenSections.has('statistiky')} aria-controls="profile-bubble-body-statistiky">
-                <span className="profile-bubble-title">Statistiky</span>
+                <span className="profile-bubble-title">Statistiky a progres</span>
                 <span className={`profile-bubble-chevron ${profileOpenSections.has('statistiky') ? 'open' : ''}`} aria-hidden>▼</span>
               </button>
               <div id="profile-bubble-body-statistiky" role="region" aria-labelledby="profile-bubble-header-statistiky" className="profile-bubble-body" data-open={profileOpenSections.has('statistiky')}>
+              <div className="profile-bubble-tabs" role="tablist" aria-label="Sekce statistik">
+                <button type="button" role="tab" aria-selected={statsTab === 'overview'} className={`profile-bubble-tab ${statsTab === 'overview' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setStatsTab('overview')}>Přehled</button>
+                <button type="button" role="tab" aria-selected={statsTab === 'weight'} className={`profile-bubble-tab ${statsTab === 'weight' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setStatsTab('weight')}>Vývoj váhy</button>
+                <button type="button" role="tab" aria-selected={statsTab === 'progress'} className={`profile-bubble-tab ${statsTab === 'progress' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setStatsTab('progress')}>Progres</button>
+              </div>
+              {statsTab === 'overview' && (
             <section className="kpi-section">
-              <h2 className="section-head">Statistiky</h2>
+              <h2 className="section-head">Přehled</h2>
               <div className="kpis-bar">
                 <div className="kpi-item">
                   <span className="kpi-icon">🏋️</span>
@@ -2446,18 +2480,8 @@ export default function Profil() {
                 </div>
               </div>
             </section>
-              </div>
-            </div>
-            )}
-
-            {/* Vývoj váhy – bublina (jen klienti) */}
-            {!profile?.can_create_calendar_events && (
-            <div className="profile-bubble" id="vyvoj-vahy">
-              <button type="button" id="profile-bubble-header-vyvoj-vahy" className="profile-bubble-header" onClick={() => toggleProfileSection('vyvoj-vahy')} aria-expanded={profileOpenSections.has('vyvoj-vahy')} aria-controls="profile-bubble-body-vyvoj-vahy">
-                <span className="profile-bubble-title">Vývoj váhy</span>
-                <span className={`profile-bubble-chevron ${profileOpenSections.has('vyvoj-vahy') ? 'open' : ''}`} aria-hidden>▼</span>
-              </button>
-              <div id="profile-bubble-body-vyvoj-vahy" role="region" aria-labelledby="profile-bubble-header-vyvoj-vahy" className="profile-bubble-body" data-open={profileOpenSections.has('vyvoj-vahy')}>
+              )}
+              {statsTab === 'weight' && (
             <section className="card chart-section">
               <h2 className="section-head">Vývoj váhy</h2>
               {(chartWeightData || []).length >= 1 ? (
@@ -2539,18 +2563,8 @@ export default function Profil() {
                 <p className="chart-empty">Graf se naplní automaticky podle zapsaných tréninků (výchozí váha z registrace). Zapiš tréninky a uvidíš odhad vývoje váhy.</p>
               )}
             </section>
-              </div>
-            </div>
-            )}
-
-            {/* Tvůj progres – bublina (jen klienti) */}
-            {!profile?.can_create_calendar_events && (
-            <div className="profile-bubble" id="progres">
-              <button type="button" id="profile-bubble-header-progres" className="profile-bubble-header" onClick={() => toggleProfileSection('progres')} aria-expanded={profileOpenSections.has('progres')} aria-controls="profile-bubble-body-progres">
-                <span className="profile-bubble-title">Tvůj progres</span>
-                <span className={`profile-bubble-chevron ${profileOpenSections.has('progres') ? 'open' : ''}`} aria-hidden>▼</span>
-              </button>
-              <div id="profile-bubble-body-progres" role="region" aria-labelledby="profile-bubble-header-progres" className="profile-bubble-body" data-open={profileOpenSections.has('progres')}>
+              )}
+              {statsTab === 'progress' && (
             <section className="card card-accent center progress-section progress-detail-end">
               <h2 className="section-head">Tvůj progres</h2>
               <p className="progress-dates">Období: <strong>{periodStartFormatted}</strong> – <strong>{periodEndFormatted}</strong></p>
@@ -2642,6 +2656,7 @@ export default function Profil() {
                 </p>
               )}
             </section>
+              )}
               </div>
             </div>
             )}
@@ -3471,6 +3486,31 @@ export default function Profil() {
           max-height: 5000px;
           padding: 0 20px 20px;
           box-sizing: border-box;
+        }
+        .profile-bubble-tabs {
+          display: flex;
+          gap: 4px;
+          margin-bottom: 16px;
+          padding: 4px 0 0;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .profile-bubble-tab {
+          padding: 8px 16px;
+          font-size: 14px;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.6);
+          background: none;
+          border: none;
+          border-radius: 10px;
+          cursor: pointer;
+          transition: color 0.2s, background 0.2s;
+        }
+        .profile-bubble-tab:hover {
+          color: rgba(255, 255, 255, 0.85);
+        }
+        .profile-bubble-tab--active {
+          color: #e2e8f0;
+          background: rgba(139, 92, 246, 0.25);
         }
 
         .hero {

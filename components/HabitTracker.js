@@ -598,10 +598,13 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           .ht-chart-wrap { width: 100%; }
         }
 
-        /* ── Top header ── */
+        /* ── Top header (sticky při vertikálním scrollu stránky) ── */
         .ht-top {
           display: flex; align-items: center; justify-content: space-between;
           gap: 20px; margin-bottom: 20px;
+          position: sticky; top: 0; z-index: 20;
+          background: rgb(14, 19, 33);
+          padding-bottom: 12px;
         }
         .ht-title {
           margin: 0 0 4px; font-size: 1.625rem; font-weight: 800;
@@ -700,11 +703,11 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           50% { opacity: 0.5; }
         }
 
-        /* ── Habit label (vždy viditelné – plné pozadí, sticky) ── */
+        /* ── Habit label (zamčené vlevo – při horizontálním posouvání zůstávají názvy návyků vždy vidět) ── */
         .hg-label {
           display: flex; align-items: flex-start; gap: 10px;
           min-height: 56px; padding-right: 16px; overflow: hidden;
-          position: sticky; left: 0; z-index: 5;
+          position: sticky; left: 0; z-index: 10;
           background: rgb(14, 19, 33);
           box-shadow: 4px 0 12px rgba(0,0,0,0.35);
           min-width: 0;

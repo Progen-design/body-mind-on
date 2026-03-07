@@ -559,6 +559,13 @@ export default function Profil() {
   }, [session?.access_token]);
 
 
+  // Když se otevře modal Zapsat trénink nebo Upravit preference, scroll nahoru aby byl modal hned vidět
+  useEffect(() => {
+    if (showWorkoutModal || showPreferencesModal) {
+      window.scrollTo(0, 0);
+    }
+  }, [showWorkoutModal, showPreferencesModal]);
+
   // Habit wizard jen pro ON Club a VIP; průvodce (tour) jen pro ON Club a VIP – START to mít nesmí (přidaná hodnota)
   useEffect(() => {
     if (!loading && session && !error && profile) {
@@ -4957,11 +4964,19 @@ export default function Profil() {
           .kpis-bar .kpi-label, .kpis-bar .kpi-sub { font-size: 11px; }
           .kpi-divider { min-height: 40px; }
           .section-head { font-size: 1.25rem; }
-          .modal-overlay { padding: 0; align-items: stretch; justify-content: flex-end; }
+          .modal-overlay {
+            padding: 0;
+            align-items: flex-start;
+            justify-content: flex-start;
+            padding-top: env(safe-area-inset-top);
+            overflow-y: auto;
+          }
           .modal {
-            max-width: 100%; width: 100%; border-radius: 16px 16px 0 0;
+            max-width: 100%; width: 100%; border-radius: 16px;
             padding: 24px 20px; padding-bottom: max(28px, env(safe-area-inset-bottom));
-            max-height: 96vh; display: flex; flex-direction: column;
+            max-height: calc(100vh - env(safe-area-inset-top) - 16px);
+            display: flex; flex-direction: column;
+            flex-shrink: 0;
           }
           .modal form { display: flex; flex-direction: column; flex: 1; min-height: 0; }
           .modal .modal-actions {

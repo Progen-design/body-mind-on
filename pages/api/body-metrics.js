@@ -2,6 +2,7 @@
 import { supabaseServer } from '../../lib/supabaseServer';
 import { generatePlanForEmail } from '../../lib/generatePlan';
 import { createAuthUserIfNew } from '../../lib/authHelpers';
+import { createInitialAITasks } from '../../lib/generateAITasks';
 import { getClientIp, isRateLimited } from '../../lib/rateLimit';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getWeeklySessions } from '../../lib/preferenceConstants';
@@ -124,6 +125,11 @@ export default async function handler(req, res) {
     }
 
     console.log(`✅ Data uložena do body_metrics pro ${payload.email}, user_id: ${payload.user_id}`);
+
+    if (payload.user_id) {
+      const { created } = await createInitialAITasks(payload.user_id);
+      if (created) console.log(`✅ Vytvořeny úvodní AI úkoly pro user_id: ${payload.user_id}`);
+    }
 
     // Uložit tier členství do tabulky memberships (upsert – aktualizovat pokud existuje)
     if (payload.user_id) {

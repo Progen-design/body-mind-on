@@ -716,7 +716,7 @@ export default function Profil() {
       if (res.ok && json.ok) {
         await supabase.auth.signOut();
         setToast({ message: 'Účet byl smazán.', type: 'success' });
-        router.replace('/login');
+        router.replace('/');
       } else {
         setToast({ message: json.error || 'Nepodařilo se smazat účet.', type: 'error' });
       }

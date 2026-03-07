@@ -1,6 +1,6 @@
 // /pages/api/ai/run-scheduler.js – Run AI task generator + scheduler (cron or manual)
 import { generateAITasks } from '../../../lib/generateAITasks';
-import { runAIScheduler } from '../../../lib/aiScheduler';
+import { processAIEvents, runAIScheduler } from '../../../lib/aiScheduler';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -16,10 +16,12 @@ export default async function handler(req, res) {
 
   try {
     const gen = await generateAITasks();
+    const events = await processAIEvents();
     const run = await runAIScheduler();
     return res.status(200).json({
       ok: true,
       generated: gen.created,
+      events,
       scheduler: run,
     });
   } catch (err) {

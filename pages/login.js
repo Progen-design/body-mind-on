@@ -75,12 +75,19 @@ export default function Login() {
       <>
         <Header />
         <main className="login-page app-page">
-          <div className="login-hero">
-            <h2 className="login-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
-            <span className="login-hero-badge">Přihlášení</span>
+          <div className="login-bg-decor" aria-hidden>
+            <span className="login-bg-orb login-bg-orb--top" />
+            <span className="login-bg-orb login-bg-orb--bottom" />
           </div>
-          <div className="login-content">
-            <p className="login-loading">Načítám…</p>
+          <div className="login-shell">
+            <div className="login-hero">
+              <h2 className="login-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
+              <span className="login-hero-badge">Přihlášení</span>
+              <p className="login-hero-sub">Zapni své tělo i mysl a pokračuj ve svém plánu.</p>
+            </div>
+            <div className="login-content">
+              <p className="login-loading">Načítám…</p>
+            </div>
           </div>
         </main>
         <Footer />
@@ -92,50 +99,57 @@ export default function Login() {
     <>
       <Header />
       <main className="login-page app-page">
-        <div className="login-hero">
-          <h2 className="login-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
-          <span className="login-hero-badge">Přihlášení</span>
+        <div className="login-bg-decor" aria-hidden>
+          <span className="login-bg-orb login-bg-orb--top" />
+          <span className="login-bg-orb login-bg-orb--bottom" />
         </div>
-        <div className="login-content">
-          {router.query.registered === '1' && (
-            <div className="login-registered-msg">
-              Registrace dokončena. Přihlaste se e-mailem a heslem. Odkaz na plán a přístup do profilu najdete také v e-mailu.
-            </div>
-          )}
-          <p className="login-hint">
-            Zadej e-mail a heslo, které máš z registrace (poslali jsme ti je e-mailem).
-          </p>
-          <form onSubmit={handleSubmit} className="login-form">
-            <div className="login-field">
-              <label className="login-label">E-mail</label>
-              <input
-                type="email"
-                className="login-input"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="jan@example.com"
-                required
-              />
-            </div>
-            <div className="login-field">
-              <label className="login-label">Heslo</label>
-              <input
-                type="password"
-                className="login-input"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
-            </div>
-            <button type="submit" className="login-submit" disabled={loading}>
-              {loading ? 'Přihlašuji…' : 'Přihlásit se'}
-            </button>
-            {message && <p className="login-error" role="alert">{message}</p>}
-          </form>
-          <p className="login-footer-hint">
-            Nemáš účet? <Link href="/start">Registruj se ve START programu</Link> – dostaneš plán a přihlašovací údaje e-mailem.
-          </p>
+        <div className="login-shell">
+          <div className="login-hero">
+            <h2 className="login-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
+            <span className="login-hero-badge">Přihlášení</span>
+            <p className="login-hero-sub">Zapni své tělo i mysl a pokračuj ve svém plánu.</p>
+          </div>
+          <div className="login-content">
+            {router.query.registered === '1' && (
+              <div className="login-registered-msg">
+                Registrace dokončena. Přihlaste se e-mailem a heslem. Odkaz na plán a přístup do profilu najdete také v e-mailu.
+              </div>
+            )}
+            <p className="login-hint">
+              Zadej e-mail a heslo, které máš z registrace (poslali jsme ti je e-mailem).
+            </p>
+            <form onSubmit={handleSubmit} className="login-form">
+              <div className="login-field">
+                <label className="login-label">E-mail</label>
+                <input
+                  type="email"
+                  className="login-input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="jan@example.com"
+                  required
+                />
+              </div>
+              <div className="login-field">
+                <label className="login-label">Heslo</label>
+                <input
+                  type="password"
+                  className="login-input"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+              <button type="submit" className="login-submit" disabled={loading}>
+                {loading ? 'Přihlašuji…' : 'Přihlásit se'}
+              </button>
+              {message && <p className="login-error" role="alert">{message}</p>}
+            </form>
+            <p className="login-footer-hint">
+              Nemáš účet? <Link href="/start">Registruj se ve START programu</Link> – dostaneš plán a přihlašovací údaje e-mailem.
+            </p>
+          </div>
         </div>
       </main>
       <Footer />
@@ -143,58 +157,113 @@ export default function Login() {
       <style jsx>{`
         .login-page {
           min-height: 100vh;
-          padding: 0 20px 100px;
-          background: radial-gradient(circle at 30% 0%, #1c1333, #0b0b15 60%), #0a0a0f;
+          padding: 24px 20px 100px;
           color: #fff;
           font-family: Inter, sans-serif;
+          position: relative;
+          overflow: hidden;
+        }
+        .login-bg-decor {
+          position: fixed;
+          inset: 0;
+          z-index: 0;
+          pointer-events: none;
+          background-color: #0a0a0f;
+          background-image:
+            linear-gradient(180deg, rgba(10, 10, 15, 0.82) 0%, rgba(10, 10, 15, 0.7) 45%, rgba(10, 10, 15, 0.82) 100%),
+            url('https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=1920&q=80');
+          background-size: cover;
+          background-position: center;
+        }
+        .login-bg-orb {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(90px);
+          opacity: 0.28;
+        }
+        .login-bg-orb--top {
+          width: 420px;
+          height: 420px;
+          top: -140px;
+          right: -100px;
+          background: radial-gradient(circle, rgba(139, 92, 246, 0.7) 0%, transparent 70%);
+        }
+        .login-bg-orb--bottom {
+          width: 360px;
+          height: 360px;
+          bottom: -120px;
+          left: -80px;
+          background: radial-gradient(circle, rgba(34, 211, 238, 0.38) 0%, transparent 72%);
+        }
+        .login-shell {
+          position: relative;
+          z-index: 1;
+          max-width: 1080px;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: 1.05fr 0.95fr;
+          gap: 22px;
+          align-items: stretch;
+        }
+        .login-hero,
+        .login-content {
+          border-radius: 24px;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          background: linear-gradient(145deg, rgba(20, 25, 40, 0.72), rgba(32, 28, 56, 0.58));
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
         }
         .login-hero {
-          text-align: center;
-          padding: 28px 24px 32px;
-          margin: 0 -20px 32px -20px;
-          background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4c1d95 100%);
-          border-radius: 0 0 20px 20px;
-          position: relative;
-          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
-        }
-        .login-hero::after {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.5), transparent);
+          padding: 34px 30px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
         }
         .login-hero-title {
-          margin: 0 0 12px;
-          font-size: 22px;
-          font-weight: 700;
-          color: #fff;
-          text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+          margin: 0 0 14px;
+          font-size: clamp(24px, 4vw, 36px);
+          font-weight: 800;
+          line-height: 1.15;
+          letter-spacing: -0.02em;
+          text-shadow: 0 2px 20px rgba(0, 0, 0, 0.35);
         }
         .login-hero-badge {
-          display: inline-block;
-          background: rgba(255, 255, 255, 0.35);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: fit-content;
+          background: rgba(255, 255, 255, 0.22);
           color: #fff;
-          padding: 8px 18px;
-          border-radius: 20px;
+          padding: 9px 16px;
+          border-radius: 999px;
           font-size: 13px;
-          font-weight: 600;
-          border: 1px solid rgba(255, 255, 255, 0.4);
-          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+          font-weight: 700;
+          border: 1px solid rgba(255, 255, 255, 0.35);
+          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+          margin-bottom: 16px;
+        }
+        .login-hero-sub {
+          margin: 0;
+          color: #cbd5e1;
+          font-size: 16px;
+          line-height: 1.5;
+          max-width: 40ch;
         }
         .login-content {
-          max-width: 420px;
-          margin: 0 auto;
+          padding: 28px 24px;
+          max-width: 460px;
+          width: 100%;
+          justify-self: end;
         }
         .login-loading {
           text-align: center;
-          color: #94a3b8;
+          color: #cbd5e1;
           margin: 0;
+          font-size: 16px;
         }
         .login-registered-msg {
-          margin-bottom: 20px;
+          margin-bottom: 18px;
           padding: 14px;
           background: rgba(34, 197, 94, 0.12);
           border: 1px solid rgba(34, 197, 94, 0.4);
@@ -204,14 +273,14 @@ export default function Login() {
           line-height: 1.5;
         }
         .login-hint {
-          color: #94a3b8;
-          margin: 0 0 24px;
-          font-size: 15px;
+          color: #cbd5e1;
+          margin: 0 0 18px;
+          font-size: 14px;
           line-height: 1.5;
         }
         .login-form {
           display: grid;
-          gap: 18px;
+          gap: 16px;
         }
         .login-field {
           display: flex;
@@ -219,66 +288,89 @@ export default function Login() {
           gap: 6px;
         }
         .login-label {
-          font-size: 14px;
-          color: #94a3b8;
+          font-size: 13px;
+          color: #cbd5e1;
+          font-weight: 500;
         }
         .login-input {
           width: 100%;
-          padding: 12px 14px;
+          padding: 13px 14px;
           border-radius: 12px;
-          border: 1px solid #334155;
-          background: #0f0f1a;
+          border: 1px solid rgba(148, 163, 184, 0.35);
+          background: rgba(15, 23, 42, 0.55);
           color: #fff;
           font-size: 16px;
           box-sizing: border-box;
         }
         .login-input::placeholder {
-          color: #64748b;
+          color: #94a3b8;
         }
         .login-input:focus {
           outline: none;
-          border-color: rgba(139, 92, 255, 0.6);
-          box-shadow: 0 0 0 2px rgba(139, 92, 255, 0.2);
+          border-color: rgba(139, 92, 246, 0.8);
+          box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.22);
         }
         .login-submit {
-          margin-top: 8px;
+          margin-top: 4px;
           padding: 14px 24px;
           border-radius: 12px;
           border: none;
-          background: linear-gradient(135deg, #7c3aed, #9b5cff);
-          color: #fff;
+          background: linear-gradient(135deg, #10b981, #14b8a6);
+          color: #052e2b;
           font-size: 16px;
-          font-weight: 600;
+          font-weight: 700;
           cursor: pointer;
-          transition: opacity 0.2s;
+          transition: transform 0.2s, filter 0.2s;
         }
         .login-submit:hover:not(:disabled) {
-          opacity: 0.95;
+          transform: translateY(-1px);
+          filter: brightness(1.05);
         }
         .login-submit:disabled {
           opacity: 0.6;
           cursor: not-allowed;
         }
         .login-error {
-          color: #f87171;
+          color: #fecaca;
           font-size: 14px;
           margin: 0;
           padding: 10px 12px;
-          background: rgba(239, 68, 68, 0.15);
-          border-radius: 8px;
+          background: rgba(239, 68, 68, 0.16);
+          border-radius: 10px;
+          border: 1px solid rgba(248, 113, 113, 0.4);
         }
         .login-footer-hint {
-          margin-top: 24px;
+          margin-top: 20px;
           font-size: 14px;
-          color: #94a3b8;
+          color: #cbd5e1;
           line-height: 1.5;
         }
         .login-footer-hint a {
-          color: #a78bfa;
+          color: #c4b5fd;
           text-decoration: underline;
+          text-underline-offset: 2px;
         }
         .login-footer-hint a:hover {
-          color: #c4b5fd;
+          color: #e9d5ff;
+        }
+        @media (max-width: 900px) {
+          .login-page {
+            padding: 14px 16px 80px;
+          }
+          .login-shell {
+            grid-template-columns: 1fr;
+            gap: 14px;
+          }
+          .login-content {
+            justify-self: stretch;
+            max-width: none;
+          }
+          .login-hero {
+            padding: 24px 20px;
+          }
+          .login-hero-title {
+            font-size: 28px;
+          }
         }
       `}</style>
     </>

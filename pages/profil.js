@@ -1371,22 +1371,60 @@ export default function Profil() {
             {!profile?.can_create_calendar_events && (currentPlan || program === 'ON_CLUB' || program === 'VIP') && (
               <div className="profile-welcome-plan">
                 <h2 className="profile-welcome-plan-title">Tvůj osobní AI plán Body & Mind ON</h2>
-                <span className="plan-goal-badge plan-goal-badge-program">
-                  {program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP' : getPlanTypeLabel(currentPlan?.plan_type) || 'START'}
-                </span>
+                <div className="profile-welcome-plan-meta">
+                  <span className="plan-goal-badge plan-goal-badge-program">
+                    {program === 'ON_CLUB' ? 'ON Club' : program === 'VIP' ? 'VIP' : getPlanTypeLabel(currentPlan?.plan_type) || 'START'}
+                  </span>
+                  <span className="profile-welcome-plan-note">Vítej v programu</span>
+                </div>
               </div>
             )}
             <div className="profile-welcome-greeting">
-              <h1 className="profile-welcome-title">
-                {(() => {
-                  const h = new Date().getHours();
-                  const greeting = h < 12 ? 'Krásné ráno' : h < 18 ? 'Krásné odpoledne' : 'Dobrý večer';
-                  return <>{greeting}, <span>{firstName}</span></>;
-                })()}
-              </h1>
-              <p className="profile-welcome-sub">
-                {profile?.can_create_calendar_events ? 'Přehled klientů a kalendář tréninků.' : 'Sleduj návyky, tréninky a svůj progres.'}
-              </p>
+              {!profile?.can_create_calendar_events ? (
+                <div className="profile-welcome-user">
+                  <div className="profile-welcome-avatar-col">
+                    <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="profile-welcome-avatar-btn" aria-label="Změnit profilový obrázek">
+                      {profile?.user?.avatar_url ? (
+                        <img src={profile.user.avatar_url} alt="" className="profile-welcome-avatar" />
+                      ) : (
+                        <span className="profile-welcome-avatar-placeholder" aria-hidden>{firstName?.charAt(0)?.toUpperCase() || '?'}</span>
+                      )}
+                    </button>
+                    <input
+                      type="file"
+                      ref={avatarInputRef}
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      className="hero-avatar-input-hidden"
+                      onChange={handleAvatarUpload}
+                    />
+                    <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="profile-welcome-avatar-change">
+                      {uploadingAvatar ? 'Nahrávám…' : 'Změnit obrázek'}
+                    </button>
+                    {avatarError && <p className="profile-welcome-avatar-error" role="alert">{avatarError}</p>}
+                  </div>
+                  <div className="profile-welcome-copy">
+                    <h1 className="profile-welcome-title">
+                      {(() => {
+                        const h = new Date().getHours();
+                        const greeting = h < 12 ? 'Krásné ráno' : h < 18 ? 'Krásné odpoledne' : 'Dobrý večer';
+                        return <>{greeting}, <span>{firstName}</span></>;
+                      })()}
+                    </h1>
+                    <p className="profile-welcome-sub">Sleduj návyky, tréninky a svůj progres.</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h1 className="profile-welcome-title">
+                    {(() => {
+                      const h = new Date().getHours();
+                      const greeting = h < 12 ? 'Krásné ráno' : h < 18 ? 'Krásné odpoledne' : 'Dobrý večer';
+                      return <>{greeting}, <span>{firstName}</span></>;
+                    })()}
+                  </h1>
+                  <p className="profile-welcome-sub">Přehled klientů a kalendář tréninků.</p>
+                </>
+              )}
             </div>
           </header>
         )}
@@ -1429,26 +1467,6 @@ export default function Profil() {
               {(currentPlan || program === 'ON_CLUB' || program === 'VIP') && (
                 <div className="plan-goal-in-card">
                   <div className="plan-goal-row">
-                    <div className="plan-goal-avatar-col">
-                      <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="plan-goal-avatar-btn" aria-label="Změnit profilový obrázek">
-                        {profile?.user?.avatar_url ? (
-                          <img src={profile.user.avatar_url} alt="" className="plan-goal-avatar" />
-                        ) : (
-                          <span className="plan-goal-avatar-placeholder" aria-hidden>{firstName?.charAt(0)?.toUpperCase() || '?'}</span>
-                        )}
-                      </button>
-                      <input
-                        type="file"
-                        ref={avatarInputRef}
-                        accept="image/jpeg,image/png,image/gif,image/webp"
-                        className="hero-avatar-input-hidden"
-                        onChange={handleAvatarUpload}
-                      />
-                      <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="plan-goal-avatar-change">
-                        {uploadingAvatar ? 'Nahrávám…' : 'Změnit obrázek'}
-                      </button>
-                      {avatarError && <p className="plan-goal-avatar-error" role="alert">{avatarError}</p>}
-                    </div>
                     {!loading && !error && (
                       <div className="plan-goal-stats">
                         <div className="plan-goal-stat">
@@ -2761,7 +2779,7 @@ export default function Profil() {
       <style jsx>{`
         .page {
           min-height: 100vh;
-          padding: 60px 20px 100px;
+          padding: 14px 20px 100px;
           background: transparent;
           color: #fff;
           font-family: Inter, sans-serif;
@@ -2830,10 +2848,10 @@ export default function Profil() {
           display: flex;
           align-items: center;
           justify-content: flex-start;
-          gap: 48px;
+          gap: 20px;
           flex-wrap: wrap;
-          margin-bottom: 32px;
-          padding: 24px 20px 0;
+          margin-bottom: 18px;
+          padding: 6px 20px 0;
           max-width: 1180px;
           margin-left: auto;
           margin-right: auto;
@@ -2847,19 +2865,30 @@ export default function Profil() {
           display: flex;
           flex-direction: column;
           align-items: flex-start;
-          gap: 10px;
-          padding: 20px 22px;
-          border-radius: 22px;
+          gap: 8px;
+          padding: 16px 18px;
+          border-radius: 18px;
           background: linear-gradient(145deg, rgba(19, 24, 40, 0.72), rgba(33, 26, 56, 0.58));
           border: 1px solid rgba(255, 255, 255, 0.1);
           backdrop-filter: blur(14px);
           -webkit-backdrop-filter: blur(14px);
           box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
-          min-width: 240px;
+          min-width: 280px;
+        }
+        .profile-welcome-plan-meta {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .profile-welcome-plan-note {
+          font-size: 13px;
+          color: #cbd5e1;
+          font-weight: 500;
         }
         .profile-welcome-plan-title {
           margin: 0;
-          font-size: 20px;
+          font-size: 18px;
           font-weight: 700;
           color: #fff;
           text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
@@ -2868,8 +2897,8 @@ export default function Profil() {
         }
         .profile-welcome-greeting {
           text-align: left;
-          padding: 20px 24px;
-          border-radius: 22px;
+          padding: 16px 18px;
+          border-radius: 18px;
           background: linear-gradient(145deg, rgba(16, 20, 34, 0.68), rgba(30, 26, 50, 0.54));
           border: 1px solid rgba(255, 255, 255, 0.08);
           backdrop-filter: blur(14px);
@@ -2877,6 +2906,66 @@ export default function Profil() {
           box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
           flex: 1;
           min-width: 280px;
+        }
+        .profile-welcome-user {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+        .profile-welcome-avatar-col {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+          flex-shrink: 0;
+        }
+        .profile-welcome-avatar-btn {
+          width: 68px;
+          height: 68px;
+          border-radius: 50%;
+          border: 2px solid rgba(148, 163, 184, 0.35);
+          padding: 0;
+          overflow: hidden;
+          background: none;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: border-color 0.2s, transform 0.2s;
+        }
+        .profile-welcome-avatar-btn:hover {
+          border-color: rgba(196, 181, 253, 0.7);
+          transform: scale(1.02);
+        }
+        .profile-welcome-avatar,
+        .profile-welcome-avatar-placeholder {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .profile-welcome-avatar-placeholder {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, #4a3b6c, #3d2e5c);
+          color: #c4b5fd;
+          font-size: 28px;
+          font-weight: 600;
+        }
+        .profile-welcome-avatar-change {
+          font-size: 12px;
+          color: #94a3b8;
+          background: none;
+          border: none;
+          cursor: pointer;
+          text-decoration: underline;
+          padding: 0;
+        }
+        .profile-welcome-avatar-change:hover:not(:disabled) { color: #c4b5fd; }
+        .profile-welcome-avatar-change:disabled { opacity: 0.7; cursor: wait; }
+        .profile-welcome-avatar-error { margin: 0; font-size: 12px; color: #fca5a5; text-align: center; }
+        .profile-welcome-copy {
+          min-width: 0;
         }
         .profile-welcome-title {
           margin: 0 0 6px;
@@ -3004,67 +3093,13 @@ export default function Profil() {
           display: flex;
           align-items: stretch;
           justify-content: space-between;
-          gap: 28px;
+          gap: 18px;
           flex-wrap: wrap;
-          padding: 18px 20px;
+          padding: 14px 16px;
           background: rgba(255, 255, 255, 0.04);
           border: 1px solid rgba(255, 255, 255, 0.07);
           border-radius: 18px;
         }
-        .plan-goal-avatar-col {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 8px;
-          flex-shrink: 0;
-          justify-content: center;
-        }
-        .plan-goal-avatar-btn {
-          width: 72px;
-          height: 72px;
-          border-radius: 50%;
-          border: 2px solid rgba(148, 163, 184, 0.4);
-          padding: 0;
-          overflow: hidden;
-          background: none;
-          cursor: pointer;
-          transition: border-color 0.2s, transform 0.2s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .plan-goal-avatar-btn:hover {
-          border-color: rgba(196, 181, 253, 0.7);
-          transform: scale(1.02);
-        }
-        .plan-goal-avatar {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        .plan-goal-avatar-placeholder {
-          width: 100%;
-          height: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: linear-gradient(135deg, #4a3b6c, #3d2e5c);
-          color: #c4b5fd;
-          font-size: 28px;
-          font-weight: 600;
-        }
-        .plan-goal-avatar-change {
-          font-size: 12px;
-          color: #94a3b8;
-          background: none;
-          border: none;
-          cursor: pointer;
-          text-decoration: underline;
-          padding: 0;
-        }
-        .plan-goal-avatar-change:hover:not(:disabled) { color: #c4b5fd; }
-        .plan-goal-avatar-change:disabled { opacity: 0.7; cursor: wait; }
-        .plan-goal-avatar-error { margin: 0; font-size: 12px; color: #fca5a5; }
         .plan-goal-text-col {
           text-align: center;
           flex: 1;
@@ -4671,7 +4706,7 @@ export default function Profil() {
         .error-banner span { color: #888; }
 
         @media (max-width: 640px) {
-          .page { padding: 48px 16px 80px; }
+          .page { padding: 8px 16px 80px; }
           .progress-section, .progress-detail-end { padding: 18px 16px; margin-left: -4px; margin-right: -4px; border-radius: 14px; }
           .progress-lead, .progress-period-hint { font-size: 14px; line-height: 1.5; }
           .progress-dates { font-size: 14px; margin-bottom: 16px; }
@@ -4690,10 +4725,14 @@ export default function Profil() {
           .section-head { font-size: 1.25rem; }
           .modal-overlay { padding: 12px; align-items: flex-end; }
           .modal { max-width: 100%; border-radius: 16px 16px 0 0; padding: 24px 20px; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
-          .profile-welcome { flex-direction: column; align-items: center; text-align: center; gap: 24px; padding-top: 16px; }
-          .profile-welcome-plan { align-items: center; }
+          .profile-welcome { flex-direction: column; align-items: stretch; text-align: center; gap: 14px; padding-top: 0; }
+          .profile-welcome-plan { align-items: flex-start; min-width: 0; }
+          .profile-welcome-plan-meta { gap: 8px; }
           .profile-welcome-plan-title { text-align: center; font-size: 18px; }
-          .profile-welcome-greeting { text-align: center; }
+          .profile-welcome-greeting { text-align: left; min-width: 0; }
+          .profile-welcome-user { align-items: flex-start; }
+          .profile-welcome-avatar-col { align-items: center; }
+          .profile-welcome-avatar-btn { width: 56px; height: 56px; }
           .profile-welcome-title { font-size: 24px; }
           .profile-welcome-sub { font-size: 14px; }
           .hero-intro { font-size: 16px; }

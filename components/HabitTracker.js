@@ -122,9 +122,13 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   useEffect(() => {
     if (loading || fetchError) return;
     const el = todayColRef.current;
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
+    const container = scrollContainerRef.current;
+    if (!el || !container) return;
+    // Keep profile at top; only scroll the inner habits grid horizontally.
+    const targetLeft = el.offsetLeft - (container.clientWidth / 2) + (el.clientWidth / 2);
+    const maxLeft = Math.max(0, container.scrollWidth - container.clientWidth);
+    const nextLeft = Math.max(0, Math.min(maxLeft, targetLeft));
+    container.scrollTo({ left: nextLeft, behavior: 'smooth' });
   }, [loading, fetchError]);
 
   const getCompleted = (habitId, dateStr) => {

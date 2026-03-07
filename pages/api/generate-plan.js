@@ -34,7 +34,7 @@ export default async function handler(req, res) {
       preferences,
     } = req.body || {}
 
-    const { html, metrics } = await generatePlan({
+    const { html, metrics, enrichment } = await generatePlan({
       name,
       gender,
       age,
@@ -51,7 +51,7 @@ export default async function handler(req, res) {
       notes,
     })
 
-    return res.status(200).json({ ok: true, html, metrics })
+    return res.status(200).json({ ok: true, html, metrics, enrichment: enrichment || { meals: [], exercises: [] } })
   } catch (err) {
     console.error('❌ /api/generate-plan error:', err)
     return res.status(500).json({

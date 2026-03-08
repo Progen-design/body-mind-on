@@ -3,8 +3,10 @@
 // Secured by ADMIN_TOKEN (env var).
 // Usage: GET /api/run-migration?token=<ADMIN_TOKEN>
 //
-// Uses Supabase Management API to run raw SQL on the project database.
-// Requires: SUPABASE_SERVICE_ROLE_KEY and SUPABASE_URL env vars.
+// Requires: DATABASE_URL env var (Supabase → Settings → Database → Connection string URI)
+
+import pg from 'pg';
+const { Client } = pg;
 
 const STATEMENTS = [
   // ── Tables ──────────────────────────────────────────────────────────────────
@@ -157,46 +159,32 @@ const STATEMENTS = [
   $$`,
 ];
 
-async function runSql(sql) {
-  // Supabase Management API — runs arbitrary SQL via the project's REST endpoint
-  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  // Extract project ref from URL: https://<ref>.supabase.co
-  const ref = url.replace('https://', '').split('.')[0];
-
-  const resp = await fetch(
-    `https://api.supabase.com/v1/projects/${ref}/database/query`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${key}`,
-      },
-      body: JSON.stringify({ query: sql }),
-    }
-  );
-
-  const text = await resp.text();
-  let json;
-  try { json = JSON.parse(text); } catch { json = { raw: text }; }
-
-  if (!resp.ok) return { ok: false, status: resp.status, body: json };
-  return { ok: true, body: json };
-}
-
 export default async function handler(req, res) {
   const token = req.query.token || req.headers['x-admin-token'];
   if (!token || token !== process.env.ADMIN_TOKEN) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) {
+    return res.status(500).json({ error: 'DATABASE_URL not set in env' });
+  }
+
+  const client = new Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
+  await client.connect();
+
   const results = [];
   for (const sql of STATEMENTS) {
     const label = sql.trim().split('\n')[0].slice(0, 80);
-    const result = await runSql(sql);
-    results.push({ sql: label, ...result });
+    try {
+      await client.query(sql);
+      results.push({ sql: label, ok: true });
+    } catch (err) {
+      results.push({ sql: label, ok: false, error: err.message });
+    }
   }
+
+  await client.end();
 
   const failed = results.filter((r) => !r.ok);
   return res.status(200).json({

@@ -9,9 +9,13 @@ export default async function handler(req, res) {
   }
 
   const secret = process.env.CRON_SECRET;
+  if (!secret) {
+    // Autopilot safety: scheduled orchestration must never run as a public endpoint.
+    return res.status(500).json({ error: 'CRON_SECRET is not configured' });
+  }
   const authHeader = req.headers.authorization || '';
-  const bearer = secret ? `Bearer ${secret}` : '';
-  if (secret && authHeader !== bearer) {
+  const bearer = `Bearer ${secret}`;
+  if (authHeader !== bearer) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

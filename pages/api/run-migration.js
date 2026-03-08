@@ -160,6 +160,11 @@ const STATEMENTS = [
 ];
 
 export default async function handler(req, res) {
+  if (process.env.NODE_ENV === 'production') {
+    // Safety: one-shot migration endpoint is intentionally disabled in production.
+    return res.status(410).json({ error: 'run-migration endpoint disabled in production' });
+  }
+
   const token = req.query.token || req.headers['x-admin-token'];
   if (!token || token !== process.env.ADMIN_TOKEN) {
     return res.status(401).json({ error: 'Unauthorized' });

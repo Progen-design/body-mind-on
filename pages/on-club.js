@@ -423,6 +423,23 @@ export default function OnClubPage() {
         .diet-section-body > div { margin-bottom: 16px; }
         .diet-section-body .reg-label { color: #94a3b8; }
         .diet-section-body > div:last-child { margin-bottom: 0; }
+        @media (max-width: 640px) {
+          .progress-dots { gap: 8px; }
+          .progress-dots span { width: 28px; height: 28px; line-height: 28px; font-size: 13px; }
+          .form-actions {
+            flex-direction: column-reverse;
+            align-items: stretch;
+            gap: 10px;
+            padding-top: 20px;
+          }
+          .btn-back,
+          .btn-submit {
+            width: 100%;
+            justify-content: center;
+          }
+          .diet-section-header { padding: 16px; gap: 10px; }
+          .diet-section-body { padding: 16px; }
+        }
       `}</style>
     </>
   );

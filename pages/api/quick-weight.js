@@ -1,5 +1,6 @@
 // POST /api/quick-weight – přihlášený uživatel přidá jen váhu (a volitelně datum)
 import { supabaseServer } from '../../lib/supabaseServer';
+import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -68,6 +69,23 @@ export default async function handler(req, res) {
       console.error('[quick-weight] insert error:', error);
       return res.status(500).json({ error: error.message || 'Nepodařilo se uložit váhu.' });
     }
+
+    // Event-driven autonomy: quick weight entry behaves as a check-in signal.
+    try {
+      await supabaseServer.from('user_checkins').insert({
+        user_id: user.id,
+        weight: weight_kg,
+        stress_level: latest?.stress_level ?? null,
+        adherence_score: null,
+        notes: 'quick_weight',
+        created_at,
+      });
+      await enqueueAIEvent('user_checkin_created', user.id, { source: 'quick_weight' });
+      await triggerImmediateDecision(user.id);
+    } catch (autonomyErr) {
+      console.warn('[quick-weight] autonomy reaction failed:', autonomyErr?.message || autonomyErr);
+    }
+
     return res.status(201).json({ metric: data });
   } catch (err) {
     console.error('[quick-weight] ERROR:', err);

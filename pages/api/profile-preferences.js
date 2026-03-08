@@ -4,6 +4,7 @@ import { supabaseServer } from '../../lib/supabaseServer';
 import { generatePlanForEmail } from '../../lib/generatePlan';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency } from '../../lib/preferenceConstants';
+import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
 
 export default async function handler(req, res) {
   if (req.method !== 'PATCH' && req.method !== 'POST') {
@@ -100,6 +101,18 @@ export default async function handler(req, res) {
           detail: process.env.NODE_ENV === 'development' ? msg : undefined,
         });
       }
+    }
+
+    // Event-driven autonomy for dynamic reactions.
+    const changedKeys = Object.keys(updates);
+    if (changedKeys.length > 0) {
+      if (changedKeys.some((k) => ['diet_type', 'dietary_restrictions', 'foods_to_avoid'].includes(k))) {
+        await enqueueAIEvent('diet_changed', userId, { changed_keys: changedKeys });
+      }
+      if (changedKeys.includes('goal')) {
+        await enqueueAIEvent('goal_changed', userId, { changed_keys: changedKeys });
+      }
+      await triggerImmediateDecision(userId);
     }
 
     // Aktualizovat user_habits

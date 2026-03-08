@@ -6,6 +6,7 @@ import { createInitialAITasks } from '../../lib/createInitialAITasks';
 import { getClientIp, isRateLimited } from '../../lib/rateLimit';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getWeeklySessions } from '../../lib/preferenceConstants';
+import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -129,6 +130,8 @@ export default async function handler(req, res) {
     if (payload.user_id) {
       const { created } = await createInitialAITasks(payload.user_id);
       if (created) console.log(`✅ Vytvořeny úvodní AI úkoly pro user_id: ${payload.user_id}`);
+      await enqueueAIEvent('user_registered', payload.user_id, { program: payload.program || 'START' });
+      await triggerImmediateDecision(payload.user_id);
     }
 
     // Uložit tier členství do tabulky memberships (upsert – aktualizovat pokud existuje)

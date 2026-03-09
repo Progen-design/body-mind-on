@@ -1,9 +1,12 @@
 // /pages/login.js – Přihlášení do profilu (e-mail + heslo z registrace)
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { supabase } from '../lib/supabaseClient';
+
+const MAIN_SITE = process.env.NEXT_PUBLIC_MAIN_SITE_URL || 'https://bodyandmindon.cz';
 
 export default function Login() {
   const router = useRouter();
@@ -110,6 +113,11 @@ export default function Login() {
             <span className="login-bg-orb login-bg-orb--bottom" />
           </div>
           <div className="login-shell">
+            <div className="login-top-links">
+              <a href={MAIN_SITE} className="login-top-link">Hlavní stránka</a>
+              <span className="login-top-sep">·</span>
+              <Link href="/on-club" className="login-top-link">Registrace</Link>
+            </div>
             <div className="login-hero">
               <h2 className="login-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
               <p className="login-hero-sub">Zapni své tělo i mysl a pokračuj ve svém plánu.</p>
@@ -133,6 +141,11 @@ export default function Login() {
           <span className="login-bg-orb login-bg-orb--bottom" />
         </div>
         <div className="login-shell">
+          <div className="login-top-links">
+            <a href={MAIN_SITE} className="login-top-link">Hlavní stránka</a>
+            <span className="login-top-sep">·</span>
+            <Link href="/on-club" className="login-top-link">Registrace</Link>
+          </div>
           <div className="login-hero">
             <h2 className="login-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
             <p className="login-hero-sub">Zapni své tělo i mysl a pokračuj ve svém plánu.</p>
@@ -232,6 +245,27 @@ export default function Login() {
           grid-template-columns: 1.05fr 0.95fr;
           gap: 22px;
           align-items: stretch;
+        }
+        .login-top-links {
+          grid-column: 1 / -1;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: -8px;
+          font-size: 14px;
+        }
+        .login-top-link {
+          color: #c4b5fd;
+          text-decoration: none;
+          font-weight: 500;
+        }
+        .login-top-link:hover {
+          color: #e9d5ff;
+          text-decoration: underline;
+        }
+        .login-top-sep {
+          color: #64748b;
+          font-weight: 400;
         }
         .login-hero,
         .login-content {

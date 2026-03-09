@@ -255,6 +255,7 @@ export default function Profil() {
   const [error, setError] = useState('');
 
   const [showWorkoutModal, setShowWorkoutModal] = useState(false);
+  const [workoutModalAnchor, setWorkoutModalAnchor] = useState(null); // { top, left } u tlačítka „Zapsat trénink“
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [workoutError, setWorkoutError] = useState('');
@@ -834,6 +835,7 @@ export default function Profil() {
           perceived_difficulty: '',
         });
         setShowWorkoutModal(false);
+        setWorkoutModalAnchor(null);
         if (fresh) setSession(fresh);
         
         // Automaticky označit habit "Trénink" jako splněný pro datum tréninku
@@ -1623,7 +1625,13 @@ export default function Profil() {
                   <button
                     type="button"
                     className="profile-main-workout-btn"
-                    onClick={() => {
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const modalWidth = 400;
+                      const pad = 20;
+                      const left = Math.max(pad, Math.min(rect.left, window.innerWidth - modalWidth - pad));
+                      const top = rect.bottom + 8;
+                      setWorkoutModalAnchor({ top, left });
                       setShowWorkoutModal(true);
                       setWorkoutError('');
                       setWorkoutForm((f) => ({ ...f, workout_date: getLocalDateStr(new Date()) }));
@@ -2687,8 +2695,18 @@ export default function Profil() {
 
             {/* Modaly */}
             {showWorkoutModal && renderPortal(
-              <div className="modal-overlay" onClick={() => { setShowWorkoutModal(false); setWorkoutError(''); }}>
-                <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-overlay" onClick={() => { setShowWorkoutModal(false); setWorkoutModalAnchor(null); setWorkoutError(''); }}>
+                <div
+                  className="modal modal-anchored"
+                  onClick={(e) => e.stopPropagation()}
+                  style={workoutModalAnchor ? {
+                    position: 'fixed',
+                    top: workoutModalAnchor.top,
+                    left: workoutModalAnchor.left,
+                    margin: 0,
+                    maxHeight: `calc(100vh - ${workoutModalAnchor.top}px - 24px)`,
+                  } : undefined}
+                >
                   <h3>Zapsat trénink</h3>
                   <form onSubmit={handleAddWorkout}>
                     <label>Datum</label>
@@ -2781,7 +2799,7 @@ export default function Profil() {
                       </div>
                     )}
                     <div className="modal-actions">
-                      <button type="button" onClick={() => { setShowWorkoutModal(false); setWorkoutError(''); }} disabled={savingWorkout}>Zrušit</button>
+                      <button type="button" onClick={() => { setShowWorkoutModal(false); setWorkoutModalAnchor(null); setWorkoutError(''); }} disabled={savingWorkout}>Zrušit</button>
                       <button type="submit" disabled={savingWorkout} className={savingWorkout ? 'loading' : ''}>
                         {savingWorkout ? (
                           <>

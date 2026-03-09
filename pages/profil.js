@@ -571,6 +571,7 @@ export default function Profil() {
 
     const previousBodyOverflow = document.body.style.overflow;
     const previousHtmlOverflow = document.documentElement.style.overflow;
+    const activeElement = document.activeElement;
 
     document.body.style.overflow = 'hidden';
     document.documentElement.style.overflow = 'hidden';
@@ -578,10 +579,29 @@ export default function Profil() {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     const rafId = window.requestAnimationFrame(() => {
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      document.querySelectorAll('.modal-overlay').forEach((node) => {
+        try { node.scrollTo({ top: 0, left: 0, behavior: 'auto' }); } catch (_) {}
+      });
+      document.querySelectorAll('.modal').forEach((node) => {
+        try { node.scrollTo({ top: 0, left: 0, behavior: 'auto' }); } catch (_) {}
+      });
+      if (activeElement && typeof activeElement.blur === 'function') {
+        activeElement.blur();
+      }
     });
+    const timeoutId = window.setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      document.querySelectorAll('.modal-overlay').forEach((node) => {
+        try { node.scrollTop = 0; } catch (_) {}
+      });
+      document.querySelectorAll('.modal').forEach((node) => {
+        try { node.scrollTop = 0; } catch (_) {}
+      });
+    }, 80);
 
     return () => {
       window.cancelAnimationFrame(rafId);
+      window.clearTimeout(timeoutId);
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
     };
@@ -4697,6 +4717,7 @@ export default function Profil() {
           padding: 28px;
           max-width: 400px;
           width: 100%;
+          align-self: flex-start;
           border: 1px solid #333;
           margin: 0 auto auto;
           max-height: calc(100vh - max(32px, env(safe-area-inset-top)) - 20px);

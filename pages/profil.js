@@ -273,7 +273,8 @@ export default function Profil() {
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [mindsetTipFromPlan, setMindsetTipFromPlan] = useState('');
-  const [workoutModalOffsetTop, setWorkoutModalOffsetTop] = useState(0);
+  const [workoutModalAnchor, setWorkoutModalAnchor] = useState(null);
+  const [preferencesModalAnchor, setPreferencesModalAnchor] = useState(null);
   const [trainerSchedule, setTrainerSchedule] = useState({ events: [], connected: false });
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [scheduleRefreshAt, setScheduleRefreshAt] = useState(0);
@@ -511,6 +512,30 @@ export default function Profil() {
     return '';
   };
 
+  const getAnchoredModalStyle = (triggerEl, modalWidth, estimatedHeight = 560) => {
+    if (typeof window === 'undefined' || !triggerEl) return null;
+    const rect = triggerEl.getBoundingClientRect();
+    const pad = 12;
+    const viewportW = window.innerWidth;
+    const viewportH = window.innerHeight;
+    let left = rect.left + rect.width / 2 - modalWidth / 2;
+    left = Math.max(pad, Math.min(left, viewportW - modalWidth - pad));
+    let top = rect.bottom + 10;
+    const minVisibleHeight = 220;
+    const spaceBelow = viewportH - top - pad;
+    if (spaceBelow < minVisibleHeight) {
+      top = Math.max(pad, rect.top - estimatedHeight - 10);
+    }
+    const maxHeight = Math.max(minVisibleHeight, viewportH - top - pad);
+    return {
+      position: 'fixed',
+      top: `${Math.round(top)}px`,
+      left: `${Math.round(left)}px`,
+      margin: 0,
+      maxHeight: `${Math.round(maxHeight)}px`,
+    };
+  };
+
   useEffect(() => {
     if (router.query.edit === 'preferences' && profile && !profile?.can_create_calendar_events) {
       const lm = profile?.body_metrics?.[0];
@@ -527,6 +552,7 @@ export default function Profil() {
         foods_to_avoid: lm?.foods_to_avoid ?? '',
         selected_habits: (profile?.user_habits || []).map((h) => h.habit_id).filter(Boolean),
       });
+      setPreferencesModalAnchor(null);
       setShowPreferencesModal(true);
       router.replace('/profil', undefined, { shallow: true });
     }
@@ -577,7 +603,11 @@ export default function Profil() {
     document.body.style.overflow = 'hidden';
     document.documentElement.style.overflow = 'hidden';
 
-    const shouldForceTop = showPreferencesModal || showSettingsModal || showDeleteAccountModal;
+    const shouldForceTop =
+      showSettingsModal ||
+      showDeleteAccountModal ||
+      (showWorkoutModal && !workoutModalAnchor) ||
+      (showPreferencesModal && !preferencesModalAnchor);
     if (shouldForceTop) {
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }
@@ -614,7 +644,7 @@ export default function Profil() {
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
     };
-  }, [anyProfileModalOpen]);
+  }, [anyProfileModalOpen, showWorkoutModal, showPreferencesModal, showSettingsModal, showDeleteAccountModal, workoutModalAnchor, preferencesModalAnchor]);
 
   // Habit wizard jen pro ON Club a VIP; průvodce (tour) jen pro ON Club a VIP – START to mít nesmí (přidaná hodnota)
   useEffect(() => {
@@ -843,6 +873,7 @@ export default function Profil() {
           perceived_difficulty: '',
         });
         setShowWorkoutModal(false);
+        setWorkoutModalAnchor(null);
         if (fresh) setSession(fresh);
         
         // Automaticky označit habit "Trénink" jako splněný pro datum tréninku
@@ -1088,6 +1119,7 @@ export default function Profil() {
       const json = await res.json();
       if (res.ok && json.ok) {
         setShowPreferencesModal(false);
+        setPreferencesModalAnchor(null);
         setToast({ message: json.message || 'Preference uloženy a plán přegenerován.', type: 'success' });
         lastMutatedAtRef.current = Date.now();
         const result = await refetchProfile(token, profile);
@@ -1634,12 +1666,9 @@ export default function Profil() {
                     className="profile-main-workout-btn"
                     onClick={(e) => {
                       if (typeof window !== 'undefined' && window.innerWidth >= 900) {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        const maxTop = Math.max(24, window.innerHeight - 560);
-                        const anchoredTop = Math.min(maxTop, Math.max(8, rect.bottom + 8));
-                        setWorkoutModalOffsetTop(anchoredTop);
+                        setWorkoutModalAnchor(getAnchoredModalStyle(e.currentTarget, 400, 560));
                       } else {
-                        setWorkoutModalOffsetTop(0);
+                        setWorkoutModalAnchor(null);
                       }
                       setShowWorkoutModal(true);
                       setWorkoutError('');
@@ -1682,7 +1711,7 @@ export default function Profil() {
                     <div className="plan-goal-actions">
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={(e) => {
                           const lm = profile?.body_metrics?.[0];
                           const freq = getFreqFromMetrics(lm);
                           const wdRaw = lm?.workout_days;
@@ -1701,6 +1730,11 @@ export default function Profil() {
                             foods_to_avoid: lm?.foods_to_avoid ?? '',
                             selected_habits: (profile?.user_habits || []).map((h) => h.habit_id).filter(Boolean),
                           });
+                          if (typeof window !== 'undefined' && window.innerWidth >= 900) {
+                            setPreferencesModalAnchor(getAnchoredModalStyle(e.currentTarget, 520, 700));
+                          } else {
+                            setPreferencesModalAnchor(null);
+                          }
                           setShowPreferencesModal(true);
                         }}
                         className="hero-prefs-btn plan-goal-prefs-btn"
@@ -2704,8 +2738,8 @@ export default function Profil() {
 
             {/* Modaly */}
             {showWorkoutModal && renderPortal(
-              <div className="modal-overlay" onClick={() => { setShowWorkoutModal(false); setWorkoutError(''); setWorkoutModalOffsetTop(0); }}>
-                <div className="modal modal-workout" style={workoutModalOffsetTop > 0 ? { marginTop: `${workoutModalOffsetTop}px` } : undefined} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-overlay" onClick={() => { setShowWorkoutModal(false); setWorkoutError(''); setWorkoutModalAnchor(null); }}>
+                <div className="modal modal-workout" style={workoutModalAnchor || undefined} onClick={(e) => e.stopPropagation()}>
                   <h3>Zapsat trénink</h3>
                   <form onSubmit={handleAddWorkout}>
                     <label>Datum</label>
@@ -2798,7 +2832,7 @@ export default function Profil() {
                       </div>
                     )}
                     <div className="modal-actions">
-                      <button type="button" onClick={() => { setShowWorkoutModal(false); setWorkoutError(''); setWorkoutModalOffsetTop(0); }} disabled={savingWorkout}>Zrušit</button>
+                      <button type="button" onClick={() => { setShowWorkoutModal(false); setWorkoutError(''); setWorkoutModalAnchor(null); }} disabled={savingWorkout}>Zrušit</button>
                       <button type="submit" disabled={savingWorkout} className={savingWorkout ? 'loading' : ''}>
                         {savingWorkout ? (
                           <>
@@ -2815,8 +2849,8 @@ export default function Profil() {
               </div>
             )}
             {showPreferencesModal && renderPortal(
-              <div className="modal-overlay" onClick={() => { if (!savingPreferences) { setShowPreferencesModal(false); setPreferencesError(''); } }}>
-                <div className="modal modal-preferences" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-overlay" onClick={() => { if (!savingPreferences) { setShowPreferencesModal(false); setPreferencesError(''); setPreferencesModalAnchor(null); } }}>
+                <div className="modal modal-preferences" style={preferencesModalAnchor || undefined} onClick={(e) => e.stopPropagation()}>
                   <h3>Upravit preference</h3>
                   <p className="modal-hint">Změny uložíme a podle toho přegenerujeme plán. Při změně <strong>jen stravy</strong> (typ stravy, co nejí) se změní pouze <strong>jídelníček</strong> – rozvrh tréninků (který den odpočinek, který trénink) zůstane. Při změně aktivity nebo cíle se přegeneruje celý plán. Zapsané tréninky zůstanou zachovány.</p>
                   <form onSubmit={handleSavePreferences}>
@@ -2927,7 +2961,7 @@ export default function Profil() {
                       </div>
                     )}
                     <div className="modal-actions">
-                      <button type="button" onClick={() => { if (!savingPreferences) { setShowPreferencesModal(false); setPreferencesError(''); } }} disabled={savingPreferences}>Zrušit</button>
+                      <button type="button" onClick={() => { if (!savingPreferences) { setShowPreferencesModal(false); setPreferencesError(''); setPreferencesModalAnchor(null); } }} disabled={savingPreferences}>Zrušit</button>
                       <button type="submit" disabled={savingPreferences || preferencesForm.selected_habits.length === 0} className={savingPreferences ? 'loading' : ''}>
                         {savingPreferences ? (<><span className="button-spinner"></span> Ukládám…</>) : 'Uložit a přegenerovat plán'}
                       </button>

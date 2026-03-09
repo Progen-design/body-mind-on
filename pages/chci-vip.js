@@ -1,5 +1,6 @@
 // /pages/chci-vip.js – Registrace VIP Coaching (stejná grafika jako START)
 import { useState, useMemo } from "react";
+import { useRouter } from "next/router";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import HabitSelection from "../components/HabitSelection";
@@ -8,6 +9,7 @@ import { getSuggestedHabits } from "../lib/habits";
 const MAX_STEP = 5;
 
 export default function ChciVipPage() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: "",
@@ -102,7 +104,11 @@ export default function ChciVipPage() {
         if (result.planSent === false) {
           setStatus("⚠️ " + (result.message || "Údaje uloženy, ale e-mail s plánem se nepodařilo odeslat. Zkontroluj spam nebo napiš na info@bodyandmindon.cz."));
         } else {
-          setStatus("✅ " + (result.message || "Údaje byly uloženy a plán byl odeslán na e-mail."));
+          setStatus("✅ Účet je vytvořen. Přesměrování na přihlášení…");
+          setTimeout(() => {
+            router.push(`/login?registered=1&email=${encodeURIComponent(cleanedData.email || '')}`);
+          }, 1500);
+          return;
         }
         setFormData({ name: "", email: "", password: "", passwordConfirm: "", gender: "", age: "", height: "", weight: "", activity: "", stress: "", worktype: "", goal: "", frequency: "", workout_days: [], diet_type: "", dietary_restrictions: "", foods_to_avoid: "", notes: "", program: "VIP" });
         setSelectedHabits([]);

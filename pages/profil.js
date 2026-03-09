@@ -287,6 +287,7 @@ export default function Profil() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState('');
   const avatarInputRef = useRef(null);
+  const anyProfileModalOpen = showWorkoutModal || showPreferencesModal || showSettingsModal || showDeleteAccountModal;
   const [avatarCrop, setAvatarCrop] = useState({ open: false, src: null, file: null, offset: { x: 0, y: 0 }, size: { w: 0, h: 0 }, dragStart: null });
   const avatarCropImageRef = useRef(null);
   const avatarCropContainerRef = useRef(null);
@@ -561,12 +562,30 @@ export default function Profil() {
   }, [session?.access_token]);
 
 
-  // Když se otevře modal Zapsat trénink nebo Upravit preference, scroll nahoru aby byl modal hned vidět
+  // Když se otevře modal, zarovnej stránku nahoru a zamkni scroll pod overlayem,
+  // aby se formulář otevíral hned u horní hrany místo "dole".
   useEffect(() => {
-    if (showWorkoutModal || showPreferencesModal) {
-      window.scrollTo(0, 0);
+    if (!anyProfileModalOpen || typeof window === 'undefined' || typeof document === 'undefined') {
+      return undefined;
     }
-  }, [showWorkoutModal, showPreferencesModal]);
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    const rafId = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [anyProfileModalOpen]);
 
   // Habit wizard jen pro ON Club a VIP; průvodce (tour) jen pro ON Club a VIP – START to mít nesmí (přidaná hodnota)
   useEffect(() => {
@@ -4668,7 +4687,9 @@ export default function Profil() {
           align-items: flex-start;
           justify-content: center;
           z-index: 1000;
-          padding: 56px 20px 20px;
+          overflow-y: auto;
+          overscroll-behavior: contain;
+          padding: max(16px, env(safe-area-inset-top)) 20px 20px;
         }
         .modal {
           background: #1a1a2e;
@@ -4677,8 +4698,10 @@ export default function Profil() {
           max-width: 400px;
           width: 100%;
           border: 1px solid #333;
-          max-height: calc(100vh - 96px);
+          margin: 0 auto auto;
+          max-height: calc(100vh - max(32px, env(safe-area-inset-top)) - 20px);
           overflow-y: auto;
+          overscroll-behavior: contain;
         }
         .modal-preferences { max-width: 520px; max-height: 90vh; overflow-y: auto; }
         .preferences-section { margin-bottom: 24px; }
@@ -4968,14 +4991,16 @@ export default function Profil() {
           .modal-overlay {
             padding: 0;
             align-items: flex-start;
-            justify-content: flex-start;
+            justify-content: center;
             padding-top: env(safe-area-inset-top);
             overflow-y: auto;
+            overscroll-behavior: contain;
           }
           .modal {
             max-width: 100%; width: 100%; border-radius: 16px;
             padding: 24px 20px; padding-bottom: max(28px, env(safe-area-inset-bottom));
-            max-height: calc(100vh - env(safe-area-inset-top) - 16px);
+            margin: 0;
+            max-height: calc(100vh - env(safe-area-inset-top) - 8px);
             display: flex; flex-direction: column;
             flex-shrink: 0;
           }

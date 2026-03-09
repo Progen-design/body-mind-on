@@ -112,7 +112,7 @@ export default function OnClubPage() {
         } else {
           setStatus("✅ Účet je vytvořen. Přesměrování na přihlášení…");
           setTimeout(() => {
-            router.push("/login?registered=1");
+            router.push(`/login?registered=1&email=${encodeURIComponent(cleanedData.email || '')}`);
           }, 1500);
           return;
         }

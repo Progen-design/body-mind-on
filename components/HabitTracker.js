@@ -127,8 +127,12 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     const el = todayColRef.current;
     const container = scrollContainerRef.current;
     if (!el || !container) return;
-    // Keep profile at top; only scroll the inner habits grid horizontally.
-    const targetLeft = el.offsetLeft - (container.clientWidth / 2) + (el.clientWidth / 2);
+    const isNarrowViewport = typeof window !== 'undefined' && window.innerWidth < 720;
+    // On mobile keep the sticky label column visible and place "today"
+    // right after it instead of centering the whole grid.
+    const targetLeft = isNarrowViewport
+      ? Math.max(0, el.offsetLeft - LABEL_W - 28)
+      : el.offsetLeft - (container.clientWidth / 2) + (el.clientWidth / 2);
     const maxLeft = Math.max(0, container.scrollWidth - container.clientWidth);
     const nextLeft = Math.max(0, Math.min(maxLeft, targetLeft));
     container.scrollTo({ left: nextLeft, behavior: 'smooth' });
@@ -275,7 +279,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   const displayDateFormatted = new Date(displayDateStr + 'T12:00:00').toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
   const todayFormatted = new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
   const CELL_W = 56;
-  const LABEL_W = 180;
+  const LABEL_W = 220;
   const GAP = '8px';
   const gridCols = `${LABEL_W}px repeat(${days.length}, ${CELL_W}px)`;
 
@@ -635,6 +639,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
 
         /* ── Outer card ── */
         .hg-scroll {
+          position: relative;
           overflow-x: auto;
           -webkit-overflow-scrolling: touch;
           scrollbar-width: thin;
@@ -649,16 +654,23 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         .hg-scroll::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.5); border-radius: 4px; }
         .hg-scroll::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.7); }
         .hg-grid {
+          position: relative;
+          isolation: isolate;
           display: grid; padding: 18px 20px 24px; min-width: max-content;
         }
         .hg-corner {
           height: 60px;
+          width: ${LABEL_W}px;
+          min-width: ${LABEL_W}px;
+          max-width: ${LABEL_W}px;
+          position: -webkit-sticky;
           position: sticky;
           left: 0;
-          z-index: 6;
-          background: rgb(14, 19, 33);
-          box-shadow: 4px 0 12px rgba(0,0,0,0.35);
+          z-index: 16;
+          background: linear-gradient(90deg, rgba(14, 19, 33, 1) 0%, rgba(14, 19, 33, 0.98) 84%, rgba(14, 19, 33, 0.94) 100%);
+          box-shadow: 8px 0 18px rgba(0,0,0,0.38);
           border-right: 1px solid rgba(255,255,255,0.08);
+          transform: translateZ(0);
         }
 
         /* ── Date headers (clickable) ── */
@@ -712,12 +724,30 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         /* ── Habit label (zamčené vlevo – při horizontálním posouvání zůstávají názvy návyků vždy vidět) ── */
         .hg-label {
           display: flex; align-items: flex-start; gap: 10px;
-          min-height: 56px; padding-right: 16px; overflow: hidden;
+          min-height: 56px;
+          width: ${LABEL_W}px;
+          min-width: ${LABEL_W}px;
+          max-width: ${LABEL_W}px;
+          padding: 6px 16px 6px 0;
+          overflow: hidden;
+          position: -webkit-sticky;
           position: sticky; left: 0; z-index: 10;
-          background: rgb(14, 19, 33);
-          box-shadow: 4px 0 12px rgba(0,0,0,0.35);
+          z-index: 18;
+          background: linear-gradient(90deg, rgba(14, 19, 33, 1) 0%, rgba(14, 19, 33, 0.985) 82%, rgba(14, 19, 33, 0.94) 100%);
+          box-shadow: 8px 0 18px rgba(0,0,0,0.38);
           border-right: 1px solid rgba(255,255,255,0.08);
           min-width: 0;
+          transform: translateZ(0);
+        }
+        .hg-label::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          right: -1px;
+          width: 18px;
+          height: 100%;
+          pointer-events: none;
+          background: linear-gradient(90deg, rgba(14, 19, 33, 0) 0%, rgba(14, 19, 33, 0.92) 100%);
         }
         .hg-emoji { font-size: 1.3rem; flex-shrink: 0; line-height: 1; margin-top: 2px; }
         .hg-name-wrap {
@@ -868,6 +898,12 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           .ht-progress-inline { align-items: flex-start; width: 100%; }
           .ht-prog-bar-wrap { width: 100%; max-width: 180px; }
           .hg-grid { padding: 14px 14px 18px; }
+          .hg-corner,
+          .hg-label {
+            width: 196px;
+            min-width: 196px;
+            max-width: 196px;
+          }
         }
       `}</style>
     </section>

@@ -25,6 +25,12 @@ export default function Login() {
     }).catch(() => setCheckingSession(false));
   }, [router, redirectTo]);
 
+  useEffect(() => {
+    if (typeof router.query.email === 'string' && router.query.email.trim()) {
+      setEmail(router.query.email.trim().toLowerCase());
+    }
+  }, [router.query.email]);
+
   // Chyba z Supabase při vypršeném odkazu na potvrzení e-mailu (např. po registraci trenéra)
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -134,11 +140,11 @@ export default function Login() {
           <div className="login-content">
             {router.query.registered === '1' && (
               <div className="login-registered-msg">
-                Registrace dokončena. Přihlaste se e-mailem a heslem. Odkaz na plán a přístup do profilu najdete také v e-mailu.
+                Registrace dokončena. Přihlas se stejným e-mailem a heslem, které jsi zadal při registraci. Odkaz na plán a přístup do profilu najdeš také v e-mailu.
               </div>
             )}
             <p className="login-hint">
-              Zadej e-mail a heslo, které máš z registrace (poslali jsme ti je e-mailem).
+              Zadej stejný e-mail a heslo, které jsi použil při registraci.
             </p>
             <form onSubmit={handleSubmit} className="login-form">
               <div className="login-field">

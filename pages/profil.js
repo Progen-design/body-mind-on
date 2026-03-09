@@ -255,7 +255,6 @@ export default function Profil() {
   const [error, setError] = useState('');
 
   const [showWorkoutModal, setShowWorkoutModal] = useState(false);
-  const [workoutModalAnchor, setWorkoutModalAnchor] = useState(null); // { top, left } u tlačítka „Zapsat trénink“
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [workoutError, setWorkoutError] = useState('');
@@ -274,6 +273,7 @@ export default function Profil() {
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [mindsetTipFromPlan, setMindsetTipFromPlan] = useState('');
+  const [workoutModalOffsetTop, setWorkoutModalOffsetTop] = useState(0);
   const [trainerSchedule, setTrainerSchedule] = useState({ events: [], connected: false });
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [scheduleRefreshAt, setScheduleRefreshAt] = useState(0);
@@ -577,9 +577,15 @@ export default function Profil() {
     document.body.style.overflow = 'hidden';
     document.documentElement.style.overflow = 'hidden';
 
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-    const rafId = window.requestAnimationFrame(() => {
+    const shouldForceTop = showPreferencesModal || showSettingsModal || showDeleteAccountModal;
+    if (shouldForceTop) {
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
+
+    const rafId = window.requestAnimationFrame(() => {
+      if (shouldForceTop) {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      }
       document.querySelectorAll('.modal-overlay').forEach((node) => {
         try { node.scrollTo({ top: 0, left: 0, behavior: 'auto' }); } catch (_) {}
       });
@@ -591,7 +597,9 @@ export default function Profil() {
       }
     });
     const timeoutId = window.setTimeout(() => {
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      if (shouldForceTop) {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      }
       document.querySelectorAll('.modal-overlay').forEach((node) => {
         try { node.scrollTop = 0; } catch (_) {}
       });
@@ -835,7 +843,6 @@ export default function Profil() {
           perceived_difficulty: '',
         });
         setShowWorkoutModal(false);
-        setWorkoutModalAnchor(null);
         if (fresh) setSession(fresh);
         
         // Automaticky označit habit "Trénink" jako splněný pro datum tréninku
@@ -1626,12 +1633,14 @@ export default function Profil() {
                     type="button"
                     className="profile-main-workout-btn"
                     onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const modalWidth = 400;
-                      const pad = 20;
-                      const left = Math.max(pad, Math.min(rect.left, window.innerWidth - modalWidth - pad));
-                      const top = rect.bottom + 8;
-                      setWorkoutModalAnchor({ top, left });
+                      if (typeof window !== 'undefined' && window.innerWidth >= 900) {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const maxTop = Math.max(24, window.innerHeight - 560);
+                        const anchoredTop = Math.min(maxTop, Math.max(8, rect.bottom + 8));
+                        setWorkoutModalOffsetTop(anchoredTop);
+                      } else {
+                        setWorkoutModalOffsetTop(0);
+                      }
                       setShowWorkoutModal(true);
                       setWorkoutError('');
                       setWorkoutForm((f) => ({ ...f, workout_date: getLocalDateStr(new Date()) }));
@@ -2695,18 +2704,8 @@ export default function Profil() {
 
             {/* Modaly */}
             {showWorkoutModal && renderPortal(
-              <div className="modal-overlay" onClick={() => { setShowWorkoutModal(false); setWorkoutModalAnchor(null); setWorkoutError(''); }}>
-                <div
-                  className="modal modal-anchored"
-                  onClick={(e) => e.stopPropagation()}
-                  style={workoutModalAnchor ? {
-                    position: 'fixed',
-                    top: workoutModalAnchor.top,
-                    left: workoutModalAnchor.left,
-                    margin: 0,
-                    maxHeight: `calc(100vh - ${workoutModalAnchor.top}px - 24px)`,
-                  } : undefined}
-                >
+              <div className="modal-overlay" onClick={() => { setShowWorkoutModal(false); setWorkoutError(''); setWorkoutModalOffsetTop(0); }}>
+                <div className="modal modal-workout" style={workoutModalOffsetTop > 0 ? { marginTop: `${workoutModalOffsetTop}px` } : undefined} onClick={(e) => e.stopPropagation()}>
                   <h3>Zapsat trénink</h3>
                   <form onSubmit={handleAddWorkout}>
                     <label>Datum</label>
@@ -2799,7 +2798,7 @@ export default function Profil() {
                       </div>
                     )}
                     <div className="modal-actions">
-                      <button type="button" onClick={() => { setShowWorkoutModal(false); setWorkoutModalAnchor(null); setWorkoutError(''); }} disabled={savingWorkout}>Zrušit</button>
+                      <button type="button" onClick={() => { setShowWorkoutModal(false); setWorkoutError(''); setWorkoutModalOffsetTop(0); }} disabled={savingWorkout}>Zrušit</button>
                       <button type="submit" disabled={savingWorkout} className={savingWorkout ? 'loading' : ''}>
                         {savingWorkout ? (
                           <>

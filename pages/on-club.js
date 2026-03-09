@@ -35,6 +35,7 @@ export default function OnClubPage() {
   });
 
   const [status, setStatus] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [selectedHabits, setSelectedHabits] = useState([]);
 
   const normalizeData = (data) => {
@@ -48,7 +49,23 @@ export default function OnClubPage() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+    }
     setFormData({ ...formData, [name]: value });
+  };
+
+  const getStep2Errors = () => {
+    const errors = {};
+    const height = Number(formData.height);
+    if (formData.height !== "" && (!Number.isFinite(height) || height < 100 || height > 250)) {
+      errors.height = "Výška musí být mezi 100 a 250 cm.";
+    }
+    return errors;
   };
 
   const canProceedStep1 = () => formData.name?.trim() && formData.email?.trim() && formData.password?.length >= 6 && formData.password === formData.passwordConfirm;
@@ -68,6 +85,14 @@ export default function OnClubPage() {
   const defaultHabits = useMemo(() => ['training', 'healthy_diet', 'quality_sleep'], []);
 
   const handleNext = () => {
+    if (step === 2) {
+      const step2Errors = getStep2Errors();
+      if (Object.keys(step2Errors).length > 0) {
+        setFieldErrors((prev) => ({ ...prev, ...step2Errors }));
+        setStatus("");
+        return;
+      }
+    }
     if (step === 3 && selectedHabits.length === 0) {
       setSelectedHabits(suggestedHabits.length > 0 ? [...suggestedHabits] : defaultHabits);
     }
@@ -77,6 +102,13 @@ export default function OnClubPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const step2Errors = getStep2Errors();
+    if (Object.keys(step2Errors).length > 0) {
+      setFieldErrors(step2Errors);
+      setStatus("");
+      setStep(2);
+      return;
+    }
     if (formData.password && formData.password.length < 6) {
       setStatus("❌ Heslo musí mít alespoň 6 znaků.");
       return;
@@ -120,7 +152,14 @@ export default function OnClubPage() {
         setSelectedHabits([]);
         setStep(1);
       } else {
-        setStatus("❌ " + (result.error || result.message || "Nepodařilo se odeslat."));
+        const nextError = result.error || result.message || "Nepodařilo se odeslat.";
+        if (/Výška musí být mezi 100 a 250 cm\./i.test(nextError)) {
+          setFieldErrors({ height: "Výška musí být mezi 100 a 250 cm." });
+          setStatus("");
+          setStep(2);
+        } else {
+          setStatus("❌ " + nextError);
+        }
       }
     } catch (err) {
       setStatus("❌ Chyba připojení: " + (err.message || "Zkuste to znovu za chvíli."));
@@ -198,6 +237,7 @@ export default function OnClubPage() {
               <div>
                 <label className="reg-label">Výška (cm)</label>
                 <input name="height" type="number" className="reg-input" value={formData.height} onChange={handleChange} placeholder="180" required />
+                {fieldErrors.height && <p className="reg-field-error" role="alert">{fieldErrors.height}</p>}
               </div>
               <div>
                 <label className="reg-label">Váha (kg)</label>
@@ -388,6 +428,7 @@ export default function OnClubPage() {
         .reg-workout-days { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 8px; }
         .reg-workout-day-check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; color: #e2e8f0; margin: 0; }
         .reg-workout-day-check input { width: 18px; height: 18px; accent-color: #7c3aed; }
+        .reg-field-error { margin: 6px 0 0; font-size: 13px; color: #f87171; }
         .form-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 28px; margin-top: 8px; border-top: 1px solid #222; }
         .btn-back { padding: 12px 24px; border-radius: 10px; border: 1px solid #4b5563; background: transparent; color: #d1d5db; font-size: 15px; font-weight: 500; cursor: pointer; transition: background 0.2s, border-color 0.2s; }
         .btn-back:hover { background: #1a1a1a; border-color: #6b7280; }

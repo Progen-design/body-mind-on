@@ -848,8 +848,18 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                   btn.textContent = 'Generuji PDF…';
                   btn.disabled = true;
                   try {
+                    // PDF should always contain full weekly plan, not only days from "today".
+                    const exportDays = (parsed?.days || []).map((day, idx) => {
+                      const dateIso = plan?.valid_from ? addDaysToDateStr(plan.valid_from, idx) : '';
+                      return {
+                        ...day,
+                        originalIndex: idx,
+                        dateStr: dateIso ? formatDayLabel(dateIso) : '',
+                        isToday: Boolean(dateIso && dateIso === todayIsoStr && !isFuturePlan),
+                      };
+                    });
                     let rows = '';
-                    (displayedDays || []).forEach((day, di) => {
+                    (exportDays || []).forEach((day, di) => {
                       const dayLabel = (day.dayName || 'Den') + (day.dateStr ? ` (${day.dateStr})` : '') + (day.isToday ? ' – dnes' : '');
                       rows += `<div style="margin-bottom:18px;page-break-inside:avoid;"><div style="font-size:15px;font-weight:700;background:#eff6ff;color:#1e40af;padding:8px 14px;border-radius:7px;margin-bottom:10px;">${dayLabel.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>`;
                       (day.meals || []).forEach((meal, mi) => {

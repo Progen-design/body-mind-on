@@ -1,6 +1,7 @@
 // /pages/profil.js – Modern Premium Profil (real-time update, refetch on focus, timeout 15s)
 
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import Header from '../components/Header';
@@ -246,6 +247,7 @@ function getEventsByDate(events) {
 const WEEKDAY_LABELS = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
 
 export default function Profil() {
+  const renderPortal = (node) => (typeof document !== 'undefined' ? createPortal(node, document.body) : null);
   const router = useRouter();
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -1717,7 +1719,7 @@ export default function Profil() {
             )}
           </div>
 
-          {avatarCrop.open && avatarCrop.src && (
+          {avatarCrop.open && avatarCrop.src && renderPortal(
             <div className="avatar-crop-overlay" onClick={closeAvatarCropModal}>
               <div className="avatar-crop-modal" onClick={(e) => e.stopPropagation()}>
                 <h3 className="avatar-crop-title">Uprav obrázek</h3>
@@ -1984,6 +1986,28 @@ export default function Profil() {
 
             {/* Sjednocený kontejner bublin – pro trenéra i klienta */}
             <div className="profile-bubbles">
+            {/* Mindset na tento týden (jen klienti) – nahoře před plánem */}
+            {!profile?.can_create_calendar_events && mindsetTipFromPlan && (
+            <div className="profile-bubble" id="mindset">
+              <button type="button" id="profile-bubble-header-mindset" className="profile-bubble-header" onClick={() => toggleProfileSection('mindset')} aria-expanded={profileOpenSections.has('mindset')} aria-controls="profile-bubble-body-mindset">
+                <span className="profile-bubble-title">Mindset na tento týden</span>
+                <span className={`profile-bubble-chevron ${profileOpenSections.has('mindset') ? 'open' : ''}`} aria-hidden>▼</span>
+              </button>
+              <div id="profile-bubble-body-mindset" role="region" aria-labelledby="profile-bubble-header-mindset" className="profile-bubble-body" data-open={profileOpenSections.has('mindset')}>
+              <div className="mindset-block">
+                <div className="mindset-header">
+                  <span className="mindset-icon">🧠</span>
+                  <h3 className="mindset-block-title">Mindset na tento týden</h3>
+                </div>
+                <div
+                  className="mindset-content"
+                  dangerouslySetInnerHTML={{ __html: mindsetTipFromPlan }}
+                />
+              </div>
+              </div>
+            </div>
+            )}
+
             {/* Můj plán – první blok pro klienta (Varianta C) */}
             {!profile?.can_create_calendar_events && (currentPlan || nextPlan) && (
             <div className="profile-bubble" id="muj-plan">
@@ -2110,29 +2134,6 @@ export default function Profil() {
               </div>
             </div>
             )}
-
-            {/* Mindset na tento týden (jen klienti) – bublina */}
-            {!profile?.can_create_calendar_events && mindsetTipFromPlan && (
-            <div className="profile-bubble" id="mindset">
-              <button type="button" id="profile-bubble-header-mindset" className="profile-bubble-header" onClick={() => toggleProfileSection('mindset')} aria-expanded={profileOpenSections.has('mindset')} aria-controls="profile-bubble-body-mindset">
-                <span className="profile-bubble-title">Mindset na tento týden</span>
-                <span className={`profile-bubble-chevron ${profileOpenSections.has('mindset') ? 'open' : ''}`} aria-hidden>▼</span>
-              </button>
-              <div id="profile-bubble-body-mindset" role="region" aria-labelledby="profile-bubble-header-mindset" className="profile-bubble-body" data-open={profileOpenSections.has('mindset')}>
-              <div className="mindset-block">
-                <div className="mindset-header">
-                  <span className="mindset-icon">🧠</span>
-                  <h3 className="mindset-block-title">Mindset na tento týden</h3>
-                </div>
-                <div
-                  className="mindset-content"
-                  dangerouslySetInnerHTML={{ __html: mindsetTipFromPlan }}
-                />
-              </div>
-              </div>
-            </div>
-            )}
-
 
             {/* Kdy mám trénink? / Můj kalendář – bublina (pro oba) */}
             <div className="profile-bubble" id="kalendar">
@@ -2646,7 +2647,7 @@ export default function Profil() {
             {/* konec profile-bubbles */}
 
             {/* Modaly */}
-            {showWorkoutModal && (
+            {showWorkoutModal && renderPortal(
               <div className="modal-overlay" onClick={() => { setShowWorkoutModal(false); setWorkoutError(''); }}>
                 <div className="modal" onClick={(e) => e.stopPropagation()}>
                   <h3>Zapsat trénink</h3>
@@ -2757,7 +2758,7 @@ export default function Profil() {
                 </div>
               </div>
             )}
-            {showPreferencesModal && (
+            {showPreferencesModal && renderPortal(
               <div className="modal-overlay" onClick={() => { if (!savingPreferences) { setShowPreferencesModal(false); setPreferencesError(''); } }}>
                 <div className="modal modal-preferences" onClick={(e) => e.stopPropagation()}>
                   <h3>Upravit preference</h3>
@@ -2879,7 +2880,7 @@ export default function Profil() {
                 </div>
               </div>
             )}
-            {showSettingsModal && (
+            {showSettingsModal && renderPortal(
               <div className="modal-overlay" onClick={() => { setShowSettingsModal(false); setSettingsError(''); }}>
                 <div className="modal" onClick={(e) => e.stopPropagation()}>
                   <h3>Nastavení pro výpočet</h3>
@@ -2908,7 +2909,7 @@ export default function Profil() {
                 </div>
               </div>
             )}
-            {showDeleteAccountModal && (
+            {showDeleteAccountModal && renderPortal(
               <div className="modal-overlay" onClick={() => { if (!deletingAccount) setShowDeleteAccountModal(false); }}>
                 <div className="modal modal-danger" onClick={(e) => e.stopPropagation()}>
                   <h3>Zrušit profil</h3>

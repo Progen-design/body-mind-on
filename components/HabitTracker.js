@@ -35,6 +35,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   const [viewingDateStr, setViewingDateStr] = useState(null); // zobrazený den v hlavičce (dynamické); null = dnes
   const scrollContainerRef = useRef(null);
   const todayColRef = useRef(null);
+  const didAutoCenterRef = useRef(false);
 
   const buildHabitsLists = useCallback((uh) => {
     let list = [];
@@ -122,6 +123,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
 
   useEffect(() => {
     if (loading || fetchError) return;
+    if (didAutoCenterRef.current) return;
     const el = todayColRef.current;
     const container = scrollContainerRef.current;
     if (!el || !container) return;
@@ -130,6 +132,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     const maxLeft = Math.max(0, container.scrollWidth - container.clientWidth);
     const nextLeft = Math.max(0, Math.min(maxLeft, targetLeft));
     container.scrollTo({ left: nextLeft, behavior: 'smooth' });
+    didAutoCenterRef.current = true;
   }, [loading, fetchError]);
 
   const getCompleted = (habitId, dateStr) => {
@@ -272,7 +275,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   const displayDateFormatted = new Date(displayDateStr + 'T12:00:00').toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
   const todayFormatted = new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
   const CELL_W = 56;
-  const LABEL_W = 220;
+  const LABEL_W = 180;
   const GAP = '8px';
   const gridCols = `${LABEL_W}px repeat(${days.length}, ${CELL_W}px)`;
 
@@ -605,6 +608,8 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           position: sticky; top: 0; z-index: 20;
           background: rgb(14, 19, 33);
           padding-bottom: 12px;
+          padding-right: 8px;
+          box-sizing: border-box;
         }
         .ht-title {
           margin: 0 0 4px; font-size: 1.625rem; font-weight: 800;
@@ -653,6 +658,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           z-index: 6;
           background: rgb(14, 19, 33);
           box-shadow: 4px 0 12px rgba(0,0,0,0.35);
+          border-right: 1px solid rgba(255,255,255,0.08);
         }
 
         /* ── Date headers (clickable) ── */
@@ -710,6 +716,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           position: sticky; left: 0; z-index: 10;
           background: rgb(14, 19, 33);
           box-shadow: 4px 0 12px rgba(0,0,0,0.35);
+          border-right: 1px solid rgba(255,255,255,0.08);
           min-width: 0;
         }
         .hg-emoji { font-size: 1.3rem; flex-shrink: 0; line-height: 1; margin-top: 2px; }
@@ -857,7 +864,9 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         @media (max-width: 640px) {
           .habit-tracker { margin-bottom: 32px; }
           .ht-title { font-size: 1.25rem; }
-          .ht-prog-bar-wrap { width: 90px; }
+          .ht-top { flex-direction: column; align-items: flex-start; gap: 10px; }
+          .ht-progress-inline { align-items: flex-start; width: 100%; }
+          .ht-prog-bar-wrap { width: 100%; max-width: 180px; }
           .hg-grid { padding: 14px 14px 18px; }
         }
       `}</style>

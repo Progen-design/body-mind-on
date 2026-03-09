@@ -518,8 +518,9 @@ export default function Profil() {
     const pad = 12;
     const viewportW = window.innerWidth;
     const viewportH = window.innerHeight;
-    let left = rect.left + rect.width / 2 - modalWidth / 2;
-    left = Math.max(pad, Math.min(left, viewportW - modalWidth - pad));
+    const effectiveWidth = Math.min(modalWidth, Math.max(280, viewportW - pad * 2));
+    let left = rect.left + rect.width / 2 - effectiveWidth / 2;
+    left = Math.max(pad, Math.min(left, viewportW - effectiveWidth - pad));
     let top = rect.bottom + 10;
     const minVisibleHeight = 220;
     const spaceBelow = viewportH - top - pad;
@@ -531,6 +532,8 @@ export default function Profil() {
       position: 'fixed',
       top: `${Math.round(top)}px`,
       left: `${Math.round(left)}px`,
+      width: `${Math.round(effectiveWidth)}px`,
+      maxWidth: `${Math.round(effectiveWidth)}px`,
       margin: 0,
       maxHeight: `${Math.round(maxHeight)}px`,
     };
@@ -1665,7 +1668,7 @@ export default function Profil() {
                     type="button"
                     className="profile-main-workout-btn"
                     onClick={(e) => {
-                      if (typeof window !== 'undefined' && window.innerWidth >= 900) {
+                      if (typeof window !== 'undefined' && window.innerWidth > 640) {
                         setWorkoutModalAnchor(getAnchoredModalStyle(e.currentTarget, 400, 560));
                       } else {
                         setWorkoutModalAnchor(null);
@@ -1730,7 +1733,7 @@ export default function Profil() {
                             foods_to_avoid: lm?.foods_to_avoid ?? '',
                             selected_habits: (profile?.user_habits || []).map((h) => h.habit_id).filter(Boolean),
                           });
-                          if (typeof window !== 'undefined' && window.innerWidth >= 900) {
+                          if (typeof window !== 'undefined' && window.innerWidth > 640) {
                             setPreferencesModalAnchor(getAnchoredModalStyle(e.currentTarget, 520, 700));
                           } else {
                             setPreferencesModalAnchor(null);

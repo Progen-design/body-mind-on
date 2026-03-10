@@ -215,3 +215,64 @@ The system is designed to be honest when uncertain:
 | All sources fail | No visual (trust = none) |
 
 **The system never pretends certainty it doesn't have.**
+
+---
+
+## Trust Safety Principles (Updated)
+
+### Why Pexels fallback must NOT be persisted to exercise_asset_registry
+
+The `exercise_asset_registry` table is the canonical truth store for exercise visuals. Once an asset is stored by `canonical_key`, it becomes the permanent visual for that exercise across all plan renderings.
+
+**The problem:** If a Pexels fallback image (trust_level = "fallback") is stored in the registry, it becomes permanent. The next time the same exercise is requested, the system reads the registry and returns the Pexels image — indefinitely. If that image was a yoga pose instead of a squat, or a generic gym photo instead of a specific exercise, every future user sees the wrong image forever.
+
+**The fix (implemented):**
+- `setRegistryEntry()` has a hard guard: it returns immediately if `entry.trust_level !== 'exact'`
+- `getRegistryEntry()` filters to `trust_level = 'exact'` only
+- Pexels results are returned for the current request only and never written to the registry
+- When ExerciseDB later finds the correct GIF, it writes it to the registry as `exact` and all future requests get the right visual
+
+This means canonical exercises that currently only have a Pexels fallback will re-try ExerciseDB on the next request, improving over time rather than being frozen at a bad state.
+
+---
+
+### Why exact and illustrative meal cache entries must have different lifetimes
+
+The `meal_metadata_cache` stores the result of the full enrichment pipeline so the same lookup is not repeated on every plan view. However, not all cached results are equally trustworthy or stable.
+
+**Cache TTL policy (implemented):**
+
+| `image_trust_level` | TTL | Reasoning |
+|---------------------|-----|-----------|
+| `exact` | Never expires | Spoonacular confirmed with score ≥ 0.75. Stable, reliable truth. |
+| `illustrative` | 7 days | Pexels fallback. May improve later as Czech query translation gets a better match. |
+| `none` | 3 days | No result found. Re-try periodically — Spoonacular coverage improves, queries improve. |
+
+The system checks `updated_at` in the cache against the TTL for the stored `image_trust_level`. If the entry is stale for its trust level, the resolver re-runs the full pipeline instead of returning the cached result.
+
+This guarantees that a bad first result — a Pexels photo for a Czech meal that Spoonacular might match correctly later — does not stay cached forever.
+
+---
+
+### How the Czech → English meal query layer works
+
+Spoonacular has significantly better English coverage than Czech. A query like "Kuřecí prsa na grilu s rýží a zeleninou" is unlikely to produce a high-confidence Spoonacular match. The same meal queried as "grilled chicken breast rice" has a much higher probability.
+
+**Query candidate generation (implemented in `buildMealSearchCandidates`):**
+
+For every meal name, the resolver now builds an ordered list of search candidates:
+
+1. Original normalized Czech: `"Kuřecí prsa na grilu s rýží a zeleninou"`
+2. Czech before connector (`" s "`): `"Kuřecí prsa na grilu"`
+3. Full English translation: `"chicken breast grilled rice vegetables"`
+4. Simplified English: `"chicken breast grilled"`
+5. First 3 Czech words: `"Kuřecí prsa na"`
+6. First word Czech + English: `"Kuřecí"` / `"chicken"`
+
+Spoonacular is queried with each candidate in order. The query that produces the highest `scoreMealMatch()` result wins. If any candidate produces a score ≥ 0.75, the search stops early.
+
+**Translation coverage:** The dictionary covers the most common AI-generated Czech meal terms — proteins (kuřecí, hovězí, losos...), carbs (rýže, brambory, těstoviny...), vegetables (brokolice, špenát, zelenina...), cooking methods (na grilu, pečené...), and dairy/other (jogurt, tvaroh, vejce...).
+
+The translation is practical, not complete. If a Czech term is not in the dictionary, the Czech query is still tried and may still match.
+
+**Scoring still decides:** The English translation is only a search input. The `scoreMealMatch()` function compares the Spoonacular result against the original Czech meal name. A translation that produces a better match than the Czech query wins by score, not by assumption.

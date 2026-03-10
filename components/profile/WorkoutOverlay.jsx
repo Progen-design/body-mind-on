@@ -50,13 +50,13 @@ export default function WorkoutOverlay({
       open={open}
       onClose={onClose}
       canClose={!saving}
-      title="Zapsat trénink"
-      subtitle="Přidej hotový trénink do profilu. Uložíme ho do přehledu a navážeme na něj další vyhodnocení."
+      title="Záznam tréninku"
+      subtitle="Zapiš dokončenou aktivitu. Systém ji zahrne do hodnocení a doporučení."
       size="workout"
       headerActions={(
         <button
           type="button"
-          className="workspace-primary-btn"
+          className="btn-save"
           onClick={() => formRef.current?.requestSubmit()}
           disabled={saving}
         >
@@ -64,30 +64,34 @@ export default function WorkoutOverlay({
         </button>
       )}
       footer={(
-        <div className="workspace-footer-actions">
-          <button type="button" className="workspace-secondary-btn" onClick={onClose} disabled={saving}>
+        <div className="footer-row">
+          <button type="button" className="btn-cancel" onClick={onClose} disabled={saving}>
             Zrušit
           </button>
           <button
             type="button"
-            className="workspace-primary-btn workspace-primary-btn--footer"
+            className="btn-save btn-save--lg"
             onClick={() => formRef.current?.requestSubmit()}
             disabled={saving}
           >
-            {saving ? 'Ukládám trénink…' : 'Uložit trénink'}
+            {saving ? 'Ukládám…' : 'Uložit záznam'}
           </button>
         </div>
       )}
     >
-      <form ref={formRef} id="workout-overlay-form" className="workspace-form" onSubmit={onSubmit}>
-        <section className="workspace-card">
-          <div className="workspace-card-head">
-            <span className="workspace-kicker">A. Základní info</span>
-            <h3>Základní parametry</h3>
-            <p>Nejdřív doplň datum, typ a délku. Zbytek formuláře se přizpůsobí podle typu aktivity.</p>
+      <form ref={formRef} id="workout-overlay-form" className="wf" onSubmit={onSubmit}>
+
+        {/* ── Sekce 1 ─ Základní info ───────────────────────────── */}
+        <section className="ws">
+          <div className="ws-head">
+            <span className="ws-num">01</span>
+            <div>
+              <h3 className="ws-title">Základní parametry</h3>
+              <p className="ws-desc">Datum, typ aktivity a délka tréninku.</p>
+            </div>
           </div>
 
-          <div className="workspace-grid workspace-grid--two">
+          <div className="row-two">
             <label className="field">
               <span className="field-label">Datum</span>
               <input
@@ -96,382 +100,507 @@ export default function WorkoutOverlay({
                 value={form.workout_date}
                 min={toLocalDateInputValue(new Date(Date.now() - 365 * 24 * 60 * 60 * 1000))}
                 max={toLocalDateInputValue(new Date())}
-                onChange={(event) => setForm((current) => ({ ...current, workout_date: event.target.value }))}
+                onChange={(e) => setForm((c) => ({ ...c, workout_date: e.target.value }))}
                 required
               />
             </label>
 
             <div className="field">
-              <span className="field-label">Typ tréninku</span>
-              <div className="type-grid" role="group" aria-label="Typ tréninku">
-                {workoutTypes.map((type) => {
-                  const active = form.workout_type === type.id;
-                  return (
+              <span className="field-label">Délka tréninku</span>
+              <div className="duration-row">
+                <input
+                  type="number"
+                  min={1}
+                  value={form.duration_min}
+                  onChange={(e) => setForm((c) => ({ ...c, duration_min: Number(e.target.value) || 0 }))}
+                  placeholder="min"
+                  required
+                  className="input-narrow"
+                />
+                <div className="quick-row">
+                  {QUICK_DURATION_OPTIONS.map((m) => (
                     <button
-                      key={type.id}
+                      key={m}
                       type="button"
-                      className={`type-chip ${active ? 'type-chip--active' : ''}`}
-                      onClick={() => setWorkoutType(type.id)}
-                      aria-pressed={active}
+                      className={`quick-btn ${Number(form.duration_min) === m ? 'quick-btn--on' : ''}`}
+                      onClick={() => setForm((c) => ({ ...c, duration_min: m }))}
                     >
-                      <span aria-hidden>{type.emoji}</span>
-                      <span>{type.label}</span>
+                      {m}′
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="workspace-grid workspace-grid--two">
-            <label className="field">
-              <span className="field-label">Délka (min)</span>
-              <input
-                type="number"
-                min={1}
-                value={form.duration_min}
-                onChange={(event) => setForm((current) => ({ ...current, duration_min: Number(event.target.value) || 0 }))}
-                required
-              />
-            </label>
-
-            <div className="field">
-              <span className="field-label">Rychlá volba</span>
-              <div className="quick-chip-row">
-                {QUICK_DURATION_OPTIONS.map((minutes) => {
-                  const active = Number(form.duration_min) === minutes;
-                  return (
-                    <button
-                      key={minutes}
-                      type="button"
-                      className={`quick-chip ${active ? 'quick-chip--active' : ''}`}
-                      onClick={() => setForm((current) => ({ ...current, duration_min: minutes }))}
-                    >
-                      {minutes} min
-                    </button>
-                  );
-                })}
-              </div>
+          <div className="field">
+            <span className="field-label">Typ aktivity</span>
+            <div className="type-grid" role="group" aria-label="Typ aktivity">
+              {workoutTypes.map((type) => {
+                const active = form.workout_type === type.id;
+                return (
+                  <button
+                    key={type.id}
+                    type="button"
+                    className={`type-btn ${active ? 'type-btn--on' : ''}`}
+                    onClick={() => setWorkoutType(type.id)}
+                    aria-pressed={active}
+                  >
+                    {active && <span className="type-dot" aria-hidden />}
+                    {type.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </section>
 
-        <section className="workspace-card">
-          <div className="workspace-card-head">
-            <span className="workspace-kicker">B. Detail podle typu</span>
-            <h3>Doplň jen to, co dává smysl</h3>
-            <p>Formulář zobrazuje jen relevantní pole, aby se přehledně zapisoval každý typ aktivity.</p>
+        {/* ── Sekce 2 ─ Doplňující parametry ───────────────────── */}
+        <section className="ws">
+          <div className="ws-head">
+            <span className="ws-num">02</span>
+            <div>
+              <h3 className="ws-title">Parametry aktivity</h3>
+              <p className="ws-desc">Doplňující údaje dle typu tréninku.</p>
+            </div>
           </div>
 
-          {isSwimming ? (
-            <label className="field field--narrow">
-              <span className="field-label">Vzdálenost (m)</span>
-              <input
-                type="number"
-                min={25}
-                step={25}
-                value={form.distance_m}
-                onChange={(event) => setForm((current) => ({ ...current, distance_m: event.target.value }))}
-                placeholder="např. 1000"
-              />
+          {isSwimming && (
+            <label className="field field--half">
+              <span className="field-label">Vzdálenost</span>
+              <div className="input-unit">
+                <input
+                  type="number"
+                  min={25}
+                  step={25}
+                  value={form.distance_m}
+                  onChange={(e) => setForm((c) => ({ ...c, distance_m: e.target.value }))}
+                  placeholder="0"
+                />
+                <span className="unit">m</span>
+              </div>
             </label>
-          ) : null}
+          )}
 
-          {isKmWorkout ? (
-            <label className="field field--narrow">
-              <span className="field-label">Vzdálenost (km)</span>
-              <input
-                type="number"
-                min={0.1}
-                step={0.1}
-                value={form.distance_km}
-                onChange={(event) => setForm((current) => ({ ...current, distance_km: event.target.value }))}
-                placeholder="např. 5.5"
-              />
+          {isKmWorkout && (
+            <label className="field field--half">
+              <span className="field-label">Vzdálenost</span>
+              <div className="input-unit">
+                <input
+                  type="number"
+                  min={0.1}
+                  step={0.1}
+                  value={form.distance_km}
+                  onChange={(e) => setForm((c) => ({ ...c, distance_km: e.target.value }))}
+                  placeholder="0.0"
+                />
+                <span className="unit">km</span>
+              </div>
             </label>
-          ) : null}
+          )}
 
-          {showsDifficulty ? (
+          {showsDifficulty && (
             <div className="field">
-              <span className="field-label">Jak náročné to bylo?</span>
-              <div className="difficulty-grid" role="radiogroup" aria-label="Náročnost tréninku">
-                {difficultyOptions.map((option) => {
-                  const checked = (form.perceived_difficulty || '') === option.id;
+              <span className="field-label">Subjektivní náročnost</span>
+              <div className="diff-grid" role="radiogroup">
+                {difficultyOptions.map((opt) => {
+                  const on = (form.perceived_difficulty || '') === opt.id;
                   return (
                     <button
-                      key={option.id}
+                      key={opt.id}
                       type="button"
-                      className={`difficulty-card ${checked ? 'difficulty-card--active' : ''}`}
-                      onClick={() => setForm((current) => ({ ...current, perceived_difficulty: option.id }))}
-                      aria-pressed={checked}
+                      className={`diff-btn ${on ? 'diff-btn--on' : ''}`}
+                      onClick={() => setForm((c) => ({ ...c, perceived_difficulty: opt.id }))}
+                      aria-pressed={on}
                     >
-                      {option.label}
+                      {opt.label}
                     </button>
                   );
                 })}
               </div>
             </div>
-          ) : (
-            <div className="workspace-note">
-              Pro vybraný typ tréninku nejsou potřeba další pole. Stačí základní info a případná poznámka.
-            </div>
+          )}
+
+          {!isSwimming && !isKmWorkout && !showsDifficulty && (
+            <p className="no-extra">Pro tento typ aktivity nejsou potřeba doplňující parametry.</p>
           )}
         </section>
 
-        <section className="workspace-card">
-          <div className="workspace-card-head">
-            <span className="workspace-kicker">C. Poznámka</span>
-            <h3>Krátký kontext k tréninku</h3>
-            <p>Poznámka je volitelná, ale pomůže při pozdějším vyhodnocení a doporučeních.</p>
+        {/* ── Sekce 3 ─ Poznámka ────────────────────────────────── */}
+        <section className="ws">
+          <div className="ws-head">
+            <span className="ws-num">03</span>
+            <div>
+              <h3 className="ws-title">Poznámka</h3>
+              <p className="ws-desc">Volitelný kontext k tréninku – pocit, podmínky, zaměření.</p>
+            </div>
           </div>
 
           <label className="field">
-            <span className="field-label">Poznámka</span>
+            <span className="field-label">Poznámka <span className="optional">(nepovinné)</span></span>
             <textarea
-              rows={5}
+              rows={4}
               value={form.notes}
-              onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
-              placeholder="např. nohy, intervaly, lehké tempo, regenerace..."
+              onChange={(e) => setForm((c) => ({ ...c, notes: e.target.value }))}
+              placeholder="Nohy, intervaly, regenerace, lehké tempo…"
             />
           </label>
         </section>
 
-        {error ? <p className="workspace-error" role="alert">{error}</p> : null}
-        {saving ? (
-          <div className="workspace-status" role="status" aria-live="polite">
-            <span className="workspace-spinner" aria-hidden />
-            <span>Ukládám trénink a aktualizuji profil…</span>
+        {error && <p className="err-msg" role="alert">{error}</p>}
+        {saving && (
+          <div className="status-row" role="status" aria-live="polite">
+            <span className="spinner" aria-hidden />
+            <span>Ukládám záznam…</span>
           </div>
-        ) : null}
+        )}
       </form>
 
       <style jsx>{`
-        .workspace-form {
+        /* ── Layout ──────────────────────────────────────────────── */
+        .wf {
           display: grid;
-          gap: 20px;
+          gap: 2px;
         }
-        .workspace-card {
+
+        /* ── Sekce ───────────────────────────────────────────────── */
+        .ws {
           display: grid;
-          gap: 20px;
-          padding: 24px;
-          border-radius: 24px;
-          border: 1px solid rgba(148, 163, 184, 0.14);
-          background:
-            linear-gradient(180deg, rgba(15, 23, 42, 0.76) 0%, rgba(15, 23, 42, 0.62) 100%);
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+          gap: 22px;
+          padding: 28px 32px;
+          border-bottom: 1px solid rgba(148, 163, 184, 0.08);
         }
-        .workspace-card-head h3 {
-          margin: 8px 0 0;
-          font-size: 1.28rem;
-          line-height: 1.2;
-          color: #f8fafc;
+        .ws:last-child {
+          border-bottom: none;
         }
-        .workspace-card-head p {
-          margin: 10px 0 0;
-          color: #94a3b8;
-          line-height: 1.6;
+
+        .ws-head {
+          display: flex;
+          align-items: flex-start;
+          gap: 16px;
         }
-        .workspace-kicker {
-          display: inline-flex;
-          width: fit-content;
-          padding: 6px 10px;
-          border-radius: 999px;
-          background: rgba(124, 58, 237, 0.14);
-          color: #c4b5fd;
-          font-size: 0.76rem;
+        .ws-num {
+          flex-shrink: 0;
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          background: rgba(100, 116, 139, 0.12);
+          border: 1px solid rgba(100, 116, 139, 0.18);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.72rem;
           font-weight: 700;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: #64748b;
+          margin-top: 2px;
         }
-        .workspace-grid {
+        .ws-title {
+          margin: 0 0 5px;
+          font-size: 1.05rem;
+          font-weight: 600;
+          color: #f1f5f9;
+          letter-spacing: -0.01em;
+        }
+        .ws-desc {
+          margin: 0;
+          font-size: 0.875rem;
+          color: #64748b;
+          line-height: 1.5;
+        }
+
+        /* ── Grid ────────────────────────────────────────────────── */
+        .row-two {
           display: grid;
-          gap: 18px;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          align-items: start;
         }
-        .workspace-grid--two {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
+
+        /* ── Field ───────────────────────────────────────────────── */
         .field {
           display: grid;
-          gap: 10px;
+          gap: 8px;
         }
-        .field--narrow {
-          max-width: 260px;
+        .field--half {
+          max-width: 280px;
         }
         .field-label {
-          font-size: 0.95rem;
-          font-weight: 700;
-          color: #e2e8f0;
+          font-size: 0.78rem;
+          font-weight: 600;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: #94a3b8;
         }
-        .field :is(input, textarea) {
+        .optional {
+          font-weight: 400;
+          text-transform: none;
+          letter-spacing: 0;
+          color: #475569;
+        }
+
+        /* ── Inputs ──────────────────────────────────────────────── */
+        .field :is(input[type="date"], input[type="number"], textarea),
+        .input-narrow {
           width: 100%;
-          border-radius: 16px;
-          border: 1px solid rgba(148, 163, 184, 0.2);
-          background: rgba(2, 6, 23, 0.58);
-          color: #f8fafc;
-          padding: 15px 16px;
-          font-size: 0.98rem;
+          box-sizing: border-box;
+          padding: 11px 14px;
+          border-radius: 10px;
+          border: 1px solid rgba(100, 116, 139, 0.22);
+          background: rgba(15, 23, 42, 0.6);
+          color: #f1f5f9;
+          font-size: 0.95rem;
           outline: none;
-          transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+          transition: border-color 0.15s, box-shadow 0.15s;
         }
-        .field :is(input, textarea):focus {
-          border-color: rgba(96, 165, 250, 0.5);
-          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.14);
-          background: rgba(2, 6, 23, 0.74);
+        .field :is(input, textarea):focus,
+        .input-narrow:focus {
+          border-color: rgba(148, 163, 184, 0.5);
+          box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.08);
         }
         .field textarea {
           resize: vertical;
-          min-height: 132px;
+          min-height: 100px;
         }
+
+        /* ── Duration row ────────────────────────────────────────── */
+        .duration-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+        .input-narrow {
+          width: 90px;
+          flex-shrink: 0;
+        }
+        .quick-row {
+          display: flex;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .quick-btn {
+          height: 38px;
+          padding: 0 12px;
+          border-radius: 8px;
+          border: 1px solid rgba(100, 116, 139, 0.22);
+          background: rgba(15, 23, 42, 0.5);
+          color: #94a3b8;
+          font-size: 0.82rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: border-color 0.15s, color 0.15s, background 0.15s;
+        }
+        .quick-btn--on {
+          border-color: rgba(148, 163, 184, 0.45);
+          background: rgba(30, 41, 59, 0.9);
+          color: #e2e8f0;
+        }
+        .quick-btn:hover:not(.quick-btn--on) {
+          border-color: rgba(100, 116, 139, 0.4);
+          color: #cbd5e1;
+        }
+
+        /* ── Typ aktivity ────────────────────────────────────────── */
         .type-grid {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 10px;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 7px;
         }
-        .type-chip,
-        .quick-chip,
-        .difficulty-card,
-        .workspace-secondary-btn,
-        .workspace-primary-btn {
-          border: 1px solid rgba(148, 163, 184, 0.18);
-          background: rgba(15, 23, 42, 0.72);
-          color: #e2e8f0;
-          cursor: pointer;
-          transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
-        }
-        .type-chip {
-          display: inline-flex;
+        .type-btn {
+          position: relative;
+          display: flex;
           align-items: center;
           justify-content: center;
-          gap: 8px;
-          min-height: 52px;
-          padding: 10px 12px;
-          border-radius: 16px;
+          gap: 6px;
+          padding: 10px 8px;
+          border-radius: 8px;
+          border: 1px solid rgba(100, 116, 139, 0.18);
+          background: rgba(15, 23, 42, 0.45);
+          color: #94a3b8;
+          font-size: 0.82rem;
+          font-weight: 500;
+          cursor: pointer;
+          text-align: center;
+          transition: border-color 0.15s, color 0.15s, background 0.15s;
+        }
+        .type-btn--on {
+          border-color: rgba(148, 163, 184, 0.5);
+          background: rgba(30, 41, 59, 0.9);
+          color: #f1f5f9;
           font-weight: 600;
         }
-        .type-chip--active,
-        .quick-chip--active,
-        .difficulty-card--active {
-          border-color: rgba(167, 139, 250, 0.55);
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.22), rgba(59, 130, 246, 0.16));
-          box-shadow: 0 16px 30px rgba(15, 23, 42, 0.26);
-          color: #ffffff;
+        .type-btn:hover:not(.type-btn--on) {
+          border-color: rgba(100, 116, 139, 0.35);
+          color: #cbd5e1;
         }
-        .quick-chip-row {
+        .type-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #94a3b8;
+          flex-shrink: 0;
+        }
+
+        /* ── Unit input ──────────────────────────────────────────── */
+        .input-unit {
+          position: relative;
           display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
+          align-items: center;
         }
-        .quick-chip {
-          min-height: 48px;
-          padding: 0 16px;
-          border-radius: 14px;
-          font-weight: 700;
+        .input-unit input {
+          padding-right: 46px;
         }
-        .difficulty-grid {
+        .unit {
+          position: absolute;
+          right: 14px;
+          font-size: 0.8rem;
+          font-weight: 600;
+          letter-spacing: 0.04em;
+          color: #475569;
+          pointer-events: none;
+        }
+
+        /* ── Náročnost ───────────────────────────────────────────── */
+        .diff-grid {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 10px;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 8px;
         }
-        .difficulty-card {
-          min-height: 58px;
-          padding: 14px 16px;
-          border-radius: 18px;
-          font-weight: 700;
-        }
-        .workspace-note {
-          padding: 16px 18px;
-          border-radius: 18px;
-          background: rgba(15, 23, 42, 0.5);
-          border: 1px dashed rgba(148, 163, 184, 0.2);
+        .diff-btn {
+          padding: 12px 10px;
+          border-radius: 8px;
+          border: 1px solid rgba(100, 116, 139, 0.18);
+          background: rgba(15, 23, 42, 0.45);
           color: #94a3b8;
-          line-height: 1.6;
+          font-size: 0.84rem;
+          font-weight: 500;
+          cursor: pointer;
+          text-align: center;
+          transition: border-color 0.15s, color 0.15s, background 0.15s;
         }
-        .workspace-footer-actions {
+        .diff-btn--on {
+          border-color: rgba(148, 163, 184, 0.5);
+          background: rgba(30, 41, 59, 0.9);
+          color: #f1f5f9;
+          font-weight: 600;
+        }
+        .diff-btn:hover:not(.diff-btn--on) {
+          border-color: rgba(100, 116, 139, 0.35);
+          color: #cbd5e1;
+        }
+
+        /* ── Footer ──────────────────────────────────────────────── */
+        .footer-row {
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 12px;
         }
-        .workspace-secondary-btn,
-        .workspace-primary-btn {
-          min-height: 50px;
-          padding: 0 18px;
-          border-radius: 16px;
-          font-size: 0.96rem;
-          font-weight: 700;
+        .btn-cancel {
+          height: 44px;
+          padding: 0 20px;
+          border-radius: 9px;
+          border: 1px solid rgba(100, 116, 139, 0.22);
+          background: transparent;
+          color: #64748b;
+          font-size: 0.9rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: color 0.15s, border-color 0.15s;
         }
-        .workspace-primary-btn {
-          background: linear-gradient(135deg, #8b5cf6, #3b82f6);
-          border-color: rgba(167, 139, 250, 0.45);
-          color: #ffffff;
+        .btn-cancel:hover:not(:disabled) {
+          color: #94a3b8;
+          border-color: rgba(100, 116, 139, 0.4);
         }
-        .workspace-primary-btn:hover:not(:disabled),
-        .workspace-secondary-btn:hover:not(:disabled),
-        .type-chip:hover,
-        .quick-chip:hover,
-        .difficulty-card:hover {
-          transform: translateY(-1px);
+        .btn-save {
+          height: 44px;
+          padding: 0 22px;
+          border-radius: 9px;
+          border: 1px solid rgba(148, 163, 184, 0.3);
+          background: rgba(30, 41, 59, 0.95);
+          color: #e2e8f0;
+          font-size: 0.9rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.15s, border-color 0.15s, color 0.15s;
         }
-        .workspace-secondary-btn {
-          min-width: 120px;
+        .btn-save:hover:not(:disabled) {
+          background: rgba(51, 65, 85, 0.95);
+          border-color: rgba(148, 163, 184, 0.5);
+          color: #f8fafc;
         }
-        .workspace-primary-btn--footer {
-          min-width: 190px;
+        .btn-save--lg {
+          min-width: 160px;
         }
-        .workspace-primary-btn:disabled,
-        .workspace-secondary-btn:disabled {
-          opacity: 0.55;
+        .btn-cancel:disabled,
+        .btn-save:disabled {
+          opacity: 0.45;
           cursor: not-allowed;
         }
-        .workspace-error {
+
+        /* ── States ──────────────────────────────────────────────── */
+        .no-extra {
           margin: 0;
-          padding: 14px 16px;
-          border-radius: 16px;
-          border: 1px solid rgba(248, 113, 113, 0.26);
-          background: rgba(127, 29, 29, 0.24);
-          color: #fecaca;
-          line-height: 1.55;
+          font-size: 0.875rem;
+          color: #475569;
+          line-height: 1.6;
         }
-        .workspace-status {
+        .err-msg {
+          margin: 0;
+          padding: 13px 16px;
+          border-radius: 9px;
+          border: 1px solid rgba(248, 113, 113, 0.2);
+          background: rgba(127, 29, 29, 0.18);
+          color: #fca5a5;
+          font-size: 0.9rem;
+          line-height: 1.5;
+        }
+        .status-row {
           display: inline-flex;
           align-items: center;
-          gap: 12px;
-          padding: 14px 16px;
-          border-radius: 16px;
-          background: rgba(15, 23, 42, 0.56);
-          border: 1px solid rgba(148, 163, 184, 0.16);
-          color: #cbd5e1;
+          gap: 10px;
+          padding: 12px 16px;
+          border-radius: 9px;
+          background: rgba(15, 23, 42, 0.5);
+          border: 1px solid rgba(100, 116, 139, 0.16);
+          color: #94a3b8;
+          font-size: 0.875rem;
         }
-        .workspace-spinner {
-          width: 18px;
-          height: 18px;
-          border-radius: 999px;
-          border: 2px solid rgba(148, 163, 184, 0.2);
-          border-top-color: #8b5cf6;
-          animation: spin 0.85s linear infinite;
+        .spinner {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          border: 2px solid rgba(100, 116, 139, 0.2);
+          border-top-color: #94a3b8;
+          animation: spin 0.8s linear infinite;
         }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* ── Responsive ──────────────────────────────────────────── */
         @media (max-width: 767px) {
-          .workspace-card {
-            padding: 18px;
-            border-radius: 20px;
+          .ws {
+            padding: 22px 18px;
           }
-          .workspace-grid--two,
-          .type-grid,
-          .difficulty-grid {
+          .row-two {
             grid-template-columns: 1fr;
           }
-          .workspace-footer-actions {
+          .type-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+          .footer-row {
             flex-direction: column-reverse;
           }
-          .workspace-footer-actions :global(button) {
+          .footer-row button {
             width: 100%;
           }
-          .field--narrow {
+          .field--half {
             max-width: none;
+          }
+        }
+        @media (max-width: 400px) {
+          .type-grid {
+            grid-template-columns: repeat(2, 1fr);
           }
         }
       `}</style>

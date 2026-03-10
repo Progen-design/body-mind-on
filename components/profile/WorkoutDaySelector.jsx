@@ -1,7 +1,10 @@
-export default function WorkoutDaySelector({ value = [], onChange, labels = [] }) {
+export default function WorkoutDaySelector({ value = [], onChange, labels = [], maxSelections = 7, disabled = false }) {
   const selectedDays = Array.isArray(value) ? value : [];
+  const reachedMax = selectedDays.length >= maxSelections;
 
   const toggleDay = (day) => {
+    if (disabled) return;
+    if (!selectedDays.includes(day) && reachedMax) return;
     const next = selectedDays.includes(day)
       ? selectedDays.filter((item) => item !== day)
       : [...selectedDays, day].sort((a, b) => a - b);
@@ -12,13 +15,15 @@ export default function WorkoutDaySelector({ value = [], onChange, labels = [] }
     <div className="workout-day-selector" role="group" aria-label="Vyber dny tréninku">
       {labels.map(({ v, label }) => {
         const active = selectedDays.includes(v);
+        const isDisabled = disabled || (!active && reachedMax);
         return (
           <button
             key={v}
             type="button"
-            className={`day-chip ${active ? 'day-chip--active' : ''}`}
+            className={`day-chip ${active ? 'day-chip--active' : ''} ${isDisabled ? 'day-chip--disabled' : ''}`}
             onClick={() => toggleDay(v)}
             aria-pressed={active}
+            disabled={isDisabled}
           >
             <span className="day-chip-label">{label}</span>
           </button>
@@ -53,6 +58,11 @@ export default function WorkoutDaySelector({ value = [], onChange, labels = [] }
           border-color: rgba(167, 139, 250, 0.58);
           box-shadow: inset 0 0 0 1px rgba(196, 181, 253, 0.18), 0 14px 28px rgba(15, 23, 42, 0.26);
           color: #ffffff;
+        }
+        .day-chip--disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          transform: none;
         }
         .day-chip-label {
           display: inline-flex;

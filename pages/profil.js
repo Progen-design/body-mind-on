@@ -19,7 +19,7 @@ import PreferencesOverlay from '../components/profile/PreferencesOverlay';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
 import { getHabitById } from '../lib/habits';
-import { normalizeOccupationForForm, activityToFormLabel, goalToFormLabel } from '../lib/preferenceConstants';
+import { normalizeOccupationForForm, activityToFormLabel, goalToFormLabel, normalizeFrequency, getFrequencyDayRange } from '../lib/preferenceConstants';
 import { useProfileData } from '../hooks/useProfileData';
 
 const PROGRAM_LABELS = {
@@ -434,6 +434,20 @@ export default function Profil() {
     if (w === 5) return '4-5x týdně';
     if (w === 3) return '2-3x týdně';
     return '';
+  };
+
+  const validateWorkoutDaysByFrequency = (formState) => {
+    const frequency = normalizeFrequency(formState?.freq_choice || formState?.frequency);
+    if (!frequency) return null;
+    const { min, max } = getFrequencyDayRange(frequency);
+    const days = Array.isArray(formState?.workout_days)
+      ? formState.workout_days.filter((n) => Number.isFinite(Number(n)) && Number(n) >= 0 && Number(n) <= 6)
+      : [];
+    const count = days.length;
+    if (count < min || count > max) {
+      return `Pro frekvenci ${frequency} musíš vybrat přesně ${min}-${max} tréninkových dní (teď máš ${count}).`;
+    }
+    return null;
   };
 
   const openWorkoutWorkspace = () => {
@@ -982,6 +996,11 @@ export default function Profil() {
       const token = fresh?.access_token ?? session?.access_token;
       if (!token) {
         setPreferencesError('Session vypršela. Obnov stránku.');
+        return;
+      }
+      const freqValidationError = validateWorkoutDaysByFrequency(preferencesForm);
+      if (freqValidationError) {
+        setPreferencesError(freqValidationError);
         return;
       }
       if (preferencesForm.selected_habits.length === 0) {

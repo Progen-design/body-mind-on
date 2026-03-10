@@ -5,7 +5,7 @@
 import { supabaseServer } from '../../lib/supabaseServer';
 import { generatePlanForEmail } from '../../lib/generatePlan';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
-import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency } from '../../lib/preferenceConstants';
+import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getFrequencyDayRange } from '../../lib/preferenceConstants';
 import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
 
 export default async function handler(req, res) {
@@ -60,9 +60,31 @@ export default async function handler(req, res) {
     if (b.foods_to_avoid !== undefined) updates.foods_to_avoid = (b.foods_to_avoid || '').trim() || null;
     if (b.workout_days !== undefined) {
       const wd = b.workout_days;
-      updates.workout_days = Array.isArray(wd) && wd.length > 0
-        ? wd.filter((n) => Number.isFinite(Number(n)) && n >= 0 && n <= 6).join(',')
-        : null;
+      const normalizedDays = Array.isArray(wd) && wd.length > 0
+        ? wd.filter((n) => Number.isFinite(Number(n)) && n >= 0 && n <= 6)
+        : [];
+      updates.workout_days = normalizedDays.length > 0 ? normalizedDays.join(',') : null;
+    }
+
+    const effectiveFrequency = normalizeFrequency(
+      updates.freq_choice ?? b.freq_choice ?? b.frequency ?? latest.freq_choice
+    );
+    if (effectiveFrequency) {
+      const { min, max } = getFrequencyDayRange(effectiveFrequency);
+      const effectiveWorkoutDaysRaw = updates.workout_days ?? latest.workout_days;
+      const effectiveWorkoutDays = (
+        Array.isArray(effectiveWorkoutDaysRaw)
+          ? effectiveWorkoutDaysRaw
+          : typeof effectiveWorkoutDaysRaw === 'string' && effectiveWorkoutDaysRaw
+            ? effectiveWorkoutDaysRaw.split(',').map((s) => Number(s.trim()))
+            : []
+      ).filter((n) => Number.isFinite(n) && n >= 0 && n <= 6);
+
+      if (effectiveWorkoutDays.length < min || effectiveWorkoutDays.length > max) {
+        return res.status(400).json({
+          error: `Pro frekvenci ${effectiveFrequency} musí být vybráno ${min}-${max} tréninkových dní (aktuálně ${effectiveWorkoutDays.length}).`,
+        });
+      }
     }
 
     if (Object.keys(updates).length > 0) {

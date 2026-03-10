@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import FullscreenOverlay from './FullscreenOverlay';
 import WorkoutDaySelector from './WorkoutDaySelector';
 import HabitChipGrid from './HabitChipGrid';
+import { getFrequencyDayRange } from '../../lib/preferenceConstants';
 
 export default function PreferencesOverlay({
   open,
@@ -23,6 +24,8 @@ export default function PreferencesOverlay({
   }, [open]);
 
   const saveDisabled = saving || form.selected_habits.length === 0;
+  const dayRange = getFrequencyDayRange(form.freq_choice || form.frequency);
+  const dayCount = Array.isArray(form.workout_days) ? form.workout_days.length : 0;
 
   return (
     <FullscreenOverlay
@@ -148,6 +151,9 @@ export default function PreferencesOverlay({
                     ...current,
                     freq_choice: event.target.value,
                     frequency: event.target.value,
+                    workout_days: Array.isArray(current.workout_days)
+                      ? current.workout_days.slice(0, getFrequencyDayRange(event.target.value).max)
+                      : [],
                   }))
                 }
               >
@@ -163,11 +169,19 @@ export default function PreferencesOverlay({
             <div className="prefs-block-head">
               <span className="prefs-label">Preferované dny tréninku</span>
               <p>Vyber dny, kdy je realistické mít v plánu hlavní trénink nebo řízený pohyb.</p>
+                {dayRange?.normalized ? (
+                  <p className="prefs-day-rule">
+                    Pro frekvenci <strong>{dayRange.normalized}</strong> je potřeba vybrat {dayRange.min}-{dayRange.max} dní
+                    (aktuálně {dayCount}).
+                  </p>
+                ) : null}
             </div>
             <WorkoutDaySelector
               value={form.workout_days}
               labels={workoutDayLabels}
               onChange={(days) => setForm((current) => ({ ...current, workout_days: days }))}
+                maxSelections={dayRange?.max || 7}
+                disabled={saving}
             />
           </div>
         </section>
@@ -333,6 +347,11 @@ export default function PreferencesOverlay({
         .prefs-block {
           display: grid;
           gap: 14px;
+        }
+        .prefs-day-rule {
+          margin-top: 8px;
+          color: #a5b4fc;
+          font-size: 0.9rem;
         }
         .prefs-footer-actions {
           display: flex;

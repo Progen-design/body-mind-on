@@ -2,6 +2,7 @@
 import { supabaseServer } from '../../lib/supabaseServer';
 import { generatePlanForEmail } from '../../lib/generatePlan';
 import { createAuthUserIfNew } from '../../lib/authHelpers';
+import { writeAILog } from '../../lib/aiOps';
 import { createInitialAITasks } from '../../lib/createInitialAITasks';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getWeeklySessions } from '../../lib/preferenceConstants';
@@ -184,7 +185,16 @@ export default async function handler(req, res) {
         targetStartDate: new Date(),
       });
     } catch (e) {
-      console.error('⚠️ Chyba při generování AI plánu:', e);
+      const errMsg = e?.message || String(e);
+      console.error('⚠️ [body-metrics] AI plán – výjimka:', errMsg, e?.stack);
+      await writeAILog({
+        agent_slug: 'trainer',
+        user_id: payload.user_id,
+        status: 'failed',
+        cache_hit: false,
+        duration_ms: 0,
+        message: `body-metrics generatePlanForEmail: ${errMsg}`,
+      });
       return res.status(200).json({
         ok: true,
         message: 'Údaje byly uloženy. Odeslání plánu na e-mail se nepodařilo – zkontroluj prosím spam nebo nás kontaktuj na info@bodyandmindon.cz.',
@@ -193,7 +203,16 @@ export default async function handler(req, res) {
     }
 
     if (!planResult?.ok) {
-      console.error('⚠️ generatePlanForEmail vrátil chybu:', planResult?.message);
+      const errMsg = planResult?.message || 'neznámá chyba';
+      console.error('⚠️ [body-metrics] generatePlanForEmail vrátil chybu:', errMsg);
+      await writeAILog({
+        agent_slug: 'trainer',
+        user_id: payload.user_id,
+        status: 'failed',
+        cache_hit: false,
+        duration_ms: 0,
+        message: `body-metrics planResult: ${errMsg}`,
+      });
       return res.status(200).json({
         ok: true,
         message: 'Údaje byly uloženy. E-mail s plánem se nepodařilo odeslat – zkontroluj spam nebo napiš na info@bodyandmindon.cz.',

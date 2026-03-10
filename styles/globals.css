@@ -26,9 +26,27 @@
 /* ---- App pages (start, login, trener, on-club, chci-vip) – jednotný vzhled ---- */
 .app-page {
   min-height: 100vh;
-  background: radial-gradient(circle at 30% 0%, #1c1333, #0b0b15 60%), #0a0a0f;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% -10%, rgba(159,70,255,0.45) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 10%, rgba(52,2,107,0.55) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 50% 90%, rgba(18,6,56,0.5) 0%, transparent 60%),
+    linear-gradient(160deg, #120638 0%, #1a0645 30%, #0d0420 65%, #050111 100%);
   color: #fff;
 }
+.app-page::before {
+  content: '';
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle 500px at 15% 25%, rgba(159,70,255,0.18) 0%, transparent 70%),
+    radial-gradient(circle 400px at 85% 70%, rgba(14,165,233,0.12) 0%, transparent 65%),
+    radial-gradient(circle 300px at 60% 10%, rgba(167,139,250,0.14) 0%, transparent 60%);
+  z-index: 0;
+}
+.app-page > * { position: relative; z-index: 1; }
 
 /* ---- Base ---- */
 * { box-sizing: border-box; }

@@ -134,6 +134,7 @@ export default async function handler(req, res) {
       userChosePassword,
     };
 
+    let planSent = false;
     if (payload.user_id) {
       await createInitialAITasks(payload.user_id, emailOptions);
       console.log(`✅ Vytvořeny úvodní AI úkoly pro user_id: ${payload.user_id}`);
@@ -143,6 +144,21 @@ export default async function handler(req, res) {
       try {
         const run = await runAIScheduler();
         console.log(`✅ Scheduler: ${run.completed} completed, ${run.failed} failed`);
+
+        const { data: taskRow } = await supabaseServer
+          .from('ai_tasks')
+          .select('status, result')
+          .eq('user_id', payload.user_id)
+          .eq('agent_slug', 'trainer')
+          .eq('task_type', 'initial_plan')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        planSent = taskRow?.status === 'completed';
+        if (!planSent && taskRow?.status === 'failed') {
+          console.warn('⚠️ Trainer initial_plan failed:', taskRow?.result);
+        }
       } catch (schedErr) {
         console.warn('⚠️ Scheduler run failed (tasks remain pending):', schedErr?.message);
       }
@@ -190,13 +206,14 @@ export default async function handler(req, res) {
     }
 
     const accountCreated = payload.user_id != null;
+    const successMsg = accountCreated
+      ? 'Údaje byly úspěšně uloženy a plán byl odeslán na e-mail. V e-mailu najdeš přihlašovací údaje – s nimi se můžeš přihlásit a vidět svůj profil.'
+      : 'Údaje a plán byly uloženy a odeslány na e-mail. Vytvoření přihlašovacího účtu se nezdařilo – pro přístup do profilu nás kontaktuj na info@bodyandmindon.cz.';
     return res.status(200).json({
       ok: true,
-      planSent: true,
+      planSent,
       loginUnavailable: !accountCreated,
-      message: accountCreated
-        ? 'Údaje byly úspěšně uloženy a plán byl odeslán na e-mail. V e-mailu najdeš přihlašovací údaje – s nimi se můžeš přihlásit a vidět svůj profil.'
-        : 'Údaje a plán byly uloženy a odeslány na e-mail. Vytvoření přihlašovacího účtu se nezdařilo – pro přístup do profilu nás kontaktuj na info@bodyandmindon.cz.',
+      message: planSent ? successMsg : 'Údaje byly uloženy. E-mail s plánem se nepodařilo odeslat – zkontroluj spam nebo napiš na info@bodyandmindon.cz.',
     });
 
   } catch (e) {

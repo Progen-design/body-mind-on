@@ -122,6 +122,79 @@ where table_name in ('ai_messages', 'user_ai_memory')
 
 ---
 
+---
+
+## SECTION 8 — Business Module Maturity
+
+> These checks confirm that no unfinished business module is being released as production-ready without explicit review.
+
+| # | Check | Status | Notes |
+|---|-------|--------|-------|
+| 8.1 | Trainer agent is confirmed production-ready (plan generation, email, retry all verified) | [ ] Pass / [ ] Fail / [ ] Review | |
+| 8.2 | Coach agent is confirmed production-usable (messages generated, stored in `ai_messages` with `task_id`) | [ ] Pass / [ ] Fail / [ ] Review | |
+| 8.3 | Marketing agent is acknowledged as draft-stage — NOT being released as a finished business module | [ ] Pass / [ ] Fail / [ ] Review | |
+| 8.4 | Social agent is acknowledged as draft-stage — NOT being released as a finished business module | [ ] Pass / [ ] Fail / [ ] Review | |
+| 8.5 | Any marketing/social `ai_content_drafts` have been reviewed by a human before external use (if applicable) | [ ] Pass / [ ] Fail / [ ] N/A | |
+| 8.6 | No new agent has been added to this release without a defined business contract and product spec | [ ] Pass / [ ] Fail / [ ] Review | |
+
+**Section Result:** [ ] GO  [ ] NO-GO
+
+---
+
+## SECTION 9 — Legal Readiness
+
+> These checks confirm minimum legal hygiene before external user exposure.
+
+| # | Check | Status | Notes |
+|---|-------|--------|-------|
+| 9.1 | Privacy policy exists and is accessible to users | [ ] Pass / [ ] Fail / [ ] Review | |
+| 9.2 | Privacy policy explicitly covers AI-generated recommendations and third-party data processors | [ ] Pass / [ ] Fail / [ ] Review | |
+| 9.3 | Terms of service exist and are accessible | [ ] Pass / [ ] Fail / [ ] Review | |
+| 9.4 | Terms cover AI output limitations and user data usage | [ ] Pass / [ ] Fail / [ ] Review | |
+| 9.5 | An AI disclaimer is visible to users before they receive AI-generated recommendations | [ ] Pass / [ ] Fail / [ ] Review | |
+| 9.6 | Account deletion flow tested end-to-end (`/api/delete-account` removes all user data) | [ ] Pass / [ ] Fail / [ ] Review | |
+| 9.7 | Data export process defined (or explicitly accepted as not yet required for this release) | [ ] Pass / [ ] Fail / [ ] Review | |
+| 9.8 | Data retention policy defined for `ai_logs`, `ai_tasks`, `ai_messages`, `ai_generated_plans` | [ ] Pass / [ ] Fail / [ ] Review | |
+| 9.9 | Third-party processors (OpenAI, Supabase, Vercel, Stripe) have documented DPA or equivalents | [ ] Pass / [ ] Fail / [ ] Review | |
+
+**Section Result:** [ ] GO  [ ] NO-GO
+
+---
+
+## SECTION 10 — Product Clarity
+
+> These checks confirm the product being released is coherent, honest, and does not overpromise.
+
+| # | Check | Status | Notes |
+|---|-------|--------|-------|
+| 10.1 | Target customer is clearly defined (who this product is for) | [ ] Pass / [ ] Fail / [ ] Review | |
+| 10.2 | Core paid value proposition is clearly defined (what the user pays for) | [ ] Pass / [ ] Fail / [ ] Review | |
+| 10.3 | Onboarding promise matches real product behavior (what happens after registration is accurate) | [ ] Pass / [ ] Fail / [ ] Review | |
+| 10.4 | Paid tier differentiation is enforced in the application (START vs ON Club vs VIP features are distinct) | [ ] Pass / [ ] Fail / [ ] Review | |
+| 10.5 | Monetization path is defined (how a free user converts to paid) | [ ] Pass / [ ] Fail / [ ] Review | |
+| 10.6 | No feature is being communicated as available if it is actually in draft or incomplete state | [ ] Pass / [ ] Fail / [ ] Review | |
+
+**Section Result:** [ ] GO  [ ] NO-GO
+
+---
+
+## SECTION 11 — Operational Discipline
+
+> These checks confirm the release does not introduce uncontrolled complexity.
+
+| # | Check | Status | Notes |
+|---|-------|--------|-------|
+| 11.1 | No unreviewed new agent behavior was added in this release | [ ] Pass / [ ] Fail / [ ] Review | |
+| 11.2 | No new shared memory types added without documentation in `docs/AI_SHARED_MEMORY.md` | [ ] Pass / [ ] Fail / [ ] Review | |
+| 11.3 | No new event types added without documentation in `docs/AI_SYSTEM_ARCHITECTURE.md` | [ ] Pass / [ ] Fail / [ ] Review | |
+| 11.4 | Complexity governance checklist (`docs/COMPLEXITY_GOVERNANCE.md`) was consulted for any new AI feature | [ ] Pass / [ ] Fail / [ ] N/A | |
+| 11.5 | Strategic risk register (`docs/STRATEGIC_RISK_REGISTER.md`) was reviewed and no new unmitigated P0 risks exist | [ ] Pass / [ ] Fail / [ ] Review | |
+| 11.6 | No unfinished business module is being released without explicit written approval | [ ] Pass / [ ] Fail / [ ] Review | |
+
+**Section Result:** [ ] GO  [ ] NO-GO
+
+---
+
 ## FINAL DECISION
 
 | Section | Result |
@@ -133,10 +206,14 @@ where table_name in ('ai_messages', 'user_ai_memory')
 | 5. Logging | [ ] GO / [ ] NO-GO |
 | 6. DB Migrations | [ ] GO / [ ] NO-GO |
 | 7. No Critical Issues | [ ] GO / [ ] NO-GO |
+| 8. Business Module Maturity | [ ] GO / [ ] NO-GO |
+| 9. Legal Readiness | [ ] GO / [ ] NO-GO |
+| 10. Product Clarity | [ ] GO / [ ] NO-GO |
+| 11. Operational Discipline | [ ] GO / [ ] NO-GO |
 
 **OVERALL:**  [ ] **GO — release approved**   [ ] **NO-GO — do not release**
 
 > All sections must be GO for overall GO.
-> A single NO-GO blocks release unless explicitly accepted with documented reason.
+> A single NO-GO blocks release unless explicitly accepted with documented reason and owner sign-off.
 
 **Approved by:** _________________________  **Date:** ___________

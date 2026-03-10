@@ -363,3 +363,76 @@ where user_id = 'USER_UUID'
   and memory_type like 'shared_%'
 order by created_at desc;
 ```
+
+---
+
+## F. STRATEGIC NON-TECHNICAL READINESS
+
+> Run this section before any external launch, significant scope expansion, or new user acquisition effort.
+> These are not philosophical questions. They are operational checks that determine whether the business layer is aligned with the technical layer.
+
+### F1. Business Module Status Check
+
+**Ask before every release that touches agent behavior:**
+
+| Question | Answer required before proceeding |
+|----------|-----------------------------------|
+| Are marketing/social drafts being treated as unfinished business modules — not as live product features? | Yes / No — if No, halt and resolve |
+| Has any marketing/social `ai_content_drafts` output been used externally without human review? | Must be No |
+| Is the trainer module confirmed as the primary production-ready AI module for this release? | Must be Yes |
+| Is the coach module confirmed as operational (messages generating, `task_id` present)? | Must be Yes |
+
+**Red flag:** If marketing or social agents are being described externally as production features before their business workflow is defined, stop and correct it.
+
+### F2. Legal Gap Status Check
+
+**Ask before any external user acquisition push:**
+
+| Question | Action if not resolved |
+|----------|----------------------|
+| Does a reviewed privacy policy exist that covers AI recommendations and third-party processors? | Block external acquisition |
+| Is there a user-facing AI disclaimer? | Block plan delivery to new users |
+| Has the delete/export flow been tested end-to-end? | Block public launch |
+| Is there a defined data retention policy for `ai_logs`, `ai_tasks`, `ai_messages`? | Document it before scaling |
+| Are there DPAs confirmed with OpenAI, Supabase, Vercel, Stripe? | Required before GDPR-scope user base |
+
+**Check:** See `docs/STRATEGIC_RISK_REGISTER.md` Risk B for full legal gap detail.
+
+### F3. Product Promise Alignment Check
+
+**Ask when the registration flow, homepage, or pricing changes:**
+
+| Question | Why it matters |
+|----------|----------------|
+| Does what we promise on the homepage match what actually happens after registration? | If not, users will churn and trust will erode |
+| Is the paid tier differentiation (START / ON Club / VIP) enforced in the application, not just on the pricing page? | If not, pricing is fiction |
+| Has a real user tested the full flow from homepage → registration → plan receipt → profile view → paid upgrade prompt? | If not, the funnel is theoretical |
+| Is the "hero feature" — the single thing a user would pay for — clearly identified? | If not, conversion optimization has no anchor |
+
+### F4. Complexity Growth Check
+
+**Ask before adding any new AI capability:**
+
+| Question | Acceptable answer |
+|----------|------------------|
+| Has complexity increased since the last release without corresponding user value? | Should be No |
+| Are we adding new AI capabilities faster than we can monitor and govern them? | Should be No |
+| Is there at least one person who can explain the full AI pipeline state from DB alone in under 10 minutes? | Must be Yes |
+| Are all new shared memory types documented in `docs/AI_SHARED_MEMORY.md`? | Must be Yes |
+| Was the complexity governance checklist (`docs/COMPLEXITY_GOVERNANCE.md`) applied to any new feature in this release? | Must be Yes if new features were added |
+
+**Check:** See `docs/COMPLEXITY_GOVERNANCE.md` for the full evaluation framework.
+
+### F5. Strategic Risk Review
+
+Before any significant release:
+
+```
+[ ] docs/STRATEGIC_RISK_REGISTER.md has been reviewed
+[ ] No new P0/P1 strategic risk has been introduced without a mitigation plan
+[ ] Risk B (legal) is not blocking external scale
+[ ] Risk C (product/monetization) has a defined owner and next step
+[ ] Risk D (complexity) has not worsened since last release
+```
+
+**If any item is unchecked:** Document the reason and the owner before proceeding.

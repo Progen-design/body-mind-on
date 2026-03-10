@@ -105,3 +105,67 @@ The operator (Body & Mind ON) is responsible for:
 - Reviewing marketing/social drafts before external use
 - Applying Supabase migrations before deploying code changes
 - Keeping API keys secure and rotating them per security best practices
+
+---
+
+## 8. Product Honesty and Launch Discipline
+
+> This section defines the principle that governs how AI capabilities are represented internally and externally. It exists because the distinction between "technically implemented" and "product-ready" is easily lost under development momentum.
+
+### 8.1 Technical Capability ≠ Product Readiness
+
+A working AI pipeline is not automatically a finished product module. The following conditions must be met before an AI capability is treated as a product feature:
+
+1. **Business workflow defined** — there is a clear process that the capability supports
+2. **Delivery mechanism exists** — the output reaches the right person through the right channel
+3. **Human oversight confirmed** — where required, human review is in place before external exposure
+4. **Measurable value defined** — there is a defined outcome the capability produces
+5. **Failure behavior documented** — it is known what happens when the capability fails
+
+If any of these five conditions is missing, the capability is **technical infrastructure**, not a product module.
+
+### 8.2 Marketing and Social Agent Status
+
+The marketing and social agents are **draft-stage technical infrastructure**.
+
+- They produce `ai_content_drafts` stored with `status: 'draft'`
+- They are not approved for external publication without human review
+- They are not finished business modules
+- They must not be positioned externally as live or production-ready features until all five conditions in 8.1 are met
+
+This is not a temporary limitation — it is the correct state for these modules today. Treating draft-stage infrastructure as a shipped product creates reputational and operational risk.
+
+### 8.3 Trainer and Coach Are the Primary Live Modules
+
+- **Trainer** is the primary production-ready AI module. It generates plans, delivers them by email, retries on failure, and stores outcomes with full provenance.
+- **Coach** is operational. Messages are generated, stored in `ai_messages` with `task_id`, and linked to the task pipeline. The user-facing coach experience is functional but not yet fully designed as a product flow.
+
+All other modules (marketing, social, validators) are supporting infrastructure or draft-stage capabilities.
+
+### 8.4 Complexity Must Be Governed, Not Accumulated
+
+Every new AI capability introduced to the platform increases the attack surface for bugs, the operational monitoring burden, and the cognitive load for anyone maintaining the system.
+
+The rule is simple: **do not add AI capability faster than you can govern it.**
+
+Before adding a new agent, new shared memory type, new event type, or new enrichment behavior:
+- Consult `docs/COMPLEXITY_GOVERNANCE.md`
+- Confirm there is a clear user or business value
+- Confirm there is monitoring and a defined failure behavior
+- Confirm the capability has a defined owner
+
+If these conditions are not met, the feature waits.
+
+### 8.5 The Standard for External Communication
+
+When communicating about the platform externally (marketing, sales, investor conversations, user onboarding), the following standard applies:
+
+| Claim type | Rule |
+|------------|------|
+| "We have an AI trainer that generates your plan" | Accurate — allowed |
+| "We have an AI coach that supports your journey" | Accurate with qualification — allowed |
+| "We have an AI marketing engine" | Not accurate as a finished product — not allowed without qualification |
+| "Our AI social system creates your content" | Not accurate as a finished product — not allowed without qualification |
+| "Everything is fully automated" | Misleading — not allowed |
+
+Honesty about what is finished and what is in development is a product asset, not a weakness.

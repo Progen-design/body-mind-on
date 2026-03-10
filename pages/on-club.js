@@ -181,10 +181,6 @@ export default function OnClubPage() {
           </p>
         </section>
 
-        <div className="reg-notice max-w-3xl mx-auto mb-6" role="note">
-          Registrace proběhne hned po odeslání formuláře. Neomezujeme počet pokusů o registraci, takže když něco opravíš, můžeš formulář odeslat znovu bez čekání.
-        </div>
-
         <div className="progress-bar-wrap max-w-3xl mx-auto mb-8">
           <div className="progress-dots">
             {[1, 2, 3, 4].map((s) => (
@@ -420,16 +416,6 @@ export default function OnClubPage() {
         .progress-dots span.active { background: #0ea5e9; color: #fff; }
         .progress-dots span.done { background: #22c55e; color: #fff; }
         .progress-label { font-size: 14px; color: #94a3b8; margin: 0; font-weight: 500; }
-        .reg-notice {
-          padding: 14px 16px;
-          border-radius: 12px;
-          border: 1px solid rgba(14, 165, 233, 0.35);
-          background: rgba(14, 165, 233, 0.08);
-          color: #cbd5e1;
-          font-size: 14px;
-          line-height: 1.55;
-          text-align: left;
-        }
         .step3-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px 32px; }
         @media (max-width: 640px) { .step3-grid { grid-template-columns: 1fr; } }
         .step3-field { display: flex; flex-direction: column; min-height: 88px; }

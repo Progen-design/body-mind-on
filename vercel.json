@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/daily-digest",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/ai/run-scheduler",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

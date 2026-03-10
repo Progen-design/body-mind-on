@@ -1,8 +1,7 @@
 // /pages/api/body-metrics.js
 import { supabaseServer } from '../../lib/supabaseServer';
-import { generatePlanForEmail } from '../../lib/generatePlan';
 import { createAuthUserIfNew } from '../../lib/authHelpers';
-import { writeAILog } from '../../lib/aiOps';
+import { runAIScheduler } from '../../lib/aiScheduler';
 import { createInitialAITasks } from '../../lib/createInitialAITasks';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getWeeklySessions } from '../../lib/preferenceConstants';
@@ -126,11 +125,27 @@ export default async function handler(req, res) {
 
     console.log(`✅ Data uložena do body_metrics pro ${payload.email}, user_id: ${payload.user_id}`);
 
+    const loginUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '') + '/login';
+    const emailOptions = {
+      loginPassword,
+      loginUrl,
+      existingAccount,
+      loginUnavailable: payload.user_id == null,
+      userChosePassword,
+    };
+
     if (payload.user_id) {
-      const { created } = await createInitialAITasks(payload.user_id);
-      if (created) console.log(`✅ Vytvořeny úvodní AI úkoly pro user_id: ${payload.user_id}`);
+      await createInitialAITasks(payload.user_id, emailOptions);
+      console.log(`✅ Vytvořeny úvodní AI úkoly pro user_id: ${payload.user_id}`);
       await enqueueAIEvent('user_registered', payload.user_id, { program: payload.program || 'START' });
       await triggerImmediateDecision(payload.user_id);
+
+      try {
+        const run = await runAIScheduler();
+        console.log(`✅ Scheduler: ${run.completed} completed, ${run.failed} failed`);
+      } catch (schedErr) {
+        console.warn('⚠️ Scheduler run failed (tasks remain pending):', schedErr?.message);
+      }
     }
 
     // Uložit tier členství do tabulky memberships (upsert – aktualizovat pokud existuje)
@@ -172,52 +187,6 @@ export default async function handler(req, res) {
         const { error: uhErr } = await supabaseServer.from('user_habits').insert(validHabits);
         if (uhErr) console.warn('[body-metrics] user_habits insert:', uhErr.message);
       }
-    }
-
-    let planResult;
-    try {
-      planResult = await generatePlanForEmail(payload.email, {
-        loginPassword,
-        loginUrl: (process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '') + '/login',
-        existingAccount,
-        loginUnavailable: payload.user_id == null,
-        userChosePassword,
-        targetStartDate: new Date(),
-      });
-    } catch (e) {
-      const errMsg = e?.message || String(e);
-      console.error('⚠️ [body-metrics] AI plán – výjimka:', errMsg, e?.stack);
-      await writeAILog({
-        agent_slug: 'trainer',
-        user_id: payload.user_id,
-        status: 'failed',
-        cache_hit: false,
-        duration_ms: 0,
-        message: `body-metrics generatePlanForEmail: ${errMsg}`,
-      });
-      return res.status(200).json({
-        ok: true,
-        message: 'Údaje byly uloženy. Odeslání plánu na e-mail se nepodařilo – zkontroluj prosím spam nebo nás kontaktuj na info@bodyandmindon.cz.',
-        planSent: false,
-      });
-    }
-
-    if (!planResult?.ok) {
-      const errMsg = planResult?.message || 'neznámá chyba';
-      console.error('⚠️ [body-metrics] generatePlanForEmail vrátil chybu:', errMsg);
-      await writeAILog({
-        agent_slug: 'trainer',
-        user_id: payload.user_id,
-        status: 'failed',
-        cache_hit: false,
-        duration_ms: 0,
-        message: `body-metrics planResult: ${errMsg}`,
-      });
-      return res.status(200).json({
-        ok: true,
-        message: 'Údaje byly uloženy. E-mail s plánem se nepodařilo odeslat – zkontroluj spam nebo napiš na info@bodyandmindon.cz.',
-        planSent: false,
-      });
     }
 
     const accountCreated = payload.user_id != null;

@@ -1,10 +1,16 @@
 // /components/PlanViewer.js – Grafické zobrazení AI plánu (wow efekt, obrázky u jídel)
+//
+// NO LIES UI RULE: Frontend must not display media in a way that misleads about trust.
+// - illustrative ≠ exact  |  fallback ≠ verified  |  none ≠ broken image
+// Trust labels and placeholders reflect backend image_trust_level / trust_level.
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
 
-// Obrázky jídel – NEJDELŠÍ SHODA. Žádný obecný klíč „zelenina“ (dával by všem stejnou mísu). Jen konkrétní jídla.
+// Static meal fallbacks: used ONLY when no trust metadata exists (e.g. legacy/incomplete enrichment).
+// They must never override backend truth: when meal_trust says "none" or no image_url, we show placeholder.
+// When used, the UI must label the result as "Ilustrační foto", never as exact.
 const DISH_IMAGES = [
   { keys: ['palačinky z mandlové', 'palacinky z mandlove', 'palačinky', 'palacinky', 'pancake'], url: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=280&fit=crop' },
   { keys: ['chia pudink s kokosovým', 'chia pudink s kokosovym', 'chia pudink', 'chia pudding'], url: 'https://images.unsplash.com/photo-1517673132405-a56a62b18ddb?w=400&h=280&fit=crop' },
@@ -52,7 +58,7 @@ const DISH_IMAGES = [
   { keys: ['snídaně', 'snidane'], url: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=400&h=280&fit=crop' },
   { keys: ['svačina', 'svacina'], url: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=280&fit=crop' },
 ];
-const DEFAULT_MEAL_IMAGE = 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop';
+const DEFAULT_MEAL_IMAGE = 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop'; // Used only by getMealImageByDish when no trust data; never as onError fallback (would mask trust).
 
 const PERSONAL_ICONS = {
   'Věk': '🎂',
@@ -130,6 +136,27 @@ function getEnrichedMealImage(mealText, mealImagesMap = {}) {
   }
 
   return bestKey ? mealImagesMap[bestKey] : null;
+}
+
+/**
+ * Resolve trust metadata for a meal using the same key resolution as getEnrichedMealImage.
+ * Returns { image_url, image_trust_level, exact_source, illustrative_source } or null.
+ * NO LIES UI RULE: Frontend must not display media in a way that misleads about trust.
+ */
+function getEnrichedMealTrust(mealText, mealTrustMap = {}) {
+  const source = String(mealText || '').replace(/^[^:]+:\s*/i, '').trim();
+  const key = normalizeLookupKey(source);
+  if (!key) return null;
+
+  let bestKey = '';
+  for (const candidateKey of Object.keys(mealTrustMap || {})) {
+    if (!candidateKey) continue;
+    if (key.includes(candidateKey) || candidateKey.includes(key)) {
+      if (candidateKey.length > bestKey.length) bestKey = candidateKey;
+    }
+  }
+
+  return bestKey ? mealTrustMap[bestKey] : null;
 }
 
 function getExerciseMediaFromItemText(itemText, exerciseMediaMap = {}) {
@@ -669,7 +696,11 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
   const [expandedTrainingKey, setExpandedTrainingKey] = useState(null); // 'dayIdx-itemIdx' – rozbalený cvik (detail Ve fitku / Doma)
   const [expandedDays, setExpandedDays] = useState(null); // null = dnes rozbalený; Set(di) = které dny jsou rozbalené
   const [mealImagesMap, setMealImagesMap] = useState({});
+  const [mealTrustMap, setMealTrustMap] = useState({});
   const [exerciseMediaMap, setExerciseMediaMap] = useState({});
+  /** Keys of meal cards whose image failed to load — show placeholder instead of broken/static fallback (NO LIES UI RULE). */
+  const [mealImageErrorKeys, setMealImageErrorKeys] = useState(() => new Set());
+  const [exerciseMediaErrorKeys, setExerciseMediaErrorKeys] = useState(() => new Set());
   const recipeOpenIdRef = useRef(0);
   const recipeCacheRef = useRef(new Map()); // dish -> html, 5 min TTL
 
@@ -724,6 +755,7 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
   useEffect(() => {
     if (!plan?.plan_html || typeof document === 'undefined') {
       setMealImagesMap({});
+      setMealTrustMap({});
       setExerciseMediaMap({});
       return;
     }
@@ -744,10 +776,14 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
         const data = await res.json();
         if (cancelled) return;
         setMealImagesMap(data?.meal_images && typeof data.meal_images === 'object' ? data.meal_images : {});
+        setMealTrustMap(data?.meal_trust && typeof data.meal_trust === 'object' ? data.meal_trust : {});
         setExerciseMediaMap(data?.exercise_media && typeof data.exercise_media === 'object' ? data.exercise_media : {});
+        setMealImageErrorKeys(new Set());
+        setExerciseMediaErrorKeys(new Set());
       } catch (_) {
         if (!cancelled) {
           setMealImagesMap({});
+          setMealTrustMap({});
           setExerciseMediaMap({});
         }
       }
@@ -1075,18 +1111,50 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                         };
                         const mealTextForPin = override ? (override.title || '') : (meal.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().replace(/\s*\([^)]*\)\s*$/g, '').trim();
                         const mealPinned = isPinned(meal.type || '', mealTextForPin);
-                        const dynamicMealImage = getEnrichedMealImage(mealFullText || meal.text || meal.type, mealImagesMap);
-                        const mealImageSrc = dynamicMealImage || getMealImageByDish(mealFullText || meal.text || meal.type);
+                        const mealTrust = getEnrichedMealTrust(mealFullText || meal.text || meal.type, mealTrustMap);
+                        const enrichedUrl = getEnrichedMealImage(mealFullText || meal.text || meal.type, mealImagesMap);
+                        const dishFallbackUrl = getMealImageByDish(mealFullText || meal.text || meal.type);
+                        // NO LIES UI RULE: Backend none = no fake image. illustrative ≠ exact. Never use static fallback when trust says none.
+                        let resolvedUrl = null;
+                        let trustLevel = 'none';
+                        if (mealTrust) {
+                          trustLevel = mealTrust.image_trust_level ?? 'none';
+                          if (trustLevel === 'exact') {
+                            resolvedUrl = mealTrust.image_url ?? null; // exact badge only when we have trust URL
+                          } else if (trustLevel === 'illustrative') {
+                            resolvedUrl = mealTrust.image_url ?? enrichedUrl ?? null;
+                          }
+                          // When trust is "none": resolvedUrl stays null — do not use enrichedUrl or dishFallbackUrl.
+                        } else {
+                          // No trust data (legacy/incomplete enrichment): static fallback allowed, but always label as illustrative.
+                          resolvedUrl = enrichedUrl ?? dishFallbackUrl ?? null;
+                          trustLevel = resolvedUrl ? 'illustrative' : 'none';
+                        }
+                        const mealCardKey = `meal-${di}-${mi}-${normalizeLookupKey(mealFullText || meal.text || meal.type).slice(0, 40)}`;
+                        const imageLoadFailed = mealImageErrorKeys.has(mealCardKey);
+                        const showMealImage = !imageLoadFailed && (trustLevel === 'exact' || trustLevel === 'illustrative') && !!resolvedUrl;
                         return (
                           <div key={mi} className="plan-meal-card">
                             <button type="button" className="plan-meal-image-wrap" onClick={openRecipe} title="Klikni pro zobrazení receptu">
-                              <img
-                                src={mealImageSrc}
-                                alt=""
-                                className="plan-meal-image"
-                                onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_MEAL_IMAGE; }}
-                              />
+                              {showMealImage ? (
+                                <img
+                                  src={resolvedUrl}
+                                  alt=""
+                                  className="plan-meal-image"
+                                  onError={() => setMealImageErrorKeys((prev) => new Set([...prev, mealCardKey]))}
+                                />
+                              ) : (
+                                <div className="plan-meal-no-image" aria-hidden>
+                                  <span className="plan-meal-no-image-text">Bez ověřeného obrázku</span>
+                                </div>
+                              )}
                               <span className="plan-meal-type">{meal.type}</span>
+                              {showMealImage && (
+                                <span className={`plan-trust-badge plan-trust-badge-meal plan-trust-badge-${trustLevel}`} title={trustLevel === 'exact' ? 'Obrázek odpovídá nalezenému receptu' : trustLevel === 'illustrative' ? 'Orientační vizuál' : ''}>
+                                  {trustLevel === 'exact' && <>Přesný zdroj{mealTrust?.exact_source === 'spoonacular' ? <span className="plan-trust-sublabel"> Spoonacular</span> : null}</>}
+                                  {trustLevel === 'illustrative' && <>Ilustrační foto{mealTrust?.illustrative_source === 'pexels' ? <span className="plan-trust-sublabel"> Pexels</span> : null}</>}
+                                </span>
+                              )}
                               <span className="plan-meal-recept-badge">Klikni pro recept</span>
                             </button>
                             <div className="plan-meal-body">
@@ -1223,8 +1291,11 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                                 const iconType = getExerciseIconType(item.text);
                                 const equipment = getSafeEquipment(iconType);
                                 const exerciseMedia = getExerciseMediaFromItemText(item.text, exerciseMediaMap);
-                                const exerciseThumb = exerciseMedia?.gif_url || exerciseMedia?.image_url || null;
+                                const exTrustLevel = exerciseMedia?.trust_level ?? 'none';
+                                const exerciseThumb = (exTrustLevel !== 'none') ? (exerciseMedia?.gif_url || exerciseMedia?.image_url || null) : null;
                                 const itemKey = `training-${di}-${idx}`;
+                                const exerciseThumbFailed = exerciseMediaErrorKeys.has(itemKey);
+                                const showExerciseThumb = exerciseThumb && !exerciseThumbFailed;
                                 const isExpanded = expandedTrainingKey === itemKey;
                                 const hasDetail = (equipment.machine || equipment.home) && iconType !== 'total';
                                 return (
@@ -1233,14 +1304,24 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                                       <ExerciseIcon type={iconType} />
                                     </span>
                                     <div className="plan-day-training-body">
-                                      {exerciseThumb && (
-                                        <img
-                                          src={exerciseThumb}
-                                          alt=""
-                                          className="plan-day-training-thumb"
-                                          loading="lazy"
-                                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                                        />
+                                      {showExerciseThumb ? (
+                                        <>
+                                          <img
+                                            src={exerciseThumb}
+                                            alt=""
+                                            className="plan-day-training-thumb"
+                                            loading="lazy"
+                                            onError={() => setExerciseMediaErrorKeys((prev) => new Set([...prev, itemKey]))}
+                                          />
+                                          <span className={`plan-trust-badge plan-trust-badge-exercise plan-trust-badge-${exTrustLevel}`} title={exTrustLevel === 'exact' ? 'Vizuál odpovídá rozpoznanému cviku' : exTrustLevel === 'fallback' ? 'Náhradní vizuál' : ''}>
+                                            {exTrustLevel === 'exact' && <>Ověřený cvik{exerciseMedia?.source && exerciseMedia.source !== 'none' ? <span className="plan-trust-sublabel"> {exerciseMedia.source === 'exercisedb' ? 'ExerciseDB' : exerciseMedia.source}</span> : null}</>}
+                                            {exTrustLevel === 'fallback' && 'Ilustrační foto'}
+                                          </span>
+                                        </>
+                                      ) : (
+                                        <div className="plan-exercise-no-media" aria-hidden>
+                                          <span className="plan-exercise-no-media-text">Bez ověřeného média</span>
+                                        </div>
                                       )}
                                       {hasDetail ? (
                                         <button
@@ -2165,6 +2246,50 @@ const planSectionStyles = `
     font-size: 11px;
     font-weight: 600;
   }
+  .plan-trust-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.3;
+    pointer-events: none;
+  }
+  .plan-trust-badge-meal { top: 38px; }
+  .plan-trust-badge-exact {
+    background: rgba(34, 197, 94, 0.9);
+    color: #fff;
+  }
+  .plan-trust-badge-illustrative, .plan-trust-badge-fallback {
+    background: rgba(148, 163, 184, 0.9);
+    color: #0f172a;
+  }
+  .plan-trust-badge-none {
+    background: rgba(71, 85, 105, 0.85);
+    color: #e2e8f0;
+  }
+  .plan-trust-sublabel { opacity: 0.9; font-size: 9px; font-weight: 500; }
+  .plan-meal-no-image, .plan-exercise-no-media {
+    width: 100%;
+    height: 100%;
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px dashed rgba(148, 163, 184, 0.4);
+    border-radius: 10px;
+  }
+  .plan-meal-no-image { height: 140px; min-height: 140px; }
+  .plan-meal-no-image-text, .plan-exercise-no-media-text {
+    font-size: 12px;
+    color: #94a3b8;
+    padding: 0 12px;
+    text-align: center;
+  }
+  .plan-trust-badge-exercise { position: relative; top: 0; margin-top: 4px; display: inline-block; }
   .plan-recipe-modal-overlay {
     position: fixed;
     inset: 0;

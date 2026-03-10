@@ -85,6 +85,30 @@ and column_name in ('idempotency_key','source_event_id','processing_started_at',
 
 ---
 
+## 3b. Supabase: governed agent seed (instrukce a modely)
+
+> Po 20260315 (nebo když už existuje `ai_agents`) spusť **governance seed** – nastaví všem agentům jednotné instrukce a modely (trainer = gpt-4.1, ostatní = gpt-4.1-mini). Viz `docs/AI_AGENT_GOVERNANCE.md`.
+
+### Postup:
+
+1. Supabase Dashboard → SQL Editor
+2. Otevři `supabase/migrations/20260316_ai_agents_governed_seed.sql`
+3. Zkopíruj celý obsah a spusť
+4. Ověř: žádná `ERROR:` (WARNING je OK)
+
+### Ověření:
+
+```sql
+select slug, model, left(system_prompt, 60) as prompt_preview from ai_agents order by slug;
+-- trainer musí mít model = gpt-4.1, ostatní gpt-4.1-mini
+-- system_prompt u každého musí být neprázdný
+```
+
+- [ ] `ai_agents` – 6 řádků (trainer, coach, marketing, social, nutrition_validator, training_validator)
+- [ ] trainer.model = `gpt-4.1`, ostatní = `gpt-4.1-mini`
+
+---
+
 ## 4. Vercel deploy
 
 ```bash

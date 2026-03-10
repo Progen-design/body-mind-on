@@ -107,6 +107,11 @@ export default async function handler(req, res) {
           error: 'S tímto e-mailem už máš účet. Přihlas se nebo obnov heslo na app.bodyandmindon.cz.',
         });
       }
+      if (isServerAuthConfigError(authResult.error)) {
+        return res.status(503).json({
+          error: 'Registrace je teď dočasně nedostupná kvůli nastavení serveru. Zkus to prosím za chvíli znovu.',
+        });
+      }
       const userMessage = toUserFriendlyAuthError(authResult.error);
       return res.status(400).json({ error: userMessage });
     } else {
@@ -236,7 +241,24 @@ function toUserFriendlyAuthError(message) {
   if (m.includes('email') && (m.includes('invalid') || m.includes('valid')))
     return 'Zadej platnou e-mailovou adresu.';
   if (m.includes('already') || m.includes('registered')) return 'S tímto e-mailem už máš účet. Přihlas se nebo obnov heslo na app.bodyandmindon.cz.';
-  return 'Nepodařilo se vytvořit účet. Zkontroluj údaje (heslo alespoň 6 znaků) a zkus to znovu.';
+  if (isServerAuthConfigError(message))
+    return 'Registrace je teď dočasně nedostupná kvůli nastavení serveru. Zkus to prosím za chvíli znovu.';
+  return 'Nepodařilo se vytvořit účet. Zkontroluj údaje a zkus to znovu.';
+}
+
+function isServerAuthConfigError(message) {
+  if (!message || typeof message !== 'string') return false;
+  const m = message.toLowerCase();
+  return (
+    m.includes('invalid api key') ||
+    m.includes('unauthorized') ||
+    m.includes('not authorized') ||
+    m.includes('service_role') ||
+    m.includes('service role') ||
+    m.includes('jwt') ||
+    m.includes('permission denied') ||
+    m.includes('user not allowed')
+  );
 }
 
 function toNum(v) {

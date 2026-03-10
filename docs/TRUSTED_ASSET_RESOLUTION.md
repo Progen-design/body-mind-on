@@ -64,20 +64,35 @@ The score (0..1) considers:
 4. **Image bonus**: recipe includes an image (+0.05)
 5. **Zero-overlap penalty**: if no words match, score is capped at 0.05
 
-### Dual-candidate scoring (important)
+### Dual-candidate scoring
 
 When searching via English translation candidates, the Spoonacular result may be
 correct but the score against the original Czech name is near-zero (no word overlap).
 
-To fix this, the score is now computed against **both** the original Czech meal name
-**and** the search candidate that found the recipe. The maximum is taken:
+The score is computed against **both** the original Czech meal name and the search candidate
+that found the recipe. The maximum is taken:
 
 ```
 final_score = max(scoreMealMatch(originalMealName, recipe), scoreMealMatch(searchCandidate, recipe))
 ```
 
 This prevents penalising a correct English match just because the original query was Czech.
-The threshold (0.75) is unchanged — only the evaluation angle is fairer.
+The threshold (0.75) is unchanged.
+
+### Shortlist evaluation (top 3 per candidate)
+
+Spoonacular is queried with `number=3` — returning up to 3 results per search candidate.
+All results across all candidates are scored. The best recipe is selected by
+`chooseBestMealRecipe()` using the following priority:
+
+1. Highest `scoreFinal`
+2. Tie-break: recipe has image
+3. Tie-break: recipe has nutrition data
+4. Tie-break: shorter/more specific title
+
+This prevents the resolver from being stuck on a weak first result when a better
+match is available in the same Spoonacular response. Same number of API calls,
+significantly more evaluated candidates per call.
 
 ### Why Pexels is always illustrative
 

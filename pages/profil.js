@@ -13,12 +13,14 @@ import WelcomeTour from '../components/WelcomeTour';
 import PlanViewer, { parsePlanHtml } from '../components/PlanViewer';
 import HabitTracker from '../components/HabitTracker';
 import HabitEntryWizard from '../components/HabitEntryWizard';
-import HabitSelection from '../components/HabitSelection';
 import Toast from '../components/Toast';
+import WorkoutOverlay from '../components/profile/WorkoutOverlay';
+import PreferencesOverlay from '../components/profile/PreferencesOverlay';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
 import { getHabitById } from '../lib/habits';
 import { normalizeOccupationForForm, activityToFormLabel, goalToFormLabel } from '../lib/preferenceConstants';
+import { useProfileData } from '../hooks/useProfileData';
 
 const PROGRAM_LABELS = {
   START: { subtitle: 'Každý trénink, každé měření.' },
@@ -250,9 +252,31 @@ export default function Profil() {
   const renderPortal = (node) => (typeof document !== 'undefined' ? createPortal(node, document.body) : null);
   const router = useRouter();
   const [session, setSession] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [authReady, setAuthReady] = useState(false);
+
+  const {
+    profile,
+    setProfile,
+    loading: profileLoading,
+    error: profileError,
+    refetch,
+    profileRef,
+  } = useProfileData({
+    accessToken: session?.access_token ?? null,
+    enabled: !!session?.access_token,
+    refreshSession: async () => {
+      const { data: { session: s } } = await supabase.auth.refreshSession();
+      return s;
+    },
+    onSessionRefreshed: (s) => setSession(s),
+    onAuthFailure: async () => {
+      await supabase.auth.signOut();
+      router.replace('/login');
+    },
+  });
+
+  const loading = !authReady || profileLoading;
+  const error = profileError;
 
   const [showWorkoutModal, setShowWorkoutModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -273,8 +297,6 @@ export default function Profil() {
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [mindsetTipFromPlan, setMindsetTipFromPlan] = useState('');
-  const [workoutModalAnchor, setWorkoutModalAnchor] = useState(null);
-  const [preferencesModalAnchor, setPreferencesModalAnchor] = useState(null);
   const [trainerSchedule, setTrainerSchedule] = useState({ events: [], connected: false });
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [scheduleRefreshAt, setScheduleRefreshAt] = useState(0);
@@ -289,7 +311,7 @@ export default function Profil() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState('');
   const avatarInputRef = useRef(null);
-  const anyProfileModalOpen = showWorkoutModal || showPreferencesModal || showSettingsModal || showDeleteAccountModal;
+  const anyProfileModalOpen = showSettingsModal || showDeleteAccountModal;
   const [avatarCrop, setAvatarCrop] = useState({ open: false, src: null, file: null, offset: { x: 0, y: 0 }, size: { w: 0, h: 0 }, dragStart: null });
   const avatarCropImageRef = useRef(null);
   const avatarCropContainerRef = useRef(null);
@@ -344,10 +366,6 @@ export default function Profil() {
   });
   const WORKOUT_DAY_LABELS = [{ v: 1, label: 'Po' }, { v: 2, label: 'Út' }, { v: 3, label: 'St' }, { v: 4, label: 'Čt' }, { v: 5, label: 'Pá' }, { v: 6, label: 'So' }, { v: 0, label: 'Ne' }];
 
-  const profileRef = useRef(null);
-  const lastMutatedAtRef = useRef(0);
-  const workoutDateInputRef = useRef(null);
-  useEffect(() => { profileRef.current = profile; }, [profile]);
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const prevScrollRestoration = window.history?.scrollRestoration;
@@ -374,88 +392,9 @@ export default function Profil() {
 
   const fetchOptions = { cache: 'no-store' };
 
-  const fetchProfileWithToken = (accessToken, currentProfileForSkip) =>
-    fetch(`/api/profile?t=${Date.now()}`, {
-      ...fetchOptions,
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) {
-          setError(data.error);
-          return { error: data.error };
-        }
-        const sortedWorkouts = Array.isArray(data.workouts)
-          ? [...data.workouts].sort((a, b) => {
-              const dateA = (a.workout_date || '').toString();
-              const dateB = (b.workout_date || '').toString();
-              return dateB.localeCompare(dateA);
-            })
-          : [];
-        const sortedMetrics = Array.isArray(data.body_metrics)
-          ? [...data.body_metrics].sort((a, b) => {
-              const dateA = (a.created_at || '').toString();
-              const dateB = (b.created_at || '').toString();
-              return dateB.localeCompare(dateA);
-            })
-          : [];
-        const freshProfile = {
-          user: data.user ? { ...data.user } : null,
-          body_metrics: sortedMetrics,
-          user_habits: Array.isArray(data.user_habits) ? [...data.user_habits] : [],
-          workouts: sortedWorkouts,
-          plans: Array.isArray(data.plans) ? [...data.plans] : [],
-          weight_history: Array.isArray(data.weight_history) ? [...data.weight_history] : [],
-          stats: data.stats ? { ...data.stats } : {},
-          habit_summary_7d: data.habit_summary_7d ? { ...data.habit_summary_7d } : null,
-          program: data.program || 'START',
-          membershipStatus: data.membershipStatus || 'active',
-          membershipSince: data.membershipSince || null,
-          trialEndsAt: data.trialEndsAt || null,
-          isTrialExpired: data.isTrialExpired === true,
-          daysUntilTrialEnd: data.daysUntilTrialEnd != null ? data.daysUntilTrialEnd : null,
-          can_create_calendar_events: data.can_create_calendar_events === true,
-          _updated: Date.now(),
-        };
-        let skipped = false;
-        setProfile((prev) => {
-          if (!prev) return freshProfile;
-          const justMutated = lastMutatedAtRef.current && (Date.now() - lastMutatedAtRef.current) < 2500;
-          if (justMutated) {
-            skipped = true;
-            return prev;
-          }
-          const nw = prev.workouts?.length ?? 0;
-          const nm = prev.body_metrics?.length ?? 0;
-          if (sortedWorkouts.length < nw || sortedMetrics.length < nm) {
-            skipped = true;
-            return prev;
-          }
-          return freshProfile;
-        });
-        setError('');
-        return { ok: true, skipped };
-      })
-      .catch((err) => {
-        console.error('Fetch profile error:', err);
-        setError('Chyba při načítání profilu');
-        return { error: err.message };
-      });
-
-  const refetchProfile = (token, currentProfileForSkip) => {
-    const t = token ?? session?.access_token;
-    if (!t) return Promise.resolve();
-    return fetchProfileWithToken(t, currentProfileForSkip);
-  };
-
+  // Auth only – profile fetch is handled by useProfileData
   useEffect(() => {
     let cancelled = false;
-    const timeoutId = setTimeout(() => {
-      if (!cancelled) {
-        setLoading(false);
-        setError('Načítání trvalo příliš dlouho. Zkontroluj připojení a obnov stránku.');
-      }
-    }, 15000);
     (async () => {
       const { data: { session: s }, error: sessionErr } = await supabase.auth.getSession();
       if (cancelled) return;
@@ -466,34 +405,9 @@ export default function Profil() {
       const { data: { session: fresh }, error: refreshErr } = await supabase.auth.refreshSession();
       const sessionToUse = !refreshErr && fresh ? fresh : s;
       setSession(sessionToUse);
-
-      let result = await fetchProfileWithToken(sessionToUse.access_token);
-      if (cancelled) return;
-      if (result?.error === 'Neplatná session' || result?.error === 'Nejste přihlášen') {
-        const { data: { session: retrySession } } = await supabase.auth.refreshSession();
-        if (retrySession) {
-          result = await fetchProfileWithToken(retrySession.access_token);
-          if (result?.ok) setSession(retrySession);
-        }
-        if (cancelled) return;
-        if (result?.error) {
-          await supabase.auth.signOut();
-          router.replace('/login');
-          return;
-        }
-      }
-    })()
-      .catch(() => { if (!cancelled) setError('Nepodařilo se načíst profil.'); })
-      .finally(() => {
-        if (!cancelled) {
-          clearTimeout(timeoutId);
-          setLoading(false);
-        }
-      });
-    return () => {
-      cancelled = true;
-      clearTimeout(timeoutId);
-    };
+      if (!cancelled) setAuthReady(true);
+    })();
+    return () => { cancelled = true; };
   }, [router]);
 
   /** Normalizuje freq_choice/weekly_sessions_user na hodnotu pro select (1-2x | 2-3x | 4-5x týdně). */
@@ -512,88 +426,66 @@ export default function Profil() {
     return '';
   };
 
-  const getAnchoredModalStyle = (triggerEl, modalWidth, estimatedHeight = 560) => {
-    if (typeof window === 'undefined' || !triggerEl) return null;
-    const rect = triggerEl.getBoundingClientRect();
-    const pad = 12;
-    const viewportW = window.innerWidth;
-    const viewportH = window.innerHeight;
-    const effectiveWidth = Math.min(modalWidth, Math.max(280, viewportW - pad * 2));
-    let left = rect.left + rect.width / 2 - effectiveWidth / 2;
-    left = Math.max(pad, Math.min(left, viewportW - effectiveWidth - pad));
-    let top = rect.bottom + 10;
-    const minVisibleHeight = 220;
-    const spaceBelow = viewportH - top - pad;
-    if (spaceBelow < minVisibleHeight) {
-      top = Math.max(pad, rect.top - estimatedHeight - 10);
-    }
-    const maxHeight = Math.max(minVisibleHeight, viewportH - top - pad);
-    return {
-      position: 'fixed',
-      top: `${Math.round(top)}px`,
-      left: `${Math.round(left)}px`,
-      width: `${Math.round(effectiveWidth)}px`,
-      maxWidth: `${Math.round(effectiveWidth)}px`,
-      margin: 0,
-      maxHeight: `${Math.round(maxHeight)}px`,
-    };
+  const openWorkoutWorkspace = () => {
+    setWorkoutError('');
+    setWorkoutForm((current) => ({
+      ...current,
+      workout_date: current.workout_date || getLocalDateStr(new Date()),
+      duration_min: Number(current.duration_min) > 0 ? current.duration_min : 45,
+    }));
+    setShowWorkoutModal(true);
+  };
+
+  const closeWorkoutWorkspace = () => {
+    if (savingWorkout) return;
+    setShowWorkoutModal(false);
+    setWorkoutError('');
+  };
+
+  const openPreferencesWorkspace = () => {
+    const lm = profile?.body_metrics?.[0];
+    const freq = getFreqFromMetrics(lm);
+    const wdRaw = lm?.workout_days;
+    const workoutDays = (
+      Array.isArray(wdRaw)
+        ? wdRaw
+        : typeof wdRaw === 'string' && wdRaw
+          ? wdRaw.split(',').map((s) => Number(s.trim()))
+          : []
+    ).filter((n) => Number.isFinite(n) && n >= 0 && n <= 6);
+
+    setPreferencesError('');
+    setPreferencesForm({
+      activity: activityToFormLabel(lm?.activity) || '',
+      stress_level: lm?.stress_level ?? '',
+      occupation: normalizeOccupationForForm(lm?.occupation) || '',
+      goal: goalToFormLabel(lm?.goal) || '',
+      freq_choice: freq,
+      frequency: freq,
+      workout_days: workoutDays,
+      diet_type: lm?.diet_type ?? '',
+      dietary_restrictions: lm?.dietary_restrictions ?? '',
+      foods_to_avoid: lm?.foods_to_avoid ?? '',
+      selected_habits: (profile?.user_habits || []).map((h) => h.habit_id).filter(Boolean),
+    });
+    setShowPreferencesModal(true);
+  };
+
+  const closePreferencesWorkspace = () => {
+    if (savingPreferences) return;
+    setShowPreferencesModal(false);
+    setPreferencesError('');
   };
 
   useEffect(() => {
     if (router.query.edit === 'preferences' && profile && !profile?.can_create_calendar_events) {
-      const lm = profile?.body_metrics?.[0];
-      const freq = getFreqFromMetrics(lm);
-      setPreferencesForm({
-        activity: activityToFormLabel(lm?.activity) || '',
-        stress_level: lm?.stress_level ?? '',
-        occupation: normalizeOccupationForForm(lm?.occupation) || '',
-        goal: goalToFormLabel(lm?.goal) || '',
-        freq_choice: freq,
-        frequency: freq,
-        diet_type: lm?.diet_type ?? '',
-        dietary_restrictions: lm?.dietary_restrictions ?? '',
-        foods_to_avoid: lm?.foods_to_avoid ?? '',
-        selected_habits: (profile?.user_habits || []).map((h) => h.habit_id).filter(Boolean),
-      });
-      setPreferencesModalAnchor(null);
-      setShowPreferencesModal(true);
+      openPreferencesWorkspace();
       router.replace('/profil', undefined, { shallow: true });
     }
   }, [router.query.edit, profile]);
 
-  // Automatické obnovení dat méně často (3 min), aby stránka ne„přeskakovala“
-  useEffect(() => {
-    if (!session?.access_token || loading) return;
-    const interval = setInterval(async () => {
-      try {
-        const { data: { session: fresh } } = await supabase.auth.refreshSession();
-        const token = fresh?.access_token ?? session?.access_token;
-        if (token) await refetchProfile(token);
-      } catch (err) {}
-    }, 180000);
-    return () => clearInterval(interval);
-  }, [session, loading]);
-
-  // Refetch při návratu na záložku jen pokud byla skrytá aspoň 60 s (sníží „přeskakování“)
-  useEffect(() => {
-    if (!session?.access_token) return;
-    let hiddenAt = null;
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        hiddenAt = Date.now();
-      } else if (document.visibilityState === 'visible' && hiddenAt != null) {
-        const hiddenDuration = Date.now() - hiddenAt;
-        if (hiddenDuration >= 60000) refetchProfile(session.access_token, profileRef.current);
-        hiddenAt = null;
-      }
-    };
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
-  }, [session?.access_token]);
-
-
-  // Když se otevře modal, zarovnej stránku nahoru a zamkni scroll pod overlayem,
-  // aby se formulář otevíral hned u horní hrany místo "dole".
+  // Menší dialogy drží původní scroll-lock zde; fullscreen workspace overlaye
+  // si zamykají scroll samostatně, aby se nemíchaly různé modal patterny.
   useEffect(() => {
     if (!anyProfileModalOpen || typeof window === 'undefined' || typeof document === 'undefined') {
       return undefined;
@@ -606,11 +498,7 @@ export default function Profil() {
     document.body.style.overflow = 'hidden';
     document.documentElement.style.overflow = 'hidden';
 
-    const shouldForceTop =
-      showSettingsModal ||
-      showDeleteAccountModal ||
-      (showWorkoutModal && !workoutModalAnchor) ||
-      (showPreferencesModal && !preferencesModalAnchor);
+    const shouldForceTop = showSettingsModal || showDeleteAccountModal;
     if (shouldForceTop) {
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }
@@ -647,7 +535,7 @@ export default function Profil() {
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
     };
-  }, [anyProfileModalOpen, showWorkoutModal, showPreferencesModal, showSettingsModal, showDeleteAccountModal, workoutModalAnchor, preferencesModalAnchor]);
+  }, [anyProfileModalOpen, showSettingsModal, showDeleteAccountModal]);
 
   // Habit wizard jen pro ON Club a VIP; průvodce (tour) jen pro ON Club a VIP – START to mít nesmí (přidaná hodnota)
   useEffect(() => {
@@ -842,7 +730,6 @@ export default function Profil() {
 
       const json = await res.json();
       if (res.ok && json.workout) {
-        lastMutatedAtRef.current = Date.now();
         const newWorkout = { ...json.workout, id: json.workout.id ?? `new-${Date.now()}` };
         setProfile((p) => {
           const prev = p || {};
@@ -865,7 +752,7 @@ export default function Profil() {
           };
         });
         
-        // Zavřít modal a resetovat formulář OKAMŽITĚ
+        // Zavřít workspace a resetovat formulář
         setWorkoutForm({
           workout_date: getLocalDateStr(new Date()),
           workout_type: 'silovy',
@@ -876,7 +763,6 @@ export default function Profil() {
           perceived_difficulty: '',
         });
         setShowWorkoutModal(false);
-        setWorkoutModalAnchor(null);
         if (fresh) setSession(fresh);
         
         // Automaticky označit habit "Trénink" jako splněný pro datum tréninku
@@ -892,9 +778,8 @@ export default function Profil() {
         setToast({ message: 'Trénink úspěšně přidán! 🏋️ Habit "Trénink" byl automaticky označen jako splněný.', type: 'success' });
         (async () => {
           try {
-            await new Promise(resolve => setTimeout(resolve, 2500));
-            lastMutatedAtRef.current = 0;
-            await refetchProfile(token, profileRef.current);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await refetch(token);
           } catch (err) {
             console.warn('Background refetch failed:', err);
           }
@@ -945,13 +830,10 @@ export default function Profil() {
         
         // Zobrazit toast notifikaci
         setToast({ message: 'Trénink smazán', type: 'info' });
-        
-        lastMutatedAtRef.current = Date.now();
         (async () => {
           try {
-            await new Promise(resolve => setTimeout(resolve, 2500));
-            lastMutatedAtRef.current = 0;
-            await refetchProfile(token, profileRef.current);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await refetch(token);
           } catch (err) {
             console.warn('Background refetch failed:', err);
           }
@@ -986,7 +868,6 @@ export default function Profil() {
       });
       const json = await res.json();
       if (res.ok && json.metric) {
-        lastMutatedAtRef.current = Date.now();
         const metric = {
           ...json.metric,
           date: json.metric.date || (json.metric.created_at ? String(json.metric.created_at).slice(0, 10) : weightForm.date),
@@ -1019,9 +900,8 @@ export default function Profil() {
         setToast({ message: 'Váha úspěšně přidána! ⚖️', type: 'success' });
         (async () => {
           try {
-            await new Promise(resolve => setTimeout(resolve, 2500));
-            lastMutatedAtRef.current = 0;
-            await refetchProfile(token, profileRef.current);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await refetch(token);
           } catch (err) {
             console.warn('Background refetch failed:', err);
           }
@@ -1072,8 +952,7 @@ export default function Profil() {
         }));
         setShowSettingsModal(false);
         setToast({ message: 'Údaje pro výpočet uloženy.', type: 'success' });
-        const result = await refetchProfile(token);
-        if (result?.ok) setProfile((prev) => ({ ...prev, _updated: Date.now() }));
+        await refetch(token);
       } else {
         setSettingsError(json.error || 'Nepodařilo se uložit.');
       }
@@ -1122,11 +1001,13 @@ export default function Profil() {
       const json = await res.json();
       if (res.ok && json.ok) {
         setShowPreferencesModal(false);
-        setPreferencesModalAnchor(null);
-        setToast({ message: json.message || 'Preference uloženy a plán přegenerován.', type: 'success' });
-        lastMutatedAtRef.current = Date.now();
-        const result = await refetchProfile(token, profile);
-        if (result?.ok) setProfile((prev) => ({ ...prev, _updated: Date.now() }));
+        setToast({
+          message: json.planRegenerated
+            ? 'Preference byly uloženy a plán byl aktualizován.'
+            : 'Preference byly uloženy. Aktualizace plánu se dokončí následně nebo ji bude potřeba zopakovat.',
+          type: 'success',
+        });
+        await refetch(token);
       } else {
         setPreferencesError(json.error || 'Nepodařilo se uložit.');
       }
@@ -1256,8 +1137,6 @@ export default function Profil() {
     }
     openAvatarCropModal(file);
   }
-
-  if (!session && !loading) return null;
 
   // Všechny parametry se přepočítají při každé změně profile (trénink, váha)
   // Použít _updated timestamp jako závislost, aby se vždy přepočítalo při změně
@@ -1456,8 +1335,7 @@ export default function Profil() {
       const json = await res.json();
       if (res.ok && json.ok) {
         setToast({ message: 'Jídelníček na příští týden vygenerován. Zkontroluj náhled níže.', type: 'success' });
-        const result = await refetchProfile(token);
-        if (result?.ok) setProfile((prev) => ({ ...prev, _updated: Date.now() }));
+        await refetch(token);
       } else {
         setToast({ message: json.error || 'Nepodařilo vygenerovat plán.', type: 'error' });
       }
@@ -1500,7 +1378,7 @@ export default function Profil() {
       const { data: { session: fresh } } = await supabase.auth.refreshSession();
       const token = fresh?.access_token ?? session?.access_token;
       if (fresh) setSession(fresh);
-      const result = await refetchProfile(token);
+      const result = await refetch(token);
       if (result?.ok) {
         setToast({ message: 'Data obnovena! 🔄', type: 'success' });
       } else {
@@ -1561,6 +1439,8 @@ export default function Profil() {
     setMindsetTipFromPlan(parsed?.mindsetTip || '');
   }, [currentPlan?.plan_html]);
 
+  if (!session && !loading) return null;
+
   return (
     <>
       {showWelcomeTour && <WelcomeTour onClose={() => setShowWelcomeTour(false)} />}
@@ -1571,7 +1451,7 @@ export default function Profil() {
           bodyMetrics={profile?.body_metrics}
           userHabits={profile?.user_habits}
           onClose={() => setShowHabitEntryWizard(false)}
-          onHabitsSaved={() => refetchProfile(session?.access_token, profile)}
+          onHabitsSaved={() => refetch(session?.access_token)}
         />
       )}
       {toast.message && (
@@ -1581,6 +1461,27 @@ export default function Profil() {
           onClose={() => setToast({ message: '', type: 'success' })}
         />
       )}
+      <WorkoutOverlay
+        open={showWorkoutModal}
+        onClose={closeWorkoutWorkspace}
+        onSubmit={handleAddWorkout}
+        form={workoutForm}
+        setForm={setWorkoutForm}
+        error={workoutError}
+        saving={savingWorkout}
+        workoutTypes={WORKOUT_TYPES}
+        difficultyOptions={WORKOUT_DIFFICULTY_OPTIONS}
+      />
+      <PreferencesOverlay
+        open={showPreferencesModal}
+        onClose={closePreferencesWorkspace}
+        onSubmit={handleSavePreferences}
+        form={preferencesForm}
+        setForm={setPreferencesForm}
+        error={preferencesError}
+        saving={savingPreferences}
+        workoutDayLabels={WORKOUT_DAY_LABELS}
+      />
       <Header />
       <main className="page">
         <div className="page-bg-decor" aria-hidden>
@@ -1667,16 +1568,7 @@ export default function Profil() {
                   <button
                     type="button"
                     className="profile-main-workout-btn"
-                    onClick={(e) => {
-                      if (typeof window !== 'undefined' && window.innerWidth > 640) {
-                        setWorkoutModalAnchor(getAnchoredModalStyle(e.currentTarget, 400, 560));
-                      } else {
-                        setWorkoutModalAnchor(null);
-                      }
-                      setShowWorkoutModal(true);
-                      setWorkoutError('');
-                      setWorkoutForm((f) => ({ ...f, workout_date: getLocalDateStr(new Date()) }));
-                    }}
+                    onClick={openWorkoutWorkspace}
                   >
                     <span className="profile-main-workout-btn-emoji" aria-hidden>🏋️</span>
                     Zapsat trénink
@@ -1714,32 +1606,7 @@ export default function Profil() {
                     <div className="plan-goal-actions">
                       <button
                         type="button"
-                        onClick={(e) => {
-                          const lm = profile?.body_metrics?.[0];
-                          const freq = getFreqFromMetrics(lm);
-                          const wdRaw = lm?.workout_days;
-                          const workoutDays = (Array.isArray(wdRaw) ? wdRaw : (typeof wdRaw === 'string' && wdRaw ? wdRaw.split(',').map((s) => Number(s.trim())) : [])).filter((n) => Number.isFinite(n) && n >= 0 && n <= 6);
-                          setPreferencesError('');
-                          setPreferencesForm({
-                            activity: activityToFormLabel(lm?.activity) || '',
-                            stress_level: lm?.stress_level ?? '',
-                            occupation: normalizeOccupationForForm(lm?.occupation) || '',
-                            goal: goalToFormLabel(lm?.goal) || '',
-                            freq_choice: freq,
-                            frequency: freq,
-                            workout_days: workoutDays,
-                            diet_type: lm?.diet_type ?? '',
-                            dietary_restrictions: lm?.dietary_restrictions ?? '',
-                            foods_to_avoid: lm?.foods_to_avoid ?? '',
-                            selected_habits: (profile?.user_habits || []).map((h) => h.habit_id).filter(Boolean),
-                          });
-                          if (typeof window !== 'undefined' && window.innerWidth > 640) {
-                            setPreferencesModalAnchor(getAnchoredModalStyle(e.currentTarget, 520, 700));
-                          } else {
-                            setPreferencesModalAnchor(null);
-                          }
-                          setShowPreferencesModal(true);
-                        }}
+                        onClick={openPreferencesWorkspace}
                         className="hero-prefs-btn plan-goal-prefs-btn"
                       >
                         <span className="hero-prefs-emoji">✏️</span>
@@ -2457,7 +2324,7 @@ export default function Profil() {
               session={session}
               userHabits={profile?.user_habits}
               onToast={(t) => setToast({ message: t.message, type: t.type })}
-              onHabitSaved={() => refetchProfile(session?.access_token)}
+              onHabitSaved={() => refetch(session?.access_token)}
             />
               </div>
             </div>
@@ -2740,239 +2607,6 @@ export default function Profil() {
             {/* konec profile-bubbles */}
 
             {/* Modaly */}
-            {showWorkoutModal && renderPortal(
-              <div className="modal-overlay" onClick={() => { setShowWorkoutModal(false); setWorkoutError(''); setWorkoutModalAnchor(null); }}>
-                <div className="modal modal-workout" style={workoutModalAnchor || undefined} onClick={(e) => e.stopPropagation()}>
-                  <h3>Zapsat trénink</h3>
-                  <form onSubmit={handleAddWorkout}>
-                    <label>Datum</label>
-                    <div className="modal-date-wrap">
-                      <input
-                        ref={workoutDateInputRef}
-                        type="date"
-                        id="workout-date-input"
-                        value={workoutForm.workout_date}
-                        onChange={(e) => setWorkoutForm((f) => ({ ...f, workout_date: e.target.value }))}
-                        min={getLocalDateStr(new Date(Date.now() - 365 * 24 * 60 * 60 * 1000))}
-                        max={getLocalDateStr(new Date())}
-                        required
-                        className="modal-date-input"
-                      />
-                      <button
-                        type="button"
-                        className="modal-date-calendar-btn"
-                        onClick={() => { try { workoutDateInputRef.current?.showPicker?.(); } catch (_) { workoutDateInputRef.current?.focus(); } }}
-                        title="Otevřít kalendář"
-                        aria-label="Otevřít kalendář"
-                      >
-                        📅
-                      </button>
-                    </div>
-                    <label>Typ</label>
-                    <select
-                      value={workoutForm.workout_type}
-                      onChange={(e) => setWorkoutForm((f) => ({
-                        ...f,
-                        workout_type: e.target.value,
-                        distance_m: e.target.value === 'plavani' ? f.distance_m : '',
-                        distance_km: ['beh', 'kolo', 'chuze', 'nordic_walking', 'brusleni', 'lyzovani'].includes(e.target.value) ? f.distance_km : '',
-                      }))}
-                    >
-                      {WORKOUT_TYPES.map((t) => (
-                        <option key={t.id} value={t.id}>{t.emoji} {t.label}</option>
-                      ))}
-                    </select>
-                    <label>Délka (min)</label>
-                    <input type="number" min={1} value={workoutForm.duration_min} onChange={(e) => setWorkoutForm((f) => ({ ...f, duration_min: Number(e.target.value) || 0 }))} />
-                    {workoutForm.workout_type === 'plavani' && (
-                      <>
-                        <label>Počet metrů</label>
-                        <input
-                          type="number"
-                          min={25}
-                          step={25}
-                          value={workoutForm.distance_m}
-                          onChange={(e) => setWorkoutForm((f) => ({ ...f, distance_m: e.target.value }))}
-                          placeholder="např. 1000"
-                        />
-                      </>
-                    )}
-                    {['beh', 'kolo', 'chuze', 'nordic_walking', 'brusleni', 'lyzovani'].includes(workoutForm.workout_type) && (
-                      <>
-                        <label>Vzdálenost (km)</label>
-                        <input
-                          type="number"
-                          min={0.1}
-                          step={0.1}
-                          value={workoutForm.distance_km}
-                          onChange={(e) => setWorkoutForm((f) => ({ ...f, distance_km: e.target.value }))}
-                          placeholder="např. 5.5"
-                        />
-                      </>
-                    )}
-                    <label>Poznámka (volitelné)</label>
-                    <input type="text" value={workoutForm.notes} onChange={(e) => setWorkoutForm((f) => ({ ...f, notes: e.target.value }))} placeholder="např. nohy" />
-                    <label>Jak náročné to pro tebe bylo?</label>
-                    <div className="workout-difficulty-options">
-                      {WORKOUT_DIFFICULTY_OPTIONS.map((opt) => (
-                        <label key={opt.id} className="workout-difficulty-option">
-                          <input
-                            type="radio"
-                            name="perceived_difficulty"
-                            value={opt.id}
-                            checked={(workoutForm.perceived_difficulty || '') === opt.id}
-                            onChange={() => setWorkoutForm((f) => ({ ...f, perceived_difficulty: opt.id }))}
-                          />
-                          <span>{opt.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {workoutError && <p className="modal-error" role="alert">{workoutError}</p>}
-                    {savingWorkout && (
-                      <div className="modal-loading">
-                        <div className="loading-spinner"></div>
-                        <span>Ukládám trénink…</span>
-                      </div>
-                    )}
-                    <div className="modal-actions">
-                      <button type="button" onClick={() => { setShowWorkoutModal(false); setWorkoutError(''); setWorkoutModalAnchor(null); }} disabled={savingWorkout}>Zrušit</button>
-                      <button type="submit" disabled={savingWorkout} className={savingWorkout ? 'loading' : ''}>
-                        {savingWorkout ? (
-                          <>
-                            <span className="button-spinner"></span>
-                            Ukládám…
-                          </>
-                        ) : (
-                          'Uložit'
-                        )}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
-            {showPreferencesModal && renderPortal(
-              <div className="modal-overlay" onClick={() => { if (!savingPreferences) { setShowPreferencesModal(false); setPreferencesError(''); setPreferencesModalAnchor(null); } }}>
-                <div className="modal modal-preferences" style={preferencesModalAnchor || undefined} onClick={(e) => e.stopPropagation()}>
-                  <h3>Upravit preference</h3>
-                  <p className="modal-hint">Změny uložíme a podle toho přegenerujeme plán. Při změně <strong>jen stravy</strong> (typ stravy, co nejí) se změní pouze <strong>jídelníček</strong> – rozvrh tréninků (který den odpočinek, který trénink) zůstane. Při změně aktivity nebo cíle se přegeneruje celý plán. Zapsané tréninky zůstanou zachovány.</p>
-                  <form onSubmit={handleSavePreferences}>
-                    <div className="preferences-section">
-                      <h4 className="preferences-section-title">Aktivita a cíl</h4>
-                      <div className="preferences-grid">
-                        <div>
-                          <label>Úroveň aktivity <span className="label-hint">(současný stav)</span></label>
-                          <select value={preferencesForm.activity} onChange={(e) => setPreferencesForm((f) => ({ ...f, activity: e.target.value }))}>
-                            <option value="">Vyber</option>
-                            <option value="Nízká">Nízká</option>
-                            <option value="Střední">Střední</option>
-                            <option value="Vysoká">Vysoká</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label>Míra stresu</label>
-                          <select value={preferencesForm.stress_level} onChange={(e) => setPreferencesForm((f) => ({ ...f, stress_level: e.target.value }))}>
-                            <option value="">Vyber</option>
-                            <option value="low">Nízká</option>
-                            <option value="medium">Střední</option>
-                            <option value="high">Vysoká</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label>Typ práce</label>
-                          <select value={preferencesForm.occupation} onChange={(e) => setPreferencesForm((f) => ({ ...f, occupation: e.target.value }))}>
-                            <option value="">Vyber</option>
-                            <option value="Sedavé zaměstnání">Sedavé zaměstnání</option>
-                            <option value="Aktivní zaměstnání">Aktivní zaměstnání</option>
-                            <option value="Kombinované">Kombinované</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label>Cíl</label>
-                          <select value={preferencesForm.goal} onChange={(e) => setPreferencesForm((f) => ({ ...f, goal: e.target.value }))}>
-                            <option value="">Vyber</option>
-                            <option value="Redukce hmotnosti">Redukce hmotnosti</option>
-                            <option value="Nárůst svalů">Nárůst svalů</option>
-                            <option value="Zdravý životní styl">Zdravý životní styl</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label>Frekvence cvičení</label>
-                          <select value={preferencesForm.freq_choice || preferencesForm.frequency} onChange={(e) => setPreferencesForm((f) => ({ ...f, freq_choice: e.target.value, frequency: e.target.value }))}>
-                            <option value="">Vyber</option>
-                            <option value="1-2x týdně">1–2x týdně</option>
-                            <option value="2-3x týdně">2–3x týdně</option>
-                            <option value="4-5x týdně">4–5x týdně</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="preferences-section-title">Cvičím v tyto dny</label>
-                        <p className="preferences-workout-days-hint">Vyber dny, kdy chceš mít trénink v plánu. Ostatní dny budou odpočinek nebo lehká procházka.</p>
-                        <div className="preferences-workout-days">
-                          {WORKOUT_DAY_LABELS.map(({ v, label }) => (
-                            <label key={v} className="preferences-workout-day-check">
-                              <input
-                                type="checkbox"
-                                checked={preferencesForm.workout_days.includes(v)}
-                                onChange={(e) => {
-                                  const next = e.target.checked
-                                    ? [...preferencesForm.workout_days, v].sort((a, b) => a - b)
-                                    : preferencesForm.workout_days.filter((d) => d !== v);
-                                  setPreferencesForm((f) => ({ ...f, workout_days: next }));
-                                }}
-                              />
-                              <span>{label}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="preferences-section">
-                      <h4 className="preferences-section-title">Strava a omezení</h4>
-                      <div>
-                        <label>Typ stravy</label>
-                        <select value={preferencesForm.diet_type} onChange={(e) => setPreferencesForm((f) => ({ ...f, diet_type: e.target.value }))}>
-                          <option value="">Žádná preference</option>
-                          <option value="vegetarian">Vegetarián</option>
-                          <option value="vegan">Vegan</option>
-                          <option value="gluten_free">Bez lepku</option>
-                          <option value="lactose_free">Bez laktózy</option>
-                          <option value="paleo">Paleo</option>
-                          <option value="low_carb">Nízkosacharidová</option>
-                          <option value="other">Jiné</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label>Co nejí – alergie, intolerance</label>
-                        <textarea rows={2} placeholder="např. ořechy, mléko, lepek…" value={preferencesForm.dietary_restrictions} onChange={(e) => setPreferencesForm((f) => ({ ...f, dietary_restrictions: e.target.value }))} />
-                      </div>
-                      <div>
-                        <label>Potraviny k vynechání z jídelníčku</label>
-                        <textarea rows={2} placeholder="např. avokádo, brokolice, banány…" value={preferencesForm.foods_to_avoid} onChange={(e) => setPreferencesForm((f) => ({ ...f, foods_to_avoid: e.target.value }))} />
-                      </div>
-                    </div>
-                    <div className="preferences-section">
-                      <h4 className="preferences-section-title">Denní návyky</h4>
-                      <HabitSelection selectedIds={preferencesForm.selected_habits} onChange={(ids) => setPreferencesForm((f) => ({ ...f, selected_habits: ids }))} />
-                    </div>
-                    {preferencesError && <p className="modal-error" role="alert">{preferencesError}</p>}
-                    {savingPreferences && (
-                      <div className="modal-loading">
-                        <div className="loading-spinner"></div>
-                        <span>Ukládám a přegenerovávám plán… Může to trvat až minutu.</span>
-                      </div>
-                    )}
-                    <div className="modal-actions">
-                      <button type="button" onClick={() => { if (!savingPreferences) { setShowPreferencesModal(false); setPreferencesError(''); setPreferencesModalAnchor(null); } }} disabled={savingPreferences}>Zrušit</button>
-                      <button type="submit" disabled={savingPreferences || preferencesForm.selected_habits.length === 0} className={savingPreferences ? 'loading' : ''}>
-                        {savingPreferences ? (<><span className="button-spinner"></span> Ukládám…</>) : 'Uložit a přegenerovat plán'}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
             {showSettingsModal && renderPortal(
               <div className="modal-overlay" onClick={() => { setShowSettingsModal(false); setSettingsError(''); }}>
                 <div className="modal" onClick={(e) => e.stopPropagation()}>

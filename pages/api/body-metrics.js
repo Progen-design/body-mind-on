@@ -1,4 +1,7 @@
 // /pages/api/body-metrics.js
+// CORE FLOW: Registrace musí vést k reálnému AI výsledku (body_metrics → ai_tasks → ai_generated_plans → zobrazení + e-mail).
+// Při refaktoru neměň pořadí: insert body_metrics → createInitialAITasks → enqueueAIEvent → triggerImmediateDecision → runAIScheduler.
+// Viz docs/CORE_FLOW_REGISTRACE_AI_PLAN.md
 import { supabaseServer } from '../../lib/supabaseServer';
 import { createAuthUserIfNew } from '../../lib/authHelpers';
 import { runAIScheduler } from '../../lib/aiScheduler';

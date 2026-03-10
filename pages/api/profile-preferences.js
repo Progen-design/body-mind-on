@@ -1,5 +1,7 @@
 // PATCH /api/profile-preferences – uloží preference (aktivita, cíl, strava, návyky) a přegeneruje plán
 // Workouty zůstávají nedotčeny – mění se jen body_metrics a user_habits
+// Orchestration: preference update + event (diet_changed, goal_changed) + triggerImmediateDecision.
+// Přegenerování plánu je orchestration-compatible: generatePlanForEmail používá stejný trainer jako task executor; v budoucnu lze nahradit za event + task adjust_plan.
 import { supabaseServer } from '../../lib/supabaseServer';
 import { generatePlanForEmail } from '../../lib/generatePlan';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';

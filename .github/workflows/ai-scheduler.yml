@@ -1,0 +1,48 @@
+# AI Scheduler – supplemental cron for Vercel Hobby plan
+#
+# Vercel Hobby plan limits cron to 1x/day. This workflow calls the scheduler
+# every 5 minutes, independently of Vercel's native cron, ensuring autonomous
+# AI orchestration runs on time.
+#
+# Required GitHub repository secrets:
+#   APP_URL        – e.g. https://app.bodyandmindon.cz
+#   CRON_SECRET    – must match CRON_SECRET env variable on Vercel
+#
+# To disable: remove or rename this file, or set `enabled: false` on the
+# `schedule` trigger (not supported natively – just delete the schedule block).
+
+name: AI Scheduler (every 5 min)
+
+on:
+  schedule:
+    # Runs every 5 minutes. GitHub Actions has ~1 min jitter; that is acceptable.
+    - cron: "*/5 * * * *"
+  # Allow manual trigger from GitHub Actions UI for debugging
+  workflow_dispatch:
+
+jobs:
+  run-scheduler:
+    name: Trigger AI run-scheduler
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+
+    steps:
+      - name: Call /api/ai/run-scheduler
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          STATUS=$(curl -s -o /tmp/response.json -w "%{http_code}" \
+            -X GET \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            --max-time 180 \
+            "${APP_URL}/api/ai/run-scheduler")
+
+          echo "HTTP status: $STATUS"
+          cat /tmp/response.json | python3 -m json.tool 2>/dev/null || cat /tmp/response.json
+
+          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
+            echo "::error::Scheduler returned HTTP $STATUS"
+            exit 1
+          fi

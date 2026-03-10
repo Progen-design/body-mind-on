@@ -124,7 +124,7 @@ export default function Start() {
       setStatus("❌ Hesla se neshodují.");
       return;
     }
-    setStatus("⏳ Odesílám... (může trvat až minutu – generuje se plán a e-mail)");
+    setStatus("⏳ Odesílám registraci a připravuji účet…");
 
     try {
       const cleanedData = normalizeData(formData);
@@ -204,6 +204,10 @@ export default function Start() {
             Vyzkoušej systém bez rizika – AI ti zdarma připraví osobní plán tréninku, jídelníček i regeneraci.
           </p>
         </section>
+
+        <div className="reg-notice max-w-3xl mx-auto mb-6" role="note">
+          Registrace proběhne hned po odeslání formuláře. Neomezujeme počet pokusů o registraci, takže když něco opravíš, můžeš formulář odeslat znovu bez čekání.
+        </div>
 
         {/* Progress bar */}
         <div className="progress-bar-wrap max-w-3xl mx-auto mb-8">
@@ -525,6 +529,16 @@ export default function Start() {
         .progress-dots span.active { background: #0ea5e9; color: #fff; }
         .progress-dots span.done { background: #22c55e; color: #fff; }
         .progress-label { font-size: 13px; color: #64748b; margin: 0; }
+        .reg-notice {
+          padding: 14px 16px;
+          border-radius: 12px;
+          border: 1px solid rgba(14, 165, 233, 0.35);
+          background: rgba(14, 165, 233, 0.08);
+          color: #cbd5e1;
+          font-size: 14px;
+          line-height: 1.55;
+          text-align: left;
+        }
 
         .step3-grid {
           display: grid;

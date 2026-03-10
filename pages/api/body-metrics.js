@@ -3,7 +3,6 @@ import { supabaseServer } from '../../lib/supabaseServer';
 import { generatePlanForEmail } from '../../lib/generatePlan';
 import { createAuthUserIfNew } from '../../lib/authHelpers';
 import { createInitialAITasks } from '../../lib/createInitialAITasks';
-import { getClientIp, isRateLimited } from '../../lib/rateLimit';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getWeeklySessions } from '../../lib/preferenceConstants';
 import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
@@ -14,12 +13,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    const ip = getClientIp(req);
-    if (isRateLimited(`body-metrics:${ip}`, 5, 10 * 60 * 1000)) {
-      res.setHeader('Retry-After', '600');
-      return res.status(429).json({ error: 'Příliš mnoho požadavků. Zkus to prosím za chvíli znovu.' });
-    }
-
     const b = req.body || {};
 
     // Strava a omezení – volitelná pole (null při prázdných)

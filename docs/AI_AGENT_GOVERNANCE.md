@@ -1,10 +1,25 @@
 # AI Agent Governance — Body & Mind ON
 
-> Jednotný řízený model všech AI agentů: jasné role, instrukce, modely a výstupní kontrakty. Žádný chaos mezi agenty; maximální kvalita tam, kde to má business smysl.
+> Jednotný řízený model všech AI agentů. Trainer je hlavní agent; ostatní ho podporují, ne s ním soutěží. Žádný chaos; maximální kvalita u plánu.
 
 ---
 
-## 1. Přehled agentů
+## 1. Kanonická hierarchie agentů
+
+Oficiální pořadí (od hlavního k podpůrným):
+
+1. **TRAINER** — hlavní agent, hlavní produkt, hlavní autorita. Jediný generuje skutečný plán.
+2. **COACH** — podpůrný behaviorální agent. Není druhý planner.
+3. **NUTRITION_VALIDATOR** — kontrola jídelníčku.
+4. **TRAINING_VALIDATOR** — kontrola tréninku.
+5. **MARKETING** — draft engine. Není autonomní CMO.
+6. **SOCIAL** — draft engine. Není publisher.
+
+Pravidlo: trainer je jediný agent, který má generovat skutečný plán. Ostatní agenti ho mají podporovat, ne s ním soutěžit. Systém nesmí sklouznout do agentového chaosu, kde si každý myslí, že je hlavní.
+
+---
+
+## 2. Přehled agentů
 
 | Agent | Role | Model | Výstup |
 |-------|------|--------|--------|
@@ -17,17 +32,16 @@
 
 ---
 
-## 2. Kanonické role
+## 3. Kanonické role
 
 ### TRAINER
-- **Hlavní autorita** pro jídelníček a trénink. Jediný agent, který generuje reálný plán (HTML + metriky).
-- Musí být nejkvalitnější a nejvíce business-critical → používá nejsilnější model (gpt-4.1).
-- Nesmí být „chatty“; je to **planner**, ne obecný asistent.
+- **Hlavní AI planner** a hlavní produktový agent. Zodpovědný za jídelníček, tréninkový plán, adaptaci podle dat, návaznost mezi plány a důvěryhodnost výstupu.
+- Jediný agent, který generuje skutečný plán (HTML + metriky). Musí být nejspolehlivější a nejkvalitnější → gpt-4.1.
+- Priorita: přesnost, proveditelnost, návaznost, důvěryhodnost. Nesmí být ukecaný; je to planner, ne chatovací asistent.
 - Respektuje: diet_type, preferences, foods_to_avoid, workout_days, pinned meals, progress_analysis, shared_memory.
-- Při adjust_plan / reduce_training_load / weekly_plan_update reaguje na task context, negeneruje plán „od nuly bez důvodu“.
-- Negeneruje marketingový text ani coach messaging místo plánu.
-- Nepředstírá použití nástrojů, které nejsou v runtime_capabilities.
-- Vrací pouze validní JSON podle runtime contractu.
+- Při autonomous task (adjust_plan, reduce_training_load, weekly_plan_update) reaguje na task context; neignoruje důvod úkolu.
+- Nevymýšlí nástroje ani zdroje, které runtime nepotvrzuje. Negeneruje volné povídání, marketing ani coach messaging.
+- Vrací pouze validní JSON dle contractu.
 
 ### COACH
 - **Behaviorální a motivační vrstva.** Podporuje adherence, regeneraci, konzistenci, mindset.
@@ -61,7 +75,7 @@
 
 ---
 
-## 3. Modelová strategie
+## 4. Modelová strategie
 
 | Agent | Model | Důvod |
 |-------|--------|--------|
@@ -74,7 +88,7 @@
 
 ---
 
-## 4. Output kontrakty
+## 5. Output kontrakty
 
 - **trainer** → `{ ok, metrics: { bmr, tdee, calories, protein_g, carbs_g, fat_g }, html, mindset_tip?, shopping_list? }`
 - **coach** → `{ ok, message, coaching_plan?: { weekly_focus?, daily_actions?, ... }, assumptions? }`
@@ -86,7 +100,7 @@ Kontrakty jsou definované v `lib/aiTaskRegistry.js` (TRAINER_PLAN_OUTPUT_SCHEMA
 
 ---
 
-## 5. Control plane (DB)
+## 6. Control plane (DB)
 
 - Konfigurace agentů je v **Supabase** v tabulce **`ai_agents`**.
 - Sloupce: `slug`, `name`, `model`, `system_prompt`, `temperature`, `enabled`, `context_profile_slug`, `default_output_contract`, `executor_group`, `artifact_type`, `version`, `prompt_version`, `is_published`.
@@ -95,7 +109,7 @@ Kontrakty jsou definované v `lib/aiTaskRegistry.js` (TRAINER_PLAN_OUTPUT_SCHEMA
 
 ---
 
-## 6. Proč trainer je hero agent
+## 7. Proč trainer je hero agent
 
 - Trainer je dnes **nejvíce production-ready** a přímo ovlivňuje core produkt: jídelníček a trénink.
 - Kvalita plánu určuje spokojenost uživatele a důvěru v produkt.
@@ -103,7 +117,7 @@ Kontrakty jsou definované v `lib/aiTaskRegistry.js` (TRAINER_PLAN_OUTPUT_SCHEMA
 
 ---
 
-## 7. Proč coach není druhý planner
+## 8. Proč coach není druhý planner
 
 - Coach doplňuje trainera: motivace, adherence, regenerace, mindset.
 - Coach **nesmí** generovat vlastní kompletní plán; jinak by vznikl konflikt a nekonzistence.
@@ -111,7 +125,7 @@ Kontrakty jsou definované v `lib/aiTaskRegistry.js` (TRAINER_PLAN_OUTPUT_SCHEMA
 
 ---
 
-## 8. Proč marketing/social nejsou plné business moduly
+## 9. Proč marketing/social nejsou plné business moduly
 
 - Slouží jako **draft engine**: vytvářejí návrhy a strukturovaný obsah k revizi.
 - Publikování, schvalování a nasazení kampaní je mimo jejich scope.
@@ -119,7 +133,7 @@ Kontrakty jsou definované v `lib/aiTaskRegistry.js` (TRAINER_PLAN_OUTPUT_SCHEMA
 
 ---
 
-## 9. Proč validátory mají být levné a přísné
+## 10. Proč validátory mají být levné a přísné
 
 - Validátory jsou **kontrolní vrstva**, ne produktoví agenti.
 - Potřebují konzistenci a nízkou variabilitu; kreativita je nežádoucí.
@@ -127,7 +141,17 @@ Kontrakty jsou definované v `lib/aiTaskRegistry.js` (TRAINER_PLAN_OUTPUT_SCHEMA
 
 ---
 
-## 10. Kde je to implementované
+## 11. Kritická business pravda
+
+- Trainer je dnes nejsilnější a nejvíc production-ready agent; přímo ovlivňuje core produkt.
+- Coach je podpůrná vrstva, ne druhý planner.
+- Marketing a social nejsou hotové business moduly; jsou draft enginy.
+- Validátory jsou kontrolní vrstva, ne produktoví agenti.
+- Systém se nesmí rozpadnout do AI chaosu, kde si každý agent myslí, že je hlavní. Tento dokument a DB seed to zajišťují.
+
+---
+
+## 12. Kde je to implementované
 
 - **getAgentConfig.js** — načtení modelu a system_prompt z DB; fallbacky v souladu s governance.
 - **runAgent.js** — volá getAgentConfig, buildAgentContext, OpenAI Responses API; výstup vždy JSON.

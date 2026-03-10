@@ -97,30 +97,6 @@ const STATEMENTS = [
     created_at      timestamp default now()
   )`,
 
-  `create table if not exists meal_metadata_cache (
-    id         uuid primary key default gen_random_uuid(),
-    meal_name  text unique not null,
-    image_url  text,
-    calories   numeric,
-    protein_g  numeric,
-    carbs_g    numeric,
-    fat_g      numeric,
-    source     text,
-    created_at timestamp default now()
-  )`,
-
-  `create table if not exists exercise_metadata_cache (
-    id            uuid primary key default gen_random_uuid(),
-    exercise_name text unique not null,
-    image_url     text,
-    gif_url       text,
-    body_part     text,
-    target        text,
-    equipment     text,
-    source        text,
-    created_at    timestamp default now()
-  )`,
-
   // ── Indexes ──────────────────────────────────────────────────────────────────
   `create index if not exists idx_ai_tasks_status     on ai_tasks(status)`,
   `create index if not exists idx_ai_tasks_user       on ai_tasks(user_id)`,
@@ -137,9 +113,6 @@ const STATEMENTS = [
 
   `create index if not exists idx_user_ai_memory_user  on user_ai_memory(user_id)`,
   `create index if not exists idx_user_ai_memory_agent on user_ai_memory(agent_slug)`,
-
-  `create index if not exists idx_meal_cache_name     on meal_metadata_cache(meal_name)`,
-  `create index if not exists idx_exercise_cache_name on exercise_metadata_cache(exercise_name)`,
 
   // ── Column additions ─────────────────────────────────────────────────────────
   `alter table ai_tasks add column if not exists processed_at timestamp`,

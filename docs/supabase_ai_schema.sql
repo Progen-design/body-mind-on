@@ -56,5 +56,5 @@ create table if not exists body_metrics (
 --   user_ai_memory                                → supabase_multi_agent.sql
 --   ai_tasks                                      → supabase_ai_tasks.sql
 --   user_checkins                                 → supabase_user_checkins.sql
---   meal_metadata_cache, exercise_metadata_cache  → supabase_enrichment_cache.sql
+--   meal_metadata_cache, exercise_metadata_cache  → removed (enrichment now fully dynamic)
 --   ai_config                                     → supabase_ai_config.sql

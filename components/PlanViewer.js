@@ -105,6 +105,49 @@ function getMealImageByDish(mealText) {
   return best.url;
 }
 
+function normalizeLookupKey(value) {
+  if (!value || typeof value !== 'string') return '';
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getEnrichedMealImage(mealText, mealImagesMap = {}) {
+  const source = String(mealText || '').replace(/^[^:]+:\s*/i, '').trim();
+  const key = normalizeLookupKey(source);
+  if (!key) return null;
+
+  let bestKey = '';
+  for (const candidateKey of Object.keys(mealImagesMap || {})) {
+    if (!candidateKey) continue;
+    if (key.includes(candidateKey) || candidateKey.includes(key)) {
+      if (candidateKey.length > bestKey.length) bestKey = candidateKey;
+    }
+  }
+
+  return bestKey ? mealImagesMap[bestKey] : null;
+}
+
+function getExerciseMediaFromItemText(itemText, exerciseMediaMap = {}) {
+  const rawName = String(itemText || '').split(':')[0].trim();
+  const key = normalizeLookupKey(rawName);
+  if (!key) return null;
+
+  let bestKey = '';
+  for (const candidateKey of Object.keys(exerciseMediaMap || {})) {
+    if (!candidateKey) continue;
+    if (key.includes(candidateKey) || candidateKey.includes(key)) {
+      if (candidateKey.length > bestKey.length) bestKey = candidateKey;
+    }
+  }
+  if (!bestKey) return null;
+  return exerciseMediaMap[bestKey] || null;
+}
+
 /** Odstraní obrázky z HTML (v sekci Trénink nechceme velké obrázky). */
 function stripImagesFromHtml(html) {
   if (!html || typeof html !== 'string') return html;
@@ -497,7 +540,10 @@ function parsePlanHtml(html) {
                   const mealType = bold ? bold.textContent.replace(/:\s*$/, '').trim() : '';
                   const rest = (next.textContent || '').replace(bold?.textContent || '', '').replace(/^:\s*/, '').trim();
                   const isMeal = mealTypes.some((m) => norm(mealType).includes(norm(m)));
-                  const isTrainingBlock = /Trénink tento den|trenink tento den/i.test(mealType || '');
+                  const paragraphText = (next.textContent || '').trim();
+                  const isTrainingBlock =
+                    /Trénink tento den|trenink tento den/i.test(mealType || '') ||
+                    /Trénink tento den|trenink tento den/i.test(paragraphText);
                   if (isMeal && (mealType || rest)) meals.push({ type: mealType || 'Jídlo', text: rest, fullHtml: next.innerHTML });
                   if (isTrainingBlock) {
                     trainingHtml = next.outerHTML || '';
@@ -511,7 +557,11 @@ function parsePlanHtml(html) {
                 }
                 next = next.nextElementSibling;
               }
-              result.days.push({ dayName, meals, trainingHtml: trainingHtml || null });
+              result.days.push({
+                dayName,
+                meals,
+                trainingHtml: trainingHtml || '<p><b>Trénink tento den:</b></p><ul><li>Odpočinek.</li></ul>',
+              });
             }
           }
           el = el.tagName === 'H3' ? null : el.nextElementSibling;
@@ -602,7 +652,7 @@ function normalizeMealTextForPin(text) {
   return s.normalize('NFD').replace(/\p{Diacritic}/gu, '');
 }
 
-export default function PlanViewer({ plan, userName, hideHero, dietaryPreferences = '', canPinMeals = true, onToast }) {
+export default function PlanViewer({ plan, userName, hideHero, hideShoppingList = false, dietaryPreferences = '', canPinMeals = true, onToast }) {
   const [parsed, setParsed] = useState(null);
   const [recipeModal, setRecipeModal] = useState(null); // { title, content, anchorRect, hasRecipe, openId? }
   const [mealOverrides, setMealOverrides] = useState({}); // { "di_mi": { title, content } }
@@ -618,6 +668,8 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
   const [shoppingListOpen, setShoppingListOpen] = useState(false); // rozbalovací sekce
   const [expandedTrainingKey, setExpandedTrainingKey] = useState(null); // 'dayIdx-itemIdx' – rozbalený cvik (detail Ve fitku / Doma)
   const [expandedDays, setExpandedDays] = useState(null); // null = dnes rozbalený; Set(di) = které dny jsou rozbalené
+  const [mealImagesMap, setMealImagesMap] = useState({});
+  const [exerciseMediaMap, setExerciseMediaMap] = useState({});
   const recipeOpenIdRef = useRef(0);
   const recipeCacheRef = useRef(new Map()); // dish -> html, 5 min TTL
 
@@ -664,6 +716,40 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
         if (!cancelled) setMealPins([]);
       } finally {
         if (!cancelled) setMealPinsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [plan?.plan_html]);
+
+  useEffect(() => {
+    if (!plan?.plan_html || typeof document === 'undefined') {
+      setMealImagesMap({});
+      setExerciseMediaMap({});
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token || cancelled) return;
+        const res = await fetch('/api/plan-enrichment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ html: plan.plan_html }),
+        });
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (cancelled) return;
+        setMealImagesMap(data?.meal_images && typeof data.meal_images === 'object' ? data.meal_images : {});
+        setExerciseMediaMap(data?.exercise_media && typeof data.exercise_media === 'object' ? data.exercise_media : {});
+      } catch (_) {
+        if (!cancelled) {
+          setMealImagesMap({});
+          setExerciseMediaMap({});
+        }
       }
     })();
     return () => { cancelled = true; };
@@ -989,11 +1075,13 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                         };
                         const mealTextForPin = override ? (override.title || '') : (meal.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().replace(/\s*\([^)]*\)\s*$/g, '').trim();
                         const mealPinned = isPinned(meal.type || '', mealTextForPin);
+                        const dynamicMealImage = getEnrichedMealImage(mealFullText || meal.text || meal.type, mealImagesMap);
+                        const mealImageSrc = dynamicMealImage || getMealImageByDish(mealFullText || meal.text || meal.type);
                         return (
                           <div key={mi} className="plan-meal-card">
                             <button type="button" className="plan-meal-image-wrap" onClick={openRecipe} title="Klikni pro zobrazení receptu">
                               <img
-                                src={getMealImageByDish(mealFullText || meal.text || meal.type)}
+                                src={mealImageSrc}
                                 alt=""
                                 className="plan-meal-image"
                                 onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_MEAL_IMAGE; }}
@@ -1134,6 +1222,8 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                               {trainingItems.map((item, idx) => {
                                 const iconType = getExerciseIconType(item.text);
                                 const equipment = getSafeEquipment(iconType);
+                                const exerciseMedia = getExerciseMediaFromItemText(item.text, exerciseMediaMap);
+                                const exerciseThumb = exerciseMedia?.gif_url || exerciseMedia?.image_url || null;
                                 const itemKey = `training-${di}-${idx}`;
                                 const isExpanded = expandedTrainingKey === itemKey;
                                 const hasDetail = (equipment.machine || equipment.home) && iconType !== 'total';
@@ -1143,6 +1233,15 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
                                       <ExerciseIcon type={iconType} />
                                     </span>
                                     <div className="plan-day-training-body">
+                                      {exerciseThumb && (
+                                        <img
+                                          src={exerciseThumb}
+                                          alt=""
+                                          className="plan-day-training-thumb"
+                                          loading="lazy"
+                                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                        />
+                                      )}
                                       {hasDetail ? (
                                         <button
                                           type="button"
@@ -1290,7 +1389,7 @@ export default function PlanViewer({ plan, userName, hideHero, dietaryPreference
           {/* Mindset se vykresluje v profil.js hned pod Tvé milníky */}
 
           {/* Nákupní seznam – rozbalovací, filtr Celý týden / konkrétní den */}
-          {(() => {
+          {!hideShoppingList && (() => {
             const fullList = parsed.shoppingList?.length ? parsed.shoppingList : buildShoppingListFromRecipes(parsed.recipes);
             const dayIndex = shoppingFilter === 'week' ? null : Number(shoppingFilter);
             const selectedDay = dayIndex != null && !Number.isNaN(dayIndex) ? displayedDays.find((d) => (d.originalIndex ?? -1) === dayIndex) : null;
@@ -1886,7 +1985,7 @@ const planSectionStyles = `
     background: rgba(30, 41, 59, 0.5);
     border-radius: 12px;
     border: 1px solid rgba(71, 85, 105, 0.5);
-    font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+    font-family: inherit;
     font-size: 15px;
     line-height: 1.6;
     color: #e2e8f0;
@@ -1932,6 +2031,17 @@ const planSectionStyles = `
     justify-content: center;
   }
   .plan-day-training-body { flex: 1; min-width: 0; }
+  .plan-day-training-thumb {
+    display: block;
+    width: 100%;
+    max-width: 260px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    margin-bottom: 10px;
+    background: rgba(15, 23, 42, 0.45);
+  }
   .plan-day-training-header-btn {
     display: block;
     width: 100%;

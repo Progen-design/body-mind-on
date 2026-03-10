@@ -25,6 +25,7 @@ const DAYS_FORWARD = 2;
 const DAYS_BACK = 5;
 
 export default function HabitTracker({ session, userHabits, onToast, onHabitSaved }) {
+  const todayStr = getLocalDateStr(new Date());
   const [positiveHabits, setPositiveHabits] = useState([]);
   const [negativeHabits, setNegativeHabits] = useState([]);
   const [allLogs, setAllLogs] = useState([]);
@@ -32,7 +33,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
   const [toggling, setToggling] = useState(null);
-  const [viewingDateStr, setViewingDateStr] = useState(null); // zobrazený den v hlavičce (dynamické); null = dnes
+  const [viewingDateStr, setViewingDateStr] = useState(todayStr); // vždy aktivně zvolený den
   const scrollContainerRef = useRef(null);
   const todayColRef = useRef(null);
   const didAutoCenterRef = useRef(false);
@@ -49,7 +50,6 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     return { pos, neg };
   }, []);
 
-  const todayStr = getLocalDateStr(new Date());
   const days = useMemo(() => {
     const result = [];
     const today = new Date();
@@ -138,6 +138,12 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     container.scrollTo({ left: nextLeft, behavior: 'smooth' });
     didAutoCenterRef.current = true;
   }, [loading, fetchError]);
+
+  useEffect(() => {
+    if (!viewingDateStr || !days.includes(viewingDateStr)) {
+      setViewingDateStr(todayStr);
+    }
+  }, [viewingDateStr, days, todayStr]);
 
   const getCompleted = (habitId, dateStr) => {
     const log = (allLogs || []).find((l) => l.habit_id === habitId && l.log_date === dateStr);
@@ -382,10 +388,10 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
               <>Zobrazený den: <strong>{displayDateFormatted}</strong>{displayDateStr > todayStr && ' (budoucí)'}</>
             )}
             {displayDateStr !== todayStr && (
-              <button type="button" className="ht-date-back" onClick={() => setViewingDateStr(null)}>Zpět na dnes</button>
+              <button type="button" className="ht-date-back" onClick={() => setViewingDateStr(todayStr)}>Zpět na dnes</button>
             )}
           </p>
-          <p className="ht-hint">Odškrtnutí se ukládá pro daný den (sloupec). Klikni na datum v mřížce pro zobrazení toho dne. Po uložení uvidíš „Splněno!“ – záznam zůstane i další den.</p>
+          <p className="ht-hint">Odškrtnutí se ukládá pro konkrétní datum (sloupec). Aktivní je vždy dnešní den. Kliknutím na datum nahoře přepneš náhled dne.</p>
         </div>
         <div className="ht-progress-inline">
           <span className="ht-prog-nums">{completedToday}<span className="ht-prog-sep">/</span>{totalHabits}</span>
@@ -625,7 +631,16 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           text-decoration: underline; padding: 0; font-weight: 600;
         }
         .ht-date-back:hover { color: #c4b5fd; }
-        .ht-hint { margin: 6px 0 0; font-size: 0.75rem; color: #64748b; line-height: 1.4; max-width: 320px; }
+        .ht-hint {
+          margin: 6px 0 0;
+          font-size: 0.75rem;
+          color: #64748b;
+          line-height: 1.4;
+          max-width: 420px;
+          position: sticky;
+          top: 2px;
+          z-index: 2;
+        }
         .ht-progress-inline { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; flex-shrink: 0; }
         .ht-prog-nums { font-size: 1.125rem; font-weight: 800; color: #f8fafc; letter-spacing: -0.02em; }
         .ht-prog-sep { color: #334155; margin: 0 3px; font-weight: 400; }

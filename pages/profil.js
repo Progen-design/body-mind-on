@@ -98,6 +98,43 @@ function parseWorkoutMetaFromNotes(rawNotes) {
   }
 }
 
+function parsePositiveNumber(value) {
+  if (value == null || value === '') return 0;
+  const normalized = String(value).trim().replace(',', '.');
+  const n = Number(normalized);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function normalizeDistanceKmForType(type, rawKm, durationMin) {
+  let km = parsePositiveNumber(rawKm);
+  if (km <= 0) return 0;
+
+  // Legacy / user-input guard: values like "1000" for run are often meters.
+  if (km >= 200) km = km / 1000;
+
+  const minutes = parsePositiveNumber(durationMin);
+  if (minutes <= 0) return km;
+
+  const hours = minutes / 60;
+  const maxSpeedByType = {
+    beh: 28,
+    chuze: 10,
+    nordic_walking: 12,
+    brusleni: 45,
+    lyzovani: 90,
+    kolo: 90,
+    plavani: 12,
+  };
+  const maxSpeed = maxSpeedByType[type] || 40;
+  const maxReasonableKm = maxSpeed * hours * 1.25;
+  if (km > maxReasonableKm) {
+    const asMetersKm = km / 1000;
+    if (asMetersKm > 0 && asMetersKm <= maxReasonableKm) return asMetersKm;
+  }
+
+  return km;
+}
+
 function serializeWorkoutNotesWithMeta(userNotes, meta) {
   const clean = (userNotes || '').trim();
   const normalizedMeta = {};
@@ -115,12 +152,17 @@ function serializeWorkoutNotesWithMeta(userNotes, meta) {
 function getWorkoutDistanceKm(workout) {
   const type = normalizeWorkoutTypeId(workout?.workout_type);
   const { meta } = parseWorkoutMetaFromNotes(workout?.notes);
+  const durationMin = parsePositiveNumber(workout?.duration_min);
   if (type === 'plavani') {
-    const meters = Number(meta?.distance_m) || 0;
+    const meters = parsePositiveNumber(meta?.distance_m);
     return meters > 0 ? meters / 1000 : 0;
   }
-  const km = Number(meta?.distance_km) || 0;
-  return km > 0 ? km : 0;
+  const km = parsePositiveNumber(meta?.distance_km);
+  if (km > 0) return normalizeDistanceKmForType(type, km, durationMin);
+
+  const metersFallback = parsePositiveNumber(meta?.distance_m);
+  if (metersFallback > 0) return normalizeDistanceKmForType(type, metersFallback / 1000, durationMin);
+  return 0;
 }
 
 function getWorkoutDurationMinutes(workout) {
@@ -137,10 +179,10 @@ function getWorkoutDetailLabel(workout) {
   const type = normalizeWorkoutTypeId(workout?.workout_type);
   const { meta } = parseWorkoutMetaFromNotes(workout?.notes);
   if (type === 'plavani') {
-    const meters = Number(meta?.distance_m) || 0;
+    const meters = parsePositiveNumber(meta?.distance_m);
     if (meters > 0) return `${meters} m`;
   }
-  const km = Number(meta?.distance_km) || 0;
+  const km = getWorkoutDistanceKm(workout);
   if (km > 0) return `${km.toFixed(km < 10 ? 1 : 0)} km`;
   return '';
 }
@@ -342,6 +384,15 @@ export default function Profil() {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
+      return next;
+    });
+  };
+
+  const openProfileSection = (id) => {
+    setProfileOpenSections((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
       return next;
     });
   };
@@ -1626,12 +1677,12 @@ export default function Profil() {
                   </span>
                   <div className="membership-card-nav-wrap">
                     <nav className="profile-quick-nav" aria-label="Rychlá navigace">
-                      <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('muj-plan'); }}>Můj plán</button>
-                      <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('denni-navyky')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('denni-navyky'); }}>Denní návyky</button>
-                      <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('muj-plan'); }} title="Zobrazit jídelníček a tréninkový plán">
+                      <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('muj-plan'); document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); }}>Můj plán</button>
+                      <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('denni-navyky'); document.getElementById('denni-navyky')?.scrollIntoView({ behavior: 'smooth' }); }}>Denní návyky</button>
+                      <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('muj-plan'); document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); }} title="Zobrazit jídelníček a tréninkový plán">
                         Tréninkový plán
                       </button>
-                      <button type="button" className="profile-quick-nav-btn" onClick={() => { document.getElementById('statistiky')?.scrollIntoView({ behavior: 'smooth' }); toggleProfileSection('statistiky'); }}>Statistiky a progres</button>
+                      <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('statistiky'); document.getElementById('statistiky')?.scrollIntoView({ behavior: 'smooth' }); }}>Statistiky a progres</button>
                     </nav>
                   </div>
                 </div>
@@ -2058,6 +2109,7 @@ export default function Profil() {
                       plan={currentPlan}
                       userName={userName}
                       hideHero
+                      hideShoppingList
                       dietaryPreferences={(() => {
                         const lm = profile?.body_metrics?.[0];
                         if (!lm) return '';
@@ -2074,6 +2126,7 @@ export default function Profil() {
                       plan={nextPlan}
                       userName={userName}
                       hideHero
+                      hideShoppingList
                       dietaryPreferences={(() => {
                         const lm = profile?.body_metrics?.[0];
                         if (!lm) return '';
@@ -2092,6 +2145,7 @@ export default function Profil() {
                   plan={currentPlan}
                   userName={userName}
                   hideHero
+                  hideShoppingList
                   dietaryPreferences={(() => {
                     const lm = profile?.body_metrics?.[0];
                     if (!lm) return '';
@@ -2108,6 +2162,7 @@ export default function Profil() {
                   plan={nextPlan}
                   userName={userName}
                   hideHero
+                  hideShoppingList
                   dietaryPreferences={(() => {
                     const lm = profile?.body_metrics?.[0];
                     if (!lm) return '';
@@ -2780,7 +2835,7 @@ export default function Profil() {
           padding: 0 20px 100px;
           background: transparent;
           color: #fff;
-          font-family: Inter, sans-serif;
+          font-family: inherit;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
           text-rendering: optimizeLegibility;
@@ -2890,14 +2945,14 @@ export default function Profil() {
           color: rgba(255, 255, 255, 0.9);
           letter-spacing: -0.02em;
           line-height: 1.05;
-          font-family: Inter, system-ui, sans-serif;
+          font-family: inherit;
         }
         .profile-hero-brand-welcome {
           font-size: 16px;
           font-weight: 600;
           color: rgba(255, 255, 255, 0.75);
           letter-spacing: 0.01em;
-          font-family: Inter, system-ui, sans-serif;
+          font-family: inherit;
         }
         .profile-hero-main {
           display: flex;

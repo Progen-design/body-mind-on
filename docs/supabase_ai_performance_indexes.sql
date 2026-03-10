@@ -77,22 +77,6 @@ $$;
 
 
 -- =============================================================================
--- STEP 4 — CACHING TABLES
--- (Defined in supabase_enrichment_cache.sql; indexes added here.)
--- =============================================================================
-
--- meal_metadata_cache already has "text unique not null" on meal_name,
--- which creates an implicit index. This explicit named index enables fast
--- lookup by partial meal name patterns if needed.
-create index if not exists idx_meal_cache_name
-  on meal_metadata_cache(meal_name);
-
--- exercise_metadata_cache — same rationale.
-create index if not exists idx_exercise_cache_name
-  on exercise_metadata_cache(exercise_name);
-
-
--- =============================================================================
 -- STEP 5 — TASK QUEUE OPTIMIZATION
 -- =============================================================================
 
@@ -141,7 +125,6 @@ create index if not exists idx_ai_tasks_processing
 --   ✓ Thousands of AI tasks        → status + processing composite index
 --   ✓ Efficient scheduler queries  → idx_ai_tasks_processing (status, created_at)
 --   ✓ Efficient plan history       → idx_ai_generated_plans_user + created
---   ✓ External API enrichment cache→ idx_meal_cache_name + idx_exercise_cache_name
 --   ✓ Duplicate plan prevention    → uq_ai_generated_plans_user_valid_from
 --
 -- All statements are idempotent (IF NOT EXISTS / DO block guards).

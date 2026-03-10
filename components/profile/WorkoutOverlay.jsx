@@ -64,23 +64,28 @@ export default function WorkoutOverlay({
           {saving ? 'Ukládám…' : 'Uložit'}
         </button>
       )}
-      footer={(
+      footer={saving ? (
+        <div className="footer-saving" role="status" aria-live="polite">
+          <span className="spinner" aria-hidden />
+          <span>Ukládám trénink a aktualizuji plán…</span>
+        </div>
+      ) : (
         <div className="footer-row">
-          <button type="button" className="btn-cancel" onClick={onClose} disabled={saving}>
+          <button type="button" className="btn-cancel" onClick={onClose}>
             Zrušit
           </button>
           <button
             type="button"
             className="btn-save btn-save--lg"
             onClick={() => formRef.current?.requestSubmit()}
-            disabled={saving}
           >
-            {saving ? 'Ukládám…' : 'Uložit záznam'}
+            Uložit záznam
           </button>
         </div>
       )}
     >
       <form ref={formRef} id="workout-overlay-form" className="wf" onSubmit={onSubmit}>
+        <fieldset className="wf-lock" disabled={saving}>
         <section className="ws">
           <h3 className="ws-title">Základní údaje</h3>
           <div className="row-two">
@@ -217,6 +222,7 @@ export default function WorkoutOverlay({
             />
           </label>
         </section>
+        </fieldset>
 
         {error && <p className="err-msg" role="alert">{error}</p>}
         {saving && (
@@ -232,6 +238,18 @@ export default function WorkoutOverlay({
         .wf {
           display: grid;
           gap: 12px;
+        }
+        .wf-lock {
+          margin: 0;
+          padding: 0;
+          border: 0;
+          min-width: 0;
+          display: grid;
+          gap: 12px;
+        }
+        .wf-lock:disabled {
+          opacity: 0.62;
+          cursor: wait;
         }
 
         /* ── Sekce ───────────────────────────────────────────────── */
@@ -443,6 +461,21 @@ export default function WorkoutOverlay({
           align-items: center;
           justify-content: space-between;
           gap: 12px;
+        }
+        .footer-saving {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          width: 100%;
+          min-height: 46px;
+          padding: 0 16px;
+          border-radius: 12px;
+          border: 1px solid rgba(100, 116, 139, 0.18);
+          background: rgba(15, 23, 42, 0.5);
+          color: #cbd5e1;
+          font-size: 0.9rem;
+          font-weight: 600;
         }
         .btn-cancel {
           height: 44px;

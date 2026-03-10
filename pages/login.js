@@ -8,6 +8,21 @@ import { supabase } from '../lib/supabaseClient';
 
 const MAIN_SITE = process.env.NEXT_PUBLIC_MAIN_SITE_URL || 'https://bodyandmindon.cz';
 
+function mapAuthErrorToCzechMessage(raw) {
+  const msg = String(raw || '');
+  const lower = msg.toLowerCase();
+  if (lower.includes('legacy api keys are disabled')) {
+    return 'Přihlášení je teď dočasně nedostupné. Zkus to prosím za chvíli znovu.';
+  }
+  if (msg === 'Invalid login credentials' || lower.includes('invalid') || lower.includes('credentials')) {
+    return 'Nesprávný e-mail nebo heslo.';
+  }
+  if (lower.includes('supabase není nakonfigurován')) {
+    return 'Aplikace nemá nastavené připojení k databázi. Kontaktuj provozovatele.';
+  }
+  return msg || 'Přihlášení se nepodařilo.';
+}
+
 export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -67,14 +82,7 @@ export default function Login() {
         setMessage('Přihlášení se nepodařilo. Zkus to znovu.');
       }
     } catch (err) {
-      const msg = err?.message || '';
-      if (msg === 'Invalid login credentials' || msg.includes('invalid') || msg.includes('credentials')) {
-        setMessage('Nesprávný e-mail nebo heslo.');
-      } else if (msg.includes('Supabase není nakonfigurován')) {
-        setMessage('Aplikace nemá nastavené připojení k databázi. Kontaktuj provozovatele.');
-      } else {
-        setMessage(msg || 'Přihlášení se nepodařilo.');
-      }
+      setMessage(mapAuthErrorToCzechMessage(err?.message));
     } finally {
       setLoading(false);
     }
@@ -97,7 +105,7 @@ export default function Login() {
       if (error) throw error;
       setMessage('Odkaz pro obnovení hesla jsme poslali na tvůj e-mail.');
     } catch (err) {
-      setMessage(err?.message || 'Nepodařilo se odeslat e-mail pro obnovu hesla.');
+      setMessage(mapAuthErrorToCzechMessage(err?.message) || 'Nepodařilo se odeslat e-mail pro obnovu hesla.');
     } finally {
       setResetLoading(false);
     }

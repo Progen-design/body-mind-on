@@ -355,7 +355,7 @@ export default function ChciVipPage() {
           {step === 5 && (
             <div className="habit-step">
               <h3 className="habit-step-title">Vyber si návyky k sledování</h3>
-              <HabitSelection selectedIds={selectedHabits} onChange={setSelectedHabits} />
+              <HabitSelection selectedIds={selectedHabits} suggestedIds={suggestedHabits} onChange={setSelectedHabits} />
               {selectedHabits.length === 0 && <p className="habit-step-hint">Vyber alespoň jeden návyk pro pokračování.</p>}
             </div>
           )}

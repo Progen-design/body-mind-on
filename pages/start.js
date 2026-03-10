@@ -407,6 +407,7 @@ export default function Start() {
               <h3 className="habit-step-title">Vyber si návyky k sledování</h3>
               <HabitSelection
                 selectedIds={selectedHabits}
+                suggestedIds={suggestedHabits}
                 onChange={setSelectedHabits}
               />
               {selectedHabits.length === 0 && (

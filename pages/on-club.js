@@ -367,7 +367,7 @@ export default function OnClubPage() {
                 <h3 className="habit-step-title">Vyber si denní návyky k sledování</h3>
                 <p className="habit-step-desc">V profilu uvidíš habit tracker a budeš si každý den odškrtávat, co jsi zvládl. Vyber alespoň jeden návyk – některé jsou předvybrané podle tvých odpovědí.</p>
                 <p className="habit-step-tip">Doporučujeme 3–7 návyků – méně je často lépe udržitelné.</p>
-                <HabitSelection selectedIds={selectedHabits} onChange={setSelectedHabits} />
+                <HabitSelection selectedIds={selectedHabits} suggestedIds={suggestedHabits} onChange={setSelectedHabits} />
                 {selectedHabits.length === 0 && <p className="habit-step-hint">Vyber alespoň jeden návyk pro pokračování.</p>}
               </div>
             </>

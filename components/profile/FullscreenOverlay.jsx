@@ -17,6 +17,7 @@ export default function FullscreenOverlay({
   title,
   subtitle,
   size = 'medium',
+  transparent = false,
   headerActions = null,
   footer = null,
   children,
@@ -99,7 +100,7 @@ export default function FullscreenOverlay({
 
   return createPortal(
     <div
-      className="overlay-root"
+      className={`overlay-root ${transparent ? 'overlay-root--transparent' : ''}`}
       role="presentation"
       onMouseDown={(event) => {
         if (event.target !== event.currentTarget || !canClose) return;
@@ -108,7 +109,7 @@ export default function FullscreenOverlay({
     >
       <div
         ref={panelRef}
-        className={panelClassName}
+        className={`${panelClassName} ${transparent ? 'overlay-panel--transparent' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy || 'fullscreen-overlay-title'}
@@ -155,6 +156,13 @@ export default function FullscreenOverlay({
           backdrop-filter: blur(18px);
           -webkit-backdrop-filter: blur(18px);
         }
+        .overlay-root--transparent {
+          background:
+            radial-gradient(circle at top, rgba(124, 58, 237, 0.16), transparent 34%),
+            rgba(2, 6, 23, 0.56);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+        }
         .overlay-panel {
           position: relative;
           display: flex;
@@ -167,6 +175,12 @@ export default function FullscreenOverlay({
           border: 1px solid rgba(148, 163, 184, 0.18);
           box-shadow: 0 32px 80px rgba(2, 6, 23, 0.55);
           overflow: hidden;
+        }
+        .overlay-panel--transparent {
+          background:
+            linear-gradient(180deg, rgba(8, 15, 31, 0.78) 0%, rgba(7, 12, 24, 0.74) 100%);
+          border-color: rgba(148, 163, 184, 0.14);
+          box-shadow: 0 26px 62px rgba(2, 6, 23, 0.38);
         }
         .overlay-panel--workout {
           max-width: 860px;

@@ -51,8 +51,9 @@ export default function WorkoutOverlay({
       onClose={onClose}
       canClose={!saving}
       title="Záznam tréninku"
-      subtitle="Zapiš dokončenou aktivitu. Systém ji zahrne do hodnocení a doporučení."
+      subtitle="Vyplň jen datum, typ a délku. Ostatní pole se ukážou automaticky podle zvolené aktivity."
       size="workout"
+      transparent
       headerActions={(
         <button
           type="button"
@@ -80,17 +81,8 @@ export default function WorkoutOverlay({
       )}
     >
       <form ref={formRef} id="workout-overlay-form" className="wf" onSubmit={onSubmit}>
-
-        {/* ── Sekce 1 ─ Základní info ───────────────────────────── */}
         <section className="ws">
-          <div className="ws-head">
-            <span className="ws-num">01</span>
-            <div>
-              <h3 className="ws-title">Základní parametry</h3>
-              <p className="ws-desc">Datum, typ aktivity a délka tréninku.</p>
-            </div>
-          </div>
-
+          <h3 className="ws-title">Základní údaje</h3>
           <div className="row-two">
             <label className="field">
               <span className="field-label">Datum</span>
@@ -153,17 +145,7 @@ export default function WorkoutOverlay({
               })}
             </div>
           </div>
-        </section>
-
-        {/* ── Sekce 2 ─ Doplňující parametry ───────────────────── */}
-        <section className="ws">
-          <div className="ws-head">
-            <span className="ws-num">02</span>
-            <div>
-              <h3 className="ws-title">Parametry aktivity</h3>
-              <p className="ws-desc">Doplňující údaje dle typu tréninku.</p>
-            </div>
-          </div>
+          <p className="hint">Zobrazujeme jen pole, která se k vybranému typu tréninku opravdu vážou.</p>
 
           {isSwimming && (
             <label className="field field--half">
@@ -224,17 +206,6 @@ export default function WorkoutOverlay({
           {!isSwimming && !isKmWorkout && !showsDifficulty && (
             <p className="no-extra">Pro tento typ aktivity nejsou potřeba doplňující parametry.</p>
           )}
-        </section>
-
-        {/* ── Sekce 3 ─ Poznámka ────────────────────────────────── */}
-        <section className="ws">
-          <div className="ws-head">
-            <span className="ws-num">03</span>
-            <div>
-              <h3 className="ws-title">Poznámka</h3>
-              <p className="ws-desc">Volitelný kontext k tréninku – pocit, podmínky, zaměření.</p>
-            </div>
-          </div>
 
           <label className="field">
             <span className="field-label">Poznámka <span className="optional">(nepovinné)</span></span>
@@ -260,53 +231,29 @@ export default function WorkoutOverlay({
         /* ── Layout ──────────────────────────────────────────────── */
         .wf {
           display: grid;
-          gap: 2px;
+          gap: 12px;
         }
 
         /* ── Sekce ───────────────────────────────────────────────── */
         .ws {
           display: grid;
-          gap: 22px;
-          padding: 28px 32px;
-          border-bottom: 1px solid rgba(148, 163, 184, 0.08);
-        }
-        .ws:last-child {
-          border-bottom: none;
-        }
-
-        .ws-head {
-          display: flex;
-          align-items: flex-start;
-          gap: 16px;
-        }
-        .ws-num {
-          flex-shrink: 0;
-          width: 36px;
-          height: 36px;
-          border-radius: 10px;
-          background: rgba(100, 116, 139, 0.12);
-          border: 1px solid rgba(100, 116, 139, 0.18);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 0.72rem;
-          font-weight: 700;
-          letter-spacing: 0.05em;
-          color: #64748b;
-          margin-top: 2px;
+          gap: 18px;
+          padding: 20px 22px;
+          border-radius: 16px;
+          border: 1px solid rgba(148, 163, 184, 0.12);
+          background: rgba(8, 15, 31, 0.34);
         }
         .ws-title {
-          margin: 0 0 5px;
-          font-size: 1.05rem;
+          margin: 0;
+          font-size: 1rem;
           font-weight: 600;
           color: #f1f5f9;
           letter-spacing: -0.01em;
         }
-        .ws-desc {
-          margin: 0;
-          font-size: 0.875rem;
-          color: #64748b;
-          line-height: 1.5;
+        .hint {
+          margin: -4px 0 2px;
+          font-size: 0.84rem;
+          color: #94a3b8;
         }
 
         /* ── Grid ────────────────────────────────────────────────── */
@@ -345,9 +292,9 @@ export default function WorkoutOverlay({
           width: 100%;
           box-sizing: border-box;
           padding: 11px 14px;
-          border-radius: 10px;
+          border-radius: 12px;
           border: 1px solid rgba(100, 116, 139, 0.22);
-          background: rgba(15, 23, 42, 0.6);
+          background: rgba(15, 23, 42, 0.52);
           color: #f1f5f9;
           font-size: 0.95rem;
           outline: none;
@@ -405,7 +352,7 @@ export default function WorkoutOverlay({
         .type-grid {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 7px;
+          gap: 8px;
         }
         .type-btn {
           position: relative;
@@ -413,8 +360,8 @@ export default function WorkoutOverlay({
           align-items: center;
           justify-content: center;
           gap: 6px;
-          padding: 10px 8px;
-          border-radius: 8px;
+          padding: 11px 8px;
+          border-radius: 12px;
           border: 1px solid rgba(100, 116, 139, 0.18);
           background: rgba(15, 23, 42, 0.45);
           color: #94a3b8;
@@ -465,11 +412,11 @@ export default function WorkoutOverlay({
         .diff-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 8px;
+          gap: 9px;
         }
         .diff-btn {
           padding: 12px 10px;
-          border-radius: 8px;
+          border-radius: 12px;
           border: 1px solid rgba(100, 116, 139, 0.18);
           background: rgba(15, 23, 42, 0.45);
           color: #94a3b8;
@@ -502,7 +449,7 @@ export default function WorkoutOverlay({
           padding: 0 20px;
           border-radius: 9px;
           border: 1px solid rgba(100, 116, 139, 0.22);
-          background: transparent;
+          background: rgba(15, 23, 42, 0.22);
           color: #64748b;
           font-size: 0.9rem;
           font-weight: 500;
@@ -516,7 +463,7 @@ export default function WorkoutOverlay({
         .btn-save {
           height: 44px;
           padding: 0 22px;
-          border-radius: 9px;
+          border-radius: 12px;
           border: 1px solid rgba(148, 163, 184, 0.3);
           background: rgba(30, 41, 59, 0.95);
           color: #e2e8f0;
@@ -561,7 +508,7 @@ export default function WorkoutOverlay({
           align-items: center;
           gap: 10px;
           padding: 12px 16px;
-          border-radius: 9px;
+          border-radius: 12px;
           background: rgba(15, 23, 42, 0.5);
           border: 1px solid rgba(100, 116, 139, 0.16);
           color: #94a3b8;
@@ -580,7 +527,7 @@ export default function WorkoutOverlay({
         /* ── Responsive ──────────────────────────────────────────── */
         @media (max-width: 767px) {
           .ws {
-            padding: 22px 18px;
+            padding: 16px;
           }
           .row-two {
             grid-template-columns: 1fr;

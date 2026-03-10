@@ -51,40 +51,39 @@ const WORKOUT_DIFFICULTY_OPTIONS = [
   { id: 'too_hard', label: 'Příliš náročné' },
 ];
 
-// Odhad kcal/min dle typu (orientační)
-const KCAL_PER_MIN_BY_TYPE = {
-  silovy: 5,
-  kardio: 8,
-  beh: 10,
-  kolo: 7,
-  chuze: 4,
-  plavani: 10,
-  strečink: 2.5,
-  joga: 3,
-  nordic_walking: 6,
-  brusleni: 8,
-  lyzovani: 8,
-  sauna: 1.5,
-  ostatni: 4,
+const WORKOUT_TYPE_SPECS = {
+  silovy: { kcalPerMin: 5, loadPerMin: 1.1 },
+  kardio: { kcalPerMin: 8, loadPerMin: 1.4 },
+  beh: { kcalPerMin: 10, loadPerMin: 1.6, kcalPerKm: 60, paceMinPerKm: 6.5, loadPerKm: 9.5 },
+  kolo: { kcalPerMin: 7, loadPerMin: 1.3, kcalPerKm: 30, paceMinPerKm: 3.3, loadPerKm: 5.5 },
+  chuze: { kcalPerMin: 4, loadPerMin: 0.7, kcalPerKm: 35, paceMinPerKm: 12, loadPerKm: 4.2 },
+  plavani: { kcalPerMin: 10, loadPerMin: 1.8, kcalPerKm: 100, loadPerKm: 12 }, // 10 kcal / 100 m
+  'strečink': { kcalPerMin: 2.5, loadPerMin: 0.45 },
+  strecink: { kcalPerMin: 2.5, loadPerMin: 0.45 }, // fallback bez diakritiky
+  joga: { kcalPerMin: 3, loadPerMin: 0.55 },
+  nordic_walking: { kcalPerMin: 6, loadPerMin: 1, kcalPerKm: 45, paceMinPerKm: 10, loadPerKm: 6.5 },
+  brusleni: { kcalPerMin: 8, loadPerMin: 1.35, kcalPerKm: 50, paceMinPerKm: 5, loadPerKm: 7.8 },
+  lyzovani: { kcalPerMin: 8, loadPerMin: 1.45, kcalPerKm: 55, paceMinPerKm: 6, loadPerKm: 8.4 },
+  sauna: { kcalPerMin: 1.5, loadPerMin: 0.2 },
+  ostatni: { kcalPerMin: 4, loadPerMin: 0.8 },
 };
 
-const WORKOUT_DISTANCE_KCAL_PER_KM = {
-  beh: 60,
-  kolo: 30,
-  chuze: 35,
-  nordic_walking: 45,
-  brusleni: 50,
-  lyzovani: 55,
+const WORKOUT_DIFFICULTY_MULTIPLIER = {
+  easy: 0.9,
+  just_right: 1,
+  hard: 1.12,
+  too_hard: 1.2,
 };
 
-const WORKOUT_DISTANCE_PACE_MIN_PER_KM = {
-  beh: 6.5,
-  kolo: 3.3,
-  chuze: 12,
-  nordic_walking: 10,
-  brusleni: 5,
-  lyzovani: 6,
-};
+function normalizeWorkoutTypeId(type) {
+  const raw = String(type || 'ostatni').toLowerCase();
+  return raw === 'strecink' ? 'strečink' : raw;
+}
+
+function getWorkoutTypeSpec(type) {
+  const normalized = normalizeWorkoutTypeId(type);
+  return WORKOUT_TYPE_SPECS[normalized] || WORKOUT_TYPE_SPECS.ostatni;
+}
 
 function parseWorkoutMetaFromNotes(rawNotes) {
   const notes = typeof rawNotes === 'string' ? rawNotes : '';
@@ -114,7 +113,7 @@ function serializeWorkoutNotesWithMeta(userNotes, meta) {
 }
 
 function getWorkoutDistanceKm(workout) {
-  const type = (workout?.workout_type || 'ostatni').toLowerCase();
+  const type = normalizeWorkoutTypeId(workout?.workout_type);
   const { meta } = parseWorkoutMetaFromNotes(workout?.notes);
   if (type === 'plavani') {
     const meters = Number(meta?.distance_m) || 0;
@@ -127,15 +126,15 @@ function getWorkoutDistanceKm(workout) {
 function getWorkoutDurationMinutes(workout) {
   const explicit = Number(workout?.duration_min) || 0;
   if (explicit > 0) return explicit;
-  const type = (workout?.workout_type || 'ostatni').toLowerCase();
+  const type = normalizeWorkoutTypeId(workout?.workout_type);
   const km = getWorkoutDistanceKm(workout);
-  const pace = WORKOUT_DISTANCE_PACE_MIN_PER_KM[type];
+  const pace = getWorkoutTypeSpec(type)?.paceMinPerKm;
   if (km > 0 && pace) return Math.round(km * pace);
   return 0;
 }
 
 function getWorkoutDetailLabel(workout) {
-  const type = (workout?.workout_type || 'ostatni').toLowerCase();
+  const type = normalizeWorkoutTypeId(workout?.workout_type);
   const { meta } = parseWorkoutMetaFromNotes(workout?.notes);
   if (type === 'plavani') {
     const meters = Number(meta?.distance_m) || 0;
@@ -147,19 +146,30 @@ function getWorkoutDetailLabel(workout) {
 }
 
 function estimatedCalories(workout) {
-  const type = (workout.workout_type || 'ostatni').toLowerCase();
+  const type = normalizeWorkoutTypeId(workout?.workout_type);
+  const spec = getWorkoutTypeSpec(type);
   const km = getWorkoutDistanceKm(workout);
   if (km > 0) {
-    if (type === 'plavani') {
-      // Orientační výdej: cca 10 kcal / 100 m plavání.
-      return Math.round(km * 1000 * 0.1);
-    }
-    const perKm = WORKOUT_DISTANCE_KCAL_PER_KM[type];
+    const perKm = spec?.kcalPerKm;
     if (perKm) return Math.round(km * perKm);
   }
   const min = getWorkoutDurationMinutes(workout);
-  const kcalPerMin = KCAL_PER_MIN_BY_TYPE[type] ?? KCAL_PER_MIN_BY_TYPE.ostatni;
+  const kcalPerMin = spec?.kcalPerMin ?? WORKOUT_TYPE_SPECS.ostatni.kcalPerMin;
   return Math.round(min * kcalPerMin);
+}
+
+function getWorkoutLoadPoints(workout) {
+  const type = normalizeWorkoutTypeId(workout?.workout_type);
+  const spec = getWorkoutTypeSpec(type);
+  const km = getWorkoutDistanceKm(workout);
+  const minutes = getWorkoutDurationMinutes(workout);
+  const difficultyMul = WORKOUT_DIFFICULTY_MULTIPLIER[workout?.perceived_difficulty] || 1;
+
+  const baseLoad = km > 0 && spec?.loadPerKm
+    ? km * spec.loadPerKm
+    : minutes * (spec?.loadPerMin ?? WORKOUT_TYPE_SPECS.ostatni.loadPerMin);
+
+  return Math.round(baseLoad * difficultyMul * 10) / 10;
 }
 
 function formatDate(d) {
@@ -1140,7 +1150,7 @@ export default function Profil() {
 
   // Všechny parametry se přepočítají při každé změně profile (trénink, váha)
   // Použít _updated timestamp jako závislost, aby se vždy přepočítalo při změně
-  const { program, membershipStatus, membershipSince, trialEndsAt, isTrialExpired, daysUntilTrialEnd, metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, userName, firstName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, periodStartFormatted, periodEndFormatted, thisWeekDates, startWeightDate, lastWeightDate, habitAdjustedWeight, hasHabitData, positiveDone, negativeDone, habitCorrectionKg } = useMemo(() => {
+  const { program, membershipStatus, membershipSince, trialEndsAt, isTrialExpired, daysUntilTrialEnd, metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, workoutLoadThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, weeklyTypeLoadBars, weeklyDayLoadBars, userName, firstName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, periodStartFormatted, periodEndFormatted, thisWeekDates, startWeightDate, lastWeightDate, habitAdjustedWeight, hasHabitData, positiveDone, negativeDone, habitCorrectionKg } = useMemo(() => {
     // Zajistit, že máme vždy nové reference na pole pro správnou detekci změn
     // A SORT podle data - nejnovější první
     const m = profile?.body_metrics 
@@ -1179,6 +1189,7 @@ export default function Profil() {
     const thisWeekDates = [...new Set(thisWeek.map((x) => getDate(x)))].sort().map((d) => formatShortDate(d));
     const minWeek = thisWeek.reduce((s, x) => s + getWorkoutDurationMinutes(x), 0);
     const kcalWeek = thisWeek.reduce((s, x) => s + estimatedCalories(x), 0);
+    const loadWeek = thisWeek.reduce((s, x) => s + getWorkoutLoadPoints(x), 0);
     const minTotal = w.reduce((s, x) => s + getWorkoutDurationMinutes(x), 0);
     const kcalTotal = w.reduce((s, x) => s + estimatedCalories(x), 0);
     const lastWeekStart = new Date(weekStart);
@@ -1241,6 +1252,44 @@ export default function Profil() {
       : null;
     const hasHabitData = (profile?.habit_summary_7d != null) && (positiveDone > 0 || negativeDone > 0);
 
+    const typeLoadMap = {};
+    thisWeek.forEach((workout) => {
+      const typeId = normalizeWorkoutTypeId(workout?.workout_type);
+      typeLoadMap[typeId] = (typeLoadMap[typeId] || 0) + getWorkoutLoadPoints(workout);
+    });
+    const maxTypeLoad = Math.max(1, ...Object.values(typeLoadMap), 1);
+    const weeklyTypeLoadBars = WORKOUT_TYPES
+      .map((type) => ({
+        id: type.id,
+        label: type.label,
+        points: Math.round((typeLoadMap[type.id] || 0) * 10) / 10,
+      }))
+      .filter((x) => x.points > 0)
+      .sort((a, b) => b.points - a.points)
+      .slice(0, 6)
+      .map((x) => ({
+        ...x,
+        ratio: Math.max(8, Math.round((x.points / maxTypeLoad) * 100)),
+      }));
+
+    const weekDayBase = getWeekDays(weekStartStr);
+    const dayLoadMap = {};
+    thisWeek.forEach((workout) => {
+      const dayKey = getDate(workout);
+      if (!dayKey) return;
+      dayLoadMap[dayKey] = (dayLoadMap[dayKey] || 0) + getWorkoutLoadPoints(workout);
+    });
+    const maxDayLoad = Math.max(1, ...Object.values(dayLoadMap), 1);
+    const weeklyDayLoadBars = weekDayBase.map((day) => {
+      const points = Math.round((dayLoadMap[day.dateKey] || 0) * 10) / 10;
+      return {
+        date: day.dateKey,
+        label: formatShortDate(day.dateKey),
+        points,
+        ratio: points > 0 ? Math.max(10, Math.round((points / maxDayLoad) * 100)) : 0,
+      };
+    });
+
     const program = profile?.program || 'START';
     const membershipStatus = profile?.membershipStatus || 'active';
     const membershipSince = profile?.membershipSince || null;
@@ -1265,9 +1314,12 @@ export default function Profil() {
       workoutsThisWeek: thisWeek,
       totalMinutesThisWeek: minWeek,
       estimatedCaloriesThisWeek: kcalWeek,
+      workoutLoadThisWeek: Math.round(loadWeek),
       totalMinutes: minTotal,
       estimatedCaloriesAll: kcalTotal,
       chartWeightData: chartData,
+      weeklyTypeLoadBars,
+      weeklyDayLoadBars,
       userName: name,
       firstName: (name || '').trim().split(/\s+/)[0] || name || 'ty',
       lastWeekCount: lastWeek.length,
@@ -2421,6 +2473,44 @@ export default function Profil() {
                   <span className="kpi-label">{hasHabitData ? 'odhad (tréninky + návyky)' : 'odhad z tréninků'}</span>
                 </div>
               </div>
+              <div className="workload-panels">
+                <section className="workload-card">
+                  <h3 className="workload-title">Zátěž týdne podle typu</h3>
+                  <p className="workload-sub">Skóre = typ aktivity + délka/vzdálenost + náročnost.</p>
+                  {weeklyTypeLoadBars.length > 0 ? (
+                    <ul className="workload-bars">
+                      {weeklyTypeLoadBars.map((item) => (
+                        <li key={item.id} className="workload-row">
+                          <span className="workload-label">{item.label}</span>
+                          <div className="workload-track">
+                            <span className="workload-fill" style={{ width: `${item.ratio}%` }} />
+                          </div>
+                          <span className="workload-value">{item.points}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="workload-empty">Tento týden zatím bez záznamu aktivit.</p>
+                  )}
+                </section>
+
+                <section className="workload-card">
+                  <h3 className="workload-title">Denní zátěž (tento týden)</h3>
+                  <p className="workload-sub">Lépe uvidíš, které dny jsou přetížené a které volnější.</p>
+                  <ul className="workload-bars">
+                    {weeklyDayLoadBars.map((item) => (
+                      <li key={item.date} className="workload-row">
+                        <span className="workload-label">{item.label}</span>
+                        <div className="workload-track">
+                          <span className="workload-fill workload-fill--day" style={{ width: `${item.ratio}%` }} />
+                        </div>
+                        <span className="workload-value">{item.points > 0 ? item.points : '—'}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              </div>
+              <p className="workload-total">Souhrnná zátěž týdne: <strong>{workoutLoadThisWeek}</strong></p>
             </section>
               )}
               {statsTab === 'weight' && (
@@ -4322,6 +4412,80 @@ export default function Profil() {
         }
         .kpis-bar .kpi-label { font-size: 12px; color: #94a3b8; }
         .kpis-bar .kpi-sub { font-size: 11px; color: #64748b; }
+        .workload-panels {
+          margin-top: 14px;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+        .workload-card {
+          padding: 14px;
+          border-radius: 14px;
+          border: 1px solid rgba(255,255,255,0.08);
+          background: rgba(255,255,255,0.03);
+        }
+        .workload-title {
+          margin: 0;
+          font-size: 14px;
+          color: #e9d5ff;
+        }
+        .workload-sub {
+          margin: 6px 0 12px;
+          font-size: 12px;
+          color: #94a3b8;
+        }
+        .workload-bars {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          display: grid;
+          gap: 8px;
+        }
+        .workload-row {
+          display: grid;
+          grid-template-columns: 92px 1fr auto;
+          align-items: center;
+          gap: 8px;
+        }
+        .workload-label {
+          font-size: 12px;
+          color: #cbd5e1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .workload-track {
+          height: 8px;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.06);
+          overflow: hidden;
+        }
+        .workload-fill {
+          display: block;
+          height: 100%;
+          border-radius: inherit;
+          background: linear-gradient(90deg, #7c3aed, #a78bfa);
+        }
+        .workload-fill--day {
+          background: linear-gradient(90deg, #2563eb, #60a5fa);
+        }
+        .workload-value {
+          min-width: 32px;
+          text-align: right;
+          font-size: 12px;
+          color: #e2e8f0;
+          font-weight: 600;
+        }
+        .workload-empty {
+          margin: 0;
+          font-size: 12px;
+          color: #64748b;
+        }
+        .workload-total {
+          margin: 12px 2px 0;
+          color: #94a3b8;
+          font-size: 13px;
+        }
 
         .chart-section { margin-bottom: 40px; }
         .chart-hint {
@@ -4696,6 +4860,8 @@ export default function Profil() {
           .kpis-bar .kpi-num { font-size: 16px; }
           .kpis-bar .kpi-label, .kpis-bar .kpi-sub { font-size: 11px; }
           .kpi-divider { min-height: 40px; }
+          .workload-panels { grid-template-columns: 1fr; }
+          .workload-row { grid-template-columns: 84px 1fr auto; }
           .section-head { font-size: 1.25rem; }
           .modal-overlay {
             padding: 0;

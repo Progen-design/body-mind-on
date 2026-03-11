@@ -7,7 +7,7 @@ import HabitSelection from "../components/HabitSelection";
 import { getSuggestedHabits } from "../lib/habits";
 import { getFrequencyDayRange } from "../lib/preferenceConstants";
 
-const MAX_STEP = 4;
+const MAX_STEP = 5;
 
 export default function OnClubPage() {
   const router = useRouter();
@@ -73,7 +73,7 @@ export default function OnClubPage() {
   const canProceedStep2 = () => formData.gender && formData.age && formData.height && formData.weight;
   const canProceedStep3 = () => formData.activity && formData.stress && formData.worktype && formData.goal && formData.frequency
     && Array.isArray(formData.workout_days) && formData.workout_days.length >= 1;
-  const canProceedStep4 = () => selectedHabits.length > 0;
+  const canProceedStep5 = () => selectedHabits.length > 0;
 
   const suggestedHabits = useMemo(() => getSuggestedHabits({
     goal: formData.goal,
@@ -187,11 +187,11 @@ export default function OnClubPage() {
 
         <div className="progress-bar-wrap max-w-3xl mx-auto mb-8">
           <div className="progress-dots">
-            {[1, 2, 3, 4].map((s) => (
+            {[1, 2, 3, 4, 5].map((s) => (
               <span key={s} className={s === step ? "active" : s < step ? "done" : ""} aria-hidden>{s}</span>
             ))}
           </div>
-          <p className="progress-label">Krok {step} z {MAX_STEP}{step === 4 ? " – Vyber denní návyky" : ""}</p>
+          <p className="progress-label">Krok {step} z {MAX_STEP}</p>
         </div>
 
         <form
@@ -354,48 +354,50 @@ export default function OnClubPage() {
             </div>
           )}
 
+          {/* KROK 4: Strava a omezení (volitelné) – stejné jako START */}
           {step === 4 && (
-            <>
-              <div className="diet-section">
-                <div className="diet-section-header">
-                  <span className="diet-section-icon">🥗</span>
-                  <div>
-                    <h3 className="diet-section-title">Strava a omezení (volitelné)</h3>
-                    <p className="diet-section-desc">Abychom do jídelníčku nezařadili to, co nejíš.</p>
-                  </div>
-                </div>
-                <div className="diet-section-body">
-                  <div>
-                    <label className="reg-label">Typ stravy (volitelné)</label>
-                    <select name="diet_type" className="reg-input" value={formData.diet_type} onChange={handleChange} disabled={isSubmitting}>
-                      <option value="">Žádná preference</option>
-                      <option value="vegetarian">Vegetarián</option>
-                      <option value="vegan">Vegan</option>
-                      <option value="gluten_free">Bez lepku</option>
-                      <option value="lactose_free">Bez laktózy</option>
-                      <option value="paleo">Paleo</option>
-                      <option value="low_carb">Nízkosacharidová</option>
-                      <option value="other">Jiné (popiš v poli Co nejí)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="reg-label">Co nejí – alergie, intolerance (volitelné)</label>
-                    <textarea name="dietary_restrictions" className="reg-input" rows="2" value={formData.dietary_restrictions} onChange={handleChange} placeholder="např. ořechy, mléko, lepek…" disabled={isSubmitting} />
-                  </div>
-                  <div>
-                    <label className="reg-label">Potraviny k vynechání z jídelníčku (volitelné)</label>
-                    <textarea name="foods_to_avoid" className="reg-input" rows="2" value={formData.foods_to_avoid} onChange={handleChange} placeholder="např. avokádo, brokolice, banány – konkrétní potraviny, které nemají být v plánu" disabled={isSubmitting} />
-                  </div>
+            <div className="diet-section">
+              <div className="diet-section-header">
+                <span className="diet-section-icon">🥗</span>
+                <div>
+                  <h3 className="diet-section-title">Strava a omezení (volitelné)</h3>
+                  <p className="diet-section-desc">Abychom do jídelníčku nezařadili to, co nejíš.</p>
                 </div>
               </div>
-              <div className="habit-step">
-                <h3 className="habit-step-title">Vyber si denní návyky k sledování</h3>
-                <p className="habit-step-desc">V profilu uvidíš habit tracker a budeš si každý den odškrtávat, co jsi zvládl. Vyber alespoň jeden návyk – některé jsou předvybrané podle tvých odpovědí.</p>
-                <p className="habit-step-tip">Doporučujeme 3–7 návyků – méně je často lépe udržitelné.</p>
-                <HabitSelection selectedIds={selectedHabits} suggestedIds={suggestedHabits} onChange={setSelectedHabits} disabled={isSubmitting} />
-                {selectedHabits.length === 0 && <p className="habit-step-hint">Vyber alespoň jeden návyk pro pokračování.</p>}
+              <div className="diet-section-body">
+                <div>
+                  <label className="reg-label">Typ stravy (volitelné)</label>
+                  <select name="diet_type" className="reg-input" value={formData.diet_type} onChange={handleChange} disabled={isSubmitting}>
+                    <option value="">Žádná preference</option>
+                    <option value="vegetarian">Vegetarián</option>
+                    <option value="vegan">Vegan</option>
+                    <option value="gluten_free">Bez lepku</option>
+                    <option value="lactose_free">Bez laktózy</option>
+                    <option value="paleo">Paleo</option>
+                    <option value="low_carb">Nízkosacharidová</option>
+                    <option value="other">Jiné (popiš v poli Co nejí)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="reg-label">Co nejí – alergie, intolerance (volitelné)</label>
+                  <textarea name="dietary_restrictions" className="reg-input" rows="2" value={formData.dietary_restrictions} onChange={handleChange} placeholder="např. ořechy, mléko, lepek…" disabled={isSubmitting} />
+                </div>
+                <div>
+                  <label className="reg-label">Potraviny k vynechání z jídelníčku (volitelné)</label>
+                  <textarea name="foods_to_avoid" className="reg-input" rows="2" value={formData.foods_to_avoid} onChange={handleChange} placeholder="např. avokádo, brokolice, banány – konkrétní potraviny, které nemají být v plánu" disabled={isSubmitting} />
+                </div>
               </div>
-            </>
+            </div>
+          )}
+
+          {/* KROK 5: Výběr návyků – ON Club extra: habit tracker v profilu */}
+          {step === 5 && (
+            <div className="habit-step">
+              <h3 className="habit-step-title">Vyber si návyky k sledování</h3>
+              <p className="habit-step-desc habit-step-extra">V ON Clubu máš přístup k habit trackeru – v profilu budeš každý den odškrtávat, co jsi zvládl. Vyber alespoň jeden návyk – některé jsou předvybrané podle tvých odpovědí.</p>
+              <HabitSelection selectedIds={selectedHabits} suggestedIds={suggestedHabits} onChange={setSelectedHabits} disabled={isSubmitting} />
+              {selectedHabits.length === 0 && <p className="habit-step-hint">Vyber alespoň jeden návyk pro pokračování.</p>}
+            </div>
           )}
 
           <div className="form-actions">
@@ -405,11 +407,11 @@ export default function OnClubPage() {
               <span />
             )}
             {step < MAX_STEP ? (
-              <button type="submit" className="btn-submit" disabled={isSubmitting || (step === 1 && !canProceedStep1()) || (step === 2 && !canProceedStep2()) || (step === 3 && !canProceedStep3())}>
+              <button type="submit" className="btn-submit" disabled={isSubmitting || (step === 1 && !canProceedStep1()) || (step === 2 && !canProceedStep2()) || (step === 3 && !canProceedStep3()) || (step === 5 && !canProceedStep5())}>
                 Pokračovat
               </button>
             ) : (
-              <button type="submit" className="btn-submit btn-submit-large" disabled={!canProceedStep4() || isSubmitting}>
+              <button type="submit" className="btn-submit btn-submit-large" disabled={!canProceedStep5() || isSubmitting}>
                 {isSubmitting ? "Generuji plán…" : "Připojit se k ON Clubu"}
               </button>
             )}

@@ -179,9 +179,9 @@ export default async function handler(req, res) {
         }
         if (initialPlanTaskStatus === 'pending' && taskRow?.id) {
           directExecutionTriggered = true;
-          console.info('[body-metrics] initial_plan still pending after scheduler – processing directly (fallback for batch limit)');
+          console.info('[body-metrics] direct executeAITask started (fallback for pending initial_plan)');
           try {
-            const { data: directTask } = await supabaseServer.from('ai_tasks').select('id, user_id, agent_slug, task_type, payload').eq('id', taskRow.id).eq('status', 'pending').maybeSingle();
+            const { data: directTask } = await supabaseServer.from('ai_tasks').select('id, user_id, agent_slug, task_type, payload').eq('id', taskRow.id).eq('status', 'pending').eq('agent_slug', 'trainer').eq('task_type', 'initial_plan').maybeSingle();
             if (directTask) {
               const exec = await executeAITask(directTask);
               await supabaseServer.from('ai_tasks').update({
@@ -194,13 +194,14 @@ export default async function handler(req, res) {
                 planSent = exec?.result?.email_sent === true;
                 initialPlanSummary = exec?.result?.summary ?? null;
                 initialPlanValidationWarning = exec?.result?.validation_warning ?? null;
-                console.info('[body-metrics] direct executeAITask completed', { plan_sent: planSent, summary: initialPlanSummary });
+                console.info('[body-metrics] direct executeAITask finished', { plan_sent: planSent, summary: initialPlanSummary });
               }
             }
           } catch (directErr) {
             console.warn('[body-metrics] direct executeAITask fallback failed:', directErr?.message);
           }
         }
+        console.info('[body-metrics] initial_plan task final status', initialPlanTaskStatus);
       } catch (schedErr) {
         console.warn('[body-metrics] scheduler run failed (tasks remain pending):', schedErr?.message);
       }

@@ -77,6 +77,7 @@ export default async function handler(req, res) {
           result_email_sent: task.result?.email_sent ?? null,
           result_html_length: task.result?.html_length ?? null,
           result_selected_html_source: task.result?.selected_html_source ?? null,
+          result_matched_sections: task.result?.matched_sections ?? null,
           result_keys: task.result && typeof task.result === 'object' ? Object.keys(task.result) : [],
           created_at: task.created_at,
           processed_at: task.processed_at,

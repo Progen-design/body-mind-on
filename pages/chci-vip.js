@@ -115,7 +115,7 @@ export default function ChciVipPage() {
       return;
     }
     setIsSubmitting(true);
-    setStatus("⏳ Odesílám... (může trvat až minutu – generuje se plán a e-mail)");
+    setStatus("⏳ Odesílám registraci a připravuji účet…");
 
     try {
       const cleanedData = normalizeData(formData);
@@ -377,7 +377,7 @@ export default function ChciVipPage() {
                 </div>
                 <div>
                   <label className="reg-label">Co nejí – alergie, intolerance (volitelné)</label>
-                  <textarea name="dietary_restrictions" className="reg-input" rows="2" value={formData.dietary_restrictions} onChange={handleChange} placeholder="např. ořechy, mléko, lepek…" />
+                  <textarea name="dietary_restrictions" className="reg-input" rows="2" value={formData.dietary_restrictions} onChange={handleChange} placeholder="např. ořechy, mléko, lepek…" disabled={isSubmitting} />
                 </div>
                 <div>
                   <label className="reg-label">Potraviny k vynechání z jídelníčku (volitelné)</label>
@@ -387,9 +387,11 @@ export default function ChciVipPage() {
             </div>
           )}
 
+          {/* KROK 5: Výběr návyků – VIP extra: habit tracker + plný přístup ke koučování */}
           {step === 5 && (
             <div className="habit-step">
               <h3 className="habit-step-title">Vyber si návyky k sledování</h3>
+              <p className="habit-step-desc habit-step-extra">Jako VIP máš habit tracker, AI plán i přístup k elitnímu kouči – týdenní 1:1 konzultace a strategie šitá na míru. Vyber alespoň jeden návyk – některé jsou předvybrané podle tvých odpovědí.</p>
               <HabitSelection selectedIds={selectedHabits} suggestedIds={suggestedHabits} onChange={setSelectedHabits} disabled={isSubmitting} />
               {selectedHabits.length === 0 && <p className="habit-step-hint">Vyber alespoň jeden návyk pro pokračování.</p>}
             </div>
@@ -406,7 +408,7 @@ export default function ChciVipPage() {
                 Pokračovat
               </button>
             ) : (
-              <button type="submit" className="btn-submit btn-submit-large" disabled={isSubmitting}>
+              <button type="submit" className="btn-submit btn-submit-large" disabled={!canProceedStep5() || isSubmitting}>
                 {isSubmitting ? "Generuji plán…" : "Chci VIP přístup"}
               </button>
             )}
@@ -448,7 +450,8 @@ export default function ChciVipPage() {
         .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-submit-large { padding: 14px 32px; font-size: 16px; }
         .habit-step { margin-bottom: 0; }
-        .habit-step-title { margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #e2e8f0; }
+        .habit-step-title { margin: 0 0 10px; font-size: 16px; font-weight: 600; color: #e2e8f0; }
+        .habit-step-desc { margin: 0 0 16px; font-size: 15px; color: #94a3b8; line-height: 1.55; }
         .habit-step-hint { margin: 12px 0 0; font-size: 13px; color: #f87171; }
         .diet-section {
           margin-bottom: 24px;

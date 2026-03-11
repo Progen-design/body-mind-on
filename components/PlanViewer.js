@@ -531,7 +531,9 @@ function parsePlanHtml(html) {
       let next = h3.nextElementSibling;
       const list = [];
       let htmlContent = '';
+      let rawSectionHtml = '';
       while (next && next.tagName !== 'H3') {
+        rawSectionHtml += next.outerHTML || '';
         if (next.tagName === 'UL') {
           next.querySelectorAll('li').forEach((li) => list.push(li.innerHTML || li.textContent));
         } else if (next.tagName === 'P' || next.tagName === 'H4') {
@@ -539,6 +541,7 @@ function parsePlanHtml(html) {
         }
         next = next.nextElementSibling;
       }
+      if (title && rawSectionHtml) result.rawSections[title] = rawSectionHtml;
 
       if (/Osobní údaje|údaje & cíle/i.test(title)) {
         result.personal = list.map((item) => {
@@ -661,7 +664,7 @@ function parsePlanHtml(html) {
       result.days = rotated.map((dn) => byDay[dn] || { dayName: dn, meals: [], _placeholder: true });
     }
 
-    if (result.personal.length || result.macros.length || result.days.length) return result;
+    if (result.personal.length || result.macros.length || result.days.length || Object.keys(result.rawSections).length > 0) return result;
     return null;
   } catch (e) {
     return null;
@@ -733,7 +736,10 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
 
   useEffect(() => {
     if (plan?.plan_html && typeof document !== 'undefined') {
-      setParsed(parsePlanHtml(plan.plan_html));
+      const result = parsePlanHtml(plan.plan_html);
+      setParsed(result);
+      const noGraphical = !result || ((result.days?.length ?? 0) === 0 && Object.keys(result.rawSections || {}).length === 0);
+      if (noGraphical) setShowRawPlanFallback(true);
     } else {
       setParsed(null);
     }
@@ -868,7 +874,8 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
   const validUntilDate = plan.valid_until ? new Date(plan.valid_until + 'T12:00:00') : null;
   const daysUntilExpiry = validUntilDate ? Math.ceil((validUntilDate - today) / (24 * 60 * 60 * 1000)) : null;
   const planExpiresSoon = isValid && daysUntilExpiry != null && daysUntilExpiry >= 0 && daysUntilExpiry <= 2;
-  const showGraphical = parsed && (parsed.personal?.length > 0 || parsed.days?.length > 0);
+  const showGraphical = parsed && (parsed.personal?.length > 0 || parsed.days?.length > 0 || Object.keys(parsed.rawSections || {}).length > 0);
+  const hasParsedDays = (parsed?.days?.length ?? 0) > 0;
 
   // Dynamicky zobrazit dny od dneška do konce platnosti (ne pevný týden od pondělí)
   const displayedDays = (() => {
@@ -965,6 +972,19 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                 <h3>Dnes ({todayStr})</h3>
                 <p>Podívej se do jídelníčku a na tréninkový plán (jak cvičit, rozcvička, cviky) níže.</p>
               </div>
+            </div>
+          )}
+
+          {/* Když parser nevrátil dny, ale máme rawSections – zobrazit plán po sekcích (Trénink, Regenerace, …) */}
+          {showGraphical && !hasParsedDays && Object.keys(parsed?.rawSections || {}).length > 0 && (
+            <div className="plan-block plan-raw-sections-fallback">
+              <p className="plan-parse-fallback-msg" style={{ marginBottom: 16 }}>Plán zobrazen po sekcích (parser nerozpoznal jídelníček).</p>
+              {Object.entries(parsed.rawSections).map(([sectionTitle, sectionHtml]) => (
+                <div key={sectionTitle} className="plan-raw-section-block">
+                  <h3 className="plan-block-title">{sectionTitle}</h3>
+                  <div className="plan-raw-section-content" dangerouslySetInnerHTML={{ __html: sanitizeHtmlForFallback(sectionHtml) }} />
+                </div>
+              ))}
             </div>
           )}
 
@@ -1137,12 +1157,12 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                           // When trust is "none": resolvedUrl stays null — do not use enrichedUrl or dishFallbackUrl.
                         } else {
                           // No trust data (legacy/incomplete enrichment): static fallback (DISH_IMAGES) allowed, but ALWAYS label as "Ilustrační foto".
-                          resolvedUrl = enrichedUrl ?? dishFallbackUrl ?? null;
-                          trustLevel = resolvedUrl ? 'illustrative' : 'none';
+                          resolvedUrl = enrichedUrl ?? dishFallbackUrl ?? DEFAULT_MEAL_IMAGE;
+                          trustLevel = (enrichedUrl ?? dishFallbackUrl) ? 'illustrative' : 'placeholder';
                         }
                         const mealCardKey = `meal-${di}-${mi}-${normalizeLookupKey(mealFullText || meal.text || meal.type).slice(0, 40)}`;
                         const imageLoadFailed = mealImageErrorKeys.has(mealCardKey);
-                        const showMealImage = !imageLoadFailed && (trustLevel === 'exact' || trustLevel === 'illustrative') && !!resolvedUrl;
+                        const showMealImage = !imageLoadFailed && (trustLevel === 'exact' || trustLevel === 'illustrative' || trustLevel === 'placeholder') && !!resolvedUrl;
                         return (
                           <div key={mi} className="plan-meal-card">
                             <button type="button" className="plan-meal-image-wrap" onClick={openRecipe} title="Klikni pro zobrazení receptu">
@@ -1160,9 +1180,10 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                               )}
                               <span className="plan-meal-type">{meal.type}</span>
                               {showMealImage && (
-                                <span className={`plan-trust-badge plan-trust-badge-meal plan-trust-badge-${trustLevel}`} title={trustLevel === 'exact' ? 'Obrázek odpovídá nalezenému receptu' : trustLevel === 'illustrative' ? 'Orientační vizuál' : ''}>
+                                <span className={`plan-trust-badge plan-trust-badge-meal plan-trust-badge-${trustLevel}`} title={trustLevel === 'exact' ? 'Obrázek odpovídá nalezenému receptu' : trustLevel === 'illustrative' ? 'Orientační vizuál' : trustLevel === 'placeholder' ? 'Obecný placeholder' : ''}>
                                   {trustLevel === 'exact' && <>Přesný zdroj{mealTrust?.exact_source === 'spoonacular' ? <span className="plan-trust-sublabel"> Spoonacular</span> : null}</>}
                                   {trustLevel === 'illustrative' && <>Ilustrační foto{mealTrust?.illustrative_source === 'pexels' ? <span className="plan-trust-sublabel"> Pexels</span> : null}</>}
+                                  {trustLevel === 'placeholder' && <>Ilustrační foto</>}
                                 </span>
                               )}
                               <span className="plan-meal-recept-badge">Klikni pro recept</span>
@@ -1776,6 +1797,13 @@ const planSectionStyles = `
   .plan-raw-fallback-content :global(h3) { font-size: 16px; margin: 14px 0 6px; color: #c4b5fd; }
   .plan-raw-fallback-content :global(p) { margin: 8px 0; }
   .plan-raw-fallback-content :global(ul) { margin: 8px 0; padding-left: 20px; }
+
+  .plan-raw-sections-fallback { margin-top: 16px; }
+  .plan-raw-section-block { margin-bottom: 24px; }
+  .plan-raw-section-block .plan-block-title { margin-bottom: 10px; }
+  .plan-raw-section-content { padding: 12px 0; color: #cbd5e1; font-size: 14px; line-height: 1.5; }
+  .plan-raw-section-content :global(p) { margin: 8px 0; }
+  .plan-raw-section-content :global(ul) { margin: 8px 0; padding-left: 20px; }
 
   .plan-block {
     margin-bottom: 32px;

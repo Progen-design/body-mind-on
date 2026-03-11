@@ -1586,6 +1586,17 @@ export default function Profil() {
     setMindsetTipFromPlan(parsed?.mindsetTip || '');
   }, [currentPlan?.plan_html]);
 
+  useEffect(() => {
+    if (typeof document === 'undefined' || !currentPlan?.plan_html) return;
+    const parsed = parsePlanHtml(currentPlan.plan_html);
+    const plan_state = profile?._diagnostics?.plan_state;
+    const current_plan_html_length = (currentPlan?.plan_html || '').length;
+    const current_plan_structure = validatePublishedPlanHtml(currentPlan?.plan_html || '');
+    const generation_source = currentPlan?.generation_source ?? profile?._diagnostics?.generation_source;
+    const fallback_used = currentPlan?.fallback_used ?? profile?._diagnostics?.fallback_used;
+    console.debug('[profil] plan_state', plan_state, 'current_plan_html_length', current_plan_html_length, 'current_plan_structure', current_plan_structure, 'generation_source', generation_source, 'fallback_used', fallback_used, 'parsePlanHtml_result', parsed ? { daysCount: parsed.days?.length ?? 0, rawSectionsKeys: Object.keys(parsed.rawSections || {}), hasPersonal: (parsed.personal?.length ?? 0) > 0 } : null);
+  }, [currentPlan, profile?._diagnostics]);
+
   if (!session && !loading) return null;
 
   return (
@@ -2178,7 +2189,7 @@ export default function Profil() {
               )}
               {profile?._diagnostics?.plan_state !== 'processing' && profile?._diagnostics?.plan_state !== 'invalid' && profile?._diagnostics?.plan_state !== 'missing' && (currentPlan || nextPlan) && (
               <>
-              {!hasValidPlanHtml(currentPlan) && !hasValidPlanHtml(nextPlan) ? (
+              {!(currentPlan?.plan_html) && !(nextPlan?.plan_html) ? (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
                   <p className="plan-preparing-text">Plán není kompletní. Obnov stránku za chvíli nebo kontaktuj podporu.</p>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>
@@ -2192,7 +2203,7 @@ export default function Profil() {
                     <button type="button" role="tab" aria-selected={planTab === 'next'} className={`profile-bubble-tab ${planTab === 'next' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setPlanTab('next')}>Příští týden</button>
                   </div>
                   {planTab === 'current' ? (
-                    hasValidPlanHtml(currentPlan) ? (
+                    (currentPlan && currentPlan.plan_html) ? (
                     <PlanViewer
                       plan={currentPlan}
                       userName={userName}
@@ -2215,7 +2226,7 @@ export default function Profil() {
                       <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
                     </div>
                     )
-                  ) : hasValidPlanHtml(nextPlan) ? (
+                  ) : (nextPlan && nextPlan.plan_html) ? (
                     <PlanViewer
                       plan={nextPlan}
                       userName={userName}
@@ -2240,7 +2251,7 @@ export default function Profil() {
                   )}
                 </>
               ) : currentPlan ? (
-                hasValidPlanHtml(currentPlan) ? (
+                (currentPlan && currentPlan.plan_html) ? (
                 <PlanViewer
                   plan={currentPlan}
                   userName={userName}
@@ -2264,7 +2275,7 @@ export default function Profil() {
                 </div>
                 )
               ) : nextPlan ? (
-                hasValidPlanHtml(nextPlan) ? (
+                (nextPlan && nextPlan.plan_html) ? (
                 <PlanViewer
                   plan={nextPlan}
                   userName={userName}

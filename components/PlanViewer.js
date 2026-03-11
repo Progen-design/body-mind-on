@@ -111,6 +111,7 @@ function getMealImageByDish(mealText) {
   return best.url;
 }
 
+/** Stejná normalizace jako backend (plan-enrichment) pro spolehlivý lookup. */
 function normalizeLookupKey(value) {
   if (!value || typeof value !== 'string') return '';
   return value
@@ -118,6 +119,7 @@ function normalizeLookupKey(value) {
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
     .replace(/<[^>]+>/g, ' ')
+    .replace(/[^a-z0-9 ]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -126,16 +128,17 @@ function getEnrichedMealImage(mealText, mealImagesMap = {}) {
   const source = String(mealText || '').replace(/^[^:]+:\s*/i, '').trim();
   const key = normalizeLookupKey(source);
   if (!key) return null;
+  const map = mealImagesMap || {};
 
+  if (map[key]) return map[key];
   let bestKey = '';
-  for (const candidateKey of Object.keys(mealImagesMap || {})) {
+  for (const candidateKey of Object.keys(map)) {
     if (!candidateKey) continue;
     if (key.includes(candidateKey) || candidateKey.includes(key)) {
       if (candidateKey.length > bestKey.length) bestKey = candidateKey;
     }
   }
-
-  return bestKey ? mealImagesMap[bestKey] : null;
+  return bestKey ? map[bestKey] : null;
 }
 
 /**
@@ -147,32 +150,34 @@ function getEnrichedMealTrust(mealText, mealTrustMap = {}) {
   const source = String(mealText || '').replace(/^[^:]+:\s*/i, '').trim();
   const key = normalizeLookupKey(source);
   if (!key) return null;
+  const map = mealTrustMap || {};
 
+  if (map[key]) return map[key];
   let bestKey = '';
-  for (const candidateKey of Object.keys(mealTrustMap || {})) {
+  for (const candidateKey of Object.keys(map)) {
     if (!candidateKey) continue;
     if (key.includes(candidateKey) || candidateKey.includes(key)) {
       if (candidateKey.length > bestKey.length) bestKey = candidateKey;
     }
   }
-
-  return bestKey ? mealTrustMap[bestKey] : null;
+  return bestKey ? map[bestKey] : null;
 }
 
 function getExerciseMediaFromItemText(itemText, exerciseMediaMap = {}) {
   const rawName = String(itemText || '').split(':')[0].trim();
   const key = normalizeLookupKey(rawName);
   if (!key) return null;
+  const map = exerciseMediaMap || {};
 
+  if (map[key]) return map[key];
   let bestKey = '';
-  for (const candidateKey of Object.keys(exerciseMediaMap || {})) {
+  for (const candidateKey of Object.keys(map)) {
     if (!candidateKey) continue;
     if (key.includes(candidateKey) || candidateKey.includes(key)) {
       if (candidateKey.length > bestKey.length) bestKey = candidateKey;
     }
   }
-  if (!bestKey) return null;
-  return exerciseMediaMap[bestKey] || null;
+  return bestKey ? map[bestKey] : null;
 }
 
 /** Odstraní obrázky z HTML (v sekci Trénink nechceme velké obrázky). */
@@ -1144,21 +1149,20 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                         const mealTrust = getEnrichedMealTrust(mealFullText || meal.text || meal.type, mealTrustMap);
                         const enrichedUrl = getEnrichedMealImage(mealFullText || meal.text || meal.type, mealImagesMap);
                         const dishFallbackUrl = getMealImageByDish(mealFullText || meal.text || meal.type);
-                        // NO LIES UI RULE: Backend none = no fake image. illustrative ≠ exact. Never use static fallback when trust says none.
+                        // API-first priority: (1) meal_trust.image_url when trust exists (2) meal_images when no trust (3) DISH_IMAGES only as last resort. NO LIES: trust "none" => never show static fallback.
                         let resolvedUrl = null;
                         let trustLevel = 'none';
                         if (mealTrust) {
                           trustLevel = mealTrust.image_trust_level ?? 'none';
                           if (trustLevel === 'exact') {
-                            resolvedUrl = mealTrust.image_url ?? null; // exact badge only when we have trust URL
+                            resolvedUrl = mealTrust.image_url ?? null;
                           } else if (trustLevel === 'illustrative') {
                             resolvedUrl = mealTrust.image_url ?? enrichedUrl ?? null;
                           }
-                          // When trust is "none": resolvedUrl stays null — do not use enrichedUrl or dishFallbackUrl.
+                          if (trustLevel === 'none' || !mealTrust.image_url) resolvedUrl = null;
                         } else {
-                          // No trust data (legacy/incomplete enrichment): static fallback (DISH_IMAGES) allowed, but ALWAYS label as "Ilustrační foto".
                           resolvedUrl = enrichedUrl ?? dishFallbackUrl ?? DEFAULT_MEAL_IMAGE;
-                          trustLevel = (enrichedUrl ?? dishFallbackUrl) ? 'illustrative' : 'placeholder';
+                          trustLevel = enrichedUrl ? 'illustrative' : (dishFallbackUrl ? 'illustrative' : 'placeholder');
                         }
                         const mealCardKey = `meal-${di}-${mi}-${normalizeLookupKey(mealFullText || meal.text || meal.type).slice(0, 40)}`;
                         const imageLoadFailed = mealImageErrorKeys.has(mealCardKey);

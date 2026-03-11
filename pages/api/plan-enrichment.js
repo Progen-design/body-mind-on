@@ -62,6 +62,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'html is required' });
     }
 
+    if (!process.env.SPOONACULAR_API_KEY && !process.env.RAPIDAPI_KEY) {
+      console.warn('[plan-enrichment] SPOONACULAR_API_KEY or RAPIDAPI_KEY missing – meal exact images may be unavailable');
+    }
+    if (!process.env.PEXELS_API_KEY) {
+      console.warn('[plan-enrichment] PEXELS_API_KEY missing – illustrative meal/exercise fallbacks may be unavailable');
+    }
+    if (!process.env.EXERCISEDB_API_KEY && !process.env.RAPIDAPI_KEY) {
+      console.warn('[plan-enrichment] EXERCISEDB_API_KEY or RAPIDAPI_KEY missing – exercise media may be unavailable');
+    }
+
     const enriched = await enrichPlanContent({ html });
 
     // meal_images: backward-compatible map of key → url string (used by current PlanViewer)
@@ -70,7 +80,10 @@ export default async function handler(req, res) {
     const mealTrust = {};
 
     for (const meal of enriched.meals || []) {
-      const candidates = [meal?.query_name, meal?.name];
+      const candidates = new Set([meal?.query_name, meal?.name].filter(Boolean));
+      if (meal?.query_name && meal.query_name.length > 1) {
+        candidates.add(meal.query_name.slice(0, 80).trim());
+      }
       for (const candidate of candidates) {
         const key = normalizeTextKey(candidate);
         if (!key) continue;
@@ -109,12 +122,13 @@ export default async function handler(req, res) {
         equipment: ex?.equipment || null,
       };
 
-      // Build all lookup candidate keys
       const candidates = new Set([ex?.query_name, ex?.name].filter(Boolean));
-      // Also register by canonical key if available (most reliable lookup)
       if (ex?.canonical_key) candidates.add(ex.canonical_key);
       const firstWord = (ex?.query_name || '').trim().split(/\s+/)[0];
       if (firstWord && firstWord.length > 1) candidates.add(firstWord);
+      if (ex?.query_name && ex.query_name.length > 1) {
+        candidates.add(ex.query_name.slice(0, 60).trim());
+      }
 
       for (const candidate of candidates) {
         const key = normalizeTextKey(candidate);

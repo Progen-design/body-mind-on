@@ -2966,7 +2966,7 @@ export default function Profil() {
           padding: 0 20px 100px;
           background: transparent;
           color: #fff;
-          font-family: inherit;
+          font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
           text-rendering: optimizeLegibility;

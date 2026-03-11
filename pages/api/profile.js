@@ -80,8 +80,9 @@ export default async function handler(req, res) {
     let plansData = (plansRes.status === 'fulfilled' && plansRes.value?.data) ? plansRes.value.data : [];
     const activePlan = plansData.find((p) => p.is_active === true);
     const hasActivePlan = !!activePlan;
-    const currentPlanForDiagnostics = activePlan || plansData.find((p) => p.plan_html && p.plan_html.length > 0);
+    const currentPlanForDiagnostics = activePlan || plansData.find((p) => p.plan_html && typeof p.plan_html === 'string' && p.plan_html.length > 0);
     const currentPlanHtmlLength = currentPlanForDiagnostics?.plan_html?.length ?? 0;
+    const hasValidPlan = currentPlanHtmlLength >= 1000;
     if (!hasActivePlan && plansData.length > 0) {
       plansData = plansData.filter((p) => p.plan_html && typeof p.plan_html === 'string' && p.plan_html.length > 0);
     }
@@ -172,6 +173,7 @@ export default async function handler(req, res) {
         plans_count: plansData.length,
         has_active_plan: hasActivePlan,
         current_plan_html_length: currentPlanHtmlLength,
+        has_valid_plan: hasValidPlan,
       },
       weight_history: weightHistory,
       stats: {

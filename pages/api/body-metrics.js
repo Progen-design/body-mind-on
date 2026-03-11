@@ -6,6 +6,7 @@ import { supabaseServer } from '../../lib/supabaseServer';
 import { createAuthUserIfNew } from '../../lib/authHelpers';
 import { runAIScheduler } from '../../lib/aiScheduler';
 import { createInitialAITasks } from '../../lib/createInitialAITasks';
+import { executeAITask } from '../../lib/taskExecutors';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getWeeklySessions } from '../../lib/preferenceConstants';
 import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
@@ -140,6 +141,8 @@ export default async function handler(req, res) {
     let planSent = false;
     let schedulerTriggered = false;
     let initialPlanTaskStatus = null;
+    let initialPlanSummary = null;
+    let initialPlanValidationWarning = null;
     const accountCreated = payload.user_id != null;
     if (payload.user_id) {
       await createInitialAITasks(payload.user_id, emailOptions);
@@ -155,7 +158,7 @@ export default async function handler(req, res) {
 
         const { data: taskRow } = await supabaseServer
           .from('ai_tasks')
-          .select('status, result')
+          .select('id, status, result')
           .eq('user_id', payload.user_id)
           .eq('agent_slug', 'trainer')
           .eq('task_type', 'initial_plan')
@@ -166,9 +169,35 @@ export default async function handler(req, res) {
         initialPlanTaskStatus = taskRow?.status ?? null;
         planSent = taskRow?.status === 'completed';
         const emailSent = taskRow?.result?.email_sent === true;
-        console.info('[body-metrics] initial_plan task status after scheduler', `status=${initialPlanTaskStatus} email_sent=${emailSent}`);
+        initialPlanSummary = taskRow?.result?.summary ?? null;
+        initialPlanValidationWarning = taskRow?.result?.validation_warning ?? null;
+        console.info('[body-metrics] initial_plan task status after scheduler', `status=${initialPlanTaskStatus} email_sent=${emailSent} summary=${initialPlanSummary ?? '—'}`);
+        if (initialPlanValidationWarning) console.info('[body-metrics] initial_plan validation_warning', initialPlanValidationWarning);
         if (!planSent && taskRow?.status === 'failed') {
           console.warn('[body-metrics] trainer initial_plan failed:', taskRow?.result);
+        }
+        if (initialPlanTaskStatus === 'pending' && taskRow?.id) {
+          console.info('[body-metrics] initial_plan still pending after scheduler – processing directly (fallback for batch limit)');
+          try {
+            const { data: directTask } = await supabaseServer.from('ai_tasks').select('id, user_id, agent_slug, task_type, payload').eq('id', taskRow.id).eq('status', 'pending').maybeSingle();
+            if (directTask) {
+              const exec = await executeAITask(directTask);
+              await supabaseServer.from('ai_tasks').update({
+                status: exec?.ok ? 'completed' : 'failed',
+                result: exec?.result ?? { error: 'Direct execution returned no result' },
+                processed_at: new Date().toISOString(),
+              }).eq('id', directTask.id);
+              if (exec?.ok) {
+                initialPlanTaskStatus = 'completed';
+                planSent = exec?.result?.email_sent === true;
+                initialPlanSummary = exec?.result?.summary ?? null;
+                initialPlanValidationWarning = exec?.result?.validation_warning ?? null;
+                console.info('[body-metrics] direct executeAITask completed', { plan_sent: planSent, summary: initialPlanSummary });
+              }
+            }
+          } catch (directErr) {
+            console.warn('[body-metrics] direct executeAITask fallback failed:', directErr?.message);
+          }
         }
       } catch (schedErr) {
         console.warn('[body-metrics] scheduler run failed (tasks remain pending):', schedErr?.message);
@@ -229,6 +258,9 @@ export default async function handler(req, res) {
       response.hasUserId = true;
       response.schedulerTriggered = schedulerTriggered;
       response.initialPlanTaskStatus = initialPlanTaskStatus;
+      response.planSent = planSent;
+      response.initialPlanSummary = initialPlanSummary;
+      response.initialPlanValidationWarning = initialPlanValidationWarning ?? undefined;
     } else {
       response.hasUserId = false;
     }

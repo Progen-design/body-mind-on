@@ -1126,7 +1126,7 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                           }
                           // When trust is "none": resolvedUrl stays null — do not use enrichedUrl or dishFallbackUrl.
                         } else {
-                          // No trust data (legacy/incomplete enrichment): static fallback allowed, but always label as illustrative.
+                          // No trust data (legacy/incomplete enrichment): static fallback (DISH_IMAGES) allowed, but ALWAYS label as "Ilustrační foto".
                           resolvedUrl = enrichedUrl ?? dishFallbackUrl ?? null;
                           trustLevel = resolvedUrl ? 'illustrative' : 'none';
                         }

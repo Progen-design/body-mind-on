@@ -1,9 +1,10 @@
-// GET = seznam agentů, PATCH = aktualizace jednoho (key=ADMIN_TOKEN v query nebo body)
+// GET = seznam agentů, PATCH = aktualizace jednoho (auth pouze Bearer header – token v URL/body by mohl uniknout do logů)
 import { supabaseServer } from '../../../lib/supabaseServer';
 
 function isAdmin(req) {
-  const key = req.query?.key || req.body?.key || (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  return process.env.ADMIN_TOKEN && key === process.env.ADMIN_TOKEN;
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+  return process.env.ADMIN_TOKEN && token === process.env.ADMIN_TOKEN;
 }
 
 export default async function handler(req, res) {

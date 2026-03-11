@@ -175,7 +175,7 @@ export default async function handler(req, res) {
         console.info('[body-metrics] initial_plan task status after scheduler', `status=${initialPlanTaskStatus} email_sent=${emailSent} summary=${initialPlanSummary ?? '—'}`);
         if (initialPlanValidationWarning) console.info('[body-metrics] initial_plan validation_warning', initialPlanValidationWarning);
         if (!planSent && taskRow?.status === 'failed') {
-          console.warn('[body-metrics] trainer initial_plan failed:', taskRow?.result);
+          console.warn('[body-metrics] trainer initial_plan failed – task result:', JSON.stringify(taskRow?.result ?? null));
         }
         if (initialPlanTaskStatus === 'pending' && taskRow?.id) {
           directExecutionTriggered = true;
@@ -199,6 +199,10 @@ export default async function handler(req, res) {
             }
           } catch (directErr) {
             console.warn('[body-metrics] direct executeAITask fallback failed:', directErr?.message);
+            const { data: refetched } = await supabaseServer.from('ai_tasks').select('id, status, result, last_error').eq('id', taskRow.id).maybeSingle();
+            if (refetched) {
+              console.warn('[body-metrics] initial_plan task after direct fail:', { status: refetched.status, result: refetched?.result, last_error: refetched?.last_error });
+            }
           }
         }
         console.info('[body-metrics] initial_plan task final status', initialPlanTaskStatus);

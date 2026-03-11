@@ -72,6 +72,7 @@ export default async function handler(req, res) {
           status: task.status,
           last_error: task.last_error || null,
           result_summary: task.result?.summary ?? null,
+          result_reason: task.result?.reason ?? null,
           result_skip_reason: task.result?.skip_reason ?? null,
           result_validation_warning: task.result?.validation_warning ?? null,
           result_email_sent: task.result?.email_sent ?? null,

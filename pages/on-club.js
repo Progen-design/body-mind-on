@@ -5,6 +5,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import HabitSelection from "../components/HabitSelection";
 import { getSuggestedHabits } from "../lib/habits";
+import { getFrequencyDayRange } from "../lib/preferenceConstants";
 
 const MAX_STEP = 4;
 
@@ -298,7 +299,21 @@ export default function OnClubPage() {
               <div className="step3-field step3-field-full">
                 <label className="step3-label">Frekvence cvičení</label>
                 <p className="step3-hint step3-hint-empty" aria-hidden> </p>
-                <select name="frequency" className="step3-select reg-input" value={formData.frequency} onChange={(e) => setFormData({ ...formData, frequency: e.target.value.replace("–", "-") })} required disabled={isSubmitting}>
+                <select
+                  name="frequency"
+                  className="step3-select reg-input"
+                  value={formData.frequency}
+                  onChange={(e) => {
+                    const freq = e.target.value.replace("–", "-");
+                    const { max } = getFrequencyDayRange(freq);
+                    const trimmed = Array.isArray(formData.workout_days)
+                      ? formData.workout_days.slice(0, max)
+                      : [];
+                    setFormData({ ...formData, frequency: freq, workout_days: trimmed });
+                  }}
+                  required
+                  disabled={isSubmitting}
+                >
                   <option value="">Vyber</option>
                   <option value="1-2x týdně">1–2x týdně</option>
                   <option value="2-3x týdně">2–3x týdně</option>
@@ -316,8 +331,11 @@ export default function OnClubPage() {
                         checked={formData.workout_days.includes(v)}
                         disabled={isSubmitting}
                         onChange={(e) => {
+                          const { max } = getFrequencyDayRange(formData.frequency);
                           const next = e.target.checked
-                            ? [...formData.workout_days, v].sort((a, b) => a - b)
+                            ? (formData.workout_days.length >= max
+                              ? formData.workout_days
+                              : [...formData.workout_days, v].sort((a, b) => a - b))
                             : formData.workout_days.filter((d) => d !== v);
                           setFormData((f) => ({ ...f, workout_days: next }));
                         }}

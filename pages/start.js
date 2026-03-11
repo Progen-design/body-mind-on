@@ -4,6 +4,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import HabitSelection from "../components/HabitSelection";
 import { getSuggestedHabits } from "../lib/habits";
+import { getFrequencyDayRange } from "../lib/preferenceConstants";
 
 const MAX_STEP = 5;
 
@@ -338,7 +339,14 @@ export default function Start() {
                   name="frequency"
                   className="step3-select reg-input"
                   value={formData.frequency}
-                  onChange={(e) => setFormData({ ...formData, frequency: e.target.value.replace("–", "-") })}
+                  onChange={(e) => {
+                    const freq = e.target.value.replace("–", "-");
+                    const { max } = getFrequencyDayRange(freq);
+                    const trimmed = Array.isArray(formData.workout_days)
+                      ? formData.workout_days.slice(0, max)
+                      : [];
+                    setFormData({ ...formData, frequency: freq, workout_days: trimmed });
+                  }}
                   required
                   disabled={isSubmitting}
                 >
@@ -359,8 +367,11 @@ export default function Start() {
                         checked={formData.workout_days.includes(v)}
                         disabled={isSubmitting}
                         onChange={(e) => {
+                          const { max } = getFrequencyDayRange(formData.frequency);
                           const next = e.target.checked
-                            ? [...formData.workout_days, v].sort((a, b) => a - b)
+                            ? (formData.workout_days.length >= max
+                              ? formData.workout_days
+                              : [...formData.workout_days, v].sort((a, b) => a - b))
                             : formData.workout_days.filter((d) => d !== v);
                           setFormData((f) => ({ ...f, workout_days: next }));
                         }}

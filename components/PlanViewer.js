@@ -555,43 +555,42 @@ function parsePlanHtml(html) {
         const mealTypes = ['Snídaně', 'Oběd', 'Večeře', 'Svačina', 'Snidane', 'Obed', 'Vecere', 'Svacina'];
         let el = h3.nextElementSibling;
         while (el) {
-          if (el.tagName === 'H4') {
-            const dayName = (el.textContent || '').trim();
-            if (dayNames.some((d) => dayName.includes(d))) {
-              const meals = [];
-              let trainingHtml = '';
-              let next = el.nextElementSibling;
-              while (next && next.tagName !== 'H4' && next.tagName !== 'H3') {
-                if (next.tagName === 'P') {
-                  const bold = next.querySelector('b');
-                  const mealType = bold ? bold.textContent.replace(/:\s*$/, '').trim() : '';
-                  const rest = (next.textContent || '').replace(bold?.textContent || '', '').replace(/^:\s*/, '').trim();
-                  const isMeal = mealTypes.some((m) => norm(mealType).includes(norm(m)));
-                  const paragraphText = (next.textContent || '').trim();
-                  const isTrainingBlock =
-                    /Trénink tento den|trenink tento den/i.test(mealType || '') ||
-                    /Trénink tento den|trenink tento den/i.test(paragraphText);
-                  if (isMeal && (mealType || rest)) meals.push({ type: mealType || 'Jídlo', text: rest, fullHtml: next.innerHTML });
-                  if (isTrainingBlock) {
-                    trainingHtml = next.outerHTML || '';
+          const isDayHeader = (el.tagName === 'H4' || el.tagName === 'H3');
+          const dayName = (el.textContent || '').trim();
+          if (isDayHeader && dayNames.some((d) => dayName.includes(d))) {
+            const meals = [];
+            let trainingHtml = '';
+            let next = el.nextElementSibling;
+            while (next && next.tagName !== 'H4' && next.tagName !== 'H3') {
+              if (next.tagName === 'P') {
+                const bold = next.querySelector('b');
+                const mealType = bold ? bold.textContent.replace(/:\s*$/, '').trim() : '';
+                const rest = (next.textContent || '').replace(bold?.textContent || '', '').replace(/^:\s*/, '').trim();
+                const isMeal = mealTypes.some((m) => norm(mealType).includes(norm(m)));
+                const paragraphText = (next.textContent || '').trim();
+                const isTrainingBlock =
+                  /Trénink tento den|trenink tento den/i.test(mealType || '') ||
+                  /Trénink tento den|trenink tento den/i.test(paragraphText);
+                if (isMeal && (mealType || rest)) meals.push({ type: mealType || 'Jídlo', text: rest, fullHtml: next.innerHTML });
+                if (isTrainingBlock) {
+                  trainingHtml = next.outerHTML || '';
+                  next = next.nextElementSibling;
+                  while (next && next.tagName !== 'H4' && next.tagName !== 'H3') {
+                    trainingHtml += next.outerHTML || '';
                     next = next.nextElementSibling;
-                    while (next && next.tagName !== 'H4' && next.tagName !== 'H3') {
-                      trainingHtml += next.outerHTML || '';
-                      next = next.nextElementSibling;
-                    }
-                    continue;
                   }
+                  continue;
                 }
-                next = next.nextElementSibling;
               }
-              result.days.push({
-                dayName,
-                meals,
-                trainingHtml: trainingHtml || '<p><b>Trénink tento den:</b></p><ul><li>Odpočinek.</li></ul>',
-              });
+              next = next.nextElementSibling;
             }
+            result.days.push({
+              dayName,
+              meals,
+              trainingHtml: trainingHtml || '<p><b>Trénink tento den:</b></p><ul><li>Odpočinek.</li></ul>',
+            });
           }
-          el = el.tagName === 'H3' ? null : el.nextElementSibling;
+          el = el.nextElementSibling;
         }
       } else if (/Recepty/i.test(title)) {
         const dayNames = ['Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota', 'Neděle'];
@@ -701,8 +700,19 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
   /** Keys of meal cards whose image failed to load — show placeholder instead of broken/static fallback (NO LIES UI RULE). */
   const [mealImageErrorKeys, setMealImageErrorKeys] = useState(() => new Set());
   const [exerciseMediaErrorKeys, setExerciseMediaErrorKeys] = useState(() => new Set());
+  const [showRawPlanFallback, setShowRawPlanFallback] = useState(false);
   const recipeOpenIdRef = useRef(0);
   const recipeCacheRef = useRef(new Map()); // dish -> html, 5 min TTL
+
+  /** Odstraní nebezpečné tagy z HTML pro zobrazení v fallbacku. */
+  const sanitizeHtmlForFallback = (raw) => {
+    if (!raw || typeof raw !== 'string') return '';
+    return raw
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, '')
+      .trim();
+  };
 
   const getRecipeForDish = (dishName, avoid = '') => {
     const key = ((dishName || '').trim().toLowerCase().slice(0, 120)) + (avoid ? '|' + avoid.slice(0, 80) : '');
@@ -1612,6 +1622,15 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
               </div>
             </div>
           )}
+          <div className="plan-parse-fallback-block">
+            <p className="plan-parse-fallback-msg">Plán existuje, ale nepodařilo se ho správně vykreslit.</p>
+            <button type="button" className="plan-btn-raw-fallback" onClick={() => setShowRawPlanFallback((v) => !v)}>
+              {showRawPlanFallback ? 'Skrýt plán jako text' : 'Zobrazit plán jako text'}
+            </button>
+            {showRawPlanFallback && plan?.plan_html && (
+              <div className="plan-raw-fallback-content" dangerouslySetInnerHTML={{ __html: sanitizeHtmlForFallback(plan.plan_html) }} />
+            )}
+          </div>
         </>
       )}
 
@@ -1716,6 +1735,47 @@ const planSectionStyles = `
   }
   .plan-expires-soon a { color: #a78bfa; text-decoration: none; }
   .plan-expires-soon a:hover { text-decoration: underline; }
+
+  .plan-parse-fallback-block {
+    margin-top: 20px;
+    padding: 20px;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 12px;
+  }
+  .plan-parse-fallback-msg {
+    margin: 0 0 12px;
+    color: #cbd5e1;
+    font-size: 15px;
+  }
+  .plan-btn-raw-fallback {
+    padding: 10px 18px;
+    background: rgba(139, 92, 255, 0.3);
+    border: 1px solid rgba(139, 92, 255, 0.5);
+    color: #e9d5ff;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .plan-btn-raw-fallback:hover {
+    background: rgba(139, 92, 255, 0.45);
+  }
+  .plan-raw-fallback-content {
+    margin-top: 16px;
+    padding: 16px;
+    background: rgba(15, 23, 42, 0.8);
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #cbd5e1;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  .plan-raw-fallback-content :global(h2) { font-size: 18px; margin: 16px 0 8px; color: #e9d5ff; }
+  .plan-raw-fallback-content :global(h3) { font-size: 16px; margin: 14px 0 6px; color: #c4b5fd; }
+  .plan-raw-fallback-content :global(p) { margin: 8px 0; }
+  .plan-raw-fallback-content :global(ul) { margin: 8px 0; padding-left: 20px; }
 
   .plan-block {
     margin-bottom: 32px;

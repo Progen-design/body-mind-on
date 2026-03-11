@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     weekEnd.setDate(weekEnd.getDate() + 6);
     const weekEndStr = weekEnd.toISOString().split('T')[0];
 
-    const [metricsRes, plansRes, workoutsRes, userHabitsRes, membershipRes, habitLogsRes, profileRes, coachMessagesRes] = await Promise.allSettled([
+    const [metricsRes, plansRes, workoutsRes, userHabitsRes, membershipRes, habitLogsRes, profileRes, coachMessagesRes, initialPlanTaskRes] = await Promise.allSettled([
       supabaseServer
         .from('body_metrics')
         .select('*')
@@ -75,10 +75,20 @@ export default async function handler(req, res) {
         .eq('agent_slug', 'coach')
         .order('created_at', { ascending: false })
         .limit(5),
+      supabaseServer
+        .from('ai_tasks')
+        .select('id, status, created_at')
+        .eq('user_id', userId)
+        .eq('agent_slug', 'trainer')
+        .eq('task_type', 'initial_plan')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ]);
 
     const bodyMetrics = (metricsRes.status === 'fulfilled' && metricsRes.value?.data) ? metricsRes.value.data : [];
     let plansData = (plansRes.status === 'fulfilled' && plansRes.value?.data) ? plansRes.value.data : [];
+    const initialPlanTask = (initialPlanTaskRes?.status === 'fulfilled' && initialPlanTaskRes?.value?.data) ? initialPlanTaskRes.value.data : null;
     const activePlan = plansData.find((p) => p.is_active === true);
     const hasActivePlan = !!activePlan;
     const currentPlanForDiagnostics = activePlan || plansData.find((p) => p.plan_html && typeof p.plan_html === 'string' && p.plan_html.length > 0);
@@ -87,6 +97,13 @@ export default async function handler(req, res) {
     const planValidation = validatePublishedPlanHtml(currentPlanHtml);
     const hasValidPlan = planValidation.ok;
     const currentPlanMissingSections = planValidation.missingCoreSections ?? [];
+
+    const initialPlanPending = initialPlanTask?.status === 'pending';
+    let plan_state = 'missing';
+    if (hasValidPlan) plan_state = 'ready';
+    else if (initialPlanPending) plan_state = 'processing';
+    else if (plansData.length > 0) plan_state = 'invalid';
+    else plan_state = 'missing';
     if (!hasActivePlan && plansData.length > 0) {
       plansData = plansData.filter((p) => p.plan_html && typeof p.plan_html === 'string' && p.plan_html.length > 0);
     }
@@ -176,9 +193,10 @@ export default async function handler(req, res) {
       _diagnostics: {
         plans_count: plansData.length,
         has_active_plan: hasActivePlan,
-        current_plan_html_length: currentPlanHtmlLength,
         has_valid_plan: hasValidPlan,
+        current_plan_html_length: currentPlanHtmlLength,
         current_plan_missing_sections: currentPlanMissingSections,
+        plan_state,
       },
       weight_history: weightHistory,
       stats: {

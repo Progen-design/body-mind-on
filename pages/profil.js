@@ -2151,15 +2151,34 @@ export default function Profil() {
             </div>
             )}
 
-            {/* Můj plán – první blok pro klienta (Varianta C) */}
-            {!profile?.can_create_calendar_events && (currentPlan || nextPlan) && (
+            {/* Můj plán – vždy zobrazen pro klienta; obsah dle plan_state */}
+            {!profile?.can_create_calendar_events && (
             <div className="profile-bubble" id="muj-plan">
               <button type="button" id="profile-bubble-header-muj-plan" className="profile-bubble-header" onClick={() => toggleProfileSection('muj-plan')} aria-expanded={profileOpenSections.has('muj-plan')} aria-controls="profile-bubble-body-muj-plan">
                 <span className="profile-bubble-title">Můj plán</span>
                 <span className={`profile-bubble-chevron ${profileOpenSections.has('muj-plan') ? 'open' : ''}`} aria-hidden>▼</span>
               </button>
               <div id="profile-bubble-body-muj-plan" role="region" aria-labelledby="profile-bubble-header-muj-plan" className="profile-bubble-body" data-open={profileOpenSections.has('muj-plan')}>
-              {!hasValidPlanHtml(currentPlan) && !hasValidPlanHtml(nextPlan) && (currentPlan || nextPlan) ? (
+              {profile?._diagnostics?.plan_state === 'processing' && (
+                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                  <p className="plan-preparing-text">Plán se právě připravuje. Obnov stránku za chvíli.</p>
+                  <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
+                </div>
+              )}
+              {profile?._diagnostics?.plan_state === 'invalid' && (
+                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                  <p className="plan-preparing-text">Plán se nepodařilo dokončit korektně. Zkus obnovit stránku nebo kontaktuj podporu.</p>
+                  <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
+                </div>
+              )}
+              {profile?._diagnostics?.plan_state === 'missing' && (
+                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                  <p className="plan-preparing-text">Plán zatím nebyl vytvořen.</p>
+                </div>
+              )}
+              {profile?._diagnostics?.plan_state !== 'processing' && profile?._diagnostics?.plan_state !== 'invalid' && profile?._diagnostics?.plan_state !== 'missing' && (currentPlan || nextPlan) && (
+              <>
+              {!hasValidPlanHtml(currentPlan) && !hasValidPlanHtml(nextPlan) ? (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
                   <p className="plan-preparing-text">Plán není kompletní. Obnov stránku za chvíli nebo kontaktuj podporu.</p>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>
@@ -2269,6 +2288,13 @@ export default function Profil() {
                 </div>
                 )
               ) : null}
+              </>
+              )}
+              {(!currentPlan && !nextPlan) && profile?._diagnostics?.plan_state !== 'processing' && profile?._diagnostics?.plan_state !== 'invalid' && profile?._diagnostics?.plan_state !== 'missing' && (
+                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                  <p className="plan-preparing-text">Plán zatím nebyl vytvořen.</p>
+                </div>
+              )}
               </div>
             </div>
             )}

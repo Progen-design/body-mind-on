@@ -32,16 +32,27 @@ jobs:
           APP_URL: ${{ secrets.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
+          if [ -z "${APP_URL}" ] || [ -z "${CRON_SECRET}" ]; then
+            echo "::error::Missing secrets: set APP_URL and CRON_SECRET in repository Secrets (Settings → Secrets and variables → Actions). Exit code 3 from curl usually means APP_URL was empty (malformed URL)."
+            exit 1
+          fi
+          APP_URL="${APP_URL%/}"
+          set +e
           STATUS=$(curl -s -o /tmp/response.json -w "%{http_code}" \
             -X GET \
             -H "Authorization: Bearer ${CRON_SECRET}" \
             -H "Content-Type: application/json" \
             --max-time 180 \
             "${APP_URL}/api/ai/run-scheduler")
-
+          CURL_EXIT=$?
+          set -e
+          if [ $CURL_EXIT -ne 0 ]; then
+            echo "::error::curl failed (exit $CURL_EXIT). Check APP_URL (e.g. https://app.bodyandmindon.cz) and network."
+            cat /tmp/response.json 2>/dev/null || true
+            exit 1
+          fi
           echo "HTTP status: $STATUS"
           cat /tmp/response.json | python3 -m json.tool 2>/dev/null || cat /tmp/response.json
-
           if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
             echo "::error::Scheduler returned HTTP $STATUS"
             exit 1

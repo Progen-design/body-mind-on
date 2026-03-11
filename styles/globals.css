@@ -48,6 +48,58 @@
 }
 .app-page > * { position: relative; z-index: 1; }
 
+/* Registrační stránky – pozadí jako profil (gym obrázek + orby) */
+.app-page .app-page-bg-decor {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background-color: #0a0a0f;
+  background-image:
+    linear-gradient(180deg, rgba(10,10,15,0.75) 0%, rgba(10,10,15,0.65) 50%, rgba(10,10,15,0.78) 100%),
+    url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1920&q=80');
+  background-size: cover;
+  background-position: center;
+}
+.app-page-bg-decor::before,
+.app-page-bg-decor::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.35;
+}
+.app-page-bg-decor::before {
+  width: 550px;
+  height: 550px;
+  background: radial-gradient(circle, rgba(139, 92, 255, 0.5) 0%, transparent 65%);
+  top: -180px;
+  right: -120px;
+}
+.app-page-bg-decor::after {
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.2) 0%, transparent 65%);
+  bottom: -120px;
+  left: -100px;
+}
+.app-page-bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.25;
+}
+.app-page-bg-orb--center {
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.4) 0%, transparent 70%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.app-page .app-page-bg-decor ~ * { position: relative; z-index: 1; }
+
 /* ---- Base ---- */
 * { box-sizing: border-box; }
 html {

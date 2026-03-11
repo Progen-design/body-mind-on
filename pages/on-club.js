@@ -173,6 +173,9 @@ export default function OnClubPage() {
     <>
       <Header />
       <main className="app-page container py-12 text-white">
+        <div className="app-page-bg-decor" aria-hidden>
+          <span className="app-page-bg-orb app-page-bg-orb--center" />
+        </div>
         <section className="onclub-hero text-center mb-10">
           <h1 className="onclub-hero-title">
             ON Club – program s denními návyky a AI plánem

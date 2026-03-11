@@ -171,6 +171,9 @@ export default function ChciVipPage() {
     <>
       <Header />
       <main className="app-page container py-12 text-white">
+        <div className="app-page-bg-decor" aria-hidden>
+          <span className="app-page-bg-orb app-page-bg-orb--center" />
+        </div>
         <section className="text-center mb-10">
           <h1 className="text-4xl font-extrabold mb-3 text-sky-400">
             VIP Coaching – Luxusní péče pro ty, co chtějí víc

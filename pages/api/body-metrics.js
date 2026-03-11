@@ -140,6 +140,7 @@ export default async function handler(req, res) {
 
     let planSent = false;
     let schedulerTriggered = false;
+    let directExecutionTriggered = false;
     let initialPlanTaskStatus = null;
     let initialPlanSummary = null;
     let initialPlanValidationWarning = null;
@@ -177,6 +178,7 @@ export default async function handler(req, res) {
           console.warn('[body-metrics] trainer initial_plan failed:', taskRow?.result);
         }
         if (initialPlanTaskStatus === 'pending' && taskRow?.id) {
+          directExecutionTriggered = true;
           console.info('[body-metrics] initial_plan still pending after scheduler – processing directly (fallback for batch limit)');
           try {
             const { data: directTask } = await supabaseServer.from('ai_tasks').select('id, user_id, agent_slug, task_type, payload').eq('id', taskRow.id).eq('status', 'pending').maybeSingle();
@@ -258,9 +260,10 @@ export default async function handler(req, res) {
       response.hasUserId = true;
       response.schedulerTriggered = schedulerTriggered;
       response.initialPlanTaskStatus = initialPlanTaskStatus;
-      response.planSent = planSent;
       response.initialPlanSummary = initialPlanSummary;
       response.initialPlanValidationWarning = initialPlanValidationWarning ?? undefined;
+      response.directExecutionTriggered = directExecutionTriggered;
+      response.planSent = planSent;
     } else {
       response.hasUserId = false;
     }

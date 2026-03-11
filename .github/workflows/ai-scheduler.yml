@@ -24,7 +24,7 @@ jobs:
   run-scheduler:
     name: Trigger AI run-scheduler
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 6
 
     steps:
       - name: Call /api/ai/run-scheduler
@@ -42,7 +42,7 @@ jobs:
             -X GET \
             -H "Authorization: Bearer ${CRON_SECRET}" \
             -H "Content-Type: application/json" \
-            --max-time 180 \
+            --max-time 300 \
             "${APP_URL}/api/ai/run-scheduler")
           CURL_EXIT=$?
           set -e

@@ -376,7 +376,7 @@ export default function Profil() {
   const [loadingClients, setLoadingClients] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [showFullClientCard, setShowFullClientCard] = useState(false);
-  const [profileOpenSections, setProfileOpenSections] = useState(new Set(['muj-plan', 'moji-klienti', 'zprava-od-kouce']));
+  const [profileOpenSections, setProfileOpenSections] = useState(new Set(['muj-plan', 'denni-navyky']));
   const [planTab, setPlanTab] = useState('current'); // 'current' | 'next' – Varianta C: Můj plán
   const [statsTab, setStatsTab] = useState('overview'); // 'overview' | 'weight' | 'progress' – Varianta C: Statistiky a progres
 
@@ -3402,6 +3402,35 @@ export default function Profil() {
           padding: 8px 18px;
           border: 1px solid rgba(255, 255, 255, 0.4);
           box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 767px) {
+          .profile-hero { padding: 0 16px; margin-bottom: 16px; }
+          .profile-hero-inner { padding: 18px 20px 22px; gap: 16px; flex-wrap: wrap; }
+          .profile-hero-brand-label { font-size: 28px; }
+          .profile-hero-main { flex-wrap: wrap; justify-content: center; gap: 16px; }
+          .profile-hero-avatar-wrap { margin-left: 0; }
+          .profile-hero-avatar-btn { width: 72px; height: 72px; }
+          .profile-hero-title { font-size: 26px; }
+          .profile-hero-tagline { font-size: 14px; }
+          .profile-membership-plan-card { padding: 16px; margin-bottom: 20px; }
+          .membership-card-row { flex-direction: column; align-items: stretch; gap: 16px; flex-wrap: wrap; }
+          .membership-card-left { min-width: 0; }
+          .profile-quick-nav { flex-wrap: wrap; gap: 10px; justify-content: flex-start; }
+          .profile-quick-nav-btn { min-height: 44px; padding: 10px 14px; font-size: 13px; touch-action: manipulation; }
+          .membership-card-right { flex-direction: column; align-items: stretch; gap: 12px; flex-shrink: 0; }
+          .profile-main-workout-btn { min-height: 48px; width: 100%; justify-content: center; font-size: 15px; padding: 12px 20px; }
+          .membership-status-block { align-items: center; }
+          .profile-quick-nav-account { flex-wrap: wrap; gap: 10px; }
+          .profile-quick-nav-account .profile-quick-nav-btn { flex: 1; min-width: 120px; }
+          .plan-goal-in-card { padding-top: 16px; margin-top: 16px; }
+          .plan-goal-row { flex-direction: column; gap: 14px; padding: 12px 14px; }
+          .plan-goal-stats { gap: 16px; padding: 12px 16px; min-width: 0; flex-wrap: wrap; justify-content: center; }
+          .plan-goal-stat { min-width: 70px; }
+          .plan-goal-stat-value { font-size: 16px; }
+          .plan-goal-stat-label { font-size: 10px; }
+          .plan-goal-actions { min-width: 0; width: 100%; }
+          .hero-prefs-btn, .plan-goal-prefs-btn { min-height: 48px; padding: 12px 18px; width: 100%; }
         }
 
         /* ── Rozbalovací bubliny profilu (oválné, centrované) ── */

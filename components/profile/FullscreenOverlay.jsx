@@ -136,7 +136,7 @@ export default function FullscreenOverlay({
           {headerActions ? <div className="overlay-header-actions">{headerActions}</div> : null}
         </div>
 
-        <div className="overlay-body">{children}</div>
+        <div className={`overlay-body ${footer ? 'overlay-body-has-footer' : ''}`}>{children}</div>
 
         {footer ? <div className="overlay-footer">{footer}</div> : null}
       </div>
@@ -257,6 +257,10 @@ export default function FullscreenOverlay({
           flex: 1;
           overflow-y: auto;
           padding: 28px 24px 32px;
+          -webkit-overflow-scrolling: touch;
+        }
+        .overlay-body-has-footer {
+          padding-bottom: 100px;
         }
         .overlay-footer {
           position: sticky;
@@ -282,18 +286,32 @@ export default function FullscreenOverlay({
 
         @media (max-width: 767px) {
           .overlay-header {
-            padding: 16px;
+            padding: 14px 16px;
             align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 12px;
           }
+          .overlay-header-main { min-width: 0; }
+          .overlay-title { font-size: 1.25rem; }
+          .overlay-subtitle { font-size: 0.875rem; margin-top: 4px; }
           .overlay-body {
-            padding: 20px 16px 24px;
+            padding: 18px 16px 24px;
+          }
+          .overlay-body-has-footer {
+            padding-bottom: 100px;
           }
           .overlay-footer {
             padding: 14px 16px 18px;
+            min-height: 72px;
           }
           .overlay-header-actions {
             width: 100%;
             justify-content: flex-end;
+          }
+          .overlay-header-actions button {
+            min-height: 44px;
+            padding: 10px 18px;
+            touch-action: manipulation;
           }
         }
       `}</style>

@@ -424,6 +424,10 @@ export default function PreferencesOverlay({
         }
 
         @media (max-width: 767px) {
+          .prefs-form {
+            gap: 18px;
+            padding-bottom: 24px;
+          }
           .prefs-intro-card,
           .prefs-section-card {
             padding: 18px;
@@ -435,9 +439,16 @@ export default function PreferencesOverlay({
           }
           .prefs-footer-actions {
             flex-direction: column-reverse;
+            gap: 10px;
           }
           .prefs-footer-actions :global(button) {
             width: 100%;
+            min-height: 48px;
+            touch-action: manipulation;
+          }
+          .prefs-primary-btn:not(.prefs-primary-btn--footer) {
+            min-height: 44px;
+            padding: 10px 18px;
           }
         }
       `}</style>

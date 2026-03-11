@@ -33,10 +33,11 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
   const [toggling, setToggling] = useState(null);
-  const [viewingDateStr, setViewingDateStr] = useState(todayStr); // vždy aktivně zvolený den
+  const [viewingDateStr, setViewingDateStr] = useState(todayStr); // vždy aktivně zvolený den – defaultně dnes
   const scrollContainerRef = useRef(null);
   const todayColRef = useRef(null);
   const didAutoCenterRef = useRef(false);
+  const didResetToTodayRef = useRef(false);
 
   const buildHabitsLists = useCallback((uh) => {
     let list = [];
@@ -143,6 +144,12 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
       setViewingDateStr(todayStr);
     }
   }, [viewingDateStr, days, todayStr]);
+
+  useEffect(() => {
+    if (didResetToTodayRef.current) return;
+    didResetToTodayRef.current = true;
+    setViewingDateStr(todayStr);
+  }, [todayStr]);
 
   const getCompleted = (habitId, dateStr) => {
     const log = (allLogs || []).find((l) => l.habit_id === habitId && l.log_date === dateStr);
@@ -420,22 +427,24 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   return (
     <section className="habit-tracker">
       <div className="ht-top">
-        <div>
+        <div className="ht-top-text">
           <h2 className="ht-title">Denní návyky</h2>
-          <p className="ht-date">
-            {displayDateStr === todayStr ? todayFormatted : (
+          <p className="ht-date ht-date-active" aria-live="polite">
+            {displayDateStr === todayStr ? (
+              <>Aktivní den: <strong>{todayFormatted}</strong> (dnes)</>
+            ) : (
               <>Zobrazený den: <strong>{displayDateFormatted}</strong>{displayDateStr > todayStr && ' (budoucí)'}</>
             )}
             {displayDateStr !== todayStr && (
               <button type="button" className="ht-date-back" onClick={() => setViewingDateStr(todayStr)}>Zpět na dnes</button>
             )}
           </p>
-          <p className="ht-hint">Odškrtnutí se ukládá pro konkrétní datum (sloupec). Aktivní je vždy dnešní den. Kliknutím na datum nahoře přepneš náhled dne.</p>
+          <p className="ht-hint">Odškrtnutí se ukládá pro konkrétní datum. Aktivní je vždy dnešní den. Klikni na datum nahoře pro přepnutí.</p>
         </div>
         <div className="ht-progress-inline">
           <span className="ht-prog-nums">{completedToday}<span className="ht-prog-sep">/</span>{totalHabits}</span>
           <div className="ht-prog-bar-wrap">
-            <div className="ht-prog-bar" style={{ width: `${pct}%` }} />
+            <div className="ht-prog-bar" style={{ width: `${pct}%` }} role="progressbar" aria-valuenow={completedToday} aria-valuemin={0} aria-valuemax={totalHabits} />
           </div>
         </div>
       </div>
@@ -682,6 +691,37 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           .ht-chart-wrap { width: 100%; }
         }
 
+        @media (max-width: 768px) {
+          .ht-top { flex-wrap: wrap; gap: 14px; padding: 12px 8px 14px; }
+          .ht-top-text { min-width: 0; flex: 1; }
+          .ht-title { font-size: 1.35rem; margin-bottom: 6px; }
+          .ht-date { font-size: 0.8125rem; }
+          .ht-hint { font-size: 0.7rem; max-width: none; margin-top: 4px; }
+          .ht-progress-inline { align-items: center; }
+          .ht-prog-nums { font-size: 1.25rem; }
+          .ht-prog-bar-wrap { width: 100px; }
+          .ht-date-back {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 10px 16px;
+            min-height: 44px;
+            border-radius: 12px;
+            border: 1px solid rgba(167, 139, 250, 0.5);
+            background: rgba(124, 58, 237, 0.25);
+            color: #c4b5fd;
+            font-size: 0.875rem;
+            font-weight: 700;
+            text-decoration: none;
+            touch-action: manipulation;
+          }
+          .ht-date-back:hover { background: rgba(124, 58, 237, 0.35); color: #e9d5ff; }
+          .hg-fixed-col { padding: 12px 0 18px 14px; }
+          .hg-scroll { -webkit-overflow-scrolling: touch; }
+          .hg-days-grid { padding: 12px 20px 18px 14px; }
+          .ht-chart-wrap { padding: 20px 16px; }
+          .ht-chart-title { font-size: 0.65rem; }
+        }
+
         /* ── Top header (sticky při vertikálním scrollu stránky) ── */
         .ht-top {
           display: flex; align-items: center; justify-content: space-between;
@@ -702,6 +742,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           text-decoration: underline; padding: 0; font-weight: 600;
         }
         .ht-date-back:hover { color: #c4b5fd; }
+        .ht-date-active strong { color: #c4b5fd; }
         .ht-hint {
           margin: 6px 0 0;
           font-size: 0.75rem;

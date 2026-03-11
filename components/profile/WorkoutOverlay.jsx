@@ -673,15 +673,40 @@ export default function WorkoutOverlay({
           .row-two {
             grid-template-columns: 1fr;
           }
+          .type-hero {
+            padding: 12px 14px;
+          }
+          .type-hero h4 { font-size: 1rem; }
           .type-grid {
             grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+          }
+          .type-btn {
+            min-height: 44px;
+            padding: 12px 10px;
+            font-size: 0.8rem;
+            touch-action: manipulation;
+          }
+          .duration-row { gap: 12px; }
+          .quick-btn {
+            min-height: 44px;
+            padding: 0 14px;
+            touch-action: manipulation;
+          }
+          .diff-btn {
+            min-height: 44px;
+            touch-action: manipulation;
           }
           .footer-row {
             flex-direction: column-reverse;
+            gap: 10px;
           }
           .footer-row button {
             width: 100%;
+            min-height: 48px;
+            touch-action: manipulation;
           }
+          .btn-save--lg { min-width: 0; }
           .field--half {
             max-width: none;
           }

@@ -1888,7 +1888,7 @@ export default function Profil() {
         {error && (
           <div className="error-banner" role="alert">
             <p>{error}</p>
-            <button type="button" onClick={() => { setError(''); setLoading(true); window.location.reload(); }} className="btn-ghost">
+            <button type="button" onClick={() => window.location.reload()} className="btn-ghost">
               Obnovit stránku
             </button>
             <span> nebo </span>

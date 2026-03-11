@@ -82,8 +82,11 @@ export default async function handler(req, res) {
     const activePlan = plansData.find((p) => p.is_active === true);
     const hasActivePlan = !!activePlan;
     const currentPlanForDiagnostics = activePlan || plansData.find((p) => p.plan_html && typeof p.plan_html === 'string' && p.plan_html.length > 0);
-    const currentPlanHtmlLength = currentPlanForDiagnostics?.plan_html?.length ?? 0;
-    const hasValidPlan = currentPlanHtmlLength >= 1000;
+    const currentPlanHtml = currentPlanForDiagnostics?.plan_html ?? '';
+    const currentPlanHtmlLength = currentPlanHtml.length;
+    const planValidation = validatePublishedPlanHtml(currentPlanHtml);
+    const hasValidPlan = planValidation.ok;
+    const currentPlanMissingSections = planValidation.missingCoreSections ?? [];
     if (!hasActivePlan && plansData.length > 0) {
       plansData = plansData.filter((p) => p.plan_html && typeof p.plan_html === 'string' && p.plan_html.length > 0);
     }

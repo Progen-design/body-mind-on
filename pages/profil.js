@@ -763,7 +763,8 @@ export default function Profil() {
       if (res.ok && json.ok) {
         await supabase.auth.signOut();
         setToast({ message: 'Účet byl smazán.', type: 'success' });
-        router.replace('/');
+        const mainSite = process.env.NEXT_PUBLIC_MAIN_SITE_URL || 'https://bodyandmindon.cz';
+        window.location.href = `${mainSite.replace(/\/$/, '')}/#card-pnjildktpojs3bo`;
       } else {
         setToast({ message: json.error || 'Nepodařilo se smazat účet.', type: 'error' });
       }

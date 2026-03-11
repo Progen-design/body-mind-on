@@ -2,7 +2,15 @@
 // CORE FLOW: Registrace musí vést k reálnému AI výsledku (body_metrics → ai_tasks → ai_generated_plans → zobrazení + e-mail).
 // Při refaktoru neměň pořadí: insert body_metrics → createInitialAITasks → enqueueAIEvent → triggerImmediateDecision → runAIScheduler.
 // Viz docs/CORE_FLOW_REGISTRACE_AI_PLAN.md
+// Registrace ve všech programech (START, ON Club, VIP) se chová dle pravidel ON Club – lib/registrationRules.js.
 import { supabaseServer } from '../../lib/supabaseServer';
+import {
+  PROGRAMS,
+  validateHeightCm,
+  validateWeightKg,
+  validateAge,
+  validatePassword,
+} from '../../lib/registrationRules';
 import { createAuthUserIfNew } from '../../lib/authHelpers';
 import { runAIScheduler } from '../../lib/aiScheduler';
 import { createInitialAITasks } from '../../lib/createInitialAITasks';
@@ -61,7 +69,7 @@ export default async function handler(req, res) {
       dietary_restrictions: dietaryRestrictions || null,
       foods_to_avoid: foodsToAvoid || null,
       notes: notesFinal,
-      program: b.program || 'START',
+      program: PROGRAMS.includes(b.program) ? b.program : 'START',
       created_at: new Date().toISOString(),
       user_id: null,
     };
@@ -70,8 +78,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'E-mail je povinný.' });
     }
     const password = typeof b.password === 'string' ? b.password.trim() : '';
-    if (password && password.length < 6) {
-      return res.status(400).json({ error: 'Heslo musí mít alespoň 6 znaků.' });
+    const passwordValidation = validatePassword(password);
+    if (password && !passwordValidation.valid) {
+      return res.status(400).json({ error: passwordValidation.error || 'Heslo musí mít alespoň 6 znaků.' });
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(payload.email)) {
@@ -81,15 +90,12 @@ export default async function handler(req, res) {
     if (!payload.height_cm || !payload.weight_kg) {
       return res.status(400).json({ error: 'Chybí výška nebo váha.' });
     }
-    if (payload.height_cm < 100 || payload.height_cm > 250) {
-      return res.status(400).json({ error: 'Výška musí být mezi 100 a 250 cm.' });
-    }
-    if (payload.weight_kg < 30 || payload.weight_kg > 300) {
-      return res.status(400).json({ error: 'Váha musí být mezi 30 a 300 kg.' });
-    }
-    if (payload.age != null && (payload.age < 15 || payload.age > 120)) {
-      return res.status(400).json({ error: 'Věk musí být mezi 15 a 120.' });
-    }
+    const heightCheck = validateHeightCm(payload.height_cm);
+    if (!heightCheck.valid) return res.status(400).json({ error: heightCheck.error });
+    const weightCheck = validateWeightKg(payload.weight_kg);
+    if (!weightCheck.valid) return res.status(400).json({ error: weightCheck.error });
+    const ageCheck = validateAge(payload.age);
+    if (!ageCheck.valid) return res.status(400).json({ error: ageCheck.error });
 
     const authResult = await createAuthUserIfNew(payload.email, payload.name, password || undefined);
     let loginPassword = null;

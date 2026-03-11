@@ -6,8 +6,10 @@ import Footer from "../components/Footer";
 import HabitSelection from "../components/HabitSelection";
 import { getSuggestedHabits } from "../lib/habits";
 import { getFrequencyDayRange } from "../lib/preferenceConstants";
+import { REGISTRATION_STEPS } from "../lib/registrationRules";
 
-const MAX_STEP = 5;
+// Referenční stránka pravidel registrace – START a VIP se chovají dle těchto pravidel (5 kroků, POST /api/body-metrics).
+const MAX_STEP = REGISTRATION_STEPS;
 
 export default function OnClubPage() {
   const router = useRouter();

@@ -5,8 +5,10 @@ import Footer from "../components/Footer";
 import HabitSelection from "../components/HabitSelection";
 import { getSuggestedHabits } from "../lib/habits";
 import { getFrequencyDayRange } from "../lib/preferenceConstants";
+import { REGISTRATION_STEPS } from "../lib/registrationRules";
 
-const MAX_STEP = 5;
+// Registrace dle pravidel ON Club (stejný flow pro START, ON Club, VIP): https://app.bodyandmindon.cz/on-club
+const MAX_STEP = REGISTRATION_STEPS;
 
 export default function Start() {
   const router = useRouter();

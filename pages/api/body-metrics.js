@@ -115,16 +115,18 @@ export default async function handler(req, res) {
       userChosePassword = authResult.userChosePassword === true;
     }
 
-    const { error: dbErr } = await supabaseServer
+    const { data: insertedRows, error: dbErr } = await supabaseServer
       .from('body_metrics')
-      .insert([payload]);
+      .insert([payload])
+      .select('id');
 
     if (dbErr) {
       console.error('[body-metrics] DB insert failed:', dbErr.message);
       throw new Error(dbErr.message);
     }
 
-    console.info('[body-metrics] body_metrics inserted', payload.user_id ? `user_id=${payload.user_id}` : '(no user_id)');
+    const bodyMetricsId = insertedRows?.[0]?.id ?? null;
+    console.info('[body-metrics] body_metrics inserted', payload.user_id ? `user_id=${payload.user_id} body_metrics_id=${bodyMetricsId}` : `body_metrics_id=${bodyMetricsId} (no user_id)`);
 
     const loginUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '') + '/login';
     const emailOptions = {
@@ -136,15 +138,19 @@ export default async function handler(req, res) {
     };
 
     let planSent = false;
+    let schedulerTriggered = false;
+    let initialPlanTaskStatus = null;
+    const accountCreated = payload.user_id != null;
     if (payload.user_id) {
       await createInitialAITasks(payload.user_id, emailOptions);
-      console.info('[body-metrics] initial tasks created', `user_id=${payload.user_id}`);
+      console.info('[body-metrics] initial tasks created / already existed', `user_id=${payload.user_id}`);
       await enqueueAIEvent('user_registered', payload.user_id, { program: payload.program || 'START' });
       await triggerImmediateDecision(payload.user_id);
 
       try {
         console.info('[body-metrics] scheduler run started', `user_id=${payload.user_id}`);
         const run = await runAIScheduler();
+        schedulerTriggered = true;
         console.info('[body-metrics] scheduler run finished', `completed=${run.completed} failed=${run.failed}`);
 
         const { data: taskRow } = await supabaseServer
@@ -157,14 +163,15 @@ export default async function handler(req, res) {
           .limit(1)
           .maybeSingle();
 
+        initialPlanTaskStatus = taskRow?.status ?? null;
         planSent = taskRow?.status === 'completed';
         const emailSent = taskRow?.result?.email_sent === true;
-        console.info('[body-metrics] task initial_plan', `status=${taskRow?.status} email_sent=${emailSent}`);
+        console.info('[body-metrics] initial_plan task status after scheduler', `status=${initialPlanTaskStatus} email_sent=${emailSent}`);
         if (!planSent && taskRow?.status === 'failed') {
           console.warn('[body-metrics] trainer initial_plan failed:', taskRow?.result);
         }
       } catch (schedErr) {
-        console.warn('⚠️ Scheduler run failed (tasks remain pending):', schedErr?.message);
+        console.warn('[body-metrics] scheduler run failed (tasks remain pending):', schedErr?.message);
       }
     }
 
@@ -209,16 +216,23 @@ export default async function handler(req, res) {
       }
     }
 
-    const accountCreated = payload.user_id != null;
     const successMsg = accountCreated
       ? 'Údaje byly úspěšně uloženy a plán byl odeslán na e-mail. V e-mailu najdeš přihlašovací údaje – s nimi se můžeš přihlásit a vidět svůj profil.'
       : 'Údaje a plán byly uloženy a odeslány na e-mail. Vytvoření přihlašovacího účtu se nezdařilo – pro přístup do profilu nás kontaktuj na info@bodyandmindon.cz.';
-    return res.status(200).json({
+    const response = {
       ok: true,
       planSent,
       loginUnavailable: !accountCreated,
       message: planSent ? successMsg : 'Údaje byly uloženy. E-mail s plánem se nepodařilo odeslat – zkontroluj spam nebo napiš na info@bodyandmindon.cz.',
-    });
+    };
+    if (accountCreated) {
+      response.hasUserId = true;
+      response.schedulerTriggered = schedulerTriggered;
+      response.initialPlanTaskStatus = initialPlanTaskStatus;
+    } else {
+      response.hasUserId = false;
+    }
+    return res.status(200).json(response);
 
   } catch (e) {
     console.error('[body-metrics] ERROR:', e);

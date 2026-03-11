@@ -1530,6 +1530,8 @@ export default function Profil() {
     return msgs[0];
   }, [profile?.coach_messages]);
 
+  const hasValidPlanHtml = (plan) => plan?.plan_html && typeof plan.plan_html === 'string' && plan.plan_html.length >= 200;
+
   // Najít plán platný pro aktuální týden / dnes – jídelníček se mění s časem
   const currentPlan = useMemo(() => {
     if (!profile?.plans || !Array.isArray(profile.plans) || profile.plans.length === 0) {
@@ -2151,13 +2153,21 @@ export default function Profil() {
                 <span className={`profile-bubble-chevron ${profileOpenSections.has('muj-plan') ? 'open' : ''}`} aria-hidden>▼</span>
               </button>
               <div id="profile-bubble-body-muj-plan" role="region" aria-labelledby="profile-bubble-header-muj-plan" className="profile-bubble-body" data-open={profileOpenSections.has('muj-plan')}>
-              {currentPlan && nextPlan ? (
+              {!hasValidPlanHtml(currentPlan) && !hasValidPlanHtml(nextPlan) && (currentPlan || nextPlan) ? (
+                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                  <p className="plan-preparing-text">Plán ještě není připraven. Zkus obnovit stránku za chvíli.</p>
+                  <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>
+                    {refreshing ? 'Obnovuji…' : 'Obnovit'}
+                  </button>
+                </div>
+              ) : currentPlan && nextPlan ? (
                 <>
                   <div className="profile-bubble-tabs" role="tablist" aria-label="Týden plánu">
                     <button type="button" role="tab" aria-selected={planTab === 'current'} className={`profile-bubble-tab ${planTab === 'current' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setPlanTab('current')}>Tento týden</button>
                     <button type="button" role="tab" aria-selected={planTab === 'next'} className={`profile-bubble-tab ${planTab === 'next' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setPlanTab('next')}>Příští týden</button>
                   </div>
                   {planTab === 'current' ? (
+                    hasValidPlanHtml(currentPlan) ? (
                     <PlanViewer
                       plan={currentPlan}
                       userName={userName}
@@ -2174,7 +2184,13 @@ export default function Profil() {
                       onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
                       canPinMeals={membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired)}
                     />
-                  ) : (
+                    ) : (
+                    <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                      <p className="plan-preparing-text">Plán ještě není připraven. Zkus obnovit stránku za chvíli.</p>
+                      <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
+                    </div>
+                    )
+                  ) : hasValidPlanHtml(nextPlan) ? (
                     <PlanViewer
                       plan={nextPlan}
                       userName={userName}
@@ -2191,42 +2207,61 @@ export default function Profil() {
                       onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
                       canPinMeals={false}
                     />
+                  ) : (
+                    <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                      <p className="plan-preparing-text">Plán ještě není připraven. Zkus obnovit stránku za chvíli.</p>
+                      <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
+                    </div>
                   )}
                 </>
               ) : currentPlan ? (
+                hasValidPlanHtml(currentPlan) ? (
                 <PlanViewer
                   plan={currentPlan}
                   userName={userName}
                   hideHero
                   hideShoppingList
                   dietaryPreferences={(() => {
-                    const lm = profile?.body_metrics?.[0];
-                    if (!lm) return '';
-                    const parts = [];
-                    if (lm.dietary_restrictions?.trim()) parts.push(lm.dietary_restrictions.trim());
-                    if (lm.foods_to_avoid?.trim()) parts.push(lm.foods_to_avoid.trim());
-                    return parts.join('. ');
-                  })()}
+                        const lm = profile?.body_metrics?.[0];
+                        if (!lm) return '';
+                        const parts = [];
+                        if (lm.dietary_restrictions?.trim()) parts.push(lm.dietary_restrictions.trim());
+                        if (lm.foods_to_avoid?.trim()) parts.push(lm.foods_to_avoid.trim());
+                        return parts.join('. ');
+                      })()}
                   onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
                   canPinMeals={membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired)}
                 />
+                ) : (
+                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                  <p className="plan-preparing-text">Plán ještě není připraven. Zkus obnovit stránku za chvíli.</p>
+                  <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
+                </div>
+                )
               ) : nextPlan ? (
+                hasValidPlanHtml(nextPlan) ? (
                 <PlanViewer
                   plan={nextPlan}
                   userName={userName}
                   hideHero
                   hideShoppingList
                   dietaryPreferences={(() => {
-                    const lm = profile?.body_metrics?.[0];
-                    if (!lm) return '';
-                    const parts = [];
-                    if (lm.dietary_restrictions?.trim()) parts.push(lm.dietary_restrictions.trim());
-                    if (lm.foods_to_avoid?.trim()) parts.push(lm.foods_to_avoid.trim());
-                    return parts.join('. ');
-                  })()}
+                        const lm = profile?.body_metrics?.[0];
+                        if (!lm) return '';
+                        const parts = [];
+                        if (lm.dietary_restrictions?.trim()) parts.push(lm.dietary_restrictions.trim());
+                        if (lm.foods_to_avoid?.trim()) parts.push(lm.foods_to_avoid.trim());
+                        return parts.join('. ');
+                      })()}
                   onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
                   canPinMeals={false}
                 />
+                ) : (
+                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                  <p className="plan-preparing-text">Plán ještě není připraven. Zkus obnovit stránku za chvíli.</p>
+                  <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
+                </div>
+                )
               ) : null}
               </div>
             </div>

@@ -77,7 +77,14 @@ export default async function handler(req, res) {
     ]);
 
     const bodyMetrics = (metricsRes.status === 'fulfilled' && metricsRes.value?.data) ? metricsRes.value.data : [];
-    const plansData = (plansRes.status === 'fulfilled' && plansRes.value?.data) ? plansRes.value.data : [];
+    let plansData = (plansRes.status === 'fulfilled' && plansRes.value?.data) ? plansRes.value.data : [];
+    const activePlan = plansData.find((p) => p.is_active === true);
+    const hasActivePlan = !!activePlan;
+    const currentPlanForDiagnostics = activePlan || plansData.find((p) => p.plan_html && p.plan_html.length > 0);
+    const currentPlanHtmlLength = currentPlanForDiagnostics?.plan_html?.length ?? 0;
+    if (!hasActivePlan && plansData.length > 0) {
+      plansData = plansData.filter((p) => p.plan_html && typeof p.plan_html === 'string' && p.plan_html.length > 0);
+    }
     const workouts = (workoutsRes.status === 'fulfilled' && workoutsRes.value?.data) ? workoutsRes.value.data : [];
     const userHabits = (userHabitsRes.status === 'fulfilled' && userHabitsRes.value?.data) ? userHabitsRes.value.data : [];
     const membershipData = (membershipRes.status === 'fulfilled' && membershipRes.value?.data) ? membershipRes.value.data : null;
@@ -161,6 +168,11 @@ export default async function handler(req, res) {
       plans: plansData,
       coach_messages: coachMessages,
       workouts,
+      _diagnostics: {
+        plans_count: plansData.length,
+        has_active_plan: hasActivePlan,
+        current_plan_html_length: currentPlanHtmlLength,
+      },
       weight_history: weightHistory,
       stats: {
         workouts_this_week: workoutsThisWeek,

@@ -1,6 +1,7 @@
 // /pages/api/profile.js - Vrací data přihlášeného uživatele
 import { supabaseServer } from '../../lib/supabaseServer';
 import { POSITIVE_HABITS, NEGATIVE_HABITS } from '../../lib/habits';
+import { validatePublishedPlanHtml } from '../../lib/validatePlanHtml';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -174,6 +175,7 @@ export default async function handler(req, res) {
         has_active_plan: hasActivePlan,
         current_plan_html_length: currentPlanHtmlLength,
         has_valid_plan: hasValidPlan,
+        current_plan_missing_sections: currentPlanMissingSections,
       },
       weight_history: weightHistory,
       stats: {

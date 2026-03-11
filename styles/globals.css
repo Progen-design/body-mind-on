@@ -23,16 +23,13 @@
   --profil-accent-light: #a78bfa;
 }
 
-/* ---- App pages (start, login, trener, on-club, chci-vip) – jednotný vzhled ---- */
+/* ---- App pages (start, login, trener, on-club, chci-vip) – pozadí jako hlavní stránka ---- */
 .app-page {
   min-height: 100vh;
   position: relative;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse 80% 60% at 20% -10%, rgba(159,70,255,0.45) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 80% 10%, rgba(52,2,107,0.55) 0%, transparent 55%),
-    radial-gradient(ellipse 50% 40% at 50% 90%, rgba(18,6,56,0.5) 0%, transparent 60%),
-    linear-gradient(160deg, #120638 0%, #1a0645 30%, #0d0420 65%, #050111 100%);
+  /* Stejný gradient jako hero na hlavní stránce */
+  background: linear-gradient(135deg, #120638 0%, #1a0645 25%, #34026b 50%, #1a0645 75%, #0d0420 100%);
   color: #fff;
 }
 .app-page::before {
@@ -40,60 +37,57 @@
   pointer-events: none;
   position: fixed;
   inset: 0;
+  /* Jemné světelné zdroje – fialovo-modré jako na hlavní stránce */
   background:
-    radial-gradient(circle 500px at 15% 25%, rgba(159,70,255,0.18) 0%, transparent 70%),
-    radial-gradient(circle 400px at 85% 70%, rgba(14,165,233,0.12) 0%, transparent 65%),
-    radial-gradient(circle 300px at 60% 10%, rgba(167,139,250,0.14) 0%, transparent 60%);
+    radial-gradient(circle 600px at 20% 20%, rgba(159, 70, 255, 0.25) 0%, transparent 60%),
+    radial-gradient(circle 500px at 80% 80%, rgba(52, 2, 107, 0.3) 0%, transparent 55%),
+    radial-gradient(circle 400px at 50% 50%, rgba(14, 165, 233, 0.12) 0%, transparent 65%),
+    radial-gradient(circle 350px at 70% 20%, rgba(167, 139, 250, 0.15) 0%, transparent 60%);
   z-index: 0;
 }
 .app-page > * { position: relative; z-index: 1; }
 
-/* Registrační stránky – pozadí jako profil (gym obrázek + orby) */
+/* Registrační stránky – dekorativní vrstva (bez obrázku, čistý gradient jako hlavní stránka) */
 .app-page .app-page-bg-decor {
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
   overflow: hidden;
-  background-color: #0a0a0f;
-  background-image:
-    linear-gradient(180deg, rgba(10,10,15,0.75) 0%, rgba(10,10,15,0.65) 50%, rgba(10,10,15,0.78) 100%),
-    url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1920&q=80');
-  background-size: cover;
-  background-position: center;
+  background: transparent;
 }
 .app-page-bg-decor::before,
 .app-page-bg-decor::after {
   content: '';
   position: absolute;
   border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.35;
+  filter: blur(140px);
+  opacity: 0.4;
 }
 .app-page-bg-decor::before {
-  width: 550px;
-  height: 550px;
-  background: radial-gradient(circle, rgba(139, 92, 255, 0.5) 0%, transparent 65%);
-  top: -180px;
-  right: -120px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(159, 70, 255, 0.45) 0%, transparent 65%);
+  top: -200px;
+  right: -100px;
 }
 .app-page-bg-decor::after {
-  width: 450px;
-  height: 450px;
-  background: radial-gradient(circle, rgba(34, 197, 94, 0.2) 0%, transparent 65%);
-  bottom: -120px;
-  left: -100px;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(52, 2, 107, 0.35) 0%, transparent 65%);
+  bottom: -150px;
+  left: -120px;
 }
 .app-page-bg-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.25;
+  filter: blur(100px);
+  opacity: 0.3;
 }
 .app-page-bg-orb--center {
-  width: 350px;
-  height: 350px;
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.4) 0%, transparent 70%);
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(139, 92, 255, 0.35) 0%, transparent 70%);
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);

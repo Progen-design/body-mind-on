@@ -18,6 +18,7 @@ import WorkoutOverlay from '../components/profile/WorkoutOverlay';
 import PreferencesOverlay from '../components/profile/PreferencesOverlay';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
+import { validatePublishedPlanHtml } from '../lib/validatePlanHtml';
 import { getHabitById } from '../lib/habits';
 import { normalizeOccupationForForm, activityToFormLabel, goalToFormLabel, normalizeFrequency, getFrequencyDayRange } from '../lib/preferenceConstants';
 import { useProfileData } from '../hooks/useProfileData';
@@ -1530,7 +1531,11 @@ export default function Profil() {
     return msgs[0];
   }, [profile?.coach_messages]);
 
-  const hasValidPlanHtml = (plan) => plan?.plan_html && typeof plan.plan_html === 'string' && plan.plan_html.length >= 200;
+  const hasValidPlanHtml = (plan) => {
+    const html = plan?.plan_html;
+    if (!html || typeof html !== 'string') return false;
+    return validatePublishedPlanHtml(html).ok;
+  };
 
   // Najít plán platný pro aktuální týden / dnes – jídelníček se mění s časem
   const currentPlan = useMemo(() => {
@@ -2155,7 +2160,7 @@ export default function Profil() {
               <div id="profile-bubble-body-muj-plan" role="region" aria-labelledby="profile-bubble-header-muj-plan" className="profile-bubble-body" data-open={profileOpenSections.has('muj-plan')}>
               {!hasValidPlanHtml(currentPlan) && !hasValidPlanHtml(nextPlan) && (currentPlan || nextPlan) ? (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
-                  <p className="plan-preparing-text">Plán ještě není připraven. Zkus obnovit stránku za chvíli.</p>
+                  <p className="plan-preparing-text">Plán není kompletní. Obnov stránku za chvíli nebo kontaktuj podporu.</p>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>
                     {refreshing ? 'Obnovuji…' : 'Obnovit'}
                   </button>
@@ -2186,7 +2191,7 @@ export default function Profil() {
                     />
                     ) : (
                     <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
-                      <p className="plan-preparing-text">Plán ještě není připraven. Zkus obnovit stránku za chvíli.</p>
+                      <p className="plan-preparing-text">Plán není kompletní. Obnov stránku za chvíli nebo kontaktuj podporu.</p>
                       <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
                     </div>
                     )
@@ -2209,7 +2214,7 @@ export default function Profil() {
                     />
                   ) : (
                     <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
-                      <p className="plan-preparing-text">Plán ještě není připraven. Zkus obnovit stránku za chvíli.</p>
+                      <p className="plan-preparing-text">Plán není kompletní. Obnov stránku za chvíli nebo kontaktuj podporu.</p>
                       <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
                     </div>
                   )}
@@ -2234,7 +2239,7 @@ export default function Profil() {
                 />
                 ) : (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
-                  <p className="plan-preparing-text">Plán ještě není připraven. Zkus obnovit stránku za chvíli.</p>
+                  <p className="plan-preparing-text">Plán není kompletní. Obnov stránku za chvíli nebo kontaktuj podporu.</p>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
                 </div>
                 )
@@ -2258,7 +2263,7 @@ export default function Profil() {
                 />
                 ) : (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
-                  <p className="plan-preparing-text">Plán ještě není připraven. Zkus obnovit stránku za chvíli.</p>
+                  <p className="plan-preparing-text">Plán není kompletní. Obnov stránku za chvíli nebo kontaktuj podporu.</p>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
                 </div>
                 )

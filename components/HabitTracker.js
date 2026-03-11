@@ -128,10 +128,9 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     const container = scrollContainerRef.current;
     if (!el || !container) return;
     const isNarrowViewport = typeof window !== 'undefined' && window.innerWidth < 720;
-    // On mobile keep the sticky label column visible and place "today"
-    // right after it instead of centering the whole grid.
+    // První sloupec je mimo scroll – posouváme jen oblast s dny.
     const targetLeft = isNarrowViewport
-      ? Math.max(0, el.offsetLeft - LABEL_W - 28)
+      ? Math.max(0, el.offsetLeft - 28)
       : el.offsetLeft - (container.clientWidth / 2) + (el.clientWidth / 2);
     const maxLeft = Math.max(0, container.scrollWidth - container.clientWidth);
     const nextLeft = Math.max(0, Math.min(maxLeft, targetLeft));
@@ -378,6 +377,46 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     </>
   );
 
+  /** Jen buňky pro daný návyk (pro scrollovatelnou část – první sloupec je vždy vlevo mimo scroll). */
+  const renderHabitRowCellsOnly = (h, isNegative) =>
+    days.map((dateStr) => {
+      const completed = getCompleted(h.id, dateStr);
+      const isToday = dateStr === todayStr;
+      const isFuture = dateStr > todayStr;
+      const busy = toggling === `${h.id}-${dateStr}`;
+      return (
+        <button
+          key={`${h.id}-${dateStr}`}
+          type="button"
+          style={getCellStyle(completed, isToday, isFuture, busy, isNegative)}
+          onClick={() => !isFuture && !busy && handleToggle(h.id, dateStr)}
+          disabled={isFuture || busy}
+          aria-pressed={completed}
+          aria-label={`${h.label}, ${formatShortDate(dateStr)}${completed ? ', splněno' : ', nesplněno'}`}
+          onMouseEnter={(e) => { if (!isFuture && !busy) { e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)'; e.currentTarget.style.boxShadow = completed ? (isNegative ? '0 8px 24px rgba(239,68,68,0.6)' : '0 8px 24px rgba(34,197,94,0.6)') : isToday ? '0 0 0 1.5px rgba(139,92,246,0.8) inset, 0 8px 20px rgba(0,0,0,0.3)' : '0 0 0 1.5px rgba(255,255,255,0.25) inset, 0 8px 20px rgba(0,0,0,0.25)'; } }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = getCellStyle(completed, isToday, isFuture, busy, isNegative).boxShadow; }}
+          onMouseDown={(e) => { if (!isFuture && !busy) e.currentTarget.style.transform = 'scale(0.9)'; }}
+          onMouseUp={(e) => { if (!isFuture && !busy) e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)'; }}
+        >
+          {busy ? (
+            <span className="hg-spin" />
+          ) : completed ? (
+            isNegative ? (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" stroke="#fff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )
+          ) : (
+            <span style={{ width: '22px', height: '22px', borderRadius: '50%', border: isToday ? '2px solid rgba(167,139,250,0.65)' : '2px solid rgba(255,255,255,0.28)', display: 'block' }} />
+          )}
+        </button>
+      );
+    });
+
   return (
     <section className="habit-tracker">
       <div className="ht-top">
@@ -411,45 +450,77 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
       ) : (
         <>
           <div className="ht-content">
-            <div className="hg-scroll" ref={scrollContainerRef}>
-              <div className="hg-grid" style={{ gridTemplateColumns: gridCols, columnGap: GAP, rowGap: '6px' }}>
-
-                {/* Date header row – kliknutím nastaví zobrazený den */}
+            <div className="hg-table-wrap">
+              {/* První sloupec (návyky) – vždy vidět, mimo scroll */}
+              <div className="hg-fixed-col">
                 <div className="hg-corner" />
-                {days.map((d) => (
-                  <button
-                    key={d}
-                    type="button"
-                    ref={d === todayStr ? todayColRef : undefined}
-                    className={`hg-hdr-cell ${d === todayStr ? 'today' : ''} ${displayDateStr === d ? 'hg-hdr-cell-selected' : ''}`}
-                    onClick={() => setViewingDateStr(d)}
-                    aria-pressed={displayDateStr === d}
-                    aria-label={`${new Date(d + 'T12:00:00').toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' })}${d === todayStr ? ', dnes' : ''}. Klikni pro zobrazení tohoto dne.`}
-                  >
-                    <span className="hg-hdr-day">{new Date(d + 'T12:00:00').toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' }).replace(' ', '')}</span>
-                    {d === todayStr && <span className="hg-hdr-today">Dnes</span>}
-                  </button>
-                ))}
-
-                {/* Positive habits */}
                 {positiveHabits.length > 0 && (
                   <>
-                    <div className="hg-section-bar pos" style={{ gridColumn: `1 / span ${days.length + 1}` }}>
+                    <div className="hg-section-bar pos">
                       <span className="hg-section-dot" />ZDRAVÉ NÁVYKY
                     </div>
-                    {positiveHabits.map((h) => renderHabitRow(h, false))}
+                    {positiveHabits.map((h) => (
+                      <div key={`lbl-${h.id}`} className="hg-label">
+                        <span className="hg-emoji" aria-hidden="true">{h.emoji}</span>
+                        <div className="hg-name-wrap">
+                          <span className="hg-name">{h.label}</span>
+                          {h.description && <span className="hg-hint"> ({h.description})</span>}
+                        </div>
+                      </div>
+                    ))}
                   </>
                 )}
-
-                {/* Negative habits */}
                 {negativeHabits.length > 0 && (
                   <>
-                    <div className="hg-section-bar neg" style={{ gridColumn: `1 / span ${days.length + 1}` }}>
+                    <div className="hg-section-bar neg">
                       <span className="hg-section-dot neg" />ZLOZVYKY
                     </div>
-                    {negativeHabits.map((h) => renderHabitRow(h, true))}
+                    {negativeHabits.map((h) => (
+                      <div key={`lbl-${h.id}`} className="hg-label">
+                        <span className="hg-emoji" aria-hidden="true">{h.emoji}</span>
+                        <div className="hg-name-wrap">
+                          <span className="hg-name">{h.label}</span>
+                          {h.description && <span className="hg-hint"> ({h.description})</span>}
+                        </div>
+                      </div>
+                    ))}
                   </>
                 )}
+              </div>
+              {/* Posuvná část – jen dny (sloupce s daty) */}
+              <div className="hg-scroll" ref={scrollContainerRef}>
+                <div className="hg-days-grid" style={{ gridTemplateColumns: `repeat(${days.length}, ${CELL_W}px)`, columnGap: GAP, rowGap: '6px' }}>
+                  {days.map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      ref={d === todayStr ? todayColRef : undefined}
+                      className={`hg-hdr-cell ${d === todayStr ? 'today' : ''} ${displayDateStr === d ? 'hg-hdr-cell-selected' : ''}`}
+                      onClick={() => setViewingDateStr(d)}
+                      aria-pressed={displayDateStr === d}
+                      aria-label={`${new Date(d + 'T12:00:00').toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' })}${d === todayStr ? ', dnes' : ''}. Klikni pro zobrazení tohoto dne.`}
+                    >
+                      <span className="hg-hdr-day">{new Date(d + 'T12:00:00').toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' }).replace(' ', '')}</span>
+                      {d === todayStr && <span className="hg-hdr-today">Dnes</span>}
+                    </button>
+                  ))}
+                  {positiveHabits.length > 0 && (
+                    <>
+                      <div className="hg-section-bar pos" style={{ gridColumn: `1 / -1` }}>
+                        <span className="hg-section-dot" aria-hidden />
+                      </div>
+                      {positiveHabits.map((h) => renderHabitRowCellsOnly(h, false))}
+                    </>
+                  )}
+                  {negativeHabits.length > 0 && (
+                    <>
+                      <div className="hg-section-bar neg" style={{ gridColumn: `1 / -1` }}>
+                        <span className="hg-section-dot neg" aria-hidden />
+                      </div>
+                      {negativeHabits.map((h) => renderHabitRowCellsOnly(h, true))}
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -523,7 +594,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         .ht-content {
           display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap;
         }
-        .hg-scroll { flex: 1; min-width: 280px; }
+        .hg-table-wrap { flex: 1; min-width: 280px; }
 
         .ht-chart-wrap {
           flex-shrink: 0;
@@ -652,40 +723,53 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           box-shadow: 0 0 10px rgba(52,211,153,0.55);
         }
 
-        /* ── Outer card ── */
-        .hg-scroll {
-          position: relative;
-          overflow-x: auto;
-          -webkit-overflow-scrolling: touch;
-          scrollbar-width: thin;
-          scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+        /* ── Tabulka: pevný první sloupec + posuvná oblast s dny ── */
+        .hg-table-wrap {
+          display: flex;
+          align-items: flex-start;
           border-radius: 20px;
           background: linear-gradient(160deg, rgba(22,32,55,0.98) 0%, rgba(10,15,30,0.98) 100%);
           border: 1px solid rgba(255,255,255,0.08);
           box-shadow: 0 20px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.02) inset;
+          overflow: hidden;
+        }
+        .hg-fixed-col {
+          flex-shrink: 0;
+          width: ${LABEL_W}px;
+          min-width: ${LABEL_W}px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          padding: 18px 0 24px 20px;
+          border-right: 1px solid rgba(255,255,255,0.08);
+          background: linear-gradient(90deg, rgba(14, 19, 33, 1) 0%, rgba(14, 19, 33, 0.98) 100%);
+        }
+        .hg-scroll {
+          flex: 1;
+          min-width: 0;
+          position: relative;
+          overflow-x: auto;
+          overflow-y: visible;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
         }
         .hg-scroll::-webkit-scrollbar { height: 8px; }
         .hg-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); border-radius: 4px; }
         .hg-scroll::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.5); border-radius: 4px; }
         .hg-scroll::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.7); }
-        .hg-grid {
-          position: relative;
-          isolation: isolate;
-          display: grid; padding: 18px 20px 24px; min-width: max-content;
+        .hg-days-grid {
+          display: grid;
+          padding: 18px 28px 24px 20px;
+          min-width: max-content;
+          box-sizing: border-box;
         }
         .hg-corner {
           height: 60px;
-          width: ${LABEL_W}px;
+          width: 100%;
           min-width: ${LABEL_W}px;
-          max-width: ${LABEL_W}px;
-          position: -webkit-sticky;
-          position: sticky;
-          left: 0;
-          z-index: 16;
-          background: linear-gradient(90deg, rgba(14, 19, 33, 1) 0%, rgba(14, 19, 33, 0.98) 84%, rgba(14, 19, 33, 0.94) 100%);
-          box-shadow: 8px 0 18px rgba(0,0,0,0.38);
-          border-right: 1px solid rgba(255,255,255,0.08);
-          transform: translateZ(0);
+          flex-shrink: 0;
+          background: transparent;
         }
 
         /* ── Date headers (clickable) ── */
@@ -736,33 +820,14 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           50% { opacity: 0.5; }
         }
 
-        /* ── Habit label (zamčené vlevo – při horizontálním posouvání zůstávají názvy návyků vždy vidět) ── */
+        /* ── Habit label (v pevném sloupci vlevo – vždy vidět) ── */
         .hg-label {
           display: flex; align-items: flex-start; gap: 10px;
           min-height: 56px;
-          width: ${LABEL_W}px;
-          min-width: ${LABEL_W}px;
-          max-width: ${LABEL_W}px;
+          width: 100%;
           padding: 6px 16px 6px 0;
           overflow: hidden;
-          position: -webkit-sticky;
-          position: sticky; left: 0; z-index: 10;
-          z-index: 18;
-          background: linear-gradient(90deg, rgba(14, 19, 33, 1) 0%, rgba(14, 19, 33, 0.985) 82%, rgba(14, 19, 33, 0.94) 100%);
-          box-shadow: 8px 0 18px rgba(0,0,0,0.38);
-          border-right: 1px solid rgba(255,255,255,0.08);
-          min-width: 0;
-          transform: translateZ(0);
-        }
-        .hg-label::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          right: -1px;
-          width: 18px;
-          height: 100%;
-          pointer-events: none;
-          background: linear-gradient(90deg, rgba(14, 19, 33, 0) 0%, rgba(14, 19, 33, 0.92) 100%);
+          box-sizing: border-box;
         }
         .hg-emoji { font-size: 1.3rem; flex-shrink: 0; line-height: 1; margin-top: 2px; }
         .hg-name-wrap {
@@ -912,13 +977,8 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           .ht-top { flex-direction: column; align-items: flex-start; gap: 10px; }
           .ht-progress-inline { align-items: flex-start; width: 100%; }
           .ht-prog-bar-wrap { width: 100%; max-width: 180px; }
-          .hg-grid { padding: 14px 14px 18px; }
-          .hg-corner,
-          .hg-label {
-            width: 196px;
-            min-width: 196px;
-            max-width: 196px;
-          }
+          .hg-fixed-col { width: 196px; min-width: 196px; padding: 14px 0 18px 14px; }
+          .hg-days-grid { padding: 14px 24px 18px 14px; }
         }
       `}</style>
     </section>

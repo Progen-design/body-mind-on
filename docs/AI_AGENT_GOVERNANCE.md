@@ -104,8 +104,8 @@ Kontrakty jsou definované v `lib/aiTaskRegistry.js` (TRAINER_PLAN_OUTPUT_SCHEMA
 
 - Konfigurace agentů je v **Supabase** v tabulce **`ai_agents`**.
 - Sloupce: `slug`, `name`, `model`, `system_prompt`, `temperature`, `enabled`, `context_profile_slug`, `default_output_contract`, `executor_group`, `artifact_type`, `version`, `prompt_version`, `is_published`.
-- Runtime načítá konfiguraci přes `lib/getAgentConfig.js`. Pokud řádek chybí nebo je chyba, použije se fallback z kódu (governance-sladěný).
-- Idempotentní seed všech agentů: **`supabase/migrations/20260316_ai_agents_governed_seed.sql`**. Přidá chybějící sloupce (context_profile_slug, executor_group, artifact_type) a upsertuje všech šest agentů s governance prompty a modely.
+- Runtime načítá konfiguraci přes `lib/getAgentConfig.js`. Pokud řádek chybí nebo je chyba, použije se fallback z kódu (governance-sladěný). Pokud DB vrátí prázdný `system_prompt`, použije se governance fallback prompt (nikdy se neposílají prázdné instrukce).
+- Idempotentní seed všech agentů: **`supabase/migrations/20260316_ai_agents_governed_seed.sql`**. Přidá chybějící sloupce (context_profile_slug, executor_group, artifact_type) a upsertuje všech šest agentů s governance prompty a modely. Routing v `taskExecutors.js` používá `side_effect_type` z registru a tabulku `ai_executor_bindings` (nebo hardcoded fallback); sloupce `executor_group` a `artifact_type` v `ai_agents` slouží pro konzistenci a audit.
 
 ---
 
@@ -156,7 +156,7 @@ Kontrakty jsou definované v `lib/aiTaskRegistry.js` (TRAINER_PLAN_OUTPUT_SCHEMA
 - **getAgentConfig.js** — načtení modelu a system_prompt z DB; fallbacky v souladu s governance.
 - **runAgent.js** — volá getAgentConfig, buildAgentContext, OpenAI Responses API; výstup vždy JSON.
 - **buildAgentContext.js** — kontext podle context_profile_slug (trainer_coach, marketing, social, validator).
-- **taskExecutors.js** — executeTrainerTask, executeCoachTask, executeContentTask (marketing/social), executeValidatorTask; žádná změna role agentů.
+- **taskExecutors.js** — executeTrainerTask, executeCoachTask, executeMarketingTask / executeSocialTask (oba delegují na executeContentTask), executeValidatorTask; žádná změna role agentů.
 - **generatePlan.js** — volá runAgent('trainer', { input: { prompt: userMessage } }); detailní user prompt z buildUserPrompt/buildMealsOnlyPrompt.
 
 Systém se nesmí rozpadnout do AI chaosu, kde si každý agent myslí, že je hlavní. Tento dokument a DB seed zajišťují jednotnou roli a instrukce.

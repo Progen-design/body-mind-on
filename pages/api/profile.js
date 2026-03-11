@@ -77,7 +77,7 @@ export default async function handler(req, res) {
         .limit(5),
       supabaseServer
         .from('ai_tasks')
-        .select('id, status, created_at')
+        .select('id, status, created_at, result')
         .eq('user_id', userId)
         .eq('agent_slug', 'trainer')
         .eq('task_type', 'initial_plan')
@@ -97,6 +97,10 @@ export default async function handler(req, res) {
     const planValidation = validatePublishedPlanHtml(currentPlanHtml);
     const hasValidPlan = planValidation.ok;
     const currentPlanMissingSections = planValidation.missingCoreSections ?? [];
+    const currentPlanStructure = planValidation.structure ?? null;
+    const initialPlanResult = initialPlanTask?.result;
+    const generation_source = initialPlanResult?.generation_source ?? null;
+    const fallback_used = initialPlanResult?.fallback_used ?? null;
 
     const initialPlanPending = initialPlanTask?.status === 'pending';
     let plan_state = 'missing';
@@ -196,6 +200,9 @@ export default async function handler(req, res) {
         has_valid_plan: hasValidPlan,
         current_plan_html_length: currentPlanHtmlLength,
         current_plan_missing_sections: currentPlanMissingSections,
+        current_plan_structure: currentPlanStructure,
+        generation_source,
+        fallback_used,
         plan_state,
       },
       weight_history: weightHistory,

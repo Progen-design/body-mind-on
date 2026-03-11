@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     weekEnd.setDate(weekEnd.getDate() + 6);
     const weekEndStr = weekEnd.toISOString().split('T')[0];
 
-    const [metricsRes, plansRes, workoutsRes, userHabitsRes, membershipRes, habitLogsRes, profileRes] = await Promise.allSettled([
+    const [metricsRes, plansRes, workoutsRes, userHabitsRes, membershipRes, habitLogsRes, profileRes, coachMessagesRes] = await Promise.allSettled([
       supabaseServer
         .from('body_metrics')
         .select('*')
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
         .limit(50),
       supabaseServer
         .from('ai_generated_plans')
-        .select('id, plan_type, daily_calories, macros, valid_from, valid_until, created_at, plan_html')
+        .select('id, plan_type, daily_calories, macros, valid_from, valid_until, created_at, plan_html, is_active')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(10),
@@ -67,6 +67,13 @@ export default async function handler(req, res) {
         .gte('log_date', weekStartStr)
         .lte('log_date', weekEndStr),
       supabaseServer.from('profiles').select('avatar_url, daily_email').eq('id', userId).maybeSingle(),
+      supabaseServer
+        .from('ai_messages')
+        .select('id, title, content, created_at, task_type')
+        .eq('user_id', userId)
+        .eq('agent_slug', 'coach')
+        .order('created_at', { ascending: false })
+        .limit(5),
     ]);
 
     const bodyMetrics = (metricsRes.status === 'fulfilled' && metricsRes.value?.data) ? metricsRes.value.data : [];
@@ -109,6 +116,7 @@ export default async function handler(req, res) {
     const negativeIds = new Set(NEGATIVE_HABITS.map((h) => h.id));
     const habitLogs = (habitLogsRes.status === 'fulfilled' && habitLogsRes.value?.data) ? habitLogsRes.value.data : [];
     const profileRow = (profileRes.status === 'fulfilled' && profileRes.value?.data) ? profileRes.value.data : null;
+    const coachMessages = (coachMessagesRes.status === 'fulfilled' && coachMessagesRes.value?.data) ? coachMessagesRes.value.data : [];
     let positiveDone = 0;
     let negativeDone = 0;
     const byHabit = {};
@@ -151,6 +159,7 @@ export default async function handler(req, res) {
       body_metrics: bodyMetrics,
       user_habits: userHabits,
       plans: plansData,
+      coach_messages: coachMessages,
       workouts,
       weight_history: weightHistory,
       stats: {

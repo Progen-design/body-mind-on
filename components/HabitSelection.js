@@ -1,7 +1,7 @@
 // components/HabitSelection.js – modern card výběr návyků pro registraci
 import { POSITIVE_HABITS, NEGATIVE_HABITS } from '../lib/habits';
 
-export default function HabitSelection({ selectedIds = [], suggestedIds = [], onChange }) {
+export default function HabitSelection({ selectedIds = [], suggestedIds = [], onChange, disabled = false }) {
   const ids = Array.isArray(selectedIds) ? selectedIds : [];
   const suggested = Array.isArray(suggestedIds) ? suggestedIds : [];
   const toggle = (id) => {
@@ -24,8 +24,9 @@ export default function HabitSelection({ selectedIds = [], suggestedIds = [], on
               key={h.id}
               type="button"
               className={`habit-selection-item ${ids.includes(h.id) ? 'habit-selection-item--active' : ''}`}
-              onClick={() => toggle(h.id)}
+              onClick={() => !disabled && toggle(h.id)}
               aria-pressed={ids.includes(h.id)}
+              disabled={disabled}
             >
               <span className="habit-selection-check" aria-hidden>{ids.includes(h.id) ? '✓' : ''}</span>
               <span className="habit-selection-emoji">{h.emoji}</span>
@@ -48,8 +49,9 @@ export default function HabitSelection({ selectedIds = [], suggestedIds = [], on
               key={h.id}
               type="button"
               className={`habit-selection-item ${ids.includes(h.id) ? 'habit-selection-item--active' : ''}`}
-              onClick={() => toggle(h.id)}
+              onClick={() => !disabled && toggle(h.id)}
               aria-pressed={ids.includes(h.id)}
+              disabled={disabled}
             >
               <span className="habit-selection-check" aria-hidden>{ids.includes(h.id) ? '✓' : ''}</span>
               <span className="habit-selection-emoji">{h.emoji}</span>

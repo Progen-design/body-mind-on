@@ -96,20 +96,18 @@ export default async function handler(req, res) {
     let userChosePassword = authResult.userChosePassword === true;
 
     if (authResult.error) {
-      console.error('❌ createAuthUserIfNew:', authResult.error);
       const isAlready = authResult.error.toLowerCase().includes('already') || authResult.error.toLowerCase().includes('registered');
       if (isAlready) {
         return res.status(400).json({
           error: 'S tímto e-mailem už máš účet. Přihlas se nebo obnov heslo na app.bodyandmindon.cz.',
         });
       }
-      if (isServerAuthConfigError(authResult.error)) {
-        return res.status(503).json({
-          error: 'Registrace je teď dočasně nedostupná kvůli nastavení serveru. Zkus to prosím za chvíli znovu.',
-        });
-      }
-      const userMessage = toUserFriendlyAuthError(authResult.error);
-      return res.status(400).json({ error: userMessage });
+      // Auth selhalo, ale registraci nefailujeme – uložíme data bez user_id a vrátíme loginUnavailable
+      console.info('[body-metrics] Auth failed (no user_id), saving body_metrics without user_id');
+      payload.user_id = null;
+      loginPassword = null;
+      existingAccount = false;
+      userChosePassword = false;
     } else {
       payload.user_id = authResult.userId;
       loginPassword = authResult.password ?? null;
@@ -122,11 +120,11 @@ export default async function handler(req, res) {
       .insert([payload]);
 
     if (dbErr) {
-      console.error('❌ Chyba při zápisu do DB:', dbErr);
+      console.error('[body-metrics] DB insert failed:', dbErr.message);
       throw new Error(dbErr.message);
     }
 
-    console.log(`✅ Data uložena do body_metrics pro ${payload.email}, user_id: ${payload.user_id}`);
+    console.info('[body-metrics] body_metrics inserted', payload.user_id ? `user_id=${payload.user_id}` : '(no user_id)');
 
     const loginUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '') + '/login';
     const emailOptions = {
@@ -140,13 +138,14 @@ export default async function handler(req, res) {
     let planSent = false;
     if (payload.user_id) {
       await createInitialAITasks(payload.user_id, emailOptions);
-      console.log(`✅ Vytvořeny úvodní AI úkoly pro user_id: ${payload.user_id}`);
+      console.info('[body-metrics] initial tasks created', `user_id=${payload.user_id}`);
       await enqueueAIEvent('user_registered', payload.user_id, { program: payload.program || 'START' });
       await triggerImmediateDecision(payload.user_id);
 
       try {
+        console.info('[body-metrics] scheduler run started', `user_id=${payload.user_id}`);
         const run = await runAIScheduler();
-        console.log(`✅ Scheduler: ${run.completed} completed, ${run.failed} failed`);
+        console.info('[body-metrics] scheduler run finished', `completed=${run.completed} failed=${run.failed}`);
 
         const { data: taskRow } = await supabaseServer
           .from('ai_tasks')
@@ -159,8 +158,10 @@ export default async function handler(req, res) {
           .maybeSingle();
 
         planSent = taskRow?.status === 'completed';
+        const emailSent = taskRow?.result?.email_sent === true;
+        console.info('[body-metrics] task initial_plan', `status=${taskRow?.status} email_sent=${emailSent}`);
         if (!planSent && taskRow?.status === 'failed') {
-          console.warn('⚠️ Trainer initial_plan failed:', taskRow?.result);
+          console.warn('[body-metrics] trainer initial_plan failed:', taskRow?.result);
         }
       } catch (schedErr) {
         console.warn('⚠️ Scheduler run failed (tasks remain pending):', schedErr?.message);
@@ -189,7 +190,7 @@ export default async function handler(req, res) {
       if (memErr) {
         console.warn('[body-metrics] memberships upsert:', memErr.message);
       } else {
-        console.log(`✅ Membership tier "${payload.program}" uložen pro user_id: ${payload.user_id}`);
+        console.info('[body-metrics] membership tier saved', `user_id=${payload.user_id}`);
       }
     }
 

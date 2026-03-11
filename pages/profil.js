@@ -375,7 +375,7 @@ export default function Profil() {
   const [loadingClients, setLoadingClients] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [showFullClientCard, setShowFullClientCard] = useState(false);
-  const [profileOpenSections, setProfileOpenSections] = useState(new Set(['muj-plan', 'moji-klienti']));
+  const [profileOpenSections, setProfileOpenSections] = useState(new Set(['muj-plan', 'moji-klienti', 'zprava-od-kouce']));
   const [planTab, setPlanTab] = useState('current'); // 'current' | 'next' – Varianta C: Můj plán
   const [statsTab, setStatsTab] = useState('overview'); // 'overview' | 'weight' | 'progress' – Varianta C: Statistiky a progres
 
@@ -1513,6 +1513,23 @@ export default function Profil() {
     }
   };
 
+  const hasActivePlan = useMemo(() => {
+    const plans = profile?.plans;
+    if (!Array.isArray(plans) || plans.length === 0) return false;
+    return plans.some((p) => p.is_active === true);
+  }, [profile?.plans]);
+
+  const planPreparing = useMemo(() => {
+    const bm = profile?.body_metrics;
+    return Array.isArray(bm) && bm.length > 0 && !hasActivePlan;
+  }, [profile?.body_metrics, hasActivePlan]);
+
+  const latestCoachMessage = useMemo(() => {
+    const msgs = profile?.coach_messages;
+    if (!Array.isArray(msgs) || msgs.length === 0) return null;
+    return msgs[0];
+  }, [profile?.coach_messages]);
+
   // Najít plán platný pro aktuální týden / dnes – jídelníček se mění s časem
   const currentPlan = useMemo(() => {
     if (!profile?.plans || !Array.isArray(profile.plans) || profile.plans.length === 0) {
@@ -2086,6 +2103,42 @@ export default function Profil() {
                   dangerouslySetInnerHTML={{ __html: mindsetTipFromPlan }}
                 />
               </div>
+              </div>
+            </div>
+            )}
+
+            {/* Plán se připravuje – když má body_metrics, ale ještě není aktivní plán */}
+            {!profile?.can_create_calendar_events && planPreparing && (
+            <div className="profile-bubble" id="plan-preparing">
+              <div className="profile-bubble-body" style={{ padding: '1rem 1.25rem' }}>
+                <p className="plan-preparing-text">Plán se připravuje – obnov stránku za chvíli.</p>
+                <button
+                  type="button"
+                  className="profile-quick-nav-btn"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                >
+                  {refreshing ? 'Obnovuji…' : 'Obnovit'}
+                </button>
+              </div>
+            </div>
+            )}
+
+            {/* Zpráva od kouče */}
+            {!profile?.can_create_calendar_events && latestCoachMessage && (
+            <div className="profile-bubble" id="zprava-od-kouce">
+              <button type="button" id="profile-bubble-header-coach" className="profile-bubble-header" onClick={() => toggleProfileSection('zprava-od-kouce')} aria-expanded={profileOpenSections.has('zprava-od-kouce')} aria-controls="profile-bubble-body-coach">
+                <span className="profile-bubble-title">Zpráva od kouče</span>
+                <span className={`profile-bubble-chevron ${profileOpenSections.has('zprava-od-kouce') ? 'open' : ''}`} aria-hidden>▼</span>
+              </button>
+              <div id="profile-bubble-body-coach" role="region" aria-labelledby="profile-bubble-header-coach" className="profile-bubble-body" data-open={profileOpenSections.has('zprava-od-kouce')}>
+                <div className="coach-message-block">
+                  {latestCoachMessage.title && <h3 className="coach-message-title">{latestCoachMessage.title}</h3>}
+                  <div
+                    className="coach-message-content"
+                    dangerouslySetInnerHTML={{ __html: (latestCoachMessage.content || '').replace(/\n/g, '<br>') }}
+                  />
+                </div>
               </div>
             </div>
             )}

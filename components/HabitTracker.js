@@ -601,13 +601,15 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         .habit-tracker { margin-bottom: 48px; }
 
         .ht-content {
-          display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          align-items: stretch;
         }
-        .hg-table-wrap { flex: 1; min-width: 280px; }
+        .hg-table-wrap { width: 100%; min-width: 0; }
 
         .ht-chart-wrap {
-          flex-shrink: 0;
-          width: 580px;
+          width: 100%;
           padding: 32px;
           border-radius: 20px;
           background: linear-gradient(160deg, rgba(22,32,55,0.98) 0%, rgba(10,15,30,0.98) 100%);
@@ -687,8 +689,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         .ht-chart-label.today { color: #34d399; font-weight: 700; }
 
         @media (max-width: 720px) {
-          .ht-content { flex-direction: column; }
-          .ht-chart-wrap { width: 100%; }
+          .ht-chart-wrap { padding: 20px 16px; }
         }
 
         @media (max-width: 768px) {

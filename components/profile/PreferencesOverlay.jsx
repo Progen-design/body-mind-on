@@ -35,6 +35,7 @@ export default function PreferencesOverlay({
       title="Upravit preference"
       subtitle="Tahle nastavení ovlivní tvůj další plán a doporučení."
       size="large"
+      brandedBg
       headerActions={(
         <button
           type="button"

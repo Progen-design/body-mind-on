@@ -18,6 +18,7 @@ export default function FullscreenOverlay({
   subtitle,
   size = 'medium',
   transparent = false,
+  brandedBg = false,
   headerActions = null,
   footer = null,
   children,
@@ -100,7 +101,7 @@ export default function FullscreenOverlay({
 
   return createPortal(
     <div
-      className={`overlay-root ${transparent ? 'overlay-root--transparent' : ''}`}
+      className={`overlay-root ${transparent ? 'overlay-root--transparent' : ''} ${brandedBg ? 'overlay-root--branded' : ''}`}
       role="presentation"
       onMouseDown={(event) => {
         if (event.target !== event.currentTarget || !canClose) return;
@@ -162,6 +163,25 @@ export default function FullscreenOverlay({
             rgba(2, 6, 23, 0.56);
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
+        }
+        .overlay-root--branded {
+          background:
+            linear-gradient(135deg, #120638 0%, #1a0645 30%, #34026b 60%, #1a0645 100%);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+        }
+        .overlay-root--branded::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background:
+            radial-gradient(circle 50% at 20% 20%, rgba(159, 70, 255, 0.25) 0%, transparent 50%),
+            radial-gradient(circle 40% at 80% 80%, rgba(52, 2, 107, 0.3) 0%, transparent 50%),
+            radial-gradient(circle 35% at 50% 50%, rgba(139, 92, 255, 0.15) 0%, transparent 55%);
+        }
+        .overlay-root--branded .overlay-panel {
+          box-shadow: 0 32px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
         }
         .overlay-panel {
           position: relative;

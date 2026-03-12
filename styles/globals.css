@@ -92,6 +92,13 @@
   left: 50%;
   transform: translate(-50%, -50%);
 }
+.app-page-bg-orb--top-right {
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(159, 70, 255, 0.3) 0%, transparent 70%);
+  top: -80px;
+  right: -60px;
+}
 .app-page .app-page-bg-decor ~ * { position: relative; z-index: 1; }
 
 /* ---- Base ---- */

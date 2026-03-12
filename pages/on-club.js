@@ -174,11 +174,13 @@ export default function OnClubPage() {
   return (
     <>
       <Header />
-      <main className="app-page container py-12 text-white">
+      <main className="app-page app-page--onclub container py-12 text-white">
         <div className="app-page-bg-decor" aria-hidden>
           <span className="app-page-bg-orb app-page-bg-orb--center" />
+          <span className="app-page-bg-orb app-page-bg-orb--top-right" aria-hidden />
         </div>
         <section className="onclub-hero text-center mb-10">
+          <div className="onclub-hero-bg" aria-hidden />
           <h1 className="onclub-hero-title">
             ON Club – program s denními návyky a AI plánem
           </h1>
@@ -425,19 +427,37 @@ export default function OnClubPage() {
       <Footer />
 
       <style jsx>{`
-        .onclub-hero { max-width: 36rem; margin-left: auto; margin-right: auto; }
+        .onclub-hero {
+          position: relative;
+          max-width: 36rem;
+          margin-left: auto;
+          margin-right: auto;
+          padding: 32px 24px 40px;
+          border-radius: 20px;
+          overflow: hidden;
+        }
+        .onclub-hero-bg {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, rgba(18, 6, 56, 0.85) 0%, rgba(52, 2, 107, 0.75) 100%);
+          border-radius: 20px;
+          border: 1px solid rgba(159, 70, 255, 0.25);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+        .onclub-hero-title,
+        .onclub-hero-desc { position: relative; z-index: 1; }
         .onclub-hero-title {
           font-size: clamp(1.75rem, 4vw, 2.25rem);
           font-weight: 700;
           letter-spacing: -0.02em;
           line-height: 1.25;
-          color: #38bdf8;
+          color: #e0e7ff;
           margin: 0 0 12px;
         }
         .onclub-hero-desc {
           font-size: 1.0625rem;
           line-height: 1.6;
-          color: #cbd5e1;
+          color: #c7d2fe;
           margin: 0;
         }
         .progress-bar-wrap { text-align: center; }

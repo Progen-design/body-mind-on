@@ -57,11 +57,16 @@ export default async function handler(req, res) {
     const task = trainerTaskLatest.data;
     const plan = planLatest.data;
 
+    const html = plan?.plan_html || '';
+    const mealKeysInHtml = html ? (html.match(/data-meal-key\s*=\s*["'][^"']*["']/gi) || []).length : 0;
+    const exerciseKeysInHtml = html ? (html.match(/data-exercise-key\s*=\s*["'][^"']*["']/gi) || []).length : 0;
     const planSummary = plan
       ? {
           id: plan.id,
           is_active: plan.is_active,
-          html_length: plan.plan_html ? plan.plan_html.length : 0,
+          html_length: html.length,
+          meal_keys_in_html: mealKeysInHtml,
+          exercise_keys_in_html: exerciseKeysInHtml,
           created_at: plan.created_at,
         }
       : null;

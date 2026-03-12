@@ -170,11 +170,21 @@ export default async function handler(req, res) {
       }
     }
 
+    const mealKeysCount = new Set((enriched.meals || []).map((m) => m?.meal_key).filter(Boolean)).size;
+    const exercisesWithKey = (enriched.exercises || []).filter((e) => e?.exercise_key).length;
+    const exercisesByText = (enriched.exercises || []).length - exercisesWithKey;
+
     return res.status(200).json({
       ok: true,
       meal_images: mealImages,
       meal_trust: mealTrust,
       exercise_media: exerciseMedia,
+      _diagnostics: {
+        meal_keys_count: mealKeysCount,
+        exercise_keys_count: Object.keys(exerciseMedia).length,
+        exercises_lookup_by_key: exercisesWithKey,
+        exercises_lookup_by_text: exercisesByText,
+      },
     });
   } catch (err) {
     console.error('[plan-enrichment] error:', err);

@@ -291,25 +291,37 @@ export default function FullscreenOverlay({
             flex-wrap: wrap;
             gap: 12px;
           }
-          .overlay-header-main { min-width: 0; }
-          .overlay-title { font-size: 1.25rem; }
+          .overlay-header-main {
+            min-width: 0;
+            flex: 1 1 auto;
+          }
+          .overlay-title-wrap { min-width: 0; }
+          .overlay-title {
+            font-size: 1.2rem;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+          }
           .overlay-subtitle { font-size: 0.875rem; margin-top: 4px; }
           .overlay-body {
             padding: 18px 16px 24px;
+            -webkit-overflow-scrolling: touch;
+            overflow-y: auto;
           }
           .overlay-body-has-footer {
-            padding-bottom: 100px;
+            padding-bottom: 120px;
           }
           .overlay-footer {
-            padding: 14px 16px 18px;
-            min-height: 72px;
+            padding: 16px 16px max(18px, env(safe-area-inset-bottom));
+            min-height: 76px;
           }
           .overlay-header-actions {
             width: 100%;
             justify-content: flex-end;
+            flex-shrink: 0;
           }
           .overlay-header-actions button {
             min-height: 44px;
+            min-width: 44px;
             padding: 10px 18px;
             touch-action: manipulation;
           }

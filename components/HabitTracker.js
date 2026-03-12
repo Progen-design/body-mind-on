@@ -693,32 +693,36 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         }
 
         @media (max-width: 768px) {
-          .ht-top { flex-wrap: wrap; gap: 14px; padding: 12px 8px 14px; }
+          .ht-top { flex-wrap: wrap; gap: 12px; padding: 14px 10px 16px; }
           .ht-top-text { min-width: 0; flex: 1; }
           .ht-title { font-size: 1.35rem; margin-bottom: 6px; }
-          .ht-date { font-size: 0.8125rem; }
-          .ht-hint { font-size: 0.7rem; max-width: none; margin-top: 4px; }
-          .ht-progress-inline { align-items: center; }
-          .ht-prog-nums { font-size: 1.25rem; }
-          .ht-prog-bar-wrap { width: 100px; }
+          .ht-date { font-size: 0.875rem; line-height: 1.4; }
+          .ht-date-active strong { font-size: 0.95rem; }
+          .ht-hint { font-size: 0.7rem; max-width: none; margin-top: 6px; }
+          .ht-progress-inline { align-items: flex-start; width: 100%; }
+          .ht-prog-nums { font-size: 1.5rem; }
+          .ht-prog-bar-wrap { width: 100%; max-width: 200px; height: 6px; }
           .ht-date-back {
-            display: inline-block;
-            margin-top: 8px;
-            padding: 10px 16px;
-            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+            padding: 12px 18px;
+            min-height: 48px;
             border-radius: 12px;
-            border: 1px solid rgba(167, 139, 250, 0.5);
-            background: rgba(124, 58, 237, 0.25);
-            color: #c4b5fd;
-            font-size: 0.875rem;
+            border: 2px solid rgba(167, 139, 250, 0.6);
+            background: rgba(124, 58, 237, 0.3);
+            color: #e9d5ff;
+            font-size: 0.9375rem;
             font-weight: 700;
             text-decoration: none;
             touch-action: manipulation;
+            cursor: pointer;
           }
-          .ht-date-back:hover { background: rgba(124, 58, 237, 0.35); color: #e9d5ff; }
-          .hg-fixed-col { padding: 12px 0 18px 14px; }
+          .ht-date-back:hover { background: rgba(124, 58, 237, 0.45); color: #fff; }
+          .hg-fixed-col { padding: 12px 8px 18px 12px; width: 180px !important; min-width: 180px !important; }
           .hg-scroll { -webkit-overflow-scrolling: touch; }
-          .hg-days-grid { padding: 12px 20px 18px 14px; }
+          .hg-days-grid { padding: 12px 16px 18px 12px; }
           .ht-chart-wrap { padding: 20px 16px; }
           .ht-chart-title { font-size: 0.65rem; }
         }
@@ -1015,12 +1019,16 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
 
         @media (max-width: 640px) {
           .habit-tracker { margin-bottom: 32px; }
-          .ht-title { font-size: 1.25rem; }
-          .ht-top { flex-direction: column; align-items: flex-start; gap: 10px; }
+          .ht-title { font-size: 1.2rem; }
+          .ht-top { flex-direction: column; align-items: flex-start; gap: 10px; padding: 12px 8px 14px; }
           .ht-progress-inline { align-items: flex-start; width: 100%; }
-          .ht-prog-bar-wrap { width: 100%; max-width: 180px; }
-          .hg-fixed-col { width: 196px; min-width: 196px; padding: 14px 0 18px 14px; }
-          .hg-days-grid { padding: 14px 24px 18px 14px; }
+          .ht-prog-bar-wrap { width: 100%; max-width: 220px; height: 6px; }
+          .ht-prog-nums { font-size: 1.4rem; }
+          .hg-fixed-col { width: 160px !important; min-width: 160px !important; padding: 10px 6px 14px 10px; }
+          .hg-label { padding: 6px 10px 6px 0; min-height: 52px; }
+          .hg-name-wrap { font-size: 0.9rem; }
+          .hg-days-grid { padding: 10px 14px 14px 10px; }
+          .hg-hdr-cell { min-height: 52px; }
         }
       `}</style>
     </section>

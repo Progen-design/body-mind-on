@@ -425,25 +425,40 @@ export default function PreferencesOverlay({
 
         @media (max-width: 767px) {
           .prefs-form {
-            gap: 18px;
-            padding-bottom: 24px;
+            gap: 20px;
+            padding-bottom: 32px;
           }
           .prefs-intro-card,
           .prefs-section-card {
-            padding: 18px;
+            padding: 18px 16px;
             border-radius: 20px;
+          }
+          .prefs-section-card {
+            gap: 18px;
+          }
+          .prefs-section-head h3 {
+            font-size: 1.2rem;
           }
           .prefs-grid--three,
           .prefs-grid--two {
             grid-template-columns: 1fr;
+            gap: 16px;
+          }
+          .prefs-field {
+            gap: 8px;
+          }
+          .prefs-field :is(select, textarea) {
+            min-height: 48px;
+            padding: 14px 16px;
+            touch-action: manipulation;
           }
           .prefs-footer-actions {
             flex-direction: column-reverse;
-            gap: 10px;
+            gap: 12px;
           }
           .prefs-footer-actions :global(button) {
             width: 100%;
-            min-height: 48px;
+            min-height: 50px;
             touch-action: manipulation;
           }
           .prefs-primary-btn:not(.prefs-primary-btn--footer) {

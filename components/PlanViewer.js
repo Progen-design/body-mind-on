@@ -124,12 +124,12 @@ function normalizeLookupKey(value) {
     .trim();
 }
 
-function getEnrichedMealImage(mealText, mealImagesMap = {}) {
+function getEnrichedMealImage(mealText, mealImagesMap = {}, preferredKey = null) {
+  const map = mealImagesMap || {};
+  if (preferredKey && map[preferredKey]) return map[preferredKey];
   const source = String(mealText || '').replace(/^[^:]+:\s*/i, '').trim();
   const key = normalizeLookupKey(source);
   if (!key) return null;
-  const map = mealImagesMap || {};
-
   if (map[key]) return map[key];
   let bestKey = '';
   for (const candidateKey of Object.keys(map)) {
@@ -146,12 +146,12 @@ function getEnrichedMealImage(mealText, mealImagesMap = {}) {
  * Returns { image_url, image_trust_level, exact_source, illustrative_source } or null.
  * NO LIES UI RULE: Frontend must not display media in a way that misleads about trust.
  */
-function getEnrichedMealTrust(mealText, mealTrustMap = {}) {
+function getEnrichedMealTrust(mealText, mealTrustMap = {}, preferredKey = null) {
+  const map = mealTrustMap || {};
+  if (preferredKey && map[preferredKey]) return map[preferredKey];
   const source = String(mealText || '').replace(/^[^:]+:\s*/i, '').trim();
   const key = normalizeLookupKey(source);
   if (!key) return null;
-  const map = mealTrustMap || {};
-
   if (map[key]) return map[key];
   let bestKey = '';
   for (const candidateKey of Object.keys(map)) {
@@ -579,7 +579,8 @@ function parsePlanHtml(html) {
                 const isTrainingBlock =
                   /Trénink tento den|trenink tento den/i.test(mealType || '') ||
                   /Trénink tento den|trenink tento den/i.test(paragraphText);
-                if (isMeal && (mealType || rest)) meals.push({ type: mealType || 'Jídlo', text: rest, fullHtml: next.innerHTML });
+                const mealKey = next.getAttribute?.('data-meal-key') ? normalizeLookupKey(next.getAttribute('data-meal-key')) : null;
+                if (isMeal && (mealType || rest)) meals.push({ type: mealType || 'Jídlo', text: rest, fullHtml: next.innerHTML, meal_key: mealKey || undefined });
                 if (isTrainingBlock) {
                   trainingHtml = next.outerHTML || '';
                   next = next.nextElementSibling;
@@ -1146,8 +1147,9 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                         };
                         const mealTextForPin = override ? (override.title || '') : (meal.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().replace(/\s*\([^)]*\)\s*$/g, '').trim();
                         const mealPinned = isPinned(meal.type || '', mealTextForPin);
-                        const mealTrust = getEnrichedMealTrust(mealFullText || meal.text || meal.type, mealTrustMap);
-                        const enrichedUrl = getEnrichedMealImage(mealFullText || meal.text || meal.type, mealImagesMap);
+                        const mealLookupKey = meal.meal_key || null;
+                        const mealTrust = getEnrichedMealTrust(mealFullText || meal.text || meal.type, mealTrustMap, mealLookupKey);
+                        const enrichedUrl = getEnrichedMealImage(mealFullText || meal.text || meal.type, mealImagesMap, mealLookupKey);
                         const dishFallbackUrl = getMealImageByDish(mealFullText || meal.text || meal.type);
                         // API-first: (1) meal_trust.image_url when trust metadata exist (2) meal_images when no trust (3) DISH_IMAGES only as last resort. NO LIES: trust "none" or null url => placeholder, never static as "correct".
                         let resolvedUrl = null;

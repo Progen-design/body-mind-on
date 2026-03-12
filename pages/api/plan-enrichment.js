@@ -101,36 +101,36 @@ export default async function handler(req, res) {
     const mealTrust = {};
 
     for (const meal of enriched.meals || []) {
-      const rawCandidates = new Set([meal?.query_name, meal?.name].filter(Boolean));
-      if (meal?.query_name && meal.query_name.length > 1) {
-        rawCandidates.add(meal.query_name.slice(0, 80).trim());
+      const trustObj = {
+        image_url: meal.image_url ?? null,
+        image_trust_level: meal.image_trust_level ?? 'none',
+        exact_source: meal.exact_source ?? null,
+        illustrative_source: meal.illustrative_source ?? null,
+        confidence_score: meal.confidence_score ?? 0,
+        calories: meal.calories ?? null,
+        protein_g: meal.protein_g ?? null,
+        carbs_g: meal.carbs_g ?? null,
+        fat_g: meal.fat_g ?? null,
+      };
+      // PRIORITY 1: canonical meal_key from HTML (data-meal-key)
+      const primaryKey = meal?.meal_key && normalizeTextKey(meal.meal_key) ? normalizeTextKey(meal.meal_key) : null;
+      if (primaryKey) {
+        if (meal?.image_url) mealImages[primaryKey] = meal.image_url;
+        mealTrust[primaryKey] = trustObj;
       }
+      // Fallback: query_name, name, mealKeyVariants for backward compatibility and frontend lookup
+      const rawCandidates = new Set([meal?.query_name, meal?.name].filter(Boolean));
+      if (meal?.query_name && meal.query_name.length > 1) rawCandidates.add(meal.query_name.slice(0, 80).trim());
       const candidates = new Set();
       for (const raw of rawCandidates) {
         const key = normalizeTextKey(raw);
         if (key) candidates.add(key);
-        for (const v of mealKeyVariants(key)) {
-          candidates.add(v);
-        }
+        for (const v of mealKeyVariants(key)) candidates.add(v);
       }
       for (const key of candidates) {
         if (!key) continue;
-        if (meal?.image_url && !mealImages[key]) {
-          mealImages[key] = meal.image_url;
-        }
-        if (!mealTrust[key]) {
-          mealTrust[key] = {
-            image_url: meal.image_url ?? null,
-            image_trust_level: meal.image_trust_level ?? 'none',
-            exact_source: meal.exact_source ?? null,
-            illustrative_source: meal.illustrative_source ?? null,
-            confidence_score: meal.confidence_score ?? 0,
-            calories: meal.calories ?? null,
-            protein_g: meal.protein_g ?? null,
-            carbs_g: meal.carbs_g ?? null,
-            fat_g: meal.fat_g ?? null,
-          };
-        }
+        if (meal?.image_url && !mealImages[key]) mealImages[key] = meal.image_url;
+        if (!mealTrust[key]) mealTrust[key] = trustObj;
       }
     }
 
@@ -142,21 +142,23 @@ export default async function handler(req, res) {
         image_url: ex?.image_url || null,
         gif_url: ex?.gif_url || null,
         source: ex?.source || 'none',
-        // Trust metadata — UI may display "Ověřený cvik" or "Ilustrační foto"
         canonical_key: ex?.canonical_key || null,
         trust_level: ex?.trust_level || 'none',
         body_part: ex?.body_part || null,
         target: ex?.target || null,
         equipment: ex?.equipment || null,
       };
-
+      // PRIORITY 1: canonical exercise_key from HTML (data-exercise-key)
+      const primaryKey = ex?.exercise_key && normalizeTextKey(ex.exercise_key) ? normalizeTextKey(ex.exercise_key) : null;
+      if (primaryKey && !exerciseMedia[primaryKey]) {
+        exerciseMedia[primaryKey] = media;
+      }
       const rawCandidates = new Set([ex?.query_name, ex?.name].filter(Boolean));
       if (ex?.canonical_key) rawCandidates.add(ex.canonical_key);
+      if (ex?.exercise_key) rawCandidates.add(ex.exercise_key);
       const firstWord = (ex?.query_name || '').trim().split(/\s+/)[0];
       if (firstWord && firstWord.length > 1) rawCandidates.add(firstWord);
-      if (ex?.query_name && ex.query_name.length > 1) {
-        rawCandidates.add(ex.query_name.slice(0, 60).trim());
-      }
+      if (ex?.query_name && ex.query_name.length > 1) rawCandidates.add(ex.query_name.slice(0, 60).trim());
       const keysToSet = new Set();
       for (const raw of rawCandidates) {
         const key = normalizeTextKey(raw);

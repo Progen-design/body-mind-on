@@ -163,12 +163,12 @@ function getEnrichedMealTrust(mealText, mealTrustMap = {}, preferredKey = null) 
   return bestKey ? map[bestKey] : null;
 }
 
-function getExerciseMediaFromItemText(itemText, exerciseMediaMap = {}) {
+function getExerciseMediaFromItemText(itemText, exerciseMediaMap = {}, preferredKey = null) {
+  const map = exerciseMediaMap || {};
+  if (preferredKey && map[preferredKey]) return map[preferredKey];
   const rawName = String(itemText || '').split(':')[0].trim();
   const key = normalizeLookupKey(rawName);
   if (!key) return null;
-  const map = exerciseMediaMap || {};
-
   if (map[key]) return map[key];
   let bestKey = '';
   for (const candidateKey of Object.keys(map)) {
@@ -219,17 +219,22 @@ function extractMealNameFromRecipeHtml(html) {
   return null;
 }
 
-/** Z HTML bloku „Trénink tento den“ vytáhne položky <li> (pro zobrazení s figurinami). */
+/** Z HTML bloku „Trénink tento den“ vytáhne položky <li> (pro zobrazení s figurinami). Extrahuje data-exercise-key pro API-first lookup. */
 function parseTrainingItems(html) {
   if (!html || typeof html !== 'string') return null;
-  const liRe = /<li[^>]*>([\s\S]*?)<\/li>/gi;
+  const liRe = /<li([^>]*)>([\s\S]*?)<\/li>/gi;
   const items = [];
   let m;
   while ((m = liRe.exec(html)) !== null) {
-    const inner = m[1];
+    const tag = m[1] || '';
+    const inner = m[2];
+    const text = inner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    const keyMatch = tag.match(/data-exercise-key\s*=\s*["']([^"']*)["']/i);
+    const exercise_key = keyMatch ? normalizeLookupKey(keyMatch[1]) : null;
     items.push({
       innerHTML: inner,
-      text: inner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
+      text,
+      exercise_key: exercise_key || undefined,
     });
   }
   return items.length ? items : null;
@@ -1328,7 +1333,7 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                               {trainingItems.map((item, idx) => {
                                 const iconType = getExerciseIconType(item.text);
                                 const equipment = getSafeEquipment(iconType);
-                                const exerciseMedia = getExerciseMediaFromItemText(item.text, exerciseMediaMap);
+                                const exerciseMedia = getExerciseMediaFromItemText(item.text, exerciseMediaMap, item.exercise_key || null);
                                 const exTrustLevel = exerciseMedia?.trust_level ?? 'none';
                                 const exerciseThumb = (exTrustLevel !== 'none') ? (exerciseMedia?.gif_url || exerciseMedia?.image_url || null) : null;
                                 const itemKey = `training-${di}-${idx}`;

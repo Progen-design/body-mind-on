@@ -1149,24 +1149,26 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                         const mealTrust = getEnrichedMealTrust(mealFullText || meal.text || meal.type, mealTrustMap);
                         const enrichedUrl = getEnrichedMealImage(mealFullText || meal.text || meal.type, mealImagesMap);
                         const dishFallbackUrl = getMealImageByDish(mealFullText || meal.text || meal.type);
-                        // API-first priority: (1) meal_trust.image_url when trust exists (2) meal_images when no trust (3) DISH_IMAGES only as last resort. NO LIES: trust "none" => never show static fallback.
+                        // API-first: (1) meal_trust.image_url when trust metadata exist (2) meal_images when no trust (3) DISH_IMAGES only as last resort. NO LIES: trust "none" or null url => placeholder, never static as "correct".
                         let resolvedUrl = null;
                         let trustLevel = 'none';
                         if (mealTrust) {
                           trustLevel = mealTrust.image_trust_level ?? 'none';
-                          if (trustLevel === 'exact') {
-                            resolvedUrl = mealTrust.image_url ?? null;
+                          if (trustLevel === 'exact' && mealTrust.image_url) {
+                            resolvedUrl = mealTrust.image_url;
                           } else if (trustLevel === 'illustrative') {
                             resolvedUrl = mealTrust.image_url ?? enrichedUrl ?? null;
                           }
-                          if (trustLevel === 'none' || !mealTrust.image_url) resolvedUrl = null;
+                          if (trustLevel === 'none' || !mealTrust.image_url) {
+                            resolvedUrl = null;
+                          }
                         } else {
-                          resolvedUrl = enrichedUrl ?? dishFallbackUrl ?? DEFAULT_MEAL_IMAGE;
+                          resolvedUrl = enrichedUrl ?? dishFallbackUrl ?? null;
                           trustLevel = enrichedUrl ? 'illustrative' : (dishFallbackUrl ? 'illustrative' : 'placeholder');
                         }
                         const mealCardKey = `meal-${di}-${mi}-${normalizeLookupKey(mealFullText || meal.text || meal.type).slice(0, 40)}`;
                         const imageLoadFailed = mealImageErrorKeys.has(mealCardKey);
-                        const showMealImage = !imageLoadFailed && (trustLevel === 'exact' || trustLevel === 'illustrative' || trustLevel === 'placeholder') && !!resolvedUrl;
+                        const showMealImage = !imageLoadFailed && !!resolvedUrl;
                         return (
                           <div key={mi} className="plan-meal-card">
                             <button type="button" className="plan-meal-image-wrap" onClick={openRecipe} title="Klikni pro zobrazení receptu">
@@ -1184,10 +1186,9 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                               )}
                               <span className="plan-meal-type">{meal.type}</span>
                               {showMealImage && (
-                                <span className={`plan-trust-badge plan-trust-badge-meal plan-trust-badge-${trustLevel}`} title={trustLevel === 'exact' ? 'Obrázek odpovídá nalezenému receptu' : trustLevel === 'illustrative' ? 'Orientační vizuál' : trustLevel === 'placeholder' ? 'Obecný placeholder' : ''}>
+                                <span className={`plan-trust-badge plan-trust-badge-meal plan-trust-badge-${trustLevel}`} title={trustLevel === 'exact' ? 'Obrázek odpovídá nalezenému receptu' : trustLevel === 'illustrative' ? 'Orientační vizuál' : 'Obecný placeholder'}>
                                   {trustLevel === 'exact' && <>Přesný zdroj{mealTrust?.exact_source === 'spoonacular' ? <span className="plan-trust-sublabel"> Spoonacular</span> : null}</>}
-                                  {trustLevel === 'illustrative' && <>Ilustrační foto{mealTrust?.illustrative_source === 'pexels' ? <span className="plan-trust-sublabel"> Pexels</span> : null}</>}
-                                  {trustLevel === 'placeholder' && <>Ilustrační foto</>}
+                                  {(trustLevel === 'illustrative' || trustLevel === 'placeholder') && <>Ilustrační foto{mealTrust?.illustrative_source === 'pexels' ? <span className="plan-trust-sublabel"> Pexels</span> : null}</>}
                                 </span>
                               )}
                               <span className="plan-meal-recept-badge">Klikni pro recept</span>
@@ -1350,7 +1351,7 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                                           />
                                           <span className={`plan-trust-badge plan-trust-badge-exercise plan-trust-badge-${exTrustLevel}`} title={exTrustLevel === 'exact' ? 'Vizuál odpovídá rozpoznanému cviku' : exTrustLevel === 'fallback' ? 'Náhradní vizuál' : ''}>
                                             {exTrustLevel === 'exact' && <>Ověřený cvik{exerciseMedia?.source && exerciseMedia.source !== 'none' ? <span className="plan-trust-sublabel"> {exerciseMedia.source === 'exercisedb' ? 'ExerciseDB' : exerciseMedia.source}</span> : null}</>}
-                                            {exTrustLevel === 'fallback' && 'Ilustrační foto'}
+                                            {exTrustLevel === 'fallback' && 'Náhradní vizuál'}
                                           </span>
                                         </>
                                       ) : (

@@ -36,6 +36,20 @@ function normalizeTextKey(value) {
     .trim();
 }
 
+/** Produce extra lookup keys from normalized meal name so PlanViewer can match e.g. "Kuřecí prsa s rýží a zeleninou" to enrichment "Kuřecí prsa s rýží". */
+function mealKeyVariants(normalized) {
+  if (!normalized || typeof normalized !== 'string') return [];
+  const out = [normalized];
+  let s = normalized.trim();
+  while (s.length > 10) {
+    const m = s.match(/\s+(?:a|s)\s+[a-z0-9]+$/);
+    if (!m) break;
+    s = s.slice(0, m.index).trim();
+    if (s.length > 3) out.push(s);
+  }
+  return out;
+}
+
 function getAuthToken(req) {
   const auth = req.headers.authorization || '';
   if (!auth.startsWith('Bearer ')) return null;
@@ -62,14 +76,21 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'html is required' });
     }
 
-    if (!process.env.SPOONACULAR_API_KEY && !process.env.RAPIDAPI_KEY) {
-      console.warn('[plan-enrichment] SPOONACULAR_API_KEY or RAPIDAPI_KEY missing – meal exact images may be unavailable');
+    const hasSpoonacular = !!(process.env.SPOONACULAR_API_KEY || process.env.RAPIDAPI_KEY);
+    const hasPexels = !!process.env.PEXELS_API_KEY;
+    const hasExerciseDb = !!(process.env.EXERCISEDB_API_KEY || process.env.RAPIDAPI_KEY);
+    const hasExerciseDbHost = !!(process.env.EXERCISEDB_API_HOST || process.env.RAPIDAPI_KEY);
+    if (!hasSpoonacular) {
+      console.warn('[plan-enrichment] SPOONACULAR_API_KEY or RAPIDAPI_KEY missing – meal exact images will be none/placeholder');
     }
-    if (!process.env.PEXELS_API_KEY) {
-      console.warn('[plan-enrichment] PEXELS_API_KEY missing – illustrative meal/exercise fallbacks may be unavailable');
+    if (!hasPexels) {
+      console.warn('[plan-enrichment] PEXELS_API_KEY missing – illustrative fallbacks will be unavailable');
     }
-    if (!process.env.EXERCISEDB_API_KEY && !process.env.RAPIDAPI_KEY) {
-      console.warn('[plan-enrichment] EXERCISEDB_API_KEY or RAPIDAPI_KEY missing – exercise media may be unavailable');
+    if (!hasExerciseDb) {
+      console.warn('[plan-enrichment] EXERCISEDB_API_KEY or RAPIDAPI_KEY missing – exercise media will be none/placeholder');
+    }
+    if (hasExerciseDb && !hasExerciseDbHost) {
+      console.warn('[plan-enrichment] EXERCISEDB_API_HOST not set – ExerciseDB may fail (use RAPIDAPI host or set EXERCISEDB_API_HOST)');
     }
 
     const enriched = await enrichPlanContent({ html });
@@ -80,12 +101,19 @@ export default async function handler(req, res) {
     const mealTrust = {};
 
     for (const meal of enriched.meals || []) {
-      const candidates = new Set([meal?.query_name, meal?.name].filter(Boolean));
+      const rawCandidates = new Set([meal?.query_name, meal?.name].filter(Boolean));
       if (meal?.query_name && meal.query_name.length > 1) {
-        candidates.add(meal.query_name.slice(0, 80).trim());
+        rawCandidates.add(meal.query_name.slice(0, 80).trim());
       }
-      for (const candidate of candidates) {
-        const key = normalizeTextKey(candidate);
+      const candidates = new Set();
+      for (const raw of rawCandidates) {
+        const key = normalizeTextKey(raw);
+        if (key) candidates.add(key);
+        for (const v of mealKeyVariants(key)) {
+          candidates.add(v);
+        }
+      }
+      for (const key of candidates) {
         if (!key) continue;
         if (meal?.image_url && !mealImages[key]) {
           mealImages[key] = meal.image_url;
@@ -122,16 +150,19 @@ export default async function handler(req, res) {
         equipment: ex?.equipment || null,
       };
 
-      const candidates = new Set([ex?.query_name, ex?.name].filter(Boolean));
-      if (ex?.canonical_key) candidates.add(ex.canonical_key);
+      const rawCandidates = new Set([ex?.query_name, ex?.name].filter(Boolean));
+      if (ex?.canonical_key) rawCandidates.add(ex.canonical_key);
       const firstWord = (ex?.query_name || '').trim().split(/\s+/)[0];
-      if (firstWord && firstWord.length > 1) candidates.add(firstWord);
+      if (firstWord && firstWord.length > 1) rawCandidates.add(firstWord);
       if (ex?.query_name && ex.query_name.length > 1) {
-        candidates.add(ex.query_name.slice(0, 60).trim());
+        rawCandidates.add(ex.query_name.slice(0, 60).trim());
       }
-
-      for (const candidate of candidates) {
-        const key = normalizeTextKey(candidate);
+      const keysToSet = new Set();
+      for (const raw of rawCandidates) {
+        const key = normalizeTextKey(raw);
+        if (key) keysToSet.add(key);
+      }
+      for (const key of keysToSet) {
         if (!key || exerciseMedia[key]) continue;
         exerciseMedia[key] = media;
       }

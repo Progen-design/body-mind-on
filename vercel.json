@@ -7,10 +7,6 @@
     {
       "path": "/api/ai/run-scheduler",
       "schedule": "30 7 * * *"
-    },
-    {
-      "path": "/api/ai/run-scheduler",
-      "schedule": "*/5 * * * *"
     }
   ]
 }

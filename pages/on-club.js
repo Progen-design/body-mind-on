@@ -181,10 +181,10 @@ export default function OnClubPage() {
         <section className="onclub-hero text-center mb-10">
           <div className="onclub-hero-bg" aria-hidden />
           <h1 className="onclub-hero-title">
-            ON Club – program s denními návyky a AI plánem
+            ON Club – osobní AI plán na míru
           </h1>
           <p className="onclub-hero-desc">
-            Denní návyky, AI plán (jídelníček a trénink), záznam tréninků a statistiky.
+            Jídelníček a trénink podle tvých cílů. Denní návyky, záznam tréninků a statistiky v jednom místě.
           </p>
         </section>
 

@@ -3,6 +3,8 @@
 // NO LIES UI RULE: Frontend must not display media in a way that misleads about trust.
 // - illustrative ≠ exact  |  fallback ≠ verified  |  none ≠ broken image
 // Trust labels and placeholders reflect backend image_trust_level / trust_level.
+// NEXT_PUBLIC_API_ONLY_MEDIA=true → show images/media only when exact (Spoonacular, ExerciseDB), not Pexels.
+const API_ONLY_MEDIA = process.env.NEXT_PUBLIC_API_ONLY_MEDIA === 'true';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabaseClient';
@@ -1178,14 +1180,17 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                           trustLevel = mealTrust.image_trust_level ?? 'none';
                           if (trustLevel === 'exact' && mealTrust.image_url) {
                             resolvedUrl = mealTrust.image_url;
-                          } else if (trustLevel === 'illustrative') {
+                          } else if (!API_ONLY_MEDIA && trustLevel === 'illustrative') {
                             resolvedUrl = mealTrust.image_url ?? enrichedUrl ?? null;
                           }
                           if (trustLevel === 'none' || !mealTrust.image_url) {
                             resolvedUrl = null;
                           }
+                          if (API_ONLY_MEDIA && trustLevel !== 'exact') {
+                            resolvedUrl = null;
+                          }
                         } else {
-                          resolvedUrl = enrichedUrl ?? dishFallbackUrl ?? null;
+                          resolvedUrl = API_ONLY_MEDIA ? null : (enrichedUrl ?? dishFallbackUrl ?? null);
                           trustLevel = enrichedUrl ? 'illustrative' : (dishFallbackUrl ? 'illustrative' : 'none');
                         }
                         const mealCardKey = `meal-${di}-${mi}-${normalizeLookupKey(mealFullText || meal.text || meal.type).slice(0, 40)}`;
@@ -1350,7 +1355,7 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                                 const equipment = getSafeEquipment(iconType);
                                 const exerciseMedia = getExerciseMediaFromItemText(item.text, exerciseMediaMap, item.exercise_key || null);
                                 const exTrustLevel = exerciseMedia?.trust_level ?? 'none';
-                                const exerciseThumb = (exTrustLevel !== 'none') ? (exerciseMedia?.gif_url || exerciseMedia?.image_url || null) : null;
+                                const exerciseThumb = (API_ONLY_MEDIA ? exTrustLevel === 'exact' : exTrustLevel !== 'none') ? (exerciseMedia?.gif_url || exerciseMedia?.image_url || null) : null;
                                 const itemKey = `training-${di}-${idx}`;
                                 const exerciseThumbFailed = exerciseMediaErrorKeys.has(itemKey);
                                 const showExerciseThumb = exerciseThumb && !exerciseThumbFailed;

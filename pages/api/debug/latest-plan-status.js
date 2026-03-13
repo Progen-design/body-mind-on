@@ -104,12 +104,33 @@ export default async function handler(req, res) {
         }
       : null;
 
+    const trainerLogLatest = userId
+      ? await supabaseServer
+          .from('ai_logs')
+          .select('id, status, payload, created_at')
+          .eq('user_id', userId)
+          .eq('agent_slug', 'trainer')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : { data: null };
+    const logRow = trainerLogLatest.data;
+    const agentDiagnostic = logRow?.payload
+      ? {
+          prompt_version: logRow.payload.prompt_version ?? null,
+          prompt_source: logRow.payload.prompt_source ?? null,
+          supporting_documents_count: logRow.payload.supporting_documents_count ?? null,
+          log_created_at: logRow.created_at,
+        }
+      : null;
+
     return res.status(200).json({
       auth_user_exists: !!authUser,
       user_id: userId,
       body_metrics: bodyMetricsSummary,
       trainer_task: taskSummary,
       ai_generated_plan: planSummary,
+      agent_diagnostic: agentDiagnostic,
     });
   } catch (err) {
     console.error('[debug/latest-plan-status]', err);

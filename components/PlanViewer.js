@@ -326,7 +326,7 @@ function getExerciseIconType(text) {
   const t = (text || '').toLowerCase();
   if (/trénink celkem|trenink celkem|celkem\s*\d+\s*min/i.test(t)) return 'total';
   if (/rozcvička|warm-up|rozcvicka/i.test(t)) return 'warmup';
-  if (/závěr|zaver|strečink|strecink|cool-down/i.test(t) && !/rozcvička|rozcvicka/i.test(t)) return 'cooldown';
+  if (/závěr|zaver|strečink|strecink|cool-down|mobilita/i.test(t) && !/rozcvička|rozcvicka/i.test(t)) return 'cooldown';
   if (/odpočinek|odpocinek|procházka|prochazka|chůze|chuze/i.test(t)) return 'rest';
   if (/dřepy|drep|squat/i.test(t)) return 'squat';
   if (/kliky|klik|push-up|push up/i.test(t)) return 'push_up';
@@ -1356,13 +1356,15 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                                 const showExerciseThumb = exerciseThumb && !exerciseThumbFailed;
                                 const isExpanded = expandedTrainingKey === itemKey;
                                 const hasDetail = (equipment.machine || equipment.home) && iconType !== 'total';
+                                const isStructuralItem = ['total', 'warmup', 'cooldown', 'rest'].includes(iconType);
+                                const showMediaBox = !isStructuralItem;
                                 return (
                                   <li key={idx} className={`plan-day-training-item ${isExpanded ? 'plan-day-training-item-expanded' : ''}`}>
                                     <span className="plan-day-training-icon" aria-hidden title="Jak cvičit">
                                       <ExerciseIcon type={iconType} />
                                     </span>
                                     <div className="plan-day-training-body">
-                                      {showExerciseThumb ? (
+                                      {showMediaBox && (showExerciseThumb ? (
                                         <>
                                           <img
                                             src={exerciseThumb}
@@ -1380,7 +1382,7 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                                         <div className="plan-exercise-no-media" aria-hidden>
                                           <span className="plan-exercise-no-media-text">Bez ověřeného média</span>
                                         </div>
-                                      )}
+                                      ))}
                                       {hasDetail ? (
                                         <button
                                           type="button"

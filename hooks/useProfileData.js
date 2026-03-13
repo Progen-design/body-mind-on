@@ -18,8 +18,8 @@ const BACKGROUND_REFRESH_INTERVAL_MS = 180000;
 const VISIBILITY_REFRESH_THRESHOLD_MS = 60000;
 
 /** When plan is processing (e.g. after registration), poll until plan appears or timeout */
-const PLAN_PROCESSING_POLL_MS = 5000;
-const PLAN_PROCESSING_POLL_MAX = 24; // 24 × 5s = 2 min
+const PLAN_PROCESSING_POLL_MS = 3000;
+const PLAN_PROCESSING_POLL_MAX = 40; // 40 × 3s = 2 min
 
 /** Initial load timeout (15 s) */
 const INITIAL_LOAD_TIMEOUT_MS = 15000;

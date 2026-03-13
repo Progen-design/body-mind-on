@@ -153,6 +153,8 @@ export default async function handler(req, res) {
     let initialPlanValidationWarning = null;
     const accountCreated = payload.user_id != null;
     const PLAN_GENERATION_TIMEOUT_MS = 25000; // max 25 s čekání – pak úspěch a plán na pozadí (cron)
+    const PLAN_WAIT_POLL_MS = 800; // krátký poll interval pro initial_plan
+    const PLAN_WAIT_MAX_MS = 12000; // max 12 s explicitního čekání na dokončení initial_plan
 
     if (payload.user_id) {
       await createInitialAITasks(payload.user_id, emailOptions);
@@ -212,6 +214,31 @@ export default async function handler(req, res) {
             const { data: refetched } = await supabaseServer.from('ai_tasks').select('id, status, result, last_error').eq('id', taskRow.id).maybeSingle();
             if (refetched) {
               console.warn('[body-metrics] initial_plan task after direct fail:', { status: refetched.status, result: refetched?.result, last_error: refetched?.last_error });
+            }
+          }
+        }
+        // Krátký wait/poll loop: pokud task stále pending, počkej max 12 s na dokončení (cron/scheduler může doběhnout)
+        if (initialPlanTaskStatus === 'pending' && taskRow?.id) {
+          const pollStart = Date.now();
+          while (Date.now() - pollStart < PLAN_WAIT_MAX_MS) {
+            await new Promise((r) => setTimeout(r, PLAN_WAIT_POLL_MS));
+            const { data: polled } = await supabaseServer
+              .from('ai_tasks')
+              .select('status, result')
+              .eq('id', taskRow.id)
+              .maybeSingle();
+            if (polled?.status === 'completed') {
+              initialPlanTaskStatus = 'completed';
+              planSent = polled?.result?.email_sent === true;
+              initialPlanSummary = polled?.result?.summary ?? null;
+              initialPlanValidationWarning = polled?.result?.validation_warning ?? null;
+              console.info('[body-metrics] initial_plan completed during wait loop');
+              break;
+            }
+            if (polled?.status === 'failed') {
+              initialPlanTaskStatus = 'failed';
+              console.info('[body-metrics] initial_plan failed during wait loop');
+              break;
             }
           }
         }
@@ -311,10 +338,18 @@ export default async function handler(req, res) {
       : 'Údaje a plán byly uloženy a odeslány na e-mail. Vytvoření přihlašovacího účtu se nezdařilo – pro přístup do profilu nás kontaktuj na info@bodyandmindon.cz.';
     const pendingMsg = 'Účet je vytvořen. Plán se dokončuje na pozadí – za chvíli přijde e-mail a v profilu uvidíš plán.';
     const failMsg = 'Údaje byly uloženy. E-mail s plánem se nepodařilo odeslat – zkontroluj spam nebo napiš na info@bodyandmindon.cz.';
+    let plan_state = 'unknown';
+    if (accountCreated) {
+      if (initialPlanTaskStatus === 'completed') plan_state = 'ready';
+      else if (initialPlanTaskStatus === 'pending') plan_state = 'processing';
+      else if (initialPlanTaskStatus === 'failed') plan_state = 'failed';
+    }
+
     const response = {
       ok: true,
       planSent,
       planPending: planPending || false,
+      plan_state,
       loginUnavailable: !accountCreated,
       message: planSent ? successMsg : (planPending ? pendingMsg : failMsg),
     };

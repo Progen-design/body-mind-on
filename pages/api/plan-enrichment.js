@@ -2,6 +2,7 @@
  * POST /api/plan-enrichment
  * ─────────────────────────────────────────────────────────────────────────────
  * Returns enriched meal images and exercise media for a given plan HTML.
+ * Cache: in-memory by plan_html hash, TTL 5 min – snižuje opakované volání při stejném plánu.
  *
  * RESPONSE:
  *   meal_images      { [normalized_key]: url_string }   — backward-compatible, used by PlanViewer
@@ -96,6 +97,19 @@ export default async function handler(req, res) {
       console.info('[plan-enrichment] ENV summary:', { hasSpoonacular, hasPexels, hasExerciseDb, hasExerciseDbHost });
     }
 
+    const cacheKey = simpleHash(html);
+    const cached = enrichmentCache.get(cacheKey);
+    if (cached && Date.now() - cached.at < ENRICHMENT_CACHE_TTL_MS) {
+      return res.status(200).json({
+        ...cached.payload,
+        _diagnostics: {
+          ...cached.payload._diagnostics,
+          enrichment_cached: true,
+          cache_hit: true,
+        },
+      });
+    }
+
     const enriched = await enrichPlanContent({ html });
 
     // meal_images: backward-compatible map of key → url string (used by current PlanViewer)
@@ -184,7 +198,7 @@ export default async function handler(req, res) {
     const exercisesFallback = (enriched.exercises || []).filter((e) => (e?.trust_level ?? 'none') === 'fallback').length;
     const exercisesNone = (enriched.exercises || []).filter((e) => (e?.trust_level ?? 'none') === 'none').length;
 
-    return res.status(200).json({
+    const payload = {
       ok: true,
       meal_images: mealImages,
       meal_trust: mealTrust,
@@ -200,8 +214,12 @@ export default async function handler(req, res) {
         exercises_exact_count: exercisesExact,
         exercises_fallback_count: exercisesFallback,
         exercises_none_count: exercisesNone,
+        enrichment_cached: false,
+        cache_hit: false,
       },
-    });
+    };
+    enrichmentCache.set(cacheKey, { payload, at: Date.now() });
+    return res.status(200).json(payload);
   } catch (err) {
     console.error('[plan-enrichment] error:', err);
     return res.status(500).json({ error: 'Failed to enrich plan media' });

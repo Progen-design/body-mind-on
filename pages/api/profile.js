@@ -77,7 +77,7 @@ export default async function handler(req, res) {
         .limit(5),
       supabaseServer
         .from('ai_tasks')
-        .select('id, status, created_at, result')
+        .select('id, status, created_at, result, last_error')
         .eq('user_id', userId)
         .eq('agent_slug', 'trainer')
         .eq('task_type', 'initial_plan')
@@ -101,11 +101,15 @@ export default async function handler(req, res) {
     const initialPlanResult = initialPlanTask?.result;
     const generation_source = initialPlanResult?.generation_source ?? null;
     const fallback_used = initialPlanResult?.fallback_used ?? null;
+    const last_task_status = initialPlanTask?.status ?? null;
+    const last_task_reason = initialPlanTask?.result?.reason ?? initialPlanTask?.last_error ?? null;
 
     const initialPlanPending = initialPlanTask?.status === 'pending';
+    const initialPlanFailed = initialPlanTask?.status === 'failed';
     let plan_state = 'missing';
     if (hasValidPlan) plan_state = 'ready';
     else if (initialPlanPending) plan_state = 'processing';
+    else if (initialPlanFailed) plan_state = 'failed';
     else if (plansData.length > 0) plan_state = 'invalid';
     else plan_state = 'missing';
     if (!hasActivePlan && plansData.length > 0) {
@@ -204,6 +208,8 @@ export default async function handler(req, res) {
         generation_source,
         fallback_used,
         plan_state,
+        last_task_status: last_task_status ?? undefined,
+        last_task_reason: last_task_reason ?? undefined,
       },
       weight_history: weightHistory,
       stats: {

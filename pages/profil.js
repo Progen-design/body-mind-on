@@ -2172,11 +2172,11 @@ export default function Profil() {
               <div id="profile-bubble-body-muj-plan" role="region" aria-labelledby="profile-bubble-header-muj-plan" className="profile-bubble-body" data-open={profileOpenSections.has('muj-plan')}>
               {profile?._diagnostics?.plan_state === 'processing' && (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
-                  <p className="plan-preparing-text">Plán se právě připravuje. Obnov stránku za chvíli.</p>
+                  <p className="plan-preparing-text">Plán se dokončuje – automaticky se obnoví, jakmile bude hotový.</p>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
                 </div>
               )}
-              {profile?._diagnostics?.plan_state === 'invalid' && (
+              {(profile?._diagnostics?.plan_state === 'invalid' || profile?._diagnostics?.plan_state === 'failed') && (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
                   <p className="plan-preparing-text">Plán se nepodařilo dokončit korektně. Zkus obnovit stránku nebo kontaktuj podporu.</p>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
@@ -2187,7 +2187,7 @@ export default function Profil() {
                   <p className="plan-preparing-text">Plán zatím nebyl vytvořen.</p>
                 </div>
               )}
-              {profile?._diagnostics?.plan_state !== 'processing' && profile?._diagnostics?.plan_state !== 'invalid' && profile?._diagnostics?.plan_state !== 'missing' && (currentPlan || nextPlan) && (
+              {profile?._diagnostics?.plan_state !== 'processing' && profile?._diagnostics?.plan_state !== 'invalid' && profile?._diagnostics?.plan_state !== 'failed' && profile?._diagnostics?.plan_state !== 'missing' && (currentPlan || nextPlan) && (
               <>
               {!(currentPlan?.plan_html) && !(nextPlan?.plan_html) ? (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
@@ -2301,7 +2301,7 @@ export default function Profil() {
               ) : null}
               </>
               )}
-              {(!currentPlan && !nextPlan) && profile?._diagnostics?.plan_state !== 'processing' && profile?._diagnostics?.plan_state !== 'invalid' && profile?._diagnostics?.plan_state !== 'missing' && (
+              {(!currentPlan && !nextPlan) && profile?._diagnostics?.plan_state !== 'processing' && profile?._diagnostics?.plan_state !== 'invalid' && profile?._diagnostics?.plan_state !== 'failed' && profile?._diagnostics?.plan_state !== 'missing' && (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
                   <p className="plan-preparing-text">Plán zatím nebyl vytvořen.</p>
                 </div>

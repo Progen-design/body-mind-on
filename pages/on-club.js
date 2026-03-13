@@ -142,15 +142,14 @@ export default function OnClubPage() {
       }
 
       if (res.ok) {
-        if (result.planSent === false) {
-          setStatus("⚠️ " + (result.message || "Údaje uloženy, ale e-mail s plánem se nepodařilo odeslat. Zkontroluj spam nebo napiš na info@bodyandmindon.cz."));
-        } else {
-          setStatus("✅ Účet je vytvořen. Přesměrování na přihlášení…");
+        if (result.planSent || result.planPending) {
+          setStatus("✅ " + (result.message || "Účet je vytvořen. Přesměrování na přihlášení…"));
           setTimeout(() => {
             router.push(`/login?registered=1&email=${encodeURIComponent(cleanedData.email || '')}`);
           }, 1500);
           return;
         }
+        setStatus("⚠️ " + (result.message || "Údaje uloženy, ale e-mail s plánem se nepodařilo odeslat. Zkontroluj spam nebo napiš na info@bodyandmindon.cz."));
         setFormData({ name: "", email: "", password: "", passwordConfirm: "", gender: "", age: "", height: "", weight: "", activity: "", stress: "", worktype: "", goal: "", frequency: "", workout_days: [], diet_type: "", dietary_restrictions: "", foods_to_avoid: "", notes: "", program: "ON_CLUB" });
         setSelectedHabits([]);
         setStep(1);

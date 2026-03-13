@@ -8,9 +8,9 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
 
-// Static meal fallbacks: used ONLY when no trust metadata exists (e.g. legacy/incomplete enrichment).
-// They must never override backend truth: when meal_trust says "none" or no image_url, we show placeholder.
-// When used, the UI must label the result as "Ilustrační foto", never as exact.
+// Static meal fallbacks: used ONLY when meal_trust has no entry for this meal (legacy/incomplete enrichment).
+// When meal_trust exists and image_trust_level is "none", we never use DISH_IMAGES – show placeholder only (no fake exact).
+// When used, the UI labels as "Ilustrační foto", never as exact.
 const DISH_IMAGES = [
   { keys: ['palačinky z mandlové', 'palacinky z mandlove', 'palačinky', 'palacinky', 'pancake'], url: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=280&fit=crop' },
   { keys: ['chia pudink s kokosovým', 'chia pudink s kokosovym', 'chia pudink', 'chia pudding'], url: 'https://images.unsplash.com/photo-1517673132405-a56a62b18ddb?w=400&h=280&fit=crop' },
@@ -1170,8 +1170,8 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                         const mealLookupKey = meal.meal_key || null;
                         const mealTrust = getEnrichedMealTrust(mealFullText || meal.text || meal.type, mealTrustMap, mealLookupKey);
                         const enrichedUrl = getEnrichedMealImage(mealFullText || meal.text || meal.type, mealImagesMap, mealLookupKey);
-                        const dishFallbackUrl = getMealImageByDish(mealFullText || meal.text || meal.type);
-                        // API-first: (1) meal_trust.image_url when trust metadata exist (2) meal_images when no trust (3) DISH_IMAGES only as last resort. NO LIES: trust "none" or null url => placeholder, never static as "correct".
+                        // API-first: (1) meal_trust is priority 1 – use image_url and trust_level from backend. (2) meal_images only if no trust entry. (3) DISH_IMAGES only when no trust metadata at all (legacy). NO LIES: when trust === "none" or backend says no image → placeholder only, never static stock.
+                        const dishFallbackUrl = !mealTrust ? getMealImageByDish(mealFullText || meal.text || meal.type) : null;
                         let resolvedUrl = null;
                         let trustLevel = 'none';
                         if (mealTrust) {
@@ -1186,7 +1186,7 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                           }
                         } else {
                           resolvedUrl = enrichedUrl ?? dishFallbackUrl ?? null;
-                          trustLevel = enrichedUrl ? 'illustrative' : (dishFallbackUrl ? 'illustrative' : 'placeholder');
+                          trustLevel = enrichedUrl ? 'illustrative' : (dishFallbackUrl ? 'illustrative' : 'none');
                         }
                         const mealCardKey = `meal-${di}-${mi}-${normalizeLookupKey(mealFullText || meal.text || meal.type).slice(0, 40)}`;
                         const imageLoadFailed = mealImageErrorKeys.has(mealCardKey);
@@ -1208,9 +1208,9 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                               )}
                               <span className="plan-meal-type">{meal.type}</span>
                               {showMealImage && (
-                                <span className={`plan-trust-badge plan-trust-badge-meal plan-trust-badge-${trustLevel}`} title={trustLevel === 'exact' ? 'Obrázek odpovídá nalezenému receptu' : trustLevel === 'illustrative' ? 'Orientační vizuál' : 'Obecný placeholder'}>
+                                <span className={`plan-trust-badge plan-trust-badge-meal plan-trust-badge-${trustLevel}`} title={trustLevel === 'exact' ? 'Obrázek odpovídá nalezenému receptu' : 'Orientační vizuál'}>
                                   {trustLevel === 'exact' && <>Přesný zdroj{mealTrust?.exact_source === 'spoonacular' ? <span className="plan-trust-sublabel"> Spoonacular</span> : null}</>}
-                                  {(trustLevel === 'illustrative' || trustLevel === 'placeholder') && <>Ilustrační foto{mealTrust?.illustrative_source === 'pexels' ? <span className="plan-trust-sublabel"> Pexels</span> : null}</>}
+                                  {trustLevel === 'illustrative' && <>Ilustrační foto{mealTrust?.illustrative_source === 'pexels' ? <span className="plan-trust-sublabel"> Pexels</span> : null}</>}
                                 </span>
                               )}
                               <span className="plan-meal-recept-badge">Klikni pro recept</span>

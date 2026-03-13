@@ -92,6 +92,9 @@ export default async function handler(req, res) {
     if (hasExerciseDb && !hasExerciseDbHost) {
       console.warn('[plan-enrichment] EXERCISEDB_API_HOST not set – ExerciseDB may fail (use RAPIDAPI host or set EXERCISEDB_API_HOST)');
     }
+    if (!hasSpoonacular || !hasPexels || !hasExerciseDb || (hasExerciseDb && !hasExerciseDbHost)) {
+      console.info('[plan-enrichment] ENV summary:', { hasSpoonacular, hasPexels, hasExerciseDb, hasExerciseDbHost });
+    }
 
     const enriched = await enrichPlanContent({ html });
 
@@ -174,6 +177,13 @@ export default async function handler(req, res) {
     const exercisesWithKey = (enriched.exercises || []).filter((e) => e?.exercise_key).length;
     const exercisesByText = (enriched.exercises || []).length - exercisesWithKey;
 
+    const mealsExact = (enriched.meals || []).filter((m) => (m?.image_trust_level ?? 'none') === 'exact').length;
+    const mealsIllustrative = (enriched.meals || []).filter((m) => (m?.image_trust_level ?? 'none') === 'illustrative').length;
+    const mealsNone = (enriched.meals || []).filter((m) => (m?.image_trust_level ?? 'none') === 'none').length;
+    const exercisesExact = (enriched.exercises || []).filter((e) => (e?.trust_level ?? 'none') === 'exact').length;
+    const exercisesFallback = (enriched.exercises || []).filter((e) => (e?.trust_level ?? 'none') === 'fallback').length;
+    const exercisesNone = (enriched.exercises || []).filter((e) => (e?.trust_level ?? 'none') === 'none').length;
+
     return res.status(200).json({
       ok: true,
       meal_images: mealImages,
@@ -184,6 +194,12 @@ export default async function handler(req, res) {
         exercise_keys_count: Object.keys(exerciseMedia).length,
         exercises_lookup_by_key: exercisesWithKey,
         exercises_lookup_by_text: exercisesByText,
+        meals_exact_count: mealsExact,
+        meals_illustrative_count: mealsIllustrative,
+        meals_none_count: mealsNone,
+        exercises_exact_count: exercisesExact,
+        exercises_fallback_count: exercisesFallback,
+        exercises_none_count: exercisesNone,
       },
     });
   } catch (err) {

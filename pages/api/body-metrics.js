@@ -145,18 +145,22 @@ export default async function handler(req, res) {
     };
 
     let planSent = false;
+    let planPending = false; // true když jsme kvůli timeoutu vrátili odpověď dřív – plán dokoční cron
     let schedulerTriggered = false;
     let directExecutionTriggered = false;
     let initialPlanTaskStatus = null;
     let initialPlanSummary = null;
     let initialPlanValidationWarning = null;
     const accountCreated = payload.user_id != null;
+    const PLAN_GENERATION_TIMEOUT_MS = 25000; // max 25 s čekání – pak úspěch a plán na pozadí (cron)
+
     if (payload.user_id) {
       await createInitialAITasks(payload.user_id, emailOptions);
       console.info('[body-metrics] initial tasks created / already existed', `user_id=${payload.user_id}`);
       await enqueueAIEvent('user_registered', payload.user_id, { program: payload.program || 'START' });
       await triggerImmediateDecision(payload.user_id);
 
+      const runPlanGeneration = async () => {
       try {
         console.info('[body-metrics] scheduler run started', `user_id=${payload.user_id}`);
         const run = await runAIScheduler();
@@ -249,6 +253,16 @@ export default async function handler(req, res) {
           console.warn('[body-metrics] fallback executeAITask failed:', fallbackErr?.message);
         }
       }
+      }; // runPlanGeneration
+
+      await Promise.race([
+        runPlanGeneration(),
+        new Promise((resolve) => setTimeout(() => {
+          planPending = true;
+          console.info('[body-metrics] plan generation timeout – returning success, cron will complete plan');
+          resolve();
+        }, PLAN_GENERATION_TIMEOUT_MS)),
+      ]);
     }
 
     // Uložit tier členství do tabulky memberships (upsert – aktualizovat pokud existuje)
@@ -295,11 +309,14 @@ export default async function handler(req, res) {
     const successMsg = accountCreated
       ? 'Údaje byly úspěšně uloženy a plán byl odeslán na e-mail. V e-mailu najdeš přihlašovací údaje – s nimi se můžeš přihlásit a vidět svůj profil.'
       : 'Údaje a plán byly uloženy a odeslány na e-mail. Vytvoření přihlašovacího účtu se nezdařilo – pro přístup do profilu nás kontaktuj na info@bodyandmindon.cz.';
+    const pendingMsg = 'Účet je vytvořen. Plán se dokončuje na pozadí – za chvíli přijde e-mail a v profilu uvidíš plán.';
+    const failMsg = 'Údaje byly uloženy. E-mail s plánem se nepodařilo odeslat – zkontroluj spam nebo napiš na info@bodyandmindon.cz.';
     const response = {
       ok: true,
       planSent,
+      planPending: planPending || false,
       loginUnavailable: !accountCreated,
-      message: planSent ? successMsg : 'Údaje byly uloženy. E-mail s plánem se nepodařilo odeslat – zkontroluj spam nebo napiš na info@bodyandmindon.cz.',
+      message: planSent ? successMsg : (planPending ? pendingMsg : failMsg),
     };
     if (accountCreated) {
       response.hasUserId = true;

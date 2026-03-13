@@ -2,6 +2,9 @@
   "functions": {
     "pages/api/body-metrics.js": {
       "maxDuration": 60
+    },
+    "pages/api/retry-initial-plan.js": {
+      "maxDuration": 90
     }
   },
   "crons": [
@@ -11,7 +14,7 @@
     },
     {
       "path": "/api/ai/run-scheduler",
-      "schedule": "30 7 * * *"
+      "schedule": "*/15 * * * *"
     }
   ]
 }

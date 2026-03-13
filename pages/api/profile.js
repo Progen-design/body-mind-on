@@ -101,6 +101,7 @@ export default async function handler(req, res) {
     const initialPlanResult = initialPlanTask?.result;
     const generation_source = initialPlanResult?.generation_source ?? null;
     const fallback_used = initialPlanResult?.fallback_used ?? null;
+    const truth_check = initialPlanResult?.truth_check ?? null;
     const last_task_status = initialPlanTask?.status ?? null;
     const last_task_reason = initialPlanTask?.result?.reason ?? initialPlanTask?.last_error ?? null;
 
@@ -210,6 +211,16 @@ export default async function handler(req, res) {
         plan_state,
         last_task_status: last_task_status ?? undefined,
         last_task_reason: last_task_reason ?? undefined,
+        truth_check_passed: truth_check?.truth_check_passed ?? undefined,
+        truth_check_reason: truth_check?.truth_check_reason ?? undefined,
+        unpublishable_meals: truth_check?.unpublishable_meals ?? undefined,
+        unpublishable_exercises: truth_check?.unpublishable_exercises ?? undefined,
+        meals_exact_count: truth_check?.meals_exact_count ?? undefined,
+        meals_illustrative_count: truth_check?.meals_illustrative_count ?? undefined,
+        meals_none_count: truth_check?.meals_none_count ?? undefined,
+        exercises_exact_count: truth_check?.exercises_exact_count ?? undefined,
+        exercises_fallback_count: truth_check?.exercises_fallback_count ?? undefined,
+        exercises_none_count: truth_check?.exercises_none_count ?? undefined,
       },
       weight_history: weightHistory,
       stats: {

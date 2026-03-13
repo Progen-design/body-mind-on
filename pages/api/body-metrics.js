@@ -152,7 +152,7 @@ export default async function handler(req, res) {
     let initialPlanSummary = null;
     let initialPlanValidationWarning = null;
     const accountCreated = payload.user_id != null;
-    const PLAN_GENERATION_TIMEOUT_MS = 25000; // max 25 s čekání – pak úspěch a plán na pozadí (cron)
+    const PLAN_GENERATION_TIMEOUT_MS = 50000; // max 50 s čekání – pak úspěch a plán na pozadí (cron každých 15 min)
     const PLAN_WAIT_POLL_MS = 800; // krátký poll interval pro initial_plan
     const PLAN_WAIT_MAX_MS = 12000; // max 12 s explicitního čekání na dokončení initial_plan
 

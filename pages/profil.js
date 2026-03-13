@@ -346,6 +346,7 @@ export default function Profil() {
   const [toast, setToast] = useState({ message: '', type: 'success' });
   const [showAllWorkouts, setShowAllWorkouts] = useState(false);
   const [sendingPlan, setSendingPlan] = useState(false);
+  const [retryingPlan, setRetryingPlan] = useState(false);
   const [generatingNextWeek, setGeneratingNextWeek] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -1515,6 +1516,33 @@ export default function Profil() {
     }
   };
 
+  const handleRetryPlan = async () => {
+    setRetryingPlan(true);
+    try {
+      const { data: { session: fresh } } = await supabase.auth.refreshSession();
+      const token = fresh?.access_token ?? session?.access_token;
+      if (!token) {
+        setToast({ message: 'Nejsi přihlášen.', type: 'error' });
+        return;
+      }
+      const res = await fetch('/api/retry-initial-plan', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (res.ok && json?.ok) {
+        setToast({ message: json.message || 'Plán se generuje. Obnov stránku za chvíli.', type: 'success' });
+        await refetch(token);
+      } else {
+        setToast({ message: json?.error || 'Nepodařilo spustit generování.', type: 'error' });
+      }
+    } catch (err) {
+      setToast({ message: 'Chyba připojení.', type: 'error' });
+    } finally {
+      setRetryingPlan(false);
+    }
+  };
+
   const hasActivePlan = useMemo(() => {
     const plans = profile?.plans;
     if (!Array.isArray(plans) || plans.length === 0) return false;
@@ -2178,13 +2206,21 @@ export default function Profil() {
               )}
               {(profile?._diagnostics?.plan_state === 'invalid' || profile?._diagnostics?.plan_state === 'failed') && (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
-                  <p className="plan-preparing-text">Plán se nepodařilo dokončit korektně. Zkus obnovit stránku nebo kontaktuj podporu.</p>
-                  <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
+                  <p className="plan-preparing-text">Plán se nepodařilo dokončit korektně. Zkus znovu vygenerovat nebo obnov stránku.</p>
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '12px' }}>
+                    <button type="button" className="profile-quick-nav-btn" onClick={handleRetryPlan} disabled={retryingPlan}>
+                      {retryingPlan ? 'Generuji…' : 'Vygenerovat plán'}
+                    </button>
+                    <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
+                  </div>
                 </div>
               )}
               {profile?._diagnostics?.plan_state === 'missing' && (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
                   <p className="plan-preparing-text">Plán zatím nebyl vytvořen.</p>
+                  <button type="button" className="profile-quick-nav-btn" onClick={handleRetryPlan} disabled={retryingPlan} style={{ marginTop: '12px' }}>
+                    {retryingPlan ? 'Generuji…' : 'Vygenerovat plán'}
+                  </button>
                 </div>
               )}
               {profile?._diagnostics?.plan_state !== 'processing' && profile?._diagnostics?.plan_state !== 'invalid' && profile?._diagnostics?.plan_state !== 'failed' && profile?._diagnostics?.plan_state !== 'missing' && (currentPlan || nextPlan) && (
@@ -2304,6 +2340,9 @@ export default function Profil() {
               {(!currentPlan && !nextPlan) && profile?._diagnostics?.plan_state !== 'processing' && profile?._diagnostics?.plan_state !== 'invalid' && profile?._diagnostics?.plan_state !== 'failed' && profile?._diagnostics?.plan_state !== 'missing' && (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
                   <p className="plan-preparing-text">Plán zatím nebyl vytvořen.</p>
+                  <button type="button" className="profile-quick-nav-btn" onClick={handleRetryPlan} disabled={retryingPlan} style={{ marginTop: '12px' }}>
+                    {retryingPlan ? 'Generuji…' : 'Vygenerovat plán'}
+                  </button>
                 </div>
               )}
               </div>

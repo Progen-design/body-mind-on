@@ -47,14 +47,19 @@
 }
 .app-page > * { position: relative; z-index: 1; }
 
-/* Registrační stránky – dekorativní vrstva (bez obrázku, čistý gradient jako hlavní stránka) */
+/* Registrační stránky – pozadí s obrázkem (jako login/profil) */
 .app-page .app-page-bg-decor {
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
   overflow: hidden;
-  background: transparent;
+  background-color: #0a0a0f;
+  background-image:
+    linear-gradient(180deg, rgba(10, 10, 15, 0.82) 0%, rgba(18, 6, 56, 0.78) 45%, rgba(10, 10, 15, 0.85) 100%),
+    url('https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=1920&q=80');
+  background-size: cover;
+  background-position: center;
 }
 .app-page-bg-decor::before,
 .app-page-bg-decor::after {

@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "pages/api/body-metrics.js": {
+      "maxDuration": 60
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/daily-digest",

@@ -164,11 +164,7 @@ export default async function handler(req, res) {
 
       const runPlanGeneration = async () => {
       try {
-        console.info('[body-metrics] scheduler run started', `user_id=${payload.user_id}`);
-        const run = await runAIScheduler();
-        schedulerTriggered = true;
-        console.info('[body-metrics] scheduler run finished', `completed=${run.completed} failed=${run.failed}`);
-
+        // 1. Načíst task tohoto uživatele
         const { data: taskRow } = await supabaseServer
           .from('ai_tasks')
           .select('id, status, result')
@@ -181,17 +177,16 @@ export default async function handler(req, res) {
 
         initialPlanTaskStatus = taskRow?.status ?? null;
         planSent = taskRow?.status === 'completed';
-        const emailSent = taskRow?.result?.email_sent === true;
         initialPlanSummary = taskRow?.result?.summary ?? null;
         initialPlanValidationWarning = taskRow?.result?.validation_warning ?? null;
-        console.info('[body-metrics] initial_plan task status after scheduler', `status=${initialPlanTaskStatus} email_sent=${emailSent} summary=${initialPlanSummary ?? '—'}`);
-        if (initialPlanValidationWarning) console.info('[body-metrics] initial_plan validation_warning', initialPlanValidationWarning);
-        if (!planSent && taskRow?.status === 'failed') {
+        if (initialPlanTaskStatus === 'failed') {
           console.warn('[body-metrics] trainer initial_plan failed – task result:', JSON.stringify(taskRow?.result ?? null));
         }
+
+        // 2. PRIORITIZACE: pokud pending, spustit ihned (ne čekat na scheduler s 30 tasky)
         if (initialPlanTaskStatus === 'pending' && taskRow?.id) {
           directExecutionTriggered = true;
-          console.info('[body-metrics] direct executeAITask started (fallback for pending initial_plan)');
+          console.info('[body-metrics] direct executeAITask started (priority for new user)');
           try {
             const { data: directTask } = await supabaseServer.from('ai_tasks').select('id, user_id, agent_slug, task_type, payload').eq('id', taskRow.id).eq('status', 'pending').eq('agent_slug', 'trainer').eq('task_type', 'initial_plan').maybeSingle();
             if (directTask) {
@@ -210,10 +205,51 @@ export default async function handler(req, res) {
               }
             }
           } catch (directErr) {
-            console.warn('[body-metrics] direct executeAITask fallback failed:', directErr?.message);
+            console.warn('[body-metrics] direct executeAITask failed:', directErr?.message);
             const { data: refetched } = await supabaseServer.from('ai_tasks').select('id, status, result, last_error').eq('id', taskRow.id).maybeSingle();
             if (refetched) {
-              console.warn('[body-metrics] initial_plan task after direct fail:', { status: refetched.status, result: refetched?.result, last_error: refetched?.last_error });
+              console.warn('[body-metrics] initial_plan task after direct fail:', { status: refetched.status, last_error: refetched?.last_error });
+            }
+          }
+        }
+
+        // 3. Pokud stále pending, spustit scheduler (zpracuje i ostatní tasky)
+        if (initialPlanTaskStatus === 'pending') {
+          console.info('[body-metrics] scheduler run started', `user_id=${payload.user_id}`);
+          const run = await runAIScheduler();
+          schedulerTriggered = true;
+          console.info('[body-metrics] scheduler run finished', `completed=${run.completed} failed=${run.failed}`);
+
+          const { data: refetched } = await supabaseServer.from('ai_tasks').select('id, status, result').eq('id', taskRow.id).maybeSingle();
+          if (refetched) {
+            initialPlanTaskStatus = refetched.status;
+            planSent = refetched.status === 'completed' && refetched?.result?.email_sent === true;
+            initialPlanSummary = refetched?.result?.summary ?? null;
+            initialPlanValidationWarning = refetched?.result?.validation_warning ?? null;
+          }
+
+          if (initialPlanTaskStatus === 'pending' && taskRow?.id) {
+            directExecutionTriggered = true;
+            console.info('[body-metrics] direct executeAITask fallback (after scheduler)');
+            try {
+              const { data: directTask } = await supabaseServer.from('ai_tasks').select('id, user_id, agent_slug, task_type, payload').eq('id', taskRow.id).eq('status', 'pending').eq('agent_slug', 'trainer').eq('task_type', 'initial_plan').maybeSingle();
+              if (directTask) {
+                const exec = await executeAITask(directTask);
+                await supabaseServer.from('ai_tasks').update({
+                  status: exec?.ok ? 'completed' : 'failed',
+                  result: exec?.result ?? { error: 'Direct execution returned no result' },
+                  processed_at: new Date().toISOString(),
+                }).eq('id', directTask.id);
+                if (exec?.ok) {
+                  initialPlanTaskStatus = 'completed';
+                  planSent = exec?.result?.email_sent === true;
+                  initialPlanSummary = exec?.result?.summary ?? null;
+                  initialPlanValidationWarning = exec?.result?.validation_warning ?? null;
+                  console.info('[body-metrics] direct executeAITask fallback finished', { plan_sent: planSent });
+                }
+              }
+            } catch (directErr) {
+              console.warn('[body-metrics] direct executeAITask fallback failed:', directErr?.message);
             }
           }
         }

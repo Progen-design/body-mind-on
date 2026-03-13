@@ -779,6 +779,21 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
     return () => { cancelled = true; };
   }, [plan?.plan_html]);
 
+  // Po načtení plánu posunout na „dnešek“, aby byl aktuální den hned vidět
+  useEffect(() => {
+    if (typeof document === 'undefined' || !parsed?.days?.length || !plan?.valid_from) return;
+    const planFromStr = (plan.valid_from || '').split('T')[0];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayIsoStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    if (planFromStr && planFromStr > todayIsoStr) return; // náhled příštího týdne – neposouvat
+    const t = setTimeout(() => {
+      const el = document.getElementById('plan-day-card-today');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [parsed?.days?.length, plan?.valid_from, plan?.plan_html]);
+
   useEffect(() => {
     if (!plan?.plan_html || typeof document === 'undefined') {
       setMealImagesMap({});
@@ -1080,7 +1095,7 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                     });
                   };
                   return (
-                  <div key={di} className={`plan-day-card ${day._placeholder ? 'plan-day-placeholder' : ''} ${day.isToday ? 'plan-day-today' : ''} ${isDayExpanded ? 'plan-day-expanded' : ''}`}>
+                  <div id={day.isToday ? 'plan-day-card-today' : undefined} key={di} className={`plan-day-card ${day._placeholder ? 'plan-day-placeholder' : ''} ${day.isToday ? 'plan-day-today' : ''} ${isDayExpanded ? 'plan-day-expanded' : ''}`}>
                     <button type="button" className="plan-day-header-btn" onClick={toggleDay} aria-expanded={isDayExpanded}>
                       <h4 className="plan-day-name">
                         {day.dayName}{day.dateStr ? ` (${day.dateStr})` : ''}{day.isToday ? ' – dnes' : ''}

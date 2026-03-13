@@ -214,6 +214,40 @@ export default async function handler(req, res) {
         console.info('[body-metrics] initial_plan task final status', initialPlanTaskStatus);
       } catch (schedErr) {
         console.warn('[body-metrics] scheduler run failed (tasks remain pending):', schedErr?.message);
+        // Fallback: i když scheduler spadl (timeout, výjimka), zkusíme dokončit initial_plan pro tohoto uživatele přímo
+        try {
+          const { data: fallbackTask } = await supabaseServer
+            .from('ai_tasks')
+            .select('id, user_id, agent_slug, task_type, payload')
+            .eq('user_id', payload.user_id)
+            .eq('agent_slug', 'trainer')
+            .eq('task_type', 'initial_plan')
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (fallbackTask?.id) {
+            directExecutionTriggered = true;
+            const exec = await executeAITask(fallbackTask);
+            await supabaseServer
+              .from('ai_tasks')
+              .update({
+                status: exec?.ok ? 'completed' : 'failed',
+                result: exec?.result ?? { error: 'Fallback execution after scheduler error' },
+                processed_at: new Date().toISOString(),
+              })
+              .eq('id', fallbackTask.id);
+            if (exec?.ok) {
+              initialPlanTaskStatus = 'completed';
+              planSent = exec?.result?.email_sent === true;
+              initialPlanSummary = exec?.result?.summary ?? null;
+              initialPlanValidationWarning = exec?.result?.validation_warning ?? null;
+              console.info('[body-metrics] fallback executeAITask after scheduler error', { plan_sent: planSent });
+            }
+          }
+        } catch (fallbackErr) {
+          console.warn('[body-metrics] fallback executeAITask failed:', fallbackErr?.message);
+        }
       }
     }
 

@@ -17,6 +17,10 @@ const BACKGROUND_REFRESH_INTERVAL_MS = 180000;
 /** Min tab-hidden duration before visibility-triggered refresh (60 s) */
 const VISIBILITY_REFRESH_THRESHOLD_MS = 60000;
 
+/** When plan is processing (e.g. after registration), poll until plan appears or timeout */
+const PLAN_PROCESSING_POLL_MS = 5000;
+const PLAN_PROCESSING_POLL_MAX = 24; // 24 × 5s = 2 min
+
 /** Initial load timeout (15 s) */
 const INITIAL_LOAD_TIMEOUT_MS = 15000;
 
@@ -157,6 +161,31 @@ export function useProfileData({
     document.addEventListener('visibilitychange', onVisibilityChange);
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   }, [accessToken, enabled, refetch]);
+
+  // When plan is processing (e.g. right after registration), poll so plan appears as soon as ready
+  useEffect(() => {
+    const planState = profile?._diagnostics?.plan_state;
+    if (planState !== 'processing' || !accessToken || !enabled) return;
+    let count = 0;
+    const early = setTimeout(() => {
+      refetch(accessToken).catch(() => {});
+    }, 2000);
+    const id = setInterval(async () => {
+      count += 1;
+      if (count > PLAN_PROCESSING_POLL_MAX) {
+        clearInterval(id);
+        return;
+      }
+      try {
+        const result = await refetch(accessToken);
+        if (result?.profile?._diagnostics?.plan_state !== 'processing') clearInterval(id);
+      } catch (_) {}
+    }, PLAN_PROCESSING_POLL_MS);
+    return () => {
+      clearTimeout(early);
+      clearInterval(id);
+    };
+  }, [accessToken, enabled, profile?._diagnostics?.plan_state, refetch]);
 
   const setProfile = useCallback((updater) => {
     setProfileState((prev) => (typeof updater === 'function' ? updater(prev) : updater));

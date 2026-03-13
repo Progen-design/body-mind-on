@@ -14,7 +14,7 @@
     },
     {
       "path": "/api/ai/run-scheduler",
-      "schedule": "*/15 * * * *"
+      "schedule": "30 7 * * *"
     }
   ]
 }

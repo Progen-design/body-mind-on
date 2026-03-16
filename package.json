@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "migrate:ai-supporting-documents": "node scripts/run-ai-supporting-documents-migration.mjs",
+    "migrate:ai-documents": "node scripts/migrate-ai-documents.mjs",
     "migrate:trainer-calendar": "node scripts/run-trainer-calendar-migration.js",
     "test:expired-trial": "node scripts/set-expired-trial-for-test.js",
     "dev": "next dev",

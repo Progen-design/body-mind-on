@@ -31,7 +31,7 @@ function extractTrainerPrompt() {
   return content.slice(i + start.length, end);
 }
 
-const PROMPT_VERSION = 4;
+const PROMPT_VERSION = 5;
 const AGENT_PROMPTS = {
   trainer: null, // filled from file below
   coach:

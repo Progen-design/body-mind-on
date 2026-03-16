@@ -120,6 +120,8 @@ export default async function handler(req, res) {
           prompt_version: logRow.payload.prompt_version ?? null,
           prompt_source: logRow.payload.prompt_source ?? null,
           supporting_documents_count: logRow.payload.supporting_documents_count ?? null,
+          document_titles: logRow.payload.document_titles ?? null,
+          source_ids: logRow.payload.source_ids ?? null,
           log_created_at: logRow.created_at,
         }
       : null;

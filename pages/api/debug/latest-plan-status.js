@@ -2,6 +2,7 @@
 // Interní debug helper – vrací stav flow pro daný e-mail (bez dalších PII).
 // Vyžaduje ADMIN_TOKEN v Authorization header.
 import { supabaseServer } from '../../../lib/supabaseServer';
+import { validatePublishedPlanHtml } from '../../../lib/validatePlanHtml';
 
 function isAdmin(req) {
   const auth = req.headers.authorization || '';
@@ -60,6 +61,7 @@ export default async function handler(req, res) {
     const html = plan?.plan_html || '';
     const mealKeysInHtml = html ? (html.match(/data-meal-key\s*=\s*["'][^"']*["']/gi) || []).length : 0;
     const exerciseKeysInHtml = html ? (html.match(/data-exercise-key\s*=\s*["'][^"']*["']/gi) || []).length : 0;
+    const planValidation = html ? validatePublishedPlanHtml(html) : { ok: false };
     const planSummary = plan
       ? {
           id: plan.id,
@@ -67,6 +69,8 @@ export default async function handler(req, res) {
           html_length: html.length,
           meal_keys_in_html: mealKeysInHtml,
           exercise_keys_in_html: exerciseKeysInHtml,
+          parse_success: planValidation.ok,
+          rendering_mode: planValidation.ok ? 'parsed' : 'raw_fallback',
           created_at: plan.created_at,
         }
       : null;

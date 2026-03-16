@@ -236,6 +236,7 @@ export default async function handler(req, res) {
         media_exact_count: initialPlanResult?.media_exact_count ?? undefined,
         media_none_count: initialPlanResult?.media_none_count ?? undefined,
         parse_success: hasValidPlan,
+        rendering_mode: hasValidPlan ? 'parsed' : 'raw_fallback',
       },
       weight_history: weightHistory,
       stats: {

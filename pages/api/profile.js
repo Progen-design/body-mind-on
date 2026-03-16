@@ -77,7 +77,7 @@ export default async function handler(req, res) {
         .limit(5),
       supabaseServer
         .from('ai_tasks')
-        .select('id, status, created_at, result, last_error')
+        .select('id, status, created_at, processed_at, result, last_error')
         .eq('user_id', userId)
         .eq('agent_slug', 'trainer')
         .eq('task_type', 'initial_plan')
@@ -88,7 +88,9 @@ export default async function handler(req, res) {
 
     const bodyMetrics = (metricsRes.status === 'fulfilled' && metricsRes.value?.data) ? metricsRes.value.data : [];
     let plansData = (plansRes.status === 'fulfilled' && plansRes.value?.data) ? plansRes.value.data : [];
+    const initialPlanTaskQueryFailed = initialPlanTaskRes?.status === 'rejected';
     const initialPlanTask = (initialPlanTaskRes?.status === 'fulfilled' && initialPlanTaskRes?.value?.data) ? initialPlanTaskRes.value.data : null;
+    const initialPlanTaskExists = !!initialPlanTask;
     const activePlan = plansData.find((p) => p.is_active === true);
     const hasActivePlan = !!activePlan;
     const currentPlanForDiagnostics = activePlan || plansData.find((p) => p.plan_html && typeof p.plan_html === 'string' && p.plan_html.length > 0);
@@ -107,15 +109,36 @@ export default async function handler(req, res) {
 
     const initialPlanPending =
       initialPlanTask?.status === 'pending' || initialPlanTask?.status === 'processing';
-    const initialPlanFailed = initialPlanTask?.status === 'failed';
+    const initialPlanFailed =
+      initialPlanTask?.status === 'failed' || initialPlanTask?.status === 'dlq';
     const initialPlanCompleted = initialPlanTask?.status === 'completed';
     let plan_state = 'missing';
-    if (hasValidPlan) plan_state = 'ready';
-    else if (initialPlanPending) plan_state = 'processing';
-    else if (initialPlanFailed) plan_state = 'failed';
-    else if (plansData.length > 0) plan_state = 'invalid';
-    else if (initialPlanCompleted) plan_state = 'invalid';
-    else plan_state = 'missing';
+    let plan_state_reason = '';
+    if (hasValidPlan) {
+      plan_state = 'ready';
+      plan_state_reason = 'valid_plan_exists';
+    } else if (initialPlanTaskQueryFailed && plansData.length === 0) {
+      plan_state = 'processing';
+      plan_state_reason = 'task_query_failed_assume_processing';
+    } else if (initialPlanPending) {
+      plan_state = 'processing';
+      plan_state_reason = 'task_pending_or_processing';
+    } else if (initialPlanFailed) {
+      plan_state = 'failed';
+      plan_state_reason = 'task_failed_or_dlq';
+    } else if (plansData.length > 0) {
+      plan_state = 'invalid';
+      plan_state_reason = 'plan_exists_but_invalid';
+    } else if (initialPlanCompleted) {
+      plan_state = 'invalid';
+      plan_state_reason = 'task_completed_but_no_valid_plan';
+    } else if (initialPlanTaskExists) {
+      plan_state = 'invalid';
+      plan_state_reason = 'task_exists_unknown_status';
+    } else {
+      plan_state = 'missing';
+      plan_state_reason = 'no_task_no_plan';
+    }
     const saved_plan_exists = plansData.some((p) => p.plan_html && typeof p.plan_html === 'string' && p.plan_html.length > 0);
     const rendered_plan_exists = hasValidPlan;
     if (!hasActivePlan && plansData.length > 0) {
@@ -247,9 +270,17 @@ export default async function handler(req, res) {
         supporting_documents_count: initialPlanResult?.supporting_documents_count ?? undefined,
         document_titles: initialPlanResult?.document_titles ?? undefined,
         source_ids: initialPlanResult?.source_ids ?? undefined,
+        initialPlanTaskExists,
         initialPlanTaskStatus: initialPlanTask?.status ?? undefined,
+        initialPlanTaskCreatedAt: initialPlanTask?.created_at ?? undefined,
+        initialPlanTaskProcessedAt: initialPlanTask?.processed_at ?? undefined,
+        initialPlanTaskLastError: initialPlanTask?.last_error ?? undefined,
+        initialPlanTaskQueryFailed: initialPlanTaskQueryFailed ?? undefined,
         saved_plan_exists: saved_plan_exists ?? undefined,
+        saved_plan_id: activePlan?.id ?? (plansData[0]?.id) ?? undefined,
+        saved_plan_is_active: !!activePlan?.is_active,
         rendered_plan_exists: rendered_plan_exists ?? undefined,
+        plan_state_reason: plan_state_reason || undefined,
       },
       weight_history: weightHistory,
       stats: {

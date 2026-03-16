@@ -2204,9 +2204,20 @@ export default function Profil() {
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
                 </div>
               )}
-              {(profile?._diagnostics?.plan_state === 'invalid' || profile?._diagnostics?.plan_state === 'failed') && (
+              {profile?._diagnostics?.plan_state === 'failed' && (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
-                  <p className="plan-preparing-text">Plán se nepodařilo dokončit korektně. Zkus znovu vygenerovat nebo obnov stránku.</p>
+                  <p className="plan-preparing-text">Plán se nepodařilo dokončit.</p>
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '12px' }}>
+                    <button type="button" className="profile-quick-nav-btn" onClick={handleRetryPlan} disabled={retryingPlan}>
+                      {retryingPlan ? 'Generuji…' : 'Vygenerovat plán'}
+                    </button>
+                    <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
+                  </div>
+                </div>
+              )}
+              {profile?._diagnostics?.plan_state === 'invalid' && (
+                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                  <p className="plan-preparing-text">Plán byl vytvořen neúplně nebo neprošel validací.</p>
                   <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '12px' }}>
                     <button type="button" className="profile-quick-nav-btn" onClick={handleRetryPlan} disabled={retryingPlan}>
                       {retryingPlan ? 'Generuji…' : 'Vygenerovat plán'}

@@ -219,12 +219,15 @@ export default function WorkoutOverlay({
               <span className="field-label">Vzdálenost</span>
               <div className="input-unit">
                 <input
+                  key="workout-distance-m"
                   type="number"
                   min={25}
                   step={25}
-                  value={form.distance_m}
+                  inputMode="decimal"
+                  value={String(form.distance_m ?? '')}
                   onChange={(e) => setForm((c) => ({ ...c, distance_m: e.target.value }))}
                   placeholder="0"
+                  className="input-single-line"
                 />
                 <span className="unit">m</span>
               </div>
@@ -236,12 +239,15 @@ export default function WorkoutOverlay({
               <span className="field-label">Vzdálenost</span>
               <div className="input-unit">
                 <input
+                  key="workout-distance-km"
                   type="number"
                   min={0.1}
                   step={0.1}
-                  value={form.distance_km}
+                  inputMode="decimal"
+                  value={String(form.distance_km ?? '')}
                   onChange={(e) => setForm((c) => ({ ...c, distance_km: e.target.value }))}
                   placeholder="0.0"
+                  className="input-single-line"
                 />
                 <span className="unit">km</span>
               </div>
@@ -523,6 +529,12 @@ export default function WorkoutOverlay({
         }
         .input-unit input {
           padding-right: 46px;
+        }
+        .input-single-line,
+        .input-unit .input-single-line {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: clip;
         }
         .unit {
           position: absolute;

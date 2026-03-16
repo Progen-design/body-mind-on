@@ -26,6 +26,7 @@ export default function FullscreenOverlay({
 }) {
   const panelRef = useRef(null);
   const lastFocusedRef = useRef(null);
+  const initialFocusDoneRef = useRef(false);
 
   const panelClassName = useMemo(() => {
     if (size === 'large') return 'overlay-panel overlay-panel--large';
@@ -43,14 +44,18 @@ export default function FullscreenOverlay({
     document.body.style.overflow = 'hidden';
     document.documentElement.style.overflow = 'hidden';
 
-    const frame = window.requestAnimationFrame(() => {
-      const focusables = getFocusableElements(panelRef.current);
-      if (focusables.length > 0) {
-        focusables[0].focus();
-      } else {
-        panelRef.current?.focus();
-      }
-    });
+    let frame = null;
+    if (!initialFocusDoneRef.current) {
+      initialFocusDoneRef.current = true;
+      frame = window.requestAnimationFrame(() => {
+        const focusables = getFocusableElements(panelRef.current);
+        if (focusables.length > 0) {
+          focusables[0].focus();
+        } else {
+          panelRef.current?.focus();
+        }
+      });
+    }
 
     const handleKeyDown = (event) => {
       if (!panelRef.current) return;
@@ -87,10 +92,11 @@ export default function FullscreenOverlay({
     document.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      window.cancelAnimationFrame(frame);
+      if (frame != null) window.cancelAnimationFrame(frame);
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
+      initialFocusDoneRef.current = false;
       if (lastFocusedRef.current && typeof lastFocusedRef.current.focus === 'function') {
         lastFocusedRef.current.focus();
       }

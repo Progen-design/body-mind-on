@@ -75,6 +75,7 @@ export default async function handler(req, res) {
         }
       : null;
 
+    const taskExists = !!task;
     const taskSummary = task
       ? {
           id: task.id,
@@ -85,6 +86,7 @@ export default async function handler(req, res) {
           result_skip_reason: task.result?.skip_reason ?? null,
           result_validation_warning: task.result?.validation_warning ?? null,
           result_email_sent: task.result?.email_sent ?? null,
+          result_plan_id: task.result?.plan_id ?? null,
           result_html_length: task.result?.html_length ?? null,
           result_selected_html_source: task.result?.selected_html_source ?? null,
           result_matched_sections: task.result?.matched_sections ?? null,
@@ -93,6 +95,7 @@ export default async function handler(req, res) {
           result_validator_replacement_reason: task.result?.validatorReplacementReason ?? null,
           result_generation_source: task.result?.generation_source ?? null,
           result_fallback_used: task.result?.fallback_used ?? null,
+          result_final_publish_source: task.result?.final_publish_source ?? null,
           result_structure: task.result?.structure ?? null,
           result_raw_ai_html_length: task.result?.raw_ai_html_length ?? null,
           result_final_html_length: task.result?.final_html_length ?? null,
@@ -102,6 +105,10 @@ export default async function handler(req, res) {
           result_weak_quality_flags: task.result?.weak_quality_flags ?? null,
           result_media_exact_count: task.result?.media_exact_count ?? null,
           result_media_none_count: task.result?.media_none_count ?? null,
+          result_truth_check_passed: task.result?.truth_check?.truth_check_passed ?? null,
+          result_soft_gate_passed: task.result?.truth_check?.soft_gate_passed ?? null,
+          result_truth_retry_triggered: task.result?.truth_retry_triggered ?? null,
+          result_truth_retry_reason: task.result?.truth_retry_reason ?? null,
           result_prompt_source: task.result?.prompt_source ?? null,
           result_prompt_version: task.result?.prompt_version ?? null,
           result_supporting_documents_count: task.result?.supporting_documents_count ?? null,
@@ -143,12 +150,45 @@ export default async function handler(req, res) {
         }
       : null;
 
+    const hasValidPlan = planValidation.ok;
+    const saved_plan_exists = !!(plan?.plan_html && plan.plan_html.length > 0);
+    let debug_plan_state = 'missing';
+    let debug_plan_state_reason = 'no_task_no_plan';
+    if (hasValidPlan) {
+      debug_plan_state = 'ready';
+      debug_plan_state_reason = 'valid_plan_exists';
+    } else if (task) {
+      if (task.status === 'pending' || task.status === 'processing') {
+        debug_plan_state = 'processing';
+        debug_plan_state_reason = 'task_pending_or_processing';
+      } else if (task.status === 'failed' || task.status === 'dlq') {
+        debug_plan_state = 'failed';
+        debug_plan_state_reason = 'task_failed_or_dlq';
+      } else if (task.status === 'completed') {
+        debug_plan_state = 'invalid';
+        debug_plan_state_reason = 'task_completed_but_no_valid_plan';
+      } else {
+        debug_plan_state = 'invalid';
+        debug_plan_state_reason = 'task_exists_unknown_status';
+      }
+    } else if (saved_plan_exists) {
+      debug_plan_state = 'invalid';
+      debug_plan_state_reason = 'plan_exists_but_invalid';
+    }
+
     return res.status(200).json({
       auth_user_exists: !!authUser,
       user_id: userId,
       body_metrics: bodyMetricsSummary,
       trainer_task: taskSummary,
+      initialPlanTaskExists: taskExists,
       ai_generated_plan: planSummary,
+      saved_plan_exists,
+      saved_plan_id: plan?.id ?? null,
+      saved_plan_is_active: !!plan?.is_active,
+      rendered_plan_exists: hasValidPlan,
+      debug_plan_state,
+      debug_plan_state_reason,
       agent_diagnostic: agentDiagnostic,
     });
   } catch (err) {

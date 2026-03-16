@@ -237,6 +237,11 @@ export default async function handler(req, res) {
         media_none_count: initialPlanResult?.media_none_count ?? undefined,
         parse_success: hasValidPlan,
         rendering_mode: hasValidPlan ? 'parsed' : 'raw_fallback',
+        prompt_source: initialPlanResult?.prompt_source ?? undefined,
+        prompt_version: initialPlanResult?.prompt_version ?? undefined,
+        supporting_documents_count: initialPlanResult?.supporting_documents_count ?? undefined,
+        document_titles: initialPlanResult?.document_titles ?? undefined,
+        source_ids: initialPlanResult?.source_ids ?? undefined,
       },
       weight_history: weightHistory,
       stats: {

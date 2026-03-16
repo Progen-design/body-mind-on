@@ -105,14 +105,19 @@ export default async function handler(req, res) {
     const last_task_status = initialPlanTask?.status ?? null;
     const last_task_reason = initialPlanTask?.result?.reason ?? initialPlanTask?.last_error ?? null;
 
-    const initialPlanPending = initialPlanTask?.status === 'pending';
+    const initialPlanPending =
+      initialPlanTask?.status === 'pending' || initialPlanTask?.status === 'processing';
     const initialPlanFailed = initialPlanTask?.status === 'failed';
+    const initialPlanCompleted = initialPlanTask?.status === 'completed';
     let plan_state = 'missing';
     if (hasValidPlan) plan_state = 'ready';
     else if (initialPlanPending) plan_state = 'processing';
     else if (initialPlanFailed) plan_state = 'failed';
     else if (plansData.length > 0) plan_state = 'invalid';
+    else if (initialPlanCompleted) plan_state = 'invalid';
     else plan_state = 'missing';
+    const saved_plan_exists = plansData.some((p) => p.plan_html && typeof p.plan_html === 'string' && p.plan_html.length > 0);
+    const rendered_plan_exists = hasValidPlan;
     if (!hasActivePlan && plansData.length > 0) {
       plansData = plansData.filter((p) => p.plan_html && typeof p.plan_html === 'string' && p.plan_html.length > 0);
     }
@@ -242,6 +247,9 @@ export default async function handler(req, res) {
         supporting_documents_count: initialPlanResult?.supporting_documents_count ?? undefined,
         document_titles: initialPlanResult?.document_titles ?? undefined,
         source_ids: initialPlanResult?.source_ids ?? undefined,
+        initialPlanTaskStatus: initialPlanTask?.status ?? undefined,
+        saved_plan_exists: saved_plan_exists ?? undefined,
+        rendered_plan_exists: rendered_plan_exists ?? undefined,
       },
       weight_history: weightHistory,
       stats: {

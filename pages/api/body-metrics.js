@@ -1,8 +1,8 @@
 // /pages/api/body-metrics.js
 // CORE FLOW: Registrace musí vést k reálnému AI výsledku (body_metrics → ai_tasks → ai_generated_plans → zobrazení + e-mail).
-// Při refaktoru neměň pořadí: insert body_metrics → createInitialAITasks → enqueueAIEvent → triggerImmediateDecision → runAIScheduler.
-// Viz docs/CORE_FLOW_REGISTRACE_AI_PLAN.md
-// Registrace ve všech programech (START, ON Club, VIP) se chová dle pravidel ON Club – lib/registrationRules.js.
+// ASYNC-ONLY: insert body_metrics → createInitialAITasks → enqueueAIEvent → triggerImmediateDecision → trigger scheduler (fire-and-forget).
+// Registrace NIKDY nečeká na AI – vždy vrátí processing. Plán generuje scheduler (cron nebo triggered fetch).
+// Viz docs/CORE_FLOW_REGISTRACE_AI_PLAN.md, docs/PLAN_ALWAYS_FROM_AI_REFACTOR.md
 import { supabaseServer } from '../../lib/supabaseServer';
 import {
   PROGRAMS,
@@ -12,8 +12,6 @@ import {
   validatePassword,
 } from '../../lib/registrationRules';
 import { createAuthUserIfNew } from '../../lib/authHelpers';
-import { runAIScheduler } from '../../lib/aiScheduler';
-import { executeAITask } from '../../lib/taskExecutors';
 import { createInitialAITasks } from '../../lib/createInitialAITasks';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getWeeklySessions } from '../../lib/preferenceConstants';
@@ -147,18 +145,14 @@ export default async function handler(req, res) {
     };
 
     let planSent = false;
-    let planPending = false;
+    const planPending = true; // ASYNC-ONLY: vždy processing – plán dokončí scheduler
     let schedulerTriggered = false;
-    let directExecutionTriggered = false;
-    let initialPlanTaskStatus = null;
+    let initialPlanTaskStatus = 'pending';
     let initialPlanSummary = null;
     let initialPlanValidationWarning = null;
     const accountCreated = payload.user_id != null;
-    const PLAN_GENERATION_TIMEOUT_MS = 48000; // 48 s – AI asistent má čas vygenerovat plán v requestu
-    const PLAN_WAIT_POLL_MS = 1000;
-    const PLAN_WAIT_MAX_MS = 20000;
 
-    // Plán vždy generuje AI asistent: v requestu spustíme executeAITask + scheduler a ČEKÁME (s timeoutem).
+    // ASYNC-ONLY: vytvoř tasky, spusť scheduler (fire-and-forget), vždy vrať processing
     if (payload.user_id) {
       try {
         const taskResult = await createInitialAITasks(payload.user_id, emailOptions);
@@ -170,146 +164,31 @@ export default async function handler(req, res) {
       await enqueueAIEvent('user_registered', payload.user_id, { program: payload.program || 'START' });
       await triggerImmediateDecision(payload.user_id);
 
-      const runPlanGeneration = async () => {
-        try {
-          const { data: taskRow } = await supabaseServer
-            .from('ai_tasks')
-            .select('id, status, result')
-            .eq('user_id', payload.user_id)
-            .eq('agent_slug', 'trainer')
-            .eq('task_type', 'initial_plan')
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+      // Načtení tasku pro diagnostiku (status bude vždy pending v tomto bodu)
+      const { data: taskRow } = await supabaseServer
+        .from('ai_tasks')
+        .select('id, status, result')
+        .eq('user_id', payload.user_id)
+        .eq('agent_slug', 'trainer')
+        .eq('task_type', 'initial_plan')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      initialPlanTaskStatus = taskRow?.status ?? 'pending';
 
-          initialPlanTaskStatus = taskRow?.status ?? null;
-          planSent = taskRow?.status === 'completed';
-          initialPlanSummary = taskRow?.result?.summary ?? null;
-          initialPlanValidationWarning = taskRow?.result?.validation_warning ?? null;
-          if (initialPlanTaskStatus === 'failed') {
-            console.warn('[body-metrics] trainer initial_plan failed – task result:', JSON.stringify(taskRow?.result ?? null));
-          }
-
-          const runDirectExecute = async (label) => {
-            const { data: directTask } = await supabaseServer.from('ai_tasks').select('id, user_id, agent_slug, task_type, payload').eq('id', taskRow.id).eq('status', 'pending').eq('agent_slug', 'trainer').eq('task_type', 'initial_plan').maybeSingle();
-            if (!directTask) return false;
-            const exec = await executeAITask(directTask);
-            const hasPlanId = exec?.result?.outcome_type === 'plan_generated' && (exec?.result?.plan_id != null && exec?.result?.plan_id !== '');
-            const effectiveOk = exec?.ok && (hasPlanId || exec?.result?.outcome_type !== 'plan_generated');
-            await supabaseServer.from('ai_tasks').update({
-              status: effectiveOk ? 'completed' : 'failed',
-              result: exec?.result ?? { error: 'Direct execution returned no result' },
-              processed_at: new Date().toISOString(),
-              last_error: effectiveOk ? null : (exec?.ok && !hasPlanId ? 'Completed without plan_id' : null),
-            }).eq('id', directTask.id);
-            if (effectiveOk) {
-              initialPlanTaskStatus = 'completed';
-              planSent = exec?.result?.email_sent === true;
-              initialPlanSummary = exec?.result?.summary ?? null;
-              initialPlanValidationWarning = exec?.result?.validation_warning ?? null;
-              console.info('[body-metrics] ' + label + ' finished (AI)', { plan_sent: planSent });
-              return true;
-            }
-            return false;
-          };
-
-          if (initialPlanTaskStatus === 'pending' && taskRow?.id) {
-            directExecutionTriggered = true;
-            console.info('[body-metrics] direct executeAITask – AI asistent generuje plán');
-            try {
-              const ok = await runDirectExecute('direct executeAITask');
-              if (!ok) {
-                const { data: refetched } = await supabaseServer.from('ai_tasks').select('id, status').eq('id', taskRow.id).maybeSingle();
-                if (refetched?.status === 'pending') {
-                  console.info('[body-metrics] direct execute retry (1x)');
-                  await runDirectExecute('direct executeAITask retry').catch(() => {});
-                }
-              }
-            } catch (directErr) {
-              console.warn('[body-metrics] direct executeAITask failed:', directErr?.message);
-              const { data: refetched } = await supabaseServer.from('ai_tasks').select('id, status').eq('id', taskRow.id).maybeSingle();
-              if (refetched?.status === 'pending') {
-                try { await runDirectExecute('direct executeAITask retry after throw'); } catch (e) {}
-              }
-            }
-          }
-
-          if (initialPlanTaskStatus === 'pending') {
-            console.info('[body-metrics] scheduler run – AI asistent');
-            const run = await runAIScheduler();
-            schedulerTriggered = true;
-            const { data: refetched } = await supabaseServer.from('ai_tasks').select('id, status, result').eq('id', taskRow.id).maybeSingle();
-            if (refetched) {
-              initialPlanTaskStatus = refetched.status;
-              planSent = refetched.status === 'completed' && refetched?.result?.email_sent === true;
-              initialPlanSummary = refetched?.result?.summary ?? null;
-              initialPlanValidationWarning = refetched?.result?.validation_warning ?? null;
-            }
-            if (initialPlanTaskStatus === 'pending' && taskRow?.id) {
-              try {
-                await runDirectExecute('direct executeAITask after scheduler').catch(() => {});
-              } catch (e) {}
-            }
-          }
-
-          if (initialPlanTaskStatus === 'pending' && taskRow?.id) {
-            const pollStart = Date.now();
-            while (Date.now() - pollStart < PLAN_WAIT_MAX_MS) {
-              await new Promise((r) => setTimeout(r, PLAN_WAIT_POLL_MS));
-              const { data: polled } = await supabaseServer.from('ai_tasks').select('status, result').eq('id', taskRow.id).maybeSingle();
-              if (polled?.status === 'completed') {
-                initialPlanTaskStatus = 'completed';
-                planSent = polled?.result?.email_sent === true;
-                initialPlanSummary = polled?.result?.summary ?? null;
-                initialPlanValidationWarning = polled?.result?.validation_warning ?? null;
-                break;
-              }
-              if (polled?.status === 'failed') {
-                initialPlanTaskStatus = 'failed';
-                break;
-              }
-            }
-          }
-          console.info('[body-metrics] initial_plan task final status', initialPlanTaskStatus);
-        } catch (schedErr) {
-          console.warn('[body-metrics] plan generation error (tasks remain pending):', schedErr?.message);
-          try {
-            const { data: fallbackTask } = await supabaseServer.from('ai_tasks').select('id, user_id, agent_slug, task_type, payload').eq('user_id', payload.user_id).eq('agent_slug', 'trainer').eq('task_type', 'initial_plan').eq('status', 'pending').order('created_at', { ascending: false }).limit(1).maybeSingle();
-            if (fallbackTask?.id) {
-              directExecutionTriggered = true;
-              const exec = await executeAITask(fallbackTask);
-              const hasPlanId = exec?.result?.outcome_type === 'plan_generated' && (exec?.result?.plan_id != null && exec?.result?.plan_id !== '');
-              const effectiveOk = exec?.ok && (hasPlanId || exec?.result?.outcome_type !== 'plan_generated');
-              await supabaseServer.from('ai_tasks').update({
-                status: effectiveOk ? 'completed' : 'failed',
-                result: exec?.result ?? { error: 'Fallback execution after error' },
-                processed_at: new Date().toISOString(),
-                last_error: effectiveOk ? null : null,
-              }).eq('id', fallbackTask.id);
-              if (effectiveOk) {
-                initialPlanTaskStatus = 'completed';
-                planSent = exec?.result?.email_sent === true;
-                initialPlanSummary = exec?.result?.summary ?? null;
-                initialPlanValidationWarning = exec?.result?.validation_warning ?? null;
-              }
-            }
-          } catch (e) {}
-        }
-      };
-
-      await Promise.race([
-        runPlanGeneration(),
-        new Promise((resolve) => setTimeout(() => {
-          planPending = true;
-          console.info('[body-metrics] plan generation timeout – AI bude dokončovat na pozadí (cron)');
-          resolve();
-        }, PLAN_GENERATION_TIMEOUT_MS)),
-      ]);
-    }
-
-    if (planPending) {
-      if (initialPlanTaskStatus === 'completed') planPending = false;
-      else if (initialPlanTaskStatus === 'failed' || initialPlanTaskStatus === 'dlq') planPending = false;
+      // Trigger scheduler – fire-and-forget fetch (Vercel serverless ukončí request po response)
+      const runSchedulerUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '') + '/api/ai/run-scheduler';
+      const cronSecret = process.env.CRON_SECRET || process.env.AI_SCHEDULER_SECRET;
+      if (cronSecret && runSchedulerUrl) {
+        schedulerTriggered = true;
+        fetch(runSchedulerUrl, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${cronSecret}` },
+        }).catch((err) => console.warn('[body-metrics] scheduler trigger fetch failed:', err?.message));
+        console.info('[body-metrics] scheduler triggered (fire-and-forget) – AI generuje plán na pozadí');
+      } else {
+        console.warn('[body-metrics] CRON_SECRET missing – scheduler nebude spuštěn. Cron /api/ai/run-scheduler zpracuje pending tasky.');
+      }
     }
 
     // Uložit tier členství do tabulky memberships (upsert – aktualizovat pokud existuje)
@@ -353,49 +232,18 @@ export default async function handler(req, res) {
       }
     }
 
-    const successMsg = accountCreated
-      ? 'Údaje byly úspěšně uloženy a plán byl odeslán na e-mail. V e-mailu najdeš přihlašovací údaje – s nimi se můžeš přihlásit a vidět svůj profil.'
-      : 'Údaje a plán byly uloženy a odeslány na e-mail. Vytvoření přihlašovacího účtu se nezdařilo – pro přístup do profilu nás kontaktuj na info@bodyandmindon.cz.';
     const pendingMsg = 'Účet je vytvořen. Plán se dokončuje na pozadí – za chvíli přijde e-mail a v profilu uvidíš plán.';
-    const emailFailedPlanReadyMsg = 'Účet je vytvořen a plán je hotový. Přihlas se – plán uvidíš v profilu. E-mail s plánem se nepodařilo odeslat – zkontroluj spam nebo napiš na info@bodyandmindon.cz.';
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '');
-    const failMsg = `Údaje byly uloženy. Plán se nepodařilo dokončit – přihlas se na ${appUrl}, v profilu v sekci Můj plán zkus „Vygenerovat plán“, nebo napiš na info@bodyandmindon.cz.`;
-    let plan_state = 'unknown';
-    if (accountCreated) {
-      if (initialPlanTaskStatus === 'completed') plan_state = 'ready';
-      else if (initialPlanTaskStatus === 'pending' || initialPlanTaskStatus === 'processing') plan_state = 'processing';
-      else if (initialPlanTaskStatus === 'failed' || initialPlanTaskStatus === 'dlq') plan_state = 'failed';
-      else if (initialPlanTaskStatus != null) plan_state = 'processing'; // fallback pro jiný známý status (task může ještě běžet)
-    }
-
-    let message = successMsg;
-    if (!planSent) {
-      if (planPending) message = pendingMsg;
-      else if (initialPlanTaskStatus === 'completed') message = emailFailedPlanReadyMsg;
-      else message = failMsg;
-    }
-
-    const finalResponseReason =
-      initialPlanTaskStatus === 'completed'
-        ? (planSent ? 'plan_ready_email_sent' : 'plan_ready_email_not_sent')
-        : planPending
-          ? 'plan_still_processing'
-          : 'plan_failed';
-
-    const onboardingResult =
-      initialPlanTaskStatus === 'completed'
-        ? 'ai_success'
-        : planPending
-          ? 'processing'
-          : 'failed';
+    // ASYNC-ONLY: vždy processing – plán dokončí scheduler, uživatel nikdy nevidí fail z registrace
+    const plan_state = accountCreated ? 'processing' : 'unknown';
+    const message = accountCreated ? pendingMsg : 'Údaje byly uloženy. Vytvoření přihlašovacího účtu se nezdařilo – pro přístup do profilu nás kontaktuj na info@bodyandmindon.cz.';
+    const finalResponseReason = 'plan_still_processing';
+    const onboardingResult = 'processing';
 
     let initialPlanTaskId = null;
     let initialPlanTaskCreatedAt = null;
     let initialPlanTaskCompletedAt = null;
     let savedPlanId = null;
     let generationSource = null;
-
-    let rootFailureStage = null;
     let trainerResult = null;
     if (payload.user_id) {
       const { data: taskRow } = await supabaseServer
@@ -413,29 +261,9 @@ export default async function handler(req, res) {
         initialPlanTaskCompletedAt = taskRow.processed_at ?? null;
         generationSource = taskRow.result?.generation_source ?? taskRow.result?.final_publish_source ?? null;
         trainerResult = taskRow.result;
-        if (initialPlanTaskStatus !== 'completed') {
-          if (taskRow.last_error?.includes('429') || taskRow.last_error?.includes('quota')) rootFailureStage = 'openai_quota';
-          else if (taskRow.last_error?.includes('body_metrics') || taskRow.last_error?.includes('No body_metrics')) rootFailureStage = 'body_metrics_missing';
-          else if (taskRow.status === 'dlq') rootFailureStage = 'trainer_dlq';
-          else if (taskRow.status === 'failed') rootFailureStage = 'trainer_failed';
-          else if (taskRow.last_error?.includes('fallback') || taskRow.last_error?.includes('AI-first')) rootFailureStage = 'fallback_not_publishable';
-          else rootFailureStage = 'trainer_' + (taskRow.status || 'unknown');
-        } else rootFailureStage = 'ai_success';
-      }
-      if (!savedPlanId && plan_state === 'ready') {
-        const { data: planRow } = await supabaseServer
-          .from('ai_generated_plans')
-          .select('id')
-          .eq('user_id', payload.user_id)
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        savedPlanId = planRow?.id ?? null;
       }
     }
-
-    const savedPlanExists = !!savedPlanId;
+    const savedPlanExists = false; // ASYNC-ONLY: plán ještě neexistuje v okamžiku odpovědi
 
     if (payload.user_id) {
       writeOnboardingEvent({
@@ -447,23 +275,23 @@ export default async function handler(req, res) {
         initialPlanTaskCreatedAt,
         initialPlanTaskCompletedAt,
         onboardingResult,
-        finalPublishSource: generationSource ?? 'ai',
+        finalPublishSource: generationSource ?? null,
         generationSource,
         lastResortRan: false,
         lastResortFailed: false,
         savedPlanId,
         savedPlanExists,
         planState: plan_state,
-        planSent,
-        planPending: planPending || false,
+        planSent: false,
+        planPending: true,
         finalResponseReason,
       }).catch((err) => console.warn('[body-metrics] writeOnboardingEvent failed:', err?.message));
     }
 
     const response = {
       ok: true,
-      planSent,
-      planPending: planPending || false,
+      planSent: false,
+      planPending: true,
       plan_state,
       loginUnavailable: !accountCreated,
       message,
@@ -472,40 +300,33 @@ export default async function handler(req, res) {
       response.hasUserId = true;
       response.schedulerTriggered = schedulerTriggered;
       response.initialPlanTaskStatus = initialPlanTaskStatus;
-      response.initialPlanSummary = initialPlanSummary;
+      response.initialPlanSummary = initialPlanSummary ?? undefined;
       response.initialPlanValidationWarning = initialPlanValidationWarning ?? undefined;
-      response.directExecutionTriggered = directExecutionTriggered;
-      response.planSent = planSent;
       response._diagnostics = {
         task_created: accountCreated,
-        direct_execution_triggered: directExecutionTriggered,
+        async_only: true,
         scheduler_triggered: schedulerTriggered,
         initial_plan_task_status: initialPlanTaskStatus ?? undefined,
         initial_plan_task_id: initialPlanTaskId ?? undefined,
         initial_plan_task_created_at: initialPlanTaskCreatedAt ?? undefined,
         initial_plan_task_completed_at: initialPlanTaskCompletedAt ?? undefined,
         plan_state,
-        plan_sent: planSent,
-        plan_pending: planPending || false,
-        last_resort_ran: undefined,
-        last_resort_plan_id: undefined,
-        last_resort_failed: undefined,
+        plan_sent: false,
+        plan_pending: true,
         final_response_reason: finalResponseReason,
         onboarding_result: onboardingResult,
         saved_plan_id: savedPlanId ?? undefined,
         saved_plan_exists: savedPlanExists ?? undefined,
         generation_source: generationSource ?? undefined,
-        root_failure_stage: rootFailureStage ?? undefined,
         trainer_task_created: !!initialPlanTaskId,
-        trainer_task_completed: initialPlanTaskStatus === 'completed',
-        trainer_task_failed: initialPlanTaskStatus === 'failed',
-        trainer_task_dlq: initialPlanTaskStatus === 'dlq',
+        trainer_task_completed: false,
+        trainer_task_failed: false,
+        trainer_task_dlq: false,
         trainer_generation_source: trainerResult?.generation_source ?? trainerResult?.final_publish_source ?? undefined,
         trainer_output_exists: !!(trainerResult?.plan_id),
         fallback_used: undefined,
-        fallback_persisted: undefined,
-        email_sent: planSent,
-        plan_saved: savedPlanExists,
+        email_sent: false,
+        plan_saved: false,
         plan_saved_id: savedPlanId ?? undefined,
       };
     } else {

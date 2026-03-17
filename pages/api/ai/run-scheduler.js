@@ -11,9 +11,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const secret = process.env.CRON_SECRET;
+  const secret = process.env.CRON_SECRET || process.env.AI_SCHEDULER_SECRET;
   if (!secret) {
-    return res.status(500).json({ error: 'CRON_SECRET is not configured' });
+    return res.status(500).json({ error: 'CRON_SECRET or AI_SCHEDULER_SECRET is not configured' });
   }
   const authHeader = req.headers.authorization || '';
   const bearer = `Bearer ${secret}`;

@@ -37,6 +37,7 @@ export default function ChciVipPage() {
   });
 
   const [status, setStatus] = useState("");
+  const [planFailedWithAccount, setPlanFailedWithAccount] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [selectedHabits, setSelectedHabits] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,18 +87,23 @@ export default function ChciVipPage() {
   }), [formData.goal, formData.stress, formData.activity, formData.dietary_restrictions, formData.notes]);
 
   const handleNext = () => {
+    setStatus("");
+    setPlanFailedWithAccount(false);
     if (step === 2) {
       const step2Errors = getStep2Errors();
       if (Object.keys(step2Errors).length > 0) {
         setFieldErrors((prev) => ({ ...prev, ...step2Errors }));
-        setStatus("");
         return;
       }
     }
     if (step === 4 && selectedHabits.length === 0 && suggestedHabits.length > 0) setSelectedHabits(suggestedHabits);
     if (step < MAX_STEP) setStep((s) => s + 1);
   };
-  const handleBack = () => { if (step > 1) setStep((s) => s - 1); };
+  const handleBack = () => {
+    setStatus("");
+    setPlanFailedWithAccount(false);
+    if (step > 1) setStep((s) => s - 1);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -140,6 +146,7 @@ export default function ChciVipPage() {
       if (res.ok) {
         if (result.planSent || result.planPending) {
           setStatus("✅ " + (result.message || "Účet je vytvořen. Přesměrování na přihlášení…"));
+          setPlanFailedWithAccount(false);
           setTimeout(() => {
             router.push(`/login?registered=1&email=${encodeURIComponent(cleanedData.email || '')}`);
           }, 1500);
@@ -147,10 +154,7 @@ export default function ChciVipPage() {
         }
         setIsSubmitting(false);
         setStatus("⚠️ " + (result.message || "Údaje uloženy, ale e-mail s plánem se nepodařilo odeslat. Zkontroluj spam nebo napiš na info@bodyandmindon.cz."));
-        setIsSubmitting(false);
-        setFormData({ name: "", email: "", password: "", passwordConfirm: "", gender: "", age: "", height: "", weight: "", activity: "", stress: "", worktype: "", goal: "", frequency: "", workout_days: [], diet_type: "", dietary_restrictions: "", foods_to_avoid: "", notes: "", program: "VIP" });
-        setSelectedHabits([]);
-        setStep(1);
+        setPlanFailedWithAccount(true);
       } else {
         setIsSubmitting(false);
         const nextError = result.error || result.message || "Nepodařilo se odeslat.";
@@ -416,6 +420,13 @@ export default function ChciVipPage() {
           </div>
 
           {status && <p className="center mt-4 text-lg text-gray-300">{status}</p>}
+          {planFailedWithAccount && formData.email && (
+            <p className="center mt-3">
+              <a href={`/login?redirect=/profil&email=${encodeURIComponent(formData.email)}`} className="btn-submit inline-block">
+                Přihlásit se a vygenerovat plán
+              </a>
+            </p>
+          )}
         </form>
       </main>
       <Footer />

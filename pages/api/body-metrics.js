@@ -400,10 +400,14 @@ export default async function handler(req, res) {
       ]);
     }
 
-    // Last-resort: pokud plán stále není hotový, uložit deterministický fallback + odeslat e-mail – uživatel vždy dostane plán v profilu i do e-mailu
+    // Last-resort: pokud plán stále není hotový, uložit deterministický fallback – uživatel VŽDY dostane plán v profilu; e-mail jen když máme adresu
+    let lastResortRan = false;
+    let lastResortPlanId = null;
     if (payload.user_id && initialPlanTaskStatus !== 'completed') {
       const fallbackResult = await persistFallbackPlanForUser(payload.user_id);
-      if (fallbackResult?.plan_id && fallbackResult?.bm?.email) {
+      if (fallbackResult?.plan_id) {
+        lastResortRan = true;
+        lastResortPlanId = fallbackResult.plan_id;
         const { data: initialTask } = await supabaseServer
           .from('ai_tasks')
           .select('id')
@@ -421,21 +425,23 @@ export default async function handler(req, res) {
             last_error: null,
           }).eq('id', initialTask.id);
         }
-        const sendResult = await sendPlanEmail(fallbackResult.bm.email, fallbackResult.planHtml, {
-          loginPassword: emailOptions.loginPassword ?? null,
-          loginUrl: emailOptions.loginUrl ?? null,
-          existingAccount: emailOptions.existingAccount === true,
-          loginUnavailable: emailOptions.loginUnavailable === true,
-          userChosePassword: emailOptions.userChosePassword === true,
-        });
-        planSent = sendResult?.ok === true;
         initialPlanTaskStatus = 'completed';
-        if (planSent && initialTask?.id) {
-          await supabaseServer.from('ai_tasks').update({
-            result: { outcome_type: 'plan_generated', plan_id: fallbackResult.plan_id, email_sent: true, summary: 'deterministic_fallback_after_failure' },
-          }).eq('id', initialTask.id);
+        if (fallbackResult?.bm?.email) {
+          const sendResult = await sendPlanEmail(fallbackResult.bm.email, fallbackResult.planHtml, {
+            loginPassword: emailOptions.loginPassword ?? null,
+            loginUrl: emailOptions.loginUrl ?? null,
+            existingAccount: emailOptions.existingAccount === true,
+            loginUnavailable: emailOptions.loginUnavailable === true,
+            userChosePassword: emailOptions.userChosePassword === true,
+          });
+          planSent = sendResult?.ok === true;
+          if (planSent && initialTask?.id) {
+            await supabaseServer.from('ai_tasks').update({
+              result: { outcome_type: 'plan_generated', plan_id: fallbackResult.plan_id, email_sent: true, summary: 'deterministic_fallback_after_failure' },
+            }).eq('id', initialTask.id);
+          }
         }
-        console.info('[body-metrics] last-resort fallback: plan persisted, email_sent=', planSent, 'user_id=', payload.user_id);
+        console.info('[body-metrics] last-resort fallback: plan persisted', { plan_id: fallbackResult.plan_id, email_sent: planSent, user_id: payload.user_id });
       }
     }
 
@@ -517,6 +523,17 @@ export default async function handler(req, res) {
       response.initialPlanValidationWarning = initialPlanValidationWarning ?? undefined;
       response.directExecutionTriggered = directExecutionTriggered;
       response.planSent = planSent;
+      response._diagnostics = {
+        task_created: accountCreated,
+        direct_execution_triggered: directExecutionTriggered,
+        scheduler_triggered: schedulerTriggered,
+        initial_plan_task_status: initialPlanTaskStatus ?? undefined,
+        plan_state,
+        plan_sent: planSent,
+        plan_pending: planPending || false,
+        last_resort_ran: lastResortRan || undefined,
+        last_resort_plan_id: lastResortPlanId ?? undefined,
+      };
     } else {
       response.hasUserId = false;
     }

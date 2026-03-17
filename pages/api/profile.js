@@ -98,9 +98,11 @@ export default async function handler(req, res) {
     let recovery_task_created = false;
     let recovery_reason = undefined;
 
+    let recovery_attempted = false;
     if (!initialPlanTaskExists && !bodyMetrics.length) {
       recovery_reason = 'no_body_metrics_skip_recovery';
     } else if (!initialPlanTaskExists && bodyMetrics.length > 0) {
+      recovery_attempted = true;
       const planValidationEarly = validatePublishedPlanHtml(
         (plansData.find((p) => p.plan_html && typeof p.plan_html === 'string')?.plan_html) ?? ''
       );
@@ -292,8 +294,10 @@ export default async function handler(req, res) {
       _diagnostics: {
         body_metrics_exists: body_metrics_exists ?? undefined,
         body_metrics_count: body_metrics_count ?? undefined,
+        recovery_attempted: recovery_attempted || undefined,
         recovery_task_created: recovery_task_created || undefined,
         recovery_reason: recovery_reason ?? undefined,
+        recovery_task_triggered: recovery_task_created || undefined,
         plans_count: plansData.length,
         has_active_plan: hasActivePlan,
         has_valid_plan: hasValidPlan,

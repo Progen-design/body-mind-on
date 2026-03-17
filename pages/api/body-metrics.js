@@ -383,7 +383,8 @@ export default async function handler(req, res) {
       : 'Údaje a plán byly uloženy a odeslány na e-mail. Vytvoření přihlašovacího účtu se nezdařilo – pro přístup do profilu nás kontaktuj na info@bodyandmindon.cz.';
     const pendingMsg = 'Účet je vytvořen. Plán se dokončuje na pozadí – za chvíli přijde e-mail a v profilu uvidíš plán.';
     const emailFailedPlanReadyMsg = 'Účet je vytvořen a plán je hotový. Přihlas se – plán uvidíš v profilu. E-mail s plánem se nepodařilo odeslat – zkontroluj spam nebo napiš na info@bodyandmindon.cz.';
-    const failMsg = 'Údaje byly uloženy. Plán se nepodařilo dokončit – přihlas se a v profilu zkus „Vygenerovat plán“, nebo napiš na info@bodyandmindon.cz.';
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '');
+    const failMsg = `Údaje byly uloženy. Plán se nepodařilo dokončit – přihlas se na ${appUrl}, v profilu v sekci Můj plán zkus „Vygenerovat plán“, nebo napiš na info@bodyandmindon.cz.`;
     let plan_state = 'unknown';
     if (accountCreated) {
       if (initialPlanTaskStatus === 'completed') plan_state = 'ready';

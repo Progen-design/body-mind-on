@@ -13,7 +13,8 @@ import {
 import { createAuthUserIfNew } from '../../lib/authHelpers';
 import { createInitialAITasks } from '../../lib/createInitialAITasks';
 import { runAIScheduler } from '../../lib/aiScheduler';
-import { executeAITask } from '../../lib/taskExecutors';
+import { executeAITask, persistPublishableFallbackPlanForUser } from '../../lib/taskExecutors';
+import { sendPlanEmail } from '../../lib/mail';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getWeeklySessions } from '../../lib/preferenceConstants';
 import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
@@ -412,13 +413,88 @@ export default async function handler(req, res) {
         email_sent: planSent,
         plan_saved: savedPlanExists,
         plan_saved_id: savedPlanId ?? undefined,
+        last_resort_ran: false,
+        last_resort_failed: false,
       };
     } else {
       response.hasUserId = false;
     }
 
-    // Registrace NESMÍ být dokončena bez plánu – při selhání vracíme 503
+    // Last-resort: když AI selhalo, uložíme deterministický plán – uživatel vždy dostane plán
+    let lastResortRan = false;
+    let lastResortFailed = false;
     if (accountCreated && initialPlanTaskStatus !== 'completed') {
+      try {
+        let fallbackResult = await persistPublishableFallbackPlanForUser(payload.user_id);
+        if (!fallbackResult?.plan_id) {
+          fallbackResult = await persistPublishableFallbackPlanForUser(payload.user_id);
+        }
+        if (fallbackResult?.plan_id) {
+          lastResortRan = true;
+          plan_state = 'ready';
+          savedPlanId = fallbackResult.plan_id;
+          savedPlanExists = true;
+          let fallbackPlanSent = false;
+          if (fallbackResult.bm?.email && fallbackResult.planHtml) {
+            try {
+              const sendRes = await sendPlanEmail(fallbackResult.bm.email, fallbackResult.planHtml, {
+                loginPassword,
+                loginUrl,
+                existingAccount,
+                loginUnavailable: payload.user_id == null,
+                userChosePassword,
+              });
+              fallbackPlanSent = !!sendRes?.messageId;
+            } catch (mailErr) {
+              console.warn('[body-metrics] last-resort sendPlanEmail failed:', mailErr?.message);
+            }
+          }
+          planSent = fallbackPlanSent;
+          message = fallbackPlanSent ? successMsg : emailFailedPlanReadyMsg;
+          if (response._diagnostics) {
+            response._diagnostics.last_resort_ran = true;
+            response._diagnostics.last_resort_plan_id = fallbackResult.plan_id;
+            response._diagnostics.plan_state = 'ready';
+            response._diagnostics.saved_plan_exists = true;
+            response._diagnostics.saved_plan_id = fallbackResult.plan_id;
+            response._diagnostics.plan_sent = planSent;
+          }
+          response.ok = true;
+          response.plan_state = 'ready';
+          response.planSent = planSent;
+          response.planPending = false;
+          response.message = message;
+          writeOnboardingEvent({
+            userId: payload.user_id,
+            bodyMetricsId,
+            registrationStartedAt,
+            registrationCompletedAt: new Date().toISOString(),
+            initialPlanTaskId,
+            initialPlanTaskCreatedAt,
+            initialPlanTaskCompletedAt,
+            onboardingResult: 'fallback_success',
+            finalPublishSource: 'registration_deterministic_plan',
+            generationSource: 'registration_deterministic_plan',
+            lastResortRan: true,
+            lastResortFailed: false,
+            savedPlanId: fallbackResult.plan_id,
+            savedPlanExists: true,
+            planState: 'ready',
+            planSent: fallbackPlanSent,
+            planPending: false,
+            finalResponseReason: 'plan_ready_fallback',
+          }).catch((err) => console.warn('[body-metrics] writeOnboardingEvent failed:', err?.message));
+          return res.status(200).json(response);
+        }
+        lastResortFailed = true;
+      } catch (lrErr) {
+        console.warn('[body-metrics] last-resort failed:', lrErr?.message);
+        lastResortFailed = true;
+      }
+      if (response._diagnostics) {
+        response._diagnostics.last_resort_ran = lastResortRan;
+        response._diagnostics.last_resort_failed = lastResortFailed;
+      }
       return res.status(503).json({
         ok: false,
         error: message,

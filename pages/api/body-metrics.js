@@ -176,16 +176,36 @@ export default async function handler(req, res) {
         .maybeSingle();
       initialPlanTaskStatus = taskRow?.status ?? 'pending';
 
-      // Trigger scheduler – fire-and-forget fetch (Vercel serverless ukončí request po response)
+      // Trigger scheduler – AWAIT s timeoutem (Vercel serverless zamrzne po response;
+      // fire-and-forget fetch NENÍ garantován – request může být nikdy neodeslán)
       const runSchedulerUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '') + '/api/ai/run-scheduler';
       const cronSecret = process.env.CRON_SECRET || process.env.AI_SCHEDULER_SECRET;
       if (cronSecret && runSchedulerUrl) {
         schedulerTriggered = true;
-        fetch(runSchedulerUrl, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${cronSecret}` },
-        }).catch((err) => console.warn('[body-metrics] scheduler trigger fetch failed:', err?.message));
-        console.info('[body-metrics] scheduler triggered (fire-and-forget) – AI generuje plán na pozadí');
+        const SCHEDULER_TRIGGER_TIMEOUT_MS = 2500; // 2.5 s – stačí na odeslání requestu; run-scheduler běží v samostatné invokaci
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), SCHEDULER_TRIGGER_TIMEOUT_MS);
+        try {
+          const triggerRes = await fetch(runSchedulerUrl, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${cronSecret}` },
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+          if (triggerRes.ok) {
+            console.info('[body-metrics] scheduler triggered ok', { status: triggerRes.status });
+          } else {
+            console.warn('[body-metrics] scheduler trigger non-ok', { status: triggerRes.status, url: runSchedulerUrl });
+          }
+        } catch (triggerErr) {
+          clearTimeout(timeoutId);
+          const isAbort = triggerErr?.name === 'AbortError' || /aborted|abort/i.test(triggerErr?.message || '');
+          if (isAbort) {
+            console.info('[body-metrics] scheduler trigger sent (timeout – run-scheduler běží na pozadí)');
+          } else {
+            console.warn('[body-metrics] scheduler trigger fetch failed:', triggerErr?.message);
+          }
+        }
       } else {
         console.warn('[body-metrics] CRON_SECRET missing – scheduler nebude spuštěn. Cron /api/ai/run-scheduler zpracuje pending tasky.');
       }

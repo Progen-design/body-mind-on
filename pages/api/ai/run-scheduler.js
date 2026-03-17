@@ -28,6 +28,7 @@ export default async function handler(req, res) {
     const events = await processAIEvents();
     const decisions = await runAIDecisionEngine();
     const run = await runAIScheduler();
+    console.info('[run-scheduler] completed', { gen: gen?.created, events, decisions, run });
     return res.status(200).json({
       ok: true,
       generated: gen.created,

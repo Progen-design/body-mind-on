@@ -423,11 +423,14 @@ export default async function handler(req, res) {
     // Last-resort: když AI selhalo, uložíme deterministický plán – uživatel vždy dostane plán
     let lastResortRan = false;
     let lastResortFailed = false;
+    let lastResortError = null;
     if (accountCreated && initialPlanTaskStatus !== 'completed') {
       try {
         let fallbackResult = await persistPublishableFallbackPlanForUser(payload.user_id);
+        lastResortError = fallbackResult?.plan_id ? null : (fallbackResult?.error ?? null);
         if (!fallbackResult?.plan_id) {
           fallbackResult = await persistPublishableFallbackPlanForUser(payload.user_id);
+          if (!lastResortError && !fallbackResult?.plan_id) lastResortError = fallbackResult?.error ?? null;
         }
         if (fallbackResult?.plan_id) {
           lastResortRan = true;
@@ -490,10 +493,14 @@ export default async function handler(req, res) {
       } catch (lrErr) {
         console.warn('[body-metrics] last-resort failed:', lrErr?.message);
         lastResortFailed = true;
+        lastResortError = lrErr?.message ?? 'exception';
       }
       if (response._diagnostics) {
         response._diagnostics.last_resort_ran = lastResortRan;
         response._diagnostics.last_resort_failed = lastResortFailed;
+        if (lastResortFailed && lastResortError) {
+          response._diagnostics.last_resort_error = lastResortError;
+        }
       }
       return res.status(503).json({
         ok: false,

@@ -79,12 +79,33 @@ function norm(s) {
   return s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
 }
 
+/** Pořadí dnů odpovídající getDay(): 0=Neděle, 1=Pondělí, …, 6=Sobota */
+const CZECH_DAYS_BY_DOW = ['Neděle', 'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota'];
+
 /** Připočte dny k datu (YYYY-MM-DD), vrátí ISO. */
 function addDaysToDateStr(dateStr, days) {
   if (!dateStr) return '';
   const d = new Date(dateStr + 'T12:00:00');
   d.setDate(d.getDate() + days);
   return d.toISOString().split('T')[0];
+}
+
+/** Pro dané datum vrátí očekávaný název dne v češtině. */
+function getExpectedDayName(dateIso) {
+  if (!dateIso) return '';
+  const dow = new Date(dateIso + 'T12:00:00').getDay();
+  return CZECH_DAYS_BY_DOW[dow] || '';
+}
+
+/** Vybere den z pole days, který odpovídá dateIso. Fallback pro plány s nesprávným pořadím dnů. */
+function findDayForDate(days, dateIso, origIdx) {
+  const expected = getExpectedDayName(dateIso);
+  if (!expected || !days.length) return days[origIdx] || days[0];
+  const byIndex = days[origIdx];
+  const nameMatch = (d) => (d?.dayName || '').toLowerCase().includes(expected.toLowerCase());
+  if (byIndex && nameMatch(byIndex)) return byIndex;
+  const found = days.find(nameMatch);
+  return found || byIndex || days[0];
 }
 
 /** Formát data pro zobrazení u dne (např. "27. 2."). */
@@ -730,17 +751,24 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
       .trim();
   };
 
+  const recipeErrorHtml = (msg) => `<p class="plan-no-recipe-msg">${String(msg || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')}</p>`;
+
   const getSpoonacularRecipe = (recipeId) => {
     if (!recipeId || !Number.isInteger(Number(recipeId))) return Promise.resolve(null);
     const key = `spoonacular:${recipeId}`;
     const cached = recipeCacheRef.current.get(key);
     if (cached && cached.html != null && Date.now() - (cached.at || 0) < 5 * 60 * 1000) return Promise.resolve(cached.html);
     return fetch('/api/spoonacular-recipe?id=' + encodeURIComponent(String(recipeId)))
-      .then((res) => res.json())
-      .then((data) => {
-        const html = data.ok && data.html ? data.html : null;
-        recipeCacheRef.current.set(key, { html, at: Date.now() });
-        return html;
+      .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+      .then(({ ok, data }) => {
+        const html = ok && data?.ok && data?.html ? data.html : null;
+        const errMsg = !html && data?.error ? data.error : null;
+        const result = html || (errMsg ? recipeErrorHtml(errMsg) : null);
+        recipeCacheRef.current.set(key, { html: result, at: Date.now() });
+        return result;
       })
       .catch(() => null);
   };
@@ -753,11 +781,13 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
     let url = '/api/recipe?dish=' + encodeURIComponent((dishName || '').trim().slice(0, 150));
     if (avoid && typeof avoid === 'string' && avoid.trim()) url += '&avoid=' + encodeURIComponent(avoid.trim().slice(0, 300));
     return fetch(url)
-      .then((res) => res.json())
-      .then((data) => {
-        const html = data.ok && data.html ? data.html : null;
-        recipeCacheRef.current.set(key, { html, at: Date.now() });
-        return html;
+      .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+      .then(({ ok, data }) => {
+        const html = ok && data?.ok && data?.html ? data.html : null;
+        const errMsg = !html && data?.error ? data.error : null;
+        const result = html || (errMsg ? recipeErrorHtml(errMsg) : null);
+        recipeCacheRef.current.set(key, { html: result, at: Date.now() });
+        return result;
       })
       .catch(() => null);
   };
@@ -931,16 +961,20 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
     const diffDays = Math.round((now - start) / 86400000);
     const dayIndex = Math.max(0, Math.min(days.length - 1, diffDays));
     const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    return days.slice(dayIndex).map((day, i) => {
+    const sliceCount = Math.min(days.length - dayIndex, 7);
+    const result = [];
+    for (let i = 0; i < sliceCount; i++) {
       const origIdx = dayIndex + i;
       const dateIso = addDaysToDateStr(plan.valid_from, origIdx);
-      return {
+      const day = findDayForDate(days, dateIso, origIdx);
+      result.push({
         ...day,
         dateStr: formatDayLabel(dateIso),
         isToday: dateIso === todayIso && !isFuturePlan,
         originalIndex: origIdx,
-      };
-    });
+      });
+    }
+    return result;
   })();
 
   return (
@@ -1044,8 +1078,10 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                   btn.disabled = true;
                   try {
                     // PDF should always contain full weekly plan, not only days from "today".
-                    const exportDays = (parsed?.days || []).map((day, idx) => {
+                    const allDays = parsed?.days || [];
+                    const exportDays = allDays.map((_, idx) => {
                       const dateIso = plan?.valid_from ? addDaysToDateStr(plan.valid_from, idx) : '';
+                      const day = findDayForDate(allDays, dateIso, idx);
                       return {
                         ...day,
                         originalIndex: idx,
@@ -1150,6 +1186,8 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                         const dishTitle = (meal.text || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
                         const modalTitle = (meal.type && dishTitle) ? `${meal.type}: ${dishTitle}` : dishTitle || meal.type || mealFullText || 'Jídlo';
                         const openRecipe = (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
                           if (override?.content) {
                             const button = e?.currentTarget;
                             const rect = button?.getBoundingClientRect?.();
@@ -1171,12 +1209,18 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                           const dishName = (mealFullText.replace(/\s*\([^)]*\)\s*$/g, '').trim() || meal.type || 'Jídlo').slice(0, 150);
                           setRecipeModal({ openId: thisOpenId, title: modalTitle, content: null, anchorRect, hasRecipe: false, loading: true });
                           const recipeId = mealTrust?.recipe_id;
-                          const loadRecipe = recipeId
-                            ? () => getSpoonacularRecipe(recipeId).then((h) => h || getRecipeForDish(dishName))
-                            : () => getRecipeForDish(dishName);
+                          const loadRecipe = async () => {
+                            if (recipeId) {
+                              const spoon = await getSpoonacularRecipe(recipeId);
+                              if (spoon) return spoon;
+                            }
+                            return getRecipeForDish(dishName);
+                          };
                           loadRecipe().then((html) => {
                             const fallback = '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení nebo zkus znovu.</p>';
                             setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: html || fallback, loading: false } : prev));
+                          }).catch(() => {
+                            setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení nebo zkus znovu.</p>', loading: false } : prev));
                           });
                         };
                         const handleSwap = () => {

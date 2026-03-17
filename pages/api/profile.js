@@ -352,6 +352,8 @@ export default async function handler(req, res) {
         saved_plan_is_active: !!activePlan?.is_active,
         rendered_plan_exists: rendered_plan_exists ?? undefined,
         plan_state_reason: plan_state_reason || undefined,
+        last_resort_inferred: initialPlanResult?.summary === 'deterministic_fallback_after_failure' || undefined,
+        last_resort_plan_id: initialPlanResult?.summary === 'deterministic_fallback_after_failure' ? (initialPlanResult?.plan_id ?? activePlan?.id) : undefined,
         self_heal_applied: selfHealApplied || undefined,
       },
       weight_history: weightHistory,

@@ -404,7 +404,11 @@ export default async function handler(req, res) {
     let lastResortRan = false;
     let lastResortPlanId = null;
     if (payload.user_id && initialPlanTaskStatus !== 'completed') {
-      const fallbackResult = await persistFallbackPlanForUser(payload.user_id);
+      let fallbackResult = await persistFallbackPlanForUser(payload.user_id);
+      if (!fallbackResult?.plan_id) {
+        console.warn('[body-metrics] last-resort persist failed, retry (1x)');
+        fallbackResult = await persistFallbackPlanForUser(payload.user_id);
+      }
       if (fallbackResult?.plan_id) {
         lastResortRan = true;
         lastResortPlanId = fallbackResult.plan_id;

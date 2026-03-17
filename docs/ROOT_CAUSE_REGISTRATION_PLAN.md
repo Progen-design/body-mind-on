@@ -47,9 +47,10 @@
 
 - **pages/api/body-metrics.js**
   - Last-resort: ukládá plán a označí task za `completed` vždy, když `fallbackResult?.plan_id` (e-mail se posílá jen pokud je `fallbackResult.bm?.email`).
+  - Při selhání `persistFallbackPlanForUser` se zavolá **1× retry** před tím, než se last-resort vzdá.
   - Přidaná odpověď `_diagnostics`: `task_created`, `direct_execution_triggered`, `scheduler_triggered`, `initial_plan_task_status`, `plan_state`, `plan_sent`, `plan_pending`, `last_resort_ran`, `last_resort_plan_id`.
 - **pages/api/profile.js**
-  - V diagnostice přidáno: `recovery_attempted`, `recovery_task_triggered` (pro self-healing při chybějícím tasku).
+  - V diagnostice přidáno: `recovery_attempted`, `recovery_task_triggered`, `last_resort_inferred`, `last_resort_plan_id` (odvozeno z task result / active plan).
 - **vercel.json** (již dříve)
   - `maxDuration: 120` pro `body-metrics`.
 - **pages/api/body-metrics.js** (již dříve)

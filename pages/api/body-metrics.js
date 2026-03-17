@@ -200,9 +200,10 @@ export default async function handler(req, res) {
       };
 
       if (taskRow?.id && taskRow?.status === 'pending') {
-        console.info('[body-metrics] executing trainer/initial_plan – čekáme na plán');
+        console.info('[body-metrics] executing trainer/initial_plan', { task_id: taskRow.id });
         try {
           const ok = await runDirectExecute();
+          console.info('[body-metrics] runDirectExecute result', { ok, initialPlanTaskStatus });
           if (!ok) {
             const sched = await runAIScheduler();
             console.info('[body-metrics] scheduler ran (trainer retry + coach)', sched);
@@ -221,9 +222,9 @@ export default async function handler(req, res) {
           const schedAll = await runAIScheduler();
           console.info('[body-metrics] all agents run', schedAll);
         } catch (execErr) {
-          console.warn('[body-metrics] direct execute failed, running scheduler:', execErr?.message);
-          await runAIScheduler().catch(() => {});
-          await runDirectExecute().catch(() => {});
+          console.warn('[body-metrics] direct execute failed', { error: execErr?.message, stack: execErr?.stack?.slice?.(0, 300) });
+          await runAIScheduler().catch((schedErr) => console.warn('[body-metrics] scheduler catch', schedErr?.message));
+          await runDirectExecute().catch((retryErr) => console.warn('[body-metrics] retry direct execute', retryErr?.message));
           await runAIScheduler().catch(() => {});
         }
       }

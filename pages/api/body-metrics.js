@@ -500,8 +500,9 @@ export default async function handler(req, res) {
     let plan_state = 'unknown';
     if (accountCreated) {
       if (initialPlanTaskStatus === 'completed') plan_state = 'ready';
-      else if (initialPlanTaskStatus === 'pending') plan_state = 'processing';
-      else if (initialPlanTaskStatus === 'failed') plan_state = 'failed';
+      else if (initialPlanTaskStatus === 'pending' || initialPlanTaskStatus === 'processing') plan_state = 'processing';
+      else if (initialPlanTaskStatus === 'failed' || initialPlanTaskStatus === 'dlq') plan_state = 'failed';
+      else if (initialPlanTaskStatus != null) plan_state = 'processing'; // fallback pro jiný známý status (task může ještě běžet)
     }
 
     let message = successMsg;

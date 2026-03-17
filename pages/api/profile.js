@@ -40,7 +40,7 @@ export default async function handler(req, res) {
         .limit(50),
       supabaseServer
         .from('ai_generated_plans')
-        .select('id, plan_type, daily_calories, macros, valid_from, valid_until, created_at, plan_html, is_active')
+        .select('id, plan_type, daily_calories, macros, valid_from, valid_until, created_at, plan_html, is_active, generated_by')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(10),
@@ -89,6 +89,9 @@ export default async function handler(req, res) {
 
     const bodyMetrics = (metricsRes.status === 'fulfilled' && metricsRes.value?.data) ? metricsRes.value.data : [];
     let plansData = (plansRes.status === 'fulfilled' && plansRes.value?.data) ? plansRes.value.data : [];
+    // PRAVIDLO AI-FIRST: Plány z fallbacku nesmí být vráceny jako produkční – pouze AI plány.
+    const isPublishablePlan = (p) => !(p.generated_by || '').toLowerCase().includes('fallback');
+    plansData = plansData.filter(isPublishablePlan);
     const initialPlanTaskQueryFailed = initialPlanTaskRes?.status === 'rejected';
     let initialPlanTask = (initialPlanTaskRes?.status === 'fulfilled' && initialPlanTaskRes?.value?.data) ? initialPlanTaskRes.value.data : null;
     let initialPlanTaskExists = !!initialPlanTask;

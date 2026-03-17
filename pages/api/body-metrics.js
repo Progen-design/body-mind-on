@@ -14,8 +14,7 @@ import {
 import { createAuthUserIfNew } from '../../lib/authHelpers';
 import { runAIScheduler } from '../../lib/aiScheduler';
 import { createInitialAITasks } from '../../lib/createInitialAITasks';
-import { executeAITask, persistFallbackPlanForUser } from '../../lib/taskExecutors';
-import { sendPlanEmail } from '../../lib/mail';
+import { executeAITask } from '../../lib/taskExecutors';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getWeeklySessions } from '../../lib/preferenceConstants';
 import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
@@ -402,61 +401,14 @@ export default async function handler(req, res) {
       ]);
     }
 
-    // Last-resort: pokud plán stále není hotový, uložit deterministický fallback – uživatel VŽDY dostane plán v profilu; e-mail jen když máme adresu
-    let lastResortRan = false;
-    let lastResortPlanId = null;
-    if (payload.user_id && initialPlanTaskStatus !== 'completed') {
-      let fallbackResult = await persistFallbackPlanForUser(payload.user_id);
-      if (!fallbackResult?.plan_id) {
-        console.warn('[body-metrics] last-resort persist failed, retry (1x)');
-        fallbackResult = await persistFallbackPlanForUser(payload.user_id);
-      }
-      if (fallbackResult?.plan_id) {
-        lastResortRan = true;
-        lastResortPlanId = fallbackResult.plan_id;
-        const { data: initialTask } = await supabaseServer
-          .from('ai_tasks')
-          .select('id')
-          .eq('user_id', payload.user_id)
-          .eq('agent_slug', 'trainer')
-          .eq('task_type', 'initial_plan')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (initialTask?.id) {
-          await supabaseServer.from('ai_tasks').update({
-            status: 'completed',
-            result: { outcome_type: 'plan_generated', plan_id: fallbackResult.plan_id, email_sent: false, summary: 'deterministic_fallback_after_failure' },
-            processed_at: new Date().toISOString(),
-            last_error: null,
-          }).eq('id', initialTask.id);
-        }
-        initialPlanTaskStatus = 'completed';
-        if (fallbackResult?.bm?.email) {
-          const sendResult = await sendPlanEmail(fallbackResult.bm.email, fallbackResult.planHtml, {
-            loginPassword: emailOptions.loginPassword ?? null,
-            loginUrl: emailOptions.loginUrl ?? null,
-            existingAccount: emailOptions.existingAccount === true,
-            loginUnavailable: emailOptions.loginUnavailable === true,
-            userChosePassword: emailOptions.userChosePassword === true,
-          });
-          planSent = sendResult?.ok === true;
-          if (planSent && initialTask?.id) {
-            await supabaseServer.from('ai_tasks').update({
-              result: { outcome_type: 'plan_generated', plan_id: fallbackResult.plan_id, email_sent: true, summary: 'deterministic_fallback_after_failure' },
-            }).eq('id', initialTask.id);
-          }
-        }
-        console.info('[body-metrics] last-resort fallback: plan persisted', { plan_id: fallbackResult.plan_id, email_sent: planSent, user_id: payload.user_id });
-      }
-    }
+    // PRAVIDLO AI-FIRST: Fallback NENÍ publikován. Plán smí vzniknout pouze z AI asistenta.
+    // Žádný last-resort deterministický plán – task zůstane pending/failed, cron/retry dokončí nebo uživatel zkusí „Vygenerovat plán“ v profilu.
 
-    // P0 HOTFIX: planPending smí být true jen když plán má reálnou šanci se dokončit.
-    // Po timeoutu vždy běží last-resort. Pokud last-resort selže, plán nevznikne a cron nepomůže.
-    const lastResortFailed = payload.user_id && initialPlanTaskStatus !== 'completed' && !lastResortRan;
+    // P0: planPending smí být true jen když plán má reálnou šanci se dokončit (cron/retry).
+    const planWillNotComplete = payload.user_id && initialPlanTaskStatus !== 'completed';
     if (planPending) {
-      if (initialPlanTaskStatus === 'completed') planPending = false; // máme plán (AI nebo last-resort)
-      else if (lastResortFailed) planPending = false; // last-resort selhal – plán nevznikne
+      if (initialPlanTaskStatus === 'completed') planPending = false; // máme AI plán
+      else if (planWillNotComplete) planPending = false; // AI selhala – plán nevznikne, uživatel dostane failMsg
     }
 
     // Uložit tier členství do tabulky memberships (upsert – aktualizovat pokud existuje)
@@ -527,19 +479,17 @@ export default async function handler(req, res) {
         ? (planSent ? 'plan_ready_email_sent' : 'plan_ready_email_not_sent')
         : planPending
           ? 'plan_still_processing'
-          : lastResortFailed
-            ? 'last_resort_failed'
-            : 'plan_failed';
+          : 'plan_failed';
 
     const onboardingResult =
       initialPlanTaskStatus === 'completed'
-        ? (lastResortRan ? 'fallback_success' : 'ai_success')
+        ? 'ai_success'
         : 'failed';
 
     let initialPlanTaskId = null;
     let initialPlanTaskCreatedAt = null;
     let initialPlanTaskCompletedAt = null;
-    let savedPlanId = lastResortPlanId ?? null;
+    let savedPlanId = null;
     let generationSource = null;
 
     let rootFailureStage = null;
@@ -560,15 +510,14 @@ export default async function handler(req, res) {
         initialPlanTaskCompletedAt = taskRow.processed_at ?? null;
         generationSource = taskRow.result?.generation_source ?? taskRow.result?.final_publish_source ?? null;
         trainerResult = taskRow.result;
-        if (!lastResortRan && initialPlanTaskStatus !== 'completed') {
+        if (initialPlanTaskStatus !== 'completed') {
           if (taskRow.last_error?.includes('429') || taskRow.last_error?.includes('quota')) rootFailureStage = 'openai_quota';
           else if (taskRow.last_error?.includes('body_metrics') || taskRow.last_error?.includes('No body_metrics')) rootFailureStage = 'body_metrics_missing';
           else if (taskRow.status === 'dlq') rootFailureStage = 'trainer_dlq';
           else if (taskRow.status === 'failed') rootFailureStage = 'trainer_failed';
-          else if (lastResortFailed) rootFailureStage = 'last_resort_failed';
+          else if (taskRow.last_error?.includes('fallback') || taskRow.last_error?.includes('AI-first')) rootFailureStage = 'fallback_not_publishable';
           else rootFailureStage = 'trainer_' + (taskRow.status || 'unknown');
-        } else if (lastResortRan) rootFailureStage = 'fallback_success';
-        else rootFailureStage = 'ai_success';
+        } else rootFailureStage = 'ai_success';
       }
       if (!savedPlanId && plan_state === 'ready') {
         const { data: planRow } = await supabaseServer
@@ -635,9 +584,9 @@ export default async function handler(req, res) {
         plan_state,
         plan_sent: planSent,
         plan_pending: planPending || false,
-        last_resort_ran: lastResortRan || undefined,
-        last_resort_plan_id: lastResortPlanId ?? undefined,
-        last_resort_failed: lastResortFailed || undefined,
+        last_resort_ran: undefined,
+        last_resort_plan_id: undefined,
+        last_resort_failed: undefined,
         final_response_reason: finalResponseReason,
         onboarding_result: onboardingResult,
         saved_plan_id: savedPlanId ?? undefined,
@@ -649,9 +598,9 @@ export default async function handler(req, res) {
         trainer_task_failed: initialPlanTaskStatus === 'failed',
         trainer_task_dlq: initialPlanTaskStatus === 'dlq',
         trainer_generation_source: trainerResult?.generation_source ?? trainerResult?.final_publish_source ?? undefined,
-        trainer_output_exists: !!(trainerResult?.plan_id || lastResortPlanId),
-        fallback_used: lastResortRan || undefined,
-        fallback_persisted: lastResortRan ? !!lastResortPlanId : undefined,
+        trainer_output_exists: !!(trainerResult?.plan_id),
+        fallback_used: undefined,
+        fallback_persisted: undefined,
         email_sent: planSent,
         plan_saved: savedPlanExists,
         plan_saved_id: savedPlanId ?? undefined,

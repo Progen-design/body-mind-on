@@ -11,12 +11,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchProfile } from '../lib/profileApi';
 
-/** Interval for background refresh (3 min) */
-const BACKGROUND_REFRESH_INTERVAL_MS = 180000;
-
-/** Min tab-hidden duration before visibility-triggered refresh (60 s) */
-const VISIBILITY_REFRESH_THRESHOLD_MS = 60000;
-
 /** When plan is processing (e.g. after registration), poll until plan appears or timeout */
 const PLAN_PROCESSING_POLL_MS = 3000;
 const PLAN_PROCESSING_POLL_MAX = 40; // 40 × 3s = 2 min
@@ -126,41 +120,7 @@ export function useProfileData({
     };
   }, [accessToken, enabled]);
 
-  // Background interval refresh
-  useEffect(() => {
-    if (!accessToken || !enabled || loading) return;
-    const interval = setInterval(async () => {
-      try {
-        let token = accessToken;
-        if (refreshSession) {
-          const fresh = await refreshSession();
-          token = fresh?.access_token ?? accessToken;
-          if (fresh && onSessionRefreshed) onSessionRefreshed(fresh);
-        }
-        if (token) await refetch(token);
-      } catch (_) {}
-    }, BACKGROUND_REFRESH_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [accessToken, enabled, loading, refetch, refreshSession, onSessionRefreshed]);
-
-  // Visibility-triggered refresh (tab return after 60s hidden)
-  useEffect(() => {
-    if (!accessToken || !enabled) return;
-    let hiddenAt = null;
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        hiddenAt = Date.now();
-      } else if (document.visibilityState === 'visible' && hiddenAt != null) {
-        const hiddenDuration = Date.now() - hiddenAt;
-        if (hiddenDuration >= VISIBILITY_REFRESH_THRESHOLD_MS) {
-          refetch(accessToken);
-        }
-        hiddenAt = null;
-      }
-    };
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
-  }, [accessToken, enabled, refetch]);
+  // Žádné automatické obnovování – uživatel obnoví ručně tlačítkem „Obnovit“
 
   // When plan is processing (e.g. right after registration), poll so plan appears as soon as ready
   useEffect(() => {

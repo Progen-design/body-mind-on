@@ -19,8 +19,10 @@ import { sendPlanEmail } from '../../lib/mail';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getWeeklySessions } from '../../lib/preferenceConstants';
 import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
+import { writeOnboardingEvent } from '../../lib/onboardingMetrics';
 
 export default async function handler(req, res) {
+  const registrationStartedAt = new Date().toISOString();
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -529,6 +531,71 @@ export default async function handler(req, res) {
             ? 'last_resort_failed'
             : 'plan_failed';
 
+    const onboardingResult =
+      initialPlanTaskStatus === 'completed'
+        ? (lastResortRan ? 'fallback_success' : 'ai_success')
+        : 'failed';
+
+    let initialPlanTaskId = null;
+    let initialPlanTaskCreatedAt = null;
+    let initialPlanTaskCompletedAt = null;
+    let savedPlanId = lastResortPlanId ?? null;
+    let generationSource = null;
+
+    if (payload.user_id) {
+      const { data: taskRow } = await supabaseServer
+        .from('ai_tasks')
+        .select('id, created_at, processed_at, result')
+        .eq('user_id', payload.user_id)
+        .eq('agent_slug', 'trainer')
+        .eq('task_type', 'initial_plan')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (taskRow) {
+        initialPlanTaskId = taskRow.id;
+        initialPlanTaskCreatedAt = taskRow.created_at ?? null;
+        initialPlanTaskCompletedAt = taskRow.processed_at ?? null;
+        generationSource = taskRow.result?.generation_source ?? taskRow.result?.final_publish_source ?? null;
+      }
+      if (!savedPlanId && plan_state === 'ready') {
+        const { data: planRow } = await supabaseServer
+          .from('ai_generated_plans')
+          .select('id')
+          .eq('user_id', payload.user_id)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        savedPlanId = planRow?.id ?? null;
+      }
+    }
+
+    const savedPlanExists = !!savedPlanId;
+
+    if (payload.user_id) {
+      writeOnboardingEvent({
+        userId: payload.user_id,
+        bodyMetricsId,
+        registrationStartedAt,
+        registrationCompletedAt: new Date().toISOString(),
+        initialPlanTaskId,
+        initialPlanTaskCreatedAt,
+        initialPlanTaskCompletedAt,
+        onboardingResult,
+        finalPublishSource: lastResortRan ? 'deterministic_fallback_after_failure' : (generationSource ?? 'ai'),
+        generationSource,
+        lastResortRan: lastResortRan ?? false,
+        lastResortFailed: lastResortFailed ?? false,
+        savedPlanId,
+        savedPlanExists,
+        planState: plan_state,
+        planSent,
+        planPending: planPending || false,
+        finalResponseReason,
+      }).catch((err) => console.warn('[body-metrics] writeOnboardingEvent failed:', err?.message));
+    }
+
     const response = {
       ok: true,
       planSent,
@@ -550,6 +617,9 @@ export default async function handler(req, res) {
         direct_execution_triggered: directExecutionTriggered,
         scheduler_triggered: schedulerTriggered,
         initial_plan_task_status: initialPlanTaskStatus ?? undefined,
+        initial_plan_task_id: initialPlanTaskId ?? undefined,
+        initial_plan_task_created_at: initialPlanTaskCreatedAt ?? undefined,
+        initial_plan_task_completed_at: initialPlanTaskCompletedAt ?? undefined,
         plan_state,
         plan_sent: planSent,
         plan_pending: planPending || false,
@@ -557,6 +627,10 @@ export default async function handler(req, res) {
         last_resort_plan_id: lastResortPlanId ?? undefined,
         last_resort_failed: lastResortFailed || undefined,
         final_response_reason: finalResponseReason,
+        onboarding_result: onboardingResult,
+        saved_plan_id: savedPlanId ?? undefined,
+        saved_plan_exists: savedPlanExists ?? undefined,
+        generation_source: generationSource ?? undefined,
       };
     } else {
       response.hasUserId = false;

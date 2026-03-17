@@ -354,6 +354,9 @@ export default async function handler(req, res) {
         plan_state_reason: plan_state_reason || undefined,
         last_resort_inferred: initialPlanResult?.summary === 'deterministic_fallback_after_failure' || undefined,
         last_resort_plan_id: initialPlanResult?.summary === 'deterministic_fallback_after_failure' ? (initialPlanResult?.plan_id ?? activePlan?.id) : undefined,
+        onboarding_result: hasValidPlan
+          ? (initialPlanResult?.summary === 'deterministic_fallback_after_failure' ? 'fallback_success' : 'ai_success')
+          : (initialPlanTask?.status === 'failed' || initialPlanTask?.status === 'dlq' ? 'failed' : undefined),
         self_heal_applied: selfHealApplied || undefined,
       },
       weight_history: weightHistory,

@@ -182,6 +182,29 @@ export default async function handler(req, res) {
       if (typeof count === 'number') body_metrics_count = count;
     }
 
+    const onboardingLog = userId
+      ? await supabaseServer
+          .from('ai_logs')
+          .select('id, status, payload, created_at')
+          .eq('user_id', userId)
+          .eq('agent_slug', 'onboarding')
+          .eq('action', 'registration_complete')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : { data: null };
+    const onboarding_audit = onboardingLog.data?.payload
+      ? {
+          onboarding_result: onboardingLog.data.payload.onboarding_result ?? null,
+          plan_state: onboardingLog.data.payload.plan_state ?? null,
+          last_resort_ran: onboardingLog.data.payload.last_resort_ran ?? null,
+          last_resort_failed: onboardingLog.data.payload.last_resort_failed ?? null,
+          saved_plan_exists: onboardingLog.data.payload.saved_plan_exists ?? null,
+          time_to_plan_ready_ms: onboardingLog.data.payload.time_to_plan_ready_ms ?? null,
+          created_at: onboardingLog.data.created_at ?? null,
+        }
+      : null;
+
     return res.status(200).json({
       auth_user_exists: !!authUser,
       user_id: userId,
@@ -202,6 +225,7 @@ export default async function handler(req, res) {
       debug_plan_state,
       debug_plan_state_reason,
       agent_diagnostic: agentDiagnostic,
+      onboarding_audit,
     });
   } catch (err) {
     console.error('[debug/latest-plan-status]', err);

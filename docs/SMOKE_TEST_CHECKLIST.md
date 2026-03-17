@@ -4,6 +4,16 @@
 
 ---
 
+## A0. Onboarding metriky (P1 – po deployi)
+
+- [ ] Nová registrace → v response `_diagnostics.onboarding_result` je `ai_success` nebo `fallback_success` nebo `failed`
+- [ ] `_diagnostics.saved_plan_exists` odpovídá realitě
+- [ ] V `ai_logs` existuje záznam s `agent_slug='onboarding'`, `action='registration_complete'`
+- [ ] Viz `docs/ONBOARDING_RELEASE_CHECKLIST.md` pro detailní checklist
+- [ ] Skript: `node scripts/query-onboarding-metrics.mjs --last 24`
+
+---
+
 ## A. Registrační flow (`/start`, `/on-club`, `/chci-vip`)
 
 ### A1. Formulář a UI

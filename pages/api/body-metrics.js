@@ -191,12 +191,15 @@ export default async function handler(req, res) {
             const { data: directTask } = await supabaseServer.from('ai_tasks').select('id, user_id, agent_slug, task_type, payload').eq('id', taskRow.id).eq('status', 'pending').eq('agent_slug', 'trainer').eq('task_type', 'initial_plan').maybeSingle();
             if (directTask) {
               const exec = await executeAITask(directTask);
+              const hasPlanId = exec?.result?.outcome_type === 'plan_generated' && (exec?.result?.plan_id != null && exec?.result?.plan_id !== '');
+              const effectiveOk = exec?.ok && (hasPlanId || exec?.result?.outcome_type !== 'plan_generated');
               await supabaseServer.from('ai_tasks').update({
-                status: exec?.ok ? 'completed' : 'failed',
+                status: effectiveOk ? 'completed' : 'failed',
                 result: exec?.result ?? { error: 'Direct execution returned no result' },
                 processed_at: new Date().toISOString(),
+                last_error: effectiveOk ? null : (exec?.ok && !hasPlanId ? 'Completed without plan_id' : null),
               }).eq('id', directTask.id);
-              if (exec?.ok) {
+              if (effectiveOk) {
                 initialPlanTaskStatus = 'completed';
                 planSent = exec?.result?.email_sent === true;
                 initialPlanSummary = exec?.result?.summary ?? null;
@@ -235,12 +238,15 @@ export default async function handler(req, res) {
               const { data: directTask } = await supabaseServer.from('ai_tasks').select('id, user_id, agent_slug, task_type, payload').eq('id', taskRow.id).eq('status', 'pending').eq('agent_slug', 'trainer').eq('task_type', 'initial_plan').maybeSingle();
               if (directTask) {
                 const exec = await executeAITask(directTask);
+                const hasPlanId = exec?.result?.outcome_type === 'plan_generated' && (exec?.result?.plan_id != null && exec?.result?.plan_id !== '');
+                const effectiveOk = exec?.ok && (hasPlanId || exec?.result?.outcome_type !== 'plan_generated');
                 await supabaseServer.from('ai_tasks').update({
-                  status: exec?.ok ? 'completed' : 'failed',
+                  status: effectiveOk ? 'completed' : 'failed',
                   result: exec?.result ?? { error: 'Direct execution returned no result' },
                   processed_at: new Date().toISOString(),
+                  last_error: effectiveOk ? null : null,
                 }).eq('id', directTask.id);
-                if (exec?.ok) {
+                if (effectiveOk) {
                   initialPlanTaskStatus = 'completed';
                   planSent = exec?.result?.email_sent === true;
                   initialPlanSummary = exec?.result?.summary ?? null;
@@ -296,15 +302,18 @@ export default async function handler(req, res) {
           if (fallbackTask?.id) {
             directExecutionTriggered = true;
             const exec = await executeAITask(fallbackTask);
+            const hasPlanId = exec?.result?.outcome_type === 'plan_generated' && (exec?.result?.plan_id != null && exec?.result?.plan_id !== '');
+            const effectiveOk = exec?.ok && (hasPlanId || exec?.result?.outcome_type !== 'plan_generated');
             await supabaseServer
               .from('ai_tasks')
               .update({
-                status: exec?.ok ? 'completed' : 'failed',
+                status: effectiveOk ? 'completed' : 'failed',
                 result: exec?.result ?? { error: 'Fallback execution after scheduler error' },
                 processed_at: new Date().toISOString(),
+                last_error: effectiveOk ? null : null,
               })
               .eq('id', fallbackTask.id);
-            if (exec?.ok) {
+            if (effectiveOk) {
               initialPlanTaskStatus = 'completed';
               planSent = exec?.result?.email_sent === true;
               initialPlanSummary = exec?.result?.summary ?? null;

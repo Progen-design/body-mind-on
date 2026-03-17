@@ -77,7 +77,7 @@ export default async function handler(req, res) {
         .limit(5),
       supabaseServer
         .from('ai_tasks')
-        .select('id, status, created_at, processed_at, result, last_error')
+        .select('id, status, created_at, processed_at, result, last_error, attempts')
         .eq('user_id', userId)
         .eq('agent_slug', 'trainer')
         .eq('task_type', 'initial_plan')
@@ -139,6 +139,32 @@ export default async function handler(req, res) {
       plan_state = 'missing';
       plan_state_reason = 'no_task_no_plan';
     }
+
+    // Self-healing: task completed but no valid plan → mark task failed so state is truthful
+    let selfHealApplied = false;
+    if (plan_state === 'invalid' && plan_state_reason === 'task_completed_but_no_valid_plan' && initialPlanTask?.id) {
+      try {
+        const { error: healErr } = await supabaseServer
+          .from('ai_tasks')
+          .update({
+            status: 'failed',
+            result: {
+              ...(typeof initialPlanTask.result === 'object' && initialPlanTask.result !== null ? initialPlanTask.result : {}),
+              self_heal_reason: 'completed_without_valid_plan',
+            },
+            last_error: 'Self-healed: completed without valid plan',
+          })
+          .eq('id', initialPlanTask.id);
+        if (!healErr) {
+          plan_state = 'failed';
+          plan_state_reason = 'task_completed_but_no_valid_plan_self_healed';
+          selfHealApplied = true;
+        }
+      } catch (_) {
+        // non-fatal: response still returns invalid
+      }
+    }
+
     const saved_plan_exists = plansData.some((p) => p.plan_html && typeof p.plan_html === 'string' && p.plan_html.length > 0);
     const rendered_plan_exists = hasValidPlan;
     if (!hasActivePlan && plansData.length > 0) {
@@ -275,12 +301,14 @@ export default async function handler(req, res) {
         initialPlanTaskCreatedAt: initialPlanTask?.created_at ?? undefined,
         initialPlanTaskProcessedAt: initialPlanTask?.processed_at ?? undefined,
         initialPlanTaskLastError: initialPlanTask?.last_error ?? undefined,
+        initialPlanTaskAttemptCount: initialPlanTask?.attempts ?? undefined,
         initialPlanTaskQueryFailed: initialPlanTaskQueryFailed ?? undefined,
         saved_plan_exists: saved_plan_exists ?? undefined,
         saved_plan_id: activePlan?.id ?? (plansData[0]?.id) ?? undefined,
         saved_plan_is_active: !!activePlan?.is_active,
         rendered_plan_exists: rendered_plan_exists ?? undefined,
         plan_state_reason: plan_state_reason || undefined,
+        self_heal_applied: selfHealApplied || undefined,
       },
       weight_history: weightHistory,
       stats: {

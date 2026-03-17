@@ -402,13 +402,12 @@ export default async function handler(req, res) {
     }
 
     // PRAVIDLO AI-FIRST: Fallback NENÍ publikován. Plán smí vzniknout pouze z AI asistenta.
-    // Žádný last-resort deterministický plán – task zůstane pending/failed, cron/retry dokončí nebo uživatel zkusí „Vygenerovat plán“ v profilu.
-
-    // P0: planPending smí být true jen když plán má reálnou šanci se dokončit (cron/retry).
-    const planWillNotComplete = payload.user_id && initialPlanTaskStatus !== 'completed';
+    // P0: planPending = true znamená „časový limit, dokončí to cron/retry“. Nastavit na false jen když máme plán NEBO když task definitivně selhal (failed/dlq).
+    // Pending/processing → necháme planPending = true, aby uživatel dostal „Plán se dokončuje na pozadí“ a cron mohl plán dokončit.
     if (planPending) {
       if (initialPlanTaskStatus === 'completed') planPending = false; // máme AI plán
-      else if (planWillNotComplete) planPending = false; // AI selhala – plán nevznikne, uživatel dostane failMsg
+      else if (initialPlanTaskStatus === 'failed' || initialPlanTaskStatus === 'dlq') planPending = false; // definitivní selhání – cron už nepomůže
+      // else: pending/processing → planPending zůstane true (cron dokončí, uživatel uvidí pendingMsg)
     }
 
     // Uložit tier členství do tabulky memberships (upsert – aktualizovat pokud existuje)

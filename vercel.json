@@ -1,7 +1,7 @@
 {
   "functions": {
     "pages/api/body-metrics.js": {
-      "maxDuration": 60
+      "maxDuration": 120
     },
     "pages/api/retry-initial-plan.js": {
       "maxDuration": 90

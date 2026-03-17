@@ -153,9 +153,10 @@ export default async function handler(req, res) {
     let initialPlanSummary = null;
     let initialPlanValidationWarning = null;
     const accountCreated = payload.user_id != null;
-    const PLAN_GENERATION_TIMEOUT_MS = 95000; // ~95 s – dost času na dokončení plánu před návratem
+    // Musí skončit před Vercel maxDuration (120 s); při 60 s limitu stačí 48 s + ~10 s fallback
+    const PLAN_GENERATION_TIMEOUT_MS = 48000; // 48 s
     const PLAN_WAIT_POLL_MS = 1000;
-    const PLAN_WAIT_MAX_MS = 30000; // 30 s poll po scheduleru/direct execute
+    const PLAN_WAIT_MAX_MS = 20000; // 20 s poll po scheduleru
 
     if (payload.user_id) {
       try {

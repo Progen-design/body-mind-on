@@ -56,6 +56,8 @@ Důležité: všechny suroviny a postup musí být výhradně na jednu porci. Ne
     return res.status(200).json({ ok: true, html: html || raw });
   } catch (err) {
     console.error('[api/recipe]', err.message || err);
-    return res.status(500).json({ error: 'Nepodařilo se vygenerovat recept' });
+    const isRateLimit = /rate limit|429|quota/i.test(String(err?.message || err));
+    const msg = isRateLimit ? 'Překročen limit požadavků. Zkus to znovu za chvíli.' : 'Nepodařilo se vygenerovat recept.';
+    return res.status(isRateLimit ? 429 : 500).json({ error: msg });
   }
 }

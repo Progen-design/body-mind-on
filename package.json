@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "clear-meal-cache": "node scripts/clear-meal-cache-illustrative.mjs",
     "migrate:ai-supporting-documents": "node scripts/run-ai-supporting-documents-migration.mjs",
     "migrate:ai-documents": "node scripts/migrate-ai-documents.mjs",
     "migrate:trainer-calendar": "node scripts/run-trainer-calendar-migration.js",
@@ -28,6 +29,7 @@
     "stripe": "^20.4.0"
   },
   "devDependencies": {
+    "@supabase/mcp-server-supabase": "^0.7.0",
     "eslint": "^8.57.0",
     "eslint-config-next": "14.2.5",
     "pg": "^8.19.0",

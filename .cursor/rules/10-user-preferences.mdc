@@ -1,0 +1,11 @@
+---
+description: Předvolby uživatele – kdo co spouští
+alwaysApply: true
+---
+
+# Předvolby uživatele
+
+## Spouštění příkazů
+- **Uživatel nic nechce dělat ručně** – vše spouštět sám (migrace, deploy, skripty).
+- Nepředávat uživateli kroky typu „spusť v Supabase SQL Editoru“ nebo „zadej tento příkaz“ – místo toho příkaz spustit sám.
+- Pokud něco vyžaduje přihlášení nebo tajemství, které nemám k dispozici, to sdělit.

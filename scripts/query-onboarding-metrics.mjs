@@ -10,6 +10,28 @@
  *   node scripts/query-onboarding-metrics.mjs --last 7  (hodin)
  */
 import { createClient } from '@supabase/supabase-js';
+import { readFileSync, existsSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const root = join(__dirname, '..');
+function loadEnv() {
+  for (const f of ['.env.local', '.env']) {
+    const p = join(root, f);
+    if (!existsSync(p)) continue;
+    for (const line of readFileSync(p, 'utf8').split(/\r?\n/)) {
+      const t = line.trim();
+      if (!t || t.startsWith('#')) continue;
+      const i = t.indexOf('=');
+      if (i <= 0) continue;
+      const k = t.slice(0, i).trim();
+      const v = t.slice(i + 1).trim();
+      if (k && process.env[k] === undefined) process.env[k] = v;
+    }
+  }
+}
+loadEnv();
 
 const lastHours = parseInt(process.argv.find((a) => a.startsWith('--last'))?.split('=')[1] || process.argv[process.argv.indexOf('--last') + 1] || '24', 10) || 24;
 

@@ -6,7 +6,7 @@
 
 ## A0. Onboarding metriky (P1 – po deployi)
 
-- [ ] Nová registrace → v response `_diagnostics.onboarding_result` je `ai_success` nebo `fallback_success` nebo `failed`
+- [ ] Nová registrace (z libovolného z `/start`, `/on-club`, `/chci-vip`) → v response `_diagnostics.onboarding_result` je `ai_success` nebo `fallback_success` nebo `failed`
 - [ ] `_diagnostics.saved_plan_exists` odpovídá realitě
 - [ ] V `ai_logs` existuje záznam s `agent_slug='onboarding'`, `action='registration_complete'`
 - [ ] Viz `docs/ONBOARDING_RELEASE_CHECKLIST.md` pro detailní checklist
@@ -14,14 +14,21 @@
 
 ---
 
-## A. Registrační flow (`/start`, `/on-club`, `/chci-vip`)
+## A. Registrační flow – 3 vstupní body
 
-### A1. Formulář a UI
+Směrnice pro každý program: `docs/PROGRAM_REGISTRATION_GUIDELINES.md`.
 
-- [ ] Stránka `/start` se načte bez JS chyb (otevři DevTools → Console)
+### A1. Formulář a UI (ověř pro každý program, který testuješ)
+
+- [ ] **`/start`** – stránka se načte bez JS chyb, formulář 5 kroků, submit → POST `/api/body-metrics` s `program: 'START'`
+- [ ] **`/on-club`** – stránka se načte bez JS chyb, formulář 5 kroků, submit → POST `/api/body-metrics` s `program: 'ON_CLUB'`
+- [ ] **`/chci-vip`** – stránka se načte bez JS chyb, formulář 5 kroků, submit → POST `/api/body-metrics` s `program: 'VIP'`
+
+Obecně:
+
 - [ ] Formulář přijme data (jméno, e-mail, výška, váha, cíl, aktivita)
 - [ ] Submit tlačítko není duplikovaně disabled nebo zamrzlé
-- [ ] Po submitu přijde response do 30s (AI generování plánu)
+- [ ] Po submitu přijde response do 60 s (typicky 20–50 s)
 
 ### A2. Kontrola v DB: `body_metrics`
 
@@ -35,7 +42,20 @@ limit 5;
 - [ ] Nový řádek se objeví se správnými daty
 - [ ] `user_id` je vyplněn (auth user byl vytvořen)
 
-### A3. Kontrola v DB: `auth.users`
+### A3. Kontrola memberships (tier dle programu)
+
+```sql
+select m.user_id, u.email, m.tier, m.status, m.trial_ends_at, m.notes
+from memberships m
+join auth.users u on u.id = m.user_id
+order by m.updated_at desc limit 5;
+```
+
+- [ ] **START** z `/start` → `tier = 'START'`, `status = 'trial'`, `trial_ends_at` +7 dní
+- [ ] **ON_CLUB** z `/on-club` → `tier = 'ON_CLUB'`, `status = 'active'`, `trial_ends_at` null
+- [ ] **VIP** z `/chci-vip` → `tier = 'VIP'`, `status = 'active'`, `trial_ends_at` null
+
+### A4. Kontrola v DB: `auth.users`
 
 ```sql
 select id, email, created_at from auth.users order by created_at desc limit 5;
@@ -261,7 +281,8 @@ select slug, include_progress, include_plans, include_memory from ai_context_pro
 
 | Oblast | Status | Poznámka |
 |---|---|---|
-| Registrace + body_metrics | | |
+| Registrace (3 programy) + body_metrics | | |
+| memberships (tier/status dle programu) | | |
 | AI tasky vytvoření | | |
 | Trainer plan generování | | |
 | Plan zobrazení v profilu | | |

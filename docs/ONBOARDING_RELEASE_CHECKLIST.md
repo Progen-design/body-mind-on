@@ -1,13 +1,20 @@
 # Onboarding Release Checklist – po každém deployi
 
 > Krátký checklist pro ověření, že onboarding flow funguje. Prováděj po každém produkčním deployi.
+> **3 vstupní body:** `/start`, `/on-club`, `/chci-vip` – viz `docs/PROGRAM_REGISTRATION_GUIDELINES.md`.
 
 ---
 
 ## 1. Nová registrace
 
-- [ ] Otevři `/start` nebo `/on-club`
-- [ ] Vyplň formulář s **novým e-mailem** (např. `test-{timestamp}@example.com`)
+Otestuj alespoň jeden program (ideálně rotuj mezi deployi):
+
+- [ ] **START** – Otevři `/start`, vyplň formulář s novým e-mailem (např. `test-start-{timestamp}@example.com`)
+- [ ] **ON Club** – Otevři `/on-club`, vyplň formulář s novým e-mailem (např. `test-club-{timestamp}@example.com`)
+- [ ] **VIP** – Otevři `/chci-vip`, vyplň formulář s novým e-mailem (např. `test-vip-{timestamp}@example.com`)
+
+Pro každou testovanou registraci:
+
 - [ ] Odešli formulář
 - [ ] Response přijde do 60 s (typicky 20–50 s)
 
@@ -24,6 +31,20 @@ V DevTools → Network → POST `/api/body-metrics` → Response:
 - [ ] `_diagnostics.final_response_reason` odpovídá realitě
 - [ ] Když `plan_state === 'ready'`: `planPending` je `false`
 - [ ] Když `plan_state === 'failed'`: `planPending` je `false`, `message` je fail message
+
+**Ověření programu (dle směrnic):**
+
+- [ ] Registrace z `/start` → `memberships.tier = 'START'`, `status = 'trial'`, `trial_ends_at` +7 dní
+- [ ] Registrace z `/on-club` → `memberships.tier = 'ON_CLUB'`, `status = 'active'`
+- [ ] Registrace z `/chci-vip` → `memberships.tier = 'VIP'`, `status = 'active'`
+
+```sql
+select m.user_id, m.tier, m.status, m.trial_ends_at, m.notes
+from memberships m
+join auth.users u on u.id = m.user_id
+where u.email like 'test-%@example.com'
+order by m.updated_at desc limit 5;
+```
 
 ---
 
@@ -88,8 +109,9 @@ limit 5;
 
 | Krok | OK | Poznámka |
 |------|----|----------|
-| 1. Registrace | | |
+| 1. Registrace (program) | | |
 | 2. body-metrics response | | |
+| 2b. memberships (tier/status) | | |
 | 3. profile API | | |
 | 4. UI plán | | |
 | 5. AI vs fallback | | |

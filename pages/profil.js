@@ -1,4 +1,4 @@
-// /pages/profil.js – Modern Premium Profil (real-time update, refetch on focus, timeout 15s)
+// /pages/profil.js – Modern Premium Profil (obnovení jen ručně tlačítkem, timeout 15s)
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';

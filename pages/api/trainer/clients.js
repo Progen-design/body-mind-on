@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     const { data: { user }, error: userErr } = await supabaseServer.auth.getUser(token);
     if (userErr || !user) return res.status(401).json({ error: 'Neplatná session' });
 
-    const trainerEmail = (process.env.TRAINER_EMAIL || '').toLowerCase().trim();
+    const trainerEmail = (process.env.TRAINER_EMAIL || process.env.TRAINER_GMAIL || '').toLowerCase().trim();
     const email = (user.email || '').toLowerCase();
     if (!trainerEmail || email !== trainerEmail) {
       return res.status(403).json({ error: 'Pouze trenér může zobrazit seznam klientů.' });

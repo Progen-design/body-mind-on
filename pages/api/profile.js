@@ -264,7 +264,7 @@ export default async function handler(req, res) {
       }
     });
 
-    const trainerEmail = (process.env.TRAINER_EMAIL || '').toLowerCase().trim();
+    const trainerEmail = (process.env.TRAINER_EMAIL || process.env.TRAINER_GMAIL || '').toLowerCase().trim();
     const canCreateCalendarEvents = !!trainerEmail && email === trainerEmail;
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');

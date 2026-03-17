@@ -730,6 +730,21 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
       .trim();
   };
 
+  const getSpoonacularRecipe = (recipeId) => {
+    if (!recipeId || !Number.isInteger(Number(recipeId))) return Promise.resolve(null);
+    const key = `spoonacular:${recipeId}`;
+    const cached = recipeCacheRef.current.get(key);
+    if (cached && cached.html != null && Date.now() - (cached.at || 0) < 5 * 60 * 1000) return Promise.resolve(cached.html);
+    return fetch('/api/spoonacular-recipe?id=' + encodeURIComponent(String(recipeId)))
+      .then((res) => res.json())
+      .then((data) => {
+        const html = data.ok && data.html ? data.html : null;
+        recipeCacheRef.current.set(key, { html, at: Date.now() });
+        return html;
+      })
+      .catch(() => null);
+  };
+
   const getRecipeForDish = (dishName, avoid = '') => {
     const key = ((dishName || '').trim().toLowerCase().slice(0, 120)) + (avoid ? '|' + avoid.slice(0, 80) : '');
     if (!(dishName || '').trim()) return Promise.resolve(null);
@@ -1155,7 +1170,11 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                           }
                           const dishName = (mealFullText.replace(/\s*\([^)]*\)\s*$/g, '').trim() || meal.type || 'Jídlo').slice(0, 150);
                           setRecipeModal({ openId: thisOpenId, title: modalTitle, content: null, anchorRect, hasRecipe: false, loading: true });
-                          getRecipeForDish(dishName).then((html) => {
+                          const recipeId = mealTrust?.recipe_id;
+                          const loadRecipe = recipeId
+                            ? () => getSpoonacularRecipe(recipeId).then((h) => h || getRecipeForDish(dishName))
+                            : () => getRecipeForDish(dishName);
+                          loadRecipe().then((html) => {
                             const fallback = '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení nebo zkus znovu.</p>';
                             setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: html || fallback, loading: false } : prev));
                           });

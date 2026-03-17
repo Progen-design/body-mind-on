@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   const adminToken = process.env.ADMIN_TOKEN;
-  const trainerEmail = (process.env.TRAINER_EMAIL || '').toLowerCase().trim();
+  const trainerEmail = (process.env.TRAINER_EMAIL || process.env.TRAINER_GMAIL || '').toLowerCase().trim();
   const authHeader = (req.headers.authorization || '').trim();
   const bearer = authHeader.replace(/^Bearer\s+/i, '');
   const keyFromBody = req.body?.key;

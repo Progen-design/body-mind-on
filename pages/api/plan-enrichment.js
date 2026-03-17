@@ -14,6 +14,7 @@
  *   meal_trust[key].exact_source        "spoonacular" | null
  *   meal_trust[key].illustrative_source "pexels" | null
  *   meal_trust[key].confidence_score    0..1
+ *   meal_trust[key].recipe_id           Spoonacular recipe ID (when exact) – used by /api/spoonacular-recipe
  *   exercise_media[key].canonical_key   canonical exercise identifier
  *   exercise_media[key].trust_level     "exact" | "fallback" | "none"
  *   exercise_media[key].source          "exercisedb" | "pexels" | "none"
@@ -24,6 +25,15 @@
  */
 import { supabaseServer } from '../../lib/supabaseServer';
 import { enrichPlanContent } from '../../lib/enrichPlanContent';
+
+const ENRICHMENT_CACHE_TTL_MS = 5 * 60 * 1000; // 5 min
+const enrichmentCache = new Map();
+
+function simpleHash(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) - h) + str.charCodeAt(i) | 0;
+  return String(h);
+}
 
 function normalizeTextKey(value) {
   if (!value || typeof value !== 'string') return '';
@@ -128,6 +138,7 @@ export default async function handler(req, res) {
         protein_g: meal.protein_g ?? null,
         carbs_g: meal.carbs_g ?? null,
         fat_g: meal.fat_g ?? null,
+        recipe_id: meal.recipe_id ?? null,
       };
       // PRIORITY 1: canonical meal_key from HTML (data-meal-key)
       const primaryKey = meal?.meal_key && normalizeTextKey(meal.meal_key) ? normalizeTextKey(meal.meal_key) : null;

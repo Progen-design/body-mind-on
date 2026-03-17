@@ -542,10 +542,12 @@ export default async function handler(req, res) {
     let savedPlanId = lastResortPlanId ?? null;
     let generationSource = null;
 
+    let rootFailureStage = null;
+    let trainerResult = null;
     if (payload.user_id) {
       const { data: taskRow } = await supabaseServer
         .from('ai_tasks')
-        .select('id, created_at, processed_at, result')
+        .select('id, status, created_at, processed_at, result, last_error')
         .eq('user_id', payload.user_id)
         .eq('agent_slug', 'trainer')
         .eq('task_type', 'initial_plan')
@@ -557,6 +559,16 @@ export default async function handler(req, res) {
         initialPlanTaskCreatedAt = taskRow.created_at ?? null;
         initialPlanTaskCompletedAt = taskRow.processed_at ?? null;
         generationSource = taskRow.result?.generation_source ?? taskRow.result?.final_publish_source ?? null;
+        trainerResult = taskRow.result;
+        if (!lastResortRan && initialPlanTaskStatus !== 'completed') {
+          if (taskRow.last_error?.includes('429') || taskRow.last_error?.includes('quota')) rootFailureStage = 'openai_quota';
+          else if (taskRow.last_error?.includes('body_metrics') || taskRow.last_error?.includes('No body_metrics')) rootFailureStage = 'body_metrics_missing';
+          else if (taskRow.status === 'dlq') rootFailureStage = 'trainer_dlq';
+          else if (taskRow.status === 'failed') rootFailureStage = 'trainer_failed';
+          else if (lastResortFailed) rootFailureStage = 'last_resort_failed';
+          else rootFailureStage = 'trainer_' + (taskRow.status || 'unknown');
+        } else if (lastResortRan) rootFailureStage = 'fallback_success';
+        else rootFailureStage = 'ai_success';
       }
       if (!savedPlanId && plan_state === 'ready') {
         const { data: planRow } = await supabaseServer
@@ -631,6 +643,18 @@ export default async function handler(req, res) {
         saved_plan_id: savedPlanId ?? undefined,
         saved_plan_exists: savedPlanExists ?? undefined,
         generation_source: generationSource ?? undefined,
+        root_failure_stage: rootFailureStage ?? undefined,
+        trainer_task_created: !!initialPlanTaskId,
+        trainer_task_completed: initialPlanTaskStatus === 'completed',
+        trainer_task_failed: initialPlanTaskStatus === 'failed',
+        trainer_task_dlq: initialPlanTaskStatus === 'dlq',
+        trainer_generation_source: trainerResult?.generation_source ?? trainerResult?.final_publish_source ?? undefined,
+        trainer_output_exists: !!(trainerResult?.plan_id || lastResortPlanId),
+        fallback_used: lastResortRan || undefined,
+        fallback_persisted: lastResortRan ? !!lastResortPlanId : undefined,
+        email_sent: planSent,
+        plan_saved: savedPlanExists,
+        plan_saved_id: savedPlanId ?? undefined,
       };
     } else {
       response.hasUserId = false;

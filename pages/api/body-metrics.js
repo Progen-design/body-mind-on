@@ -449,6 +449,14 @@ export default async function handler(req, res) {
       }
     }
 
+    // P0 HOTFIX: planPending smí být true jen když plán má reálnou šanci se dokončit.
+    // Po timeoutu vždy běží last-resort. Pokud last-resort selže, plán nevznikne a cron nepomůže.
+    const lastResortFailed = payload.user_id && initialPlanTaskStatus !== 'completed' && !lastResortRan;
+    if (planPending) {
+      if (initialPlanTaskStatus === 'completed') planPending = false; // máme plán (AI nebo last-resort)
+      else if (lastResortFailed) planPending = false; // last-resort selhal – plán nevznikne
+    }
+
     // Uložit tier členství do tabulky memberships (upsert – aktualizovat pokud existuje)
     if (payload.user_id) {
       const program = payload.program || 'START';
@@ -512,6 +520,15 @@ export default async function handler(req, res) {
       else message = failMsg;
     }
 
+    const finalResponseReason =
+      initialPlanTaskStatus === 'completed'
+        ? (planSent ? 'plan_ready_email_sent' : 'plan_ready_email_not_sent')
+        : planPending
+          ? 'plan_still_processing'
+          : lastResortFailed
+            ? 'last_resort_failed'
+            : 'plan_failed';
+
     const response = {
       ok: true,
       planSent,
@@ -538,6 +555,8 @@ export default async function handler(req, res) {
         plan_pending: planPending || false,
         last_resort_ran: lastResortRan || undefined,
         last_resort_plan_id: lastResortPlanId ?? undefined,
+        last_resort_failed: lastResortFailed || undefined,
+        final_response_reason: finalResponseReason,
       };
     } else {
       response.hasUserId = false;

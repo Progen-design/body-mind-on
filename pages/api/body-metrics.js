@@ -14,7 +14,8 @@ import {
 import { createAuthUserIfNew } from '../../lib/authHelpers';
 import { runAIScheduler } from '../../lib/aiScheduler';
 import { createInitialAITasks } from '../../lib/createInitialAITasks';
-import { executeAITask } from '../../lib/taskExecutors';
+import { executeAITask, persistFallbackPlanForUser } from '../../lib/taskExecutors';
+import { sendPlanEmail } from '../../lib/mail';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getWeeklySessions } from '../../lib/preferenceConstants';
 import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
@@ -152,9 +153,9 @@ export default async function handler(req, res) {
     let initialPlanSummary = null;
     let initialPlanValidationWarning = null;
     const accountCreated = payload.user_id != null;
-    const PLAN_GENERATION_TIMEOUT_MS = 50000; // max 50 s čekání – pak úspěch a plán na pozadí (cron každých 15 min)
-    const PLAN_WAIT_POLL_MS = 800; // krátký poll interval pro initial_plan
-    const PLAN_WAIT_MAX_MS = 12000; // max 12 s explicitního čekání na dokončení initial_plan
+    const PLAN_GENERATION_TIMEOUT_MS = 95000; // ~95 s – dost času na dokončení plánu před návratem
+    const PLAN_WAIT_POLL_MS = 1000;
+    const PLAN_WAIT_MAX_MS = 30000; // 30 s poll po scheduleru/direct execute
 
     if (payload.user_id) {
       try {
@@ -188,35 +189,55 @@ export default async function handler(req, res) {
           console.warn('[body-metrics] trainer initial_plan failed – task result:', JSON.stringify(taskRow?.result ?? null));
         }
 
-        // 2. PRIORITIZACE: pokud pending, spustit ihned (ne čekat na scheduler s 30 tasky)
+        // 2. PRIORITIZACE: pokud pending, spustit ihned; při selhání jeden retry
+        const runDirectExecute = async (label) => {
+          const { data: directTask } = await supabaseServer.from('ai_tasks').select('id, user_id, agent_slug, task_type, payload').eq('id', taskRow.id).eq('status', 'pending').eq('agent_slug', 'trainer').eq('task_type', 'initial_plan').maybeSingle();
+          if (!directTask) return false;
+          const exec = await executeAITask(directTask);
+          const hasPlanId = exec?.result?.outcome_type === 'plan_generated' && (exec?.result?.plan_id != null && exec?.result?.plan_id !== '');
+          const effectiveOk = exec?.ok && (hasPlanId || exec?.result?.outcome_type !== 'plan_generated');
+          await supabaseServer.from('ai_tasks').update({
+            status: effectiveOk ? 'completed' : 'failed',
+            result: exec?.result ?? { error: 'Direct execution returned no result' },
+            processed_at: new Date().toISOString(),
+            last_error: effectiveOk ? null : (exec?.ok && !hasPlanId ? 'Completed without plan_id' : null),
+          }).eq('id', directTask.id);
+          if (effectiveOk) {
+            initialPlanTaskStatus = 'completed';
+            planSent = exec?.result?.email_sent === true;
+            initialPlanSummary = exec?.result?.summary ?? null;
+            initialPlanValidationWarning = exec?.result?.validation_warning ?? null;
+            console.info('[body-metrics] ' + label + ' finished', { plan_sent: planSent });
+            return true;
+          }
+          return false;
+        };
         if (initialPlanTaskStatus === 'pending' && taskRow?.id) {
           directExecutionTriggered = true;
           console.info('[body-metrics] direct executeAITask started (priority for new user)');
           try {
-            const { data: directTask } = await supabaseServer.from('ai_tasks').select('id, user_id, agent_slug, task_type, payload').eq('id', taskRow.id).eq('status', 'pending').eq('agent_slug', 'trainer').eq('task_type', 'initial_plan').maybeSingle();
-            if (directTask) {
-              const exec = await executeAITask(directTask);
-              const hasPlanId = exec?.result?.outcome_type === 'plan_generated' && (exec?.result?.plan_id != null && exec?.result?.plan_id !== '');
-              const effectiveOk = exec?.ok && (hasPlanId || exec?.result?.outcome_type !== 'plan_generated');
-              await supabaseServer.from('ai_tasks').update({
-                status: effectiveOk ? 'completed' : 'failed',
-                result: exec?.result ?? { error: 'Direct execution returned no result' },
-                processed_at: new Date().toISOString(),
-                last_error: effectiveOk ? null : (exec?.ok && !hasPlanId ? 'Completed without plan_id' : null),
-              }).eq('id', directTask.id);
-              if (effectiveOk) {
-                initialPlanTaskStatus = 'completed';
-                planSent = exec?.result?.email_sent === true;
-                initialPlanSummary = exec?.result?.summary ?? null;
-                initialPlanValidationWarning = exec?.result?.validation_warning ?? null;
-                console.info('[body-metrics] direct executeAITask finished', { plan_sent: planSent, summary: initialPlanSummary });
+            const ok = await runDirectExecute('direct executeAITask');
+            if (!ok) {
+              const { data: refetched } = await supabaseServer.from('ai_tasks').select('id, status').eq('id', taskRow.id).maybeSingle();
+              if (refetched?.status === 'pending') {
+                console.info('[body-metrics] direct execute retry (1x)');
+                try {
+                  await runDirectExecute('direct executeAITask retry');
+                } catch (retryErr) {
+                  console.warn('[body-metrics] direct execute retry failed:', retryErr?.message);
+                }
               }
             }
           } catch (directErr) {
             console.warn('[body-metrics] direct executeAITask failed:', directErr?.message);
-            const { data: refetched } = await supabaseServer.from('ai_tasks').select('id, status, result, last_error').eq('id', taskRow.id).maybeSingle();
-            if (refetched) {
-              console.warn('[body-metrics] initial_plan task after direct fail:', { status: refetched.status, last_error: refetched?.last_error });
+            const { data: refetched } = await supabaseServer.from('ai_tasks').select('id, status').eq('id', taskRow.id).maybeSingle();
+            if (refetched?.status === 'pending') {
+              console.info('[body-metrics] direct execute retry after throw (1x)');
+              try {
+                await runDirectExecute('direct executeAITask retry');
+              } catch (retryErr) {
+                console.warn('[body-metrics] direct execute retry failed:', retryErr?.message);
+              }
             }
           }
         }
@@ -238,29 +259,45 @@ export default async function handler(req, res) {
 
           if (initialPlanTaskStatus === 'pending' && taskRow?.id) {
             directExecutionTriggered = true;
+            const runFallbackDirect = async (label) => {
+              const { data: directTask } = await supabaseServer.from('ai_tasks').select('id, user_id, agent_slug, task_type, payload').eq('id', taskRow.id).eq('status', 'pending').eq('agent_slug', 'trainer').eq('task_type', 'initial_plan').maybeSingle();
+              if (!directTask) return false;
+              const exec = await executeAITask(directTask);
+              const hasPlanId = exec?.result?.outcome_type === 'plan_generated' && (exec?.result?.plan_id != null && exec?.result?.plan_id !== '');
+              const effectiveOk = exec?.ok && (hasPlanId || exec?.result?.outcome_type !== 'plan_generated');
+              await supabaseServer.from('ai_tasks').update({
+                status: effectiveOk ? 'completed' : 'failed',
+                result: exec?.result ?? { error: 'Direct execution returned no result' },
+                processed_at: new Date().toISOString(),
+                last_error: effectiveOk ? null : null,
+              }).eq('id', directTask.id);
+              if (effectiveOk) {
+                initialPlanTaskStatus = 'completed';
+                planSent = exec?.result?.email_sent === true;
+                initialPlanSummary = exec?.result?.summary ?? null;
+                initialPlanValidationWarning = exec?.result?.validation_warning ?? null;
+                console.info('[body-metrics] ' + label + ' finished', { plan_sent: planSent });
+                return true;
+              }
+              return false;
+            };
             console.info('[body-metrics] direct executeAITask fallback (after scheduler)');
             try {
-              const { data: directTask } = await supabaseServer.from('ai_tasks').select('id, user_id, agent_slug, task_type, payload').eq('id', taskRow.id).eq('status', 'pending').eq('agent_slug', 'trainer').eq('task_type', 'initial_plan').maybeSingle();
-              if (directTask) {
-                const exec = await executeAITask(directTask);
-                const hasPlanId = exec?.result?.outcome_type === 'plan_generated' && (exec?.result?.plan_id != null && exec?.result?.plan_id !== '');
-                const effectiveOk = exec?.ok && (hasPlanId || exec?.result?.outcome_type !== 'plan_generated');
-                await supabaseServer.from('ai_tasks').update({
-                  status: effectiveOk ? 'completed' : 'failed',
-                  result: exec?.result ?? { error: 'Direct execution returned no result' },
-                  processed_at: new Date().toISOString(),
-                  last_error: effectiveOk ? null : null,
-                }).eq('id', directTask.id);
-                if (effectiveOk) {
-                  initialPlanTaskStatus = 'completed';
-                  planSent = exec?.result?.email_sent === true;
-                  initialPlanSummary = exec?.result?.summary ?? null;
-                  initialPlanValidationWarning = exec?.result?.validation_warning ?? null;
-                  console.info('[body-metrics] direct executeAITask fallback finished', { plan_sent: planSent });
+              let ok = await runFallbackDirect('direct executeAITask fallback');
+              if (!ok) {
+                const { data: refetched } = await supabaseServer.from('ai_tasks').select('id, status').eq('id', taskRow.id).maybeSingle();
+                if (refetched?.status === 'pending') {
+                  console.info('[body-metrics] direct fallback retry (1x)');
+                  try { await runFallbackDirect('direct fallback retry'); } catch (e) { console.warn('[body-metrics] direct fallback retry failed:', e?.message); }
                 }
               }
             } catch (directErr) {
               console.warn('[body-metrics] direct executeAITask fallback failed:', directErr?.message);
+              const { data: refetched } = await supabaseServer.from('ai_tasks').select('id, status').eq('id', taskRow.id).maybeSingle();
+              if (refetched?.status === 'pending') {
+                console.info('[body-metrics] direct fallback retry after throw (1x)');
+                try { await runFallbackDirect('direct fallback retry'); } catch (e) { console.warn('[body-metrics] direct fallback retry failed:', e?.message); }
+              }
             }
           }
         }
@@ -306,28 +343,48 @@ export default async function handler(req, res) {
             .maybeSingle();
           if (fallbackTask?.id) {
             directExecutionTriggered = true;
-            const exec = await executeAITask(fallbackTask);
-            const hasPlanId = exec?.result?.outcome_type === 'plan_generated' && (exec?.result?.plan_id != null && exec?.result?.plan_id !== '');
-            const effectiveOk = exec?.ok && (hasPlanId || exec?.result?.outcome_type !== 'plan_generated');
-            await supabaseServer
-              .from('ai_tasks')
-              .update({
+            const runSchedFallback = async (label) => {
+              const { data: task } = await supabaseServer.from('ai_tasks').select('id, user_id, agent_slug, task_type, payload').eq('id', fallbackTask.id).eq('status', 'pending').maybeSingle();
+              if (!task) return false;
+              const exec = await executeAITask(task);
+              const hasPlanId = exec?.result?.outcome_type === 'plan_generated' && (exec?.result?.plan_id != null && exec?.result?.plan_id !== '');
+              const effectiveOk = exec?.ok && (hasPlanId || exec?.result?.outcome_type !== 'plan_generated');
+              await supabaseServer.from('ai_tasks').update({
                 status: effectiveOk ? 'completed' : 'failed',
                 result: exec?.result ?? { error: 'Fallback execution after scheduler error' },
                 processed_at: new Date().toISOString(),
                 last_error: effectiveOk ? null : null,
-              })
-              .eq('id', fallbackTask.id);
-            if (effectiveOk) {
-              initialPlanTaskStatus = 'completed';
-              planSent = exec?.result?.email_sent === true;
-              initialPlanSummary = exec?.result?.summary ?? null;
-              initialPlanValidationWarning = exec?.result?.validation_warning ?? null;
-              console.info('[body-metrics] fallback executeAITask after scheduler error', { plan_sent: planSent });
+              }).eq('id', task.id);
+              if (effectiveOk) {
+                initialPlanTaskStatus = 'completed';
+                planSent = exec?.result?.email_sent === true;
+                initialPlanSummary = exec?.result?.summary ?? null;
+                initialPlanValidationWarning = exec?.result?.validation_warning ?? null;
+                console.info('[body-metrics] ' + label, { plan_sent: planSent });
+                return true;
+              }
+              return false;
+            };
+            try {
+              let ok = await runSchedFallback('fallback executeAITask after scheduler error');
+              if (!ok) {
+                const { data: refetched } = await supabaseServer.from('ai_tasks').select('id, status').eq('id', fallbackTask.id).maybeSingle();
+                if (refetched?.status === 'pending') {
+                  console.info('[body-metrics] scheduler fallback retry (1x)');
+                  try { await runSchedFallback('scheduler fallback retry'); } catch (e) { console.warn('[body-metrics] scheduler fallback retry failed:', e?.message); }
+                }
+              }
+            } catch (fallbackErr) {
+              console.warn('[body-metrics] fallback executeAITask failed:', fallbackErr?.message);
+              const { data: refetched } = await supabaseServer.from('ai_tasks').select('id, status').eq('id', fallbackTask.id).maybeSingle();
+              if (refetched?.status === 'pending') {
+                console.info('[body-metrics] scheduler fallback retry after throw (1x)');
+                try { await runSchedFallback('scheduler fallback retry'); } catch (e) { console.warn('[body-metrics] scheduler fallback retry failed:', e?.message); }
+              }
             }
           }
         } catch (fallbackErr) {
-          console.warn('[body-metrics] fallback executeAITask failed:', fallbackErr?.message);
+          console.warn('[body-metrics] fallback executeAITask outer failed:', fallbackErr?.message);
         }
       }
       }; // runPlanGeneration
@@ -340,6 +397,45 @@ export default async function handler(req, res) {
           resolve();
         }, PLAN_GENERATION_TIMEOUT_MS)),
       ]);
+    }
+
+    // Last-resort: pokud plán stále není hotový, uložit deterministický fallback + odeslat e-mail – uživatel vždy dostane plán v profilu i do e-mailu
+    if (payload.user_id && initialPlanTaskStatus !== 'completed') {
+      const fallbackResult = await persistFallbackPlanForUser(payload.user_id);
+      if (fallbackResult?.plan_id && fallbackResult?.bm?.email) {
+        const { data: initialTask } = await supabaseServer
+          .from('ai_tasks')
+          .select('id')
+          .eq('user_id', payload.user_id)
+          .eq('agent_slug', 'trainer')
+          .eq('task_type', 'initial_plan')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (initialTask?.id) {
+          await supabaseServer.from('ai_tasks').update({
+            status: 'completed',
+            result: { outcome_type: 'plan_generated', plan_id: fallbackResult.plan_id, email_sent: false, summary: 'deterministic_fallback_after_failure' },
+            processed_at: new Date().toISOString(),
+            last_error: null,
+          }).eq('id', initialTask.id);
+        }
+        const sendResult = await sendPlanEmail(fallbackResult.bm.email, fallbackResult.planHtml, {
+          loginPassword: emailOptions.loginPassword ?? null,
+          loginUrl: emailOptions.loginUrl ?? null,
+          existingAccount: emailOptions.existingAccount === true,
+          loginUnavailable: emailOptions.loginUnavailable === true,
+          userChosePassword: emailOptions.userChosePassword === true,
+        });
+        planSent = sendResult?.ok === true;
+        initialPlanTaskStatus = 'completed';
+        if (planSent && initialTask?.id) {
+          await supabaseServer.from('ai_tasks').update({
+            result: { outcome_type: 'plan_generated', plan_id: fallbackResult.plan_id, email_sent: true, summary: 'deterministic_fallback_after_failure' },
+          }).eq('id', initialTask.id);
+        }
+        console.info('[body-metrics] last-resort fallback: plan persisted, email_sent=', planSent, 'user_id=', payload.user_id);
+      }
     }
 
     // Uložit tier členství do tabulky memberships (upsert – aktualizovat pokud existuje)

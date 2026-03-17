@@ -2,6 +2,7 @@
 import { supabaseServer } from '../../lib/supabaseServer';
 import { POSITIVE_HABITS, NEGATIVE_HABITS } from '../../lib/habits';
 import { validatePublishedPlanHtml } from '../../lib/validatePlanHtml';
+import { ensureInitialPlanTask } from '../../lib/ensureInitialPlanTask';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -89,8 +90,43 @@ export default async function handler(req, res) {
     const bodyMetrics = (metricsRes.status === 'fulfilled' && metricsRes.value?.data) ? metricsRes.value.data : [];
     let plansData = (plansRes.status === 'fulfilled' && plansRes.value?.data) ? plansRes.value.data : [];
     const initialPlanTaskQueryFailed = initialPlanTaskRes?.status === 'rejected';
-    const initialPlanTask = (initialPlanTaskRes?.status === 'fulfilled' && initialPlanTaskRes?.value?.data) ? initialPlanTaskRes.value.data : null;
-    const initialPlanTaskExists = !!initialPlanTask;
+    let initialPlanTask = (initialPlanTaskRes?.status === 'fulfilled' && initialPlanTaskRes?.value?.data) ? initialPlanTaskRes.value.data : null;
+    let initialPlanTaskExists = !!initialPlanTask;
+
+    const body_metrics_exists = bodyMetrics.length > 0;
+    const body_metrics_count = bodyMetrics.length;
+    let recovery_task_created = false;
+    let recovery_reason = undefined;
+
+    if (!initialPlanTaskExists && !bodyMetrics.length) {
+      recovery_reason = 'no_body_metrics_skip_recovery';
+    } else if (!initialPlanTaskExists && bodyMetrics.length > 0) {
+      const planValidationEarly = validatePublishedPlanHtml(
+        (plansData.find((p) => p.plan_html && typeof p.plan_html === 'string')?.plan_html) ?? ''
+      );
+      if (planValidationEarly.ok) {
+        recovery_reason = 'valid_plan_exists_skip_recovery';
+      } else {
+        const ensure = await ensureInitialPlanTask(userId, {});
+        recovery_reason = ensure.reason ?? (ensure.created ? 'recovery_task_created' : 'recovery_skipped');
+        if (ensure.created) {
+          recovery_task_created = true;
+          const { data: refetchedTask } = await supabaseServer
+            .from('ai_tasks')
+            .select('id, status, created_at, processed_at, result, last_error, attempts')
+            .eq('user_id', userId)
+            .eq('agent_slug', 'trainer')
+            .eq('task_type', 'initial_plan')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (refetchedTask) {
+            initialPlanTask = refetchedTask;
+            initialPlanTaskExists = true;
+          }
+        }
+      }
+    }
     const activePlan = plansData.find((p) => p.is_active === true);
     const hasActivePlan = !!activePlan;
     const currentPlanForDiagnostics = activePlan || plansData.find((p) => p.plan_html && typeof p.plan_html === 'string' && p.plan_html.length > 0);
@@ -254,6 +290,10 @@ export default async function handler(req, res) {
       coach_messages: coachMessages,
       workouts,
       _diagnostics: {
+        body_metrics_exists: body_metrics_exists ?? undefined,
+        body_metrics_count: body_metrics_count ?? undefined,
+        recovery_task_created: recovery_task_created || undefined,
+        recovery_reason: recovery_reason ?? undefined,
         plans_count: plansData.length,
         has_active_plan: hasActivePlan,
         has_valid_plan: hasValidPlan,

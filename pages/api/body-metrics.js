@@ -157,8 +157,13 @@ export default async function handler(req, res) {
     const PLAN_WAIT_MAX_MS = 12000; // max 12 s explicitního čekání na dokončení initial_plan
 
     if (payload.user_id) {
-      await createInitialAITasks(payload.user_id, emailOptions);
-      console.info('[body-metrics] initial tasks created / already existed', `user_id=${payload.user_id}`);
+      try {
+        const taskResult = await createInitialAITasks(payload.user_id, emailOptions);
+        console.info('[body-metrics] initial tasks', { user_id: payload.user_id, tasksCreated: taskResult?.tasksCreated ?? true });
+      } catch (taskErr) {
+        console.error('[body-metrics] createInitialAITasks failed', { user_id: payload.user_id, error: taskErr?.message });
+        throw taskErr;
+      }
       await enqueueAIEvent('user_registered', payload.user_id, { program: payload.program || 'START' });
       await triggerImmediateDecision(payload.user_id);
 

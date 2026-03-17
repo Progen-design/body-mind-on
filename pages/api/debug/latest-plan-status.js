@@ -176,12 +176,24 @@ export default async function handler(req, res) {
       debug_plan_state_reason = 'plan_exists_but_invalid';
     }
 
+    let body_metrics_count = bm ? 1 : 0;
+    if (userId) {
+      const { count } = await supabaseServer.from('body_metrics').select('*', { count: 'exact', head: true }).eq('user_id', userId);
+      if (typeof count === 'number') body_metrics_count = count;
+    }
+
     return res.status(200).json({
       auth_user_exists: !!authUser,
       user_id: userId,
       body_metrics: bodyMetricsSummary,
+      body_metrics_exists: !!bm,
+      body_metrics_count,
       trainer_task: taskSummary,
       initialPlanTaskExists: taskExists,
+      initialPlanTaskStatus: task?.status ?? null,
+      initialPlanTaskCreatedAt: task?.created_at ?? null,
+      initialPlanTaskProcessedAt: task?.processed_at ?? null,
+      initialPlanTaskLastError: task?.last_error ?? null,
       ai_generated_plan: planSummary,
       saved_plan_exists,
       saved_plan_id: plan?.id ?? null,

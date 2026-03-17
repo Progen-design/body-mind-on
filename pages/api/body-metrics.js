@@ -382,12 +382,20 @@ export default async function handler(req, res) {
       ? 'Údaje byly úspěšně uloženy a plán byl odeslán na e-mail. V e-mailu najdeš přihlašovací údaje – s nimi se můžeš přihlásit a vidět svůj profil.'
       : 'Údaje a plán byly uloženy a odeslány na e-mail. Vytvoření přihlašovacího účtu se nezdařilo – pro přístup do profilu nás kontaktuj na info@bodyandmindon.cz.';
     const pendingMsg = 'Účet je vytvořen. Plán se dokončuje na pozadí – za chvíli přijde e-mail a v profilu uvidíš plán.';
-    const failMsg = 'Údaje byly uloženy. E-mail s plánem se nepodařilo odeslat – zkontroluj spam nebo napiš na info@bodyandmindon.cz.';
+    const emailFailedPlanReadyMsg = 'Účet je vytvořen a plán je hotový. Přihlas se – plán uvidíš v profilu. E-mail s plánem se nepodařilo odeslat – zkontroluj spam nebo napiš na info@bodyandmindon.cz.';
+    const failMsg = 'Údaje byly uloženy. Plán se nepodařilo dokončit – přihlas se a v profilu zkus „Vygenerovat plán“, nebo napiš na info@bodyandmindon.cz.';
     let plan_state = 'unknown';
     if (accountCreated) {
       if (initialPlanTaskStatus === 'completed') plan_state = 'ready';
       else if (initialPlanTaskStatus === 'pending') plan_state = 'processing';
       else if (initialPlanTaskStatus === 'failed') plan_state = 'failed';
+    }
+
+    let message = successMsg;
+    if (!planSent) {
+      if (planPending) message = pendingMsg;
+      else if (initialPlanTaskStatus === 'completed') message = emailFailedPlanReadyMsg;
+      else message = failMsg;
     }
 
     const response = {
@@ -396,7 +404,7 @@ export default async function handler(req, res) {
       planPending: planPending || false,
       plan_state,
       loginUnavailable: !accountCreated,
-      message: planSent ? successMsg : (planPending ? pendingMsg : failMsg),
+      message,
     };
     if (accountCreated) {
       response.hasUserId = true;

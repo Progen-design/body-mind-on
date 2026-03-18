@@ -1207,12 +1207,16 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                             return;
                           }
                           const dishName = (mealFullText.replace(/\s*\([^)]*\)\s*$/g, '').trim() || meal.type || 'Jídlo').slice(0, 150);
+                          const isUnverifiedPlaceholder = mealFullText?.toLowerCase().includes('neověřeno') || dishName === 'Jídlo';
                           setRecipeModal({ openId: thisOpenId, title: modalTitle, content: null, anchorRect, hasRecipe: false, loading: true });
                           const recipeId = mealTrust?.recipe_id;
                           const loadRecipe = async () => {
                             if (recipeId) {
                               const spoon = await getSpoonacularRecipe(recipeId);
                               if (spoon) return spoon;
+                            }
+                            if (isUnverifiedPlaceholder) {
+                              return recipeErrorHtml('Recept pro toto jídlo není k dispozici – Spoonacular ho nenalezl. Zkus ho nahradit jiným.');
                             }
                             return getRecipeForDish(dishName);
                           };

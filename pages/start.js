@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/router";
+import { supabase } from "../lib/supabaseClient";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import HabitSelection from "../components/HabitSelection";
@@ -154,12 +155,23 @@ export default function Start() {
       }
 
       if (res.ok) {
-        if (result.planSent || result.planPending) {
-          setStatus("✅ " + (result.message || "Účet je vytvořen. Přesměrování na přihlášení…"));
+        if (result.planSent || result.planPending || result.plan_state === 'ready') {
+          setStatus("✅ " + (result.message || "Účet je vytvořen. Přesměrování na tvůj plán…"));
           setPlanFailedWithAccount(false);
-          setTimeout(() => {
-            router.push(`/login?registered=1&email=${encodeURIComponent(cleanedData.email || '')}&redirect=/on-club`);
-          }, 300);
+          const doRedirect = async () => {
+            if (cleanedData.password && cleanedData.email) {
+              const { error } = await supabase.auth.signInWithPassword({
+                email: cleanedData.email,
+                password: cleanedData.password,
+              });
+              if (!error) {
+                router.push('/profil');
+                return;
+              }
+            }
+            router.push(`/login?registered=1&email=${encodeURIComponent(cleanedData.email || '')}&redirect=/profil`);
+          };
+          setTimeout(doRedirect, 400);
           return;
         }
         setIsSubmitting(false);

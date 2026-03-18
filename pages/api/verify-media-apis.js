@@ -51,9 +51,12 @@ export default async function handler(req, res) {
     result.spoonacular.error = 'SPOONACULAR_API_KEY nebo RAPIDAPI_KEY chybí';
   }
 
+  const EXERCISEDB_USE_DEV_ONLY =
+    process.env.EXERCISEDB_USE_DEV_ONLY === 'true' || process.env.EXERCISEDB_USE_DEV_ONLY === '1';
+
   // ExerciseDB (RapidAPI / exercisedb.dev fallback v projektu)
-  const hasExerciseDb = Boolean(EXERCISEDB_KEY && EXERCISEDB_HOST);
-  result.exercisedb.configured = hasExerciseDb;
+  const hasExerciseDb = Boolean(EXERCISEDB_KEY && EXERCISEDB_HOST) && !EXERCISEDB_USE_DEV_ONLY;
+  result.exercisedb.configured = Boolean(EXERCISEDB_KEY && EXERCISEDB_HOST);
 
   if (hasExerciseDb) {
     try {
@@ -73,6 +76,8 @@ export default async function handler(req, res) {
     } catch (e) {
       result.exercisedb.error = e?.message || 'Chyba volání';
     }
+  } else if (EXERCISEDB_USE_DEV_ONLY) {
+    result.exercisedb.error = 'Přeskočeno (EXERCISEDB_USE_DEV_ONLY=true, používá se exercisedb.dev)';
   } else {
     result.exercisedb.error = 'EXERCISEDB_API_KEY/RAPIDAPI_KEY nebo EXERCISEDB_API_HOST chybí';
   }

@@ -71,6 +71,7 @@ Pro zobrazení obrázků v jídelníčku a tréninkovém plánu potřebuješ nas
 | `RAPIDAPI_KEY` | Jídla/cviky | Klíč z RapidAPI (pro Spoonacular + ExerciseDB) |
 | `RAPIDAPI_SPOONACULAR_HOST` | Volitelné | Výchozí: spoonacular-recipe-food-nutrition-v1.p.rapidapi.com |
 | `EXERCISEDB_API_HOST` | Cviky | exercisedb.p.rapidapi.com |
+| `EXERCISEDB_USE_DEV_ONLY` | Volitelné | `true` = přeskočit RapidAPI, používat jen exercisedb.dev (zdarma). Použij když RapidAPI vrací 403/429. |
 | `PEXELS_API_KEY` | Fallback | Ilustrační obrázky když Spoonacular/ExerciseDB nic nenajde |
 
 **Minimální konfigurace pro obrázky:**
@@ -82,7 +83,24 @@ Pro zobrazení obrázků v jídelníčku a tréninkovém plánu potřebuješ nas
 
 ## Ověření
 
-Po nasazení zkontroluj v Vercel Logs:
+### 1. Diagnostický endpoint (doporučeno)
+
+Po nasazení otevři v prohlížeči:
+```
+https://tvoje-domena.vercel.app/api/verify-media-apis
+```
+
+Odpověď ukáže:
+- `apis.spoonacular.working` – Spoonacular vrací data (jídla budou odpovídat)
+- `apis.exercisedb.working` – ExerciseDB vrací data (cviky budou odpovídat)
+- `apis.pexels.configured` – fallback pro ilustrační obrázky
+- `summary.duvod_nesouladu_jidel` – vysvětlení, proč jídla nemusí sedět
+
+Pokud `spoonacular.working === false`, obrázky jídel budou jen z Pexels (klíčová slova) – často nesedí (např. pasta místo ovesné kaše).
+
+### 2. Vercel Logs
+
+V Vercel Logs hledej:
 - `[plan-enrichment] ENV summary: { hasSpoonacular: true, hasPexels: true, hasExerciseDb: true }`
 
 Pokud vidíš `hasSpoonacular: false` – obrázky jídel se nebudou načítat.

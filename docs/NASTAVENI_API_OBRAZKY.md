@@ -1,6 +1,6 @@
 # Nastavení API pro obrázky jídel a cviků
 
-Pro zobrazení obrázků v jídelníčku a tréninkovém plánu potřebuješ nastavit 3 externí API. Bez nich se zobrazí „Bez ověřeného obrázku“.
+Pro zobrazení obrázků v jídelníčku a tréninkovém plánu potřebuješ nastavit externí API. Bez nich se zobrazí „Bez ověřeného obrázku“.
 
 ---
 
@@ -8,7 +8,6 @@ Pro zobrazení obrázků v jídelníčku a tréninkovém plánu potřebuješ nas
 
 **Zdroj:** [spoonacular.com/food-api](https://spoonacular.com/food-api/console#Dashboard)
 
-### Možnost A: Přímý API klíč (doporučeno)
 1. Zaregistruj se na [spoonacular.com](https://spoonacular.com/food-api)
 2. Získej API klíč v Profile → API Key
 3. Vercel → Settings → Environment Variables:
@@ -16,50 +15,15 @@ Pro zobrazení obrázků v jídelníčku a tréninkovém plánu potřebuješ nas
    SPOONACULAR_API_KEY=tvuj-api-klic
    ```
 
-### Možnost B: Přes RapidAPI
-1. [RapidAPI Spoonacular](https://rapidapi.com/apidojo/api/spoonacular) – subscribe (free tier)
-2. Získej `X-RapidAPI-Key` z RapidAPI dashboard
-3. Vercel env:
-   ```
-   RAPIDAPI_KEY=tvuj-rapidapi-key
-   RAPIDAPI_SPOONACULAR_HOST=spoonacular-recipe-food-nutrition-v1.p.rapidapi.com
-   ```
-
 ---
 
-## 2. ExerciseDB (GIF cviků)
+## 2. wger.de (obrázky a videa cviků)
 
-**Zdroj:** [RapidAPI ExerciseDB](https://rapidapi.com/justin-WFnsXH_t6/api/exercisedb)
+**Zdroj:** [wger.de/api/v2](https://wger.de/api/v2/)
 
-1. Otevři [RapidAPI ExerciseDB](https://rapidapi.com/justin-WFnsXH_t6/api/exercisedb)
-2. Subscribe (free tier)
-3. Z RapidAPI dashboard zkopíruj `X-RapidAPI-Key`
-4. Zjisti host – v dokumentaci API (Endpoints) uvidíš např. `exercisedb.p.rapidapi.com`
-5. Vercel env:
-   ```
-   RAPIDAPI_KEY=tvuj-rapidapi-key
-   EXERCISEDB_API_HOST=exercisedb.p.rapidapi.com
-   ```
-   Nebo pokud máš separátní klíč:
-   ```
-   EXERCISEDB_API_KEY=tvuj-rapidapi-key
-   EXERCISEDB_API_HOST=exercisedb.p.rapidapi.com
-   ```
+wger.de je veřejné API pro cviky – **nevyžaduje API klíč**. Projekt používá wger automaticky.
 
-> **Poznámka:** Jeden `RAPIDAPI_KEY` platí pro všechny RapidAPI API (Spoonacular, ExerciseDB). Stačí ho nastavit jednou.
-
----
-
-## 3. Pexels (ilustrační obrázky – fallback)
-
-**Zdroj:** [pexels.com/api](https://www.pexels.com/cs-cz/api/key/)
-
-1. Zaregistruj se na [pexels.com](https://www.pexels.com/cs-cz/api/)
-2. Získej API klíč
-3. Vercel env:
-   ```
-   PEXELS_API_KEY=tvuj-pexels-api-key
-   ```
+Žádná konfigurace není potřeba.
 
 ---
 
@@ -68,16 +32,10 @@ Pro zobrazení obrázků v jídelníčku a tréninkovém plánu potřebuješ nas
 | Proměnná | Povinné | Popis |
 |----------|---------|-------|
 | `SPOONACULAR_API_KEY` | Jídla | Přímý klíč ze spoonacular.com |
-| `RAPIDAPI_KEY` | Jídla/cviky | Klíč z RapidAPI (pro Spoonacular + ExerciseDB) |
-| `RAPIDAPI_SPOONACULAR_HOST` | Volitelné | Výchozí: spoonacular-recipe-food-nutrition-v1.p.rapidapi.com |
-| `EXERCISEDB_API_HOST` | Cviky | exercisedb.p.rapidapi.com |
-| `EXERCISEDB_USE_DEV_ONLY` | Volitelné | `true` = přeskočit RapidAPI, používat jen exercisedb.dev (zdarma). Použij když RapidAPI vrací 403/429. |
-| `PEXELS_API_KEY` | Fallback | Ilustrační obrázky když Spoonacular/ExerciseDB nic nenajde |
 
 **Minimální konfigurace pro obrázky:**
-- Jídla: `SPOONACULAR_API_KEY` NEBO `RAPIDAPI_KEY`
-- Cviky: `RAPIDAPI_KEY` + `EXERCISEDB_API_HOST`
-- Fallback: `PEXELS_API_KEY`
+- Jídla: `SPOONACULAR_API_KEY` (povinné)
+- Cviky: wger.de – bez konfigurace (veřejné API)
 
 ---
 
@@ -92,21 +50,20 @@ https://tvoje-domena.vercel.app/api/verify-media-apis
 
 Odpověď ukáže:
 - `apis.spoonacular.working` – Spoonacular vrací data (jídla budou odpovídat)
-- `apis.exercisedb.working` – ExerciseDB vrací data (cviky budou odpovídat)
-- `apis.pexels.configured` – fallback pro ilustrační obrázky
+- `apis.wger.working` – wger.de vrací data (cviky budou odpovídat)
 - `summary.duvod_nesouladu_jidel` – vysvětlení, proč jídla nemusí sedět
 
-Pokud `spoonacular.working === false`, obrázky jídel budou jen z Pexels (klíčová slova) – často nesedí (např. pasta místo ovesné kaše).
+Pokud `spoonacular.working === false`, obrázky jídel budou prázdné (placeholder).
 
 ### 2. Vercel Logs
 
 V Vercel Logs hledej:
-- `[plan-enrichment] ENV summary: { hasSpoonacular: true, hasPexels: true, hasExerciseDb: true }`
+- `[plan-enrichment]` – diagnostika enrichmentu
 
-Pokud vidíš `hasSpoonacular: false` – obrázky jídel se nebudou načítat.
+Pokud vidíš `SPOONACULAR_API_KEY missing` – obrázky jídel se nebudou načítat.
 
 ---
 
 ## NEXT_PUBLIC_API_ONLY_MEDIA
 
-Když je `true`, zobrazují se jen obrázky s `trust=exact` (Spoonacular, ExerciseDB). Ilustrační obrázky z Pexels se skrývají. Pro maximální pokrytí obrázků nastav na `false` nebo nevyplňuj.
+Když je `true`, zobrazují se jen obrázky s `trust=exact` (Spoonacular, wger). Pro maximální pokrytí obrázků nastav na `false` nebo nevyplňuj.

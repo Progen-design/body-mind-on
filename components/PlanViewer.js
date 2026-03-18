@@ -3,7 +3,7 @@
 // NO LIES UI RULE: Frontend must not display media in a way that misleads about trust.
 // - illustrative ≠ exact  |  fallback ≠ verified  |  none ≠ broken image
 // Trust labels and placeholders reflect backend image_trust_level / trust_level.
-// NEXT_PUBLIC_API_ONLY_MEDIA=true → show images/media only when exact (Spoonacular, ExerciseDB), not Pexels.
+// NEXT_PUBLIC_API_ONLY_MEDIA=true → show images/media only when exact (Spoonacular, wger), not Pexels.
 const API_ONLY_MEDIA = process.env.NEXT_PUBLIC_API_ONLY_MEDIA === 'true';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -1442,7 +1442,7 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                                             onError={() => setExerciseMediaErrorKeys((prev) => new Set([...prev, itemKey]))}
                                           />
                                           <span className={`plan-trust-badge plan-trust-badge-exercise plan-trust-badge-${exTrustLevel}`} title={exTrustLevel === 'exact' ? 'Vizuál odpovídá rozpoznanému cviku' : exTrustLevel === 'fallback' ? 'Náhradní vizuál' : ''}>
-                                            {exTrustLevel === 'exact' && <>Ověřený cvik{exerciseMedia?.source && exerciseMedia.source !== 'none' ? <span className="plan-trust-sublabel"> {exerciseMedia.source === 'exercisedb' ? 'ExerciseDB' : exerciseMedia.source}</span> : null}</>}
+                                            {exTrustLevel === 'exact' && <>Ověřený cvik{exerciseMedia?.source && exerciseMedia.source !== 'none' ? <span className="plan-trust-sublabel"> {exerciseMedia.source === 'wger' ? 'wger.de' : exerciseMedia.source}</span> : null}</>}
                                             {exTrustLevel === 'fallback' && 'Náhradní vizuál'}
                                           </span>
                                         </>

@@ -1,14 +1,9 @@
 /**
  * GET /api/verify-media-apis
- * Ověří, zda jsou Spoonacular a ExerciseDB nakonfigurovány a fungují.
- * Vrací stav bez odhalení klíčů.
+ * Ověří, zda jsou Spoonacular (jídla) a wger.de (cviky) dostupné.
+ * Spoonacular vyžaduje SPOONACULAR_API_KEY. wger.de je veřejné API bez klíče.
  */
 const SPOONACULAR_KEY = process.env.SPOONACULAR_API_KEY || '';
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || '';
-const RAPIDAPI_SPOONACULAR_HOST =
-  process.env.RAPIDAPI_SPOONACULAR_HOST || 'spoonacular-recipe-food-nutrition-v1.p.rapidapi.com';
-const EXERCISEDB_KEY = process.env.EXERCISEDB_API_KEY || process.env.RAPIDAPI_KEY || '';
-const EXERCISEDB_HOST = (process.env.EXERCISEDB_API_HOST || 'exercisedb.p.rapidapi.com').replace(/^https?:\/\//, '').replace(/\/$/, '');
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -17,26 +12,17 @@ export default async function handler(req, res) {
 
   const result = {
     spoonacular: { configured: false, working: false, error: null },
-    exercisedb: { configured: false, working: false, error: null },
-    exercisedb_dev: { working: false, error: null },
+    wger: { configured: true, working: false, error: null },
   };
 
-  // Spoonacular
-  const hasSpoonacular = Boolean(SPOONACULAR_KEY || RAPIDAPI_KEY);
+  // Spoonacular (jídla, recepty)
+  const hasSpoonacular = Boolean(SPOONACULAR_KEY);
   result.spoonacular.configured = hasSpoonacular;
 
   if (hasSpoonacular) {
     try {
-      let url, headers = { Accept: 'application/json' };
-      if (SPOONACULAR_KEY) {
-        url = `https://api.spoonacular.com/recipes/complexSearch?apiKey=${encodeURIComponent(SPOONACULAR_KEY)}&query=chicken%20breast&number=1`;
-      } else {
-        const host = RAPIDAPI_SPOONACULAR_HOST.replace(/^https?:\/\//, '');
-        url = `https://${host}/recipes/complexSearch?query=chicken%20breast&number=1`;
-        headers['X-RapidAPI-Key'] = RAPIDAPI_KEY;
-        headers['X-RapidAPI-Host'] = host;
-      }
-      const resp = await fetch(url, { method: 'GET', headers });
+      const url = `https://api.spoonacular.com/recipes/complexSearch?apiKey=${encodeURIComponent(SPOONACULAR_KEY)}&query=chicken%20breast&number=1`;
+      const resp = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } });
       const data = await resp.json();
       result.spoonacular.working = resp.ok && Array.isArray(data?.results) && data.results.length > 0;
       if (!result.spoonacular.working) {
@@ -46,62 +32,30 @@ export default async function handler(req, res) {
       result.spoonacular.error = e?.message || 'Chyba volání';
     }
   } else {
-    result.spoonacular.error = 'SPOONACULAR_API_KEY nebo RAPIDAPI_KEY chybí';
+    result.spoonacular.error = 'SPOONACULAR_API_KEY chybí';
   }
 
-  const EXERCISEDB_USE_DEV_ONLY =
-    process.env.EXERCISEDB_USE_DEV_ONLY === 'true' || process.env.EXERCISEDB_USE_DEV_ONLY === '1';
-
-  // ExerciseDB (RapidAPI / exercisedb.dev fallback v projektu)
-  const hasExerciseDb = Boolean(EXERCISEDB_KEY && EXERCISEDB_HOST) && !EXERCISEDB_USE_DEV_ONLY;
-  result.exercisedb.configured = Boolean(EXERCISEDB_KEY && EXERCISEDB_HOST);
-
-  if (hasExerciseDb) {
-    try {
-      const url = `https://${EXERCISEDB_HOST}/exercises/name/squat?limit=1`;
-      const resp = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'X-RapidAPI-Key': EXERCISEDB_KEY,
-          'X-RapidAPI-Host': EXERCISEDB_HOST,
-        },
-      });
-      const data = await resp.json();
-      result.exercisedb.working = resp.ok && (Array.isArray(data) ? data.length > 0 : (data && typeof data === 'object'));
-      if (!result.exercisedb.working) {
-        result.exercisedb.error = resp.ok ? 'Žádné výsledky' : `HTTP ${resp.status}`;
-      }
-    } catch (e) {
-      result.exercisedb.error = e?.message || 'Chyba volání';
-    }
-  } else if (EXERCISEDB_USE_DEV_ONLY) {
-    result.exercisedb.error = 'Přeskočeno (EXERCISEDB_USE_DEV_ONLY=true, používá se exercisedb.dev)';
-  } else {
-    result.exercisedb.error = 'EXERCISEDB_API_KEY/RAPIDAPI_KEY nebo EXERCISEDB_API_HOST chybí';
-  }
-
-  // exercisedb.dev – zdarma, fallback když RapidAPI vrací 429
+  // wger.de (cviky) – veřejné API, bez klíče
   try {
-    const devResp = await fetch(
-      'https://www.exercisedb.dev/api/v1/exercises/search?q=squat&limit=1',
+    const wgerResp = await fetch(
+      'https://wger.de/api/v2/exercise-translation/?search=squat&language=2&limit=1',
       { method: 'GET', headers: { Accept: 'application/json' } }
     );
-    const devData = await devResp.json();
-    const devList = devData?.data;
-    result.exercisedb_dev.working =
-      devResp.ok && Array.isArray(devList) && devList.length > 0 && devList[0]?.gifUrl;
-    if (!result.exercisedb_dev.working) {
-      result.exercisedb_dev.error = devResp.ok ? 'Žádné výsledky' : `HTTP ${devResp.status}`;
+    const wgerData = await wgerResp.json();
+    const wgerResults = wgerData?.results;
+    result.wger.working =
+      wgerResp.ok && Array.isArray(wgerResults) && wgerResults.length > 0 && wgerResults[0]?.exercise;
+    if (!result.wger.working) {
+      result.wger.error = wgerResp.ok ? 'Žádné výsledky' : `HTTP ${wgerResp.status}`;
     }
   } catch (e) {
-    result.exercisedb_dev.error = e?.message || 'Chyba volání';
+    result.wger.error = e?.message || 'Chyba volání';
   }
 
-  const cvikyOk = result.exercisedb.working || result.exercisedb_dev.working;
   const summary = {
     jidla_ok: result.spoonacular.working,
-    cviky_ok: cvikyOk,
-    cviky_zdroj: result.exercisedb.working ? 'RapidAPI' : result.exercisedb_dev.working ? 'exercisedb.dev (zdarma)' : null,
+    cviky_ok: result.wger.working,
+    cviky_zdroj: result.wger.working ? 'wger.de' : null,
     duvod_nesouladu_jidel: !result.spoonacular.working
       ? 'Spoonacular nefunguje – obrázky jídel budou prázdné'
       : null,

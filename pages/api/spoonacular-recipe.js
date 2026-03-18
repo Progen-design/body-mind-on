@@ -4,9 +4,6 @@
  * Used when meal_trust has recipe_id (exact Spoonacular match) to avoid OpenAI fallback.
  */
 const SPOONACULAR_KEY = process.env.SPOONACULAR_API_KEY || '';
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || '';
-const RAPIDAPI_SPOONACULAR_HOST =
-  process.env.RAPIDAPI_SPOONACULAR_HOST || 'spoonacular-recipe-food-nutrition-v1.p.rapidapi.com';
 const API_TIMEOUT_MS = 8000;
 
 function fetchWithTimeout(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
@@ -73,29 +70,14 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Parametr id musí být číslo (Spoonacular recipe ID)' });
   }
 
-  const hasDirect = Boolean(SPOONACULAR_KEY);
-  const hasRapid = Boolean(RAPIDAPI_KEY);
-  if (!hasDirect && !hasRapid) {
-    return res.status(503).json({ error: 'Spoonacular API není nakonfigurováno' });
+  if (!SPOONACULAR_KEY) {
+    return res.status(503).json({ error: 'Spoonacular API není nakonfigurováno (SPOONACULAR_API_KEY)' });
   }
 
-  let url = '';
-  let headers = { Accept: 'application/json' };
-
-  if (hasDirect) {
-    url = `https://api.spoonacular.com/recipes/${recipeId}/information?apiKey=${encodeURIComponent(SPOONACULAR_KEY)}&includeNutrition=false`;
-  } else {
-    const host = RAPIDAPI_SPOONACULAR_HOST.replace(/^https?:\/\//, '');
-    url = `https://${host}/recipes/${recipeId}/information?includeNutrition=false`;
-    headers = {
-      ...headers,
-      'X-RapidAPI-Key': RAPIDAPI_KEY,
-      'X-RapidAPI-Host': host,
-    };
-  }
+  const url = `https://api.spoonacular.com/recipes/${recipeId}/information?apiKey=${encodeURIComponent(SPOONACULAR_KEY)}&includeNutrition=false`;
 
   try {
-    const resp = await fetchWithTimeout(url, { method: 'GET', headers });
+    const resp = await fetchWithTimeout(url, { method: 'GET', headers: { Accept: 'application/json' } });
     if (!resp.ok) {
       console.warn('[spoonacular-recipe] API error:', resp.status, await resp.text().catch(() => ''));
       return res.status(resp.status === 404 ? 404 : 502).json({ error: 'Recept se nepodařilo načíst' });

@@ -17,7 +17,7 @@
  *   meal_trust[key].recipe_id           Spoonacular recipe ID (when exact) – used by /api/spoonacular-recipe
  *   exercise_media[key].canonical_key   canonical exercise identifier
  *   exercise_media[key].trust_level     "exact" | "fallback" | "none"
- *   exercise_media[key].source          "exercisedb" | "none"
+ *   exercise_media[key].source          "wger" | "none"
  *
  * UI can use these to show labels like:
  *   "Přesný zdroj" (exact), "Ilustrační foto" (illustrative), "Ověřený cvik" (exact exercise)
@@ -87,20 +87,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'html is required' });
     }
 
-    const hasSpoonacular = !!(process.env.SPOONACULAR_API_KEY || process.env.RAPIDAPI_KEY);
-    const hasExerciseDb = !!(process.env.EXERCISEDB_API_KEY || process.env.RAPIDAPI_KEY);
-    const hasExerciseDbHost = !!(process.env.EXERCISEDB_API_HOST || process.env.RAPIDAPI_KEY);
+    const hasSpoonacular = !!process.env.SPOONACULAR_API_KEY;
     if (!hasSpoonacular) {
-      console.warn('[plan-enrichment] SPOONACULAR_API_KEY or RAPIDAPI_KEY missing – meal exact images will be none/placeholder');
-    }
-    if (!hasExerciseDb) {
-      console.warn('[plan-enrichment] EXERCISEDB_API_KEY or RAPIDAPI_KEY missing – exercise media will be none/placeholder');
-    }
-    if (hasExerciseDb && !hasExerciseDbHost) {
-      console.warn('[plan-enrichment] EXERCISEDB_API_HOST not set – ExerciseDB may fail (use RAPIDAPI host or set EXERCISEDB_API_HOST)');
-    }
-    if (!hasSpoonacular || !hasExerciseDb || (hasExerciseDb && !hasExerciseDbHost)) {
-      console.info('[plan-enrichment] ENV summary:', { hasSpoonacular, hasExerciseDb, hasExerciseDbHost });
+      console.warn('[plan-enrichment] SPOONACULAR_API_KEY missing – meal exact images will be none/placeholder');
     }
 
     const cacheKey = simpleHash(html);

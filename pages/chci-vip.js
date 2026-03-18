@@ -155,11 +155,11 @@ export default function ChciVipPage() {
                 password: cleanedData.password,
               });
               if (!error) {
-                router.push('/profil');
+                router.replace('/profil');
                 return;
               }
             }
-            router.push(`/login?registered=1&email=${encodeURIComponent(cleanedData.email || '')}&redirect=/profil`);
+            router.replace(`/login?registered=1&email=${encodeURIComponent(cleanedData.email || '')}&redirect=/profil`);
           };
           setTimeout(doRedirect, 400);
           return;
@@ -434,7 +434,7 @@ export default function ChciVipPage() {
           {status && <p className="center mt-4 text-lg text-gray-300">{status}</p>}
           {planFailedWithAccount && formData.email && (
             <p className="center mt-3">
-              <a href={`/login?registered=1&email=${encodeURIComponent(formData.email)}&redirect=/on-club`} className="btn-submit inline-block">
+              <a href={`/login?registered=1&email=${encodeURIComponent(formData.email)}&redirect=/profil`} className="btn-submit inline-block">
                 Přihlásit se a nechat si znovu poslat plán na e-mail
               </a>
             </p>

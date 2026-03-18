@@ -19,6 +19,7 @@ export default async function handler(req, res) {
   const result = {
     spoonacular: { configured: false, working: false, error: null },
     exercisedb: { configured: false, working: false, error: null },
+    exercisedb_dev: { working: false, error: null },
     pexels: { configured: false },
   };
 
@@ -76,11 +77,30 @@ export default async function handler(req, res) {
     result.exercisedb.error = 'EXERCISEDB_API_KEY/RAPIDAPI_KEY nebo EXERCISEDB_API_HOST chybí';
   }
 
+  // exercisedb.dev – zdarma, fallback když RapidAPI vrací 429
+  try {
+    const devResp = await fetch(
+      'https://www.exercisedb.dev/api/v1/exercises/search?q=squat&limit=1',
+      { method: 'GET', headers: { Accept: 'application/json' } }
+    );
+    const devData = await devResp.json();
+    const devList = devData?.data;
+    result.exercisedb_dev.working =
+      devResp.ok && Array.isArray(devList) && devList.length > 0 && devList[0]?.gifUrl;
+    if (!result.exercisedb_dev.working) {
+      result.exercisedb_dev.error = devResp.ok ? 'Žádné výsledky' : `HTTP ${devResp.status}`;
+    }
+  } catch (e) {
+    result.exercisedb_dev.error = e?.message || 'Chyba volání';
+  }
+
   result.pexels.configured = Boolean(PEXELS_KEY);
 
+  const cvikyOk = result.exercisedb.working || result.exercisedb_dev.working;
   const summary = {
     jidla_ok: result.spoonacular.working,
-    cviky_ok: result.exercisedb.working,
+    cviky_ok: cvikyOk,
+    cviky_zdroj: result.exercisedb.working ? 'RapidAPI' : result.exercisedb_dev.working ? 'exercisedb.dev (zdarma)' : null,
     fallback_pexels: result.pexels.configured,
     duvod_nesouladu_jidel: !result.spoonacular.working
       ? 'Spoonacular nefunguje – zobrazují se jen Pexels (ilustrační, často nesedí)'

@@ -41,7 +41,7 @@
 │  4. WGER – Resolve each exercise_queries[].search_term                        │
 │     - exercise-translation?search=X&language=2 → exerciseimage?exercise=ID   │
 │     - video?exercise=ID (if available)                                       │
-│     - Fallback: exercisedb.dev, then placeholder                             │
+│     - Fallback: placeholder (žádný secondary provider)                       │
 └─────────────────────────────────────────────────────────────────────────────┘
                                         │
                                         ▼
@@ -148,7 +148,7 @@ OpenAI vrací **pouze** strukturované zadání. Žádné recepty ani cviky.
 | 2 | OpenAI → structured JSON | Retry 1×, pak deterministic fallback |
 | 3 | Parse + validate JSON (schema) | Fallback na předdefinované queries |
 | 4 | Pro každé meal: Spoonacular search | Alternativní query, pak placeholder |
-| 5 | Pro každý exercise: wger search | exercisedb.dev, pak placeholder |
+| 5 | Pro každý exercise: wger search | placeholder |
 | 6 | Sestavení finálního JSON | – |
 | 7 | (Volitelně) persist do DB | – |
 | 8 | Return 200 + plan | – |
@@ -336,8 +336,8 @@ PRAVIDLA:
 | OpenAI nevalidní JSON | Retry 1× s upřesněným promptem, pak deterministic |
 | Spoonacular 429/limit | Exponential backoff, fallback query, pak placeholder |
 | Spoonacular žádný výsledek | Zkusit zkrácený query, pak `{ display_name, recipe: null }` |
-| wger žádný cvik | exercisedb.dev, pak Pexels ilustrační, pak placeholder |
-| wger 5xx | Retry 1×, pak exercisedb.dev |
+| wger žádný cvik | placeholder |
+| wger 5xx | Retry 1×, pak placeholder |
 
 ---
 

@@ -167,8 +167,8 @@ async function run() {
     console.log(`  ℹ️  ${missing} keys will be auto-populated on first plan enrichment call`);
   }
 
-  // 8. Exercises with fallback-only (no GIF from ExerciseDB)
-  printSection('Exercises with Pexels Fallback Only');
+  // 8. Exercises with fallback-only (no exact asset from wger)
+  printSection('Exercises with Fallback Only');
   const fallbackOnly = await runQuery(pat, PROJECT_REF, `
     select canonical_key, source, trust_level
     from exercise_asset_registry

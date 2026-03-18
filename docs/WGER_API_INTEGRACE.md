@@ -30,10 +30,8 @@ GET /api/v2/exerciseimage/?exercise=167&is_main=true
 → results[0].image = URL obrázku (https://wger.de/media/...)
 ```
 
-**Rozdíl oproti ExerciseDB/exercisedb.dev:**
-- wger: **statické PNG** obrázky
-- ExerciseDB: **GIF** animace
-- Oba zdroje lze kombinovat (wger jako fallback)
+**Použití v body-mind-on:**
+- wger je jediný zdroj pro obrázky a videa cviků (žádný RapidAPI, ExerciseDB)
 
 ---
 
@@ -89,12 +87,12 @@ GET /api/v2/ingredient/?search=kuře&limit=5
 
 ## Návrh integrace do body-mind-on
 
-### Fáze 1: Cviky (obrázky) – doplněk k exercisedb.dev
+### Fáze 1: Cviky (obrázky) – implementováno
 
-1. Přidat `tryWgerExercise(searchName)` do `lib/exerciseEnrichment.js`
-2. Pořadí: ExerciseDB → exercisedb.dev → **wger** → Pexels
+1. `lib/exerciseEnrichment.js` používá `wgerService.resolveExercise(searchName)`
+2. Pořadí: exercise_asset_registry (DB) → **wger.de** → none
 3. wger: `exercise-translation?search=X&language=2` → `exerciseimage?exercise=ID`
-4. Vrací `image_url` (PNG), `gif_url: null`, `source: 'wger'`
+4. Vrací `image_url` (PNG), `gif_url` (video_url pokud existuje), `source: 'wger'`
 
 **Výhody:** Zdarma, bez API klíče, čeština (language=9), 885+ cviků s obrázky
 
@@ -155,10 +153,10 @@ GET /api/v2/ingredient/?search=kuře&limit=5
 
 | Funkce | wger | Současný stav v projektu |
 |--------|------|---------------------------|
-| Obrázky cviků | ✅ PNG, zdarma | exercisedb.dev (GIF), Pexels |
-| Obrázky jídel | ❌ jen ingredience | Spoonacular, Pexels |
+| Obrázky cviků | ✅ PNG, videa, zdarma | wger.de (jediný zdroj) |
+| Obrázky jídel | ❌ jen ingredience | Spoonacular |
 | Nutriční data | ✅ ingredience | – |
 | Recepty | ❌ | Spoonacular |
 | Tréninkové plány | ✅ (s auth) | AI generované plány |
 
-**Doporučení:** Začít s **Fází 1** – wger jako další fallback pro obrázky cviků (po exercisedb.dev, před Pexels). Žádný API klíč, stabilní zdroj.
+**Stav:** wger je jediný provider pro cviky. Žádný RapidAPI ani ExerciseDB.

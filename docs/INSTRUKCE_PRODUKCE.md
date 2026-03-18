@@ -3,7 +3,9 @@
 ## Co je nasazeno
 
 - **Aplikace:** https://app.bodyandmindon.cz
-- **Zdroj kódu:** Spoonacular (jídla) + wger.de (cviky), bez ExerciseDB/RAPIDAPI
+- **Zdroje dat pro plány:** výhradně tyto dvě platformy:
+  - **Jídelníček:** [Spoonacular](https://spoonacular.com/food-api/console#Dashboard) – recepty, obrázky, nutriční hodnoty
+  - **Trénink:** [wger.de](https://wger.de/api/v2/) – cviky, obrázky, videa
 
 ---
 
@@ -29,7 +31,7 @@ V **Vercel → Project → Settings → Environment Variables** musí být nasta
 | `ADMIN_TOKEN` | Volitelné | Pro admin panel |
 | `NEXT_PUBLIC_APP_URL` | Ano | https://app.bodyandmindon.cz |
 
-**Už nepotřebné (pro odstranění):** `RAPIDAPI_KEY`, `EXERCISEDB_API_KEY`, `EXERCISEDB_API_HOST`
+**Nepoužívané (odstranit z Vercel env):** `RAPIDAPI_KEY`, `EXERCISEDB_API_KEY`, `EXERCISEDB_API_HOST` – aplikace je bez RapidAPI
 
 ---
 

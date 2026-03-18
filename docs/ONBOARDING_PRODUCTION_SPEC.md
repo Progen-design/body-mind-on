@@ -317,12 +317,10 @@ Response: { "ok": true, "workout": { ... } }
 - `resolveExercise(term)` → { name, image_url, video_url, wger_exercise_id }
 - **Žádná závislost** na ExerciseDB/Pexels – čistý wger
 
-### Exercise Provider Extension (volitelná vrstva)
+### exerciseProviderRegistry (lib/services/exerciseProviderRegistry.js)
 
-- **Soubor:** `lib/services/exerciseProviderRegistry.js`
-- **Účel:** Registrace secondary providerů (exercisedb.dev, Pexels)
-- **Použití:** Orchestrátor volá `resolveExercise(term, { useSecondary: true })` pouze když je zapnuto
-- **Poznámka k licencím:** wger = CC-BY-SA, exercisedb.dev = vlastní licence, Pexels = Pexels License. Pro production preferovat wger (stabilní, veřejné, bez rate limitů).
+- **Účel:** Resolve cviků – pouze wger.de
+- **Žádný secondary provider** – žádný RapidAPI, ExerciseDB ani Pexels
 
 ### spoonacularService (lib/services/spoonacularService.js)
 
@@ -336,7 +334,7 @@ Response: { "ok": true, "workout": { ... } }
 - Volání OpenAI (s retry)
 - Deterministic fallback
 - Resolve meals (Spoonacular)
-- Resolve exercises (wger, volitelně secondary)
+- Resolve exercises (wger)
 - Sestavení finálního plánu
 - Logging
 

@@ -9,7 +9,6 @@ const RAPIDAPI_SPOONACULAR_HOST =
   process.env.RAPIDAPI_SPOONACULAR_HOST || 'spoonacular-recipe-food-nutrition-v1.p.rapidapi.com';
 const EXERCISEDB_KEY = process.env.EXERCISEDB_API_KEY || process.env.RAPIDAPI_KEY || '';
 const EXERCISEDB_HOST = (process.env.EXERCISEDB_API_HOST || 'exercisedb.p.rapidapi.com').replace(/^https?:\/\//, '').replace(/\/$/, '');
-const PEXELS_KEY = process.env.PEXELS_API_KEY || '';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -20,7 +19,6 @@ export default async function handler(req, res) {
     spoonacular: { configured: false, working: false, error: null },
     exercisedb: { configured: false, working: false, error: null },
     exercisedb_dev: { working: false, error: null },
-    pexels: { configured: false },
   };
 
   // Spoonacular
@@ -99,19 +97,14 @@ export default async function handler(req, res) {
     result.exercisedb_dev.error = e?.message || 'Chyba volání';
   }
 
-  result.pexels.configured = Boolean(PEXELS_KEY);
-
   const cvikyOk = result.exercisedb.working || result.exercisedb_dev.working;
   const summary = {
     jidla_ok: result.spoonacular.working,
     cviky_ok: cvikyOk,
     cviky_zdroj: result.exercisedb.working ? 'RapidAPI' : result.exercisedb_dev.working ? 'exercisedb.dev (zdarma)' : null,
-    fallback_pexels: result.pexels.configured,
     duvod_nesouladu_jidel: !result.spoonacular.working
-      ? 'Spoonacular nefunguje – zobrazují se jen Pexels (ilustrační, často nesedí)'
-      : result.spoonacular.working && result.pexels.configured
-        ? 'Spoonacular funguje. Nesoulad může být: 1) nízká confidence → Pexels fallback, 2) špatný překlad dotazu, 3) cache'
-        : null,
+      ? 'Spoonacular nefunguje – obrázky jídel budou prázdné'
+      : null,
   };
 
   return res.status(200).json({

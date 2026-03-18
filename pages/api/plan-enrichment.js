@@ -12,12 +12,12 @@
  * TRUST FIELDS (PART 7 — backend-ready for UI labels):
  *   meal_trust[key].image_trust_level   "exact" | "illustrative" | "none"
  *   meal_trust[key].exact_source        "spoonacular" | null
- *   meal_trust[key].illustrative_source "pexels" | null
+ *   meal_trust[key].illustrative_source null (Pexels odstraněn)
  *   meal_trust[key].confidence_score    0..1
  *   meal_trust[key].recipe_id           Spoonacular recipe ID (when exact) – used by /api/spoonacular-recipe
  *   exercise_media[key].canonical_key   canonical exercise identifier
  *   exercise_media[key].trust_level     "exact" | "fallback" | "none"
- *   exercise_media[key].source          "exercisedb" | "pexels" | "none"
+ *   exercise_media[key].source          "exercisedb" | "none"
  *
  * UI can use these to show labels like:
  *   "Přesný zdroj" (exact), "Ilustrační foto" (illustrative), "Ověřený cvik" (exact exercise)
@@ -88,14 +88,10 @@ export default async function handler(req, res) {
     }
 
     const hasSpoonacular = !!(process.env.SPOONACULAR_API_KEY || process.env.RAPIDAPI_KEY);
-    const hasPexels = !!process.env.PEXELS_API_KEY;
     const hasExerciseDb = !!(process.env.EXERCISEDB_API_KEY || process.env.RAPIDAPI_KEY);
     const hasExerciseDbHost = !!(process.env.EXERCISEDB_API_HOST || process.env.RAPIDAPI_KEY);
     if (!hasSpoonacular) {
       console.warn('[plan-enrichment] SPOONACULAR_API_KEY or RAPIDAPI_KEY missing – meal exact images will be none/placeholder');
-    }
-    if (!hasPexels) {
-      console.warn('[plan-enrichment] PEXELS_API_KEY missing – illustrative fallbacks will be unavailable');
     }
     if (!hasExerciseDb) {
       console.warn('[plan-enrichment] EXERCISEDB_API_KEY or RAPIDAPI_KEY missing – exercise media will be none/placeholder');
@@ -103,8 +99,8 @@ export default async function handler(req, res) {
     if (hasExerciseDb && !hasExerciseDbHost) {
       console.warn('[plan-enrichment] EXERCISEDB_API_HOST not set – ExerciseDB may fail (use RAPIDAPI host or set EXERCISEDB_API_HOST)');
     }
-    if (!hasSpoonacular || !hasPexels || !hasExerciseDb || (hasExerciseDb && !hasExerciseDbHost)) {
-      console.info('[plan-enrichment] ENV summary:', { hasSpoonacular, hasPexels, hasExerciseDb, hasExerciseDbHost });
+    if (!hasSpoonacular || !hasExerciseDb || (hasExerciseDb && !hasExerciseDbHost)) {
+      console.info('[plan-enrichment] ENV summary:', { hasSpoonacular, hasExerciseDb, hasExerciseDbHost });
     }
 
     const cacheKey = simpleHash(html);

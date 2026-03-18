@@ -1278,7 +1278,7 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                               {showMealImage && (
                                 <span className={`plan-trust-badge plan-trust-badge-meal plan-trust-badge-${trustLevel}`} title={trustLevel === 'exact' ? 'Obrázek odpovídá nalezenému receptu' : 'Orientační vizuál'}>
                                   {trustLevel === 'exact' && <>Přesný zdroj{mealTrust?.exact_source === 'spoonacular' ? <span className="plan-trust-sublabel"> Spoonacular</span> : null}</>}
-                                  {trustLevel === 'illustrative' && <>Ilustrační foto{mealTrust?.illustrative_source === 'pexels' ? <span className="plan-trust-sublabel"> Pexels</span> : null}</>}
+                                  {trustLevel === 'illustrative' && <>Ilustrační foto</>}
                                 </span>
                               )}
                               <span className="plan-meal-recept-badge">Klikni pro recept</span>

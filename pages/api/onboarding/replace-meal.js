@@ -66,6 +66,8 @@ export default async function handler(req, res) {
         display_name: display_name_cs,
         display_name_cs,
         recipe_verified: true,
+        recipe_id: meta.recipe_id ?? rawRecipe.id,
+        image_trust_level: meta.image_trust_level ?? 'none',
         recipe: {
           id: rawRecipe.id,
           title: display_name_cs,

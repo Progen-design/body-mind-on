@@ -148,8 +148,8 @@ export default function ChciVipPage() {
           setStatus("✅ " + (result.message || "Účet je vytvořen. Přesměrování na přihlášení…"));
           setPlanFailedWithAccount(false);
           setTimeout(() => {
-            router.push(`/login?registered=1&email=${encodeURIComponent(cleanedData.email || '')}`);
-          }, 1500);
+            router.push(`/login?registered=1&email=${encodeURIComponent(cleanedData.email || '')}&redirect=/on-club`);
+          }, 300);
           return;
         }
         setIsSubmitting(false);
@@ -422,8 +422,8 @@ export default function ChciVipPage() {
           {status && <p className="center mt-4 text-lg text-gray-300">{status}</p>}
           {planFailedWithAccount && formData.email && (
             <p className="center mt-3">
-              <a href={`/login?redirect=/profil&email=${encodeURIComponent(formData.email)}`} className="btn-submit inline-block">
-                Přihlásit se a vygenerovat plán
+              <a href={`/login?registered=1&email=${encodeURIComponent(formData.email)}&redirect=/on-club`} className="btn-submit inline-block">
+                Přihlásit se a nechat si znovu poslat plán na e-mail
               </a>
             </p>
           )}

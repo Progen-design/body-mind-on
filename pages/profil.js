@@ -2245,9 +2245,14 @@ export default function Profil() {
                 </div>
               ) : currentPlan && nextPlan ? (
                 <>
-                  <div className="profile-bubble-tabs" role="tablist" aria-label="Týden plánu">
-                    <button type="button" role="tab" aria-selected={planTab === 'current'} className={`profile-bubble-tab ${planTab === 'current' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setPlanTab('current')}>Tento týden</button>
-                    <button type="button" role="tab" aria-selected={planTab === 'next'} className={`profile-bubble-tab ${planTab === 'next' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setPlanTab('next')}>Příští týden</button>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <div className="profile-bubble-tabs" role="tablist" aria-label="Týden plánu">
+                      <button type="button" role="tab" aria-selected={planTab === 'current'} className={`profile-bubble-tab ${planTab === 'current' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setPlanTab('current')}>Tento týden</button>
+                      <button type="button" role="tab" aria-selected={planTab === 'next'} className={`profile-bubble-tab ${planTab === 'next' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setPlanTab('next')}>Příští týden</button>
+                    </div>
+                    <button type="button" className="profile-quick-nav-btn" onClick={handleSendPlanAgain} disabled={sendingPlan} style={{ marginLeft: 'auto' }}>
+                      {sendingPlan ? 'Odesílám…' : 'Znovu poslat plán na e-mail'}
+                    </button>
                   </div>
                   {planTab === 'current' ? (
                     (currentPlan && currentPlan.plan_html) ? (
@@ -2299,6 +2304,12 @@ export default function Profil() {
                 </>
               ) : currentPlan ? (
                 (currentPlan && currentPlan.plan_html) ? (
+                <>
+                <div style={{ marginBottom: '12px' }}>
+                  <button type="button" className="profile-quick-nav-btn" onClick={handleSendPlanAgain} disabled={sendingPlan}>
+                    {sendingPlan ? 'Odesílám…' : 'Znovu poslat plán na e-mail'}
+                  </button>
+                </div>
                 <PlanViewer
                   plan={currentPlan}
                   userName={userName}
@@ -2315,6 +2326,7 @@ export default function Profil() {
                   onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
                   canPinMeals={membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired)}
                 />
+                </>
                 ) : (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
                   <p className="plan-preparing-text">Plán není kompletní. Obnov stránku za chvíli nebo kontaktuj podporu.</p>
@@ -2323,6 +2335,12 @@ export default function Profil() {
                 )
               ) : nextPlan ? (
                 (nextPlan && nextPlan.plan_html) ? (
+                <>
+                <div style={{ marginBottom: '12px' }}>
+                  <button type="button" className="profile-quick-nav-btn" onClick={handleSendPlanAgain} disabled={sendingPlan}>
+                    {sendingPlan ? 'Odesílám…' : 'Znovu poslat plán na e-mail'}
+                  </button>
+                </div>
                 <PlanViewer
                   plan={nextPlan}
                   userName={userName}
@@ -2339,6 +2357,7 @@ export default function Profil() {
                   onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
                   canPinMeals={false}
                 />
+                </>
                 ) : (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
                   <p className="plan-preparing-text">Plán není kompletní. Obnov stránku za chvíli nebo kontaktuj podporu.</p>

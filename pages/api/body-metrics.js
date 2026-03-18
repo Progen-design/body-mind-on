@@ -411,6 +411,7 @@ export default async function handler(req, res) {
         trainer_task_failed: initialPlanTaskStatus === 'failed',
         trainer_generation_source: trainerResult?.generation_source ?? trainerResult?.final_publish_source ?? undefined,
         trainer_output_exists: !!(trainerResult?.plan_id),
+        email_error: trainerResult?.email_error ?? undefined,
         email_sent: planSent,
         plan_saved: savedPlanExists,
         plan_saved_id: savedPlanId ?? undefined,
@@ -448,7 +449,7 @@ export default async function handler(req, res) {
                 loginUnavailable: payload.user_id == null,
                 userChosePassword,
               });
-              fallbackPlanSent = !!sendRes?.messageId;
+              fallbackPlanSent = !!sendRes?.ok;
             } catch (mailErr) {
               console.warn('[body-metrics] last-resort sendPlanEmail failed:', mailErr?.message);
             }

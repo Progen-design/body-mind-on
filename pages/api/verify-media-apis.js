@@ -43,8 +43,9 @@ export default async function handler(req, res) {
     );
     const wgerData = await wgerResp.json();
     const wgerResults = wgerData?.results;
-    result.wger.working =
-      wgerResp.ok && Array.isArray(wgerResults) && wgerResults.length > 0 && wgerResults[0]?.exercise;
+    result.wger.working = Boolean(
+      wgerResp.ok && Array.isArray(wgerResults) && wgerResults.length > 0 && wgerResults[0]?.exercise
+    );
     if (!result.wger.working) {
       result.wger.error = wgerResp.ok ? 'Žádné výsledky' : `HTTP ${wgerResp.status}`;
     }

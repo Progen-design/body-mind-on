@@ -59,8 +59,10 @@ export default async function handler(req, res) {
     const exercises = [];
     for (const ex of block) {
       const resolved = await resolveExercise(ex.search_term);
+      const verified = resolved?.source === 'wger' && (resolved?.image_url || resolved?.video_url);
       exercises.push({
-        name: resolved?.name ?? ex.search_term,
+        name: verified ? (resolved?.name ?? ex.search_term) : 'Cvik (neověřeno)',
+        exercise_verified: verified,
         sets: ex.sets ?? 3,
         reps: ex.reps ?? null,
         duration_sec: ex.duration_sec ?? null,

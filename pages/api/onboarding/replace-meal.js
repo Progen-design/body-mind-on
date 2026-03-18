@@ -44,7 +44,8 @@ export default async function handler(req, res) {
         ok: true,
         meal: {
           type: meal_type,
-          display_name: query,
+          display_name: 'Jídlo (neověřeno)',
+          recipe_verified: false,
           recipe: null,
         },
         _request_id: requestId,
@@ -56,6 +57,7 @@ export default async function handler(req, res) {
       meal: {
         type: meal_type,
         display_name: recipe.title,
+        recipe_verified: true,
         recipe: {
           id: recipe.id,
           title: recipe.title,

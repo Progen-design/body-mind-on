@@ -61,7 +61,7 @@ export default async function handler(req, res) {
       const resolved = await resolveExercise(ex.search_term);
       const verified = resolved?.source === 'wger' && (resolved?.image_url || resolved?.video_url);
       exercises.push({
-        name: verified ? (resolved?.name ?? ex.search_term) : 'Cvik (neověřeno)',
+        name: verified ? (resolved?.name || 'Cvik (neověřeno)') : 'Cvik (neověřeno)',
         exercise_verified: verified,
         sets: ex.sets ?? 3,
         reps: ex.reps ?? null,

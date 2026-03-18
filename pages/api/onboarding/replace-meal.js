@@ -1,9 +1,11 @@
 /**
  * POST /api/onboarding/replace-meal
  * Nahradí jedno jídlo v plánu novým receptem ze Spoonacular.
+ * Trust-aware pipeline, display_name_cs – nikdy raw anglický název.
  * @see docs/ONBOARDING_PRODUCTION_SPEC.md § Replace Meal Flow
  */
-import { searchRecipe } from '../../../lib/services/spoonacularService';
+import { searchMealMetadata } from '../../../lib/mealEnrichment';
+import { translateRecipeTitleToCzech } from '../../../lib/recipeLocalization';
 
 function errorResponse(res, status, error, code, requestId) {
   return res.status(status).json({
@@ -35,16 +37,19 @@ export default async function handler(req, res) {
     }
 
     const query = hint_query && typeof hint_query === 'string' ? hint_query.trim().slice(0, 100) : getDefaultQuery(meal_type);
-    const diet = body.diet_type === 'vegan' ? 'vegan' : body.diet_type === 'vegetarian' ? 'vegetarian' : undefined;
 
-    const recipe = await searchRecipe(query, { diet });
+    const meta = await searchMealMetadata(query, null);
 
-    if (!recipe) {
+    const recipeVerified = meta?.recipe_id != null && (meta?.image_trust_level === 'exact' || (meta?.confidence_score ?? 0) >= 0.75);
+    const rawRecipe = meta?._recipe;
+
+    if (!recipeVerified || !rawRecipe) {
       return res.status(200).json({
         ok: true,
         meal: {
           type: meal_type,
           display_name: 'Jídlo (neověřeno)',
+          display_name_cs: 'Jídlo (neověřeno)',
           recipe_verified: false,
           recipe: null,
         },
@@ -52,23 +57,26 @@ export default async function handler(req, res) {
       });
     }
 
+    const display_name_cs = await translateRecipeTitleToCzech(rawRecipe.title || '', meta.recipe_id);
+
     return res.status(200).json({
       ok: true,
       meal: {
         type: meal_type,
-        display_name: recipe.title,
+        display_name: display_name_cs,
+        display_name_cs,
         recipe_verified: true,
         recipe: {
-          id: recipe.id,
-          title: recipe.title,
-          image: recipe.image,
-          sourceUrl: recipe.sourceUrl,
-          readyInMinutes: recipe.readyInMinutes,
-          calories: recipe.calories,
-          protein_g: recipe.protein_g,
-          carbs_g: recipe.carbs_g,
-          fat_g: recipe.fat_g,
-          source: recipe.source,
+          id: rawRecipe.id,
+          title: display_name_cs,
+          image: meta.image_trust_level === 'exact' ? rawRecipe.image : null,
+          sourceUrl: rawRecipe.sourceUrl || null,
+          readyInMinutes: rawRecipe.readyInMinutes ?? null,
+          calories: meta.calories ?? null,
+          protein_g: meta.protein_g ?? null,
+          carbs_g: meta.carbs_g ?? null,
+          fat_g: meta.fat_g ?? null,
+          source: 'spoonacular',
         },
       },
       _request_id: requestId,

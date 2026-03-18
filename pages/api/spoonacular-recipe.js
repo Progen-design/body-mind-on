@@ -1,7 +1,7 @@
 /**
  * GET /api/spoonacular-recipe?id=123
- * Fetches full recipe from Spoonacular by ID and returns HTML for the recipe modal.
- * Used when meal_trust has recipe_id (exact Spoonacular match) to avoid OpenAI fallback.
+ * Fetches full recipe from Spoonacular by ID and returns localized (Czech) HTML for the recipe modal.
+ * Raw angličtina se nikdy nedostane do UI – vždy lokalizováno.
  */
 const SPOONACULAR_KEY = process.env.SPOONACULAR_API_KEY || '';
 const API_TIMEOUT_MS = 8000;
@@ -12,42 +12,22 @@ function fetchWithTimeout(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
   return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(id));
 }
 
-function recipeToHtml(recipe) {
-  if (!recipe) return '';
-  const title = recipe.title || 'Recept';
-  const servings = recipe.servings ? `Na ${recipe.servings} porcí` : '';
+function recipeToLocalizedHtml(localized) {
+  if (!localized) return '';
+  const { display_name_cs, ingredients_cs, instructions_cs } = localized;
+  const title = display_name_cs || 'Recept';
 
   let ingredientsHtml = '';
-  const ingredients = recipe.extendedIngredients || recipe.ingredients || [];
-  if (ingredients.length) {
-    const items = ingredients
-      .map((i) => {
-        const raw = i.original || (typeof i === 'string' ? i : `${i.amount ?? ''} ${i.unit ?? ''} ${i.name ?? ''}`.trim());
-        return raw ? escapeHtml(raw) : '';
-      })
-      .filter(Boolean);
-    ingredientsHtml = '<p><b>Suroviny:</b></p><ul>' + items.map((s) => `<li>${s}</li>`).join('') + '</ul>';
+  if (Array.isArray(ingredients_cs) && ingredients_cs.length > 0) {
+    ingredientsHtml = '<p><b>Suroviny:</b></p><ul>' + ingredients_cs.map((s) => `<li>${escapeHtml(String(s))}</li>`).join('') + '</ul>';
   }
 
   let instructionsHtml = '';
-  let instructions = recipe.instructions || '';
-  if (Array.isArray(recipe.analyzedInstructions) && recipe.analyzedInstructions.length) {
-    const steps = recipe.analyzedInstructions[0]?.steps || [];
-    if (steps.length) {
-      instructionsHtml = '<p><b>Postup:</b></p><ol>' + steps
-        .map((s) => `<li>${escapeHtml(s.step || '')}</li>`)
-        .join('') + '</ol>';
-    }
-  } else if (typeof instructions === 'string' && instructions.trim()) {
-    instructionsHtml = '<p><b>Postup:</b></p>' + instructions
-      .replace(/<[^>]+>/g, '')
-      .split(/\n+/)
-      .filter((s) => s.trim())
-      .map((s, i) => `<p>${i + 1}. ${escapeHtml(s.trim())}</p>`)
-      .join('');
+  if (Array.isArray(instructions_cs) && instructions_cs.length > 0) {
+    instructionsHtml = '<p><b>Postup:</b></p><ol>' + instructions_cs.map((s) => `<li>${escapeHtml(String(s))}</li>`).join('') + '</ol>';
   }
 
-  return `<p><b>Jídlo:</b> ${escapeHtml(title)}${servings ? ` (${servings})` : ''}</p>${ingredientsHtml}${instructionsHtml}`.trim();
+  return `<p><b>Jídlo:</b> ${escapeHtml(title)}</p>${ingredientsHtml}${instructionsHtml}`.trim();
 }
 
 function escapeHtml(s) {
@@ -83,7 +63,9 @@ export default async function handler(req, res) {
       return res.status(resp.status === 404 ? 404 : 502).json({ error: 'Recept se nepodařilo načíst' });
     }
     const recipe = await resp.json();
-    const html = recipeToHtml(recipe);
+    const { getLocalizedRecipe } = await import('../../lib/recipeLocalization');
+    const localized = await getLocalizedRecipe(recipeId, recipe);
+    const html = recipeToLocalizedHtml(localized);
     if (!html) {
       return res.status(502).json({ error: 'Recept nemá dostupná data' });
     }

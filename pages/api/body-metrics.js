@@ -20,11 +20,11 @@ import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal,
 import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
 import { writeOnboardingEvent } from '../../lib/onboardingMetrics';
 
-/** Vercel Hobby = 60s. Vracíme odpověď vždy před tímto limitem. */
-const REQUEST_HARD_CAP_MS = 52000;
+/** Vercel Hobby = 60s. Plán musí být vždy vygenerován před odpovědí – optimalizace v planOrchestrator. */
+const PLAN_WAIT_TIMEOUT_MS = 55000;
+const PLAN_WAIT_POLL_MS = 1500;
 
 export default async function handler(req, res) {
-  const requestStartAt = Date.now();
   const registrationStartedAt = new Date().toISOString();
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -156,10 +156,8 @@ export default async function handler(req, res) {
     let initialPlanSummary = null;
     let initialPlanValidationWarning = null;
     const accountCreated = payload.user_id != null;
-    const PLAN_WAIT_POLL_MS = 1500;
-    const remainingMs = () => Math.max(0, REQUEST_HARD_CAP_MS - (Date.now() - requestStartAt));
 
-    // SYNC: Registrace čeká na plán v rámci requestu, max REQUEST_HARD_CAP_MS
+    // SYNC: Plán musí být vždy vygenerován před odpovědí – čekáme na AI v rámci requestu
     if (payload.user_id) {
       try {
         const taskResult = await createInitialAITasks(payload.user_id, emailOptions);
@@ -203,22 +201,12 @@ export default async function handler(req, res) {
         return false;
       };
 
-      if (taskRow?.id && taskRow?.status === 'pending' && remainingMs() > 5000) {
+      if (taskRow?.id && taskRow?.status === 'pending') {
         console.info('[body-metrics] executing trainer/initial_plan', { task_id: taskRow.id });
         try {
-          const execTimeout = Math.min(remainingMs() - 3000, 50000);
-          const ok = await Promise.race([
-            runDirectExecute(),
-            new Promise((_, rej) => setTimeout(() => rej(new Error('EXEC_TIMEOUT')), execTimeout)),
-          ]).catch((e) => {
-            if (e?.message === 'EXEC_TIMEOUT') {
-              console.info('[body-metrics] execute timeout – vrátíme planPending, scheduler dokončí na pozadí');
-              return false;
-            }
-            throw e;
-          });
+          const ok = await runDirectExecute();
           console.info('[body-metrics] runDirectExecute result', { ok, initialPlanTaskStatus });
-          if (!ok && remainingMs() > 5000) {
+          if (!ok) {
             const sched = await runAIScheduler();
             console.info('[body-metrics] scheduler ran (trainer retry + coach)', sched);
             const { data: refetched } = await supabaseServer.from('ai_tasks').select('status, result').eq('id', taskRow.id).maybeSingle();
@@ -228,32 +216,23 @@ export default async function handler(req, res) {
               initialPlanSummary = refetched?.result?.summary ?? null;
               initialPlanValidationWarning = refetched?.result?.validation_warning ?? null;
             }
-            if (initialPlanTaskStatus === 'pending' && remainingMs() > 5000) {
-              await Promise.race([
-                runDirectExecute(),
-                new Promise((_, rej) => setTimeout(() => rej(new Error('EXEC_TIMEOUT')), Math.min(remainingMs() - 2000, 40000))),
-              ]).catch(() => {});
+            if (initialPlanTaskStatus === 'pending') {
+              await runDirectExecute().catch(() => {});
             }
           }
-          if (remainingMs() > 2000) {
-            const schedAll = await runAIScheduler();
-            console.info('[body-metrics] all agents run', schedAll);
-          }
+          const schedAll = await runAIScheduler();
+          console.info('[body-metrics] all agents run', schedAll);
         } catch (execErr) {
           console.warn('[body-metrics] direct execute failed', { error: execErr?.message, stack: execErr?.stack?.slice?.(0, 300) });
           await runAIScheduler().catch((schedErr) => console.warn('[body-metrics] scheduler catch', schedErr?.message));
-          if (remainingMs() > 5000) {
-            await Promise.race([
-              runDirectExecute(),
-              new Promise((_, rej) => setTimeout(() => rej(new Error('EXEC_TIMEOUT')), Math.min(remainingMs() - 2000, 15000))),
-            ]).catch((retryErr) => { if (retryErr?.message !== 'EXEC_TIMEOUT') console.warn('[body-metrics] retry direct execute', retryErr?.message); });
-            await runAIScheduler().catch(() => {});
-          }
+          await runDirectExecute().catch((retryErr) => console.warn('[body-metrics] retry direct execute', retryErr?.message));
+          await runAIScheduler().catch(() => {});
         }
       }
 
-      if (initialPlanTaskStatus === 'pending' && taskRow?.id && remainingMs() > 2000) {
-        while (remainingMs() > PLAN_WAIT_POLL_MS) {
+      if (initialPlanTaskStatus === 'pending' && taskRow?.id) {
+        const pollStart = Date.now();
+        while (Date.now() - pollStart < PLAN_WAIT_TIMEOUT_MS) {
           await new Promise((r) => setTimeout(r, PLAN_WAIT_POLL_MS));
           const { data: polled } = await supabaseServer.from('ai_tasks').select('status, result').eq('id', taskRow.id).maybeSingle();
           if (polled?.status === 'completed') {
@@ -449,47 +428,10 @@ export default async function handler(req, res) {
     let lastResortFailed = false;
     let lastResortError = null;
     if (accountCreated && initialPlanTaskStatus !== 'completed') {
-      if (Date.now() - requestStartAt > REQUEST_HARD_CAP_MS) {
-        console.info('[body-metrics] hard cap – předčasný return, přeskočen last-resort');
-        return res.status(200).json({
-          ok: false,
-          planSent: false,
-          planPending: true,
-          plan_state: 'processing',
-          loginUnavailable: false,
-          message: failMsg,
-          hasUserId: true,
-          initialPlanTaskStatus,
-          _diagnostics: response._diagnostics,
-        });
-      }
       try {
-        const fallbackTimeout = Math.min(8000, REQUEST_HARD_CAP_MS - (Date.now() - requestStartAt) - 2000);
-        if (fallbackTimeout < 1000) {
-          return res.status(200).json({
-            ok: false,
-            planSent: false,
-            planPending: true,
-            plan_state: 'processing',
-            loginUnavailable: false,
-            message: failMsg,
-            hasUserId: true,
-            initialPlanTaskStatus,
-            _diagnostics: response._diagnostics,
-          });
-        }
-        let fallbackResult = await Promise.race([
-          persistPublishableFallbackPlanForUser(payload.user_id),
-          new Promise((_, rej) => setTimeout(() => rej(new Error('FALLBACK_TIMEOUT')), fallbackTimeout)),
-        ]).catch((e) => {
-          if (e?.message === 'FALLBACK_TIMEOUT') {
-            console.info('[body-metrics] last-resort timeout');
-            return { plan_id: null, error: 'timeout' };
-          }
-          throw e;
-        });
+        let fallbackResult = await persistPublishableFallbackPlanForUser(payload.user_id);
         lastResortError = fallbackResult?.plan_id ? null : (fallbackResult?.error ?? null);
-        if (!fallbackResult?.plan_id && fallbackResult?.error !== 'timeout') {
+        if (!fallbackResult?.plan_id) {
           fallbackResult = await persistPublishableFallbackPlanForUser(payload.user_id);
           if (!lastResortError && !fallbackResult?.plan_id) lastResortError = fallbackResult?.error ?? null;
         }

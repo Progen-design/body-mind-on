@@ -20,7 +20,11 @@ import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal,
 import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
 import { writeOnboardingEvent } from '../../lib/onboardingMetrics';
 
+/** Vercel Hobby = 60s. Vracíme odpověď vždy před tímto limitem. */
+const REQUEST_HARD_CAP_MS = 52000;
+
 export default async function handler(req, res) {
+  const requestStartAt = Date.now();
   const registrationStartedAt = new Date().toISOString();
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -152,12 +156,10 @@ export default async function handler(req, res) {
     let initialPlanSummary = null;
     let initialPlanValidationWarning = null;
     const accountCreated = payload.user_id != null;
-    // Vercel Hobby = 60s max; Pro = 300s. Držíme se pod 58s, aby nedošlo k 504.
-    const REGISTRATION_SYNC_CAP_MS = 58000;
     const PLAN_WAIT_POLL_MS = 1500;
-    const syncStart = Date.now();
+    const remainingMs = () => Math.max(0, REQUEST_HARD_CAP_MS - (Date.now() - requestStartAt));
 
-    // SYNC: Registrace čeká na plán v rámci requestu, max REGISTRATION_SYNC_CAP_MS
+    // SYNC: Registrace čeká na plán v rámci requestu, max REQUEST_HARD_CAP_MS
     if (payload.user_id) {
       try {
         const taskResult = await createInitialAITasks(payload.user_id, emailOptions);
@@ -200,8 +202,6 @@ export default async function handler(req, res) {
         }
         return false;
       };
-
-      const remainingMs = () => Math.max(0, REGISTRATION_SYNC_CAP_MS - (Date.now() - syncStart));
 
       if (taskRow?.id && taskRow?.status === 'pending' && remainingMs() > 5000) {
         console.info('[body-metrics] executing trainer/initial_plan', { task_id: taskRow.id });
@@ -449,10 +449,47 @@ export default async function handler(req, res) {
     let lastResortFailed = false;
     let lastResortError = null;
     if (accountCreated && initialPlanTaskStatus !== 'completed') {
+      if (Date.now() - requestStartAt > REQUEST_HARD_CAP_MS) {
+        console.info('[body-metrics] hard cap – předčasný return, přeskočen last-resort');
+        return res.status(200).json({
+          ok: false,
+          planSent: false,
+          planPending: true,
+          plan_state: 'processing',
+          loginUnavailable: false,
+          message: failMsg,
+          hasUserId: true,
+          initialPlanTaskStatus,
+          _diagnostics: response._diagnostics,
+        });
+      }
       try {
-        let fallbackResult = await persistPublishableFallbackPlanForUser(payload.user_id);
+        const fallbackTimeout = Math.min(8000, REQUEST_HARD_CAP_MS - (Date.now() - requestStartAt) - 2000);
+        if (fallbackTimeout < 1000) {
+          return res.status(200).json({
+            ok: false,
+            planSent: false,
+            planPending: true,
+            plan_state: 'processing',
+            loginUnavailable: false,
+            message: failMsg,
+            hasUserId: true,
+            initialPlanTaskStatus,
+            _diagnostics: response._diagnostics,
+          });
+        }
+        let fallbackResult = await Promise.race([
+          persistPublishableFallbackPlanForUser(payload.user_id),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('FALLBACK_TIMEOUT')), fallbackTimeout)),
+        ]).catch((e) => {
+          if (e?.message === 'FALLBACK_TIMEOUT') {
+            console.info('[body-metrics] last-resort timeout');
+            return { plan_id: null, error: 'timeout' };
+          }
+          throw e;
+        });
         lastResortError = fallbackResult?.plan_id ? null : (fallbackResult?.error ?? null);
-        if (!fallbackResult?.plan_id) {
+        if (!fallbackResult?.plan_id && fallbackResult?.error !== 'timeout') {
           fallbackResult = await persistPublishableFallbackPlanForUser(payload.user_id);
           if (!lastResortError && !fallbackResult?.plan_id) lastResortError = fallbackResult?.error ?? null;
         }

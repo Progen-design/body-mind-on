@@ -38,7 +38,7 @@ export default async function handler(req, res) {
 
     const query = hint_query && typeof hint_query === 'string' ? hint_query.trim().slice(0, 100) : getDefaultQuery(meal_type);
 
-    const meta = await searchMealMetadata(query, null);
+    const meta = await searchMealMetadata(query, null, { maxCandidates: 2 });
 
     const recipeVerified = meta?.recipe_id != null && (meta?.image_trust_level === 'exact' || (meta?.confidence_score ?? 0) >= 0.75);
     const rawRecipe = meta?._recipe;

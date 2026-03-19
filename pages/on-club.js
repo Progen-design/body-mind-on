@@ -172,7 +172,11 @@ export default function OnClubPage() {
         setStatus("⚠️ " + (result.message || "Údaje uloženy, ale e-mail s plánem se nepodařilo odeslat. Zkontroluj spam nebo napiš na info@bodyandmindon.cz."));
         setPlanFailedWithAccount(true);
       } else {
-        const nextError = result.error || result.message || "Nepodařilo se odeslat.";
+        let nextError = result.error || result.message || "Nepodařilo se odeslat.";
+        if (res.status === 504) {
+          nextError = "Generování plánu trvalo příliš dlouho. Účet mohl být vytvořen – zkus se přihlásit. Plán může být už v profilu, nebo zkus registraci znovu za chvíli.";
+          setPlanFailedWithAccount(true);
+        }
         if (/Výška musí být mezi 100 a 250 cm\./i.test(nextError)) {
           setFieldErrors({ height: "Výška musí být mezi 100 a 250 cm." });
           setStatus("");
@@ -182,7 +186,11 @@ export default function OnClubPage() {
         }
       }
     } catch (err) {
-      setStatus("❌ Chyba připojení: " + (err.message || "Zkuste to znovu za chvíli."));
+      const msg = err?.message || "";
+      const is504 = /504|timeout|timed out/i.test(msg);
+      setStatus(is504
+        ? "❌ Generování plánu trvalo příliš dlouho. Zkus se přihlásit – plán může být už v profilu, nebo zkus registraci znovu za chvíli."
+        : "❌ Chyba připojení: " + (msg || "Zkuste to znovu za chvíli."));
     } finally {
       setIsSubmitting(false);
     }

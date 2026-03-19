@@ -152,10 +152,12 @@ export default async function handler(req, res) {
     let initialPlanSummary = null;
     let initialPlanValidationWarning = null;
     const accountCreated = payload.user_id != null;
-    const PLAN_WAIT_TIMEOUT_MS = 100000; // 100 s – registrace čeká na plán
+    // Vercel Hobby = 60s max; Pro = 300s. Držíme se pod 58s, aby nedošlo k 504.
+    const REGISTRATION_SYNC_CAP_MS = 58000;
     const PLAN_WAIT_POLL_MS = 1500;
+    const syncStart = Date.now();
 
-    // SYNC: Registrace NESMÍ skončit bez plánu – čekáme na AI v rámci requestu
+    // SYNC: Registrace čeká na plán v rámci requestu, max REGISTRATION_SYNC_CAP_MS
     if (payload.user_id) {
       try {
         const taskResult = await createInitialAITasks(payload.user_id, emailOptions);
@@ -199,12 +201,24 @@ export default async function handler(req, res) {
         return false;
       };
 
-      if (taskRow?.id && taskRow?.status === 'pending') {
+      const remainingMs = () => Math.max(0, REGISTRATION_SYNC_CAP_MS - (Date.now() - syncStart));
+
+      if (taskRow?.id && taskRow?.status === 'pending' && remainingMs() > 5000) {
         console.info('[body-metrics] executing trainer/initial_plan', { task_id: taskRow.id });
         try {
-          const ok = await runDirectExecute();
+          const execTimeout = Math.min(remainingMs() - 3000, 50000);
+          const ok = await Promise.race([
+            runDirectExecute(),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('EXEC_TIMEOUT')), execTimeout)),
+          ]).catch((e) => {
+            if (e?.message === 'EXEC_TIMEOUT') {
+              console.info('[body-metrics] execute timeout – vrátíme planPending, scheduler dokončí na pozadí');
+              return false;
+            }
+            throw e;
+          });
           console.info('[body-metrics] runDirectExecute result', { ok, initialPlanTaskStatus });
-          if (!ok) {
+          if (!ok && remainingMs() > 5000) {
             const sched = await runAIScheduler();
             console.info('[body-metrics] scheduler ran (trainer retry + coach)', sched);
             const { data: refetched } = await supabaseServer.from('ai_tasks').select('status, result').eq('id', taskRow.id).maybeSingle();
@@ -214,24 +228,32 @@ export default async function handler(req, res) {
               initialPlanSummary = refetched?.result?.summary ?? null;
               initialPlanValidationWarning = refetched?.result?.validation_warning ?? null;
             }
-            if (initialPlanTaskStatus === 'pending') {
-              await runDirectExecute().catch(() => {});
+            if (initialPlanTaskStatus === 'pending' && remainingMs() > 5000) {
+              await Promise.race([
+                runDirectExecute(),
+                new Promise((_, rej) => setTimeout(() => rej(new Error('EXEC_TIMEOUT')), Math.min(remainingMs() - 2000, 40000))),
+              ]).catch(() => {});
             }
           }
-          // VŽDY spustit scheduler – zpracuje coach/onboarding_message (a další pending tasky)
-          const schedAll = await runAIScheduler();
-          console.info('[body-metrics] all agents run', schedAll);
+          if (remainingMs() > 2000) {
+            const schedAll = await runAIScheduler();
+            console.info('[body-metrics] all agents run', schedAll);
+          }
         } catch (execErr) {
           console.warn('[body-metrics] direct execute failed', { error: execErr?.message, stack: execErr?.stack?.slice?.(0, 300) });
           await runAIScheduler().catch((schedErr) => console.warn('[body-metrics] scheduler catch', schedErr?.message));
-          await runDirectExecute().catch((retryErr) => console.warn('[body-metrics] retry direct execute', retryErr?.message));
-          await runAIScheduler().catch(() => {});
+          if (remainingMs() > 5000) {
+            await Promise.race([
+              runDirectExecute(),
+              new Promise((_, rej) => setTimeout(() => rej(new Error('EXEC_TIMEOUT')), Math.min(remainingMs() - 2000, 15000))),
+            ]).catch((retryErr) => { if (retryErr?.message !== 'EXEC_TIMEOUT') console.warn('[body-metrics] retry direct execute', retryErr?.message); });
+            await runAIScheduler().catch(() => {});
+          }
         }
       }
 
-      if (initialPlanTaskStatus === 'pending' && taskRow?.id) {
-        const pollStart = Date.now();
-        while (Date.now() - pollStart < PLAN_WAIT_TIMEOUT_MS) {
+      if (initialPlanTaskStatus === 'pending' && taskRow?.id && remainingMs() > 2000) {
+        while (remainingMs() > PLAN_WAIT_POLL_MS) {
           await new Promise((r) => setTimeout(r, PLAN_WAIT_POLL_MS));
           const { data: polled } = await supabaseServer.from('ai_tasks').select('status, result').eq('id', taskRow.id).maybeSingle();
           if (polled?.status === 'completed') {

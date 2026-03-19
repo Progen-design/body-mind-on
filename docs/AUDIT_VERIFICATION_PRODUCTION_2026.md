@@ -8,7 +8,7 @@
 
 ## A. Celkový verdict
 
-**HOTOVO S RIZIKEM**
+**HOTOVO**
 
 ---
 
@@ -21,7 +21,7 @@
 | localized recipe popup | PASS | /api/spoonacular-recipe → getLocalizedRecipe → česky název, suroviny, postup, nutriční blok |
 | trust-safe meal images | PASS | image_url jen při image_trust_level === 'exact', jinak null |
 | wger exercises | PASS | resolveExercise → wgerService, exercise_verified, display_name_cs |
-| canonical Czech exercise names | **RISK** | mountain_climber, superman, bench_press mají display_name_cs v angličtině |
+| canonical Czech exercise names | PASS | mountain_climber → Horolezec, superman → Superman cvik, bench_press → Tlak na lavici |
 | renderer profile | PASS | planRenderer používá display_name_cs, recipe_verified, exercise_verified |
 | renderer email | PASS | stejný renderPlanHtmlFromStructured → sendPlanEmail |
 | replace meal | PASS | translateRecipeTitleToCzech, display_name_cs, recipe_verified, image_trust_level |
@@ -34,7 +34,7 @@
 Co ještě může způsobit:
 
 1. **Angličtina v UI**
-   - `exerciseCanonicalMap.js`: `mountain_climber`, `superman`, `bench_press` mají `display_name_cs` v angličtině
+   - ~~`exerciseCanonicalMap.js`: `mountain_climber`, `superman`, `bench_press` mají `display_name_cs` v angličtině~~ – opraveno
    - Při cviku mimo canonical mapu: `display_name_cs = 'Cvik'` (generic placeholder) – OK
 
 2. **Špatné obrázky**
@@ -54,7 +54,7 @@ Co ještě může způsobit:
 
 | Soubor | Funkce | Problém | Dopad |
 |--------|--------|---------|-------|
-| lib/exerciseCanonicalMap.js | CANONICAL_EXERCISES | mountain_climber.display_name_cs = 'Mountain climber', superman = 'Superman', bench_press = 'Bench press' | Anglické názvy cviků v profilu a e-mailu |
+| lib/exerciseCanonicalMap.js | CANONICAL_EXERCISES | ~~mountain_climber, superman, bench_press v angličtině~~ – opraveno na Horolezec, Superman cvik, Tlak na lavici | — |
 | lib/generatePlan.js | generatePlan (line 841) | `m.recipe ?? { title: m.display_name }` – enrichment pro vrácení | Pouze interní enrichment objekt, ne user-facing; planHtml už má display_name_cs |
 | lib/mealEnrichment.js | searchMealMetadata (line 339) | `name: best.recipe.title \|\| mealName` | Interní pole meta, planOrchestrator ho nepoužívá pro UI |
 
@@ -78,7 +78,7 @@ Co ještě může způsobit:
 
 ## F. Co ještě dorazit
 
-1. **exerciseCanonicalMap.js:** Změnit display_name_cs u mountain_climber, superman, bench_press na české ekvivalenty (např. „Mountain climber“ → „Horolezec“, „Superman“ → „Superman“ nebo „Superman cvik“, „Bench press“ → „Bench press“ nebo „Tlak na lavici“ – bench press je v ČR běžný anglicismus).
+1. ~~**exerciseCanonicalMap.js:** Změnit display_name_cs u mountain_climber, superman, bench_press na české ekvivalenty~~ – **HOTOVO** (2026-03-18): mountain_climber → „Horolezec“, superman → „Superman cvik“, bench_press → „Tlak na lavici“.
 
 ---
 

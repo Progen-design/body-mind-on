@@ -2,7 +2,7 @@
  * POST /api/plan-enrichment
  * ─────────────────────────────────────────────────────────────────────────────
  * Returns enriched meal images and exercise media for a given plan HTML.
- * Cache: in-memory by plan_html hash, TTL 5 min – snižuje opakované volání při stejném plánu.
+ * Žádná cache – vždy čerstvá data ze Spoonacular/wger.
  *
  * RESPONSE:
  *   meal_images      { [normalized_key]: url_string }   — backward-compatible, used by PlanViewer
@@ -26,14 +26,6 @@
 import { supabaseServer } from '../../lib/supabaseServer';
 import { enrichPlanContent } from '../../lib/enrichPlanContent';
 
-const ENRICHMENT_CACHE_TTL_MS = 5 * 60 * 1000; // 5 min
-const enrichmentCache = new Map();
-
-function simpleHash(str) {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) h = ((h << 5) - h) + str.charCodeAt(i) | 0;
-  return String(h);
-}
 
 function normalizeTextKey(value) {
   if (!value || typeof value !== 'string') return '';
@@ -90,19 +82,6 @@ export default async function handler(req, res) {
     const hasSpoonacular = !!process.env.SPOONACULAR_API_KEY;
     if (!hasSpoonacular) {
       console.warn('[plan-enrichment] SPOONACULAR_API_KEY missing – meal exact images will be none/placeholder');
-    }
-
-    const cacheKey = simpleHash(html);
-    const cached = enrichmentCache.get(cacheKey);
-    if (cached && Date.now() - cached.at < ENRICHMENT_CACHE_TTL_MS) {
-      return res.status(200).json({
-        ...cached.payload,
-        _diagnostics: {
-          ...cached.payload._diagnostics,
-          enrichment_cached: true,
-          cache_hit: true,
-        },
-      });
     }
 
     const enriched = await enrichPlanContent({ html });
@@ -214,7 +193,6 @@ export default async function handler(req, res) {
         cache_hit: false,
       },
     };
-    enrichmentCache.set(cacheKey, { payload, at: Date.now() });
     return res.status(200).json(payload);
   } catch (err) {
     console.error('[plan-enrichment] error:', err);

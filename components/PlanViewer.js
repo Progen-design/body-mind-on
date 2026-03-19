@@ -739,7 +739,6 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
   const [exerciseMediaErrorKeys, setExerciseMediaErrorKeys] = useState(() => new Set());
   const [showRawPlanFallback, setShowRawPlanFallback] = useState(false);
   const recipeOpenIdRef = useRef(0);
-  const recipeCacheRef = useRef(new Map()); // dish -> html, 5 min TTL
 
   /** Odstraní nebezpečné tagy z HTML pro zobrazení v fallbacku. */
   const sanitizeHtmlForFallback = (raw) => {
@@ -758,26 +757,18 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
 
   const getSpoonacularRecipe = (recipeId) => {
     if (!recipeId || !Number.isInteger(Number(recipeId))) return Promise.resolve(null);
-    const key = `spoonacular:${recipeId}`;
-    const cached = recipeCacheRef.current.get(key);
-    if (cached && cached.html != null && Date.now() - (cached.at || 0) < 5 * 60 * 1000) return Promise.resolve(cached.html);
     return fetch('/api/spoonacular-recipe?id=' + encodeURIComponent(String(recipeId)))
       .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
       .then(({ ok, data }) => {
         const html = ok && data?.ok && data?.html ? data.html : null;
         const errMsg = !html && data?.error ? data.error : null;
-        const result = html || (errMsg ? recipeErrorHtml(errMsg) : null);
-        recipeCacheRef.current.set(key, { html: result, at: Date.now() });
-        return result;
+        return html || (errMsg ? recipeErrorHtml(errMsg) : null);
       })
       .catch(() => null);
   };
 
   const getRecipeForDish = (dishName, avoid = '') => {
-    const key = ((dishName || '').trim().toLowerCase().slice(0, 120)) + (avoid ? '|' + avoid.slice(0, 80) : '');
     if (!(dishName || '').trim()) return Promise.resolve(null);
-    const cached = recipeCacheRef.current.get(key);
-    if (cached && cached.html != null && Date.now() - (cached.at || 0) < 5 * 60 * 1000) return Promise.resolve(cached.html);
     let url = '/api/recipe?dish=' + encodeURIComponent((dishName || '').trim().slice(0, 150));
     if (avoid && typeof avoid === 'string' && avoid.trim()) url += '&avoid=' + encodeURIComponent(avoid.trim().slice(0, 300));
     return fetch(url)
@@ -785,9 +776,7 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
       .then(({ ok, data }) => {
         const html = ok && data?.ok && data?.html ? data.html : null;
         const errMsg = !html && data?.error ? data.error : null;
-        const result = html || (errMsg ? recipeErrorHtml(errMsg) : null);
-        recipeCacheRef.current.set(key, { html: result, at: Date.now() });
-        return result;
+        return html || (errMsg ? recipeErrorHtml(errMsg) : null);
       })
       .catch(() => null);
   };
@@ -2585,6 +2574,66 @@ const planSectionStyles = `
   .plan-recipe-modal-body :global(.plan-no-recipe-hint) {
     color: #94a3b8;
     font-size: 13px;
+  }
+  .plan-recipe-modal-body :global(.recipe-nutrition-block) {
+    margin: 16px 0 20px;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .plan-recipe-modal-body :global(.recipe-nutrition-title) {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #e9d5ff;
+  }
+  .plan-recipe-modal-body :global(.recipe-nutrients) {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .plan-recipe-modal-body :global(.recipe-nutrient-row) {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .plan-recipe-modal-body :global(.recipe-nutrient-top) {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 8px 12px;
+    font-size: 13px;
+  }
+  .plan-recipe-modal-body :global(.recipe-nutrient-label) {
+    color: #cbd5e1;
+  }
+  .plan-recipe-modal-body :global(.recipe-nutrient-value) {
+    color: #94a3b8;
+    font-weight: 500;
+  }
+  .plan-recipe-modal-body :global(.recipe-nutrient-pct) {
+    color: #94a3b8;
+    font-size: 12px;
+    min-width: 36px;
+    text-align: right;
+  }
+  .plan-recipe-modal-body :global(.recipe-nutrient-bar-wrap) {
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .plan-recipe-modal-body :global(.recipe-nutrient-bar) {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+  .plan-recipe-modal-body :global(.recipe-nutrient-bar-macro) {
+    background: linear-gradient(90deg, #ec4899 0%, #f472b6 100%);
+  }
+  .plan-recipe-modal-body :global(.recipe-nutrient-bar-micro) {
+    background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
   }
   .plan-meal-body {
     padding: 14px;

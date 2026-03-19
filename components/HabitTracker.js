@@ -55,13 +55,22 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     const result = [];
     const today = new Date();
     today.setHours(12, 0, 0, 0);
-    for (let i = -DAYS_BACK; i <= DAYS_FORWARD; i++) {
+    const todayStr = getLocalDateStr(today);
+    result.push(todayStr);
+    for (let i = 1; i <= DAYS_FORWARD; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       result.push(getLocalDateStr(d));
     }
+    for (let i = 1; i <= DAYS_BACK; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      result.push(getLocalDateStr(d));
+    }
     return result;
   }, []);
+
+  const daysChronological = useMemo(() => [...days].sort((a, b) => a.localeCompare(b)), [days]);
 
   useEffect(() => {
     const { pos, neg } = buildHabitsLists(userHabits);
@@ -241,7 +250,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   const chartData = useMemo(() => {
     const totalHabitsCount = positiveHabits.length + negativeHabits.length;
     const maxCount = Math.max(1, totalHabitsCount);
-    return days.map((dateStr) => {
+    return daysChronological.map((dateStr) => {
       const posCount = (positiveHabits || []).filter((h) => getCompleted(h.id, dateStr)).length;
       const negCount = (negativeHabits || []).filter((h) => getCompleted(h.id, dateStr)).length;
       return {
@@ -253,7 +262,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         pct: ((posCount + negCount) / maxCount) * 100,
       };
     });
-  }, [days, todayStr, positiveHabits, negativeHabits, allLogs]);
+  }, [daysChronological, todayStr, positiveHabits, negativeHabits, allLogs]);
 
   const chartMaxVal = useMemo(() => {
     let maxPos = 0, maxNeg = 0;

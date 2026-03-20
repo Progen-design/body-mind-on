@@ -28,15 +28,25 @@ const url = `${BASE_URL.replace(/\/$/, '')}/api/body-metrics`;
 console.log('POST', url);
 
 const start = Date.now();
+const TIMEOUT_MS = 70000; // body-metrics čeká na plán max ~55s
+const controller = new AbortController();
+const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 let res;
 try {
   res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+    signal: controller.signal,
   });
+  clearTimeout(timeoutId);
 } catch (e) {
-  console.error('Chyba připojení:', e.message);
+  clearTimeout(timeoutId);
+  if (e.name === 'AbortError') {
+    console.error(`Chyba: timeout po ${TIMEOUT_MS / 1000}s`);
+  } else {
+    console.error('Chyba připojení:', e.message);
+  }
   process.exit(1);
 }
 

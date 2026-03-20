@@ -2209,7 +2209,7 @@ export default function Profil() {
                   <p className="plan-preparing-text">Plán se nepodařilo dokončit.</p>
                   <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '12px' }}>
                     <button type="button" className="profile-quick-nav-btn" onClick={handleRetryPlan} disabled={retryingPlan}>
-                      {retryingPlan ? 'Generuji…' : 'Vygenerovat plán'}
+                      {retryingPlan ? 'Generuji…' : 'Zkusit znovu'}
                     </button>
                     <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
                   </div>
@@ -2220,7 +2220,7 @@ export default function Profil() {
                   <p className="plan-preparing-text">Plán byl vytvořen neúplně nebo neprošel validací.</p>
                   <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '12px' }}>
                     <button type="button" className="profile-quick-nav-btn" onClick={handleRetryPlan} disabled={retryingPlan}>
-                      {retryingPlan ? 'Generuji…' : 'Vygenerovat plán'}
+                      {retryingPlan ? 'Generuji…' : 'Zkusit znovu'}
                     </button>
                     <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
                   </div>

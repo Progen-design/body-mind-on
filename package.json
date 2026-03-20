@@ -8,6 +8,7 @@
     "migrate:ai-documents": "node scripts/migrate-ai-documents.mjs",
     "migrate:trainer-calendar": "node scripts/run-trainer-calendar-migration.js",
     "test:expired-trial": "node scripts/set-expired-trial-for-test.js",
+    "smoke-test": "node scripts/smoke-test-critical-path.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

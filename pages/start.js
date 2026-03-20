@@ -38,6 +38,7 @@ export default function Start() {
 
   const [status, setStatus] = useState("");
   const [planFailedWithAccount, setPlanFailedWithAccount] = useState(false);
+  const [planFailedCanRetry, setPlanFailedCanRetry] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [selectedHabits, setSelectedHabits] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -97,6 +98,7 @@ export default function Start() {
   const handleNext = () => {
     setStatus("");
     setPlanFailedWithAccount(false);
+    setPlanFailedCanRetry(false);
     if (step === 2) {
       const step2Errors = getStep2Errors();
       if (Object.keys(step2Errors).length > 0) {
@@ -113,6 +115,7 @@ export default function Start() {
   const handleBack = () => {
     setStatus("");
     setPlanFailedWithAccount(false);
+    setPlanFailedCanRetry(false);
     if (step > 1) setStep((s) => s - 1);
   };
 
@@ -186,6 +189,7 @@ export default function Start() {
           setStep(2);
         } else {
           setStatus("❌ " + nextError);
+          setPlanFailedCanRetry(result?.hasUserId === true);
         }
       }
     } catch (err) {
@@ -471,6 +475,31 @@ export default function Start() {
             <p className="center mt-3">
               <a href={`/login?registered=1&email=${encodeURIComponent(formData.email)}&redirect=/profil`} className="btn-submit inline-block">
                 Přihlásit se a nechat si znovu poslat plán na e-mail
+              </a>
+            </p>
+          )}
+          {planFailedCanRetry && formData.email && formData.password && (
+            <p className="center mt-3">
+              <button
+                type="button"
+                className="btn-submit"
+                onClick={async () => {
+                  const { error } = await supabase.auth.signInWithPassword({
+                    email: formData.email,
+                    password: formData.password,
+                  });
+                  if (!error) router.replace('/profil');
+                  else router.replace(`/login?registered=1&email=${encodeURIComponent(formData.email)}&redirect=/profil`);
+                }}
+              >
+                Přihlásit se a zkusit znovu v profilu
+              </button>
+            </p>
+          )}
+          {planFailedCanRetry && formData.email && !formData.password && (
+            <p className="center mt-3">
+              <a href={`/login?registered=1&email=${encodeURIComponent(formData.email)}&redirect=/profil`} className="btn-submit inline-block">
+                Přihlásit se a zkusit znovu v profilu
               </a>
             </p>
           )}

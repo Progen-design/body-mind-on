@@ -39,6 +39,7 @@ export default function ChciVipPage() {
 
   const [status, setStatus] = useState("");
   const [planFailedWithAccount, setPlanFailedWithAccount] = useState(false);
+  const [planFailedCanRetry, setPlanFailedCanRetry] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [selectedHabits, setSelectedHabits] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,6 +91,7 @@ export default function ChciVipPage() {
   const handleNext = () => {
     setStatus("");
     setPlanFailedWithAccount(false);
+    setPlanFailedCanRetry(false);
     if (step === 2) {
       const step2Errors = getStep2Errors();
       if (Object.keys(step2Errors).length > 0) {
@@ -103,6 +105,7 @@ export default function ChciVipPage() {
   const handleBack = () => {
     setStatus("");
     setPlanFailedWithAccount(false);
+    setPlanFailedCanRetry(false);
     if (step > 1) setStep((s) => s - 1);
   };
 
@@ -168,19 +171,28 @@ export default function ChciVipPage() {
         setStatus("⚠️ " + (result.message || "Údaje uloženy, ale e-mail s plánem se nepodařilo odeslat. Zkontroluj spam nebo napiš na info@bodyandmindon.cz."));
         setPlanFailedWithAccount(true);
       } else {
-        setIsSubmitting(false);
-        const nextError = result.error || result.message || "Nepodařilo se odeslat.";
+        let nextError = result.error || result.message || "Nepodařilo se odeslat.";
+        if (res.status === 504) {
+          nextError = "Generování plánu trvalo příliš dlouho. Účet mohl být vytvořen – zkus se přihlásit. Plán může být už v profilu, nebo zkus registraci znovu za chvíli.";
+          setPlanFailedWithAccount(true);
+        }
         if (/Výška musí být mezi 100 a 250 cm\./i.test(nextError)) {
           setFieldErrors({ height: "Výška musí být mezi 100 a 250 cm." });
           setStatus("");
           setStep(2);
         } else {
           setStatus("❌ " + nextError);
+          setPlanFailedCanRetry(result?.hasUserId === true);
         }
       }
     } catch (err) {
+      const msg = err?.message || "";
+      const is504 = /504|timeout|timed out/i.test(msg);
+      setStatus(is504
+        ? "❌ Generování plánu trvalo příliš dlouho. Zkus se přihlásit – plán může být už v profilu, nebo zkus registraci znovu za chvíli."
+        : "❌ Chyba připojení: " + (msg || "Zkuste to znovu za chvíli."));
+    } finally {
       setIsSubmitting(false);
-      setStatus("❌ Chyba připojení: " + (err.message || "Zkuste to znovu za chvíli."));
     }
   };
 
@@ -436,6 +448,31 @@ export default function ChciVipPage() {
             <p className="center mt-3">
               <a href={`/login?registered=1&email=${encodeURIComponent(formData.email)}&redirect=/profil`} className="btn-submit inline-block">
                 Přihlásit se a nechat si znovu poslat plán na e-mail
+              </a>
+            </p>
+          )}
+          {planFailedCanRetry && formData.email && formData.password && (
+            <p className="center mt-3">
+              <button
+                type="button"
+                className="btn-submit"
+                onClick={async () => {
+                  const { error } = await supabase.auth.signInWithPassword({
+                    email: formData.email,
+                    password: formData.password,
+                  });
+                  if (!error) router.replace('/profil');
+                  else router.replace(`/login?registered=1&email=${encodeURIComponent(formData.email)}&redirect=/profil`);
+                }}
+              >
+                Přihlásit se a zkusit znovu v profilu
+              </button>
+            </p>
+          )}
+          {planFailedCanRetry && formData.email && !formData.password && (
+            <p className="center mt-3">
+              <a href={`/login?registered=1&email=${encodeURIComponent(formData.email)}&redirect=/profil`} className="btn-submit inline-block">
+                Přihlásit se a zkusit znovu v profilu
               </a>
             </p>
           )}

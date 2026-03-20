@@ -182,7 +182,11 @@ export default function Start() {
         setPlanFailedWithAccount(true);
       } else {
         setIsSubmitting(false);
-        const nextError = result.error || result.message || "Nepodařilo se odeslat.";
+        let nextError = result.error || result.message || "Nepodařilo se odeslat.";
+        if (res.status === 504) {
+          nextError = "Generování plánu trvalo příliš dlouho. Účet mohl být vytvořen – zkus se přihlásit. Plán může být už v profilu, nebo zkus registraci znovu za chvíli.";
+          setPlanFailedWithAccount(true);
+        }
         if (/Výška musí být mezi 100 a 250 cm\./i.test(nextError)) {
           setFieldErrors({ height: "Výška musí být mezi 100 a 250 cm." });
           setStatus("");
@@ -194,7 +198,11 @@ export default function Start() {
       }
     } catch (err) {
       setIsSubmitting(false);
-      setStatus("❌ Chyba připojení: " + (err.message || "Zkuste to znovu za chvíli."));
+      const msg = err?.message || "";
+      const is504 = /504|timeout|timed out/i.test(msg);
+      setStatus(is504
+        ? "❌ Generování plánu trvalo příliš dlouho. Zkus se přihlásit – plán může být už v profilu, nebo zkus registraci znovu za chvíli."
+        : "❌ Chyba připojení: " + (msg || "Zkuste to znovu za chvíli."));
     }
   };
 

@@ -4,7 +4,8 @@
  * Trust-aware pipeline, display_name_cs – nikdy raw anglický název.
  * @see docs/ONBOARDING_PRODUCTION_SPEC.md § Replace Meal Flow
  */
-import { searchMealMetadata, MEAL_CONFIDENCE_THRESHOLD } from '../../../lib/mealEnrichment';
+import { searchMealMetadata, MEAL_CONFIDENCE_THRESHOLD, mapSpoonacularRecipe } from '../../../lib/mealEnrichment';
+import { buildSpoonacularContext } from '../../../lib/spoonacularComplexSearch';
 import { translateRecipeTitleToCzech } from '../../../lib/recipeLocalization';
 import { extractIngredientLinesFromSpoonacularRecipe } from '../../../lib/spoonacularShopping';
 
@@ -26,7 +27,7 @@ export default async function handler(req, res) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {};
-    const { plan_id, date, meal_type, hint_query } = body;
+    const { plan_id, date, meal_type, hint_query, body_metrics, targets } = body;
 
     if (!date || !meal_type) {
       return errorResponse(res, 400, 'date a meal_type jsou povinné', 'VALIDATION_ERROR', requestId);
@@ -39,7 +40,12 @@ export default async function handler(req, res) {
 
     const query = hint_query && typeof hint_query === 'string' ? hint_query.trim().slice(0, 100) : getDefaultQuery(meal_type);
 
-    const meta = await searchMealMetadata(query, null, { maxCandidates: 3 });
+    const spoonacularContext = buildSpoonacularContext(body_metrics || null, targets || {}, meal_type);
+    const meta = await searchMealMetadata(query, null, {
+      maxCandidates: 3,
+      shortlistSize: 5,
+      spoonacularContext,
+    });
 
     const recipeVerified = meta?.recipe_id != null && (meta?.image_trust_level === 'exact' || (meta?.confidence_score ?? 0) >= MEAL_CONFIDENCE_THRESHOLD);
     const rawRecipe = meta?._recipe;
@@ -72,18 +78,19 @@ export default async function handler(req, res) {
         image_url: meta.image_trust_level === 'exact' ? meta.image_url ?? null : null,
         image_trust_level: meta.image_trust_level ?? 'none',
         shopping_ingredient_lines: shoppingIngredientLines,
-        recipe: {
-          id: rawRecipe.id,
-          title: display_name_cs,
-          image: meta.image_trust_level === 'exact' ? rawRecipe.image : null,
-          sourceUrl: rawRecipe.sourceUrl || null,
-          readyInMinutes: rawRecipe.readyInMinutes ?? null,
-          calories: meta.calories ?? null,
-          protein_g: meta.protein_g ?? null,
-          carbs_g: meta.carbs_g ?? null,
-          fat_g: meta.fat_g ?? null,
-          source: 'spoonacular',
-        },
+        recipe: (() => {
+          const mapped = mapSpoonacularRecipe(rawRecipe);
+          return {
+            ...mapped,
+            title: display_name_cs,
+            image: meta.image_trust_level === 'exact' ? mapped.image : null,
+            source: 'spoonacular',
+            sourceUrl: mapped.source_url,
+            readyInMinutes: mapped.ready_in_minutes,
+            pricePerServing: mapped.price_per_serving,
+            healthScore: mapped.health_score,
+          };
+        })(),
       },
       _request_id: requestId,
     });

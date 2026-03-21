@@ -36,7 +36,7 @@
 - ✅ **maxCandidates = 2** v normálním režimu (fastMode = 1).
 - ✅ **MAX_FALLBACK_ATTEMPTS = 2** (z 5).
 - ✅ **Instrumentace** – `_spoonacularCalls`, `_diagnostics`, log.
-- ❌ **Cache** – planOrchestrator cache stále nepoužívá. `meal_metadata_cache` existuje, ale není v pipeline.
+- **Cache** – záměrně nepoužívána. Žádná cache v planOrchestrator ani v pipeline.
 
 ---
 
@@ -88,7 +88,7 @@
 |--------|--------|----------|
 | Current request efficiency | PASS | 20–50 requestů/plán po optimalizaci; výrazné zlepšení |
 | Current meal relevance | RISK | Volný search + obecné fallbacky; občas nesedí |
-| Cache usage | FAIL | planOrchestrator cache nepoužívá |
+| Cache usage | N/A | Záměrně žádná cache v pipeline |
 | Fallback quality | RISK | Obecné dotazy; nízká kontextová relevance |
 | Maintainability | PASS | Čitelný kód, oddělené vrstvy |
 
@@ -106,9 +106,10 @@
 
 ### Co upravit
 
-1. **Cache v planOrchestrator** (volitelné) – před searchMealMetadata zkusit meal_metadata_cache. Po úspěchu zapsat. Sníží requesty při opakovaných plánech.
-2. **Lepší fallback tabulka** – kontextovější dotazy podle meal type (breakfast: oatmeal eggs, lunch: chicken rice, dinner: grilled fish vegetables).
-3. **Request budget per plan** – hard cap např. 60 requestů; při překročení přestat s fallbacky.
+1. **Lepší fallback tabulka** – kontextovější dotazy podle meal type (breakfast: oatmeal eggs, lunch: chicken rice, dinner: grilled fish vegetables).
+2. **Request budget per plan** – hard cap 60 requestů; při překročení přestat s fallbacky (implementováno).
+
+*(Cache záměrně nepoužívána – žádná cache v pipeline.)*
 
 ### Co odstranit
 
@@ -175,8 +176,8 @@
 | meals_resolved_fallback | Počet meal slotů vyřešených fallbackem |
 | meals_unverified | Počet meal slotů bez ověřeného receptu |
 | average_confidence_score | Průměrná confidence napříč sloty |
-| cache_hit_rate | null (cache v planOrchestrator nepoužívána) |
-| cache_miss_rate | null (cache v planOrchestrator nepoužívána) |
+| cache_hit_rate | null (záměrně žádná cache) |
+| cache_miss_rate | null (záměrně žádná cache) |
 
 ### Změněné soubory
 

@@ -6,6 +6,7 @@
  */
 import { searchMealMetadata } from '../../../lib/mealEnrichment';
 import { translateRecipeTitleToCzech } from '../../../lib/recipeLocalization';
+import { extractIngredientLinesFromSpoonacularRecipe } from '../../../lib/spoonacularShopping';
 
 function errorResponse(res, status, error, code, requestId) {
   return res.status(status).json({
@@ -58,6 +59,7 @@ export default async function handler(req, res) {
     }
 
     const display_name_cs = await translateRecipeTitleToCzech(rawRecipe.title || '', meta.recipe_id);
+    const shoppingIngredientLines = extractIngredientLinesFromSpoonacularRecipe(rawRecipe);
 
     return res.status(200).json({
       ok: true,
@@ -67,7 +69,9 @@ export default async function handler(req, res) {
         display_name_cs,
         recipe_verified: true,
         recipe_id: meta.recipe_id ?? rawRecipe.id,
+        image_url: meta.image_trust_level === 'exact' ? meta.image_url ?? null : null,
         image_trust_level: meta.image_trust_level ?? 'none',
+        shopping_ingredient_lines: shoppingIngredientLines,
         recipe: {
           id: rawRecipe.id,
           title: display_name_cs,

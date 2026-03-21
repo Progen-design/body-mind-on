@@ -10,57 +10,8 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
 
-// Static meal fallbacks: used ONLY when meal_trust has no entry for this meal (legacy/incomplete enrichment).
-// When meal_trust exists and image_trust_level is "none", we never use DISH_IMAGES – show placeholder only (no fake exact).
-// When used, the UI labels as "Ilustrační foto", never as exact.
-const DISH_IMAGES = [
-  { keys: ['palačinky z mandlové', 'palacinky z mandlove', 'palačinky', 'palacinky', 'pancake'], url: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=280&fit=crop' },
-  { keys: ['chia pudink s kokosovým', 'chia pudink s kokosovym', 'chia pudink', 'chia pudding'], url: 'https://images.unsplash.com/photo-1517673132405-a56a62b18ddb?w=400&h=280&fit=crop' },
-  { keys: ['jogurt s bezlepkovými ovesnými', 'jogurt s ovesnými vločkami', 'ovesnými vločkami', 'ovesne vlocky', 'ovesné vločky'], url: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=400&h=280&fit=crop' },
-  { keys: ['vejce na tvrdo s avokádem', 'vajec na tvrdo', 'vejce na tvrdo'], url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=280&fit=crop' },
-  { keys: ['toasty s avokádovým krémem', 'toast s avokádovým', 'avokádovým krémem', 'avokadovym kremem', 'bezlepkové toasty'], url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=280&fit=crop' },
-  { keys: ['červený salát s červenou řepou', 'cerveny salat s cervenou repou', 'červenou řepou', 'cervenou repou', 'řepou a bylinkami'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
-  { keys: ['zeleninové placky s jogurtovým', 'zeleninove placky', 'placky s jogurtem'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
-  { keys: ['hovězí steak s quinoa a zeleninovým salátem', 'hovezi steak s quinoa', 'hovězí steak s batátovou kaší', 'hovezi steak s batatovou kasi', 'hovězí steak s batátovou', 'steak s batátovou kaší', 'steak s quinoa'], url: 'https://images.unsplash.com/photo-1558030006-4502153934bb?w=400&h=280&fit=crop' },
-  { keys: ['zeleninová polévka s čočkou', 'zeleninova polevka s cockou', 'polévka s čočkou', 'polevka s cockou'], url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop' },
-  { keys: ['zeleninové curry s luštěninami', 'zeleninove curry s lusteninami', 'curry s luštěninami a rýží', 'curry s lusteninami'], url: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=280&fit=crop' },
-  { keys: ['tofu stir-fry s rýžovými nudlemi', 'tofu stir-fry se zeleninou', 'tofu stir-fry', 'stir-fry se zeleninou', 'stir-fry s rýžovými'], url: 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop' },
-  { keys: ['kuřecí stehno pečené', 'kureci stehno pecene', 'kuřecí stehno', 'kuřecí prso s pečenou'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
-  { keys: ['grilované kuřecí prso s brokolicí', 'grilovane kureci prso s brokolici', 'kuřecí prso s brokolicí', 'kureci prso s brokolici'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
-  { keys: ['brambory s kuřecím špenátem', 'brambory s kurecim', 'kuřecím špenátem'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
-  { keys: ['kuřecí salát s avokádem', 'kureci salat s avokadem', 'kuřecí salát'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
-  { keys: ['omeleta se špenátem a feta', 'omeleta se spinatem', 'omeleta', 'omelet', 'vajíčk', 'vejce', 'vajec'], url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=280&fit=crop' },
-  { keys: ['kuřecí', 'kuře', 'chicken', 'zapečené kuře', 'grilované kuře', 'kureci prso'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
-  { keys: ['hovězí burger', 'beef burger', 'burger'], url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=280&fit=crop' },
-  { keys: ['pečená ryba s bramborovou', 'pecena ryba s bramborovou', 'pečená ryba', 'pecena ryba', 'ryba s brambor'], url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=280&fit=crop' },
-  { keys: ['pečený losos s nokem', 'peceny losos s nokem', 'losos s cuketou', 'losos', 'salmon', 'pečený losos'], url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=280&fit=crop' },
-  { keys: ['quinoa salát s cizrnou a paprikou', 'quinoa salat s cizrnou', 'quinoa salát s avokádem', 'cizrnou a paprikou'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
-  { keys: ['cizrnový salát s červenou cibulí', 'cizrnovy salat', 'cizrnový salát'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
-  { keys: ['steak', 'hovězí', 'beef', 'pečený steak', 'hovězí steak'], url: 'https://images.unsplash.com/photo-1558030006-4502153934bb?w=400&h=280&fit=crop' },
-  { keys: ['zeleninové curry', 'zeleninove curry', 'vegetable curry', 'curry s houbami'], url: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=280&fit=crop' },
-  { keys: ['rizoto', 'risotto', 'houbové rizoto'], url: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=400&h=280&fit=crop' },
-  { keys: ['kari', 'curry', 'kokosové mléko', 'kokosove mleko'], url: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=280&fit=crop' },
-  { keys: ['quinoa', 'bulgur'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
-  { keys: ['bramborová kaše', 'bramborova kase', 'bramborovou kaší', 'batátovou kaší', 'batatovou kasi'], url: 'https://images.unsplash.com/photo-1518013431117-eb2895b37a9d?w=400&h=280&fit=crop' },
-  { keys: ['ovesná kaše', 'oatmeal', 'porridge', 'ovesna kase'], url: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=400&h=280&fit=crop' },
-  { keys: ['jogurt', 'granola', 'müsli', 'parfait'], url: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=280&fit=crop' },
-  { keys: ['smoothie s banánem a proteinem', 'smoothie s banánem', 'smoothie s proteinem', 'smoothie', 'koktejl'], url: 'https://images.unsplash.com/photo-1505252585461-04db1ebd3c2c?w=400&h=280&fit=crop' },
-  { keys: ['houbové', 'houby', 'mushroom', 'žampion'], url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop' },
-  { keys: ['kuskus', 'couscous'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
-  { keys: ['polévka', 'polevka', 'soup'], url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop' },
-  { keys: ['těstovin', 'testovin', 'pasta', 'špagety', 'spagety', 'nokem', 'noky', 'gnocchi'], url: 'https://images.unsplash.com/photo-1551183053-bf91a1f81115?w=400&h=280&fit=crop' },
-  { keys: ['rýže', 'ryze', 'rice'], url: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=280&fit=crop' },
-  { keys: ['brambor', 'brambory'], url: 'https://images.unsplash.com/photo-1518013431117-eb2895b37a9d?w=400&h=280&fit=crop' },
-  { keys: ['brokolic', 'brokolice'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
-  { keys: ['cuket', 'cuketa'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
-  { keys: ['feta', 'fetou'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
-  { keys: ['salát', 'salad'], url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop' },
-  { keys: ['večeře', 'večere'], url: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=280&fit=crop' },
-  { keys: ['oběd', 'obed'], url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=280&fit=crop' },
-  { keys: ['snídaně', 'snidane'], url: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=400&h=280&fit=crop' },
-  { keys: ['svačina', 'svacina'], url: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=280&fit=crop' },
-];
-const DEFAULT_MEAL_IMAGE = 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=400&h=280&fit=crop'; // Used only by getMealImageByDish when no trust data; never as onError fallback (would mask trust).
+// Jídla: obrázky pouze ze Spoonacular přes backend meal_trust (image_trust_level === exact).
+// Žádné stock / Unsplash fallbacky u meal cards — viz resolvedUrl níže.
 
 const PERSONAL_ICONS = {
   'Věk': '🎂',
@@ -114,26 +65,6 @@ function formatDayLabel(isoStr) {
   return new Date(isoStr + 'T12:00:00').toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' });
 }
 
-/**
- * Vybere obrázek podle názvu jídla. Používá NEJDELŠÍ SHODU (nejvíc specifický klíč vyhrává),
- * aby „Palačinky z mandlové mouky“ dostaly obrázek palačinek, ne těstovin nebo snídaně.
- */
-function getMealImageByDish(mealText) {
-  if (!mealText || typeof mealText !== 'string') return DEFAULT_MEAL_IMAGE;
-  const plain = mealText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-  const lower = norm(plain);
-  let best = { url: DEFAULT_MEAL_IMAGE, keyLen: 0 };
-  for (const { keys, url } of DISH_IMAGES) {
-    for (const k of keys) {
-      const nk = norm(k);
-      if (nk && lower.includes(nk) && nk.length > best.keyLen) {
-        best = { url, keyLen: nk.length };
-      }
-    }
-  }
-  return best.url;
-}
-
 /** Stejná normalizace jako backend (plan-enrichment) pro spolehlivý lookup. */
 function normalizeLookupKey(value) {
   if (!value || typeof value !== 'string') return '';
@@ -147,27 +78,9 @@ function normalizeLookupKey(value) {
     .trim();
 }
 
-function getEnrichedMealImage(mealText, mealImagesMap = {}, preferredKey = null) {
-  const map = mealImagesMap || {};
-  if (preferredKey && map[preferredKey]) return map[preferredKey];
-  const source = String(mealText || '').replace(/^[^:]+:\s*/i, '').trim();
-  const key = normalizeLookupKey(source);
-  if (!key) return null;
-  if (map[key]) return map[key];
-  let bestKey = '';
-  for (const candidateKey of Object.keys(map)) {
-    if (!candidateKey) continue;
-    if (key.includes(candidateKey) || candidateKey.includes(key)) {
-      if (candidateKey.length > bestKey.length) bestKey = candidateKey;
-    }
-  }
-  return bestKey ? map[bestKey] : null;
-}
-
 /**
- * Resolve trust metadata for a meal using the same key resolution as getEnrichedMealImage.
+ * Resolve trust metadata for a meal (Spoonacular URL + trust level z backendu).
  * Returns { image_url, image_trust_level, exact_source, illustrative_source } or null.
- * NO LIES UI RULE: Frontend must not display media in a way that misleads about trust.
  */
 function getEnrichedMealTrust(mealText, mealTrustMap = {}, preferredKey = null) {
   const map = mealTrustMap || {};
@@ -731,7 +644,6 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
   const [shoppingListOpen, setShoppingListOpen] = useState(false); // rozbalovací sekce
   const [expandedTrainingKey, setExpandedTrainingKey] = useState(null); // 'dayIdx-itemIdx' – rozbalený cvik (detail Ve fitku / Doma)
   const [expandedDays, setExpandedDays] = useState(null); // null = dnes rozbalený; Set(di) = které dny jsou rozbalené
-  const [mealImagesMap, setMealImagesMap] = useState({});
   const [mealTrustMap, setMealTrustMap] = useState({});
   const [exerciseMediaMap, setExerciseMediaMap] = useState({});
   /** Keys of meal cards whose image failed to load — show placeholder instead of broken/static fallback (NO LIES UI RULE). */
@@ -832,7 +744,6 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
 
   useEffect(() => {
     if (!plan?.plan_html || typeof document === 'undefined') {
-      setMealImagesMap({});
       setMealTrustMap({});
       setExerciseMediaMap({});
       return;
@@ -853,14 +764,12 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
         if (!res.ok || cancelled) return;
         const data = await res.json();
         if (cancelled) return;
-        setMealImagesMap(data?.meal_images && typeof data.meal_images === 'object' ? data.meal_images : {});
         setMealTrustMap(data?.meal_trust && typeof data.meal_trust === 'object' ? data.meal_trust : {});
         setExerciseMediaMap(data?.exercise_media && typeof data.exercise_media === 'object' ? data.exercise_media : {});
         setMealImageErrorKeys(new Set());
         setExerciseMediaErrorKeys(new Set());
       } catch (_) {
         if (!cancelled) {
-          setMealImagesMap({});
           setMealTrustMap({});
           setExerciseMediaMap({});
         }
@@ -1227,27 +1136,12 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                         const mealPinned = isPinned(meal.type || '', mealTextForPin);
                         const mealLookupKey = meal.meal_key || null;
                         const mealTrust = getEnrichedMealTrust(mealFullText || meal.text || meal.type, mealTrustMap, mealLookupKey);
-                        const enrichedUrl = getEnrichedMealImage(mealFullText || meal.text || meal.type, mealImagesMap, mealLookupKey);
-                        // API-first: (1) meal_trust is priority 1 – use image_url and trust_level from backend. (2) meal_images only if no trust entry. (3) DISH_IMAGES only when no trust metadata at all (legacy). NO LIES: when trust === "none" or backend says no image → placeholder only, never static stock.
-                        const dishFallbackUrl = !mealTrust ? getMealImageByDish(mealFullText || meal.text || meal.type) : null;
+                        // Pouze Spoonacular: zobrazíme URL jen když backend nastavil exact + image_url (zdroj Spoonacular). Žádné Unsplash / meal_images map / ilustrační stock u jídel.
                         let resolvedUrl = null;
                         let trustLevel = 'none';
-                        if (mealTrust) {
-                          trustLevel = mealTrust.image_trust_level ?? 'none';
-                          if (trustLevel === 'exact' && mealTrust.image_url) {
-                            resolvedUrl = mealTrust.image_url;
-                          } else if (!API_ONLY_MEDIA && trustLevel === 'illustrative') {
-                            resolvedUrl = mealTrust.image_url ?? enrichedUrl ?? null;
-                          }
-                          if (trustLevel === 'none' || !mealTrust.image_url) {
-                            resolvedUrl = null;
-                          }
-                          if (API_ONLY_MEDIA && trustLevel !== 'exact') {
-                            resolvedUrl = null;
-                          }
-                        } else {
-                          resolvedUrl = API_ONLY_MEDIA ? null : (enrichedUrl ?? dishFallbackUrl ?? null);
-                          trustLevel = enrichedUrl ? 'illustrative' : (dishFallbackUrl ? 'illustrative' : 'none');
+                        if (mealTrust && mealTrust.image_trust_level === 'exact' && mealTrust.image_url) {
+                          resolvedUrl = mealTrust.image_url;
+                          trustLevel = 'exact';
                         }
                         const mealCardKey = `meal-${di}-${mi}-${normalizeLookupKey(mealFullText || meal.text || meal.type).slice(0, 40)}`;
                         const imageLoadFailed = mealImageErrorKeys.has(mealCardKey);

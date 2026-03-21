@@ -4,7 +4,7 @@
  * Trust-aware pipeline, display_name_cs – nikdy raw anglický název.
  * @see docs/ONBOARDING_PRODUCTION_SPEC.md § Replace Meal Flow
  */
-import { searchMealMetadata } from '../../../lib/mealEnrichment';
+import { searchMealMetadata, MEAL_CONFIDENCE_THRESHOLD } from '../../../lib/mealEnrichment';
 import { translateRecipeTitleToCzech } from '../../../lib/recipeLocalization';
 import { extractIngredientLinesFromSpoonacularRecipe } from '../../../lib/spoonacularShopping';
 
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
 
     const meta = await searchMealMetadata(query, null, { maxCandidates: 3 });
 
-    const recipeVerified = meta?.recipe_id != null && (meta?.image_trust_level === 'exact' || (meta?.confidence_score ?? 0) >= 0.75);
+    const recipeVerified = meta?.recipe_id != null && (meta?.image_trust_level === 'exact' || (meta?.confidence_score ?? 0) >= MEAL_CONFIDENCE_THRESHOLD);
     const rawRecipe = meta?._recipe;
 
     if (!recipeVerified || !rawRecipe) {

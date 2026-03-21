@@ -214,23 +214,25 @@ export default function PreferencesOverlay({
 
           <div className="prefs-grid prefs-grid--two">
             <label className="prefs-field">
-              <span className="prefs-label">Alergie, intolerance, omezení</span>
+              <span className="prefs-label">Zdravotní omezení – alergie, intolerance</span>
               <textarea
                 rows={4}
-                placeholder="např. ořechy, mléko, lepek..."
+                placeholder="např. ořechy, mléko, lepek – kvůli bezpečnosti jídelníčku"
                 value={form.dietary_restrictions}
                 onChange={(event) => setForm((current) => ({ ...current, dietary_restrictions: event.target.value }))}
               />
+              <span className="prefs-hint">Důležité pro zdraví; do plánu nepatří potraviny, které ti škodí.</span>
             </label>
 
             <label className="prefs-field">
-              <span className="prefs-label">Potraviny, které nechceš v jídelníčku</span>
+              <span className="prefs-label">Potraviny, které nechceš v plánu – chuť, zvyk</span>
               <textarea
                 rows={4}
-                placeholder="např. avokádo, brokolice, banány..."
+                placeholder="např. brokolice, avokádo – co neješ, i když nejsi alergický/á"
                 value={form.foods_to_avoid}
                 onChange={(event) => setForm((current) => ({ ...current, foods_to_avoid: event.target.value }))}
               />
+              <span className="prefs-hint">Úprava jen podle preferencí, ne jako lékařské omezení.</span>
             </label>
           </div>
         </section>
@@ -324,6 +326,13 @@ export default function PreferencesOverlay({
           font-size: 0.95rem;
           font-weight: 700;
           color: #e2e8f0;
+        }
+        .prefs-hint {
+          font-size: 0.8rem;
+          font-weight: 400;
+          color: #94a3b8;
+          line-height: 1.45;
+          margin-top: -4px;
         }
         .prefs-field :is(select, textarea) {
           width: 100%;

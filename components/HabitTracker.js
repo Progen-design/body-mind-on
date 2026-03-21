@@ -38,6 +38,8 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   const todayColRef = useRef(null);
   const didAutoCenterRef = useRef(false);
   const didResetToTodayRef = useRef(false);
+  /** Po prvním dokončeném načtení logů už neukazujeme celosekční „Načítám…“ při opakovaném fetchi (např. polling profilu). */
+  const initialLogsLoadDoneRef = useRef(false);
 
   const buildHabitsLists = useCallback((uh) => {
     let list = [];
@@ -105,7 +107,10 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     weekAgo.setDate(today.getDate() - 6);
     const fromStr = toDateStr(weekAgo);
 
-    setLoading(true);
+    const silent = initialLogsLoadDoneRef.current;
+    if (!silent) {
+      setLoading(true);
+    }
     setFetchError(null);
     Promise.all([
       fetchLogs(days[0], days[days.length - 1], habitIds),
@@ -123,6 +128,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         setWeekLogs([]);
       })
       .finally(() => {
+        initialLogsLoadDoneRef.current = true;
         setLoading(false);
       });
   }, [positiveHabits, negativeHabits, days, todayStr, fetchLogs]);

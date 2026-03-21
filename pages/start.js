@@ -418,16 +418,18 @@ export default function Start() {
                     <option value="lactose_free">Bez laktózy</option>
                     <option value="paleo">Paleo</option>
                     <option value="low_carb">Nízkosacharidová</option>
-                    <option value="other">Jiné (popiš v poli Co nejí)</option>
+                    <option value="other">Jiné (popiš v poli Zdravotní omezení)</option>
                   </select>
                 </div>
                 <div>
-                  <label className="reg-label">Co nejí – alergie, intolerance (volitelné)</label>
-                  <textarea name="dietary_restrictions" className="reg-input" rows="2" value={formData.dietary_restrictions} onChange={handleChange} placeholder="např. ořechy, mléko, lepek…" disabled={isSubmitting} />
+                  <label className="reg-label">Zdravotní omezení – alergie, intolerance (volitelné)</label>
+                  <textarea name="dietary_restrictions" className="reg-input" rows="2" value={formData.dietary_restrictions} onChange={handleChange} placeholder="např. ořechy, mléko, lepek – kvůli bezpečnosti jídelníčku" disabled={isSubmitting} />
+                  <p className="text-sm text-gray-400 mt-1 mb-0">Důležité pro zdraví; do plánu nepatří potraviny, které ti škodí.</p>
                 </div>
                 <div>
-                  <label className="reg-label">Potraviny k vynechání z jídelníčku (volitelné)</label>
-                  <textarea name="foods_to_avoid" className="reg-input" rows="2" value={formData.foods_to_avoid} onChange={handleChange} placeholder="např. avokádo, brokolice, banány – konkrétní potraviny, které nemají být v plánu" disabled={isSubmitting} />
+                  <label className="reg-label">Potraviny, které nechceš v plánu – chuť, zvyk (volitelné)</label>
+                  <textarea name="foods_to_avoid" className="reg-input" rows="2" value={formData.foods_to_avoid} onChange={handleChange} placeholder="např. brokolice, avokádo – co neješ, i když nejsi alergický/á" disabled={isSubmitting} />
+                  <p className="text-sm text-gray-400 mt-1 mb-0">Úprava jen podle preferencí, ne jako lékařské omezení.</p>
                 </div>
               </div>
             </div>

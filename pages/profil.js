@@ -2909,12 +2909,13 @@ export default function Profil() {
                 <>
                   <div className="progress-calc">
                     <p className="progress-calc-line">
-                      <strong>~{Math.round(estimatedCaloriesAll)} kcal</strong> ≈ úbytek <strong>~{estimatedKgLostTotal.toFixed(1)} kg</strong>.
+                      Odhad z výdeje při trénincích: <strong>~{Math.round(estimatedCaloriesAll)} kcal</strong> → model{' '}
+                      <strong>~{estimatedKgLostTotal.toFixed(1)} kg</strong> tuku (7700 kcal/kg). Skutečná váha závisí i na jídle, které aplikace nesleduje.
                     </p>
                     {estimatedCurrentWeightRounded != null && (
                       <>
                         <p className="progress-calc-line">
-                          Z tréninků: <strong>{estimatedCurrentWeightRounded} kg</strong>
+                          Z tréninků (odhad): <strong>{estimatedCurrentWeightRounded} kg</strong>
                           {startWeight != null && ` (výchozí ${startWeight} kg)`}.
                         </p>
                         {hasHabitData && habitAdjustedWeight != null && (

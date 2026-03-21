@@ -127,7 +127,10 @@ export default function HabitEntryWizard({ program, session, bodyMetrics, userHa
                 </div>
               </div>
               <div className="habit-wizard-group habit-wizard-group-negative">
-                <h4 className="habit-wizard-group-title">Zlozvyky (vyhnul se = ✓)</h4>
+                <h4 className="habit-wizard-group-title">Návyky, kterým se chceš vyhnout</h4>
+                <p className="habit-wizard-negative-hint">
+                  U zdravých návyků znamená splnění „udělal/a jsem to“. U těchto znamená splnění „dnes jsem se té věci vyhnul/a“ (odškrtnutí = povedlo se vyhnout).
+                </p>
                 <div className="habit-wizard-checkboxes">
                   {NEGATIVE_HABITS.map((h) => (
                     <label key={h.id} className="habit-wizard-checkbox">
@@ -246,6 +249,13 @@ export default function HabitEntryWizard({ program, session, bodyMetrics, userHa
 
         .habit-wizard-group-negative .habit-wizard-group-title {
           color: #f87171;
+        }
+
+        .habit-wizard-negative-hint {
+          margin: 0 0 12px;
+          font-size: 13px;
+          line-height: 1.45;
+          color: #94a3b8;
         }
 
         .habit-wizard-group-title {

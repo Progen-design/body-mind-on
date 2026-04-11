@@ -46,7 +46,7 @@
 | **OpenAI** | ✅ OK | planOrchestrator: `response_format: { type: 'json_object' }`, prompt: „NEVYMÝŠLEJ recepty ani cviky – pouze vyhledávací dotazy“ |
 | **Spoonacular** | ✅ OK | planOrchestrator.resolveMeals() → searchRecipe() pro každé meal |
 | **wger** | ✅ OK | planOrchestrator.resolveWorkouts() → resolveExercise() (exerciseProviderRegistry → wgerService) |
-| **Validators** | ✅ OK | validateStructuredPlan(planJson, bm) – JSON-level, diet_type, foods_to_avoid |
+| **Validators** | ✅ OK | validateStructuredPlan(planJson, bm) – 7 dní, meals_per_day, workouts_per_week, neprázdné cviky, diet_type, foods_to_avoid; měkká varování (makra, neověřené cviky) |
 | **Renderer** | ✅ OK | renderPlanHtmlFromStructured(planJson, bm) → plan_html |
 | **Persistence** | ✅ OK | persistTrainerPlan, persistPlanFromUnified – ukládají plan_html + structured_plan_json |
 

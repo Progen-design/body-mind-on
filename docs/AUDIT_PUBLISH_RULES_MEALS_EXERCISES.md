@@ -27,8 +27,8 @@
 
 | Soubor | Změna |
 |--------|-------|
-| `lib/services/planOrchestrator.js` | **resolveMeals:** `display_name` = `recipeVerified ? recipe.title : 'Jídlo (neověřeno)'`; `recipe_verified: boolean` |
-| `lib/services/planOrchestrator.js` | **resolveWorkouts:** `name` = `exerciseVerified ? (resolvedEx?.name \|\| 'Cvik (neověřeno)') : 'Cvik (neověřeno)'`; nikdy `term` |
+| `lib/services/planOrchestratorResolve.js` | **resolveMeals:** ověřeno → `display_name_cs` z přeloženého titulu Spoonacular, `planner_suggestion_cs` = LLM; dedup `(query, type, name_cs)`; neověřeno → český název z plánovače / placeholder |
+| `lib/services/planOrchestratorResolve.js` | **resolveWorkouts:** `display_name_cs` = `resolvedEx.display_name_cs` (kanon/registry) před `name_cs` z LLM; neověřeno → `Cvik (neověřeno)` |
 | `lib/services/exerciseProviderRegistry.js` | Při wger miss vrací `{ name: null, source: 'none' }` – žádný raw search_term |
 
 ### 2. Verified flagy
@@ -40,7 +40,7 @@
 
 | Soubor | Logika |
 |--------|--------|
-| `lib/planRenderer.js` | Jídla: `m.recipe_verified === true ? (m.display_name ?? m.recipe?.title ?? '') : 'Jídlo (neověřeno)'` |
+| `lib/planRenderer.js` | Jídla: `m.display_name_cs` (u ověřeného = titul receptu po resolve); neověřeno zůstává čitelný placeholder |
 | `lib/planRenderer.js` | Cviky: `ex.exercise_verified === true ? (ex.name ?? '') : 'Cvik (neověřeno)'` |
 | `lib/planRenderer.js` | Nákupní seznam: jen `m.recipe_verified === true` |
 

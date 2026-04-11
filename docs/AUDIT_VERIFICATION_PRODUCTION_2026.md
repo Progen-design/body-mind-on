@@ -16,11 +16,11 @@
 
 | Oblast | Status | Poznámka |
 |--------|--------|----------|
-| Spoonacular meals | PASS | resolveMeals používá Spoonacular, fallback na MEAL_QUERIES při miss |
+| Spoonacular meals | PASS | resolveMeals: ověřený recept → `display_name_cs` z přeloženého titulu API; `planner_suggestion_cs` = LLM; dedup dotazu + `name_cs`; při miss `getFallbackMealQueries`; chybí-li `meal_plan` → `buildProfileTemplateMealPlan` |
 | localized meal titles | PASS | batchTranslateRecipeTitlesToCzech + translateRecipeTitleToCzech, display_name_cs nikdy raw |
 | localized recipe popup | PASS | /api/spoonacular-recipe → getLocalizedRecipe → česky název, suroviny, postup, nutriční blok |
 | trust-safe meal images | PASS | image_url jen při image_trust_level === 'exact', jinak null |
-| wger exercises | PASS | resolveExercise → wgerService, exercise_verified, display_name_cs |
+| wger exercises | PASS | resolveExercise → wgerService; ověřený cvik: kanonický/registry `display_name_cs` před `name_cs` z LLM |
 | canonical Czech exercise names | PASS | mountain_climber → Horolezec, superman → Superman cvik, bench_press → Tlak na lavici |
 | renderer profile | PASS | planRenderer používá display_name_cs, recipe_verified, exercise_verified |
 | renderer email | PASS | stejný renderPlanHtmlFromStructured → sendPlanEmail |
@@ -63,9 +63,9 @@ Co ještě může způsobit:
 ## E. Co je už správně
 
 1. **Pipeline flow:** OpenAI → Spoonacular → wger → planOrchestrator → renderer → persist + email
-2. **OpenAI negeneruje user-facing názvy:** pouze search_query, meal type
+2. **OpenAI a uživatelské názvy:** prompt žádá `name_cs` + dotazy pro API; po resolve je u jídel `display_name_cs` u ověřeného receptu **z titulu Spoonacular** (viz `planner_suggestion_cs` pro návrh LLM); u cviků kanonický český název před hintem z LLM
 3. **Jídla resolved přes Spoonacular:** searchMealMetadata, confidence >= 0.75, image_trust_level
-4. **Automatický fallback jídel:** getFallbackMealQueries při Spoonacular miss
+4. **Automatický fallback jídel:** `getFallbackMealQueries` při Spoonacular miss; strukturovaná validace: `validateStructuredPlan` (počty jídel, tréninků, neprázdné cviky, měkká varování u neověřených jídel a heuristika vybavení) + produktová pravidla v `mealTrainingCoherence.js`
 5. **Překlad receptů:** batchTranslateRecipeTitlesToCzech, translateRecipeTitleToCzech, getLocalizedRecipe
 6. **Renderer:** pouze display_name_cs, recipe_verified, exercise_verified; placeholdery Jídlo (neověřeno), Cvik (neověřeno)
 7. **Nákupní seznam:** jen recipe_verified === true

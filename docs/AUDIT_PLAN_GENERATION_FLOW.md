@@ -38,11 +38,14 @@
 
 | Místo | Před opravou | Po opravě |
 |-------|--------------|-----------|
-| `resolveMeals` – Spoonacular null | `display_name: m.search_query` (raw) | `display_name: 'Jídlo (neověřeno)'`, `recipe_verified: false` |
+| `resolveMeals` – Spoonacular null | `display_name: m.search_query` (raw) | `display_name_cs: 'Jídlo (neověřeno)'`, `recipe_verified: false`; při hitu přeložený titul receptu + `planner_suggestion_cs` |
 | `resolveWorkouts` – wger null | `name: term` (raw) | `name: 'Cvik (neověřeno)'`, `exercise_verified: false` |
 | `replace-meal` – recipe null | `display_name: query` | `display_name: 'Jídlo (neověřeno)'` |
 | `replace-workout` – wger null | `name: search_term` | `name: 'Cvik (neověřeno)'` |
 | `exerciseProviderRegistry` | secondary provider (odstraněn) | pouze wger |
+| `planOrchestrator` – chybí `meal_plan` | — | `buildProfileTemplateMealPlan` (generické dotazy), ne `getDeterministicMealPlan` |
+| `planOrchestrator` – chybí `workout_plan.days` | — | `getDeterministicWorkoutPlan` (`WORKOUT_BLOCKS` + `deriveWorkoutDays`) |
+| Unified pipeline | — | `validateStructuredPlan` tvrdě kontroluje shodu s profilem (jídla, tréninky, cviky) |
 
 ---
 

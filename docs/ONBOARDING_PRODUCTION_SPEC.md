@@ -57,83 +57,47 @@ FUNKCE derive_workout_days(workouts_per_week, preferred_workout_days):
 
 **Zakázáno:** Pole `workout_days` v inputu – používá se pouze odvozené `derive_workout_days()`.
 
+### Pravidla souhry jídel a tréninku (produkt)
+
+Tato pravidla popisují **záměr produktu** a očekávání vůči výstupu LLM. Runtime kromě strukturované validace (`validateStructuredPlan`) **automaticky nepropojuje** kalorie jednotlivých dnů s konkrétním tréninkem (žádný post-process „leg day → více sacharidů“).
+
+1. **Kalorie a makra vs tréninkové dny**  
+   Hodnoty `targets` (např. `calories_per_day`, `protein_g`) jsou **jednotný denní cíl** pro celý týden. Nevyžaduje se automatické denní přepočítávání podle toho, zda jde o tréninkový nebo klidový den; případné rozlišení má vzniknout v návrhu jídel z modelu, ne ve vynucené úpravě JSON po generování.
+
+2. **Bílkoviny**  
+   Denní `protein_g` má odpovídat cíli a profilu. Tréninkové dny nemusí mít v JSON vyšší explicitní protein, pokud to model nezapracuje do skladby jídel.
+
+3. **Vybavení**  
+   Pole `equipment` z profilu má být **respektováno v promptu** (`planOrchestrator`). Po obohacení plánu `validateStructuredPlan` může přidat **měkká varování** (heuristika klíčových slov v názvu cviku vs profil) — viz `lib/validation/mealTrainingCoherence.js` a `structuredPlanValidators.js`.
+
+4. **Shoda s profilem (struktura)**  
+   Počet jídel na každý den = `meals_per_day`. Počet dnů s neprázdným blokem `workout` a aspoň jedním cvikem = `workouts_per_week` (0 znamená žádný trénink). Na každém tréninkovém dni alespoň jeden cvik s platným názvem — viz `lib/validation/structuredPlanValidators.js`.
+
+5. **Název jídla vs. obsah receptu (Spoonacular)**  
+   Po `recipe_verified === true` je uživatelský název (`display_name_cs`) **přeložený titul receptu ze Spoonacular** (batch + cache v `recipeLocalization`), aby odpovídal surovinám a postupu v popupu. Původní `name_cs` / `ai_name` z plánovače zůstává v poli `planner_suggestion_cs` pro diagnostiku. Vyhledávání v rámci jednoho plánu se **deduplikuje** podle `(spoonacular_query, type, normalizovaný name_cs)` — stejný anglický dotaz u dvou různých českých názvů spustí dvě volání a může vrátit dva recepty.
+
 ---
 
-## 2. Fallback Rules
+## 2. Fallback a zdroje plánu (skutečné chování kódu)
 
-### Kdy se použije deterministic fallback
+### OpenAI a formáty
 
-- OpenAI vrátí nevalidní JSON
-- OpenAI vrátí prázdný/neúplný plán
-- OpenAI timeout nebo chyba
-- Po 1× retry stále selhání
+- Vestavěný prompt v `lib/services/planOrchestrator.js` žádá JSON s obalem **v5** (`meal_plan`, `workout_plan`, `targets`), ale u jídel a cviků **stejná pole jako ve v6**: u jídel `name_cs` + `spoonacular_query` (nebo `search_query`), u cviků `name_cs`, `search_term`, volitelně `canonical_key`. Po `resolveMeals` viz bod **§1.5** (titul receptu vs. `planner_suggestion_cs`).
+- `lib/validation/parseStructuredPlan.js` umí navíc formát **v6** (`_format: 'v6'`, kořenové `days[]`). Po úspěšném parsování v6 běží `enrichAgentPlanV6` (`lib/services/planOrchestrator_newFormat.js`) se stejným `resolveMeals` / `resolveWorkouts` jako legacy větev. Kořenové `days[]` z vestavěného OpenAI volání se běžně neočekávají — model vrací `meal_plan` / `workout_plan`, parser je převede na v5.
 
-### Deterministic fallback – přesný algoritmus
+### Kdy OpenAI selže nebo chybí část plánu
 
-**Vstup:** `goal`, `meals_per_day`, `workouts_per_week`, `preferred_workout_days`, `diet_type`, `weight_kg`
+- OpenAI: až 2 pokusy; při nevalidním JSON / chybě parsování je výsledek `null` a pokračuje se náhradními kroky níže.
+- **`meal_plan` chybí** (nebo nebyl získán z OpenAI): doplní se `buildProfileTemplateMealPlan` v `lib/services/deterministicFallback.js` — pro každý slot jídla krátký generický anglický dotaz (`{diet} {meal_type} balanced`), nikoli plná rotace tabulek `MEAL_QUERIES`. Spoonacular resolve běží dál nad těmito dotazy.
+- **`workout_plan.days` chybí nebo je prázdné** a `workouts_per_week > 0`: orchestrátor zavolá **`getDeterministicWorkoutPlan`** (`deriveWorkoutDays` + rotace `WORKOUT_BLOCKS` z `deterministicFallback.js`), aby každý tréninkový den měl `search_term` pro wger. Pokud model vrátí `workout_plan` s dny, ale některé dny mají prázdné `exercises`, tato větev se nespouští — řešení je na kvalitě vstupu / v6.
 
-**Krok 1 – Targets (kalorie, makra):**
+### Exporty `getDeterministicMealPlan` / `getDeterministicWorkoutPlan`
 
-```
-weight = weight_kg NEBO 70
-IF goal = "redukce":
-  calories = ROUND_DOWN(weight * 28 - 300, 50)
-  protein = ROUND(weight * 1.8)
-ELSE IF goal = "nabirani_svaly":
-  calories = ROUND_UP(weight * 32 + 200, 50)
-  protein = ROUND(weight * 2.0)
-ELSE:
-  calories = ROUND(weight * 30, 50)
-  protein = ROUND(weight * 1.6)
+`getDeterministicWorkoutPlan` **používá** `generateStructuredPlan`, když chybí platné `workout_plan.days`. **`getDeterministicMealPlan`** (plná rotace `MEAL_QUERIES` po dnech) orchestrátor při chybějícím `meal_plan` **nepoužívá** — místo toho `buildProfileTemplateMealPlan`.
 
-fat = ROUND(calories * 0.28 / 9)
-carbs = ROUND((calories - protein*4 - fat*9) / 4)
-```
+### Diagnostika `generation_source`
 
-**Krok 2 – Meal queries (7 dní × meals_per_day):**
-
-Tabulky jsou indexované `day_index` 0–6. Pro `meals_per_day = 3` použij breakfast, lunch, dinner. Pro 4 přidej snack. Pro 2 použij jen breakfast, lunch.
-
-```
-MEAL_TABLES[goal][diet_type][meal_type][day_index] = search_query
-
-goal ∈ {redukce, nabirani_svaly, udrzovani}
-diet_type ∈ {standard, vegetarian, vegan}
-meal_type ∈ {breakfast, lunch, dinner, snack}
-day_index ∈ 0..6
-```
-
-**Přesné tabulky (standard, 3 jídla):**
-
-| day_index | breakfast | lunch | dinner |
-|-----------|-----------|-------|--------|
-| 0 | oatmeal banana eggs | chicken breast rice vegetables | grilled chicken vegetables |
-| 1 | yogurt muesli fruit | grilled salmon potatoes salad | salmon salad |
-| 2 | eggs whole grain toast | beef quinoa vegetables | turkey vegetables |
-| 3 | cottage cheese fruit | turkey sweet potato | white fish vegetables |
-| 4 | oatmeal pancakes fruit | fish rice salad | chicken stir fry |
-| 5 | smoothie protein toast | chicken salad avocado | lean beef vegetables |
-| 6 | omelette vegetables | lean meat vegetables | fish vegetables |
-
-*(Pro vegetarian/vegan: substituce dle diet_type. Pro redukce: lehčí varianty. Pro nabirani_svaly: vyšší bílkoviny.)*
-
-**Krok 3 – Workout queries:**
-
-```
-workout_days = derive_workout_days(workouts_per_week, preferred_workout_days)
-
-WORKOUT_BLOCKS = [
-  [ {search_term:"squat", sets:3, reps:"10-12"}, {search_term:"push up", sets:3, reps:"8-10"}, ... ],  // full body
-  [ {search_term:"squat", sets:4, reps:"10"}, {search_term:"lunge", sets:3, reps:"10 per leg"}, ... ],   // lower
-  [ {search_term:"push up", sets:4, reps:"8-10"}, {search_term:"bent over row", sets:3, reps:"10"}, ... ]  // upper
-]
-
-FOR i, day_index IN workout_days:
-  block = WORKOUT_BLOCKS[i % 3]
-  workout_plan.days.push({ day_index, exercises: block })
-```
-
-**Žádné generativní chování** – pouze lookup v pevných tabulkách.
+V `_diagnostics.generation_source` je `openai`, pokud OpenAI vrátilo parsovatelný strukturovaný plán (i když část plánu mohla být následně doplněna šablonou jídel). Pokud OpenAI vypnuto nebo vždy selhalo, zůstává logika náhrad výše; přesná hodnota `generation_source` vždy odpovídá stavu v `planOrchestrator.js` (viz `generationSource`).
 
 ---
 
@@ -247,6 +211,20 @@ FOR i, day_index IN workout_days:
 | height_cm | 100–250 | `výška mimo rozsah 100–250 cm` |
 | weight_kg | 30–300 | `váha mimo rozsah 30–300 kg` |
 
+### Strukturovaný plán po generování (`validateStructuredPlan`)
+
+Unified pipeline (`lib/unifiedPlanPipeline.js`) volá `validateStructuredPlan(planJson, bm)` z `lib/validation/structuredPlanValidators.js` **před** renderem HTML. Tvrdé chyby zastaví pipeline (např. nesoulad s profilem nebo dietní pravidla v textu jídel):
+
+| Kontrola | Typ | Popis |
+|----------|-----|--------|
+| 7 dní v `days` | tvrdé | přesně sedm položek |
+| `meals_per_day` | tvrdé | každý den má stejný počet jídel jako odvozený z `body_metrics` (`bodyMetricsToPlanInput`) |
+| `workouts_per_week` | tvrdé | počet dnů s `workout != null` = očekávaný počet z profilu; 0 tréninků = žádný den s tréninkem |
+| cviky na tréninkovém dni | tvrdé | `workout.exercises` neprázdné; každý cvik má neprázdný `name` / `display_name_cs` |
+| neověřené cviky (wger) | měkké | varování, pokud jsou na daném dni všechny cviky s `exercise_verified === false` |
+| vegetariánství / veganství, lepek | tvrdé | stejně jako dříve (text jídel) |
+| rozsah kalorií / bílkovin v `targets` | měkké | mimo běžný rozsah → varování |
+
 ### Enum Values
 
 - `goal`: `redukce` | `nabirani_svaly` | `udrzovani`
@@ -269,7 +247,7 @@ FOR i, day_index IN workout_days:
 | Entita | Cache | TTL |
 |--------|-------|-----|
 | Meal (Spoonacular) | meal_metadata_cache (existující) | exact: ∞, illustrative: 7d, none: 3d |
-| Exercise (wger) | Žádný (veřejné API) | – |
+| Exercise (wger / canonical) | `exercise_asset_registry` (Supabase) pro známé `canonical_key`; živé dotazy na wger.de | dle řádku v DB; doplnění médií může zapisovat zpět do registry |
 | Generated plan | ai_generated_plans (DB) | Trvalé pro uživatele |
 
 ### Replace Meal Flow
@@ -331,10 +309,10 @@ Response: { "ok": true, "workout": { ... } }
 ### planOrchestrator (lib/services/planOrchestrator.js)
 
 - Validace inputu
-- Volání OpenAI (s retry)
-- Deterministic fallback
+- Volání OpenAI (s retry); parsování přes `parseStructuredPlan` (legacy + v6)
+- Náhrada chybějícího `meal_plan`: `buildProfileTemplateMealPlan`; chybějící workout: prázdné `exercises` + `deriveWorkoutDays` (viz §2)
 - Resolve meals (Spoonacular)
-- Resolve exercises (wger)
+- Resolve exercises (wger + `exerciseProviderRegistry` / registry)
 - Sestavení finálního plánu
 - Logging
 
@@ -395,15 +373,15 @@ Response: { "ok": true, "workout": { ... } }
 ### Structured OpenAI Output Parsing
 
 - `lib/validation/parseStructuredPlan.js`
-- Kontrola: targets, meal_plan.days.length=7, workout_plan.days
-- Pokud nevalidní → deterministic fallback
+- Kontrola: targets, meal_plan.days.length=7, workout_plan.days (legacy); nebo v6 `days[]`
+- Pokud OpenAI nevrátí použitelný JSON → náhrada dle § 2 (šablona jídel; deterministický workout, pokud chybí `workout_plan.days`)
 - Strip neznámých polí
 
 ### Graceful Degradation
 
 | Selhání | Chování |
 |--------|---------|
-| OpenAI | Deterministic fallback, log warning |
+| OpenAI | Šablona jídel + deterministický workout (`getDeterministicWorkoutPlan`), pokud chybí `workout_plan.days`; log warning |
 | Spoonacular pro 1 meal | recipe: null, display_name: search_query |
 | Spoonacular celé | Všechna jídla s recipe: null |
 | wger pro 1 exercise | image_url: null, name: search_term |

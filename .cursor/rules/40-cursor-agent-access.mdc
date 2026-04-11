@@ -1,0 +1,34 @@
+---
+description: Kontrolní seznam přístupu agenta (terminál, MCP Supabase/Vercel/Stripe, GitHub CLI)
+alwaysApply: false
+---
+
+# Přístup agenta – Cursor + MCP + CLI
+
+Agent potřebuje povolený **terminál** (git, npm, supabase) a běžící **MCP servery**. Tokeny jen v `.env.local` / Cursor Secrets, nikdy v gitu.
+
+## 1. Cursor (ručně v IDE)
+
+- **Settings → Agent** (nebo Features): povolit spouštění příkazů v terminálu; u Sandbox buď vypnout pro git/npm, nebo schvalovat příkazy.
+- Po změně [.cursor/mcp.json](.cursor/mcp.json) nebo proměnných pro MCP: **úplný restart Cursoru**.
+
+## 2. Supabase MCP (tento repozitář)
+
+- Zkopíruj [.env.local.example](.env.local.example) na `.env.local` a doplň `SUPABASE_ACCESS_TOKEN` z [Supabase Access Tokens](https://supabase.com/dashboard/account/tokens).
+- Spusť `npm run check:cursor-access` – ověří soubory a závislost `@supabase/mcp-server-supabase`.
+
+## 3. Vercel / Stripe (Marketplace MCP)
+
+- **Settings → MCP**: u serveru Vercel (a Stripe) dokonči přihlášení / OAuth podle UI.
+- Pokud plugin vyžaduje `mcp_auth`, spusť auth flow z panelu MCP nebo z chatu.
+
+## 4. GitHub
+
+- `gh auth login` pokud `gh auth status` není přihlášený.
+- `git remote -v` má ukazovat správný `origin`.
+
+## Diagnostika v repu
+
+```bash
+npm run check:cursor-access
+```

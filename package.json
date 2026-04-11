@@ -13,6 +13,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "check:cursor-access": "node scripts/check-cursor-access.mjs",
     "deploy": "git add -A && git commit -m \"Deploy: automatické úpravy\" && git push origin main"
   },
   "dependencies": {

@@ -22,6 +22,7 @@ import { validatePublishedPlanHtml } from '../lib/validatePlanHtml';
 import { getHabitById } from '../lib/habits';
 import { normalizeOccupationForForm, activityToFormLabel, goalToFormLabel, normalizeFrequency, getFrequencyDayRange } from '../lib/preferenceConstants';
 import { useProfileData } from '../hooks/useProfileData';
+import { PLAN_GENERATION_DURATION_HINT } from '../lib/planGenerationUiCopy';
 
 const PROGRAM_LABELS = {
   START: { subtitle: 'Každý trénink, každé měření.' },
@@ -1531,7 +1532,10 @@ export default function Profil() {
       });
       const json = await res.json();
       if (res.ok && json?.ok) {
-        setToast({ message: json.message || 'Plán se generuje. Obnov stránku za chvíli.', type: 'success' });
+        setToast({
+          message: json.message || `Plán se generuje na pozadí. ${PLAN_GENERATION_DURATION_HINT} Obnov stránku za chvíli.`,
+          type: 'success',
+        });
         await refetch(token);
       } else {
         setToast({ message: json?.error || 'Nepodařilo spustit generování.', type: 'error' });
@@ -2159,6 +2163,7 @@ export default function Profil() {
             <div className="profile-bubble" id="plan-preparing">
               <div className="profile-bubble-body" style={{ padding: '1rem 1.25rem' }}>
                 <p className="plan-preparing-text">Plán se připravuje – obnov stránku za chvíli.</p>
+                <p className="plan-preparing-hint">{PLAN_GENERATION_DURATION_HINT}</p>
                 <button
                   type="button"
                   className="profile-quick-nav-btn"
@@ -2201,6 +2206,7 @@ export default function Profil() {
               {profile?._diagnostics?.plan_state === 'processing' && (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
                   <p className="plan-preparing-text">Plán se dokončuje – automaticky se obnoví, jakmile bude hotový.</p>
+                  <p className="plan-preparing-hint">{PLAN_GENERATION_DURATION_HINT}</p>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
                 </div>
               )}

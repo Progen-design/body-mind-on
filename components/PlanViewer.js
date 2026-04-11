@@ -3,8 +3,14 @@
 // NO LIES UI RULE: Frontend must not display media in a way that misleads about trust.
 // - illustrative ≠ exact  |  fallback ≠ verified  |  none ≠ broken image
 // Trust labels and placeholders reflect backend image_trust_level / trust_level.
-// NEXT_PUBLIC_API_ONLY_MEDIA=true → show images/media only when exact (Spoonacular, wger), not Pexels.
-const API_ONLY_MEDIA = process.env.NEXT_PUBLIC_API_ONLY_MEDIA === 'true';
+// NEXT_PUBLIC_API_ONLY_MEDIA: true/false přepíše; jinak v produkčním buildu jen exact (Spoonacular, wger).
+const _apiOnlyMediaEnv = process.env.NEXT_PUBLIC_API_ONLY_MEDIA;
+const API_ONLY_MEDIA =
+  _apiOnlyMediaEnv === 'false'
+    ? false
+    : _apiOnlyMediaEnv === 'true'
+      ? true
+      : process.env.NODE_ENV === 'production';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabaseClient';
@@ -99,8 +105,49 @@ function getEnrichedMealTrust(mealText, mealTrustMap = {}, preferredKey = null) 
   return bestKey ? map[bestKey] : null;
 }
 
-function getExerciseMediaFromItemText(itemText, exerciseMediaMap = {}, preferredKey = null) {
+/**
+ * Sloučí trust z pipeline (data-* na <p>) s výsledkem /api/plan-enrichment.
+ * Recept ID a přesný obrázek z generování mají přednost, pokud jsou v HTML.
+ */
+function resolveMealTrustMerged(meal, mealText, mealTrustMap, preferredKey) {
+  const enriched = getEnrichedMealTrust(mealText, mealTrustMap, preferredKey);
+  const ridRaw = meal?.recipe_id;
+  const fromHtmlId =
+    ridRaw != null && ridRaw !== '' && Number.isFinite(Number(ridRaw)) ? Number(ridRaw) : null;
+  const recipe_id = fromHtmlId ?? enriched?.recipe_id ?? null;
+  const htmlUrl = typeof meal?.html_image_url === 'string' && meal.html_image_url.trim()
+    ? meal.html_image_url.trim()
+    : null;
+  const htmlTrustLvl = (meal?.html_image_trust_level || '').toLowerCase();
+  const htmlExact = htmlTrustLvl === 'exact' && htmlUrl;
+  const enExact = enriched?.image_trust_level === 'exact' && enriched?.image_url;
+
+  if (!enriched && recipe_id == null && !htmlUrl) return null;
+
+  const image_url = htmlExact ? htmlUrl : enExact ? enriched.image_url : htmlUrl || enriched?.image_url || null;
+  const image_trust_level = htmlExact || enExact ? 'exact' : enriched?.image_trust_level || (htmlUrl ? htmlTrustLvl || 'none' : 'none');
+
+  return {
+    ...(enriched || {}),
+    recipe_id,
+    image_url,
+    image_trust_level,
+    exact_source: htmlExact || enExact ? 'spoonacular' : enriched?.exact_source ?? null,
+    illustrative_source: enriched?.illustrative_source ?? null,
+    confidence_score: htmlExact || enExact ? 1 : enriched?.confidence_score ?? 0,
+    calories: enriched?.calories ?? null,
+    protein_g: enriched?.protein_g ?? null,
+    carbs_g: enriched?.carbs_g ?? null,
+    fat_g: enriched?.fat_g ?? null,
+  };
+}
+
+function getExerciseMediaFromItemText(itemText, exerciseMediaMap = {}, preferredKey = null, wgerExerciseId = null) {
   const map = exerciseMediaMap || {};
+  if (wgerExerciseId != null && Number.isFinite(Number(wgerExerciseId))) {
+    const wk = `wger:${Number(wgerExerciseId)}`;
+    if (map[wk]) return map[wk];
+  }
   if (preferredKey && map[preferredKey]) return map[preferredKey];
   const rawName = String(itemText || '').split(':')[0].trim();
   const key = normalizeLookupKey(rawName);
@@ -167,10 +214,14 @@ function parseTrainingItems(html) {
     const text = inner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
     const keyMatch = tag.match(/data-exercise-key\s*=\s*["']([^"']*)["']/i);
     const exercise_key = keyMatch ? normalizeLookupKey(keyMatch[1]) : null;
+    const wgerMatch = tag.match(/data-wger-exercise-id\s*=\s*["'](\d+)["']/i);
+    const wgerParsed = wgerMatch ? parseInt(wgerMatch[1], 10) : NaN;
+    const wger_exercise_id = Number.isFinite(wgerParsed) ? wgerParsed : undefined;
     items.push({
       innerHTML: inner,
       text,
       exercise_key: exercise_key || undefined,
+      wger_exercise_id,
     });
   }
   return items.length ? items : null;
@@ -521,7 +572,25 @@ function parsePlanHtml(html) {
                   /Trénink tento den|trenink tento den/i.test(mealType || '') ||
                   /Trénink tento den|trenink tento den/i.test(paragraphText);
                 const mealKey = next.getAttribute?.('data-meal-key') ? normalizeLookupKey(next.getAttribute('data-meal-key')) : null;
-                if (isMeal && (mealType || rest)) meals.push({ type: mealType || 'Jídlo', text: rest, fullHtml: next.innerHTML, meal_key: mealKey || undefined });
+                const recipeAttr = next.getAttribute?.('data-recipe-id');
+                let recipe_id;
+                if (recipeAttr != null && String(recipeAttr).trim() !== '') {
+                  const n = parseInt(String(recipeAttr).trim(), 10);
+                  if (!Number.isNaN(n)) recipe_id = n;
+                }
+                const html_image_url = (next.getAttribute?.('data-image-url') || '').trim() || undefined;
+                const html_image_trust_level = (next.getAttribute?.('data-image-trust-level') || '').trim() || undefined;
+                if (isMeal && (mealType || rest)) {
+                  meals.push({
+                    type: mealType || 'Jídlo',
+                    text: rest,
+                    fullHtml: next.innerHTML,
+                    meal_key: mealKey || undefined,
+                    ...(recipe_id !== undefined ? { recipe_id } : {}),
+                    ...(html_image_url ? { html_image_url } : {}),
+                    ...(html_image_trust_level ? { html_image_trust_level } : {}),
+                  });
+                }
                 if (isTrainingBlock) {
                   trainingHtml = next.outerHTML || '';
                   next = next.nextElementSibling;
@@ -1083,6 +1152,8 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                         });
                         const dishTitle = (meal.text || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
                         const modalTitle = (meal.type && dishTitle) ? `${meal.type}: ${dishTitle}` : dishTitle || meal.type || mealFullText || 'Jídlo';
+                        const mealLookupKey = meal.meal_key || null;
+                        const mealTrust = resolveMealTrustMerged(meal, mealFullText || meal.text || meal.type, mealTrustMap, mealLookupKey);
                         const openRecipe = (e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -1134,8 +1205,6 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                         };
                         const mealTextForPin = override ? (override.title || '') : (meal.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().replace(/\s*\([^)]*\)\s*$/g, '').trim();
                         const mealPinned = isPinned(meal.type || '', mealTextForPin);
-                        const mealLookupKey = meal.meal_key || null;
-                        const mealTrust = getEnrichedMealTrust(mealFullText || meal.text || meal.type, mealTrustMap, mealLookupKey);
                         // Pouze Spoonacular: zobrazíme URL jen když backend nastavil exact + image_url (zdroj Spoonacular). Žádné Unsplash / meal_images map / ilustrační stock u jídel.
                         let resolvedUrl = null;
                         let trustLevel = 'none';
@@ -1303,7 +1372,12 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                               {trainingItems.map((item, idx) => {
                                 const iconType = getExerciseIconType(item.text);
                                 const equipment = getSafeEquipment(iconType);
-                                const exerciseMedia = getExerciseMediaFromItemText(item.text, exerciseMediaMap, item.exercise_key || null);
+                                const exerciseMedia = getExerciseMediaFromItemText(
+                                  item.text,
+                                  exerciseMediaMap,
+                                  item.exercise_key || null,
+                                  item.wger_exercise_id ?? null,
+                                );
                                 const exTrustLevel = exerciseMedia?.trust_level ?? 'none';
                                 const exerciseThumb = (API_ONLY_MEDIA ? exTrustLevel === 'exact' : exTrustLevel !== 'none') ? (exerciseMedia?.gif_url || exerciseMedia?.image_url || null) : null;
                                 const itemKey = `training-${di}-${idx}`;

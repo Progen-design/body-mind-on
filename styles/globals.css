@@ -315,6 +315,24 @@ main { padding: 40px 0; }
 .foot { display:flex; align-items:center; justify-content:space-between; color:#a1a1aa; font-size:14px; padding:24px 0; gap:12px; flex-wrap:wrap; }
 .links { display:flex; gap:16px; flex-wrap:wrap; }
 
+/* Overlay registrace – druhý řádek pod „Generuji plán…“ */
+.reg-form-overlay-sub {
+  margin: 0.75rem 0 0;
+  max-width: 26rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  opacity: 0.92;
+  text-align: center;
+}
+
+/* Profil – doplněk k „plán se připravuje“ */
+.plan-preparing-hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--muted, #a1a1aa);
+}
+
 /* ---- Motion preference ---- */
 @media (prefers-reduced-motion: reduce){ * { animation: none !important; transition: none !important; } }
 

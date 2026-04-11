@@ -139,7 +139,13 @@ export default async function handler(req, res) {
         body_part: ex?.body_part || null,
         target: ex?.target || null,
         equipment: ex?.equipment || null,
+        wger_exercise_id: ex?.wger_exercise_id ?? null,
       };
+      const wgerNum = ex?.wger_exercise_id;
+      if (wgerNum != null && Number.isFinite(Number(wgerNum))) {
+        const wgerKey = `wger:${Number(wgerNum)}`;
+        if (!exerciseMedia[wgerKey]) exerciseMedia[wgerKey] = media;
+      }
       // PRIORITY 1: canonical exercise_key from HTML (data-exercise-key)
       const primaryKey = ex?.exercise_key && normalizeTextKey(ex.exercise_key) ? normalizeTextKey(ex.exercise_key) : null;
       if (primaryKey && !exerciseMedia[primaryKey]) {

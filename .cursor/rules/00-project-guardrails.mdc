@@ -1,0 +1,49 @@
+---
+description: Obecná pravidla projektu Body & Mind ON – stack, kód, chování AI
+alwaysApply: true
+---
+
+# Pravidla projektu
+
+Projekt: **Body & Mind ON** (fitness / AI / automatizace, jeden vývojář).
+
+## Hlavní cíl projektu
+
+**Zapojení AI, které ve spojení s API vygeneruje jídelníček a tréninkový plán. Toto musí fungovat na sto procent.**
+
+- AI (OpenAI) → strukturované dotazy
+- API (Spoonacular, wger) → reálné recepty a cviky
+- Výstup: jídelníček + tréninkový plán pro uživatele
+
+Všechno ostatní je druhotné. Tento core flow musí být spolehlivý, odolný a vždy doručit plán (s fallbacky při selhání).
+
+## Technologie
+- Next.js (pages router)
+- Hosting: Vercel
+- Backend: Supabase
+- Jazyk: JavaScript (TypeScript jen tam, kde už je)
+
+## Pravidla kódu
+- Při editaci vracet vždy **celé soubory**.
+- **Nepřidávat** nové knihovny bez schválení.
+- **Neměnit** existující text/obsah, pokud to není výslovně požadováno.
+- Nepřepisovat nepožadované části; preferovat jednoduchá a čitelná řešení.
+- Logika v `/lib`, komponenty jen UI, API v `/pages/api`.
+
+## E-maily
+- Posílat jako platné HTML.
+- Obsah e-mailů v češtině.
+- Struktura jednoduchá a kompatibilní s Gmailem.
+
+## Spoonacular a generování plánů
+- **Žádná cache.** V planOrchestrator ani nikde v pipeline pro generování plánů se nepoužívá žádná cache. Nepoužívat meal_metadata_cache ani nic podobného pro výsledky ze Spoonacular.
+- **Plný ověřený resolve.** `generateStructuredPlan` / `planOrchestrator` vždy běží s plným Spoonacular + wger resolve (žádný `fastMode`). Cíl je shoda výstupu s reálnými recepty a cviky, ne zkrácení latence na úkor verifikace.
+
+## Nasazení a prostředí
+- Kód musí být kompatibilní s Vercel (serverless).
+- Node-only API jen uvnitř API routes.
+
+## Chování AI
+- Při více možnostech navrhnout nejjednodušší.
+- Preferovat minimální změny před velkými přepisy.
+- Když není jasno: nejdřív stručně vysvětlit záměr, pak nabídnout konkrétní úpravy (ideálně celý soubor).

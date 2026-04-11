@@ -7,6 +7,7 @@ import HabitSelection from "../components/HabitSelection";
 import { getSuggestedHabits } from "../lib/habits";
 import { getFrequencyDayRange } from "../lib/preferenceConstants";
 import { REGISTRATION_STEPS } from "../lib/registrationRules";
+import { PLAN_GENERATION_DURATION_HINT, PLAN_GENERATION_OVERLAY_TITLE } from "../lib/planGenerationUiCopy";
 
 // Registrace dle pravidel ON Club (stejný flow pro START, ON Club, VIP): https://app.bodyandmindon.cz/on-club
 const MAX_STEP = REGISTRATION_STEPS;
@@ -242,7 +243,8 @@ export default function Start() {
         >
           {isSubmitting && (
             <div className="reg-form-overlay" aria-hidden>
-              <p className="reg-form-overlay-text">Generuji plán… prosím neodcházej.</p>
+              <p className="reg-form-overlay-text">{PLAN_GENERATION_OVERLAY_TITLE}</p>
+              <p className="reg-form-overlay-sub">{PLAN_GENERATION_DURATION_HINT}</p>
             </div>
           )}
           {/* KROK 1: Jméno, e-mail, hesla */}

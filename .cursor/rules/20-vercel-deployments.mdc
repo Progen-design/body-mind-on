@@ -1,0 +1,24 @@
+---
+description: Nasazování na Vercel – build, env, preview, domény
+globs: "vercel.json","**/api/**","next.config.*"
+alwaysApply: false
+---
+
+# Vercel deployments
+
+## Build a běh
+- Projekt je Next.js (pages router); build: `next build`, start: `next start`.
+- Na Vercelu se používá automatický detekce Next.js; vlastní `vercel.json` jen při nutnosti (redirecty, headers, funkce).
+
+## Proměnné prostředí
+- Citlivé hodnoty (Supabase URL/key, Resend, Stripe, atd.) pouze v Environment Variables ve Vercel dashboardu.
+- Rozlišovat Production / Preview / Development; pro preview používat vlastní Supabase projekt nebo branch, ne produkční DB.
+
+## API routes
+- API routes v `pages/api/**` musí být kompatibilní s serverless (krátký timeout, žádné dlouhodobé procesy).
+- Nepoužívat Node-only API mimo API routes; v edge/serverless kontextu ověřit podporu Vercelu.
+
+## Deploy a preview
+- **Preferovaný tok uživatele:** změny mají končit na **Production** (živý web); po úpravách push na **main** a ověření úspěšného buildu na Vercelu.
+- Po `git push` na propojenou branch Vercel sestaví a nasadí (production pro default branch, preview pro ostatní).
+- Před mergem do main zkontrolovat, že preview build prochází a že env pro preview je nastavený.

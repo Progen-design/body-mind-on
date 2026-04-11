@@ -2,7 +2,10 @@
  * GET /api/verify-media-apis
  * Ověří, zda jsou Spoonacular (jídla) a wger.de (cviky) dostupné.
  * Spoonacular vyžaduje SPOONACULAR_API_KEY. wger.de je veřejné API bez klíče.
+ * wger: endpointy dle https://wger.de/api/v2/ (exercise-translation, exercise/search, exerciseimage).
  */
+import { WGER_API_V2_BASE } from '../../lib/wgerApiConstants';
+
 const SPOONACULAR_KEY = process.env.SPOONACULAR_API_KEY || '';
 
 export default async function handler(req, res) {
@@ -12,7 +15,14 @@ export default async function handler(req, res) {
 
   const result = {
     spoonacular: { configured: false, working: false, error: null },
-    wger: { configured: true, working: false, error: null },
+    wger: {
+      configured: true,
+      working: false,
+      translation_ok: false,
+      search_ok: false,
+      exerciseimage_ok: false,
+      error: null,
+    },
   };
 
   // Spoonacular (jídla, recepty)
@@ -37,17 +47,47 @@ export default async function handler(req, res) {
 
   // wger.de (cviky) – veřejné API, bez klíče
   try {
-    const wgerResp = await fetch(
-      'https://wger.de/api/v2/exercise-translation/?search=squat&language=2&limit=1',
+    const base = WGER_API_V2_BASE;
+
+    const trResp = await fetch(
+      `${base}/exercise-translation/?search=squat&language=2&limit=1`,
       { method: 'GET', headers: { Accept: 'application/json' } }
     );
-    const wgerData = await wgerResp.json();
-    const wgerResults = wgerData?.results;
-    result.wger.working = Boolean(
-      wgerResp.ok && Array.isArray(wgerResults) && wgerResults.length > 0 && wgerResults[0]?.exercise
+    const trData = await trResp.json();
+    const trResults = trData?.results;
+    result.wger.translation_ok = Boolean(
+      trResp.ok && Array.isArray(trResults) && trResults.length > 0 && trResults[0]?.exercise != null
     );
+
+    const searchResp = await fetch(
+      `${base}/exercise/search/?term=bench&language=english&format=json`,
+      { method: 'GET', headers: { Accept: 'application/json' } }
+    );
+    const searchData = await searchResp.json();
+    const baseId = searchData?.suggestions?.[0]?.data?.base_id;
+    result.wger.search_ok = Boolean(
+      searchResp.ok && baseId != null && Number.isFinite(Number(baseId))
+    );
+
+    let imgOk = false;
+    if (result.wger.search_ok) {
+      const imgResp = await fetch(
+        `${base}/exerciseimage/?exercise=${encodeURIComponent(String(baseId))}&limit=1`,
+        { method: 'GET', headers: { Accept: 'application/json' } }
+      );
+      const imgData = await imgResp.json();
+      imgOk = Boolean(
+        imgResp.ok && Array.isArray(imgData?.results) && imgData.results.length > 0 && imgData.results[0]?.image
+      );
+    }
+    result.wger.exerciseimage_ok = imgOk;
+
+    result.wger.working = result.wger.translation_ok && result.wger.search_ok;
     if (!result.wger.working) {
-      result.wger.error = wgerResp.ok ? 'Žádné výsledky' : `HTTP ${wgerResp.status}`;
+      const parts = [];
+      if (!result.wger.translation_ok) parts.push('exercise-translation');
+      if (!result.wger.search_ok) parts.push('exercise/search');
+      result.wger.error = parts.length ? `Selhalo: ${parts.join(', ')}` : null;
     }
   } catch (e) {
     result.wger.error = e?.message || 'Chyba volání';

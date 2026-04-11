@@ -15,7 +15,7 @@
 | **assistant-intake** | generatePlanAndSendFromParams → generatePlanForEmail → **generatePlanForEmailViaUnified** | ✅ ANO |
 | **generate-plan** (API) | **runUnifiedPlanPipeline** přímo | ✅ ANO |
 | **send-plan-again** | Čte plan_html z DB, ne generuje | N/A (jen čte) |
-| **onboarding/generate-plan** | generateStructuredPlan přímo (OpenAI → Spoonacular → wger) | ⚠️ PARALELNÍ – preview-only, ne persistuje |
+| **onboarding/generate-plan** | **runUnifiedPlanPipeline** (validace + HTML; persist v tomto handleru stále ne) | ✅ ANO (stejná jádrová cesta jako generate-plan) |
 | **body-metrics last-resort** | persistPublishableFallbackPlanForUser → buildDeterministicFallbackPlanHtml | N/A (fallback při selhání AI) |
 
 ---
@@ -69,7 +69,7 @@
 | **pages/api/generate-plan-next-week.js** | PASS | generatePlanForEmail → unified |
 | **pages/api/profile-preferences.js** | PASS | generatePlanForEmail → unified |
 | **pages/api/assistant-intake.js** | PASS | generatePlanAndSendFromParams → unified |
-| **pages/api/onboarding/generate-plan.js** | RISK | Volá generateStructuredPlan přímo – ne přes runUnifiedPlanPipeline. Preview-only, ne persistuje. Stejný data flow (Spoonacular, wger). |
+| **pages/api/onboarding/generate-plan.js** | PASS | runUnifiedPlanPipeline + validateStructuredPlan; odpověď rozšířena o plan_html, _validation (persist zůstává u jiných endpointů). |
 | **lib/planValidators.js** | RISK | runPlanValidators – dead code, nevolá se. Může být odstraněn nebo ponechán pro budoucí použití. |
 | **lib/taskExecutors.js** (persistPublishableFallbackPlanForUser) | PASS | Last-resort fallback – HTML-only, bez structured_plan_json. Akceptovatelné. |
 
@@ -93,15 +93,12 @@
 | **Funkce** | generatePlan(params) |
 | **Provedeno** | Thin wrapper nad runUnifiedPlanPipeline. Vrací { html, metrics, enrichment } pro zpětnou kompatibilitu. |
 
-### 2. onboarding/generate-plan – paralelní vstup
+### 2. onboarding/generate-plan – sjednoceno ✅
 
 | Položka | Hodnota |
 |---------|---------|
 | **Soubor** | pages/api/onboarding/generate-plan.js |
-| **Funkce** | handler |
-| **Problém** | Volá generateStructuredPlan přímo, ne přes runUnifiedPlanPipeline. |
-| **Dopad** | Nízký – používá stejný planOrchestrator (Spoonacular, wger). Preview-only, ne persistuje. |
-| **Oprava** | Volitelné: přepojit na runUnifiedPlanPipeline pro konzistenci. Nebo ponechat s dokumentem, že jde o preview endpoint. |
+| **Provedeno** | Handler volá `runUnifiedPlanPipeline` (validace struktury jako u zbytku produktu). 422 + `PLAN_VALIDATION_ERROR` při tvrdé chybě validace. |
 
 ### 3. runPlanValidators – dead code
 
@@ -118,5 +115,5 @@
 ## Doporučené kroky (volitelné)
 
 1. ~~Převést generatePlan na thin wrapper~~ – **HOTOVO**
-2. **Volitelné:** Přepojit onboarding/generate-plan na runUnifiedPlanPipeline.
+2. ~~Přepojit onboarding/generate-plan na runUnifiedPlanPipeline~~ – **HOTOVO**
 3. **Volitelné:** Označit nebo odstranit runPlanValidators.

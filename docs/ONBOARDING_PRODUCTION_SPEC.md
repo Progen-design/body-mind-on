@@ -181,7 +181,9 @@ V `_diagnostics.generation_source` je `openai`, pokud OpenAI vrátilo parsovatel
     "meals_fallback": 0,
     "exercises_resolved": 15,
     "exercises_fallback": 0
-  }
+  },
+  "plan_html": "string (HTML plánu, volitelné pro klienty)",
+  "_validation": { "ok": true, "warnings": ["..."] } | null
 }
 ```
 
@@ -310,7 +312,7 @@ Response: { "ok": true, "workout": { ... } }
 
 - Validace inputu
 - Volání OpenAI (s retry); parsování přes `parseStructuredPlan` (legacy + v6)
-- Náhrada chybějícího `meal_plan`: `buildProfileTemplateMealPlan`; chybějící workout: prázdné `exercises` + `deriveWorkoutDays` (viz §2)
+- Náhrada chybějícího `meal_plan`: `buildProfileTemplateMealPlan`; chybějící `workout_plan.days` při `workouts_per_week > 0`: `getDeterministicWorkoutPlan` (viz §2)
 - Resolve meals (Spoonacular)
 - Resolve exercises (wger + `exerciseProviderRegistry` / registry)
 - Sestavení finálního plánu
@@ -318,11 +320,10 @@ Response: { "ok": true, "workout": { ... } }
 
 ### API Route Handler (pages/api/onboarding/generate-plan.js)
 
-- Parsing body
-- Input validation
-- Volání orchestrátoru
-- Error handling
-- Response formatting
+- Parsing body, `validateBodyMetrics`
+- **`runUnifiedPlanPipeline`** (jako `/api/generate-plan`): `generateStructuredPlan` → `validateStructuredPlan` → `renderPlanHtmlFromStructured`
+- Odpověď 200: pole z `planJson` (`days`, `targets`, `_diagnostics`, …) + **`plan_html`**, **`_validation`** (měkká varování)
+- Chyba validace plánu vůči profilu: **422**, `code: PLAN_VALIDATION_ERROR`, `details.validation`
 
 ---
 

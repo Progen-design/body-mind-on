@@ -4,7 +4,8 @@
  * Trust-aware pipeline, display_name_cs – nikdy raw anglický název.
  * @see docs/ONBOARDING_PRODUCTION_SPEC.md § Replace Meal Flow
  */
-import { searchMealMetadata, MEAL_CONFIDENCE_THRESHOLD, mapSpoonacularRecipe } from '../../../lib/mealEnrichment';
+import { getMealData } from '../../../lib/spoonacularClient';
+import { MEAL_CONFIDENCE_THRESHOLD, mapSpoonacularRecipe } from '../../../lib/mealEnrichment';
 import { buildSpoonacularContext } from '../../../lib/spoonacularComplexSearch';
 import { translateRecipeTitleToCzech } from '../../../lib/recipeLocalization';
 import { extractIngredientLinesFromSpoonacularRecipe } from '../../../lib/spoonacularShopping';
@@ -41,7 +42,7 @@ export default async function handler(req, res) {
     const query = hint_query && typeof hint_query === 'string' ? hint_query.trim().slice(0, 100) : getDefaultQuery(meal_type);
 
     const spoonacularContext = buildSpoonacularContext(body_metrics || null, targets || {}, meal_type);
-    const meta = await searchMealMetadata(query, null, {
+    const meta = await getMealData(query, {
       maxCandidates: 3,
       shortlistSize: 5,
       spoonacularContext,

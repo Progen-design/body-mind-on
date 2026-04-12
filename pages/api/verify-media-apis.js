@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   }
 
   const result = {
-    spoonacular: { configured: false, working: false, error: null },
+    spoonacular: { configured: false, working: false, complexSearch_ok: false, information_ok: false, error: null },
     wger: {
       configured: true,
       working: false,
@@ -31,12 +31,29 @@ export default async function handler(req, res) {
 
   if (hasSpoonacular) {
     try {
-      const url = `https://api.spoonacular.com/recipes/complexSearch?apiKey=${encodeURIComponent(SPOONACULAR_KEY)}&query=chicken%20breast&number=1`;
-      const resp = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } });
+      const searchUrl = `https://api.spoonacular.com/recipes/complexSearch?apiKey=${encodeURIComponent(SPOONACULAR_KEY)}&query=chicken%20breast&number=1&addRecipeInformation=true&addRecipeNutrition=true`;
+      const resp = await fetch(searchUrl, { method: 'GET', headers: { Accept: 'application/json' } });
       const data = await resp.json();
-      result.spoonacular.working = resp.ok && Array.isArray(data?.results) && data.results.length > 0;
-      if (!result.spoonacular.working) {
-        result.spoonacular.error = data?.message || (resp.ok ? 'Žádné výsledky' : `HTTP ${resp.status}`);
+      result.spoonacular.complexSearch_ok = Boolean(
+        resp.ok && Array.isArray(data?.results) && data.results.length > 0
+      );
+      let infoOk = false;
+      const rid = data?.results?.[0]?.id;
+      if (result.spoonacular.complexSearch_ok && rid != null) {
+        const infoUrl = `https://api.spoonacular.com/recipes/${encodeURIComponent(String(rid))}/information?apiKey=${encodeURIComponent(SPOONACULAR_KEY)}&includeNutrition=true`;
+        const infoResp = await fetch(infoUrl, { method: 'GET', headers: { Accept: 'application/json' } });
+        const infoData = await infoResp.json();
+        const nutrients = infoData?.nutrition?.nutrients;
+        infoOk = Boolean(
+          infoResp.ok && infoData?.id != null && Array.isArray(nutrients) && nutrients.length > 0
+        );
+      }
+      result.spoonacular.information_ok = infoOk;
+      result.spoonacular.working = result.spoonacular.complexSearch_ok && result.spoonacular.information_ok;
+      if (!result.spoonacular.complexSearch_ok) {
+        result.spoonacular.error = data?.message || (resp.ok ? 'complexSearch: žádné výsledky' : `HTTP ${resp.status}`);
+      } else if (!result.spoonacular.information_ok) {
+        result.spoonacular.error = 'recipes/{id}/information nevrátilo výživu – zkontroluj klíč / kvótu';
       }
     } catch (e) {
       result.spoonacular.error = e?.message || 'Chyba volání';

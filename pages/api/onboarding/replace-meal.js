@@ -45,6 +45,7 @@ export default async function handler(req, res) {
       maxCandidates: 3,
       shortlistSize: 5,
       spoonacularContext,
+      skipDailyDedup: true,
     });
 
     const recipeVerified = meta?.recipe_id != null && (meta?.image_trust_level === 'exact' || (meta?.confidence_score ?? 0) >= MEAL_CONFIDENCE_THRESHOLD);

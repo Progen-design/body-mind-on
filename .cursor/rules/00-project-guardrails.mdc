@@ -36,7 +36,7 @@ Všechno ostatní je druhotné. Tento core flow musí být spolehlivý, odolný 
 - Struktura jednoduchá a kompatibilní s Gmailem.
 
 ## Spoonacular a generování plánů
-- **Žádná cache.** V planOrchestrator ani nikde v pipeline pro generování plánů se nepoužívá žádná cache. Nepoužívat meal_metadata_cache ani nic podobného pro výsledky ze Spoonacular.
+- **Žádná cache ve flow plánu.** `resolveMeals` volá Spoonacular s `skipDailyDedup: true` (žádný denní hit zápis do `meal_metadata_cache` při generování týdenního plánu). Chybějící suroviny/nutrienty u výsledku z `complexSearch` se doplňují cíleně přes `/recipes/{id}/information`.
 - **Plný ověřený resolve.** `generateStructuredPlan` / `planOrchestrator` vždy běží s plným Spoonacular + wger resolve (žádný `fastMode`). Cíl je shoda výstupu s reálnými recepty a cviky, ne zkrácení latence na úkor verifikace.
 
 ## Nasazení a prostředí

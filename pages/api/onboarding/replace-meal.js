@@ -65,7 +65,10 @@ export default async function handler(req, res) {
       });
     }
 
-    const display_name_cs = await translateRecipeTitleToCzech(rawRecipe.title || '', meta.recipe_id);
+    let display_name_cs = (await translateRecipeTitleToCzech(rawRecipe.title || '', meta.recipe_id)).trim();
+    if (!display_name_cs || display_name_cs === 'Jídlo') {
+      display_name_cs = (rawRecipe.title || query || 'Zdravé jídlo').trim().slice(0, 120);
+    }
     const shoppingIngredientLines = extractIngredientLinesFromSpoonacularRecipe(rawRecipe);
 
     return res.status(200).json({

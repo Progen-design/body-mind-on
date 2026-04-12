@@ -1,5 +1,8 @@
 {
   "functions": {
+    "pages/api/ai/run-scheduler.js": {
+      "maxDuration": 60
+    },
     "pages/api/body-metrics.js": {
       "maxDuration": 90
     },

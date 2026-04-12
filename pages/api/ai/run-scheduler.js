@@ -3,8 +3,9 @@ import { generateAITasks } from '../../../lib/generateAITasks';
 import { processAIEvents, runAIScheduler } from '../../../lib/aiScheduler';
 import { runAIDecisionEngine } from '../../../lib/runAIDecisionEngine';
 
-// Vercel: povolit dlouhý běh (až 300 s na Pro; Hobby může mít nižší limit)
-export const config = { maxDuration: 300 };
+// Vercel: jeden lehký „tick“ scheduleru (1 task v aiScheduler) + generate/events/decisions — držet pod limitem plánu (Hobby max 60 s).
+// Na Pro lze zvednout přes vercel.json nebo AI_SCHEDULER_MAX_TASKS_PER_RUN.
+export const config = { maxDuration: 60 };
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {

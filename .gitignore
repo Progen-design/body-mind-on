@@ -2,5 +2,9 @@
 node_modules
 .env
 .env.local
+.env.production.local
+.env*.local
 .vercel
 .specstory
+supabase/.temp/
+scripts/smoke-test-payload.json

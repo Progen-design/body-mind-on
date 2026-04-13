@@ -449,6 +449,7 @@ export default async function handler(req, res) {
                 existingAccount,
                 loginUnavailable: payload.user_id == null,
                 userChosePassword,
+                firstName: fallbackResult.bm?.name ?? payload.name ?? null,
               });
               fallbackPlanSent = !!sendRes?.ok;
             } catch (mailErr) {

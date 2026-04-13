@@ -1,0 +1,22 @@
+---
+description: Git a GitHub – větve, commity, PR, gh CLI
+globs: ".github/**"
+alwaysApply: false
+---
+
+# GitHub workflow
+
+## Git
+- Smysluplné commit zprávy (česky nebo anglicky); u větších změn stručný popis.
+- Nepřidávat do repozitáře soubory s tajemstvím (`.env`, klíče); `.env.local` a podobné v `.gitignore`.
+
+## Větve a mergování
+- Hlavní vývojová větev podle nastavení repo (často `main`).
+- Větve pro větší úpravy nebo experimenty; před mergem zkontrolovat build a (pokud existují) testy.
+
+## GitHub CLI (gh)
+- Pokud je nainstalované `gh`: použít pro vytváření PR, issue, review z terminálu.
+- Přihlášení: `gh auth login`; pak např. `gh pr create`, `gh pr list`, `gh repo view`.
+
+## CI / Actions
+- Pokud jsou v `.github/workflows/` definované workflow (např. lint, test, deploy), při úpravách zachovat jejich účel a neporušit běh na push/PR.

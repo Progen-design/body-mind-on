@@ -49,9 +49,24 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'Nemáš žádný uložený plán. Vygeneruje se při registraci.' });
     }
 
+    let firstName = null;
+    try {
+      const { data: bmRow } = await supabaseServer
+        .from('body_metrics')
+        .select('name')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      firstName = bmRow?.name ?? null;
+    } catch {
+      firstName = null;
+    }
+
     const result = await sendPlanEmail(email, planHtml, {
       loginUrl,
       existingAccount: true,
+      firstName,
     });
 
     if (!result.ok) {

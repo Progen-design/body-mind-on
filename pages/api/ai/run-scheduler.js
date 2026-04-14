@@ -3,9 +3,9 @@ import { generateAITasks } from '../../../lib/generateAITasks';
 import { processAIEvents, runAIScheduler } from '../../../lib/aiScheduler';
 import { runAIDecisionEngine } from '../../../lib/runAIDecisionEngine';
 
-// Vercel: krátký běh (default 2 tasky v aiScheduler) + generate/events/decisions — držet pod limitem plánu (Hobby max 60 s).
-// Na Pro lze zvednout přes vercel.json nebo AI_SCHEDULER_MAX_TASKS_PER_RUN.
-export const config = { maxDuration: 60 };
+// Vercel Pro: až 300 s — jeden trainer task může běžet celý OpenAI + Spoonacular + wger pipeline.
+// Default 1 úloha za běh (lib/aiScheduler.js); více přes AI_SCHEDULER_MAX_TASKS_PER_RUN.
+export const config = { maxDuration: 300 };
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {

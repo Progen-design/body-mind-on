@@ -1205,12 +1205,15 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                         };
                         const mealTextForPin = override ? (override.title || '') : (meal.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().replace(/\s*\([^)]*\)\s*$/g, '').trim();
                         const mealPinned = isPinned(meal.type || '', mealTextForPin);
-                        // Pouze Spoonacular: zobrazíme URL jen když backend nastavil exact + image_url (zdroj Spoonacular). Žádné Unsplash / meal_images map / ilustrační stock u jídel.
+                        // Náhled ze Spoonacular: zobrazíme vždy, když je k dispozici image_url (přesný i ilustrační). Placeholder jen bez URL.
                         let resolvedUrl = null;
                         let trustLevel = 'none';
-                        if (mealTrust && mealTrust.image_trust_level === 'exact' && mealTrust.image_url) {
-                          resolvedUrl = mealTrust.image_url;
-                          trustLevel = 'exact';
+                        const trustUrl = mealTrust?.image_url && String(mealTrust.image_url).trim();
+                        if (trustUrl) {
+                          resolvedUrl = trustUrl;
+                          if (mealTrust.image_trust_level === 'exact') trustLevel = 'exact';
+                          else if (mealTrust.image_trust_level === 'illustrative') trustLevel = 'illustrative';
+                          else trustLevel = 'illustrative';
                         }
                         const mealCardKey = `meal-${di}-${mi}-${normalizeLookupKey(mealFullText || meal.text || meal.type).slice(0, 40)}`;
                         const imageLoadFailed = mealImageErrorKeys.has(mealCardKey);

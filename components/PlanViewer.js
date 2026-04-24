@@ -71,6 +71,30 @@ function normalizeLookupKey(value) {
 }
 
 /**
+ * Spárování jídla z plánu s blokem „Recepty“ v HTML – jen při silné shodě názvu,
+ * aby se neotevřel jiný recept (např. smoothie vs. ovesná kaše).
+ */
+function strictMealRecipeNameMatch(mealFullText, recipeName) {
+  const dish = String(mealFullText || '')
+    .replace(/^[^:]+:\s*/i, '')
+    .replace(/\s*\([^)]*\)\s*$/g, '')
+    .trim();
+  const a = normalizeLookupKey(dish).slice(0, 120);
+  const b = normalizeLookupKey(String(recipeName || ''));
+  if (!a || !b || b.length < 5) return false;
+  if (a.includes(b)) return b.length >= 8 || a.length <= b.length + 20;
+  if (b.includes(a) && a.length >= 8) return true;
+  const aw = a.split(' ').filter((w) => w.length > 2);
+  const bw = b.split(' ').filter((w) => w.length > 2);
+  if (!aw.length || !bw.length) return false;
+  const bs = new Set(bw);
+  let hits = 0;
+  for (const w of aw) if (bs.has(w)) hits += 1;
+  const need = Math.min(3, bw.length);
+  return hits >= need;
+}
+
+/**
  * Resolve trust metadata for a meal (Spoonacular URL + trust level z backendu).
  * Returns { image_url, image_trust_level, exact_source, illustrative_source } or null.
  */
@@ -661,6 +685,22 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
     return result;
   })();
 
+  /** Všechny dny platnosti plánu (jídla + trénink) — pro přehled „celý týden“ v UI. */
+  const fullWeekDays = (() => {
+    const days = parsed?.days || [];
+    if (days.length === 0 || !plan?.valid_from) return [];
+    return days.map((_, idx) => {
+      const dateIso = addDaysToDateStr(plan.valid_from, idx);
+      const day = findDayForDate(days, dateIso, idx);
+      return {
+        ...day,
+        originalIndex: idx,
+        dateStr: dateIso ? formatDayLabel(dateIso) : '',
+        isToday: Boolean(dateIso && dateIso === todayIsoStr && !isFuturePlan),
+      };
+    });
+  })();
+
   return (
     <section id="plan-overview" className="card plan-section plan-section-premium">
       {/* Hero nadpis (lze skrýt, když je vykreslen nahoře na stránce) */}
@@ -677,6 +717,8 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
           <a href="#plan-overview" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-overview')?.scrollIntoView({ behavior: 'smooth' }); }}>Můj plán</a>
           <span className="plan-nav-sep" aria-hidden>|</span>
           <a href="#plan-jidelnicek" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-jidelnicek')?.scrollIntoView({ behavior: 'smooth' }); }}>Jídelníček</a>
+          <span className="plan-nav-sep" aria-hidden>|</span>
+          <a href="#plan-tyden-cely" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-tyden-cely')?.scrollIntoView({ behavior: 'smooth' }); }}>Celý týden</a>
           <span className="plan-nav-sep" aria-hidden>|</span>
           <a href="#plan-nakupni-seznam" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-nakupni-seznam')?.scrollIntoView({ behavior: 'smooth' }); }}>Suroviny</a>
           <span className="plan-nav-sep" aria-hidden>|</span>
@@ -835,6 +877,49 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
             <div id="plan-jidelnicek" className="plan-block">
               <h3 className="plan-block-title">Tvůj jídelní plán</h3>
               <p className="plan-block-subtitle">Přehled jídel a výživových hodnot · Jídelníček podle tvého cíle</p>
+              {fullWeekDays.length > 0 && (
+                <details id="plan-tyden-cely" className="plan-week-full-details">
+                  <summary className="plan-week-full-summary">Celý týden — jídla a trénink ({fullWeekDays.length} dní)</summary>
+                  <div className="plan-week-full-body">
+                    {fullWeekDays.map((wday, wi) => (
+                      <div key={wi} className="plan-week-full-day">
+                        <h4 className="plan-week-full-day-title">
+                          {(wday.dayName || 'Den') + (wday.dateStr ? ` (${wday.dateStr})` : '')}{wday.isToday ? ' – dnes' : ''}
+                        </h4>
+                        <p className="plan-week-full-meals-label">Jídla</p>
+                        <ul className="plan-week-full-meals">
+                          {(wday.meals || []).map((m, mj) => {
+                            const ok = `${wday.originalIndex ?? wi}_${mj}`;
+                            const ovr = mealOverrides[ok];
+                            const rawLine = ovr
+                              ? (ovr.title || 'Náhrada')
+                              : (m.text && String(m.text).trim()
+                                ? String(m.text).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+                                : '');
+                            const line = rawLine || (m.type ? '—' : '');
+                            return (
+                              <li key={mj}>
+                                <strong>{m.type || 'Jídlo'}:</strong> {line}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                        {(wday.trainingHtml || '').trim() ? (
+                          <>
+                            <p className="plan-week-full-training-label">Trénink a pohyb</p>
+                            <div
+                              className="plan-week-full-training plan-training-content"
+                              dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(wday.trainingHtml) }}
+                            />
+                          </>
+                        ) : (
+                          <p className="plan-week-full-training-empty">Trénink tento den: v plánu není samostatný blok u tohoto dne.</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
               <p id="plan-varianty-jidel" className="plan-variant-hint">
                 <strong>Varianty jídel:</strong> u každého jídla můžeš zvolit <strong>„Nahradit jiným“</strong> a získat alternativní recept na stejný den.
               </p>
@@ -876,14 +961,9 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                         const overrideKey = `${day.originalIndex ?? di}_${mi}`;
                         const override = mealOverrides[overrideKey];
                         const mealFullText = override ? `${meal.type || ''} ${override.title || ''}`.trim() : `${meal.type || ''} ${meal.text || ''}`.trim();
-                        const mealStart = mealFullText.replace(/\s*\(.*$/, '').trim().slice(0, 35);
                         const matchingRecipe = !override && parsed.recipes?.find((r) => {
-                          const rn = r.name.toLowerCase();
-                          const mt = mealFullText.toLowerCase();
-                          if (mt.includes(rn)) return true;
-                          const startWords = mealStart.toLowerCase().split(/\s+/).slice(0, 4).join(' ');
-                          if (startWords.length >= 5 && rn.includes(startWords)) return true;
-                          return false;
+                          if (!r?.content || /lorem\s+ipsum|dolor\s+sit\s+amet/i.test(r.content)) return false;
+                          return strictMealRecipeNameMatch(mealFullText, r.name);
                         });
                         const dishTitle = (meal.text || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
                         const modalTitle = (meal.type && dishTitle) ? `${meal.type}: ${dishTitle}` : dishTitle || meal.type || mealFullText || 'Jídlo';
@@ -892,33 +972,40 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                         const openRecipe = (e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          if (override?.content) {
-                            const button = e?.currentTarget;
-                            const rect = button?.getBoundingClientRect?.();
-                            const anchorRect = rect ? { top: rect.bottom + 8, left: rect.left, width: rect.width } : null;
-                            recipeOpenIdRef.current += 1;
-                            setRecipeModal({ openId: recipeOpenIdRef.current, title: override.title || modalTitle, content: recipeContentOnly(override.content), anchorRect, hasRecipe: true, loading: false });
-                            return;
-                          }
                           const button = e?.currentTarget;
                           const rect = button?.getBoundingClientRect?.();
                           const anchorRect = rect ? { top: rect.bottom + 8, left: rect.left, width: rect.width } : null;
                           recipeOpenIdRef.current += 1;
                           const thisOpenId = recipeOpenIdRef.current;
-                          const hasRealRecipe = matchingRecipe?.content && !/lorem\s+ipsum|dolor\s+sit\s+amet/i.test(matchingRecipe.content);
-                          if (hasRealRecipe) {
-                            setRecipeModal({ openId: thisOpenId, title: matchingRecipe.name || modalTitle, content: recipeContentOnly(matchingRecipe.content), anchorRect, hasRecipe: true, loading: false });
+                          if (override?.content) {
+                            setRecipeModal({ openId: thisOpenId, title: override.title || modalTitle, content: recipeContentOnly(override.content), anchorRect, hasRecipe: true, loading: false });
                             return;
                           }
                           const dishName = (mealFullText.replace(/\s*\([^)]*\)\s*$/g, '').trim() || meal.type || 'Jídlo').slice(0, 150);
                           const isUnverifiedPlaceholder = mealFullText?.toLowerCase().includes('neověřeno') || dishName === 'Jídlo';
-                          setRecipeModal({ openId: thisOpenId, title: modalTitle, content: null, anchorRect, hasRecipe: false, loading: true });
-                          const recipeId = mealTrust?.recipe_id;
+                          const recipeIdRaw = mealTrust?.recipe_id;
+                          const recipeId =
+                            recipeIdRaw != null && recipeIdRaw !== '' && Number.isFinite(Number(recipeIdRaw))
+                              ? Number(recipeIdRaw)
+                              : null;
+                          const htmlRecipeFallback = matchingRecipe?.content
+                            ? recipeContentOnly(matchingRecipe.content)
+                            : null;
+                          const willTrySpoon = recipeId != null;
+                          setRecipeModal({
+                            openId: thisOpenId,
+                            title: modalTitle,
+                            content: null,
+                            anchorRect,
+                            hasRecipe: !!(willTrySpoon || htmlRecipeFallback),
+                            loading: true,
+                          });
                           const loadRecipe = async () => {
-                            if (recipeId) {
+                            if (recipeId != null) {
                               const spoon = await getSpoonacularRecipe(recipeId);
                               if (spoon) return spoon;
                             }
+                            if (htmlRecipeFallback) return htmlRecipeFallback;
                             if (isUnverifiedPlaceholder) {
                               return recipeErrorHtml('Recept pro toto jídlo není k dispozici – Spoonacular ho nenalezl. Zkus ho nahradit jiným.');
                             }
@@ -1152,7 +1239,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                 })()}
               >
                 <div className="plan-recipe-modal-header">
-                  <h3>{recipeModal.hasRecipe ? `Recept: ${recipeModal.title}` : recipeModal.title}</h3>
+                  <h3>{recipeModal.title}</h3>
                   <span className="plan-recipe-portion-label">Na 1 porci</span>
                   <button type="button" className="plan-recipe-modal-close" onClick={() => setRecipeModal(null)} aria-label="Zavřít">×</button>
                 </div>
@@ -1467,6 +1554,80 @@ const planSectionStyles = `
     line-height: 1.6;
   }
   .plan-week-parts-list li { margin: 4px 0; }
+
+  .plan-week-full-details {
+    margin: 0 0 18px;
+    padding: 0;
+    border-radius: 12px;
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(139, 92, 255, 0.28);
+    overflow: hidden;
+  }
+  .plan-week-full-summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 14px 16px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #e9d5ff;
+    background: rgba(49, 46, 129, 0.35);
+  }
+  .plan-week-full-summary::-webkit-details-marker { display: none; }
+  .plan-week-full-body {
+    padding: 12px 14px 16px;
+    max-height: 70vh;
+    overflow-y: auto;
+    border-top: 1px solid rgba(71, 85, 105, 0.4);
+  }
+  .plan-week-full-day {
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+  }
+  .plan-week-full-day:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+  .plan-week-full-day-title {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #c4b5fd;
+  }
+  .plan-week-full-meals-label,
+  .plan-week-full-training-label {
+    margin: 0 0 6px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+  }
+  .plan-week-full-meals {
+    margin: 0 0 12px;
+    padding-left: 1.15rem;
+    color: #e2e8f0;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .plan-week-full-meals li { margin: 4px 0; }
+  .plan-week-full-training {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.45);
+    font-size: 14px;
+    line-height: 1.55;
+    color: #e2e8f0;
+  }
+  .plan-week-full-training-empty {
+    margin: 0;
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.5;
+  }
+
   .plan-variant-hint {
     margin: 0 0 16px;
     padding: 12px 14px;

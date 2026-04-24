@@ -79,19 +79,36 @@ function buildNutritionHtml(nutrients) {
     const pct = n.percentOfDailyNeeds != null ? Math.min(100, Math.round(Number(n.percentOfDailyNeeds))) : 0;
     const isMacro = MACRO_NAMES.has(n.name);
     const barClass = isMacro ? 'recipe-nutrient-bar-macro' : 'recipe-nutrient-bar-micro';
-    return `<div class="recipe-nutrient-row"><div class="recipe-nutrient-top"><span class="recipe-nutrient-label">${escapeHtml(label)}</span><span class="recipe-nutrient-value">${escapeHtml(value)}</span><span class="recipe-nutrient-pct">${pct}%</span></div><div class="recipe-nutrient-bar-wrap"><div class="recipe-nutrient-bar ${barClass}" style="width:${pct}%"></div></div></div>`;
+    return `<div class="recipe-nutrient-row" style="margin-bottom:10px;"><div class="recipe-nutrient-top" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;width:100%;box-sizing:border-box;"><span class="recipe-nutrient-label" style="flex:1 1 120px;min-width:0;">${escapeHtml(label)}</span><span class="recipe-nutrient-value" style="white-space:nowrap;font-weight:600;color:#e2e8f0;">${escapeHtml(value)}</span><span class="recipe-nutrient-pct" style="white-space:nowrap;color:#94a3b8;font-size:12px;">${pct}%</span></div><div class="recipe-nutrient-bar-wrap"><div class="recipe-nutrient-bar ${barClass}" style="width:${pct}%"></div></div></div>`;
   });
   return `<div class="recipe-nutrition-block"><h4 class="recipe-nutrition-title">Nutriční hodnoty na 1 porci</h4><div class="recipe-nutrients">${rows.join('')}</div></div>`;
 }
 
-function recipeToLocalizedHtml(localized, nutrition = null) {
+function rawIngredientLinesFromRecipe(recipe) {
+  const ingredients = recipe?.extendedIngredients || recipe?.ingredients || [];
+  return ingredients
+    .map((i) =>
+      i?.original || (typeof i === 'string' ? i : `${i.amount ?? ''} ${i.unit ?? ''} ${i.name ?? ''}`.trim())
+    )
+    .filter(Boolean);
+}
+
+/**
+ * HTML pro modal: nejdřív suroviny a postup (to uživatel hledá), nutriční tabulka až na závěr.
+ * @param {string} [spoonacularTitle] – anglický název z API, když chybí český překlad názvu
+ */
+function recipeToLocalizedHtml(localized, nutrition = null, spoonacularTitle = '') {
   if (!localized) return '';
   const { display_name_cs, ingredients_cs, instructions_cs } = localized;
-  const title = display_name_cs || 'Recept';
+  const title =
+    (display_name_cs && String(display_name_cs).trim() && display_name_cs !== 'Recept')
+      ? display_name_cs
+      : (spoonacularTitle && String(spoonacularTitle).trim()) || 'Recept';
 
   let ingredientsHtml = '';
-  if (Array.isArray(ingredients_cs) && ingredients_cs.length > 0) {
-    ingredientsHtml = '<p><b>Suroviny:</b></p><ul>' + ingredients_cs.map((s) => `<li>${escapeHtml(String(s))}</li>`).join('') + '</ul>';
+  const ingList = Array.isArray(ingredients_cs) && ingredients_cs.length > 0 ? ingredients_cs : [];
+  if (ingList.length > 0) {
+    ingredientsHtml = '<p><b>Suroviny:</b></p><ul>' + ingList.map((s) => `<li>${escapeHtml(String(s))}</li>`).join('') + '</ul>';
   }
 
   let instructionsHtml = '';
@@ -100,7 +117,12 @@ function recipeToLocalizedHtml(localized, nutrition = null) {
   }
 
   const nutritionHtml = buildNutritionHtml(nutrition?.nutrients || []);
-  const parts = [`<p><b>Jídlo:</b> ${escapeHtml(title)}</p>`, nutritionHtml, ingredientsHtml, instructionsHtml].filter(Boolean);
+  const parts = [
+    `<p><b>Jídlo:</b> ${escapeHtml(title)}</p>`,
+    ingredientsHtml,
+    instructionsHtml,
+    nutritionHtml,
+  ].filter(Boolean);
   return parts.join('').trim();
 }
 
@@ -139,8 +161,14 @@ export default async function handler(req, res) {
     const recipe = await resp.json();
     const { getLocalizedRecipe } = await import('../../lib/recipeLocalization');
     const localized = await getLocalizedRecipe(recipeId, recipe);
+    const rawIng = rawIngredientLinesFromRecipe(recipe);
+    const ingredients_cs =
+      Array.isArray(localized.ingredients_cs) && localized.ingredients_cs.length > 0
+        ? localized.ingredients_cs
+        : rawIng;
+    const merged = { ...localized, ingredients_cs };
     const nutrition = recipe?.nutrition || null;
-    const html = recipeToLocalizedHtml(localized, nutrition);
+    const html = recipeToLocalizedHtml(merged, nutrition, recipe?.title || '');
     if (!html) {
       return res.status(502).json({ error: 'Recept nemá dostupná data' });
     }

@@ -282,6 +282,7 @@ function parsePlanHtml(html) {
           const dayName = (el.textContent || '').trim();
           if (isDayHeader && dayNames.some((d) => dayName.includes(d))) {
             const meals = [];
+            let trainingHtmlForDay = '';
             let next = el.nextElementSibling;
             while (next && next.tagName !== 'H4' && next.tagName !== 'H3') {
               if (next.tagName === 'P') {
@@ -314,6 +315,12 @@ function parsePlanHtml(html) {
                   });
                 }
                 if (isTrainingBlock) {
+                  trainingHtmlForDay += next.outerHTML || '';
+                  const afterP = next.nextElementSibling;
+                  if (afterP && afterP.tagName === 'UL') {
+                    trainingHtmlForDay += afterP.outerHTML || '';
+                    next = afterP;
+                  }
                   next = next.nextElementSibling;
                   while (next && next.tagName !== 'H4' && next.tagName !== 'H3') {
                     next = next.nextElementSibling;
@@ -326,7 +333,7 @@ function parsePlanHtml(html) {
             result.days.push({
               dayName,
               meals,
-              trainingHtml: '',
+              trainingHtml: trainingHtmlForDay,
             });
           }
           el = el.nextElementSibling;
@@ -397,7 +404,7 @@ function parsePlanHtml(html) {
       const rotated = firstIdx >= 0
         ? [...dayOrder.slice(firstIdx), ...dayOrder.slice(0, firstIdx)]
         : dayOrder;
-      result.days = rotated.map((dn) => byDay[dn] || { dayName: dn, meals: [], _placeholder: true });
+      result.days = rotated.map((dn) => byDay[dn] || { dayName: dn, meals: [], trainingHtml: '', _placeholder: true });
     }
 
     if (result.personal.length || result.macros.length || result.days.length || Object.keys(result.rawSections).length > 0) return result;
@@ -669,7 +676,13 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
         <nav className="plan-nav" aria-label="Sekce plánu">
           <a href="#plan-overview" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-overview')?.scrollIntoView({ behavior: 'smooth' }); }}>Můj plán</a>
           <span className="plan-nav-sep" aria-hidden>|</span>
-          <a href="#plan-jidelnicek" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-jidelnicek')?.scrollIntoView({ behavior: 'smooth' }); }}>Jídelní plán</a>
+          <a href="#plan-jidelnicek" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-jidelnicek')?.scrollIntoView({ behavior: 'smooth' }); }}>Jídelníček</a>
+          <span className="plan-nav-sep" aria-hidden>|</span>
+          <a href="#plan-nakupni-seznam" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-nakupni-seznam')?.scrollIntoView({ behavior: 'smooth' }); }}>Suroviny</a>
+          <span className="plan-nav-sep" aria-hidden>|</span>
+          <a href="#plan-varianty-jidel" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-varianty-jidel')?.scrollIntoView({ behavior: 'smooth' }); }}>Varianty</a>
+          <span className="plan-nav-sep" aria-hidden>|</span>
+          <a href="#plan-co-delat" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-co-delat')?.scrollIntoView({ behavior: 'smooth' }); }}>Trénink a úkoly</a>
         </nav>
       )}
 
@@ -715,6 +728,18 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {hasParsedDays && (
+            <div className="plan-week-parts" role="note">
+              <p className="plan-week-parts-title">Týdenní plán obsahuje</p>
+              <ul className="plan-week-parts-list">
+                <li><strong>Jídelníček</strong> – jídla podle dne níže</li>
+                <li><strong>Suroviny</strong> – nákupní seznam (celý týden nebo po dnech)</li>
+                <li><strong>Varianty</strong> – u jídla tlačítko „Nahradit jiným“</li>
+                <li><strong>Trénink a úkoly</strong> – u každého dne a přehled celého týdne</li>
+              </ul>
             </div>
           )}
 
@@ -810,6 +835,9 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
             <div id="plan-jidelnicek" className="plan-block">
               <h3 className="plan-block-title">Tvůj jídelní plán</h3>
               <p className="plan-block-subtitle">Přehled jídel a výživových hodnot · Jídelníček podle tvého cíle</p>
+              <p id="plan-varianty-jidel" className="plan-variant-hint">
+                <strong>Varianty jídel:</strong> u každého jídla můžeš zvolit <strong>„Nahradit jiným“</strong> a získat alternativní recept na stejný den.
+              </p>
               {plan.valid_from && plan.valid_until && (
                 <p className="plan-validity-range">
                   Platnost plánu: {new Date(plan.valid_from).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' })} – {new Date(plan.valid_until).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' })}
@@ -951,6 +979,15 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                         );
                       })}
                     </div>
+                    {(day.trainingHtml || '').trim() ? (
+                      <div className="plan-day-training-wrap">
+                        <h4 className="plan-day-training-subtitle">Trénink a pohyb — co dělat tento den</h4>
+                        <div
+                          className="plan-training-content plan-day-training-html"
+                          dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(day.trainingHtml) }}
+                        />
+                      </div>
+                    ) : null}
                     {(() => {
                       const dayKey = day.originalIndex ?? di;
                       const dayList = buildDayShoppingListFromMeals(day.meals || [], mealOverrides, dayKey);
@@ -1054,6 +1091,21 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                   );
                 })}
               </div>
+              {(((parsed?.workout || '').trim()) || (parsed?.days || []).some((d) => (d.trainingHtml || '').trim())) ? (
+                <div id="plan-co-delat" className="plan-training-week-wrap">
+                  <h4 className="plan-day-training-subtitle plan-training-week-title">Trénink a pohyb — co dělat</h4>
+                  {(parsed?.workout || '').trim() ? (
+                    <div
+                      className="plan-training-content plan-training-week-html"
+                      dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(parsed.workout) }}
+                    />
+                  ) : (
+                    <p className="plan-training-week-fallback">
+                      Denní cviky a úkoly máš u každého dne přímo pod jídelníčkem. Rozbal den a sjeď pod jídla.
+                    </p>
+                  )}
+                </div>
+              ) : null}
             </div>
           )}
 
@@ -1215,9 +1267,18 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
               const texts = (d.meals || []).map((m) => `${m.type || ''} ${m.text || ''}`.trim());
               return buildShoppingListFromRecipes(getRecipesForDay(parsed?.recipes || [], texts)).length > 0;
             });
-            if (!hasAnyList) return null;
+            if (!hasAnyList) {
+              return hasParsedDays ? (
+                <div id="plan-nakupni-seznam" className="plan-block plan-shopping-block plan-shopping-empty-anchor">
+                  <h3 className="plan-block-title">Suroviny a nákup</h3>
+                  <p className="plan-block-subtitle">
+                    Hromadný nákupní seznam zatím není k dispozici. Suroviny máš u jednotlivých jídel v závorkách a u každého dne tlačítko „Objednat suroviny“.
+                  </p>
+                </div>
+              ) : null;
+            }
             return (
-              <div className="plan-block plan-shopping-block">
+              <div id="plan-nakupni-seznam" className="plan-block plan-shopping-block">
                 <details className="plan-shopping-details" open={shoppingListOpen} onToggle={(e) => setShoppingListOpen(e.target.open)}>
                   <summary className="plan-shopping-summary">
                     <span className="plan-block-title">Nákupní seznam na týden</span>
@@ -1360,7 +1421,8 @@ const planSectionStyles = `
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    flex-wrap: wrap;
+    gap: 8px 12px;
     padding: 14px 20px;
     margin-bottom: 20px;
     background: rgba(30, 41, 59, 0.5);
@@ -1380,6 +1442,72 @@ const planSectionStyles = `
   .plan-nav-sep {
     color: rgba(148, 163, 184, 0.6);
     font-size: 14px;
+  }
+
+  .plan-week-parts {
+    margin: 0 0 20px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    background: rgba(30, 41, 59, 0.45);
+    border: 1px solid rgba(139, 92, 255, 0.22);
+  }
+  .plan-week-parts-title {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #a78bfa;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .plan-week-parts-list {
+    margin: 0;
+    padding-left: 1.2rem;
+    color: #cbd5e1;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .plan-week-parts-list li { margin: 4px 0; }
+  .plan-variant-hint {
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(124, 58, 237, 0.12);
+    border: 1px solid rgba(167, 139, 250, 0.28);
+    color: #e2e8f0;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .plan-day-training-wrap {
+    margin: 16px 16px 0;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: rgba(30, 41, 59, 0.55);
+    border: 1px solid rgba(71, 85, 105, 0.45);
+  }
+  .plan-day-training-subtitle {
+    margin: 0 0 10px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #c4b5fd;
+  }
+  .plan-day-training-html :global(ul) {
+    margin: 8px 0;
+    padding-left: 20px;
+    color: #e2e8f0;
+  }
+  .plan-training-week-wrap {
+    margin: 24px 0 0;
+    padding: 18px 16px;
+    border-radius: 14px;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(124, 58, 237, 0.3);
+  }
+  .plan-training-week-title { margin: 0 0 12px; }
+  .plan-training-week-fallback {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.55;
   }
 
   .plan-expired {

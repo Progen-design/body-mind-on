@@ -32,7 +32,8 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   const [weekLogs, setWeekLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
-  const [toggling, setToggling] = useState(null);
+  /** Současně může běžet více požadavků (různé návyky / dny); stejná buňka se zablokuje jen proti dvojkliku. */
+  const [togglingKeys, setTogglingKeys] = useState(() => new Set());
   const [viewingDateStr, setViewingDateStr] = useState(todayStr); // vždy aktivně zvolený den – defaultně dnes
   const scrollContainerRef = useRef(null);
   const todayColRef = useRef(null);
@@ -174,10 +175,11 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   const handleToggle = async (habitId, dateStr) => {
     if (dateStr > todayStr) return;
     const key = `${habitId}-${dateStr}`;
-    if (!session?.access_token || toggling) return;
+    if (!session?.access_token) return;
+    if (togglingKeys.has(key)) return;
     const current = getCompleted(habitId, dateStr);
     const nextCompleted = !current;
-    setToggling(key);
+    setTogglingKeys((prev) => new Set(prev).add(key));
     try {
       const res = await fetch('/api/habits', {
         method: 'POST',
@@ -214,7 +216,11 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     } catch (err) {
       if (onToast) onToast({ message: 'Chyba připojení', type: 'error' });
     } finally {
-      setToggling(null);
+      setTogglingKeys((prev) => {
+        const n = new Set(prev);
+        n.delete(key);
+        return n;
+      });
     }
   };
 
@@ -363,7 +369,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         const completed = getCompleted(h.id, dateStr);
         const isToday = dateStr === todayStr;
         const isFuture = dateStr > todayStr;
-        const busy = toggling === `${h.id}-${dateStr}`;
+        const busy = togglingKeys.has(`${h.id}-${dateStr}`);
         return (
           <button
             key={`${h.id}-${dateStr}`}
@@ -405,7 +411,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
       const completed = getCompleted(h.id, dateStr);
       const isToday = dateStr === todayStr;
       const isFuture = dateStr > todayStr;
-      const busy = toggling === `${h.id}-${dateStr}`;
+      const busy = togglingKeys.has(`${h.id}-${dateStr}`);
       return (
         <button
           key={`${h.id}-${dateStr}`}

@@ -82,7 +82,7 @@ else {
   exitCode = 1;
 }
 
-info('Vercel / Stripe MCP: dokonči přihlášení v Cursor → Settings → MCP (nelze ověřit z tohoto skriptu).');
+info('Vercel / Stripe MCP: Cursor → Settings → MCP → Vercel/Stripe → Sign in. Po výzvě agenta k mcp_auth dialog ne přeskakovat (nelze ověřit z tohoto skriptu).');
 info('Po úpravě .env.local nebo mcp.json restartuj Cursor a v Output / MCP zkontroluj start serveru „supabase“.');
 
 process.exit(exitCode);

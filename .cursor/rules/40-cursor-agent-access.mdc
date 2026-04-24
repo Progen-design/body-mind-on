@@ -19,8 +19,20 @@ Agent potřebuje povolený **terminál** (git, npm, supabase) a běžící **MCP
 
 ## 3. Vercel / Stripe (Marketplace MCP)
 
-- **Settings → MCP**: u serveru Vercel (a Stripe) dokonči přihlášení / OAuth podle UI.
-- Pokud plugin vyžaduje `mcp_auth`, spusť auth flow z panelu MCP nebo z chatu.
+Tyto servery **nepatří do** `.cursor/mcp.json` – přidávají se přes **Cursor Marketplace** (nebo záložku integrací) a objeví se v **Settings → Cursor Settings → MCP** jako např. `plugin-vercel-vercel`.
+
+### Vercel MCP (deploymenty, projekty, logy)
+
+1. **Nainstaluj / povol plugin:** Cursor → **Settings → MCP** (někdy pod **Features → MCP**) → u položky **Vercel** zapni server nebo ho přidej z [Cursor integrací / Marketplace](https://cursor.com/docs) podle aktuálního UI tvé verze Cursoru.
+2. **Přihlášení:** U řádku serveru **Vercel** klikni na **Sign in**, **Connect**, **Authenticate** nebo ekvivalent, dokud stav není „connected“ / bez chyby.  
+   Když agent v chatu zavolá nástroj **`mcp_auth`** pro `plugin-vercel-vercel`, Cursor otevře stejný OAuth flow – **potvrď dialog** (ne „Skip“), jinak zůstanou k dispozici jen deskriptory a žádné nástroje jako seznam deploymentů.
+3. **Restart:** Po změně MCP nebo tokenu **úplně zavři a znovu otevři Cursor** (stejně jako u `mcp.json`).
+4. **Ověření:** V MCP panelu u Vercelu uvidíš více nástrojů než jen `mcp_auth`. V repu zůstává `npm run check:cursor-access` – na konci připomene, že Vercel MCP se z terminálu neověřuje.
+
+### Stripe
+
+- Stejně přes **Settings → MCP**: u **Stripe** dokonči přihlášení / OAuth.
+- Při výzvě k `mcp_auth` zase nepřeskakovat, pokud chceš plné nástroje.
 
 ## 4. GitHub
 

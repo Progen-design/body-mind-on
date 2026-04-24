@@ -281,7 +281,6 @@ function parsePlanHtml(html) {
           const dayName = (el.textContent || '').trim();
           if (isDayHeader && dayNames.some((d) => dayName.includes(d))) {
             const meals = [];
-            let trainingHtml = '';
             let next = el.nextElementSibling;
             while (next && next.tagName !== 'H4' && next.tagName !== 'H3') {
               if (next.tagName === 'P') {
@@ -314,10 +313,8 @@ function parsePlanHtml(html) {
                   });
                 }
                 if (isTrainingBlock) {
-                  trainingHtml = next.outerHTML || '';
                   next = next.nextElementSibling;
                   while (next && next.tagName !== 'H4' && next.tagName !== 'H3') {
-                    trainingHtml += next.outerHTML || '';
                     next = next.nextElementSibling;
                   }
                   continue;

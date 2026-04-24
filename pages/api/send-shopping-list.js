@@ -25,12 +25,18 @@ export default async function handler(req, res) {
     if (!email) return res.status(400).json({ error: 'Uživatel nemá e-mail' });
 
     const items = req.body?.items;
-    if (!Array.isArray(items)) {
-      return res.status(400).json({ error: 'Očekává se pole položek (items)' });
-    }
+    const sections = req.body?.sections;
+    const intro = typeof req.body?.intro === 'string' ? req.body.intro.trim() : '';
     const title = typeof req.body?.title === 'string' && req.body.title.trim() ? req.body.title.trim() : null;
 
-    const result = await sendShoppingListEmail(email, items, title);
+    const hasSections = Array.isArray(sections) && sections.length > 0;
+    if (!hasSections && !Array.isArray(items)) {
+      return res.status(400).json({ error: 'Očekává se pole položek (items) nebo sections' });
+    }
+
+    const result = hasSections
+      ? await sendShoppingListEmail(email, [], null, { sections, intro: intro || undefined })
+      : await sendShoppingListEmail(email, items, title);
 
     if (!result.ok) {
       return res.status(500).json({ error: result.message || 'E-mail se nepodařilo odeslat.' });

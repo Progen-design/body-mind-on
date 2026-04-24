@@ -54,26 +54,23 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     return { pos, neg };
   }, []);
 
+  /** Sloupce vždy chronologicky (starší vlevo → dnes → budoucí), aby to dávalo smysl jako kalendář. */
   const days = useMemo(() => {
     const result = [];
     const today = new Date();
     today.setHours(12, 0, 0, 0);
-    const todayStr = getLocalDateStr(today);
-    result.push(todayStr);
-    for (let i = 1; i <= DAYS_FORWARD; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      result.push(getLocalDateStr(d));
-    }
-    for (let i = 1; i <= DAYS_BACK; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
+    const start = new Date(today);
+    start.setDate(today.getDate() - DAYS_BACK);
+    const total = DAYS_BACK + DAYS_FORWARD + 1;
+    for (let i = 0; i < total; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
       result.push(getLocalDateStr(d));
     }
     return result;
   }, []);
 
-  const daysChronological = useMemo(() => [...days].sort((a, b) => a.localeCompare(b)), [days]);
+  const daysChronological = useMemo(() => [...days], [days]);
 
   useEffect(() => {
     const { pos, neg } = buildHabitsLists(userHabits);
@@ -179,6 +176,12 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     if (togglingKeys.has(key)) return;
     const current = getCompleted(habitId, dateStr);
     const nextCompleted = !current;
+
+    setAllLogs((prev) => {
+      const filtered = prev.filter((l) => !(l.habit_id === habitId && l.log_date === dateStr));
+      return [...filtered, { habit_id: habitId, log_date: dateStr, completed: nextCompleted }];
+    });
+
     setTogglingKeys((prev) => new Set(prev).add(key));
     try {
       const res = await fetch('/api/habits', {
@@ -203,17 +206,21 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           const filtered = prev.filter((l) => !(l.habit_id === habitId && l.log_date === dateStr));
           return [...filtered, json.log];
         });
-        if (onToast) {
-          onToast({
-            message: nextCompleted ? 'Splněno! ✓' : 'Odebráno',
-            type: 'success',
-          });
-        }
         if (onHabitSaved) onHabitSaved();
-      } else if (onToast) {
-        onToast({ message: json.error || 'Chyba při ukládání', type: 'error' });
+      } else {
+        setAllLogs((prev) => {
+          const filtered = prev.filter((l) => !(l.habit_id === habitId && l.log_date === dateStr));
+          if (current) return [...filtered, { habit_id: habitId, log_date: dateStr, completed: current }];
+          return filtered;
+        });
+        if (onToast) onToast({ message: json.error || 'Chyba při ukládání', type: 'error' });
       }
     } catch (err) {
+      setAllLogs((prev) => {
+        const filtered = prev.filter((l) => !(l.habit_id === habitId && l.log_date === dateStr));
+        if (current) return [...filtered, { habit_id: habitId, log_date: dateStr, completed: current }];
+        return filtered;
+      });
       if (onToast) onToast({ message: 'Chyba připojení', type: 'error' });
     } finally {
       setTogglingKeys((prev) => {
@@ -221,6 +228,59 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         n.delete(key);
         return n;
       });
+    }
+  };
+
+  const handleCompleteAllToday = async () => {
+    if (!session?.access_token) return;
+    const allH = [...positiveHabits, ...negativeHabits];
+    const todo = allH.filter((h) => !getCompleted(h.id, todayStr));
+    if (todo.length === 0) {
+      if (onToast) onToast({ message: 'Dnes už máš všechny návyky splněné.', type: 'success' });
+      return;
+    }
+    const batch = todo.map((h) => ({ habit_id: h.id, log_date: todayStr, completed: true }));
+    setAllLogs((prev) => {
+      let next = prev.filter((l) => l.log_date !== todayStr || !todo.some((h) => h.id === l.habit_id));
+      next = [...next, ...batch.map((b) => ({ habit_id: b.habit_id, log_date: b.log_date, completed: true }))];
+      return next;
+    });
+    try {
+      const res = await fetch('/api/habits', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ batch }),
+      });
+      const json = await res.json();
+      if (res.ok && Array.isArray(json.logs)) {
+        setAllLogs((prev) => {
+          let n = [...prev];
+          for (const log of json.logs) {
+            n = n.filter((l) => !(l.habit_id === log.habit_id && l.log_date === log.log_date));
+            n.push(log);
+          }
+          return n;
+        });
+        setWeekLogs((prev) => {
+          let n = [...prev];
+          for (const log of json.logs) {
+            n = n.filter((l) => !(l.habit_id === log.habit_id && l.log_date === log.log_date));
+            n.push(log);
+          }
+          return n;
+        });
+        if (onToast) onToast({ message: `Označeno ${json.logs.length} návyků na dnes.`, type: 'success' });
+        if (onHabitSaved) onHabitSaved();
+      } else {
+        loadLogs();
+        if (onToast) onToast({ message: json.error || 'Hromadné uložení se nepodařilo.', type: 'error' });
+      }
+    } catch (e) {
+      loadLogs();
+      if (onToast) onToast({ message: 'Chyba připojení.', type: 'error' });
     }
   };
 
@@ -321,7 +381,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
       appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none',
       width: `${CELL_W}px`, height: '56px', padding: 0, margin: 0,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      borderRadius: '14px', cursor: isFuture ? 'default' : 'pointer',
+      borderRadius: '11px', cursor: isFuture ? 'default' : 'pointer',
       border: 'none', outline: 'none', position: 'relative', overflow: 'hidden',
       transition: 'transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s, opacity 0.18s',
       touchAction: 'manipulation',
@@ -397,7 +457,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
                 </svg>
               )
             ) : (
-              <span style={{ width: '22px', height: '22px', borderRadius: '50%', border: isToday ? '2px solid rgba(167,139,250,0.65)' : '2px solid rgba(255,255,255,0.28)', display: 'block' }} />
+              <span className="hg-cell-empty" style={{ borderColor: isToday ? 'rgba(167,139,250,0.65)' : 'rgba(255,255,255,0.28)' }} aria-hidden />
             )}
           </button>
         );
@@ -439,7 +499,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
               </svg>
             )
           ) : (
-            <span style={{ width: '22px', height: '22px', borderRadius: '50%', border: isToday ? '2px solid rgba(167,139,250,0.65)' : '2px solid rgba(255,255,255,0.28)', display: 'block' }} />
+            <span className="hg-cell-empty" style={{ borderColor: isToday ? 'rgba(167,139,250,0.65)' : 'rgba(255,255,255,0.28)' }} aria-hidden />
           )}
         </button>
       );
@@ -460,7 +520,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
               <button type="button" className="ht-date-back" onClick={() => setViewingDateStr(todayStr)}>Zpět na dnes</button>
             )}
           </p>
-          <p className="ht-hint">Odškrtnutí se ukládá pro konkrétní datum. Aktivní je vždy dnešní den. Klikni na datum nahoře pro přepnutí.</p>
+          <p className="ht-hint">Odškrtnutí se ukládá pro konkrétní datum. Sloupce jsou chronologicky zleva doprava (minulost → dnes → blízká budoucnost). Každá buňka je samostatný návyk — můžeš jich za sebou označit víc. Klikni na datum nahoře pro zvýraznění dne.</p>
         </div>
         <div className="ht-progress-inline">
           <span className="ht-prog-nums">{completedToday}<span className="ht-prog-sep">/</span>{totalHabits}</span>
@@ -468,6 +528,9 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
             <div className="ht-prog-bar" style={{ width: `${pct}%` }} role="progressbar" aria-valuenow={completedToday} aria-valuemin={0} aria-valuemax={totalHabits} />
           </div>
         </div>
+        <button type="button" className="ht-complete-all" onClick={handleCompleteAllToday}>
+          Splnit vše pro dnes
+        </button>
       </div>
 
       {loading ? (
@@ -788,6 +851,28 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           background: linear-gradient(90deg, #34d399, #10b981, #059669);
           transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
           box-shadow: 0 0 10px rgba(52,211,153,0.55);
+        }
+        .ht-complete-all {
+          margin-top: 4px;
+          padding: 8px 14px;
+          font-size: 0.8125rem;
+          font-weight: 600;
+          color: #e9d5ff;
+          background: rgba(124, 58, 237, 0.28);
+          border: 1px solid rgba(167, 139, 250, 0.45);
+          border-radius: 10px;
+          cursor: pointer;
+          font-family: inherit;
+          white-space: nowrap;
+        }
+        .ht-complete-all:hover { background: rgba(124, 58, 237, 0.42); }
+        .hg-cell-empty {
+          width: 22px;
+          height: 22px;
+          border-radius: 6px;
+          border: 2px solid;
+          display: block;
+          box-sizing: border-box;
         }
 
         /* ── Tabulka: pevný první sloupec + posuvná oblast s dny ── */

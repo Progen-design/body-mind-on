@@ -61,7 +61,47 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { log_date, habit_id, completed, notes } = req.body || {};
+      const body = req.body || {};
+      const batch = Array.isArray(body.batch) ? body.batch : null;
+
+      if (batch && batch.length > 0) {
+        const logs = [];
+        const max = 24;
+        for (let i = 0; i < Math.min(batch.length, max); i++) {
+          const row = batch[i] || {};
+          const log_date = row.log_date;
+          const habit_id = row.habit_id;
+          if (!log_date || !habit_id) {
+            return res.status(400).json({ error: 'batch[].log_date and batch[].habit_id are required' });
+          }
+          if (!isValidHabitId(habit_id)) {
+            return res.status(400).json({ error: `Invalid habit_id: ${habit_id}` });
+          }
+          const payload = {
+            user_id: user.id,
+            log_date: String(log_date).trim().slice(0, 10),
+            habit_id: String(habit_id).trim(),
+            completed: row.completed !== false,
+            notes: row.notes != null ? String(row.notes).trim() : null,
+          };
+          const { data, error } = await supabaseServer
+            .from('habit_logs')
+            .upsert(payload, {
+              onConflict: 'user_id,log_date,habit_id',
+              ignoreDuplicates: false,
+            })
+            .select()
+            .single();
+          if (error) {
+            console.error('[habits] POST batch error:', error);
+            return res.status(500).json({ error: error.message || 'Failed to save habit log batch' });
+          }
+          if (data) logs.push(data);
+        }
+        return res.status(200).json({ logs, batch: true });
+      }
+
+      const { log_date, habit_id, completed, notes } = body;
       if (!log_date || !habit_id) {
         return res.status(400).json({ error: 'log_date and habit_id are required' });
       }

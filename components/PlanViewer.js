@@ -4,6 +4,10 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
 import { stripPlanMediaAttrsFromHtml } from '../lib/emailTemplates';
+import {
+  aggregateShoppingIngredientLinesForDayIndex,
+  aggregateShoppingIngredientLinesFromStructuredPlan,
+} from '../lib/spoonacularShopping';
 
 const PERSONAL_ICONS = {
   'Věk': '🎂',
@@ -240,6 +244,26 @@ function buildDayShoppingListFromMeals(meals, mealOverrides, dayKey) {
     });
   });
   return out;
+}
+
+/** Suroviny z uloženého structured plánu (Spoonacular řádky), jinak závorky v textu jídel. */
+function mergeShoppingLinesForDay(structured, dayKey, meals, mealOverrides) {
+  if (structured && typeof structured === 'object') {
+    const fromStruct = aggregateShoppingIngredientLinesForDayIndex(structured, dayKey);
+    if (fromStruct.length > 0) return fromStruct;
+  }
+  return buildDayShoppingListFromMeals(meals, mealOverrides, dayKey);
+}
+
+const TRAINING_HTML_SUPPLEMENT =
+  '<p class="plan-training-supplement">Doplnění: pokud je den lehký, projdi se ještě 20–30 minut volným tempem, dýchej nosem a doplň tekutiny. Spánek podpoří regeneraci.</p>';
+
+function trainingHtmlWithSupplement(html) {
+  const raw = (html || '').trim();
+  if (!raw) return '';
+  const plain = raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  if (plain.length >= 140) return raw;
+  return `${raw}${TRAINING_HTML_SUPPLEMENT}`;
 }
 
 /** Vrátí recepty odpovídající seznamu názvů/textů jídel (pro daný den). */
@@ -658,48 +682,32 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
   const showGraphical = parsed && (parsed.personal?.length > 0 || parsed.days?.length > 0 || Object.keys(parsed.rawSections || {}).length > 0);
   const hasParsedDays = (parsed?.days?.length ?? 0) > 0;
 
-  // Dynamicky zobrazit dny od dneška do konce platnosti (ne pevný týden od pondělí)
-  const displayedDays = (() => {
-    const days = parsed?.days || [];
-    if (days.length === 0 || !plan?.valid_from) return days.map((d, i) => ({ ...d, dateStr: '', isToday: false, originalIndex: i }));
-    const start = new Date(plan.valid_from + 'T12:00:00');
-    start.setHours(0, 0, 0, 0);
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const diffDays = Math.round((now - start) / 86400000);
-    const dayIndex = Math.max(0, Math.min(days.length - 1, diffDays));
-    const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const sliceCount = Math.min(days.length - dayIndex, 7);
+  /** Vždy 7 dní od začátku platnosti plánu (valid_from) — jídla i trénink, i když zbývají jen poslední dny v kalendáři. */
+  const planWeekDays = (() => {
+    const daysArr = parsed?.days || [];
+    if (daysArr.length === 0 || !plan?.valid_from) {
+      return daysArr.map((d, i) => ({ ...d, dateStr: '', isToday: false, originalIndex: i, afterPlanEnd: false }));
+    }
+    const validUntilStr = (plan.valid_until || '').split('T')[0];
     const result = [];
-    for (let i = 0; i < sliceCount; i++) {
-      const origIdx = dayIndex + i;
+    for (let origIdx = 0; origIdx < 7; origIdx++) {
       const dateIso = addDaysToDateStr(plan.valid_from, origIdx);
-      const day = findDayForDate(days, dateIso, origIdx);
+      const day = findDayForDate(daysArr, dateIso, origIdx);
+      const afterPlanEnd = !!(validUntilStr && dateIso > validUntilStr);
       result.push({
         ...day,
-        dateStr: formatDayLabel(dateIso),
-        isToday: dateIso === todayIso && !isFuturePlan,
+        dateStr: dateIso ? formatDayLabel(dateIso) : '',
+        isToday: dateIso === todayIsoStr && !isFuturePlan,
         originalIndex: origIdx,
+        afterPlanEnd,
       });
     }
     return result;
   })();
 
-  /** Všechny dny platnosti plánu (jídla + trénink) — pro přehled „celý týden“ v UI. */
-  const fullWeekDays = (() => {
-    const days = parsed?.days || [];
-    if (days.length === 0 || !plan?.valid_from) return [];
-    return days.map((_, idx) => {
-      const dateIso = addDaysToDateStr(plan.valid_from, idx);
-      const day = findDayForDate(days, dateIso, idx);
-      return {
-        ...day,
-        originalIndex: idx,
-        dateStr: dateIso ? formatDayLabel(dateIso) : '',
-        isToday: Boolean(dateIso && dateIso === todayIsoStr && !isFuturePlan),
-      };
-    });
-  })();
+  const structuredPlan = plan?.structured_plan_json && typeof plan.structured_plan_json === 'object'
+    ? plan.structured_plan_json
+    : null;
 
   return (
     <section id="plan-overview" className="card plan-section plan-section-premium">
@@ -812,7 +820,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
           )}
 
           {/* Export jídelníčku – PDF s češtinou a obrázky */}
-          {displayedDays?.length > 0 && (
+          {planWeekDays?.length > 0 && (
             <div className="plan-block plan-export-row">
               <button
                 type="button"
@@ -824,19 +832,8 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                   btn.disabled = true;
                   try {
                     // PDF should always contain full weekly plan, not only days from "today".
-                    const allDays = parsed?.days || [];
-                    const exportDays = allDays.map((_, idx) => {
-                      const dateIso = plan?.valid_from ? addDaysToDateStr(plan.valid_from, idx) : '';
-                      const day = findDayForDate(allDays, dateIso, idx);
-                      return {
-                        ...day,
-                        originalIndex: idx,
-                        dateStr: dateIso ? formatDayLabel(dateIso) : '',
-                        isToday: Boolean(dateIso && dateIso === todayIsoStr && !isFuturePlan),
-                      };
-                    });
                     let rows = '';
-                    (exportDays || []).forEach((day, di) => {
+                    (planWeekDays || []).forEach((day, di) => {
                       const dayLabel = (day.dayName || 'Den') + (day.dateStr ? ` (${day.dateStr})` : '') + (day.isToday ? ' – dnes' : '');
                       rows += `<div style="margin-bottom:18px;page-break-inside:avoid;"><div style="font-size:15px;font-weight:700;background:#eff6ff;color:#1e40af;padding:8px 14px;border-radius:7px;margin-bottom:10px;">${dayLabel.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>`;
                       (day.meals || []).forEach((meal, mi) => {
@@ -873,18 +870,23 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
           )}
 
           {/* Jídelníček – od dneška dál (dynamicky podle aktuálního dne) */}
-          {displayedDays?.length > 0 && (
+          {planWeekDays?.length > 0 && (
             <div id="plan-jidelnicek" className="plan-block">
               <h3 className="plan-block-title">Tvůj jídelní plán</h3>
-              <p className="plan-block-subtitle">Přehled jídel a výživových hodnot · Jídelníček podle tvého cíle</p>
-              {fullWeekDays.length > 0 && (
-                <details id="plan-tyden-cely" className="plan-week-full-details">
-                  <summary className="plan-week-full-summary">Celý týden — jídla a trénink ({fullWeekDays.length} dní)</summary>
-                  <div className="plan-week-full-body">
-                    {fullWeekDays.map((wday, wi) => (
-                      <div key={wi} className="plan-week-full-day">
+              <p className="plan-block-subtitle">
+                Přehled jídel a výživových hodnot · Všech <strong>7 dní</strong> od začátku platnosti plánu najdeš níže (dnešek je zvýrazněn).
+              </p>
+              <div id="plan-tyden-cely" className="plan-week-overview-card">
+                  <h4 className="plan-week-overview-title">Rychlý přehled celého týdne</h4>
+                  <p className="plan-week-overview-lead">
+                    Stejné dny jako při rozbalení jednotlivých karet — jídla i trénink na jednom místě (bez obrázků).
+                  </p>
+                  <div className="plan-week-full-body plan-week-overview-body">
+                    {planWeekDays.map((wday, wi) => (
+                      <div key={wi} className={`plan-week-full-day ${wday.afterPlanEnd ? 'plan-week-full-day-muted' : ''}`}>
                         <h4 className="plan-week-full-day-title">
                           {(wday.dayName || 'Den') + (wday.dateStr ? ` (${wday.dateStr})` : '')}{wday.isToday ? ' – dnes' : ''}
+                          {wday.afterPlanEnd ? <span className="plan-week-after-badge"> po konci platnosti</span> : null}
                         </h4>
                         <p className="plan-week-full-meals-label">Jídla</p>
                         <ul className="plan-week-full-meals">
@@ -909,7 +911,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                             <p className="plan-week-full-training-label">Trénink a pohyb</p>
                             <div
                               className="plan-week-full-training plan-training-content"
-                              dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(wday.trainingHtml) }}
+                              dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(trainingHtmlWithSupplement(wday.trainingHtml)) }}
                             />
                           </>
                         ) : (
@@ -918,8 +920,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                       </div>
                     ))}
                   </div>
-                </details>
-              )}
+                </div>
               <p id="plan-varianty-jidel" className="plan-variant-hint">
                 <strong>Varianty jídel:</strong> u každého jídla můžeš zvolit <strong>„Nahradit jiným“</strong> a získat alternativní recept na stejný den.
               </p>
@@ -929,11 +930,11 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                 </p>
               )}
               <div className="plan-days">
-                {displayedDays.map((day, di) => {
+                {planWeekDays.map((day, di) => {
                   const isDayExpanded = expandedDays === null ? (day.isToday || (isFuturePlan && di === 0)) : expandedDays.has(di);
                   const toggleDay = () => {
                     setExpandedDays((prev) => {
-                      const todayIdx = displayedDays.findIndex((d) => d.isToday);
+                      const todayIdx = planWeekDays.findIndex((d) => d.isToday);
                       const next = new Set(prev === null ? [todayIdx >= 0 ? todayIdx : 0] : Array.from(prev));
                       if (next.has(di)) next.delete(di);
                       else next.add(di);
@@ -1071,13 +1072,16 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                         <h4 className="plan-day-training-subtitle">Trénink a pohyb — co dělat tento den</h4>
                         <div
                           className="plan-training-content plan-day-training-html"
-                          dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(day.trainingHtml) }}
+                          dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(trainingHtmlWithSupplement(day.trainingHtml)) }}
                         />
                       </div>
                     ) : null}
+                    {day.afterPlanEnd ? (
+                      <p className="plan-day-after-validity">Tento den už spadá mimo datum platnosti uloženého plánu — zobrazení je orientační.</p>
+                    ) : null}
                     {(() => {
                       const dayKey = day.originalIndex ?? di;
-                      const dayList = buildDayShoppingListFromMeals(day.meals || [], mealOverrides, dayKey);
+                      const dayList = mergeShoppingLinesForDay(structuredPlan, dayKey, day.meals || [], mealOverrides);
                       const raw = dayShoppingState[dayKey];
                       const dayState = {
                         copyDone: raw?.copyDone ?? false,
@@ -1292,10 +1296,17 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
 
           {/* Nákupní seznam – rozbalovací, filtr Celý týden / konkrétní den */}
           {!hideShoppingList && (() => {
-            const fullList = parsed.shoppingList?.length ? parsed.shoppingList : buildShoppingListFromRecipes(parsed.recipes);
+            const fromStructWeek = structuredPlan
+              ? aggregateShoppingIngredientLinesFromStructuredPlan(structuredPlan)
+              : [];
+            const fullList = fromStructWeek.length
+              ? fromStructWeek
+              : (parsed.shoppingList?.length ? parsed.shoppingList : buildShoppingListFromRecipes(parsed.recipes));
             const dayIndex = shoppingFilter === 'week' ? null : Number(shoppingFilter);
-            const selectedDay = dayIndex != null && !Number.isNaN(dayIndex) ? displayedDays.find((d) => (d.originalIndex ?? -1) === dayIndex) : null;
-            const dayList = selectedDay ? buildDayShoppingListFromMeals(selectedDay.meals || [], mealOverrides, selectedDay.originalIndex ?? 0) : [];
+            const selectedDay = dayIndex != null && !Number.isNaN(dayIndex) ? planWeekDays.find((d) => (d.originalIndex ?? -1) === dayIndex) : null;
+            const dayList = selectedDay
+              ? mergeShoppingLinesForDay(structuredPlan, selectedDay.originalIndex ?? 0, selectedDay.meals || [], mealOverrides)
+              : [];
             const list = shoppingFilter === 'week' ? fullList : dayList;
             const copyAndOpen = () => {
               try {
@@ -1328,10 +1339,26 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                   setShoppingSendEmail({ loading: false, done: false, error: 'Pro odeslání e-mailem se přihlas.' });
                   return;
                 }
+                let bodyPayload;
+                if (shoppingFilter === 'week' && structuredPlan) {
+                  const sections = planWeekDays.map((d) => ({
+                    heading: `${d.dayName || 'Den'}${d.dateStr ? ` (${d.dateStr})` : ''}`,
+                    items: aggregateShoppingIngredientLinesForDayIndex(structuredPlan, d.originalIndex ?? 0),
+                  }));
+                  bodyPayload = {
+                    sections,
+                    intro: 'Tady máš suroviny z ověřených receptů podle jednotlivých dnů (stejná data jako v aplikaci).',
+                  };
+                } else if (shoppingFilter === 'week') {
+                  bodyPayload = { items: list };
+                } else {
+                  const t = `${selectedDay?.dayName || 'Den'}${selectedDay?.dateStr ? ` (${selectedDay.dateStr})` : ''}`;
+                  bodyPayload = { items: list, title: t };
+                }
                 const res = await fetch('/api/send-shopping-list', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                  body: JSON.stringify({ items: list }),
+                  body: JSON.stringify(bodyPayload),
                 });
                 const data = await res.json();
                 if (!res.ok) {
@@ -1350,9 +1377,9 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
               const url = `https://wa.me/?text=${encodeURIComponent('🛒 ' + label + ':\n\n' + text)}`;
               window.open(url, '_blank', 'noopener,noreferrer');
             };
-            const hasAnyList = fullList.length > 0 || displayedDays.some((d) => {
-              const texts = (d.meals || []).map((m) => `${m.type || ''} ${m.text || ''}`.trim());
-              return buildShoppingListFromRecipes(getRecipesForDay(parsed?.recipes || [], texts)).length > 0;
+            const hasAnyList = fullList.length > 0 || planWeekDays.some((d) => {
+              const dk = d.originalIndex ?? 0;
+              return mergeShoppingLinesForDay(structuredPlan, dk, d.meals || [], mealOverrides).length > 0;
             });
             if (!hasAnyList) {
               return hasParsedDays ? (
@@ -1381,7 +1408,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                         onChange={(e) => setShoppingFilter(e.target.value)}
                       >
                         <option value="week">Celý týden</option>
-                        {displayedDays.map((d) => (
+                        {planWeekDays.map((d) => (
                           <option key={d.originalIndex ?? d.dayName} value={d.originalIndex ?? 0}>
                             {d.dayName}{d.dateStr ? ` (${d.dateStr})` : ''}
                           </option>
@@ -1421,7 +1448,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                       </>
                     ) : (
                       <p className="plan-shopping-empty-day">
-                        {shoppingFilter === 'week' ? 'Nákupní seznam zatím není k dispozici.' : 'Pro vybraný den nejsou v plánu vypsané suroviny (závorky u jídel).'}
+                        {shoppingFilter === 'week' ? 'Nákupní seznam zatím není k dispozici.' : 'Pro vybraný den nejsou v plánu suroviny z receptů ani v závorkách u jídel.'}
                       </p>
                     )}
                   </div>
@@ -1555,24 +1582,51 @@ const planSectionStyles = `
   }
   .plan-week-parts-list li { margin: 4px 0; }
 
-  .plan-week-full-details {
-    margin: 0 0 18px;
-    padding: 0;
-    border-radius: 12px;
-    background: rgba(30, 41, 59, 0.5);
-    border: 1px solid rgba(139, 92, 255, 0.28);
-    overflow: hidden;
+  .plan-week-overview-card {
+    margin: 0 0 22px;
+    padding: 16px 16px 8px;
+    border-radius: 14px;
+    background: rgba(30, 41, 59, 0.65);
+    border: 1px solid rgba(167, 139, 250, 0.35);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
   }
-  .plan-week-full-summary {
-    cursor: pointer;
-    list-style: none;
-    padding: 14px 16px;
-    font-size: 15px;
+  .plan-week-overview-title {
+    margin: 0 0 6px;
+    font-size: 16px;
     font-weight: 700;
-    color: #e9d5ff;
-    background: rgba(49, 46, 129, 0.35);
+    color: #f5f3ff;
   }
-  .plan-week-full-summary::-webkit-details-marker { display: none; }
+  .plan-week-overview-lead {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.55;
+  }
+  .plan-week-overview-body {
+    border-top: 1px solid rgba(71, 85, 105, 0.45);
+    padding-top: 10px;
+  }
+  .plan-week-full-day-muted {
+    opacity: 0.72;
+  }
+  .plan-week-after-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: #fbbf24;
+    margin-left: 6px;
+  }
+  .plan-day-after-validity {
+    margin: 8px 16px 0;
+    font-size: 12px;
+    color: #fbbf24;
+    line-height: 1.45;
+  }
+  .plan-training-supplement {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.5;
+  }
   .plan-week-full-body {
     padding: 12px 14px 16px;
     max-height: 70vh;

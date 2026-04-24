@@ -40,7 +40,7 @@ export default async function handler(req, res) {
         .limit(50),
       supabaseServer
         .from('ai_generated_plans')
-        .select('id, plan_type, daily_calories, macros, valid_from, valid_until, created_at, plan_html, is_active, generated_by')
+        .select('id, plan_type, daily_calories, macros, valid_from, valid_until, created_at, plan_html, structured_plan_json, is_active, generated_by')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(10),

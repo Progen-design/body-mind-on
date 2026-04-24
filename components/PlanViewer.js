@@ -1,4 +1,4 @@
-// /components/PlanViewer.js – Zobrazení AI plánu (jídelníček, makra, nákupní seznam; bez obrázků jídel a bez tréninku)
+// /components/PlanViewer.js – Zobrazení AI plánu (jídelníček, makra, nákupní seznam; bez obrázků jídel a cviků)
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabaseClient';
@@ -154,6 +154,36 @@ function resolveMealTrustMerged(meal, mealText, mealTrustMap, preferredKey) {
     carbs_g: enriched?.carbs_g ?? null,
     fat_g: enriched?.fat_g ?? null,
   };
+}
+
+/** Emoji podle typu jídla (bez obrázků Spoonacular). */
+function mealTypeEmojiFromLabel(mealType) {
+  const t = norm(String(mealType || ''));
+  if (t.includes('snidan') || t.includes('breakfast')) return '🌅';
+  if (t.includes('obed') || t.includes('lunch')) return '☀️';
+  if (t.includes('vecere') || t.includes('dinner')) return '🌙';
+  if (t.includes('svacin') || t.includes('snack')) return '🍎';
+  return '🍽️';
+}
+
+/** Řádek maker z enrichment mapy (kcal, B/S/T). */
+function mealMacroLineFromTrust(mealTrust) {
+  if (!mealTrust) return null;
+  const parts = [];
+  if (mealTrust.calories != null && Number.isFinite(Number(mealTrust.calories))) {
+    parts.push(`cca ${Math.round(Number(mealTrust.calories))} kcal`);
+  }
+  if (mealTrust.protein_g != null && Number.isFinite(Number(mealTrust.protein_g))) {
+    parts.push(`B ${Math.round(Number(mealTrust.protein_g))} g`);
+  }
+  if (mealTrust.carbs_g != null && Number.isFinite(Number(mealTrust.carbs_g))) {
+    parts.push(`S ${Math.round(Number(mealTrust.carbs_g))} g`);
+  }
+  if (mealTrust.fat_g != null && Number.isFinite(Number(mealTrust.fat_g))) {
+    parts.push(`T ${Math.round(Number(mealTrust.fat_g))} g`);
+  }
+  if (!parts.length) return null;
+  return parts.join(' · ');
 }
 
 function recipeContentOnly(html) {
@@ -1028,24 +1058,38 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                         };
                         const mealTextForPin = override ? (override.title || '') : (meal.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().replace(/\s*\([^)]*\)\s*$/g, '').trim();
                         const mealPinned = isPinned(meal.type || '', mealTextForPin);
+                        const macroLine = mealMacroLineFromTrust(mealTrust);
+                        const mealTypeLabel = (meal.type || 'Jídlo').trim();
                         return (
                           <div key={mi} className="plan-meal-card">
-                            <div className="plan-meal-head">
-                              <span className="plan-meal-type-inline">{meal.type}</span>
-                              <button type="button" className="plan-meal-recipe-btn" onClick={openRecipe}>
-                                Recept
-                              </button>
+                            <div className="plan-meal-icon" aria-hidden>
+                              {mealTypeEmojiFromLabel(meal.type)}
                             </div>
-                            <div className="plan-meal-body">
-                              <p className="plan-meal-text">
-                                {override ? (
-                                  override.title || 'Náhrada'
-                                ) : meal.text && String(meal.text).trim() ? (
-                                  meal.text
-                                ) : (
-                                  <span dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(meal.fullHtml || '') }} />
-                                )}
-                              </p>
+                            <div className="plan-meal-main">
+                              <div className="plan-meal-type-row">
+                                <span className="plan-meal-type">{mealTypeLabel}</span>
+                                <button type="button" className="plan-meal-recipe-btn" onClick={openRecipe}>
+                                  Recept
+                                </button>
+                              </div>
+                              {override ? (
+                                <p className="plan-meal-name">{override.title || 'Náhrada'}</p>
+                              ) : meal.text && String(meal.text).trim() && !/<[a-z]/i.test(String(meal.text)) ? (
+                                <p className="plan-meal-name">
+                                  {String(meal.text).replace(/^[^:]+:\s*/i, '').trim() || meal.text}
+                                </p>
+                              ) : meal.text && String(meal.text).trim() ? (
+                                <div
+                                  className="plan-meal-name plan-meal-name-html"
+                                  dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(meal.text) }}
+                                />
+                              ) : (
+                                <div
+                                  className="plan-meal-name plan-meal-name-html"
+                                  dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(meal.fullHtml || '') }}
+                                />
+                              )}
+                              {macroLine ? <p className="plan-meal-macros">{macroLine}</p> : null}
                               <div className="plan-meal-actions">
                                 <button type="button" className="plan-meal-swap" onClick={(e) => { e.stopPropagation(); handleSwap(); }}>Nahradit jiným</button>
                                 {canPinMeals && (
@@ -1832,7 +1876,46 @@ const planSectionStyles = `
   .plan-training-content p { margin: 0 0 12px; }
   .plan-training-content p:last-child { margin-bottom: 0; }
   .plan-training-content b { color: #c4b5fd; }
-  .plan-training-content img { display: none; }
+  .plan-training-content img,
+  .plan-training-content picture,
+  .plan-training-content video { display: none; }
+  .plan-training-content ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: plan-ex-num;
+  }
+  .plan-training-content ul > li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 15px;
+    font-weight: 600;
+    color: #f1f5f9;
+    line-height: 1.4;
+  }
+  .plan-training-content ul > li:last-child {
+    border-bottom: none;
+  }
+  .plan-training-content ul > li::before {
+    counter-increment: plan-ex-num;
+    content: counter(plan-ex-num);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(124, 58, 237, 0.15);
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #a78bfa;
+    flex-shrink: 0;
+    box-sizing: border-box;
+  }
   .plan-validity-range {
     margin: -8px 0 12px;
     font-size: 13px;
@@ -2291,42 +2374,58 @@ const planSectionStyles = `
   .plan-day-training :global(ul) { margin: 0; padding-left: 20px; }
   .plan-day-training :global(li) { margin-bottom: 4px; }
   .plan-meal-card {
-    background: rgba(0,0,0,0.15);
-    border-radius: 14px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.05);
-    transition: transform 0.2s, box-shadow 0.2s;
+    background: #0f0f1a;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 12px;
+    padding: 20px;
     display: flex;
-    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    transition: transform 0.2s, box-shadow 0.2s;
   }
   .plan-meal-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
   }
-  .plan-meal-head {
+  .plan-meal-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .plan-meal-main {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+  }
+  .plan-meal-type-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 12px 14px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    background: rgba(30, 27, 75, 0.35);
+    margin-bottom: 4px;
   }
-  .plan-meal-type-inline {
+  .plan-meal-type {
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 600;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #c4b5fd;
+    color: #7c3aed;
   }
   .plan-meal-recipe-btn {
     flex-shrink: 0;
-    padding: 8px 16px;
+    padding: 6px 14px;
     border-radius: 999px;
     border: 1px solid rgba(124, 58, 237, 0.45);
     background: rgba(124, 58, 237, 0.22);
     color: #e9d5ff;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     font-family: inherit;
@@ -2335,90 +2434,6 @@ const planSectionStyles = `
     background: rgba(124, 58, 237, 0.4);
     border-color: rgba(167, 139, 250, 0.65);
   }
-  .plan-meal-image-wrap {
-    position: relative;
-    height: 140px;
-    overflow: hidden;
-    display: block;
-    width: 100%;
-    border: none;
-    padding: 0;
-    background: none;
-    cursor: pointer;
-    text-align: left;
-  }
-  .plan-meal-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-  .plan-meal-type {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background: rgba(0,0,0,0.7);
-    color: #e9d5ff;
-    padding: 4px 10px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 600;
-  }
-  .plan-meal-recept-badge {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    background: rgba(139, 92, 255, 0.9);
-    color: #fff;
-    padding: 4px 10px;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 600;
-  }
-  .plan-trust-badge {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    padding: 3px 8px;
-    border-radius: 6px;
-    font-size: 10px;
-    font-weight: 600;
-    line-height: 1.3;
-    pointer-events: none;
-  }
-  .plan-trust-badge-meal { top: 38px; }
-  .plan-trust-badge-exact {
-    background: rgba(34, 197, 94, 0.9);
-    color: #fff;
-  }
-  .plan-trust-badge-illustrative, .plan-trust-badge-fallback {
-    background: rgba(148, 163, 184, 0.9);
-    color: #0f172a;
-  }
-  .plan-trust-badge-none {
-    background: rgba(71, 85, 105, 0.85);
-    color: #e2e8f0;
-  }
-  .plan-trust-sublabel { opacity: 0.9; font-size: 9px; font-weight: 500; }
-  .plan-meal-no-image, .plan-exercise-no-media {
-    width: 100%;
-    height: 100%;
-    min-height: 100px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(30, 41, 59, 0.6);
-    border: 1px dashed rgba(148, 163, 184, 0.4);
-    border-radius: 10px;
-  }
-  .plan-meal-no-image { height: 140px; min-height: 140px; }
-  .plan-meal-no-image-text, .plan-exercise-no-media-text {
-    font-size: 12px;
-    color: #94a3b8;
-    padding: 0 12px;
-    text-align: center;
-  }
-  .plan-trust-badge-exercise { position: relative; top: 0; margin-top: 4px; display: inline-block; }
   .plan-recipe-modal-overlay {
     position: fixed;
     inset: 0;
@@ -2586,24 +2601,42 @@ const planSectionStyles = `
   .plan-recipe-modal-body :global(.recipe-nutrient-bar-micro) {
     background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
   }
-  .plan-meal-body {
-    padding: 14px;
-    position: relative;
+  .plan-meal-name {
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #f8fafc;
+    line-height: 1.45;
   }
-  .plan-meal-text {
-    margin: 0 0 8px;
-    font-size: 13px;
-    color: #cbd5e1;
-    line-height: 1.5;
+  .plan-meal-name-html {
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #f8fafc;
+    line-height: 1.45;
   }
-  .plan-meal-text :global(b) {
+  .plan-meal-name-html :global(p) {
+    margin: 0;
+    font-size: inherit;
+    font-weight: inherit;
+    color: inherit;
+    line-height: inherit;
+  }
+  .plan-meal-name-html :global(b) {
     color: #e9d5ff;
+  }
+  .plan-meal-macros {
+    margin: 0 0 10px;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.45;
   }
   .plan-meal-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     align-items: center;
+    margin-top: 4px;
   }
   .plan-meal-swap {
     font-size: 11px;
@@ -2798,11 +2831,10 @@ const planSectionStyles = `
     .plan-day-name { padding: 14px 16px; font-size: 15px; }
     .plan-day-chevron { padding: 14px 16px; }
     .plan-meals { grid-template-columns: 1fr; gap: 16px; padding: 16px; }
-    .plan-meal-card { border-radius: 12px; }
-    .plan-meal-image-wrap { height: 140px; min-height: 120px; }
-    .plan-meal-no-image { height: 140px; min-height: 140px; }
-    .plan-meal-body { padding: 14px 16px; }
-    .plan-meal-text { font-size: 14px; line-height: 1.5; }
+    .plan-meal-card { border-radius: 12px; padding: 16px; gap: 14px; }
+    .plan-meal-icon { width: 44px; height: 44px; font-size: 20px; }
+    .plan-meal-name, .plan-meal-name-html { font-size: 15px; }
+    .plan-meal-macros { font-size: 11px; }
     .plan-meal-actions { gap: 12px; flex-wrap: wrap; }
     .plan-meal-swap, .plan-meal-pin {
       min-height: 48px;

@@ -1,23 +1,8 @@
-// /components/PlanViewer.js – Grafické zobrazení AI plánu (wow efekt, obrázky u jídel)
-//
-// NO LIES UI RULE: Frontend must not display media in a way that misleads about trust.
-// - illustrative ≠ exact  |  fallback ≠ verified  |  none ≠ broken image
-// Trust labels and placeholders reflect backend image_trust_level / trust_level.
-// NEXT_PUBLIC_API_ONLY_MEDIA: true/false přepíše; jinak v produkčním buildu jen exact (Spoonacular, wger).
-const _apiOnlyMediaEnv = process.env.NEXT_PUBLIC_API_ONLY_MEDIA;
-const API_ONLY_MEDIA =
-  _apiOnlyMediaEnv === 'false'
-    ? false
-    : _apiOnlyMediaEnv === 'true'
-      ? true
-      : process.env.NODE_ENV === 'production';
+// /components/PlanViewer.js – Zobrazení AI plánu (jídelníček, makra, nákupní seznam; bez obrázků jídel a bez tréninku)
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
-
-// Jídla: obrázky pouze ze Spoonacular přes backend meal_trust (image_trust_level === exact).
-// Žádné stock / Unsplash fallbacky u meal cards — viz resolvedUrl níže.
 
 const PERSONAL_ICONS = {
   'Věk': '🎂',
@@ -142,39 +127,6 @@ function resolveMealTrustMerged(meal, mealText, mealTrustMap, preferredKey) {
   };
 }
 
-function getExerciseMediaFromItemText(itemText, exerciseMediaMap = {}, preferredKey = null, wgerExerciseId = null) {
-  const map = exerciseMediaMap || {};
-  if (wgerExerciseId != null && Number.isFinite(Number(wgerExerciseId))) {
-    const wk = `wger:${Number(wgerExerciseId)}`;
-    if (map[wk]) return map[wk];
-  }
-  if (preferredKey && map[preferredKey]) return map[preferredKey];
-  const rawName = String(itemText || '').split(':')[0].trim();
-  const key = normalizeLookupKey(rawName);
-  if (!key) return null;
-  if (map[key]) return map[key];
-  let bestKey = '';
-  for (const candidateKey of Object.keys(map)) {
-    if (!candidateKey) continue;
-    if (key.includes(candidateKey) || candidateKey.includes(key)) {
-      if (candidateKey.length > bestKey.length) bestKey = candidateKey;
-    }
-  }
-  return bestKey ? map[bestKey] : null;
-}
-
-/** Odstraní obrázky z HTML (v sekci Trénink nechceme velké obrázky). */
-function stripImagesFromHtml(html) {
-  if (!html || typeof html !== 'string') return html;
-  return html.replace(/<img[^>]*>/gi, '').trim();
-}
-
-/** Odstraní blok „Progrese a bezpečnost“ z tréninkového HTML (duplicitní k denním cílům). */
-function stripProgreseBezpecnost(html) {
-  if (!html || typeof html !== 'string') return html;
-  return html.replace(/<p[^>]*>[\s\S]*?Progrese a bezpečnost[\s\S]*?<\/p>/gi, '').trim();
-}
-
 function recipeContentOnly(html) {
   if (!html || typeof html !== 'string') return html;
   const lower = html.toLowerCase();
@@ -200,238 +152,6 @@ function extractMealNameFromRecipeHtml(html) {
     return name.length > 2 ? name : null;
   }
   return null;
-}
-
-/** Z HTML bloku „Trénink tento den“ vytáhne položky <li> (pro zobrazení s figurinami). Extrahuje data-exercise-key pro API-first lookup. */
-function parseTrainingItems(html) {
-  if (!html || typeof html !== 'string') return null;
-  const liRe = /<li([^>]*)>([\s\S]*?)<\/li>/gi;
-  const items = [];
-  let m;
-  while ((m = liRe.exec(html)) !== null) {
-    const tag = m[1] || '';
-    const inner = m[2];
-    const text = inner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-    const keyMatch = tag.match(/data-exercise-key\s*=\s*["']([^"']*)["']/i);
-    const exerciseCanonicalRaw = keyMatch ? String(keyMatch[1]).trim().toLowerCase() : '';
-    const exercise_key = keyMatch ? normalizeLookupKey(keyMatch[1]) : null;
-    const wgerMatch = tag.match(/data-wger-exercise-id\s*=\s*["'](\d+)["']/i);
-    const wgerParsed = wgerMatch ? parseInt(wgerMatch[1], 10) : NaN;
-    const wger_exercise_id = Number.isFinite(wgerParsed) ? wgerParsed : undefined;
-    items.push({
-      innerHTML: inner,
-      text,
-      exercise_key: exercise_key || undefined,
-      exerciseCanonicalRaw: exerciseCanonicalRaw || undefined,
-      wger_exercise_id,
-    });
-  }
-  return items.length ? items : null;
-}
-
-/** Zakázané fráze – nikdy je nezobrazovat žádnému klientovi. Při výskytu se použije safe fallback. */
-const FORBIDDEN_EQUIPMENT_PHRASES = [
-  'personál', 'poradí', 'požádej', 'ukáže', 'ukázku', 'rádi poradí', 'poraď se', 'konzultac', 'trenér ti',
-];
-
-/**
- * Pro každý typ cviku: slova, která musí být v textu, aby byl považován za odpovídající.
- * Systém tím automaticky ověřuje, že zobrazený návod odpovídá cviku – žádné ruční kontroly.
- */
-const EQUIPMENT_MUST_MATCH_KEYWORDS = {
-  warmup:   ['kardio', 'strečink', 'rozcvič', 'kroužení', 'dynamický'],
-  cooldown: ['strečink', 'hamstringy', 'záda', 'ramena', 'protažení'],
-  rest:     ['procházka', 'odpočinek', 'protažení', 'dýchat'],
-  squat:    ['dřep', 'plošin', 'nohy', 'sed', 'opor'],
-  push_up:  ['kliky', 'tlaky', 'hrudník', 'lavice', 'tlačíš'],
-  pull_up:  ['přítahy', 'shyby', 'hrazda', 'přitáhnout', 'táhneš'],
-  lunge:    ['výpad', 'koleno', 'krok', 'činkami'],
-  plank:    ['prkno', 'předloktí', 'dlaních', 'tělo v rovině'],
-  superman: ['superman', 'břicho', 'lehni', 'zvedni', 'natažené'],
-  press:    ['tlaky', 'lavice', 'hrudník', 'činky', 'tlačíš'],
-  deadlift: ['mrtvý tah', 'osa', 'zvedni', 'záda rovná', 'trap bar'],
-  rdl:      ['rumunský', 'hamstringy', 'kyčlích', 'hinge', 'předklon'],
-};
-
-/**
- * Vrátí bezpečné texty pro zobrazení (pro všechny klienty stejně).
- * 1) Zakázané fráze → vždy fallback.
- * 2) Ověření shody: text musí obsahovat alespoň jedno klíčové slovo daného cviku, jinak fallback.
- * Tím je vždy ověřeno, že návod odpovídá cviku – bez ruční kontroly.
- */
-function getSafeEquipment(iconType) {
-  const raw = EXERCISE_EQUIPMENT[iconType] || EXERCISE_EQUIPMENT.default;
-  const def = EXERCISE_EQUIPMENT.default;
-  const hasForbidden = (s) => typeof s === 'string' && FORBIDDEN_EQUIPMENT_PHRASES.some((phrase) => s.toLowerCase().includes(phrase));
-  const keywords = EQUIPMENT_MUST_MATCH_KEYWORDS[iconType];
-  const textMatchesExercise = (s) => {
-    if (!keywords || keywords.length === 0) return true;
-    if (typeof s !== 'string' || !s.trim()) return false;
-    const lower = s.toLowerCase();
-    return keywords.some((kw) => lower.includes(kw.toLowerCase()));
-  };
-  const safeMachine = (hasForbidden(raw.machine) || !textMatchesExercise(raw.machine)) ? def.machine : (raw.machine ?? def.machine);
-  const safeHome = (hasForbidden(raw.home) || !textMatchesExercise(raw.home)) ? def.home : (raw.home ?? def.home);
-  return { machine: safeMachine, home: safeHome };
-}
-
-/** Stroj / vybavení ve fitku a domácí alternativa – vždy obě varianty, srozumitelné bez trenéra. Nikdy neuvádět poradit se s někým. */
-const EXERCISE_EQUIPMENT = {
-  warmup:   { machine: 'Lehké kardio na páse, rotopedu nebo orbitreku. Pak dynamický strečink: kroužení ramen, kyčlí, kolen – stejně jako doma.', home: 'Lehké kardio: chůze, běh na místě, kolo. Dynamický strečink: kroužení ramen, kyčlí, kolen.' },
-  cooldown: { machine: 'Strečink na zemi nebo vestoje – stejné cviky jako doma. V posilovně můžeš využít podložku a klidnější koutek.', home: 'Strečink na zemi nebo vestoje – hamstringy, záda, ramena, přední strana stehen.' },
-  rest:     { machine: 'Procházka na pásu nebo lehké protažení v klidu. Můžeš zůstat na místě a dýchat.', home: 'Procházka venku nebo na místě, lehké protažení.' },
-  squat:    { machine: 'V posilovně: stroj na dřepy (nohy tlačíš proti plošině), nebo dřep s osou za hlavou – nastavení výšky opory podle své výšky.', home: 'Dřepy s vlastní vahou, s lahví vody nebo závažím. Židle jako opora – sedni si a vstaň (opakuj).' },
-  push_up:  { machine: 'V posilovně: tlaky na hrudník na lavici (ležíš na zádech, tlačíš tyč nebo činky nahoru od hrudníku). Lavice s tyčí je obvykle u stěny.', home: 'Kliky na zemi (na kolenou snazší), kliky o zeď nebo o stůl. Roztahovače (gumy) mezi dveřmi.' },
-  pull_up:  { machine: 'V posilovně: přítahy k hrudníku vsedě (táhneš tyč nebo rukojeti k sobě), nebo shyby na hrazdě – hrazda je nad hlavou, přitáhni se až brada nad úroveň rukou.', home: 'Přítahy s expanderem (gumou) ke dveřím. Inverzní řady pod stolem – chyť se stolu a přitáhni hrudník.' },
-  lunge:    { machine: 'Výpady v prostoru s činkami v rukou (po jedné v každé ruce) nebo jen s vlastní vahou. Kroky vpřed, koleno zadní nohy jde k zemi.', home: 'Výpady v prostoru s vlastní vahou nebo s lahví / činkami. Držet se židle pro stabilitu.' },
-  plank:    { machine: 'Prkno na zemi v posilovně – stejně jako doma: opora na předloktích nebo dlaních, tělo v rovině. Můžeš na kolenou zjednodušit.', home: 'Prkno na předloktí nebo na dlaních. Můžeš na kolenou zjednodušit.' },
-  superman: { machine: 'Superman na zemi v posilovně – stejně jako doma: lehni na břicho, paže i nohy natažené. Zvedni hrudník, ruce i nohy mírně nad zem a chvíli drž, pak pomalu polož. Opakuj.', home: 'Lehni na břicho, ruce i nohy natažené. Zvedni hrudník, ruce a nohy mírně nad zem, chvíli vydrž a pomalu polož. Cvičíš jen s vlastní vahou na podlaze.' },
-  press:    { machine: 'V posilovně: tlaky na hrudník na lavici (ležíš na zádech, tlačíš tyč nebo činky nahoru). Lavice s tyčí je typicky u zdi.', home: 'Kliky, tlaky s expanderem, tlaky s lahvemi nebo činkami vleže na zemi.' },
-  deadlift: { machine: 'Mrtvý tah: stoj, osa nebo činky před stehny. Záda rovná, mírný podřep, chyť osu, zvedni do stoje (výdech při zvedání). V posilovně použij osu na zemi nebo trap bar (šestiúhelníková osa).', home: 'Mrtvý tah s činkami nebo lahvemi: stoj, záda rovná, mírný předklon a pokrčení kolen, zvedni závaží do stoje. Výdech při zvedání.' },
-  rdl:      { machine: 'Rumunský mrtvý tah: stoj s činkami nebo osou před stehny. Lehce pokrčená kolena, záda rovná. Předklon v kyčlích (hinge), posun zadečku vzad, pocit tahu v hamstringách; návrat do stoje. V posilovně osa nebo jednoručky.', home: 'Rumunský mrtvý tah s činkami nebo lahvemi: předklon v kyčlích, kolena lehce pokrčená, záda rovná, tah v zadní straně stehen – návrat do stoje.' },
-  total:    { machine: null, home: null },
-  default:  { machine: 'V posilovně: podle názvu cviku – stroj na nohy (plošina), lavice na tlaky, tyč nebo kladka na přítahy. Doma: varianta s vlastní vahou nebo expanderem (gumou).', home: 'Zkus variantu s vlastní vahou nebo s expanderem (gumou).' },
-};
-
-/** Ilustrační obrázky cviků – fotky odpovídající danému cviku (Unsplash). Při chybě se obrázek skryje. */
-const EXERCISE_IMAGE_URLS = {
-  warmup:   'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=200&h=150&fit=crop', // strečink / dynamická rozcvička
-  cooldown: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=200&h=150&fit=crop', // strečink
-  rest:     'https://images.unsplash.com/photo-1571019613454-1a2f803b42f0?w=200&h=150&fit=crop', // chůze / odpočinek
-  squat:    'https://images.unsplash.com/photo-1566241142559-40f630bd52f7?w=200&h=150&fit=crop', // dřep – osoba při dřepu
-  push_up:  'https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=200&h=150&fit=crop', // kliky
-  pull_up:  'https://images.unsplash.com/photo-1605297942671-279dd0e29b15?w=200&h=150&fit=crop', // přítahy (v předklonu / shyby)
-  lunge:    'https://images.unsplash.com/photo-1517836351103-54377833d2f2?w=200&h=150&fit=crop', // výpady
-  plank:    'https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=200&h=150&fit=crop', // prkno
-  superman: 'https://images.unsplash.com/photo-1571019613454-1a2f803b42f0?w=200&h=150&fit=crop', // superman / záda v leže
-  press:    'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=200&h=150&fit=crop', // bench press / tlaky
-  deadlift: 'https://images.unsplash.com/photo-1534368959876-26bf04f2c947?w=200&h=150&fit=crop', // mrtvý tah
-  rdl:      'https://images.unsplash.com/photo-1534368959876-26bf04f2c947?w=200&h=150&fit=crop', // rumunský mrtvý tah
-  default:  'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=200&h=150&fit=crop',
-};
-
-/** Z textu položky tréninku vrátí typ ikony (squat, push_up, …). */
-function getExerciseIconType(text) {
-  const t = (text || '').toLowerCase();
-  if (/trénink celkem|trenink celkem|celkem\s*\d+\s*min/i.test(t)) return 'total';
-  if (/rozcvička|warm-up|rozcvicka/i.test(t)) return 'warmup';
-  if (/závěr|zaver|strečink|strecink|cool-down|mobilita/i.test(t) && !/rozcvička|rozcvicka/i.test(t)) return 'cooldown';
-  if (/odpočinek|odpocinek|procházka|prochazka|chůze|chuze/i.test(t)) return 'rest';
-  if (/dřepy|drep|squat/i.test(t)) return 'squat';
-  if (/kliky|klik|push-up|push up/i.test(t)) return 'push_up';
-  if (/přítahy|pritah|pull-up|pull up|shyby|předklonu|predklonu|row/i.test(t)) return 'pull_up';
-  if (/výpady|vypad|lunge/i.test(t)) return 'lunge';
-  if (/superman/i.test(t)) return 'superman'; // před plank – popis často obsahuje „břicho“, nesmí spadnout na plank
-  if (/rumunský mrtvý|rumunsky mrtvy|romanian deadlift|rdl/i.test(t)) return 'rdl'; // před deadlift – RDL je jiný cvik (hinge, hamstringy)
-  if (/mrtvý tah|mrtvy tah|deadlift/i.test(t)) return 'deadlift';
-  if (/hip thrust|good morning|goodmorning/i.test(t)) return 'rdl'; // hinge cviky – podobný návod jako RDL
-  if (/prkno|plank|core|břicho|bricho|břicha|bricha|ab\s|abs|zvedání nohou|zvedani nohou|leg raise/i.test(t)) return 'plank';
-  if (/tlak|press|bench|tlaky na ramen|overhead|military press|ohp/i.test(t)) return 'press';
-  if (/leg press|nohy na plošin|plošin/i.test(t)) return 'squat'; // stroj na nohy – podobný kontext jako dřep
-  return 'default';
-}
-
-/** Figurina cviku (ikonka) – jednoduchá stick-figure, naznačuje provedení. */
-function ExerciseIcon({ type, className = '' }) {
-  const w = 32;
-  const h = 32;
-  const stroke = 'currentColor';
-  const fill = 'none';
-  const common = { width: w, height: h, viewBox: `0 0 ${w} ${h}`, fill, stroke, strokeWidth: 1.4, strokeLinecap: 'round', strokeLinejoin: 'round' };
-  switch (type) {
-    case 'warmup':
-      return (
-        <svg {...common} className={className} aria-hidden>
-          <circle cx="16" cy="7" r="3" />
-          <path d="M16 11v3M14 14l2 8 2-4 2 4 2-8" />
-          <path d="M12 18h8" />
-        </svg>
-      );
-    case 'squat':
-      return (
-        <svg {...common} className={className} aria-hidden>
-          <circle cx="16" cy="6" r="3" />
-          <path d="M16 10v1M12 11l-1 10 2 1 3-6 2 6 2-1-1-10M16 11l-2 5 2 5 2-5" />
-        </svg>
-      );
-    case 'push_up':
-      return (
-        <svg {...common} className={className} aria-hidden>
-          <path d="M6 22l3-5h14l3 5M9 17V9l6 2v6M15 17V9l6 2v6" />
-          <circle cx="16" cy="6" r="2.5" />
-        </svg>
-      );
-    case 'pull_up':
-      return (
-        <svg {...common} className={className} aria-hidden>
-          <path d="M4 5h24M16 5v12l-3 4-3-4V5" />
-          <circle cx="16" cy="10" r="2.5" />
-        </svg>
-      );
-    case 'lunge':
-      return (
-        <svg {...common} className={className} aria-hidden>
-          <circle cx="16" cy="6" r="3" />
-          <path d="M16 10v1M15 11l-3 11 2 1 2-6 2 6 2-1-3-11" />
-        </svg>
-      );
-    case 'plank':
-      return (
-        <svg {...common} className={className} aria-hidden>
-          <path d="M5 18h22M7 18l2-5 6 0 2 5M15 13V8" />
-        </svg>
-      );
-    case 'superman':
-      return (
-        <svg {...common} className={className} aria-hidden>
-          <ellipse cx="16" cy="18" rx="10" ry="4" />
-          <path d="M8 14l4-6 4 2 4-2 4 6M16 8v4" />
-        </svg>
-      );
-    case 'press':
-      return (
-        <svg {...common} className={className} aria-hidden>
-          <circle cx="16" cy="8" r="2.5" />
-          <path d="M16 11v2M12 13l4 6 4-6M16 13v6" />
-        </svg>
-      );
-    case 'deadlift':
-    case 'rdl':
-      return (
-        <svg {...common} className={className} aria-hidden>
-          <circle cx="16" cy="6" r="2.5" />
-          <path d="M16 9v4M14 13l-2 8 2 1 4-6 2 6 2-1-2-8" />
-          <path d="M12 21h8" />
-        </svg>
-      );
-    case 'cooldown':
-      return (
-        <svg {...common} className={className} aria-hidden>
-          <circle cx="16" cy="10" r="3" />
-          <path d="M16 14v6M12 17h8" />
-        </svg>
-      );
-    case 'rest':
-      return (
-        <svg {...common} className={className} aria-hidden>
-          <circle cx="14" cy="10" r="3" />
-          <path d="M17 20l2-3 1 2 2-3" />
-        </svg>
-      );
-    case 'total':
-      return (
-        <svg {...common} className={className} aria-hidden>
-          <circle cx="16" cy="16" r="10" />
-          <path d="M16 10v6l4 2" />
-        </svg>
-      );
-    default:
-      return (
-        <svg {...common} className={className} aria-hidden>
-          <path d="M14 8l2 2 4-4M10 16l-2 4 4 2 6-8" />
-        </svg>
-      );
-  }
 }
 
 /** Fallback: sestaví nákupní seznam z bloků Suroviny v receptech */
@@ -540,7 +260,7 @@ function parsePlanHtml(html) {
         }
         next = next.nextElementSibling;
       }
-      if (title && rawSectionHtml) result.rawSections[title] = rawSectionHtml;
+      if (title && rawSectionHtml && !/trénink|treninkovy/i.test(title)) result.rawSections[title] = rawSectionHtml;
 
       if (/Osobní údaje|údaje & cíle/i.test(title)) {
         result.personal = list.map((item) => {
@@ -608,7 +328,7 @@ function parsePlanHtml(html) {
             result.days.push({
               dayName,
               meals,
-              trainingHtml: trainingHtml || '<p><b>Trénink tento den:</b></p><ul><li>Odpočinek.</li></ul>',
+              trainingHtml: '',
             });
           }
           el = el.nextElementSibling;
@@ -713,24 +433,22 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
   const [dayShoppingState, setDayShoppingState] = useState({}); // { dayIndex: { copyDone, email: { loading, done, error } } }
   const [shoppingFilter, setShoppingFilter] = useState('week'); // 'week' | day originalIndex (number)
   const [shoppingListOpen, setShoppingListOpen] = useState(false); // rozbalovací sekce
-  const [expandedTrainingKey, setExpandedTrainingKey] = useState(null); // 'dayIdx-itemIdx' – rozbalený cvik (detail Ve fitku / Doma)
   const [expandedDays, setExpandedDays] = useState(null); // null = dnes rozbalený; Set(di) = které dny jsou rozbalené
   const [mealTrustMap, setMealTrustMap] = useState({});
-  const [exerciseMediaMap, setExerciseMediaMap] = useState({});
-  /** Keys of meal cards whose image failed to load — show placeholder instead of broken/static fallback (NO LIES UI RULE). */
-  const [mealImageErrorKeys, setMealImageErrorKeys] = useState(() => new Set());
-  const [exerciseMediaErrorKeys, setExerciseMediaErrorKeys] = useState(() => new Set());
   const [showRawPlanFallback, setShowRawPlanFallback] = useState(false);
   const recipeOpenIdRef = useRef(0);
 
-  /** Odstraní nebezpečné tagy z HTML pro zobrazení v fallbacku. */
+  /** Odstraní nebezpečné tagy z HTML pro zobrazení v fallbacku (bez tréninku a bez obrázků). */
   const sanitizeHtmlForFallback = (raw) => {
     if (!raw || typeof raw !== 'string') return '';
-    return raw
+    let s = raw
       .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
       .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
-      .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, '')
-      .trim();
+      .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, '');
+    s = s.replace(/<h3[^>]*>[^<]*(?:Tréninkový plán|Trénink)[^<]*<\/h3>[\s\S]*?(?=<h3[^>]*>|$)/gi, '');
+    s = s.replace(/<p[^>]*>\s*<b>\s*Trénink tento den\s*:?\s*<\/b>\s*<\/p>\s*<ul[\s\S]*?<\/ul>/gi, '');
+    s = s.replace(/<img\b[^>]*>/gi, '');
+    return s.trim();
   };
 
   const recipeErrorHtml = (msg) => `<p class="plan-no-recipe-msg">${String(msg || '')
@@ -816,7 +534,6 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
   useEffect(() => {
     if (!plan?.plan_html || typeof document === 'undefined') {
       setMealTrustMap({});
-      setExerciseMediaMap({});
       return;
     }
     let cancelled = false;
@@ -836,13 +553,9 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
         const data = await res.json();
         if (cancelled) return;
         setMealTrustMap(data?.meal_trust && typeof data.meal_trust === 'object' ? data.meal_trust : {});
-        setExerciseMediaMap(data?.exercise_media && typeof data.exercise_media === 'object' ? data.exercise_media : {});
-        setMealImageErrorKeys(new Set());
-        setExerciseMediaErrorKeys(new Set());
       } catch (_) {
         if (!cancelled) {
           setMealTrustMap({});
-          setExerciseMediaMap({});
         }
       }
     })();
@@ -951,7 +664,7 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
       {/* Hero nadpis (lze skrýt, když je vykreslen nahoře na stránce) */}
       {!hideHero && (
         <div className="plan-hero">
-          <h2 className="plan-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
+          <h2 className="plan-hero-title">Tvůj osobní jídelní plán Body & Mind ON</h2>
           {plan.plan_type && <span className="plan-badge">{getPlanTypeLabel(plan.plan_type)}</span>}
         </div>
       )}
@@ -961,7 +674,7 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
         <nav className="plan-nav" aria-label="Sekce plánu">
           <a href="#plan-overview" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-overview')?.scrollIntoView({ behavior: 'smooth' }); }}>Můj plán</a>
           <span className="plan-nav-sep" aria-hidden>|</span>
-          <a href="#plan-jidelnicek" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-jidelnicek')?.scrollIntoView({ behavior: 'smooth' }); }}>Jídelníček</a>
+          <a href="#plan-jidelnicek" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-jidelnicek')?.scrollIntoView({ behavior: 'smooth' }); }}>Jídelní plán</a>
         </nav>
       )}
 
@@ -998,7 +711,7 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
           {/* Denní cíle – makra */}
           {parsed.macros?.length > 0 && (
             <div className="plan-block">
-              <h3 className="plan-block-title">Denní cíle</h3>
+              <h3 className="plan-block-title">Denní cíle · makra</h3>
               <div className="plan-macros-row">
                 {parsed.macros.map((m, i) => (
                   <div key={i} className="plan-macro-card">
@@ -1016,7 +729,7 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
               <span className="plan-today-emoji">📅</span>
               <div>
                 <h3>Dnes ({todayStr})</h3>
-                <p>Podívej se do jídelníčku a na tréninkový plán (jak cvičit, rozcvička, cviky) níže.</p>
+                <p>Níže najdeš přehled jídel a výživových hodnot na dnešek a následující dny.</p>
               </div>
             </div>
           )}
@@ -1025,7 +738,9 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
           {showGraphical && !hasParsedDays && Object.keys(parsed?.rawSections || {}).length > 0 && (
             <div className="plan-block plan-raw-sections-fallback">
               <p className="plan-parse-fallback-msg" style={{ marginBottom: 16 }}>Plán zobrazen po sekcích (parser nerozpoznal jídelníček).</p>
-              {Object.entries(parsed.rawSections).map(([sectionTitle, sectionHtml]) => (
+              {Object.entries(parsed.rawSections)
+                .filter(([sectionTitle]) => !/trénink|treninkovy/i.test(sectionTitle))
+                .map(([sectionTitle, sectionHtml]) => (
                 <div key={sectionTitle} className="plan-raw-section-block">
                   <h3 className="plan-block-title">{sectionTitle}</h3>
                   <div className="plan-raw-section-content" dangerouslySetInnerHTML={{ __html: sanitizeHtmlForFallback(sectionHtml) }} />
@@ -1098,7 +813,8 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
           {/* Jídelníček – od dneška dál (dynamicky podle aktuálního dne) */}
           {displayedDays?.length > 0 && (
             <div id="plan-jidelnicek" className="plan-block">
-              <h3 className="plan-block-title">Jídelníček</h3>
+              <h3 className="plan-block-title">Tvůj jídelní plán</h3>
+              <p className="plan-block-subtitle">Přehled jídel a výživových hodnot · Jídelníček podle tvého cíle</p>
               {plan.valid_from && plan.valid_until && (
                 <p className="plan-validity-range">
                   Platnost plánu: {new Date(plan.valid_from).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' })} – {new Date(plan.valid_until).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' })}
@@ -1126,14 +842,8 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                     </button>
                     {isDayExpanded && (
                     <>
-                    <nav className="plan-day-nav" aria-label="Sekce dne">
-                      <a href={`#plan-day-${di}-meals`} className="plan-day-nav-link" onClick={(e) => { e.preventDefault(); document.getElementById(`plan-day-${di}-meals`)?.scrollIntoView({ behavior: 'smooth' }); }}>Jídelníček</a>
-                      {day.trainingHtml && (
-                        <>
-                          <span className="plan-day-nav-sep" aria-hidden>|</span>
-                          <a href={`#plan-day-${di}-training`} className="plan-day-nav-link" onClick={(e) => { e.preventDefault(); document.getElementById(`plan-day-${di}-training`)?.scrollIntoView({ behavior: 'smooth' }); }}>Trénink</a>
-                        </>
-                      )}
+                    <nav className="plan-day-nav" aria-label="Jídla dne">
+                      <span className="plan-day-nav-static">Co dnes jíst</span>
                     </nav>
                     <div id={`plan-day-${di}-meals`} className="plan-meals">
                       {day._placeholder && day.meals.length === 0 ? (
@@ -1207,43 +917,14 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                         };
                         const mealTextForPin = override ? (override.title || '') : (meal.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().replace(/\s*\([^)]*\)\s*$/g, '').trim();
                         const mealPinned = isPinned(meal.type || '', mealTextForPin);
-                        // Náhled ze Spoonacular: zobrazíme vždy, když je k dispozici image_url (přesný i ilustrační). Placeholder jen bez URL.
-                        let resolvedUrl = null;
-                        let trustLevel = 'none';
-                        const trustUrl = mealTrust?.image_url && String(mealTrust.image_url).trim();
-                        if (trustUrl) {
-                          resolvedUrl = trustUrl;
-                          if (mealTrust.image_trust_level === 'exact') trustLevel = 'exact';
-                          else if (mealTrust.image_trust_level === 'illustrative') trustLevel = 'illustrative';
-                          else trustLevel = 'illustrative';
-                        }
-                        const mealCardKey = `meal-${di}-${mi}-${normalizeLookupKey(mealFullText || meal.text || meal.type).slice(0, 40)}`;
-                        const imageLoadFailed = mealImageErrorKeys.has(mealCardKey);
-                        const showMealImage = !imageLoadFailed && !!resolvedUrl;
                         return (
                           <div key={mi} className="plan-meal-card">
-                            <button type="button" className="plan-meal-image-wrap" onClick={openRecipe} title="Klikni pro zobrazení receptu">
-                              {showMealImage ? (
-                                <img
-                                  src={resolvedUrl}
-                                  alt=""
-                                  className="plan-meal-image"
-                                  onError={() => setMealImageErrorKeys((prev) => new Set([...prev, mealCardKey]))}
-                                />
-                              ) : (
-                                <div className="plan-meal-no-image" aria-hidden>
-                                  <span className="plan-meal-no-image-text">Bez ověřeného obrázku</span>
-                                </div>
-                              )}
-                              <span className="plan-meal-type">{meal.type}</span>
-                              {showMealImage && (
-                                <span className={`plan-trust-badge plan-trust-badge-meal plan-trust-badge-${trustLevel}`} title={trustLevel === 'exact' ? 'Obrázek odpovídá nalezenému receptu' : 'Orientační vizuál'}>
-                                  {trustLevel === 'exact' && <>Přesný zdroj{mealTrust?.exact_source === 'spoonacular' ? <span className="plan-trust-sublabel"> Spoonacular</span> : null}</>}
-                                  {trustLevel === 'illustrative' && <>Ilustrační foto</>}
-                                </span>
-                              )}
-                              <span className="plan-meal-recept-badge">Klikni pro recept</span>
-                            </button>
+                            <div className="plan-meal-head">
+                              <span className="plan-meal-type-inline">{meal.type}</span>
+                              <button type="button" className="plan-meal-recipe-btn" onClick={openRecipe}>
+                                Recept
+                              </button>
+                            </div>
                             <div className="plan-meal-body">
                               <p className="plan-meal-text">
                                 {override ? (override.title || 'Náhrada') : <span dangerouslySetInnerHTML={{ __html: meal.text || meal.fullHtml }} />}
@@ -1363,117 +1044,6 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                             <a href="https://www.kosik.cz/" target="_blank" rel="noopener noreferrer">Košík.cz</a> nebo{' '}
                             <a href="https://shop.billa.cz/" target="_blank" rel="noopener noreferrer">Billa e-shop</a>.
                           </p>
-                        </div>
-                      );
-                    })()}
-                    {day.trainingHtml && (() => {
-                      const trainingItems = parseTrainingItems(day.trainingHtml);
-                      return (
-                        <div id={`plan-day-${di}-training`} className="plan-day-training">
-                          <h3 className="plan-day-training-title">Tréninkový plán</h3>
-                          <p className="plan-day-training-intro">Po rozkliknutí cviku se zobrazí, jak cvik provést a obě varianty – <strong>ve fitku</strong> (jaký stroj) i <strong>doma</strong> (alternativa).</p>
-                          {trainingItems ? (
-                            <ul className="plan-day-training-list">
-                              {trainingItems.map((item, idx) => {
-                                const iconType = getExerciseIconType(item.text);
-                                const equipment = getSafeEquipment(iconType);
-                                const exerciseMedia = getExerciseMediaFromItemText(
-                                  item.text,
-                                  exerciseMediaMap,
-                                  item.exercise_key || null,
-                                  item.wger_exercise_id ?? null,
-                                );
-                                const exTrustLevel = exerciseMedia?.trust_level ?? 'none';
-                                const exerciseThumb = (API_ONLY_MEDIA ? exTrustLevel === 'exact' : exTrustLevel !== 'none') ? (exerciseMedia?.gif_url || exerciseMedia?.image_url || null) : null;
-                                const itemKey = `training-${di}-${idx}`;
-                                const exerciseThumbFailed = exerciseMediaErrorKeys.has(itemKey);
-                                const showExerciseThumb = exerciseThumb && !exerciseThumbFailed;
-                                const isExpanded = expandedTrainingKey === itemKey;
-                                const hasDetail = (equipment.machine || equipment.home) && iconType !== 'total';
-                                const canonLc = (item.exerciseCanonicalRaw || '').toLowerCase();
-                                const isStructuralItem = ['total', 'warmup', 'cooldown', 'rest'].includes(iconType);
-                                const showMediaBox = !isStructuralItem;
-                                const isStructuralCanonical = ['warmup', 'cooldown', 'rest'].includes(canonLc);
-                                const structuralNoMediaLabel =
-                                  iconType === 'warmup' || canonLc === 'warmup'
-                                    ? '🔥 Rozcvička / mobilita'
-                                    : iconType === 'cooldown' || canonLc === 'cooldown'
-                                      ? '🧘 Závěr – protažení'
-                                      : iconType === 'rest' || canonLc === 'rest'
-                                        ? '🚶 Aktivní odpočinek'
-                                        : null;
-                                const showFriendlyPlaceholder =
-                                  !showExerciseThumb &&
-                                  (isStructuralCanonical || ['warmup', 'cooldown', 'rest'].includes(iconType));
-                                return (
-                                  <li key={idx} className={`plan-day-training-item ${isExpanded ? 'plan-day-training-item-expanded' : ''}`}>
-                                    <span className="plan-day-training-icon" aria-hidden title="Jak cvičit">
-                                      <ExerciseIcon type={iconType} />
-                                    </span>
-                                    <div className="plan-day-training-body">
-                                      {showMediaBox && (showExerciseThumb ? (
-                                        <>
-                                          <img
-                                            src={exerciseThumb}
-                                            alt=""
-                                            className="plan-day-training-thumb"
-                                            loading="lazy"
-                                            onError={() => setExerciseMediaErrorKeys((prev) => new Set([...prev, itemKey]))}
-                                          />
-                                          <span className={`plan-trust-badge plan-trust-badge-exercise plan-trust-badge-${exTrustLevel}`} title={exTrustLevel === 'exact' ? 'Vizuál odpovídá rozpoznanému cviku' : exTrustLevel === 'fallback' ? 'Náhradní vizuál' : ''}>
-                                            {exTrustLevel === 'exact' && <>Ověřený cvik{exerciseMedia?.source && exerciseMedia.source !== 'none' ? <span className="plan-trust-sublabel"> {exerciseMedia.source === 'wger' ? 'wger.de' : exerciseMedia.source}</span> : null}</>}
-                                            {exTrustLevel === 'fallback' && 'Náhradní vizuál'}
-                                          </span>
-                                        </>
-                                      ) : (
-                                        <div className="plan-exercise-no-media" aria-hidden>
-                                          <span className="plan-exercise-no-media-text">
-                                            {showFriendlyPlaceholder
-                                              ? structuralNoMediaLabel || '🏋️ Bez náhledu'
-                                              : 'Bez ověřeného média'}
-                                          </span>
-                                        </div>
-                                      ))}
-                                      {hasDetail ? (
-                                        <button
-                                          type="button"
-                                          className="plan-day-training-header-btn"
-                                          onClick={() => setExpandedTrainingKey((k) => (k === itemKey ? null : itemKey))}
-                                          aria-expanded={isExpanded}
-                                        >
-                                          <span className="plan-day-training-text" dangerouslySetInnerHTML={{ __html: item.innerHTML }} />
-                                          <span className="plan-day-training-toggle-hint">
-                                            {isExpanded ? ' ▼ Skrýt detail' : 'Jak na to – stroje ve fitku a varianta doma'}
-                                          </span>
-                                        </button>
-                                      ) : (
-                                        <span className="plan-day-training-text" dangerouslySetInnerHTML={{ __html: item.innerHTML }} />
-                                      )}
-                                      {isExpanded && hasDetail && (
-                                        <div className="plan-day-training-detail">
-                                          <p className="plan-day-training-detail-title">Jak cvik provést</p>
-                                          {equipment.machine && (
-                                            <div className="plan-day-training-detail-block">
-                                              <strong>Ve fitku – jaký stroj použít:</strong>
-                                              <p>{equipment.machine}</p>
-                                            </div>
-                                          )}
-                                          {equipment.home && (
-                                            <div className="plan-day-training-detail-block">
-                                              <strong>Doma – alternativa:</strong>
-                                              <p>{equipment.home}</p>
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          ) : (
-                            <div dangerouslySetInnerHTML={{ __html: day.trainingHtml }} />
-                          )}
                         </div>
                       );
                     })()}
@@ -1896,6 +1466,12 @@ const planSectionStyles = `
     padding-bottom: 8px;
     border-bottom: 1px solid rgba(139, 92, 255, 0.3);
   }
+  .plan-block-subtitle {
+    margin: -10px 0 18px;
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.5;
+  }
   .plan-block-training {
     background: rgba(30, 41, 59, 0.5);
     border: 1px solid rgba(71, 85, 105, 0.5);
@@ -2222,6 +1798,13 @@ const planSectionStyles = `
   }
   .plan-day-nav-link:hover { color: #c4b5fd; text-decoration: underline; }
   .plan-day-nav-sep { color: #64748b; font-size: 12px; }
+  .plan-day-nav-static {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #a78bfa;
+  }
   .plan-meals {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -2369,10 +1952,44 @@ const planSectionStyles = `
     overflow: hidden;
     border: 1px solid rgba(255,255,255,0.05);
     transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
   }
   .plan-meal-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  }
+  .plan-meal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: rgba(30, 27, 75, 0.35);
+  }
+  .plan-meal-type-inline {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #c4b5fd;
+  }
+  .plan-meal-recipe-btn {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(124, 58, 237, 0.45);
+    background: rgba(124, 58, 237, 0.22);
+    color: #e9d5ff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .plan-meal-recipe-btn:hover {
+    background: rgba(124, 58, 237, 0.4);
+    border-color: rgba(167, 139, 250, 0.65);
   }
   .plan-meal-image-wrap {
     position: relative;

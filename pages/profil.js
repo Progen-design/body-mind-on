@@ -1747,7 +1747,7 @@ export default function Profil() {
                     <nav className="profile-quick-nav" aria-label="Rychlá navigace">
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('muj-plan'); document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); }}>Můj plán</button>
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('denni-navyky'); document.getElementById('denni-navyky')?.scrollIntoView({ behavior: 'smooth' }); }}>Denní návyky</button>
-                      <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('muj-plan'); document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); }} title="Zobrazit jídelníček a tréninkový plán">
+                      <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('muj-plan'); document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); }} title="Zobrazit jídelní plán a výživové hodnoty">
                         Tréninkový plán
                       </button>
                       <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('statistiky'); document.getElementById('statistiky')?.scrollIntoView({ behavior: 'smooth' }); }}>Statistiky a progres</button>

@@ -213,6 +213,7 @@ function parseTrainingItems(html) {
     const inner = m[2];
     const text = inner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
     const keyMatch = tag.match(/data-exercise-key\s*=\s*["']([^"']*)["']/i);
+    const exerciseCanonicalRaw = keyMatch ? String(keyMatch[1]).trim().toLowerCase() : '';
     const exercise_key = keyMatch ? normalizeLookupKey(keyMatch[1]) : null;
     const wgerMatch = tag.match(/data-wger-exercise-id\s*=\s*["'](\d+)["']/i);
     const wgerParsed = wgerMatch ? parseInt(wgerMatch[1], 10) : NaN;
@@ -221,6 +222,7 @@ function parseTrainingItems(html) {
       innerHTML: inner,
       text,
       exercise_key: exercise_key || undefined,
+      exerciseCanonicalRaw: exerciseCanonicalRaw || undefined,
       wger_exercise_id,
     });
   }
@@ -1388,8 +1390,21 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                                 const showExerciseThumb = exerciseThumb && !exerciseThumbFailed;
                                 const isExpanded = expandedTrainingKey === itemKey;
                                 const hasDetail = (equipment.machine || equipment.home) && iconType !== 'total';
+                                const canonLc = (item.exerciseCanonicalRaw || '').toLowerCase();
                                 const isStructuralItem = ['total', 'warmup', 'cooldown', 'rest'].includes(iconType);
                                 const showMediaBox = !isStructuralItem;
+                                const isStructuralCanonical = ['warmup', 'cooldown', 'rest'].includes(canonLc);
+                                const structuralNoMediaLabel =
+                                  iconType === 'warmup' || canonLc === 'warmup'
+                                    ? '🔥 Rozcvička / mobilita'
+                                    : iconType === 'cooldown' || canonLc === 'cooldown'
+                                      ? '🧘 Závěr – protažení'
+                                      : iconType === 'rest' || canonLc === 'rest'
+                                        ? '🚶 Aktivní odpočinek'
+                                        : null;
+                                const showFriendlyPlaceholder =
+                                  !showExerciseThumb &&
+                                  (isStructuralCanonical || ['warmup', 'cooldown', 'rest'].includes(iconType));
                                 return (
                                   <li key={idx} className={`plan-day-training-item ${isExpanded ? 'plan-day-training-item-expanded' : ''}`}>
                                     <span className="plan-day-training-icon" aria-hidden title="Jak cvičit">
@@ -1412,7 +1427,11 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
                                         </>
                                       ) : (
                                         <div className="plan-exercise-no-media" aria-hidden>
-                                          <span className="plan-exercise-no-media-text">Bez ověřeného média</span>
+                                          <span className="plan-exercise-no-media-text">
+                                            {showFriendlyPlaceholder
+                                              ? structuralNoMediaLabel || '🏋️ Bez náhledu'
+                                              : 'Bez ověřeného média'}
+                                          </span>
                                         </div>
                                       ))}
                                       {hasDetail ? (

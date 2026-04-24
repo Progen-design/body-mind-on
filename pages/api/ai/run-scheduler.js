@@ -29,10 +29,17 @@ export default async function handler(req, res) {
     const events = await processAIEvents();
     const decisions = await runAIDecisionEngine();
     const run = await runAIScheduler();
-    console.info('[run-scheduler] completed', { gen: gen?.created, events, decisions, run });
+    console.info('[run-scheduler] completed', {
+      gen: gen?.created,
+      legacy_regen_queued: gen?.legacy_regen_queued,
+      events,
+      decisions,
+      run,
+    });
     return res.status(200).json({
       ok: true,
       generated: gen.created,
+      legacy_regen_queued: gen?.legacy_regen_queued ?? 0,
       events,
       decisions,
       scheduler: run,

@@ -922,7 +922,13 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                             </div>
                             <div className="plan-meal-body">
                               <p className="plan-meal-text">
-                                {override ? (override.title || 'Náhrada') : <span dangerouslySetInnerHTML={{ __html: meal.text || meal.fullHtml }} />}
+                                {override ? (
+                                  override.title || 'Náhrada'
+                                ) : meal.text && String(meal.text).trim() ? (
+                                  meal.text
+                                ) : (
+                                  <span dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(meal.fullHtml || '') }} />
+                                )}
                               </p>
                               <div className="plan-meal-actions">
                                 <button type="button" className="plan-meal-swap" onClick={(e) => { e.stopPropagation(); handleSwap(); }}>Nahradit jiným</button>
@@ -1104,7 +1110,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                     <p>Načítám recept z internetu…</p>
                   </div>
                 ) : (
-                  <div className="plan-recipe-modal-body" dangerouslySetInnerHTML={{ __html: recipeModal.content || '' }} />
+                  <div className="plan-recipe-modal-body" dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(recipeModal.content || '') }} />
                 )}
               </div>
             </div>,
@@ -1126,7 +1132,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                   </div>
                 ) : (
                   <>
-                    <div className="plan-recipe-modal-body" dangerouslySetInnerHTML={{ __html: swapModal.html || '<p>Recept se nepodařilo načíst.</p>' }} />
+                    <div className="plan-recipe-modal-body" dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(swapModal.html || '<p>Recept se nepodařilo načíst.</p>') }} />
                     <div className="plan-recipe-modal-actions">
                       <button type="button" className="plan-recipe-modal-replace-btn" onClick={() => {
                         const mealName = extractMealNameFromRecipeHtml(swapModal.html) || `${swapModal.mealType || 'Náhrada'} alternativa`;

@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
+import { stripPlanMediaAttrsFromHtml } from '../lib/emailTemplates';
 
 const PERSONAL_ICONS = {
   'Věk': '🎂',
@@ -416,13 +417,12 @@ function normalizeMealTextForPin(text) {
   return s.normalize('NFD').replace(/\p{Diacritic}/gu, '');
 }
 
-export default function PlanViewer({ plan, userName, hideHero, hideShoppingList = false, dietaryPreferences = '', canPinMeals = true, onToast }) {
+export default function PlanViewer({ plan, userName: _userName, hideHero, hideShoppingList = false, dietaryPreferences = '', canPinMeals = true, onToast }) {
   const [parsed, setParsed] = useState(null);
   const [recipeModal, setRecipeModal] = useState(null); // { title, content, anchorRect, hasRecipe, openId? }
   const [mealOverrides, setMealOverrides] = useState({}); // { "di_mi": { title, content } }
   const [swapModal, setSwapModal] = useState(null); // { dayIndex, mealIndex, dishQuery, loading, html }
   const [mealPins, setMealPins] = useState([]); // { meal_type, meal_text }[]
-  const [mealPinsLoading, setMealPinsLoading] = useState(false);
   const [pinToastMsg, setPinToastMsg] = useState(null); // lokální toast pro pin
   const [shoppingCopyDone, setShoppingCopyDone] = useState(false);
   const [shoppingCopyError, setShoppingCopyError] = useState(null);
@@ -444,7 +444,8 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
       .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, '');
     s = s.replace(/<h3[^>]*>[^<]*(?:Tréninkový plán|Trénink)[^<]*<\/h3>[\s\S]*?(?=<h3[^>]*>|$)/gi, '');
     s = s.replace(/<p[^>]*>\s*<b>\s*Trénink tento den\s*:?\s*<\/b>\s*<\/p>\s*<ul[\s\S]*?<\/ul>/gi, '');
-    s = s.replace(/<img\b[^>]*>/gi, '');
+    s = s.replace(/<p[^>]*>\s*<strong>\s*Trénink tento den\s*:?\s*<\/strong>\s*<\/p>\s*<ul[\s\S]*?<\/ul>/gi, '');
+    s = stripPlanMediaAttrsFromHtml(s);
     return s.trim();
   };
 
@@ -496,7 +497,6 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token || cancelled) return;
-      setMealPinsLoading(true);
       try {
         const res = await fetch('/api/meal-pins', {
           headers: { Authorization: `Bearer ${session.access_token}` },
@@ -506,8 +506,6 @@ export default function PlanViewer({ plan, userName, hideHero, hideShoppingList 
         if (data.pins) setMealPins(data.pins);
       } catch {
         if (!cancelled) setMealPins([]);
-      } finally {
-        if (!cancelled) setMealPinsLoading(false);
       }
     })();
     return () => { cancelled = true; };

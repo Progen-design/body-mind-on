@@ -39,9 +39,8 @@ export default function Header() {
   }
 
   const homeHref = isApp ? MAIN_SITE : "/";
-  const registraceUrl = "https://bodyandmindon.cz/#card-pnjildktpojs3bo";
 
-  const isRegistrationPage = ["/start", "/on-club", "/chci-vip"].includes(router.pathname);
+  const isRegistrationPage = ["/start", "/on-club", "/chci-vip", "/register", "/signup"].includes(router.pathname);
   const showLoggedInNav = session && !isRegistrationPage;
 
   return (
@@ -69,7 +68,7 @@ export default function Header() {
           ) : (
             <>
               <Link href="/trener">Pro trenéry</Link>
-              <a href={registraceUrl} target="_blank" rel="noopener noreferrer">Registrace</a>
+              <Link href="/start">Registrace</Link>
               <Link href="/profil">Profil</Link>
               <Link href="/login">Přihlášení</Link>
             </>

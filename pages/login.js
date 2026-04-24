@@ -124,7 +124,9 @@ export default function Login() {
             <div className="login-top-links">
               <a href={MAIN_SITE} className="login-top-link">Hlavní stránka</a>
               <span className="login-top-sep">·</span>
-              <Link href="/on-club" className="login-top-link">Registrace</Link>
+              <Link href="/start" className="login-top-link">Registrace (START)</Link>
+              <span className="login-top-sep">·</span>
+              <Link href="/on-club" className="login-top-link">ON Club</Link>
             </div>
             <div className="login-hero">
               <h2 className="login-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
@@ -152,7 +154,9 @@ export default function Login() {
           <div className="login-top-links">
             <a href={MAIN_SITE} className="login-top-link">Hlavní stránka</a>
             <span className="login-top-sep">·</span>
-            <Link href="/on-club" className="login-top-link">Registrace</Link>
+            <Link href="/start" className="login-top-link">Registrace (START)</Link>
+            <span className="login-top-sep">·</span>
+            <Link href="/on-club" className="login-top-link">ON Club</Link>
           </div>
           <div className="login-hero">
             <h2 className="login-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
@@ -198,6 +202,12 @@ export default function Login() {
               </button>
               {message && <p className="login-error" role="alert">{message}</p>}
             </form>
+            <p className="login-register-hint">
+              Ještě nemáš účet?{' '}
+              <Link href="/start">Vytvořit účet a plán (START)</Link>
+              {' · '}
+              <Link href="/on-club">ON Club</Link>
+            </p>
           </div>
         </div>
       </main>
@@ -413,6 +423,21 @@ export default function Login() {
           background: rgba(239, 68, 68, 0.16);
           border-radius: 10px;
           border: 1px solid rgba(248, 113, 113, 0.4);
+        }
+        .login-register-hint {
+          margin: 18px 0 0;
+          font-size: 14px;
+          color: #94a3b8;
+          line-height: 1.5;
+        }
+        .login-register-hint :global(a) {
+          color: #c4b5fd;
+          font-weight: 600;
+          text-decoration: none;
+        }
+        .login-register-hint :global(a:hover) {
+          text-decoration: underline;
+          color: #e9d5ff;
         }
         @media (max-width: 900px) {
           .login-page {

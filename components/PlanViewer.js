@@ -186,6 +186,36 @@ function mealMacroLineFromTrust(mealTrust) {
   return parts.join(' · ');
 }
 
+/**
+ * Trénink v profilu: bez médií, řádek = číslo + název + volitelně série (např. 3×10) vpravo.
+ */
+function transformProfileTrainingHtml(html) {
+  let s = stripPlanMediaAttrsFromHtml(html || '');
+  let n = 0;
+  s = s.replace(/<li(\s[^>]*)?>([\s\S]*?)<\/li>/gi, (_, attrs, inner) => {
+    n += 1;
+    const attrPart = ((attrs || '') + '').trim();
+    let restAttrs = attrPart;
+    let liClasses = 'plan-exercise-item';
+    const classMatch = attrPart.match(/\bclass\s*=\s*(["'])((?:\\.|(?!\1).)*)\1/i);
+    if (classMatch) {
+      liClasses = `${classMatch[2]} plan-exercise-item`.trim();
+      restAttrs = attrPart.replace(/\bclass\s*=\s*["'][^"']*["']/i, '').trim();
+    }
+    const open = `<li${restAttrs ? ` ${restAttrs}` : ''} class="${liClasses}">`;
+
+    let innerTrim = inner.trim();
+    const setsMatch = innerTrim.match(/(\d+)\s*[×x]\s*(\d+)\s*(?:<\/[^>]+>|\s)*$/i);
+    let setsHtml = '';
+    if (setsMatch) {
+      setsHtml = `<span class="plan-exercise-sets">${setsMatch[1]}×${setsMatch[2]}</span>`;
+      innerTrim = innerTrim.slice(0, innerTrim.length - setsMatch[0].length).trim();
+    }
+    return `${open}<span class="plan-exercise-number" aria-hidden="true">${n}</span><div class="plan-exercise-name">${innerTrim}</div>${setsHtml}</li>`;
+  });
+  return s;
+}
+
 function recipeContentOnly(html) {
   if (!html || typeof html !== 'string') return html;
   const lower = html.toLowerCase();
@@ -941,7 +971,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                             <p className="plan-week-full-training-label">Trénink a pohyb</p>
                             <div
                               className="plan-week-full-training plan-training-content"
-                              dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(trainingHtmlWithSupplement(wday.trainingHtml)) }}
+                              dangerouslySetInnerHTML={{ __html: transformProfileTrainingHtml(trainingHtmlWithSupplement(wday.trainingHtml)) }}
                             />
                           </>
                         ) : (
@@ -1065,7 +1095,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                             <div className="plan-meal-icon" aria-hidden>
                               {mealTypeEmojiFromLabel(meal.type)}
                             </div>
-                            <div className="plan-meal-main">
+                            <div className="plan-meal-body">
                               <div className="plan-meal-type-row">
                                 <span className="plan-meal-type">{mealTypeLabel}</span>
                                 <button type="button" className="plan-meal-recipe-btn" onClick={openRecipe}>
@@ -1116,7 +1146,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                         <h4 className="plan-day-training-subtitle">Trénink a pohyb — co dělat tento den</h4>
                         <div
                           className="plan-training-content plan-day-training-html"
-                          dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(trainingHtmlWithSupplement(day.trainingHtml)) }}
+                          dangerouslySetInnerHTML={{ __html: transformProfileTrainingHtml(trainingHtmlWithSupplement(day.trainingHtml)) }}
                         />
                       </div>
                     ) : null}
@@ -1232,7 +1262,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                   {(parsed?.workout || '').trim() ? (
                     <div
                       className="plan-training-content plan-training-week-html"
-                      dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(parsed.workout) }}
+                      dangerouslySetInnerHTML={{ __html: transformProfileTrainingHtml(parsed.workout) }}
                     />
                   ) : (
                     <p className="plan-training-week-fallback">
@@ -1883,25 +1913,18 @@ const planSectionStyles = `
     list-style: none;
     margin: 0;
     padding: 0;
-    counter-reset: plan-ex-num;
   }
-  .plan-training-content ul > li {
+  .plan-exercise-item {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 12px 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    font-size: 15px;
-    font-weight: 600;
-    color: #f1f5f9;
-    line-height: 1.4;
   }
-  .plan-training-content ul > li:last-child {
+  .plan-exercise-item:last-child {
     border-bottom: none;
   }
-  .plan-training-content ul > li::before {
-    counter-increment: plan-ex-num;
-    content: counter(plan-ex-num);
+  .plan-exercise-number {
     width: 32px;
     height: 32px;
     border-radius: 8px;
@@ -1915,6 +1938,27 @@ const planSectionStyles = `
     color: #a78bfa;
     flex-shrink: 0;
     box-sizing: border-box;
+  }
+  .plan-exercise-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #f1f5f9;
+    line-height: 1.45;
+  }
+  .plan-exercise-name :global(p) {
+    margin: 0 0 4px;
+  }
+  .plan-exercise-name :global(p:last-child) {
+    margin-bottom: 0;
+  }
+  .plan-exercise-sets {
+    font-size: 13px;
+    color: #7c3aed;
+    font-weight: 600;
+    margin-left: auto;
+    flex-shrink: 0;
   }
   .plan-validity-range {
     margin: -8px 0 12px;
@@ -2379,7 +2423,7 @@ const planSectionStyles = `
     border-radius: 12px;
     padding: 20px;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 16px;
     transition: transform 0.2s, box-shadow 0.2s;
   }
@@ -2399,7 +2443,7 @@ const planSectionStyles = `
     flex-shrink: 0;
     line-height: 1;
   }
-  .plan-meal-main {
+  .plan-meal-body {
     flex: 1;
     min-width: 0;
     position: relative;
@@ -2417,6 +2461,7 @@ const planSectionStyles = `
     letter-spacing: 1.5px;
     text-transform: uppercase;
     color: #7c3aed;
+    margin-bottom: 4px;
   }
   .plan-meal-recipe-btn {
     flex-shrink: 0;

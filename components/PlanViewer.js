@@ -1098,9 +1098,6 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                             <div className="plan-meal-body">
                               <div className="plan-meal-type-row">
                                 <span className="plan-meal-type">{mealTypeLabel}</span>
-                                <button type="button" className="plan-meal-recipe-btn" onClick={openRecipe}>
-                                  Recept
-                                </button>
                               </div>
                               {override ? (
                                 <p className="plan-meal-name">{override.title || 'Náhrada'}</p>
@@ -1119,8 +1116,24 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                                   dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(meal.fullHtml || '') }}
                                 />
                               )}
+                              {recipeId != null ? (
+                                <a
+                                  href={`/api/spoonacular-recipe?id=${recipeId}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="plan-recipe-link"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  📖 Zobrazit recept
+                                </a>
+                              ) : null}
                               {macroLine ? <p className="plan-meal-macros">{macroLine}</p> : null}
                               <div className="plan-meal-actions">
+                                {recipeId == null ? (
+                                  <button type="button" className="plan-meal-recipe-btn" onClick={openRecipe}>
+                                    Recept
+                                  </button>
+                                ) : null}
                                 <button type="button" className="plan-meal-swap" onClick={(e) => { e.stopPropagation(); handleSwap(); }}>Nahradit jiným</button>
                                 {canPinMeals && (
                                   <button
@@ -2739,37 +2752,28 @@ const planSectionStyles = `
   }
   .plan-recipe-modal-replace-btn:hover { opacity: 0.95; }
 
-  .plan-recipe-links {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .plan-recipe-links li { margin: 0; }
   .plan-recipe-link {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: 12px 16px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 10px;
-    color: #c4b5fd;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #7c3aed;
+    text-decoration: none;
+    padding: 4px 10px;
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    border-radius: 6px;
+    margin-top: 6px;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+    width: fit-content;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   .plan-recipe-link:hover {
-    background: rgba(139, 92, 255, 0.15);
-    border-color: rgba(139, 92, 255, 0.3);
-  }
-  .plan-recipe-link span:last-child {
-    opacity: 0.7;
-    font-size: 18px;
+    background: rgba(124, 58, 237, 0.1);
+    border-color: rgba(124, 58, 237, 0.5);
+    color: #a78bfa;
   }
 
   .plan-recipe-card {

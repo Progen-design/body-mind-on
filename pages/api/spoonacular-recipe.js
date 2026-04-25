@@ -135,6 +135,50 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
+// Prohlížeč v novém tabu: celá HTML stránka. Programové fetch zůstane u JSON (bez text/html v Accept).
+function wantsHtmlDocument(req) {
+  if (String(req.query.format || '').toLowerCase() === 'html') return true;
+  const accept = String(req.headers.accept || '').toLowerCase();
+  return /\btext\/html\b/.test(accept);
+}
+
+function wrapRecipeHtmlDocument(title, bodyHtml) {
+  const safeTitle = escapeHtml((title || 'Recept').trim() || 'Recept');
+  const styles = `
+    body{margin:0;padding:24px 18px 40px;background:#0f0f1a;color:#e2e8f0;font-family:system-ui,-apple-system,'Segoe UI',Arial,sans-serif;line-height:1.55;font-size:15px;}
+    .recipe-wrap{max-width:640px;margin:0 auto;}
+    .recipe-back{display:inline-block;margin-bottom:18px;font-size:13px;font-weight:600;color:#a78bfa;text-decoration:none;}
+    .recipe-back:hover{text-decoration:underline;}
+    h1{font-size:1.35rem;font-weight:700;color:#f8fafc;margin:0 0 20px;line-height:1.25;}
+    .recipe-body b{color:#e9d5ff;}
+    .recipe-body p{margin:12px 0;}
+    .recipe-body ul,.recipe-body ol{margin:8px 0;padding-left:22px;}
+    .recipe-body li{margin:6px 0;}
+    .recipe-nutrition-block{margin:20px 0;padding:14px 16px;background:rgba(255,255,255,0.05);border-radius:12px;border:1px solid rgba(255,255,255,0.08);}
+    .recipe-nutrition-title{margin:0 0 12px;font-size:14px;font-weight:600;color:#e9d5ff;}
+    .recipe-nutrient-bar-wrap{height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;}
+    .recipe-nutrient-bar{height:100%;border-radius:3px;}
+    .recipe-nutrient-bar-macro{background:linear-gradient(90deg,#ec4899,#f472b6);}
+    .recipe-nutrient-bar-micro{background:linear-gradient(90deg,#3b82f6,#60a5fa);}
+  `;
+  return `<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${safeTitle} – Body &amp; Mind ON</title>
+  <style>${styles}</style>
+</head>
+<body>
+  <div class="recipe-wrap">
+    <a class="recipe-back" href="/profil">← Zpět do aplikace</a>
+    <h1>${safeTitle}</h1>
+    <div class="recipe-body">${bodyHtml}</div>
+  </div>
+</body>
+</html>`;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Pouze GET' });
@@ -171,6 +215,15 @@ export default async function handler(req, res) {
     const html = recipeToLocalizedHtml(merged, nutrition, recipe?.title || '');
     if (!html) {
       return res.status(502).json({ error: 'Recept nemá dostupná data' });
+    }
+    if (wantsHtmlDocument(req)) {
+      const displayTitle =
+        (merged.display_name_cs && String(merged.display_name_cs).trim() && merged.display_name_cs !== 'Recept'
+          ? merged.display_name_cs
+          : recipe?.title) || 'Recept';
+      const doc = wrapRecipeHtmlDocument(displayTitle, html);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.status(200).send(doc);
     }
     return res.status(200).json({ ok: true, html });
   } catch (err) {

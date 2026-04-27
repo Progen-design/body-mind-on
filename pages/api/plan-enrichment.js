@@ -2,7 +2,8 @@
  * POST /api/plan-enrichment
  * ─────────────────────────────────────────────────────────────────────────────
  * Returns enriched meal images and exercise media for a given plan HTML.
- * Žádná cache – vždy čerstvá data ze Spoonacular/wger.
+ * Jídla: z data-* v HTML (žádný Spoonacular). Cviky: z embedded data-image-url/data-gif-url v HTML
+ * pokud planRenderer je doplnil; jinak živé wger přes enrichExercise.
  *
  * RESPONSE:
  *   meal_images      { [normalized_key]: url_string }   — backward-compatible, used by PlanViewer

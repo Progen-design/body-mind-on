@@ -7,6 +7,13 @@
 - **Vercel projekt:** [body-mind-on](https://vercel.com/progen-designs-projects/body-mind-on)
 - **Jinou verzi nepoužívat** – produkce je jen tato (main → tento Vercel projekt). Ostatní deploye / větve pro produkci nesmí být používány.
 
+## Domény (marketing vs. aplikace)
+
+- **Marketing:** `https://bodyandmindon.cz` (a `www.`) – úvodní stránka v repu je `pages/index.js` (`/`).
+- **Aplikace:** `https://app.bodyandmindon.cz` – dotazník `/start`, přihlášení, profil, všechna `/api/*`.
+- **Middleware** (`middleware.js`): návštěvník na marketingové doméně, který otevře např. `/start`, `/login`, `/profil`, `/komunita`, … je přesměrován na stejnou cestu na **`NEXT_PUBLIC_APP_URL`** (kanonická app, typicky `https://app.bodyandmindon.cz`). Na app hostu `/` vede na `/start`.
+- Ve Vercelu nastav **`NEXT_PUBLIC_APP_URL=https://app.bodyandmindon.cz`** a volitelně **`NEXT_PUBLIC_MAIN_SITE_URL=https://bodyandmindon.cz`** (výchozí v kódu už tyto produkční hodnoty používáme, env je jen přepínač).
+
 ---
 
 Aplikace je Next.js projekt. Aby běžela na internetu (např. na **https://app.bodyandmindon.cz**), nasaď ji na Vercel.

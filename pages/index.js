@@ -1,9 +1,9 @@
 // /pages/index.js – Hlavní marketingová stránka (bodyandmindon.cz)
-import Link from 'next/link';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { getPublicAppUrl } from '../lib/siteUrls';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz';
+const APP_URL = getPublicAppUrl();
 
 export default function Home() {
   return (

@@ -3,8 +3,9 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
+import { getPublicMainSiteUrl } from "../lib/siteUrls";
 
-const MAIN_SITE = process.env.NEXT_PUBLIC_MAIN_SITE_URL || "https://bodyandmindon.cz";
+const MAIN_SITE = getPublicMainSiteUrl();
 
 export default function Header() {
   const router = useRouter();
@@ -13,7 +14,9 @@ export default function Header() {
   const [avatarUrl, setAvatarUrl] = useState(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.location.hostname === "app.bodyandmindon.cz") setIsApp(true);
+    if (typeof window === "undefined") return;
+    const h = window.location.hostname;
+    if (h === "app.bodyandmindon.cz" || h.endsWith(".vercel.app")) setIsApp(true);
   }, []);
 
   useEffect(() => {

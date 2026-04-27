@@ -1,30 +1,57 @@
 // Rozdělení: bodyandmindon.cz = marketing, app.bodyandmindon.cz (nebo *.vercel.app) = registrace + profil
 import { NextResponse } from 'next/server';
+import { getPublicAppUrl, isMarketingHostname } from './lib/siteUrls';
 
-const MAIN_HOST = 'bodyandmindon.cz';
 const APP_HOST = 'app.bodyandmindon.cz';
-const APP_URL = `https://${APP_HOST}`;
 
-function getAppUrl(host) {
-  // Na Vercel doméně použij aktuální host jako základ URL
+function getAppBaseForRuntime(host) {
   if (host.endsWith('.vercel.app')) return `https://${host}`;
-  return APP_URL;
+  return getPublicAppUrl();
+}
+
+function isAppSiteHost(host) {
+  return host === APP_HOST || host.endsWith('.vercel.app');
+}
+
+/** Na marketingové doméně vždy přesměrovat na kanonickou aplikaci (produkční app URL z env). */
+function shouldRedirectMarketingPathToApp(pathname) {
+  if (pathname.startsWith('/_next') || pathname.startsWith('/favicon') || pathname.startsWith('/api')) return false;
+  const prefixes = [
+    '/start',
+    '/profil',
+    '/login',
+    '/register',
+    '/signup',
+    '/on-club',
+    '/chci-vip',
+    '/trener',
+    '/onboarding',
+    '/komunita',
+    '/dashboard',
+    '/club',
+    '/vip',
+    '/training',
+    '/pricing',
+  ];
+  for (const p of prefixes) {
+    if (pathname === p || pathname.startsWith(`${p}/`)) return true;
+  }
+  return false;
 }
 
 export function middleware(request) {
   const { pathname } = request.nextUrl;
   const host = request.headers.get('host') || '';
 
-  const isMainSite = host === MAIN_HOST || host === `www.${MAIN_HOST}`;
-  const isAppSite = host === APP_HOST || host.endsWith('.vercel.app');
-  const appBaseUrl = getAppUrl(host);
+  const onMarketing = isMarketingHostname(host);
+  const isAppSite = isAppSiteHost(host);
+  const appBaseUrl = getAppBaseForRuntime(host);
+  const canonicalAppUrl = getPublicAppUrl();
 
-  // Na hlavní doméně: /start, /profil, /login → přesměrovat do aplikace
-  if (isMainSite && ['/start', '/profil', '/login'].includes(pathname)) {
-    return NextResponse.redirect(new URL(pathname, APP_URL), 302);
+  if (onMarketing && shouldRedirectMarketingPathToApp(pathname)) {
+    return NextResponse.redirect(new URL(pathname, canonicalAppUrl), 302);
   }
 
-  // V aplikaci (app.bodyandmindon.cz nebo *.vercel.app): úvodní stránka / → registrace /start
   if (isAppSite && pathname === '/') {
     return NextResponse.redirect(new URL('/start', appBaseUrl), 302);
   }

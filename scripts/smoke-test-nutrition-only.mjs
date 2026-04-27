@@ -13,9 +13,10 @@ const sampleHtml = `
 <h3>Denní cíle (makra)</h3>
 <ul><li><strong>Kalorie:</strong> 2200 kcal</li><li><strong>Bílkoviny:</strong> 140 g</li></ul>
 <h3>Jídelníček (celý týden)</h3>
-<h4>Pondělí</h4>
+<h3>Pondělí</h3>
 <p data-recipe-id="123"><b>Snídaně:</b> Ovesná kaše</p>
 <p class="meal-nutrition-line"><small>B 30 g · S 50 g · T 10 g</small></p>
+<p><small><em>Součet dne (orientačně): 186 kcal, B 10 g, S 8 g, T 13 g</em></small></p>
 <p><b>Trénink tento den:</b></p>
 <ul><li>Dřepy 4x10</li></ul>
 <h3>Tréninkový plán</h3>
@@ -36,10 +37,6 @@ const forbiddenMedia = [
 
 const forbiddenNutrition = [
   ...forbiddenMedia,
-  'Trénink tento den',
-  'Tréninkový plán',
-  'wger',
-  'exercise_media',
 ];
 
 function assertNoForbiddenToken(value, label, tokens) {
@@ -60,6 +57,34 @@ if (!/Ovesná kaše/i.test(formatted)) {
 }
 if (!/Denní cíle|Kalorie|Bílkoviny/i.test(formatted)) {
   console.error('Nutrition-only smoke test failed: makra zmizela z výstupu.');
+  process.exit(1);
+}
+if (!/Trénink tento den|Tréninkový plán/i.test(formatted)) {
+  console.error('Nutrition-only smoke test failed: trénink se nezobrazil v e-mailovém výstupu.');
+  process.exit(1);
+}
+if (!/Co dnes jíst/i.test(formatted)) {
+  console.error('Nutrition-only smoke test failed: denní karta se nevykreslila.');
+  process.exit(1);
+}
+if (!/Součet dne \(orientačně\)/i.test(formatted)) {
+  console.error('Nutrition-only smoke test failed: součet dne se nezobrazil.');
+  process.exit(1);
+}
+
+const twoDaysNoExplicitWorkout = `
+<h3>Jídelníček</h3>
+<h3>Pondělí</h3>
+<p><b>Snídaně:</b> Ovesná kaše</p>
+<h3>Úterý</h3>
+<p><b>Oběd:</b> Polévka</p>
+<h3>Suplementace</h3>
+<p>Vitamín D</p>
+`;
+const formattedTwo = formatPlanHtmlForEmail(twoDaysNoExplicitWorkout);
+const trainHeadings = formattedTwo.match(/Trénink tento den/gi) || [];
+if (trainHeadings.length < 2) {
+  console.error('Nutrition-only smoke test failed: chybí výchozí tréninková karta u dne bez explicitního bloku.');
   process.exit(1);
 }
 

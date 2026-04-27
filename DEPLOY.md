@@ -50,7 +50,7 @@ V projektu v Vercelu otevři **Settings → Environment Variables** a přidej **
 
 **OpenAI klíče:** ve Vercelu (Production) nastav **jeden** platný `OPENAI_API_KEY`. Nepoužívané klíče v [OpenAI API keys](https://platform.openai.com/api-keys) smaž nebo zruš – snížíš riziko úniku a zmatek při rotaci. Po změně klíče vždy ověř generování plánu (např. `GET /api/verify-media-apis` + krátký test v aplikaci).
 
-**Smoke test (`npm run smoke-test` proti produkci):** nastav `SMOKE_TEST_RECIPIENT` na schránku s plus-adresami (např. Gmail), viz `.env.local.example` – nikdy neposílej testovací plány na vymyšlené `@bodyandmindon.cz` (není schránka → nedoručitelné zprávy).
+**Smoke test (`npm run smoke-test` proti produkci):** výchozí příjemce je `info+bm-smoke-…@bodyandmindon.cz` (doručí se na schránku **info@** při zapnutém plus-adresování v Google Workspace). Volitelně `SMOKE_TEST_RECIPIENT=jiny@domena.cz` pro jiný základ plus-adresy.
 | `ADMIN_TOKEN` | pokud používáš admin | volitelné |
 
 - **Environment**: zaškrtni **Production** (a případně Preview, pokud chceš stejné proměnné i pro náhledové deploye).

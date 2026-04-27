@@ -6,9 +6,9 @@
  * Spustit: node scripts/smoke-test-critical-path.mjs
  * Lokální API: BASE_URL=http://localhost:3000 node scripts/smoke-test-critical-path.mjs
  *
- * Proti produkci (app.bodyandmindon.cz / *.vercel.app) je nutné nastavit schránku s plus-adresováním,
- * jinak by se posílalo na neexistující @bodyandmindon.cz a Gmail vrací nedoručitelné zprávy:
- *   SMOKE_TEST_RECIPIENT=tvoje-jmeno@gmail.com BASE_URL=https://app.bodyandmindon.cz node scripts/smoke-test-critical-path.mjs
+ * Proti produkci (app.bodyandmindon.cz / *.vercel.app) výchozí příjemce:
+ *   info+bm-smoke-<čas>@bodyandmindon.cz (plus-adresa na stejnou schránku jako info@).
+ * Volitelný přepínač: SMOKE_TEST_RECIPIENT=jiny@email.cz → použije se local+bm-smoke-…@domain
  */
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -17,7 +17,8 @@ import { dirname, join } from 'path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
-/** Pro produkční URL neposílat na doménu bez schránky – viz komentář nahoře. */
+const DEFAULT_SMOKE_LOCAL = 'info';
+
 function buildSmokeRecipientEmail(baseUrl) {
   const raw = process.env.SMOKE_TEST_RECIPIENT?.trim();
   const prodLike = /bodyandmindon\.cz/i.test(baseUrl) || /\.vercel\.app/i.test(baseUrl);
@@ -25,7 +26,7 @@ function buildSmokeRecipientEmail(baseUrl) {
   if (raw) {
     const at = raw.lastIndexOf('@');
     if (at <= 0) {
-      console.error('SMOKE_TEST_RECIPIENT musí být platný e-mail (např. jmeno@gmail.com).');
+      console.error('SMOKE_TEST_RECIPIENT musí být platný e-mail (např. info@bodyandmindon.cz).');
       process.exit(1);
     }
     const local = raw.slice(0, at);
@@ -38,14 +39,7 @@ function buildSmokeRecipientEmail(baseUrl) {
   }
 
   if (prodLike) {
-    console.error(
-      'Proti produkční URL nastav SMOKE_TEST_RECIPIENT (schránka s plus-adresami, např. Gmail):\n' +
-        '  SMOKE_TEST_RECIPIENT=tvoje-jmeno@gmail.com BASE_URL=' +
-        baseUrl +
-        ' node scripts/smoke-test-critical-path.mjs\n' +
-        'Bez toho by test posílal plán na neexistující adresu @bodyandmindon.cz.'
-    );
-    process.exit(1);
+    return `${DEFAULT_SMOKE_LOCAL}+bm-smoke-${Date.now()}@bodyandmindon.cz`;
   }
 
   return `bm-smoke-${Date.now()}@example.com`;
@@ -61,7 +55,7 @@ try {
 }
 
 payload.email = buildSmokeRecipientEmail(BASE_URL);
-console.log('Smoke recipient:', payload.email.replace(/\+bm-smoke-\d+/, '+bm-smoke-…'));
+console.log('Smoke recipient:', payload.email);
 
 const url = `${BASE_URL.replace(/\/$/, '')}/api/body-metrics`;
 console.log('POST', url);

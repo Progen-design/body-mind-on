@@ -868,6 +868,9 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
               </p>
               <div id="plan-tyden-cely" className="plan-week-overview-card">
                   <h4 className="plan-week-overview-title">Rychlý přehled celého týdne</h4>
+                  <p className="plan-week-overview-hint" style={{ margin: '0 0 12px', fontSize: 13, color: '#94a3b8', lineHeight: 1.45 }}>
+                    První den odpovídá začátku platnosti plánu (obvykle den registrace). Jídelníček i trénink jsou seřazené podle kalendářních dat od tohoto dne.
+                  </p>
                   <p className="plan-week-overview-lead">
                     Stejné dny jako při rozbalení jednotlivých karet — pouze jídla na jednom místě.
                   </p>

@@ -34,9 +34,9 @@ const rawHtml = `<h3>Tvoje čísla</h3>
 <p>Tréninků týdně: <strong>3</strong>. Níže u každého dne najdeš konkrétní cviky.</p>
 <h3>Jídelníček (celý týden)</h3>
 <h4>Pondělí</h4>
-<p data-recipe-id="716426"><b>Snídaně:</b> <a class="spoonacular-recipe" href="${app}/api/spoonacular-recipe?id=716426" target="_blank" rel="noopener noreferrer" style="color:#c4b5fd;font-weight:600;text-decoration:underline;">Greek Yogurt Chocolate Parfait</a></p>
+<p data-recipe-id="716426"><b>Snídaně:</b> <a class="spoonacular-recipe" href="${app}/api/spoonacular-recipe?id=716426" target="_blank" rel="noopener noreferrer" style="color:#c4b5fd;font-weight:600;text-decoration:underline;">Řecký jogurt s čokoládou (český název z plánu)</a></p>
 <p class="meal-ingredient-portions-h" style="margin:6px 0 4px;color:#94a3b8;font-size:11px;font-weight:700;">Suroviny na 1 porci (orientačně)</p>
-<ul class="meal-ingredient-portions"><li>Greek yogurt: <strong>200 g</strong></li><li>Dark chocolate chips: <strong>30 g</strong></li></ul>
+<ul class="meal-ingredient-portions"><li>řecký jogurt: <strong>200 g</strong></li><li>čokoládové pecičky: <strong>30 g</strong></li></ul>
 <p class="meal-nutrition-line"><small>380 kcal · B 24 g · S 42 g · T 12 g · Vláknina 6 g · cca 15 min · zdraví 72/100</small></p>
 <p><b>Oběd:</b> Salát dle GPT (neověřený název v HTML)</p>
 <p><small><em>Součet dne (orientačně): 380 kcal, B 24 g, S 42 g, T 12 g, vláknina 6 g</em></small></p>
@@ -67,12 +67,12 @@ const doc = buildPlanEmailDocument({
 const out = join(tmpdir(), 'body-mind-on-plan-email-preview.html');
 writeFileSync(out, doc, 'utf8');
 console.log('Náhled e-mailu zapsán:', out);
-if (!/Greek Yogurt Chocolate Parfait/.test(doc)) {
-  console.error('Kontrola selhala: očekáván titul ze Spoonacular v HTML.');
+if (!/Řecký jogurt s čokoládou/.test(doc)) {
+  console.error('Kontrola selhala: očekáván český název jídla v HTML náhledu.');
   process.exit(1);
 }
-if (/Ovesná kaše s ovocem/.test(doc)) {
-  console.error('Kontrola selhala: GPT název by u ověřeného jídla neměl převládat v e-mailu.');
+if (/Greek Yogurt Chocolate Parfait/i.test(doc)) {
+  console.error('Kontrola selhala: v plánu by neměl být anglický titul receptu z API.');
   process.exit(1);
 }
-console.log('Kontrola OK: ověřené jídlo používá recipe.title, ne name_cs z GPT.');
+console.log('Kontrola OK: český název jídla v e-mailovém náhledu, bez anglického titulu API.');

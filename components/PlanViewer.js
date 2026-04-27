@@ -159,6 +159,33 @@ function resolveMealTrustMerged(meal, mealText, mealTrustMap, preferredKey) {
   };
 }
 
+/** Odstraní z HTML jména jídla vložené odkazy na /api/spoonacular-recipe (duplicita vedle tlačítka Recept). */
+function stripInlineSpoonacularRecipeAnchors(html) {
+  if (!html || typeof html !== 'string') return html;
+  return html
+    .replace(/<a\b[^>]*href\s*=\s*["'][^"']*spoonacular-recipe[^"']*["'][^>]*>[\s\S]*?<\/a>/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+/** Přepíše trust z HTML daty ze structured_plan_json (recipe_id + makra odpovídají ověřenému receptu). */
+function mergeTrustWithStructuredPlanMeal(baseTrust, structMeal) {
+  if (!structMeal || typeof structMeal !== 'object') return baseTrust;
+  const r = structMeal.recipe && typeof structMeal.recipe === 'object' ? structMeal.recipe : null;
+  const ridRaw = r?.id ?? structMeal.recipe_id;
+  const rid = ridRaw != null && Number.isFinite(Number(ridRaw)) ? Number(ridRaw) : null;
+  const patch = {};
+  if (rid != null) patch.recipe_id = rid;
+  if (structMeal.recipe_verified === true && r) {
+    if (r.calories != null && Number.isFinite(Number(r.calories))) patch.calories = Number(r.calories);
+    if (r.protein_g != null && Number.isFinite(Number(r.protein_g))) patch.protein_g = Number(r.protein_g);
+    if (r.carbs_g != null && Number.isFinite(Number(r.carbs_g))) patch.carbs_g = Number(r.carbs_g);
+    if (r.fat_g != null && Number.isFinite(Number(r.fat_g))) patch.fat_g = Number(r.fat_g);
+  }
+  if (!Object.keys(patch).length) return baseTrust;
+  return baseTrust && typeof baseTrust === 'object' ? { ...baseTrust, ...patch } : patch;
+}
+
 /** Emoji podle typu jídla (bez obrázků Spoonacular). */
 function mealTypeEmojiFromLabel(mealType) {
   const t = norm(String(mealType || ''));
@@ -912,7 +939,18 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                         const dishTitle = (meal.text || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
                         const modalTitle = (meal.type && dishTitle) ? `${meal.type}: ${dishTitle}` : dishTitle || meal.type || mealFullText || 'Jídlo';
                         const mealLookupKey = meal.meal_key || null;
-                        const mealTrust = resolveMealTrustMerged(meal, mealFullText || meal.text || meal.type, mealTrustMap, mealLookupKey);
+                        const structDayIdx = day.originalIndex ?? di;
+                        const structMeal =
+                          structuredPlan?.days &&
+                          Array.isArray(structuredPlan.days) &&
+                          structDayIdx >= 0 &&
+                          structDayIdx < structuredPlan.days.length
+                            ? structuredPlan.days[structDayIdx]?.meals?.[mi] ?? null
+                            : null;
+                        const mealTrust = mergeTrustWithStructuredPlanMeal(
+                          resolveMealTrustMerged(meal, mealFullText || meal.text || meal.type, mealTrustMap, mealLookupKey),
+                          structMeal
+                        );
                         const openRecipe = (e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -1025,12 +1063,20 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                               ) : meal.text && String(meal.text).trim() ? (
                                 <div
                                   className="plan-meal-name plan-meal-name-html"
-                                  dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(meal.text) }}
+                                  dangerouslySetInnerHTML={{
+                                    __html: stripInlineSpoonacularRecipeAnchors(
+                                      stripPlanMediaAttrsFromHtml(meal.text)
+                                    ),
+                                  }}
                                 />
                               ) : (
                                 <div
                                   className="plan-meal-name plan-meal-name-html"
-                                  dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(meal.fullHtml || '') }}
+                                  dangerouslySetInnerHTML={{
+                                    __html: stripInlineSpoonacularRecipeAnchors(
+                                      stripPlanMediaAttrsFromHtml(meal.fullHtml || '')
+                                    ),
+                                  }}
                                 />
                               )}
                               {macroLine ? <p className="plan-meal-macros">{macroLine}</p> : null}

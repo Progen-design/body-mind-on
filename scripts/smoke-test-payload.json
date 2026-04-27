@@ -1,0 +1,16 @@
+{
+  "email": "nahrazeno-behem-smoke-testu@example.com",
+  "name": "Smoke Test",
+  "password": "Test1234",
+  "gender": "male",
+  "age": 30,
+  "height": 178,
+  "weight": 82,
+  "activity": "moderate",
+  "stress": "medium",
+  "worktype": "sedentary",
+  "goal": "redukce",
+  "frequency": "3x tydne",
+  "program": "START",
+  "workout_days": [1, 3, 5]
+}

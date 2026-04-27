@@ -7,4 +7,3 @@ node_modules
 .vercel
 .specstory
 supabase/.temp/
-scripts/smoke-test-payload.json

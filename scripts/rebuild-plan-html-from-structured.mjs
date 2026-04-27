@@ -71,14 +71,21 @@ try {
     body: JSON.stringify(body),
   });
   const text = await res.text();
+  if (!res.ok) {
+    console.error(`HTTP ${res.status} ${res.statusText} — ${url}`);
+    if (res.status === 404) {
+      console.error('Tip: endpoint je až po nasazení aktuálního main na Vercel, nebo použij BACKFILL_APP_URL=http://localhost:3000 s běžícím npm run dev.');
+    }
+    process.exit(1);
+  }
   let json;
   try {
     json = JSON.parse(text);
   } catch {
-    json = { raw: text };
+    console.error('Neočekávaná odpověď (ne JSON):', text.slice(0, 500));
+    process.exit(1);
   }
   console.log(JSON.stringify(json, null, 2));
-  if (!res.ok) process.exit(1);
   if (!apply) {
     console.error('\nDry-run. Pro zápis přidej --apply (volitelně --all pro všechny plány).');
   }

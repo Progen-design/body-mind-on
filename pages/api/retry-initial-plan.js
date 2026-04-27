@@ -66,7 +66,12 @@ export default async function handler(req, res) {
         .eq('status', 'pending')
         .maybeSingle();
       taskToRun = pendingTask;
-    } else if (existingTask?.status === 'failed' || existingTask?.status === 'dlq' || !existingTask) {
+    } else if (
+      existingTask?.status === 'failed' ||
+      existingTask?.status === 'dlq' ||
+      existingTask?.status === 'completed' ||
+      !existingTask
+    ) {
       if (!existingTask) {
         try {
           await createInitialAITasks(userId, emailOptions);
@@ -74,6 +79,24 @@ export default async function handler(req, res) {
           if (!/duplicate|unique|already/i.test(e?.message || '')) {
             console.warn('[retry-initial-plan] createInitialAITasks:', e?.message);
           }
+        }
+      } else if (existingTask.status === 'completed') {
+        const regenKey = `regen:${userId}:trainer:initial_plan:${Date.now()}`;
+        const { error: insertErr } = await supabaseServer.from('ai_tasks').insert({
+          user_id: userId,
+          agent_slug: 'trainer',
+          task_type: 'initial_plan',
+          idempotency_key: regenKey,
+          payload: {
+            prompt: 'Přegeneruj personalizovaný plán (uživatel žádá nový plán se stejnými metrikami).',
+            emailOptions,
+            force_regenerate: true,
+          },
+          status: 'pending',
+        });
+        if (insertErr && !/duplicate|unique/i.test(insertErr.message || '')) {
+          console.error('[retry-initial-plan] regen insert failed:', insertErr.message);
+          return res.status(500).json({ error: 'Nepodařilo vytvořit úlohu přegenerování: ' + insertErr.message });
         }
       } else {
         const retryKey = `retry:${userId}:trainer:initial_plan:${Date.now()}`;

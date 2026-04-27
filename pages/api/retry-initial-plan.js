@@ -7,8 +7,9 @@ import { supabaseServer } from '../../lib/supabaseServer';
 import { createInitialAITasks } from '../../lib/createInitialAITasks';
 import { executeAITask } from '../../lib/taskExecutors';
 import { runAIScheduler } from '../../lib/aiScheduler';
+import { getDefaultLoginUrl } from '../../lib/siteUrls';
 
-const loginUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '') + '/login';
+const loginUrl = getDefaultLoginUrl();
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

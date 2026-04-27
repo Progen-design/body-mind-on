@@ -2,8 +2,9 @@
 import { supabaseServer } from '../../lib/supabaseServer';
 import { requireActiveMembership } from '../../lib/membershipHelpers';
 import { sendPlanEmail } from '../../lib/mail';
+import { getDefaultLoginUrl } from '../../lib/siteUrls';
 
-const loginUrl = process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')}/login` : 'https://app.bodyandmindon.cz/login';
+const loginUrl = getDefaultLoginUrl();
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

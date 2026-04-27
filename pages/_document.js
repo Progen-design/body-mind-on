@@ -1,9 +1,10 @@
 // /pages/_document.js
 import Document, { Html, Head, Main, NextScript } from 'next/document';
+import { getPublicAppUrl } from '../lib/siteUrls';
 
 export default class MyDocument extends Document {
   render() {
-    const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz';
+    const APP_URL = getPublicAppUrl();
     // Pozn: canonical je statický, v Next 14 bez routeru; pro detailní per-page canonical můžeš doplnit přímo v jednotlivých stránkách.
     return (
       <Html lang="cs">

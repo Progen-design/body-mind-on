@@ -19,6 +19,7 @@ import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getWeeklySessions } from '../../lib/preferenceConstants';
 import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
 import { writeOnboardingEvent } from '../../lib/onboardingMetrics';
+import { getPublicAppUrl, getDefaultLoginUrl } from '../../lib/siteUrls';
 
 /** Vercel Hobby = 60s. Plán musí být vždy vygenerován před odpovědí – optimalizace v planOrchestrator. */
 const PLAN_WAIT_TIMEOUT_MS = 55000;
@@ -141,7 +142,7 @@ export default async function handler(req, res) {
     const bodyMetricsId = insertedRows?.[0]?.id ?? null;
     console.info('[body-metrics] body_metrics inserted', payload.user_id ? `user_id=${payload.user_id} body_metrics_id=${bodyMetricsId}` : `body_metrics_id=${bodyMetricsId} (no user_id)`);
 
-    const loginUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '') + '/login';
+    const loginUrl = getDefaultLoginUrl();
     const emailOptions = {
       loginPassword,
       loginUrl,
@@ -292,7 +293,7 @@ export default async function handler(req, res) {
       }
     }
 
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '');
+    const appUrl = getPublicAppUrl();
     const successMsg = 'Údaje byly úspěšně uloženy a plán byl odeslán na e-mail. V e-mailu najdeš přihlašovací údaje.';
     const emailFailedPlanReadyMsg = 'Účet je vytvořen a plán je hotový. Přihlas se – plán uvidíš v profilu. E-mail s plánem se nepodařilo odeslat – zkontroluj spam nebo napiš na info@bodyandmindon.cz.';
     const failMsg = `Plán se nepodařilo vytvořit. Údaje byly uloženy – přihlas se na ${appUrl}, v profilu v sekci Můj plán zkus „Vygenerovat plán“, nebo napiš na info@bodyandmindon.cz.`;

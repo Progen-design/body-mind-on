@@ -1,6 +1,7 @@
 import { supabaseServer } from '../../lib/supabaseServer';
 import { generatePlanAndSendFromParams } from '../../lib/generatePlan';
 import { getClientIp, isRateLimited } from '../../lib/rateLimit';
+import { getDefaultLoginUrl } from '../../lib/siteUrls';
 
 export const config = {
   api: {
@@ -67,7 +68,7 @@ export default async function handler(req, res) {
     }
 
     // ✅ 2. Generování plánu přes OpenAI a odeslání e-mailem
-    const loginUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '') + '/login';
+    const loginUrl = getDefaultLoginUrl();
     const planResult = await generatePlanAndSendFromParams(
       {
         name: data.name,

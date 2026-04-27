@@ -179,6 +179,17 @@ function wrapRecipeHtmlDocument(title, bodyHtml) {
 </html>`;
 }
 
+/** Při otevření odkazu v prohlížeči (text/html nebo ?format=html) vrátit čitelnou stránku místo holého JSON. */
+function respondRecipeError(req, res, httpStatus, messageCs) {
+  const msg = String(messageCs || 'Recept se nepodařilo načíst').trim();
+  const body = `<p><strong>${escapeHtml(msg)}</strong></p><p>V aplikaci otevři plán na <a href="/profil" style="color:#a78bfa;">profilu</a> a použij tlačítko „Recept“ u jídla — načte se detail v okně.</p>`;
+  if (wantsHtmlDocument(req)) {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.status(httpStatus).send(wrapRecipeHtmlDocument('Recept', body));
+  }
+  return res.status(httpStatus).json({ error: msg });
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Pouze GET' });
@@ -187,11 +198,11 @@ export default async function handler(req, res) {
   const id = (req.query.id || '').trim();
   const recipeId = /^\d+$/.test(id) ? parseInt(id, 10) : null;
   if (!recipeId) {
-    return res.status(400).json({ error: 'Parametr id musí být číslo (Spoonacular recipe ID)' });
+    return respondRecipeError(req, res, 400, 'Parametr id musí být číslo (Spoonacular recipe ID)');
   }
 
   if (!SPOONACULAR_KEY) {
-    return res.status(503).json({ error: 'Spoonacular API není nakonfigurováno (SPOONACULAR_API_KEY)' });
+    return respondRecipeError(req, res, 503, 'Spoonacular API není nakonfigurováno (SPOONACULAR_API_KEY)');
   }
 
   const url = `https://api.spoonacular.com/recipes/${recipeId}/information?apiKey=${encodeURIComponent(SPOONACULAR_KEY)}&includeNutrition=true`;
@@ -199,8 +210,9 @@ export default async function handler(req, res) {
   try {
     const resp = await fetchWithTimeout(url, { method: 'GET', headers: { Accept: 'application/json' } });
     if (!resp.ok) {
-      console.warn('[spoonacular-recipe] API error:', resp.status, await resp.text().catch(() => ''));
-      return res.status(resp.status === 404 ? 404 : 502).json({ error: 'Recept se nepodařilo načíst' });
+      console.warn('[spoonacular-recipe] API error:', recipeId, resp.status, await resp.text().catch(() => ''));
+      const st = resp.status === 404 ? 404 : 502;
+      return respondRecipeError(req, res, st, 'Recept se nepodařilo načíst (Spoonacular).');
     }
     const recipe = await resp.json();
     const { getLocalizedRecipe } = await import('../../lib/recipeLocalization');
@@ -214,7 +226,7 @@ export default async function handler(req, res) {
     const nutrition = recipe?.nutrition || null;
     const html = recipeToLocalizedHtml(merged, nutrition, recipe?.title || '');
     if (!html) {
-      return res.status(502).json({ error: 'Recept nemá dostupná data' });
+      return respondRecipeError(req, res, 502, 'Recept nemá dostupná data');
     }
     if (wantsHtmlDocument(req)) {
       const displayTitle =
@@ -227,7 +239,7 @@ export default async function handler(req, res) {
     }
     return res.status(200).json({ ok: true, html });
   } catch (err) {
-    console.error('[spoonacular-recipe]', err.message || err);
-    return res.status(500).json({ error: 'Recept se nepodařilo načíst' });
+    console.error('[spoonacular-recipe]', recipeId, err.message || err);
+    return respondRecipeError(req, res, 500, 'Recept se nepodařilo načíst');
   }
 }

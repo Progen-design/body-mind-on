@@ -31,6 +31,32 @@ function norm(s) {
   return s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
 }
 
+/** Typ jídla ve structured_plan_json (breakfast | lunch | …) z českého štítku v parseru. */
+function structMealTypeFromParserLabel(mealTypeLabel) {
+  const t = norm(String(mealTypeLabel || ''));
+  if (t.includes('snidan') || t.includes('breakfast')) return 'breakfast';
+  if (t.includes('obed') || t.includes('lunch')) return 'lunch';
+  if (t.includes('vecere') || t.includes('dinner')) return 'dinner';
+  if (t.includes('svacin') || t.includes('snack')) return 'snack';
+  return null;
+}
+
+/**
+ * Položka meals[] ze structured_plan pro daný den — podle typu jídla, ne jen podle indexu
+ * (pořadí v HTML může chvíli nesedět s JSON).
+ */
+function structuredMealForDaySlot(structuredPlan, structDayIdx, mealTypeLabel, fallbackMi) {
+  const day = structuredPlan?.days?.[structDayIdx];
+  const arr = day?.meals;
+  if (!Array.isArray(arr) || arr.length === 0) return null;
+  const want = structMealTypeFromParserLabel(mealTypeLabel);
+  if (want) {
+    const hit = arr.find((m) => String(m?.type || '').toLowerCase() === want);
+    if (hit) return hit;
+  }
+  return arr[fallbackMi] ?? null;
+}
+
 /** Pořadí dnů odpovídající getDay(): 0=Neděle, 1=Pondělí, …, 6=Sobota */
 const CZECH_DAYS_BY_DOW = ['Neděle', 'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota'];
 
@@ -298,9 +324,9 @@ function parsePlanHtml(html) {
             let next = el.nextElementSibling;
             while (next && next.tagName !== 'H4' && next.tagName !== 'H3') {
               if (next.tagName === 'P') {
-                const bold = next.querySelector('b');
-                const mealType = bold ? bold.textContent.replace(/:\s*$/, '').trim() : '';
-                const rest = (next.textContent || '').replace(bold?.textContent || '', '').replace(/^:\s*/, '').trim();
+                const labelEl = next.querySelector('b, strong');
+                const mealType = labelEl ? labelEl.textContent.replace(/:\s*$/, '').trim() : '';
+                const rest = (next.textContent || '').replace(labelEl?.textContent || '', '').replace(/^:\s*/, '').trim();
                 const isMeal = mealTypes.some((m) => norm(mealType).includes(norm(m)));
                 const paragraphText = (next.textContent || '').trim();
                 const isTrainingBlock =
@@ -498,7 +524,9 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
 
   const getSpoonacularRecipe = (recipeId) => {
     if (!recipeId || !Number.isInteger(Number(recipeId))) return Promise.resolve(null);
-    return fetch('/api/spoonacular-recipe?id=' + encodeURIComponent(String(recipeId)))
+    return fetch('/api/spoonacular-recipe?id=' + encodeURIComponent(String(recipeId)), {
+      headers: { Accept: 'application/json' },
+    })
       .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
       .then(({ ok, data }) => {
         const html = ok && data?.ok && data?.html ? data.html : null;
@@ -953,7 +981,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                           Array.isArray(structuredPlan.days) &&
                           structDayIdx >= 0 &&
                           structDayIdx < structuredPlan.days.length
-                            ? structuredPlan.days[structDayIdx]?.meals?.[mi] ?? null
+                            ? structuredMealForDaySlot(structuredPlan, structDayIdx, meal.type, mi)
                             : null;
                         const displayMealTitle = structMeal
                           ? mealDisplayTitleForStructuredMeal(
@@ -1078,23 +1106,19 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                               </div>
                               {override ? (
                                 <p className="plan-meal-name">{override.title || 'Náhrada'}</p>
-                              ) : meal.text && String(meal.text).trim() && !/<[a-z]/i.test(String(meal.text)) ? (
-                                recipeIdForModal ? (
-                                  <p className="plan-meal-name">
-                                    <button
-                                      type="button"
-                                      className="plan-meal-title-link"
-                                      onClick={openRecipe}
-                                      title="Otevřít recept"
-                                    >
-                                      {displayMealTitle}
-                                    </button>
-                                  </p>
-                                ) : (
-                                  <p className="plan-meal-name">
+                              ) : recipeIdForModal ? (
+                                <p className="plan-meal-name">
+                                  <button
+                                    type="button"
+                                    className="plan-meal-title-link"
+                                    onClick={openRecipe}
+                                    title="Otevřít recept (detail v aplikaci)"
+                                  >
                                     {displayMealTitle}
-                                  </p>
-                                )
+                                  </button>
+                                </p>
+                              ) : meal.text && String(meal.text).trim() && !/<[a-z]/i.test(String(meal.text)) ? (
+                                <p className="plan-meal-name">{displayMealTitle}</p>
                               ) : meal.text && String(meal.text).trim() ? (
                                 <div
                                   className="plan-meal-name plan-meal-name-html"
@@ -1162,6 +1186,67 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                         );
                       })}
                     </div>
+                    {(() => {
+                      const dIdx = day.originalIndex ?? di;
+                      const wk = structuredPlan?.days?.[dIdx]?.workout;
+                      const list = wk?.exercises;
+                      if (!Array.isArray(list) || list.length === 0) return null;
+                      return (
+                        <div className="plan-day-training">
+                          <h4 className="plan-day-training-title">Trénink tento den</h4>
+                          <ul className="plan-day-training-list" style={{ listStyle: 'disc', paddingLeft: 22 }}>
+                            {list.map((ex, xi) => {
+                              const name = ex.display_name_cs || ex.name_cs || ex.name || 'Cvik';
+                              const wgerId =
+                                ex.wger_exercise_id != null && Number.isFinite(Number(ex.wger_exercise_id))
+                                  ? Number(ex.wger_exercise_id)
+                                  : null;
+                              const reps = ex.reps != null ? String(ex.reps) : '';
+                              const part = reps
+                                ? `${ex.sets ?? 3}×${reps}`
+                                : ex.duration_sec
+                                  ? `${Math.round(Number(ex.duration_sec) / 60)} min`
+                                  : `${ex.sets ?? 3} sérií`;
+                              return (
+                                <li key={xi} style={{ marginBottom: 10 }}>
+                                  <strong>{name}</strong>
+                                  {' '}
+                                  – {part}
+                                  {wgerId ? (
+                                    <span style={{ display: 'block', marginTop: 6, fontSize: 13 }}>
+                                      <a
+                                        href={`https://wger.de/en/exercise/${wgerId}/view`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ color: '#a78bfa', marginRight: 10 }}
+                                      >
+                                        Popis cviku (wger)
+                                      </a>
+                                      <a
+                                        href={`https://wger.de/api/v2/exerciseimage/?exercise=${wgerId}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ color: '#93c5fd', marginRight: 10 }}
+                                      >
+                                        Obrázky (API)
+                                      </a>
+                                      <a
+                                        href={`https://wger.de/api/v2/video/?exercise=${wgerId}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ color: '#86efac' }}
+                                      >
+                                        Video (API)
+                                      </a>
+                                    </span>
+                                  ) : null}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      );
+                    })()}
                     {day.afterPlanEnd ? (
                       <p className="plan-day-after-validity">Tento den už spadá mimo datum platnosti uloženého plánu — zobrazení je orientační.</p>
                     ) : null}

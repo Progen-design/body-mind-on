@@ -28,7 +28,7 @@ const url = `${BASE_URL.replace(/\/$/, '')}/api/body-metrics`;
 console.log('POST', url);
 
 const start = Date.now();
-const TIMEOUT_MS = 70000; // body-metrics čeká na plán max ~55s
+const TIMEOUT_MS = 90000; // body-metrics + OpenAI + Spoonacular + wger může trvat i ~70s na cold start
 const controller = new AbortController();
 const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 let res;

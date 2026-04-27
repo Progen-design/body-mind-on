@@ -11,6 +11,7 @@ import {
   buildShoppingItemsForMeal,
   flattenShoppingSections,
 } from '../lib/shoppingListBuilder';
+import { portionIngredientsFromStructuredMeal } from '../lib/mealPortionIngredients';
 
 const PERSONAL_ICONS = {
   'Věk': '🎂',
@@ -951,6 +952,13 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                           resolveMealTrustMerged(meal, mealFullText || meal.text || meal.type, mealTrustMap, mealLookupKey),
                           structMeal
                         );
+                        const recipeIdForModal =
+                          mealTrust?.recipe_id != null &&
+                          String(mealTrust.recipe_id).trim() !== '' &&
+                          Number.isFinite(Number(mealTrust.recipe_id))
+                            ? Number(mealTrust.recipe_id)
+                            : null;
+                        const portionRows = portionIngredientsFromStructuredMeal(structMeal);
                         const openRecipe = (e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -965,11 +973,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                           }
                           const dishName = (mealFullText.replace(/\s*\([^)]*\)\s*$/g, '').trim() || meal.type || 'Jídlo').slice(0, 150);
                           const isUnverifiedPlaceholder = mealFullText?.toLowerCase().includes('neověřeno') || dishName === 'Jídlo';
-                          const recipeIdRaw = mealTrust?.recipe_id;
-                          const recipeId =
-                            recipeIdRaw != null && recipeIdRaw !== '' && Number.isFinite(Number(recipeIdRaw))
-                              ? Number(recipeIdRaw)
-                              : null;
+                          const recipeId = recipeIdForModal;
                           const htmlRecipeFallback = matchingRecipeHtml
                             ? recipeContentOnly(matchingRecipeHtml)
                             : null;
@@ -1057,9 +1061,22 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                               {override ? (
                                 <p className="plan-meal-name">{override.title || 'Náhrada'}</p>
                               ) : meal.text && String(meal.text).trim() && !/<[a-z]/i.test(String(meal.text)) ? (
-                                <p className="plan-meal-name">
-                                  {String(meal.text).replace(/^[^:]+:\s*/i, '').trim() || meal.text}
-                                </p>
+                                recipeIdForModal ? (
+                                  <p className="plan-meal-name">
+                                    <button
+                                      type="button"
+                                      className="plan-meal-title-link"
+                                      onClick={openRecipe}
+                                      title="Otevřít recept"
+                                    >
+                                      {String(meal.text).replace(/^[^:]+:\s*/i, '').trim() || meal.text}
+                                    </button>
+                                  </p>
+                                ) : (
+                                  <p className="plan-meal-name">
+                                    {String(meal.text).replace(/^[^:]+:\s*/i, '').trim() || meal.text}
+                                  </p>
+                                )
                               ) : meal.text && String(meal.text).trim() ? (
                                 <div
                                   className="plan-meal-name plan-meal-name-html"
@@ -1080,6 +1097,23 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                                 />
                               )}
                               {macroLine ? <p className="plan-meal-macros">{macroLine}</p> : null}
+                              {portionRows.length > 0 ? (
+                                <>
+                                  <p className="plan-meal-portions-h">Suroviny na 1 porci (orientačně)</p>
+                                  <ul className="plan-meal-portions">
+                                    {portionRows.map((row, pi) => (
+                                      <li key={pi}>
+                                        {row.name}
+                                        {row.amountStr ? (
+                                          <>
+                                            : <strong>{row.amountStr}{row.unit ? ` ${row.unit}` : ' g'}</strong>
+                                          </>
+                                        ) : null}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </>
+                              ) : null}
                               <div className="plan-meal-actions">
                                 <button type="button" className="plan-meal-recipe-btn" onClick={openRecipe}>
                                   Recept
@@ -2761,6 +2795,40 @@ const planSectionStyles = `
     font-size: 12px;
     color: #64748b;
     line-height: 1.45;
+  }
+  .plan-meal-title-link {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    font-weight: 600;
+    color: #e9d5ff;
+    text-align: left;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .plan-meal-title-link:hover {
+    color: #f5d0fe;
+  }
+  .plan-meal-portions-h {
+    margin: 8px 0 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #94a3b8;
+  }
+  .plan-meal-portions {
+    margin: 0 0 10px;
+    padding-left: 18px;
+    font-size: 12px;
+    color: #cbd5e1;
+    line-height: 1.45;
+  }
+  .plan-meal-portions li {
+    margin: 3px 0;
   }
   .plan-meal-actions {
     display: flex;

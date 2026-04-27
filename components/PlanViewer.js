@@ -1,13 +1,15 @@
 // /components/PlanViewer.js – Zobrazení AI plánu (jídelníček, makra, nákupní seznam; bez obrázků jídel a cviků)
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import Link from 'next/link';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
 import { stripPlanMediaAttrsFromHtml } from '../lib/emailTemplates';
 import {
-  aggregateShoppingIngredientLinesForDayIndex,
-  aggregateShoppingIngredientLinesFromStructuredPlan,
-} from '../lib/spoonacularShopping';
+  buildShoppingSectionForDay,
+  buildShoppingSectionsForWeek,
+  flattenShoppingSections,
+} from '../lib/shoppingListBuilder';
 
 const PERSONAL_ICONS = {
   'Věk': '🎂',
@@ -211,105 +213,6 @@ function extractMealNameFromRecipeHtml(html) {
     return name.length > 2 ? name : null;
   }
   return null;
-}
-
-/** Fallback: sestaví nákupní seznam z bloků Suroviny v receptech */
-function buildShoppingListFromRecipes(recipes) {
-  if (!Array.isArray(recipes) || recipes.length === 0) return [];
-  const seen = new Set();
-  const out = [];
-  const surovinyRe = /suroviny\s*:?\s*<\/b>\s*([\s\S]*?)(?=<p\s*><b>|$)/gi;
-  recipes.forEach((r) => {
-    const content = r.content || '';
-    const match = surovinyRe.exec(content);
-    if (!match) return;
-    const block = match[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-    const items = block.split(/[,;]|\s+-\s+/).map((s) => s.trim()).filter(Boolean);
-    items.forEach((item) => {
-      const n = item.toLowerCase().slice(0, 50);
-      if (n && !seen.has(n)) { seen.add(n); out.push(item); }
-    });
-  });
-  return out;
-}
-
-function normalizeShoppingIngredient(item) {
-  const s = String(item || '').replace(/\s+/g, ' ').trim();
-  if (!s) return '';
-  if (/\b(ks|g|kg|ml|l|lžice|lžička|porce|hrst|plátek|balení)\b/i.test(s)) return s;
-  return `${s} orientačně podle receptu`;
-}
-
-/** Z textu jídla vrátí suroviny z priorit: závorky -> odhad názvu. */
-function getIngredientsFromMealText(mealText) {
-  if (!mealText || typeof mealText !== 'string') return [];
-  let t = mealText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-  t = t.replace(/^(Snídaně|Oběd|Večeře|Svačina)\s*:?\s*/i, '').trim();
-  if (!t) return [];
-
-  const fromParens = [];
-  const parenMatches = t.match(/\(([^)]+)\)/g) || [];
-  for (const seg of parenMatches) {
-    const inner = seg.replace(/^\(|\)$/g, '').trim();
-    inner.split(/[,;]|\s+\+\s+|\s+a\s+/).forEach((part) => {
-      const item = normalizeShoppingIngredient(part);
-      if (item) fromParens.push(item);
-    });
-  }
-  if (fromParens.length > 0) return fromParens;
-
-  const coreName = t.replace(/\([^)]*\)/g, '').trim();
-  if (!coreName) return [];
-  const estimate = normalizeShoppingIngredient(
-    `Suroviny se nepodařilo přesně rozpoznat – orientačně podle jídla: ${coreName}`
-  );
-  return estimate ? [estimate] : [];
-}
-
-/** Sestaví nákupní seznam jen z jídel daného dne (suroviny z textu jídel – závorky, čárky). Žádný fallback. */
-function buildDayShoppingListFromMeals(meals, mealOverrides, dayKey) {
-  if (!Array.isArray(meals) || meals.length === 0) return [];
-  const seen = new Set();
-  const out = [];
-  meals.forEach((meal, mi) => {
-    const overrideKey = `${dayKey}_${mi}`;
-    const override = mealOverrides[overrideKey];
-    const mealFullText = override ? `${meal.type || ''} ${override.title || ''}`.trim() : `${meal.type || ''} ${meal.text || ''}`.trim();
-    const items = getIngredientsFromMealText(mealFullText);
-    items.forEach((item) => {
-      const n = item.toLowerCase().slice(0, 80);
-      if (n && !seen.has(n)) { seen.add(n); out.push(item); }
-    });
-  });
-  return out;
-}
-
-/** Suroviny z uloženého structured plánu (Spoonacular řádky), jinak závorky v textu jídel. */
-function mergeShoppingLinesForDay(structured, dayKey, meals, mealOverrides) {
-  if (structured && typeof structured === 'object') {
-    const fromStruct = aggregateShoppingIngredientLinesForDayIndex(structured, dayKey);
-    if (fromStruct.length > 0) return fromStruct;
-  }
-  return buildDayShoppingListFromMeals(meals, mealOverrides, dayKey);
-}
-
-/** Vrátí recepty odpovídající seznamu názvů/textů jídel (pro daný den). */
-function getRecipesForDay(recipes, mealFullTexts) {
-  if (!Array.isArray(recipes) || !Array.isArray(mealFullTexts)) return [];
-  const matched = [];
-  mealFullTexts.forEach((mealFullText) => {
-    const mealStart = (mealFullText || '').replace(/\s*\(.*$/, '').trim().slice(0, 35);
-    const r = recipes.find((rec) => {
-      const rn = (rec.name || '').toLowerCase();
-      const mt = (mealFullText || '').toLowerCase();
-      if (mt.includes(rn)) return true;
-      const startWords = mealStart.toLowerCase().split(/\s+/).slice(0, 4).join(' ');
-      if (startWords.length >= 5 && rn.includes(startWords)) return true;
-      return false;
-    });
-    if (r && !matched.includes(r)) matched.push(r);
-  });
-  return matched;
 }
 
 function parsePlanHtml(html) {
@@ -689,7 +592,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
       <section className="card plan-section">
         <h2>Můj plán</h2>
         <p className="empty-plan">
-          Zatím nemáš žádný plán. Vyplň dotazník na <a href="/start">stránce START</a> a dostaneš osobní plán na míru.
+          Zatím nemáš žádný plán. Vyplň dotazník na <Link href="/start">stránce START</Link> a dostaneš osobní plán na míru.
         </p>
         <style jsx>{planSectionStyles}</style>
       </section>
@@ -735,6 +638,12 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
   const structuredPlan = plan?.structured_plan_json && typeof plan.structured_plan_json === 'object'
     ? plan.structured_plan_json
     : null;
+  const weekShoppingSections = buildShoppingSectionsForWeek({
+    planWeekDays,
+    recipes: parsed?.recipes || [],
+    structuredPlan,
+    mealOverrides,
+  });
 
   return (
     <section id="plan-overview" className="card plan-section plan-section-premium">
@@ -764,12 +673,12 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
       {!isValid && (
         <div className="plan-expired">
           <p>⚠️ Tento plán již vypršel.</p>
-          <p><a href="/start">Vygeneruj si nový plán</a></p>
+          <p><Link href="/start">Vygeneruj si nový plán</Link></p>
         </div>
       )}
       {planExpiresSoon && (
         <p className="plan-expires-soon">
-          Plán vyprší {daysUntilExpiry === 0 ? 'dnes' : daysUntilExpiry === 1 ? 'zítra' : `za ${daysUntilExpiry} dny`} ({plan.valid_until ? new Date(plan.valid_until).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' }) : ''}). Pro nový plán přejdi na <a href="/start">stránku START</a>.
+          Plán vyprší {daysUntilExpiry === 0 ? 'dnes' : daysUntilExpiry === 1 ? 'zítra' : `za ${daysUntilExpiry} dny`} ({plan.valid_until ? new Date(plan.valid_until).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' }) : ''}). Pro nový plán přejdi na <Link href="/start">stránku START</Link>.
         </p>
       )}
 
@@ -1112,7 +1021,16 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                     ) : null}
                     {(() => {
                       const dayKey = day.originalIndex ?? di;
-                      const dayList = mergeShoppingLinesForDay(structuredPlan, dayKey, day.meals || [], mealOverrides);
+                      const daySection = buildShoppingSectionForDay({
+                        dayName: day.dayName || 'Den',
+                        dateStr: day.dateStr || '',
+                        meals: day.meals || [],
+                        recipes: parsed?.recipes || [],
+                        structuredPlan,
+                        dayIndex: dayKey,
+                        mealOverrides,
+                      });
+                      const dayList = daySection.items || [];
                       const raw = dayShoppingState[dayKey];
                       const dayState = {
                         copyDone: raw?.copyDone ?? false,
@@ -1312,22 +1230,21 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
 
           {/* Nákupní seznam – rozbalovací, filtr Celý týden / konkrétní den */}
           {!hideShoppingList && (() => {
-            const fromStructWeek = structuredPlan
-              ? aggregateShoppingIngredientLinesFromStructuredPlan(structuredPlan)
-              : [];
-            const fromMergedDays = planWeekDays
-              .flatMap((d) => mergeShoppingLinesForDay(structuredPlan, d.originalIndex ?? 0, d.meals || [], mealOverrides));
-            const dedupMerged = Array.from(new Set(fromMergedDays.map((x) => String(x || '').trim()).filter(Boolean)));
-            const fullList = fromStructWeek.length
-              ? fromStructWeek
-              : dedupMerged.length
-                ? dedupMerged
-                : (parsed.shoppingList?.length ? parsed.shoppingList : buildShoppingListFromRecipes(parsed.recipes));
+            const fullList = flattenShoppingSections(weekShoppingSections);
             const dayIndex = shoppingFilter === 'week' ? null : Number(shoppingFilter);
             const selectedDay = dayIndex != null && !Number.isNaN(dayIndex) ? planWeekDays.find((d) => (d.originalIndex ?? -1) === dayIndex) : null;
-            const dayList = selectedDay
-              ? mergeShoppingLinesForDay(structuredPlan, selectedDay.originalIndex ?? 0, selectedDay.meals || [], mealOverrides)
-              : [];
+            const selectedDaySection = selectedDay
+              ? buildShoppingSectionForDay({
+                dayName: selectedDay.dayName || 'Den',
+                dateStr: selectedDay.dateStr || '',
+                meals: selectedDay.meals || [],
+                recipes: parsed?.recipes || [],
+                structuredPlan,
+                dayIndex: selectedDay.originalIndex ?? 0,
+                mealOverrides,
+              })
+              : null;
+            const dayList = selectedDaySection?.items || [];
             const list = shoppingFilter === 'week' ? fullList : dayList;
             const copyAndOpen = () => {
               try {
@@ -1361,22 +1278,17 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                   return;
                 }
                 let bodyPayload;
-                if (shoppingFilter === 'week' && structuredPlan) {
-                  const sections = planWeekDays.map((d) => ({
-                    heading: `${d.dayName || 'Den'}${d.dateStr ? ` (${d.dateStr})` : ''}`,
-                    items: mergeShoppingLinesForDay(
-                      structuredPlan,
-                      d.originalIndex ?? 0,
-                      d.meals || [],
-                      mealOverrides
-                    ),
+                if (shoppingFilter === 'week') {
+                  const sections = weekShoppingSections.map((s) => ({
+                    heading: s.heading,
+                    items: s.items || [],
+                    note: s.note || '',
+                    isEstimated: !!s.isEstimated,
                   }));
                   bodyPayload = {
                     sections,
-                    intro: 'Tady máš suroviny z plánu podle jednotlivých dnů. Když chybí přesná data receptu, doplnili jsme orientační položky.',
+                    intro: 'Tady máš suroviny z tvého plánu rozdělené podle dnů.',
                   };
-                } else if (shoppingFilter === 'week') {
-                  bodyPayload = { items: list };
                 } else {
                   const t = `${selectedDay?.dayName || 'Den'}${selectedDay?.dateStr ? ` (${selectedDay.dateStr})` : ''}`;
                   bodyPayload = { items: list, title: t };
@@ -1403,10 +1315,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
               const url = `https://wa.me/?text=${encodeURIComponent('🛒 ' + label + ':\n\n' + text)}`;
               window.open(url, '_blank', 'noopener,noreferrer');
             };
-            const hasAnyList = fullList.length > 0 || planWeekDays.some((d) => {
-              const dk = d.originalIndex ?? 0;
-              return mergeShoppingLinesForDay(structuredPlan, dk, d.meals || [], mealOverrides).length > 0;
-            });
+            const hasAnyList = fullList.length > 0 || weekShoppingSections.some((s) => (s.items || []).length > 0);
             if (!hasAnyList) {
               return hasParsedDays ? (
                 <div id="plan-nakupni-seznam" className="plan-block plan-shopping-block plan-shopping-empty-anchor">
@@ -1448,6 +1357,14 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                             <li key={i}>{item}</li>
                           ))}
                         </ul>
+                        {shoppingFilter === 'week' && weekShoppingSections.some((s) => s.note) ? (
+                          <p className="plan-shopping-empty-day">
+                            Přesné suroviny se nepodařilo rozpoznat u některých dnů. Seznam je v těchto částech orientační podle názvů jídel.
+                          </p>
+                        ) : null}
+                        {shoppingFilter !== 'week' && selectedDaySection?.note ? (
+                          <p className="plan-shopping-empty-day">{selectedDaySection.note}</p>
+                        ) : null}
                         <div className="plan-order-ingredients">
                           <div className="plan-shopping-actions">
                             <button type="button" className="plan-btn-order" onClick={copyAndOpen}>
@@ -1474,9 +1391,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                       </>
                     ) : (
                       <p className="plan-shopping-empty-day">
-                        {shoppingFilter === 'week'
-                          ? 'Suroviny se nepodařilo přesně rozpoznat. Níže je orientační seznam podle názvů jídel.'
-                          : 'Suroviny se nepodařilo přesně rozpoznat. Níže je orientační seznam podle názvů jídel.'}
+                        {selectedDaySection?.note || 'Suroviny se nepodařilo přesně rozpoznat. Níže je orientační seznam podle názvů jídel.'}
                       </p>
                     )}
                   </div>

@@ -13,6 +13,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:ci": "next lint --no-cache --file components/PlanViewer.js --file lib/mail.js --file lib/emailTemplates.js --file lib/dailyDigest.js --file lib/czechShoppingIntro.js --file lib/shoppingListBuilder.js",
+    "check": "npm run lint:ci && npm run build",
+    "smoke:nutrition": "node scripts/smoke-test-nutrition-only.mjs",
     "check:cursor-access": "node scripts/check-cursor-access.mjs",
     "deploy": "git add -A && git commit -m \"Deploy: automatické úpravy\" && git push origin main"
   },

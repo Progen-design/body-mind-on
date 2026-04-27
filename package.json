@@ -18,6 +18,7 @@
     "smoke:nutrition": "node scripts/smoke-test-nutrition-only.mjs",
     "check:cursor-access": "node scripts/check-cursor-access.mjs",
     "admin:delete-user": "node scripts/delete-user-by-email.mjs",
+    "migrate:plan-html-from-structured": "node scripts/rebuild-plan-html-from-structured.mjs",
     "deploy": "git add -A && git commit -m \"Deploy: automatické úpravy\" && git push origin main"
   },
   "dependencies": {

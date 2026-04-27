@@ -12,6 +12,7 @@ import {
   flattenShoppingSections,
 } from '../lib/shoppingListBuilder';
 import { portionIngredientsFromStructuredMeal } from '../lib/mealPortionIngredients';
+import { mealDisplayTitleForStructuredMeal } from '../lib/mealDisplayNameHelpers';
 
 const PERSONAL_ICONS = {
   'Věk': '🎂',
@@ -182,6 +183,7 @@ function mergeTrustWithStructuredPlanMeal(baseTrust, structMeal) {
     if (r.protein_g != null && Number.isFinite(Number(r.protein_g))) patch.protein_g = Number(r.protein_g);
     if (r.carbs_g != null && Number.isFinite(Number(r.carbs_g))) patch.carbs_g = Number(r.carbs_g);
     if (r.fat_g != null && Number.isFinite(Number(r.fat_g))) patch.fat_g = Number(r.fat_g);
+    if (r.fiber_g != null && Number.isFinite(Number(r.fiber_g))) patch.fiber_g = Number(r.fiber_g);
   }
   if (!Object.keys(patch).length) return baseTrust;
   return baseTrust && typeof baseTrust === 'object' ? { ...baseTrust, ...patch } : patch;
@@ -212,6 +214,9 @@ function mealMacroLineFromTrust(mealTrust) {
   }
   if (mealTrust.fat_g != null && Number.isFinite(Number(mealTrust.fat_g))) {
     parts.push(`T ${Math.round(Number(mealTrust.fat_g))} g`);
+  }
+  if (mealTrust.fiber_g != null && Number.isFinite(Number(mealTrust.fiber_g))) {
+    parts.push(`Vláknina ${Math.round(Number(mealTrust.fiber_g))} g`);
   }
   if (!parts.length) return null;
   return parts.join(' · ');
@@ -938,7 +943,6 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                         const mealFullText = override ? `${meal.type || ''} ${override.title || ''}`.trim() : `${meal.type || ''} ${meal.text || ''}`.trim();
                         const matchingRecipeHtml = recipeHtmlByMealName(mealFullText, parsed?.recipes || []);
                         const dishTitle = (meal.text || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
-                        const modalTitle = (meal.type && dishTitle) ? `${meal.type}: ${dishTitle}` : dishTitle || meal.type || mealFullText || 'Jídlo';
                         const mealLookupKey = meal.meal_key || null;
                         const structDayIdx = day.originalIndex ?? di;
                         const structMeal =
@@ -948,6 +952,17 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                           structDayIdx < structuredPlan.days.length
                             ? structuredPlan.days[structDayIdx]?.meals?.[mi] ?? null
                             : null;
+                        const displayMealTitle = structMeal
+                          ? mealDisplayTitleForStructuredMeal(
+                              structMeal,
+                              plan.plan_html || '',
+                              day.dayName || ''
+                            )
+                          : dishTitle;
+                        const modalTitle =
+                          meal.type && displayMealTitle
+                            ? `${meal.type}: ${displayMealTitle}`
+                            : displayMealTitle || meal.type || mealFullText || 'Jídlo';
                         const mealTrust = mergeTrustWithStructuredPlanMeal(
                           resolveMealTrustMerged(meal, mealFullText || meal.text || meal.type, mealTrustMap, mealLookupKey),
                           structMeal
@@ -1069,12 +1084,12 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                                       onClick={openRecipe}
                                       title="Otevřít recept"
                                     >
-                                      {String(meal.text).replace(/^[^:]+:\s*/i, '').trim() || meal.text}
+                                      {displayMealTitle}
                                     </button>
                                   </p>
                                 ) : (
                                   <p className="plan-meal-name">
-                                    {String(meal.text).replace(/^[^:]+:\s*/i, '').trim() || meal.text}
+                                    {displayMealTitle}
                                   </p>
                                 )
                               ) : meal.text && String(meal.text).trim() ? (

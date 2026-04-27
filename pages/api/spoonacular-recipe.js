@@ -209,12 +209,29 @@ export default async function handler(req, res) {
 
   try {
     const resp = await fetchWithTimeout(url, { method: 'GET', headers: { Accept: 'application/json' } });
+    const rawBody = await resp.text().catch(() => '');
     if (!resp.ok) {
-      console.warn('[spoonacular-recipe] API error:', recipeId, resp.status, await resp.text().catch(() => ''));
-      const st = resp.status === 404 ? 404 : 502;
-      return respondRecipeError(req, res, st, 'Recept se nepodařilo načíst (Spoonacular).');
+      let spoonMessage = '';
+      try {
+        const j = JSON.parse(rawBody);
+        if (j && typeof j.message === 'string' && j.message.trim()) spoonMessage = j.message.trim();
+      } catch (_) {}
+      console.warn('[spoonacular-recipe] API error:', recipeId, resp.status, rawBody?.slice?.(0, 500) || '');
+      const st =
+        resp.status === 404 ? 404 : resp.status === 402 || resp.status === 429 ? 503 : 502;
+      const userMsg =
+        spoonMessage && spoonMessage.length < 400
+          ? spoonMessage
+          : 'Recept se nepodařilo načíst (Spoonacular).';
+      return respondRecipeError(req, res, st, userMsg);
     }
-    const recipe = await resp.json();
+    let recipe;
+    try {
+      recipe = JSON.parse(rawBody);
+    } catch (parseErr) {
+      console.warn('[spoonacular-recipe] JSON parse:', recipeId, parseErr?.message || parseErr);
+      return respondRecipeError(req, res, 502, 'Recept se nepodařilo načíst (neplatná odpověď API).');
+    }
     const { getLocalizedRecipe } = await import('../../lib/recipeLocalization');
     const localized = await getLocalizedRecipe(recipeId, recipe);
     const rawIng = rawIngredientLinesFromRecipe(recipe);

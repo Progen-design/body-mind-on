@@ -2,7 +2,7 @@
  * GET /api/verify-media-apis
  * Ověří, zda jsou Spoonacular (jídla) a wger.de (cviky) dostupné.
  * Spoonacular vyžaduje SPOONACULAR_API_KEY. wger.de je veřejné API bez klíče.
- * wger: endpointy dle https://wger.de/api/v2/ (exercise-translation, exercise/search, exerciseimage).
+ * wger: exercise-translation, exerciseinfo?name_search= (search API zrušeno), exerciseimage.
  */
 import { WGER_API_V2_BASE } from '../../lib/wgerApiConstants';
 
@@ -76,34 +76,35 @@ export default async function handler(req, res) {
       trResp.ok && Array.isArray(trResults) && trResults.length > 0 && trResults[0]?.exercise != null
     );
 
-    const searchResp = await fetch(
-      `${base}/exercise/search/?term=bench&language=english&format=json`,
+    const infoSearchResp = await fetch(
+      `${base}/exerciseinfo/?name_search=${encodeURIComponent('squat')}&limit=3`,
       { method: 'GET', headers: { Accept: 'application/json' } }
     );
-    const searchData = await searchResp.json();
-    const baseId = searchData?.suggestions?.[0]?.data?.base_id;
+    const infoSearchData = await infoSearchResp.json();
+    const infoFirst = Array.isArray(infoSearchData?.results) ? infoSearchData.results[0] : null;
     result.wger.search_ok = Boolean(
-      searchResp.ok && baseId != null && Number.isFinite(Number(baseId))
+      infoSearchResp.ok && infoFirst?.id != null && Number.isFinite(Number(infoFirst.id))
     );
 
-    let imgOk = false;
-    if (result.wger.search_ok) {
-      const imgResp = await fetch(
-        `${base}/exerciseimage/?exercise=${encodeURIComponent(String(baseId))}&limit=1`,
-        { method: 'GET', headers: { Accept: 'application/json' } }
-      );
-      const imgData = await imgResp.json();
-      imgOk = Boolean(
-        imgResp.ok && Array.isArray(imgData?.results) && imgData.results.length > 0 && imgData.results[0]?.image
-      );
-    }
-    result.wger.exerciseimage_ok = imgOk;
+    const imgListResp = await fetch(`${base}/exerciseimage/?limit=1`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+    const imgListData = await imgListResp.json();
+    result.wger.exerciseimage_ok = Boolean(
+      imgListResp.ok &&
+        Array.isArray(imgListData?.results) &&
+        imgListData.results.length > 0 &&
+        imgListData.results[0]?.image
+    );
 
-    result.wger.working = result.wger.translation_ok && result.wger.search_ok;
+    result.wger.working =
+      result.wger.translation_ok && result.wger.search_ok && result.wger.exerciseimage_ok;
     if (!result.wger.working) {
       const parts = [];
       if (!result.wger.translation_ok) parts.push('exercise-translation');
-      if (!result.wger.search_ok) parts.push('exercise/search');
+      if (!result.wger.search_ok) parts.push('exerciseinfo?name_search');
+      if (!result.wger.exerciseimage_ok) parts.push('exerciseimage');
       result.wger.error = parts.length ? `Selhalo: ${parts.join(', ')}` : null;
     }
   } catch (e) {

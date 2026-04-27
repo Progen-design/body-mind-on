@@ -1,17 +1,95 @@
 /**
  * GET /api/verify-media-apis
- * Ověří, zda jsou Spoonacular (jídla) a wger.de (cviky) dostupné.
- * Spoonacular vyžaduje SPOONACULAR_API_KEY. wger.de je veřejné API bez klíče.
- * wger: exercise-translation, exerciseinfo?name_search= (search API zrušeno), exerciseimage.
+ * Ověří Spoonacular (jídla) a wger.de (cviky).
+ *
+ * Spoonacular – výchozí režim **minimal** (1× recipes/{id}/information, méně bodů než complexSearch).
+ * Plný test včetně complexSearch: GET …?deep=1
+ *
+ * wger: exercise-translation, exerciseinfo?name_search=, exerciseimage.
  */
 import { WGER_API_V2_BASE } from '../../lib/wgerApiConstants';
 
 const SPOONACULAR_KEY = process.env.SPOONACULAR_API_KEY || '';
 
+/** Stabilní veřejný recept pro lehký healthcheck (information). */
+const SPOONACULAR_VERIFY_RECIPE_ID = 716429;
+
+async function readJsonResponse(resp) {
+  const text = await resp.text().catch(() => '');
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { _parseError: true, message: text?.slice?.(0, 300) || 'Neplatná JSON odpověď' };
+  }
+}
+
+async function verifySpoonacularMinimal() {
+  const out = {
+    working: false,
+    complexSearch_ok: false,
+    complexSearch_skipped: true,
+    information_ok: false,
+    error: null,
+  };
+  const infoUrl = `https://api.spoonacular.com/recipes/${SPOONACULAR_VERIFY_RECIPE_ID}/information?apiKey=${encodeURIComponent(SPOONACULAR_KEY)}&includeNutrition=true`;
+  const infoResp = await fetch(infoUrl, { method: 'GET', headers: { Accept: 'application/json' } });
+  const infoData = await readJsonResponse(infoResp);
+  const nutrients = infoData?.nutrition?.nutrients;
+  out.information_ok = Boolean(
+    infoResp.ok && infoData?.id != null && Array.isArray(nutrients) && nutrients.length > 0
+  );
+  out.working = out.information_ok;
+  if (!out.information_ok) {
+    out.error =
+      infoData?.message ||
+      (infoResp.ok ? 'information: chybí výživa v odpovědi' : `HTTP ${infoResp.status}`);
+  }
+  return out;
+}
+
+async function verifySpoonacularDeep() {
+  const out = {
+    working: false,
+    complexSearch_ok: false,
+    complexSearch_skipped: false,
+    information_ok: false,
+    error: null,
+  };
+  const searchUrl = `https://api.spoonacular.com/recipes/complexSearch?apiKey=${encodeURIComponent(SPOONACULAR_KEY)}&query=chicken%20breast&number=1&addRecipeInformation=true&addRecipeNutrition=true`;
+  const resp = await fetch(searchUrl, { method: 'GET', headers: { Accept: 'application/json' } });
+  const data = await readJsonResponse(resp);
+  out.complexSearch_ok = Boolean(resp.ok && Array.isArray(data?.results) && data.results.length > 0);
+  let infoOk = false;
+  const rid = data?.results?.[0]?.id;
+  if (out.complexSearch_ok && rid != null) {
+    const infoUrl = `https://api.spoonacular.com/recipes/${encodeURIComponent(String(rid))}/information?apiKey=${encodeURIComponent(SPOONACULAR_KEY)}&includeNutrition=true`;
+    const infoResp = await fetch(infoUrl, { method: 'GET', headers: { Accept: 'application/json' } });
+    const infoData = await readJsonResponse(infoResp);
+    const nutrients = infoData?.nutrition?.nutrients;
+    infoOk = Boolean(
+      infoResp.ok && infoData?.id != null && Array.isArray(nutrients) && nutrients.length > 0
+    );
+  }
+  out.information_ok = infoOk;
+  out.working = out.complexSearch_ok && out.information_ok;
+  if (!out.complexSearch_ok) {
+    out.error = data?.message || (resp.ok ? 'complexSearch: žádné výsledky' : `HTTP ${resp.status}`);
+  } else if (!out.information_ok) {
+    out.error = 'recipes/{id}/information nevrátilo výživu – zkontroluj klíč / kvótu';
+  }
+  return out;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Pouze GET' });
   }
+
+  const deep =
+    req.query?.deep === '1' ||
+    req.query?.deep === 'true' ||
+    String(req.query?.deep || '').toLowerCase() === 'yes';
+  const verifyMode = deep ? 'deep' : 'minimal';
 
   const result = {
     spoonacular: { configured: false, working: false, complexSearch_ok: false, information_ok: false, error: null },
@@ -25,36 +103,13 @@ export default async function handler(req, res) {
     },
   };
 
-  // Spoonacular (jídla, recepty)
   const hasSpoonacular = Boolean(SPOONACULAR_KEY);
   result.spoonacular.configured = hasSpoonacular;
 
   if (hasSpoonacular) {
     try {
-      const searchUrl = `https://api.spoonacular.com/recipes/complexSearch?apiKey=${encodeURIComponent(SPOONACULAR_KEY)}&query=chicken%20breast&number=1&addRecipeInformation=true&addRecipeNutrition=true`;
-      const resp = await fetch(searchUrl, { method: 'GET', headers: { Accept: 'application/json' } });
-      const data = await resp.json();
-      result.spoonacular.complexSearch_ok = Boolean(
-        resp.ok && Array.isArray(data?.results) && data.results.length > 0
-      );
-      let infoOk = false;
-      const rid = data?.results?.[0]?.id;
-      if (result.spoonacular.complexSearch_ok && rid != null) {
-        const infoUrl = `https://api.spoonacular.com/recipes/${encodeURIComponent(String(rid))}/information?apiKey=${encodeURIComponent(SPOONACULAR_KEY)}&includeNutrition=true`;
-        const infoResp = await fetch(infoUrl, { method: 'GET', headers: { Accept: 'application/json' } });
-        const infoData = await infoResp.json();
-        const nutrients = infoData?.nutrition?.nutrients;
-        infoOk = Boolean(
-          infoResp.ok && infoData?.id != null && Array.isArray(nutrients) && nutrients.length > 0
-        );
-      }
-      result.spoonacular.information_ok = infoOk;
-      result.spoonacular.working = result.spoonacular.complexSearch_ok && result.spoonacular.information_ok;
-      if (!result.spoonacular.complexSearch_ok) {
-        result.spoonacular.error = data?.message || (resp.ok ? 'complexSearch: žádné výsledky' : `HTTP ${resp.status}`);
-      } else if (!result.spoonacular.information_ok) {
-        result.spoonacular.error = 'recipes/{id}/information nevrátilo výživu – zkontroluj klíč / kvótu';
-      }
+      const sp = deep ? await verifySpoonacularDeep() : await verifySpoonacularMinimal();
+      Object.assign(result.spoonacular, sp);
     } catch (e) {
       result.spoonacular.error = e?.message || 'Chyba volání';
     }
@@ -62,7 +117,6 @@ export default async function handler(req, res) {
     result.spoonacular.error = 'SPOONACULAR_API_KEY chybí';
   }
 
-  // wger.de (cviky) – veřejné API, bez klíče
   try {
     const base = WGER_API_V2_BASE;
 
@@ -70,7 +124,7 @@ export default async function handler(req, res) {
       `${base}/exercise-translation/?search=squat&language=2&limit=1`,
       { method: 'GET', headers: { Accept: 'application/json' } }
     );
-    const trData = await trResp.json();
+    const trData = await readJsonResponse(trResp);
     const trResults = trData?.results;
     result.wger.translation_ok = Boolean(
       trResp.ok && Array.isArray(trResults) && trResults.length > 0 && trResults[0]?.exercise != null
@@ -80,7 +134,7 @@ export default async function handler(req, res) {
       `${base}/exerciseinfo/?name_search=${encodeURIComponent('squat')}&limit=3`,
       { method: 'GET', headers: { Accept: 'application/json' } }
     );
-    const infoSearchData = await infoSearchResp.json();
+    const infoSearchData = await readJsonResponse(infoSearchResp);
     const infoFirst = Array.isArray(infoSearchData?.results) ? infoSearchData.results[0] : null;
     result.wger.search_ok = Boolean(
       infoSearchResp.ok && infoFirst?.id != null && Number.isFinite(Number(infoFirst.id))
@@ -90,7 +144,7 @@ export default async function handler(req, res) {
       method: 'GET',
       headers: { Accept: 'application/json' },
     });
-    const imgListData = await imgListResp.json();
+    const imgListData = await readJsonResponse(imgListResp);
     result.wger.exerciseimage_ok = Boolean(
       imgListResp.ok &&
         Array.isArray(imgListData?.results) &&
@@ -116,12 +170,16 @@ export default async function handler(req, res) {
     cviky_ok: result.wger.working,
     cviky_zdroj: result.wger.working ? 'wger.de' : null,
     duvod_nesouladu_jidel: !result.spoonacular.working
-      ? 'Spoonacular nefunguje – obrázky jídel budou prázdné'
+      ? verifyMode === 'deep'
+        ? 'Spoonacular (complexSearch + information) nefunguje – jídla v plánu mohou selhat'
+        : 'Spoonacular (information) nefunguje – klíč / kvóta / API; zkus také ?deep=1 pro complexSearch'
       : null,
   };
 
   return res.status(200).json({
     ok: true,
+    verify_mode: verifyMode,
+    spoonacular_verify_recipe_id: verifyMode === 'minimal' ? SPOONACULAR_VERIFY_RECIPE_ID : undefined,
     apis: result,
     summary,
   });

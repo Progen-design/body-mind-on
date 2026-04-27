@@ -1,7 +1,7 @@
 /**
  * GET /api/integrations-status
  * Jedna odpověď: env + lehký DB ping (bez Spoonacular bodů).
- * Živé testy jídel/cviků: GET /api/verify-media-apis (spotřebuje Spoonacular).
+ * Živé testy jídel/cviků: GET /api/verify-media-apis (Spoonacular: výchozí lehký; ?deep=1 = i complexSearch).
  */
 import { getAIRuntimeCapabilities } from '../../lib/aiRuntimeCapabilities';
 import { getPublicAppUrl } from '../../lib/siteUrls';
@@ -66,6 +66,7 @@ export default async function handler(req, res) {
     },
     links: {
       verify_media_apis: `${app_url}/api/verify-media-apis`,
+      verify_media_apis_deep: `${app_url}/api/verify-media-apis?deep=1`,
       run_scheduler: `${app_url}/api/ai/run-scheduler`,
       daily_digest_cron: `${app_url}/api/cron/daily-digest`,
     },

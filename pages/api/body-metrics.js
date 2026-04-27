@@ -19,7 +19,7 @@ import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getWeeklySessions } from '../../lib/preferenceConstants';
 import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
 import { writeOnboardingEvent } from '../../lib/onboardingMetrics';
-import { getPublicAppUrl, getDefaultLoginUrl } from '../../lib/siteUrls';
+import { getPublicAppUrl, getDefaultLoginUrl } from '../../lib/siteUrls.js';
 
 /** Vercel Hobby = 60s. Plán musí být vždy vygenerován před odpovědí – optimalizace v planOrchestrator. */
 const PLAN_WAIT_TIMEOUT_MS = 55000;

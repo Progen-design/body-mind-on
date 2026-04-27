@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { getPublicMainSiteUrl } from "../lib/siteUrls";
+import { getPublicMainSiteUrl } from "../lib/siteUrls.js";
 
 const MAIN_SITE = getPublicMainSiteUrl();
 

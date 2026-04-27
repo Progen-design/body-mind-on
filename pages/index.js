@@ -1,7 +1,7 @@
 // /pages/index.js – Hlavní marketingová stránka (bodyandmindon.cz)
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { getPublicAppUrl } from '../lib/siteUrls';
+import { getPublicAppUrl } from '../lib/siteUrls.js';
 
 const APP_URL = getPublicAppUrl();
 

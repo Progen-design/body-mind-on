@@ -4,7 +4,7 @@
  * Živé testy jídel/cviků: GET /api/verify-media-apis (Spoonacular: výchozí lehký; ?deep=1 = i complexSearch).
  */
 import { getAIRuntimeCapabilities } from '../../lib/aiRuntimeCapabilities';
-import { getPublicAppUrl } from '../../lib/siteUrls';
+import { getPublicAppUrl } from '../../lib/siteUrls.js';
 import { supabaseServer } from '../../lib/supabaseServer';
 
 function bool(v) {

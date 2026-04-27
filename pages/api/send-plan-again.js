@@ -2,7 +2,7 @@
 import { supabaseServer } from '../../lib/supabaseServer';
 import { requireActiveMembership } from '../../lib/membershipHelpers';
 import { sendPlanEmail } from '../../lib/mail';
-import { getDefaultLoginUrl } from '../../lib/siteUrls';
+import { getDefaultLoginUrl } from '../../lib/siteUrls.js';
 
 const loginUrl = getDefaultLoginUrl();
 

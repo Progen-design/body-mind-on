@@ -1,6 +1,6 @@
 // /pages/_document.js
 import Document, { Html, Head, Main, NextScript } from 'next/document';
-import { getPublicAppUrl } from '../lib/siteUrls';
+import { getPublicAppUrl } from '../lib/siteUrls.js';
 
 export default class MyDocument extends Document {
   render() {

@@ -7,7 +7,7 @@ import { supabaseServer } from '../../lib/supabaseServer';
 import { createInitialAITasks } from '../../lib/createInitialAITasks';
 import { executeAITask } from '../../lib/taskExecutors';
 import { runAIScheduler } from '../../lib/aiScheduler';
-import { getDefaultLoginUrl } from '../../lib/siteUrls';
+import { getDefaultLoginUrl } from '../../lib/siteUrls.js';
 
 const loginUrl = getDefaultLoginUrl();
 

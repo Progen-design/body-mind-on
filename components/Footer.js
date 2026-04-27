@@ -1,5 +1,5 @@
 // /components/Footer.js
-import { getPublicMainSiteUrl } from '../lib/siteUrls';
+import { getPublicMainSiteUrl } from '../lib/siteUrls.js';
 
 export default function Footer() {
   const main = getPublicMainSiteUrl();

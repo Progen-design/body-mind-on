@@ -1,7 +1,7 @@
 import { supabaseServer } from '../../lib/supabaseServer';
 import { generatePlanAndSendFromParams } from '../../lib/generatePlan';
 import { getClientIp, isRateLimited } from '../../lib/rateLimit';
-import { getDefaultLoginUrl } from '../../lib/siteUrls';
+import { getDefaultLoginUrl } from '../../lib/siteUrls.js';
 
 export const config = {
   api: {

@@ -1,6 +1,6 @@
 // Rozdělení: bodyandmindon.cz = marketing, app.bodyandmindon.cz (nebo *.vercel.app) = registrace + profil
 import { NextResponse } from 'next/server';
-import { getPublicAppUrl, isMarketingHostname } from './lib/siteUrls';
+import { getPublicAppUrl, isMarketingHostname } from './lib/siteUrls.js';
 
 const APP_HOST = 'app.bodyandmindon.cz';
 

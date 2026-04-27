@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 
 import { formatPlanHtmlForEmail, stripPlanMediaAttrsFromHtml } from '../lib/emailTemplates.js';
-import { buildShoppingSectionsForWeek, flattenShoppingSections } from '../lib/shoppingListBuilder.js';
+import {
+  buildShoppingItemsForMeal,
+  buildShoppingSectionsForWeek,
+  flattenShoppingSections,
+} from '../lib/shoppingListBuilder.js';
 
 const sampleHtml = `
 <h3>Tvoje čísla</h3>
@@ -89,5 +93,25 @@ if (!Array.isArray(flattened) || flattened.length === 0) {
   console.error('Nutrition-only smoke test failed: flattenShoppingSections vrátil prázdný seznam.');
   process.exit(1);
 }
+
+const mealFromRecipe = buildShoppingItemsForMeal({
+  mealText: 'Míchaná vejce',
+  recipeHtml: '<p><b>Suroviny:</b></p><ul><li>3 vejce</li><li>10 g másla</li></ul>',
+});
+if (!Array.isArray(mealFromRecipe.items) || mealFromRecipe.items.length === 0 || mealFromRecipe.source !== 'recipe') {
+  console.error('Nutrition-only smoke test failed: buildShoppingItemsForMeal (recipe) nevrátil validní data.');
+  process.exit(1);
+}
+
+const mealEstimated = buildShoppingItemsForMeal({
+  mealText: 'Ovesná kaše',
+  recipeHtml: '',
+});
+if (!mealEstimated.isEstimated || mealEstimated.source !== 'estimated' || !mealEstimated.note) {
+  console.error('Nutrition-only smoke test failed: buildShoppingItemsForMeal fallback estimated nefunguje.');
+  process.exit(1);
+}
+
+assertNoForbiddenToken(JSON.stringify(mealFromRecipe), 'buildShoppingItemsForMeal output', forbiddenNutrition);
 
 console.log('Nutrition-only smoke test passed.');

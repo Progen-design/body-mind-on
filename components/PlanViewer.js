@@ -8,6 +8,7 @@ import { stripPlanMediaAttrsFromHtml } from '../lib/emailTemplates';
 import {
   buildShoppingSectionForDay,
   buildShoppingSectionsForWeek,
+  buildShoppingItemsForMeal,
   flattenShoppingSections,
 } from '../lib/shoppingListBuilder';
 
@@ -405,6 +406,8 @@ function normalizeMealTextForPin(text) {
 export default function PlanViewer({ plan, userName: _userName, hideHero, hideShoppingList = false, dietaryPreferences = '', canPinMeals = true, onToast }) {
   const [parsed, setParsed] = useState(null);
   const [recipeModal, setRecipeModal] = useState(null); // { title, content, anchorRect, hasRecipe, openId? }
+  const [mealIngredientsModal, setMealIngredientsModal] = useState(null); // { title, items, note, isEstimated }
+  const [mealOrderModal, setMealOrderModal] = useState(null); // { title, items, note, isEstimated, copied }
   const [mealOverrides, setMealOverrides] = useState({}); // { "di_mi": { title, content } }
   const [swapModal, setSwapModal] = useState(null); // { dayIndex, mealIndex, dishQuery, loading, html }
   const [mealPins, setMealPins] = useState([]); // { meal_type, meal_text }[]
@@ -438,6 +441,27 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')}</p>`;
+
+  const mealTextFromMeal = (meal, overrideTitle = '') => {
+    if (overrideTitle && String(overrideTitle).trim()) return String(overrideTitle).trim();
+    const text = meal?.text && String(meal.text).trim()
+      ? String(meal.text)
+      : String(meal?.fullHtml || '');
+    return text
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/^[^:]+:\s*/i, '')
+      .trim();
+  };
+
+  const recipeHtmlByMealName = (mealFullText, recipes = []) => {
+    if (!Array.isArray(recipes) || recipes.length === 0) return '';
+    const matched = recipes.find((r) => {
+      if (!r?.content || /lorem\s+ipsum|dolor\s+sit\s+amet/i.test(r.content)) return false;
+      return strictMealRecipeNameMatch(mealFullText, r.name);
+    });
+    return matched?.content || '';
+  };
 
   const getSpoonacularRecipe = (recipeId) => {
     if (!recipeId || !Number.isInteger(Number(recipeId))) return Promise.resolve(null);
@@ -579,13 +603,13 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    if (recipeModal || swapModal) {
+    if (recipeModal || swapModal || mealIngredientsModal || mealOrderModal) {
       document.body.style.overflow = 'hidden';
       return () => {
         document.body.style.overflow = '';
       };
     }
-  }, [recipeModal, swapModal]);
+  }, [recipeModal, swapModal, mealIngredientsModal, mealOrderModal]);
 
   if (!plan || !plan.plan_html) {
     return (
@@ -884,10 +908,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                         const overrideKey = `${day.originalIndex ?? di}_${mi}`;
                         const override = mealOverrides[overrideKey];
                         const mealFullText = override ? `${meal.type || ''} ${override.title || ''}`.trim() : `${meal.type || ''} ${meal.text || ''}`.trim();
-                        const matchingRecipe = !override && parsed.recipes?.find((r) => {
-                          if (!r?.content || /lorem\s+ipsum|dolor\s+sit\s+amet/i.test(r.content)) return false;
-                          return strictMealRecipeNameMatch(mealFullText, r.name);
-                        });
+                        const matchingRecipeHtml = recipeHtmlByMealName(mealFullText, parsed?.recipes || []);
                         const dishTitle = (meal.text || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
                         const modalTitle = (meal.type && dishTitle) ? `${meal.type}: ${dishTitle}` : dishTitle || meal.type || mealFullText || 'Jídlo';
                         const mealLookupKey = meal.meal_key || null;
@@ -911,28 +932,36 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                             recipeIdRaw != null && recipeIdRaw !== '' && Number.isFinite(Number(recipeIdRaw))
                               ? Number(recipeIdRaw)
                               : null;
-                          const htmlRecipeFallback = matchingRecipe?.content
-                            ? recipeContentOnly(matchingRecipe.content)
+                          const htmlRecipeFallback = matchingRecipeHtml
+                            ? recipeContentOnly(matchingRecipeHtml)
                             : null;
-                          const willTrySpoon = recipeId != null;
                           setRecipeModal({
                             openId: thisOpenId,
                             title: modalTitle,
                             content: null,
                             anchorRect,
-                            hasRecipe: !!(willTrySpoon || htmlRecipeFallback),
+                            hasRecipe: true,
                             loading: true,
                           });
                           const loadRecipe = async () => {
+                            // 1) recipe_id / Spoonacular detail
                             if (recipeId != null) {
                               const spoon = await getSpoonacularRecipe(recipeId);
                               if (spoon) return spoon;
                             }
+                            // 2) strict match v lokálních receptech
                             if (htmlRecipeFallback) return htmlRecipeFallback;
+                            // 3) fallback přes /api/recipe?dish=
                             if (isUnverifiedPlaceholder) {
                               return recipeErrorHtml('Recept pro toto jídlo není k dispozici – Spoonacular ho nenalezl. Zkus ho nahradit jiným.');
                             }
-                            return getRecipeForDish(dishName);
+                            const fallbackRecipe = await getRecipeForDish(dishName);
+                            if (fallbackRecipe) return fallbackRecipe;
+                            // 4) srozumitelná finální fallback hláška
+                            return `
+                              <p class="plan-no-recipe-msg">Recept se nepodařilo automaticky dohledat.</p>
+                              <p class="plan-no-recipe-hint">Zkus vygenerovat náhradní variantu jídla nebo použij suroviny níže.</p>
+                            `;
                           };
                           loadRecipe().then((html) => {
                             const fallback = '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení nebo zkus znovu.</p>';
@@ -940,6 +969,32 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                           }).catch(() => {
                             setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení nebo zkus znovu.</p>', loading: false } : prev));
                           });
+                        };
+                        const buildMealIngredientPayload = () => {
+                          const mealTitle = mealTextFromMeal(meal, override?.title || '');
+                          const built = buildShoppingItemsForMeal({
+                            meal,
+                            mealText: mealTitle,
+                            recipeHtml: override?.content || matchingRecipeHtml || '',
+                            structuredMeal: meal,
+                          });
+                          return {
+                            title: modalTitle,
+                            items: built.items || [],
+                            note: built.note || '',
+                            isEstimated: !!built.isEstimated,
+                            source: built.source || 'estimated',
+                          };
+                        };
+                        const openIngredients = (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setMealIngredientsModal(buildMealIngredientPayload());
+                        };
+                        const openOrderIngredients = (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setMealOrderModal({ ...buildMealIngredientPayload(), copied: false });
                         };
                         const handleSwap = () => {
                           const dishQuery = `${meal.type || 'Jídlo'} alternativa, do 500 kcal`.slice(0, 150);
@@ -978,24 +1033,17 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                                   dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(meal.fullHtml || '') }}
                                 />
                               )}
-                              {recipeId != null ? (
-                                <a
-                                  href={`/api/spoonacular-recipe?id=${recipeId}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="plan-recipe-link"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  📖 Zobrazit recept
-                                </a>
-                              ) : null}
                               {macroLine ? <p className="plan-meal-macros">{macroLine}</p> : null}
                               <div className="plan-meal-actions">
-                                {recipeId == null ? (
-                                  <button type="button" className="plan-meal-recipe-btn" onClick={openRecipe}>
-                                    Recept
-                                  </button>
-                                ) : null}
+                                <button type="button" className="plan-meal-recipe-btn" onClick={openRecipe}>
+                                  Recept
+                                </button>
+                                <button type="button" className="plan-meal-secondary-btn" onClick={openIngredients}>
+                                  Suroviny
+                                </button>
+                                <button type="button" className="plan-meal-secondary-btn" onClick={openOrderIngredients}>
+                                  Objednat suroviny
+                                </button>
                                 <button type="button" className="plan-meal-swap" onClick={(e) => { e.stopPropagation(); handleSwap(); }}>Nahradit jiným</button>
                                 {canPinMeals && (
                                   <button
@@ -1189,6 +1237,111 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                 ) : (
                   <div className="plan-recipe-modal-body" dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(recipeModal.content || '') }} />
                 )}
+              </div>
+            </div>,
+            document.body
+          )}
+
+          {mealIngredientsModal && typeof document !== 'undefined' && createPortal(
+            <div className="plan-recipe-modal-overlay" onClick={() => setMealIngredientsModal(null)}>
+              <div className="plan-recipe-modal plan-recipe-modal-dynamic plan-meal-ingredients-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="plan-recipe-modal-header">
+                  <h3>Suroviny: {mealIngredientsModal.title}</h3>
+                  <button type="button" className="plan-recipe-modal-close" onClick={() => setMealIngredientsModal(null)} aria-label="Zavřít">×</button>
+                </div>
+                <div className="plan-recipe-modal-body">
+                  {mealIngredientsModal.items?.length ? (
+                    <ul className="plan-modal-ingredients-list">
+                      {mealIngredientsModal.items.map((item, idx) => <li key={`${item}-${idx}`}>{item}</li>)}
+                    </ul>
+                  ) : (
+                    <p className="plan-no-recipe-msg">Suroviny zatím nejsou dostupné.</p>
+                  )}
+                  {mealIngredientsModal.note ? <p className="plan-no-recipe-hint">{mealIngredientsModal.note}</p> : null}
+                </div>
+                <div className="plan-recipe-modal-actions">
+                  <button
+                    type="button"
+                    className="plan-recipe-modal-replace-btn"
+                    onClick={async () => {
+                      try {
+                        const text = (mealIngredientsModal.items || []).join('\n');
+                        if (!text) return;
+                        await navigator.clipboard.writeText(text);
+                        if (onToast) onToast({ message: 'Suroviny zkopírovány.', type: 'success' });
+                      } catch (_) {
+                        if (onToast) onToast({ message: 'Suroviny se nepodařilo zkopírovat.', type: 'error' });
+                      }
+                    }}
+                  >
+                    Kopírovat suroviny
+                  </button>
+                  <button
+                    type="button"
+                    className="plan-meal-secondary-btn plan-modal-inline-btn"
+                    onClick={() => {
+                      document.getElementById('plan-nakupni-seznam')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      setMealIngredientsModal(null);
+                    }}
+                  >
+                    Zobrazit v nákupním seznamu
+                  </button>
+                  <button
+                    type="button"
+                    className="plan-meal-secondary-btn plan-modal-inline-btn"
+                    onClick={() => {
+                      setMealOrderModal({ ...mealIngredientsModal, copied: false });
+                      setMealIngredientsModal(null);
+                    }}
+                  >
+                    Objednat suroviny
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
+
+          {mealOrderModal && typeof document !== 'undefined' && createPortal(
+            <div className="plan-recipe-modal-overlay" onClick={() => setMealOrderModal(null)}>
+              <div className="plan-recipe-modal plan-recipe-modal-dynamic plan-meal-ingredients-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="plan-recipe-modal-header">
+                  <h3>Objednat suroviny</h3>
+                  <button type="button" className="plan-recipe-modal-close" onClick={() => setMealOrderModal(null)} aria-label="Zavřít">×</button>
+                </div>
+                <div className="plan-recipe-modal-body">
+                  <p className="plan-order-intro">Seznam surovin je připravený ke zkopírování.</p>
+                  {mealOrderModal.items?.length ? (
+                    <pre className="plan-order-pre">{mealOrderModal.items.join('\n')}</pre>
+                  ) : (
+                    <p className="plan-no-recipe-msg">Suroviny zatím nejsou dostupné.</p>
+                  )}
+                  {mealOrderModal.note ? <p className="plan-no-recipe-hint">{mealOrderModal.note}</p> : null}
+                  <p className="plan-no-recipe-hint">Otevři e-shop a vlož seznam do vyhledávání nebo nákupního seznamu. Přímé vložení do košíku zatím není napojené.</p>
+                </div>
+                <div className="plan-recipe-modal-actions">
+                  <button
+                    type="button"
+                    className="plan-recipe-modal-replace-btn"
+                    onClick={async () => {
+                      try {
+                        const text = (mealOrderModal.items || []).join('\n');
+                        if (!text) return;
+                        await navigator.clipboard.writeText(text);
+                        setMealOrderModal((prev) => prev ? { ...prev, copied: true } : prev);
+                      } catch (_) {
+                        if (onToast) onToast({ message: 'Seznam se nepodařilo zkopírovat.', type: 'error' });
+                      }
+                    }}
+                  >
+                    Kopírovat seznam
+                  </button>
+                  <div className="plan-modal-links-row">
+                    <a className="plan-meal-secondary-btn plan-modal-link-btn" href="https://www.rohlik.cz/" target="_blank" rel="noopener noreferrer">Otevřít Rohlík</a>
+                    <a className="plan-meal-secondary-btn plan-modal-link-btn" href="https://www.kosik.cz/" target="_blank" rel="noopener noreferrer">Otevřít Košík</a>
+                  </div>
+                  {mealOrderModal.copied ? <p className="plan-copy-hint">Seznam zkopírován do schránky.</p> : null}
+                </div>
               </div>
             </div>,
             document.body
@@ -2334,11 +2487,11 @@ const planSectionStyles = `
   }
   .plan-meal-recipe-btn {
     flex-shrink: 0;
-    padding: 6px 14px;
+    padding: 8px 14px;
     border-radius: 999px;
-    border: 1px solid rgba(124, 58, 237, 0.45);
-    background: rgba(124, 58, 237, 0.22);
-    color: #e9d5ff;
+    border: 1px solid rgba(124, 58, 237, 0.75);
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.72), rgba(99, 102, 241, 0.72));
+    color: #f8fafc;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
@@ -2347,6 +2500,24 @@ const planSectionStyles = `
   .plan-meal-recipe-btn:hover {
     background: rgba(124, 58, 237, 0.4);
     border-color: rgba(167, 139, 250, 0.65);
+  }
+  .plan-meal-secondary-btn {
+    font-size: 11px;
+    color: #cbd5e1;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .plan-meal-secondary-btn:hover {
+    border-color: rgba(167, 139, 250, 0.6);
+    color: #e9d5ff;
+    background: rgba(124, 58, 237, 0.12);
   }
   .plan-recipe-modal-overlay {
     position: fixed;
@@ -2596,6 +2767,47 @@ const planSectionStyles = `
   }
   .plan-export-btn:hover { background: rgba(139, 92, 255, 0.3); }
   .plan-recipe-modal-actions { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .plan-meal-ingredients-modal .plan-recipe-modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .plan-modal-inline-btn {
+    width: 100%;
+    min-height: 42px;
+    font-size: 13px;
+  }
+  .plan-modal-links-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .plan-modal-link-btn {
+    min-height: 42px;
+    font-size: 13px;
+  }
+  .plan-modal-ingredients-list {
+    margin: 0 0 10px;
+    padding-left: 20px;
+    color: #e2e8f0;
+  }
+  .plan-order-intro {
+    margin: 0 0 10px;
+    color: #e2e8f0;
+  }
+  .plan-order-pre {
+    margin: 0 0 10px;
+    white-space: pre-wrap;
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: #e2e8f0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    max-height: 220px;
+    overflow: auto;
+  }
   .plan-recipe-modal-replace-btn {
     width: 100%;
     padding: 12px 16px;
@@ -2607,30 +2819,6 @@ const planSectionStyles = `
     cursor: pointer;
   }
   .plan-recipe-modal-replace-btn:hover { opacity: 0.95; }
-
-  .plan-recipe-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #7c3aed;
-    text-decoration: none;
-    padding: 4px 10px;
-    border: 1px solid rgba(124, 58, 237, 0.3);
-    border-radius: 6px;
-    margin-top: 6px;
-    transition: all 0.2s;
-    letter-spacing: 0.3px;
-    width: fit-content;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
-  .plan-recipe-link:hover {
-    background: rgba(124, 58, 237, 0.1);
-    border-color: rgba(124, 58, 237, 0.5);
-    color: #a78bfa;
-  }
 
   .plan-recipe-card {
     background: rgba(255,255,255,0.03);
@@ -2741,12 +2929,14 @@ const planSectionStyles = `
     .plan-meal-name, .plan-meal-name-html { font-size: 15px; }
     .plan-meal-macros { font-size: 11px; }
     .plan-meal-actions { gap: 12px; flex-wrap: wrap; }
-    .plan-meal-swap, .plan-meal-pin {
+    .plan-meal-secondary-btn,
+    .plan-meal-swap, .plan-meal-pin, .plan-meal-recipe-btn {
       min-height: 48px;
       padding: 12px 16px;
       font-size: 14px;
       touch-action: manipulation;
     }
+    .plan-modal-links-row { grid-template-columns: 1fr; }
     .plan-export-btn { min-height: 48px; padding: 12px 20px; touch-action: manipulation; }
     .plan-day-training { margin: 0 14px 14px; padding: 14px 16px; }
     .plan-day-training-title { font-size: 1.2rem; }

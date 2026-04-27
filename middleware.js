@@ -7,21 +7,12 @@ const APP_HOST = 'app.bodyandmindon.cz';
 function getAppBaseForRuntime(host) {
   const h = String(host || '').toLowerCase();
   if (h.endsWith('.vercel.app')) return `https://${host.split(':')[0]}`;
-  if (h.startsWith('localhost:') || h === 'localhost' || h.startsWith('127.0.0.1')) {
-    return `http://${host}`;
-  }
   return getPublicAppUrl();
 }
 
 function isAppSiteHost(host) {
   const h = String(host || '').toLowerCase();
-  return (
-    host === APP_HOST ||
-    h.endsWith('.vercel.app') ||
-    h.startsWith('localhost:') ||
-    h === 'localhost' ||
-    h.startsWith('127.0.0.1')
-  );
+  return host === APP_HOST || h.endsWith('.vercel.app');
 }
 
 /** Na marketingové doméně vždy přesměrovat na kanonickou aplikaci (produkční app URL z env). */

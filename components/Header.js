@@ -16,14 +16,7 @@ export default function Header() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const h = window.location.hostname;
-    if (
-      h === "app.bodyandmindon.cz" ||
-      h.endsWith(".vercel.app") ||
-      h === "localhost" ||
-      h === "127.0.0.1"
-    ) {
-      setIsApp(true);
-    }
+    if (h === "app.bodyandmindon.cz" || h.endsWith(".vercel.app")) setIsApp(true);
   }, []);
 
   useEffect(() => {

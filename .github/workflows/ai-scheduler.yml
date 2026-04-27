@@ -5,8 +5,8 @@
 # AI orchestration runs on time.
 #
 # Required GitHub repository secrets:
-#   APP_URL        – e.g. https://app.bodyandmindon.cz
-#   CRON_SECRET    – must match CRON_SECRET env variable on Vercel
+#   APP_URL        – musí být stejné jako app_url z GET https://…/api/integrations-status
+#   CRON_SECRET    – shodně s CRON_SECRET na Vercelu (Bearer u /api/ai/run-scheduler)
 #
 # To disable: remove or rename this file, or set `enabled: false` on the
 # `schedule` trigger (not supported natively – just delete the schedule block).

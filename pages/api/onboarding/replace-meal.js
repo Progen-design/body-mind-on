@@ -43,8 +43,8 @@ export default async function handler(req, res) {
 
     const spoonacularContext = buildSpoonacularContext(body_metrics || null, targets || {}, meal_type);
     const meta = await getMealData(query, {
-      maxCandidates: 2,
-      shortlistSize: 3,
+      maxCandidates: 3,
+      shortlistSize: 5,
       spoonacularContext,
       skipDailyDedup: true,
     });

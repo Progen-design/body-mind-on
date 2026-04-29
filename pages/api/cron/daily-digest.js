@@ -10,6 +10,7 @@ function shouldSkipDigestEmail(rawEmail) {
   const local = e.slice(0, e.indexOf('@'));
   const domain = e.slice(e.indexOf('@') + 1);
   if (local.startsWith('cursor-final-')) return true;
+  if (local.includes('bm-smoke')) return true;
   if (
     domain === 'example.com' ||
     domain === 'example.net' ||

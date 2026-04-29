@@ -1,7 +1,6 @@
 /**
  * Idempotentní sync system_prompt (a souvisejících sloupců) z kódu do ai_agents.
- * Aktualizuje pouze: trainer, coach, nutrition_validator, training_validator.
- * Ostatní agenty nepřepisuje.
+ * Aktualizuje: trainer, coach, nutrition_validator, training_validator, marketing, social.
  *
  * Použití:
  *   node scripts/sync-agent-prompts-from-code.mjs
@@ -12,47 +11,11 @@ import { readFileSync, existsSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
+import { AGENT_PROMPTS, CONTEXT_PROFILE_SLUG, PROMPT_VERSION } from '../lib/agentPromptsForSync.js';
+import { getModelForAgentSlug } from '../lib/openaiModels.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
-
-/** Vyextrahuje TRAINER_SYSTEM_PROMPT z lib/assistantInstructions.js (jedna zdrojová pravda). */
-function extractTrainerPrompt() {
-  const path = join(root, 'lib', 'assistantInstructions.js');
-  const content = readFileSync(path, 'utf8');
-  const start = 'export const TRAINER_SYSTEM_PROMPT = `';
-  const i = content.indexOf(start);
-  if (i === -1) throw new Error('TRAINER_SYSTEM_PROMPT not found in assistantInstructions.js');
-  let end = i + start.length;
-  while (end < content.length) {
-    if (content[end] === '`' && content[end - 1] !== '\\') break;
-    end++;
-  }
-  return content.slice(i + start.length, end);
-}
-
-const PROMPT_VERSION = 5;
-const AGENT_PROMPTS = {
-  trainer: null, // filled from file below
-  coach:
-    'Jsi Body & Mind ON kouč. Podporuj adherence, regeneraci, mindset. Negeneruj plán. Piš česky, vracej pouze platný JSON (message, coaching_plan).',
-  nutrition_validator:
-    'Validátor jídelníčku. Kontroluj diet_type, restrikce. Vracej JSON: ok, errors, suggestions, corrected_html. Piš česky.',
-  training_validator:
-    'Validátor tréninkového plánu. Kontroluj strukturu, objem, pravidla. Vracej JSON: ok, errors, suggestions, corrected_html. Piš česky.',
-};
-const AGENT_MODELS = {
-  trainer: 'gpt-4.1',
-  coach: 'gpt-4.1-mini',
-  nutrition_validator: 'gpt-4.1-mini',
-  training_validator: 'gpt-4.1-mini',
-};
-const CONTEXT_PROFILE_SLUG = {
-  trainer: 'trainer_coach',
-  coach: 'trainer_coach',
-  nutrition_validator: 'validator',
-  training_validator: 'validator',
-};
 
 function loadEnv() {
   const envPath = join(root, '.env');
@@ -71,8 +34,7 @@ function loadEnv() {
 
 loadEnv();
 
-const supabaseUrl =
-  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !serviceRoleKey) {
@@ -91,6 +53,8 @@ const SCOPE_SLUGS = [
   'coach',
   'nutrition_validator',
   'training_validator',
+  'marketing',
+  'social',
 ];
 
 const NAMES = {
@@ -98,15 +62,15 @@ const NAMES = {
   coach: 'Body & Mind ON Kouč',
   nutrition_validator: 'Body & Mind ON Nutrition Validator',
   training_validator: 'Body & Mind ON Training Validator',
+  marketing: 'Body & Mind ON Marketing',
+  social: 'Body & Mind ON Social',
 };
 
 async function main() {
-  AGENT_PROMPTS.trainer = extractTrainerPrompt();
-
   const rows = SCOPE_SLUGS.map((slug) => ({
     slug,
     name: NAMES[slug] || slug,
-    model: AGENT_MODELS[slug] || 'gpt-4.1-mini',
+    model: getModelForAgentSlug(slug),
     system_prompt: AGENT_PROMPTS[slug] || '',
     temperature: slug.includes('validator') ? 0.1 : 0.2,
     enabled: true,
@@ -115,20 +79,14 @@ async function main() {
     updated_at: new Date().toISOString(),
   }));
 
-  const { data, error } = await supabase
-    .from('ai_agents')
-    .upsert(rows, { onConflict: 'slug' });
+  const { error } = await supabase.from('ai_agents').upsert(rows, { onConflict: 'slug' });
 
   if (error) {
     console.error('Sync selhal:', error.message);
     process.exit(1);
   }
 
-  console.log(
-    'Sync dokončen. Aktualizováni agenti:',
-    SCOPE_SLUGS.join(', ')
-  );
-  console.log('prompt_version:', PROMPT_VERSION);
+  console.log('Sync dokončen. Aktualizováni agenti:', SCOPE_SLUGS.join(', '), `prompt_version=${PROMPT_VERSION}`);
 }
 
 main();

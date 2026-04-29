@@ -6,11 +6,9 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-
-const PricingTable = dynamic(() => import('../components/PricingTable'), { ssr: false });
 import BodyFigure from '../components/BodyFigure';
 import WelcomeTour from '../components/WelcomeTour';
-import PlanViewer, { parsePlanHtml } from '../components/PlanViewer';
+import { parsePlanHtml } from '../lib/parsePlanHtml';
 import HabitTracker from '../components/HabitTracker';
 import HabitEntryWizard from '../components/HabitEntryWizard';
 import Toast from '../components/Toast';
@@ -23,6 +21,9 @@ import { getHabitById } from '../lib/habits';
 import { normalizeOccupationForForm, activityToFormLabel, goalToFormLabel, normalizeFrequency, getFrequencyDayRange } from '../lib/preferenceConstants';
 import { useProfileData } from '../hooks/useProfileData';
 import { PLAN_GENERATION_DURATION_HINT } from '../lib/planGenerationUiCopy';
+
+const PricingTable = dynamic(() => import('../components/PricingTable'), { ssr: false });
+const PlanViewer = dynamic(() => import('../components/PlanViewer'), { ssr: false, loading: () => null });
 
 const PROGRAM_LABELS = {
   START: { subtitle: 'Každý trénink, každé měření.' },

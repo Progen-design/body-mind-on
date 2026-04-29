@@ -71,17 +71,25 @@ export default async function handler(req, res) {
       }
     }
 
-    const { data: { users }, error: listError } = await supabaseServer.auth.admin.listUsers({
-      page: 1,
-      perPage: 1000,
-    });
-
-    if (listError) {
-      console.error('[daily-digest] listUsers error:', listError);
-      return res.status(500).json({ error: 'Nepodařilo se načíst uživatele', detail: listError.message });
+    const list = [];
+    let page = 1;
+    const perPage = 1000;
+    for (;;) {
+      const { data: pageData, error: listError } = await supabaseServer.auth.admin.listUsers({
+        page,
+        perPage,
+      });
+      if (listError) {
+        console.error('[daily-digest] listUsers error:', listError);
+        return res.status(500).json({ error: 'Nepodařilo se načíst uživatele', detail: listError.message });
+      }
+      const batch = pageData?.users || [];
+      if (!batch.length) break;
+      list.push(...batch);
+      if (batch.length < perPage) break;
+      page += 1;
     }
 
-    const list = users || [];
     const withEmail = list.filter((u) => u.email && String(u.email).trim());
     const eligible = withEmail.filter((u) => !shouldSkipDigestEmail(u.email));
     let sent = 0;

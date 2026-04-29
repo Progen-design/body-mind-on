@@ -14,6 +14,21 @@
     },
     "pages/api/retry-initial-plan.js": {
       "maxDuration": 90
+    },
+    "pages/api/generate-plan.js": {
+      "maxDuration": 300
+    },
+    "pages/api/generate-plan-next-week.js": {
+      "maxDuration": 300
+    },
+    "pages/api/assistant-intake.js": {
+      "maxDuration": 300
+    },
+    "pages/api/onboarding/generate-plan.js": {
+      "maxDuration": 300
+    },
+    "pages/api/cron/daily-digest.js": {
+      "maxDuration": 300
     }
   }
 }

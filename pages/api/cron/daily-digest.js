@@ -3,6 +3,27 @@ import { supabaseServer } from '../../../lib/supabaseServer';
 import { buildDigestPayload, sendDailyDigestEmail } from '../../../lib/dailyDigest';
 import { sendTrainerAlertEmail } from '../../../lib/mail';
 
+/** Domény a vzory, na které se denní digest neposílá (RFC 2606 / neplatné MX, test účty z IDE). */
+function shouldSkipDigestEmail(rawEmail) {
+  const e = String(rawEmail || '').trim().toLowerCase();
+  if (!e.includes('@')) return true;
+  const local = e.slice(0, e.indexOf('@'));
+  const domain = e.slice(e.indexOf('@') + 1);
+  if (local.startsWith('cursor-final-')) return true;
+  if (
+    domain === 'example.com' ||
+    domain === 'example.net' ||
+    domain === 'example.org' ||
+    domain.endsWith('.example')
+  ) {
+    return true;
+  }
+  if (domain === 'test' || domain.endsWith('.test')) return true;
+  if (domain === 'invalid' || domain.endsWith('.invalid')) return true;
+  if (domain === 'localhost' || domain.endsWith('.localhost')) return true;
+  return false;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -61,10 +82,11 @@ export default async function handler(req, res) {
 
     const list = users || [];
     const withEmail = list.filter((u) => u.email && String(u.email).trim());
+    const eligible = withEmail.filter((u) => !shouldSkipDigestEmail(u.email));
     let sent = 0;
     const errors = [];
 
-    for (const user of withEmail) {
+    for (const user of eligible) {
       try {
         const email = user.email.trim().toLowerCase();
         const userName = user.user_metadata?.name || null;
@@ -81,6 +103,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       ok: true,
       total: withEmail.length,
+      skippedUndeliverable: withEmail.length - eligible.length,
       sent,
       errors: errors.length ? errors : undefined,
     });

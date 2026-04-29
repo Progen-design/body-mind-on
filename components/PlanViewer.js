@@ -970,21 +970,30 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                               )}
                               {macroLine ? <p className="plan-meal-macros">{macroLine}</p> : null}
                               {portionRows.length > 0 ? (
-                                <>
-                                  <p className="plan-meal-portions-h">Suroviny na 1 porci (orientačně)</p>
-                                  <ul className="plan-meal-portions">
-                                    {portionRows.map((row, pi) => (
-                                      <li key={pi}>
-                                        {row.name}
-                                        {row.amountStr ? (
-                                          <>
-                                            : <strong>{row.amountStr}{row.unit ? ` ${row.unit}` : ' g'}</strong>
-                                          </>
-                                        ) : null}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </>
+                                <details className="plan-meal-ingredients-details">
+                                  <summary className="plan-meal-ingredients-summary">
+                                    {(() => {
+                                      const n = portionRows.length;
+                                      const ph = n === 1 ? '1 položka' : (n >= 2 && n <= 4 ? `${n} položky` : `${n} položek`);
+                                      return `Suroviny (${ph}) — rozbalit`;
+                                    })()}
+                                  </summary>
+                                  <div className="plan-meal-ingredients-panel">
+                                    <p className="plan-meal-portions-h">Suroviny na 1 porci (orientačně)</p>
+                                    <ul className="plan-meal-portions">
+                                      {portionRows.map((row, pi) => (
+                                        <li key={pi}>
+                                          {row.name}
+                                          {row.amountStr ? (
+                                            <>
+                                              : <strong>{row.amountStr}{row.unit ? ` ${row.unit}` : ' g'}</strong>
+                                            </>
+                                          ) : null}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                </details>
                               ) : null}
                               <div className="plan-meal-actions">
                                 <button type="button" className="plan-meal-recipe-btn" onClick={openRecipe}>
@@ -2764,6 +2773,34 @@ const planSectionStyles = `
   }
   .plan-meal-portions li {
     margin: 3px 0;
+  }
+  .plan-meal-ingredients-details {
+    margin: 6px 0 12px;
+    border: 1px solid rgba(139,92,246,0.38);
+    border-radius: 12px;
+    background: linear-gradient(165deg,rgba(44,43,76,0.5) 0%,rgba(15,23,42,0.38) 100%);
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  }
+  .plan-meal-ingredients-summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #ddd6fe;
+    line-height: 1.35;
+  }
+  .plan-meal-ingredients-summary::-webkit-details-marker {
+    display: none;
+  }
+  .plan-meal-ingredients-panel {
+    padding: 2px 12px 12px;
+    border-top: 1px solid rgba(124,58,237,0.22);
+    background: rgba(10,14,31,0.35);
+  }
+  .plan-meal-ingredients-panel .plan-meal-portions-h {
+    margin-top: 10px;
   }
   .plan-meal-actions {
     display: flex;

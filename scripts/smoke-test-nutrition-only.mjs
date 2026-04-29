@@ -7,6 +7,10 @@ import {
 } from '../lib/emailTemplates.js';
 import { buildPlanPromptProfileJson } from '../lib/compactPlanPrompt.js';
 import {
+  compactMemoryItemsForPlan,
+  isPlanRelevantMemoryType,
+} from '../lib/services/planMemoryCompact.js';
+import {
   buildShoppingItemsForMeal,
   buildShoppingSectionsForWeek,
   flattenShoppingSections,
@@ -87,6 +91,57 @@ const profileJson = buildPlanPromptProfileJson({
 });
 if (/user_id|secret@|must-not-appear/i.test(profileJson)) {
   console.error('Nutrition-only smoke test failed: buildPlanPromptProfileJson obsahuje identifikátory.');
+  process.exit(1);
+}
+
+const memEmpty = compactMemoryItemsForPlan([]);
+if (memEmpty.summary !== '' || memEmpty.itemsUsed !== 0 || memEmpty.truncated !== false) {
+  console.error('Nutrition-only smoke test failed: compactMemoryItemsForPlan prázdný vstup.');
+  process.exit(1);
+}
+
+const longDummy = 'x'.repeat(500);
+const memBounded = compactMemoryItemsForPlan(
+  Array.from({ length: 20 }, (_, i) => ({ type: `shared_food_${i}`, content: longDummy })),
+  { maxItems: 8, maxTotalChars: 1200, maxItemChars: 220 }
+);
+if (memBounded.summary.length > 1200) {
+  console.error('Nutrition-only smoke test failed: memory summary překročil maxTotalChars.');
+  process.exit(1);
+}
+if (memBounded.itemsUsed > 8) {
+  console.error('Nutrition-only smoke test failed: memory itemsUsed překročil maxItems.');
+  process.exit(1);
+}
+
+if (!isPlanRelevantMemoryType('shared_food_preference') || isPlanRelevantMemoryType('random_chat')) {
+  console.error('Nutrition-only smoke test failed: isPlanRelevantMemoryType neočekávaná logika.');
+  process.exit(1);
+}
+
+const profileWithCoach = buildPlanPromptProfileJson({
+  goal: 'hubnuti',
+  user_id: 'must-not-appear',
+  email: 'secret@example.com',
+  meals_per_day: 3,
+  allergies: 'kešu',
+  _coach_memory_summary: 'Uživatel chce rychlé snídaně.'.repeat(200),
+});
+if (profileWithCoach.length > 8000) {
+  console.error('Nutrition-only smoke test failed: coach summary nebyl omezen v profilu.');
+  process.exit(1);
+}
+if (!/coach_memory_summary/i.test(profileWithCoach)) {
+  console.error('Nutrition-only smoke test failed: coach_memory_summary chybí v profilu.');
+  process.exit(1);
+}
+if (/must-not-appear|secret@/i.test(profileWithCoach)) {
+  console.error('Nutrition-only smoke test failed: profil s pamětí stále leakuje ID.');
+  process.exit(1);
+}
+const coachMatch = profileWithCoach.match(/"coach_memory_summary"\s*:\s*"([^"]*)"/);
+if (!coachMatch || coachMatch[1].length > 1200) {
+  console.error('Nutrition-only smoke test failed: coach_memory_summary value delší než 1200.');
   process.exit(1);
 }
 

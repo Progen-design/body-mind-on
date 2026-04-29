@@ -12,6 +12,7 @@
  *   TEST_PLAN_RECIPIENT     (default janprikopa@gmail.com)
  *   TEST_APP_URL            (default https://app.bodyandmindon.cz)
  *   TEST_PLAN_ID            (volitelné – konkrétní řádek ai_generated_plans)
+ *   TEST_PLAN_EMAIL_OUTPUT_MODE (volitelné; výchozí nutrition_training = e-mail vč. tréninku)
  */
 import { readFileSync, existsSync } from 'fs';
 import { createInterface } from 'node:readline/promises';
@@ -49,6 +50,7 @@ const RECIPIENT = (process.env.TEST_PLAN_RECIPIENT || 'janprikopa@gmail.com').tr
 const APP_URL = String(process.env.TEST_APP_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '');
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN?.trim();
 const PLAN_ID = process.env.TEST_PLAN_ID?.trim() || '';
+const PLAN_OUTPUT = (process.env.TEST_PLAN_EMAIL_OUTPUT_MODE || 'nutrition_training').trim();
 const URL = `${APP_URL}/api/admin/send-test-plan-email`;
 
 if (!ADMIN_TOKEN) {
@@ -85,6 +87,7 @@ const preview = await post({
   owner_email: OWNER,
   recipient_email: RECIPIENT,
   dry_run: true,
+  plan_output_mode: PLAN_OUTPUT,
   ...(PLAN_ID ? { plan_id: PLAN_ID } : {}),
 });
 
@@ -96,6 +99,8 @@ console.log('  plan_id:               ', preview.plan_id);
 console.log('  valid_from:            ', preview.valid_from);
 console.log('  valid_until:           ', preview.valid_until);
 console.log('  plan_html_length:      ', preview.plan_html_length);
+console.log('  from structured JSON:  ', preview.rendered_from_structured);
+console.log('  plan_output_mode:      ', preview.plan_output_mode);
 console.log('');
 
 const autoYes = process.argv.includes('--yes');
@@ -117,6 +122,7 @@ const sent = await post({
   owner_email: OWNER,
   recipient_email: RECIPIENT,
   dry_run: false,
+  plan_output_mode: PLAN_OUTPUT,
   ...(PLAN_ID ? { plan_id: PLAN_ID } : {}),
 });
 
@@ -135,6 +141,8 @@ console.log(
     valid_from: sent.valid_from,
     valid_until: sent.valid_until,
     plan_html_length: sent.plan_html_length,
+    rendered_from_structured: sent.rendered_from_structured,
+    plan_output_mode: sent.plan_output_mode,
   })
 );
 console.log('');

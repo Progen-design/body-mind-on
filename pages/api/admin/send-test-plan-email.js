@@ -3,11 +3,14 @@
 // POST body:
 //   owner_email (string, povinné)
 //   recipient_email (string, povinné – žádný server default, proti omylu)
-//   plan_id (string, volitelné – musí patřit user_id vlastníka)
+//   plan_id (string, volitelné)
+//   dry_run (bool) – jen náhled metadat
+//   plan_output_mode (string, volitelné) – výchozí nutrition_training (plán v e-mailu vč. tréninku, dle formátu e-mailu)
 import { supabaseServer } from '../../../lib/supabaseServer';
 import { sendPlanEmail } from '../../../lib/mail';
 import { getDefaultLoginUrl } from '../../../lib/siteUrls.js';
-import { getPlanOutputMode } from '../../../lib/planOutputMode';
+import { normalizePlanOutputMode } from '../../../lib/planOutputMode';
+import { renderPlanHtmlFromStructured } from '../../../lib/planRenderer';
 
 function isAdmin(req) {
   const auth = req.headers.authorization || '';
@@ -36,6 +39,16 @@ async function resolveUserIdByOwnerEmail(ownerEmail) {
   return null;
 }
 
+function buildHtmlForEmail(planRow, userId, ownerEmail, bmRow) {
+  const json = planRow.structured_plan_json;
+  if (json && typeof json === 'object' && Array.isArray(json.days) && json.days.length > 0) {
+    const bm = bmRow ? { ...bmRow, user_id: userId, email: ownerEmail } : { user_id: userId, email: ownerEmail };
+    return renderPlanHtmlFromStructured(json, bm);
+  }
+  if (planRow.plan_html && typeof planRow.plan_html === 'string') return planRow.plan_html;
+  return '';
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
@@ -48,6 +61,13 @@ export default async function handler(req, res) {
   const recipientEmail = String(req.body?.recipient_email ?? '').trim().toLowerCase();
   const planIdRaw = req.body?.plan_id != null ? String(req.body.plan_id).trim() : '';
   const dryRun = req.body?.dry_run === true || req.body?.dryRun === true;
+
+  const rawMode =
+    req.body?.plan_output_mode ??
+    req.body?.planOutputMode ??
+    process.env.TEST_PLAN_EMAIL_OUTPUT_MODE ??
+    'nutrition_training';
+  const planOutputMode = normalizePlanOutputMode(rawMode);
 
   if (!ownerEmail || !ownerEmail.includes('@')) {
     return res.status(400).json({ ok: false, error: 'Chybí platný owner_email.' });
@@ -70,7 +90,7 @@ export default async function handler(req, res) {
   if (planIdRaw) {
     const r = await supabaseServer
       .from('ai_generated_plans')
-      .select('id, plan_html, user_id, valid_from, valid_until, email')
+      .select('id, plan_html, structured_plan_json, user_id, valid_from, valid_until, email')
       .eq('user_id', userId)
       .eq('id', planIdRaw)
       .maybeSingle();
@@ -79,7 +99,7 @@ export default async function handler(req, res) {
   } else {
     const r = await supabaseServer
       .from('ai_generated_plans')
-      .select('id, plan_html, user_id, valid_from, valid_until, email')
+      .select('id, plan_html, structured_plan_json, user_id, valid_from, valid_until, email')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -91,12 +111,29 @@ export default async function handler(req, res) {
   if (planErr) {
     return res.status(500).json({ ok: false, error: planErr.message });
   }
-  if (!plan?.plan_html || typeof plan.plan_html !== 'string') {
-    return res.status(404).json({ ok: false, error: 'Plán nebo plan_html nenalezen pro daného vlastníka.' });
+  if (!plan || plan.user_id !== userId) {
+    return res.status(404).json({ ok: false, error: 'Plán nenalezen nebo nepatří vlastníkovi.' });
   }
-  if (plan.user_id !== userId) {
-    return res.status(403).json({ ok: false, error: 'Plán nepatří vlastníkovi.' });
+
+  const { data: bmFull } = await supabaseServer
+    .from('body_metrics')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const htmlSource = buildHtmlForEmail(plan, userId, ownerEmail, bmFull);
+  if (!htmlSource || typeof htmlSource !== 'string' || !htmlSource.trim()) {
+    return res.status(404).json({ ok: false, error: 'Nepodařilo se sestavit HTML plánu (chybí structured_plan_json i plan_html).' });
   }
+
+  const renderedFromStructured = !!(
+    plan.structured_plan_json &&
+    typeof plan.structured_plan_json === 'object' &&
+    Array.isArray(plan.structured_plan_json.days) &&
+    plan.structured_plan_json.days.length > 0
+  );
 
   if (dryRun) {
     return res.status(200).json({
@@ -107,27 +144,20 @@ export default async function handler(req, res) {
       plan_id: plan.id,
       valid_from: plan.valid_from ?? null,
       valid_until: plan.valid_until ?? null,
-      plan_html_length: String(plan.plan_html).length,
+      plan_html_length: htmlSource.length,
+      rendered_from_structured: renderedFromStructured,
+      plan_output_mode: planOutputMode,
     });
   }
 
   let firstName = null;
   try {
-    const { data: bmRow } = await supabaseServer
-      .from('body_metrics')
-      .select('name')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    firstName = bmRow?.name ?? null;
+    firstName = bmFull?.name ?? null;
   } catch {
     firstName = null;
   }
 
-  const planOutputMode = getPlanOutputMode(plan, null, {});
-
-  const sendResult = await sendPlanEmail(recipientEmail, plan.plan_html, {
+  const sendResult = await sendPlanEmail(recipientEmail, htmlSource, {
     loginUrl: getDefaultLoginUrl(),
     existingAccount: true,
     firstName,
@@ -149,6 +179,8 @@ export default async function handler(req, res) {
     plan_id: plan.id,
     valid_from: plan.valid_from ?? null,
     valid_until: plan.valid_until ?? null,
-    plan_html_length: String(plan.plan_html).length,
+    plan_html_length: htmlSource.length,
+    rendered_from_structured: renderedFromStructured,
+    plan_output_mode: planOutputMode,
   });
 }

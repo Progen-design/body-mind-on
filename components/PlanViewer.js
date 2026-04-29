@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
-import { stripPlanMediaAttrsFromHtml } from '../lib/emailTemplates';
+import { stripInlineTrainingDayBlockFromHtml, stripPlanMediaAttrsFromHtml } from '../lib/emailTemplates';
 import {
   buildShoppingSectionForDay,
   buildShoppingSectionsForWeek,
@@ -490,8 +490,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
       .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
       .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, '');
     s = s.replace(/<h3[^>]*>[^<]*(?:Tréninkový plán|Trénink)[^<]*<\/h3>[\s\S]*?(?=<h3[^>]*>|$)/gi, '');
-    s = s.replace(/<p[^>]*>\s*<b>\s*Trénink tento den\s*:?\s*<\/b>\s*<\/p>\s*<ul[\s\S]*?<\/ul>/gi, '');
-    s = s.replace(/<p[^>]*>\s*<strong>\s*Trénink tento den\s*:?\s*<\/strong>\s*<\/p>\s*<ul[\s\S]*?<\/ul>/gi, '');
+    s = stripInlineTrainingDayBlockFromHtml(s);
     s = stripPlanMediaAttrsFromHtml(s);
     return s.trim();
   };

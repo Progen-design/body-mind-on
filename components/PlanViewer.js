@@ -61,6 +61,34 @@ function structuredMealForDaySlot(structuredPlan, structDayIdx, mealTypeLabel, f
   return arr[fallbackMi] ?? null;
 }
 
+/**
+ * Jednoradý přehled jídel pro sbalený den (český název z struktury nebo ořezání HTML).
+ * @returns {string}
+ */
+function collapsedDayMealsPeekLine(day, di, mealOverrides, structuredPlan, planHtml) {
+  const structDayIdx = day.originalIndex ?? di;
+  const parts = [];
+  (day.meals || []).forEach((m, mj) => {
+    const ovKey = `${structDayIdx}_${mj}`;
+    const ovr = mealOverrides[ovKey];
+    let title = '';
+    if (ovr?.title) title = String(ovr.title).trim();
+    else if (structuredPlan?.days && structDayIdx >= 0) {
+      const sm = structuredMealForDaySlot(structuredPlan, structDayIdx, m.type, mj);
+      title = sm ? String(mealDisplayTitleForStructuredMeal(sm, planHtml || '', day.dayName || '') || '').trim() : '';
+    }
+    if (!title && m.text) title = String(m.text).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!title && m.fullHtml) title = String(m.fullHtml).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (m.type && title) parts.push(`${m.type}: ${title}`);
+    else if (title) parts.push(title);
+    else if (m.type) parts.push(m.type);
+  });
+  const joined = parts.join(' · ');
+  if (!joined) return '';
+  if (joined.length <= 260) return joined;
+  return `${joined.slice(0, 257)}…`;
+}
+
 /** Pořadí dnů odpovídající getDay(): 0=Neděle, 1=Pondělí, …, 6=Sobota */
 const CZECH_DAYS_BY_DOW = ['Neděle', 'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota'];
 
@@ -577,7 +605,11 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
           <span className="plan-nav-sep" aria-hidden>|</span>
           <a href="#plan-jidelnicek" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-jidelnicek')?.scrollIntoView({ behavior: 'smooth' }); }}>Jídelníček</a>
           <span className="plan-nav-sep" aria-hidden>|</span>
-          <a href="#plan-tyden-cely" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-tyden-cely')?.scrollIntoView({ behavior: 'smooth' }); }}>Celý týden</a>
+          <a href="#plan-day-card-today" className="plan-nav-item" onClick={(e) => {
+            e.preventDefault();
+            const el = document.getElementById('plan-day-card-today') || document.getElementById('plan-days');
+            el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}>Na dnešek</a>
           <span className="plan-nav-sep" aria-hidden>|</span>
           <a href="#plan-nakupni-seznam" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-nakupni-seznam')?.scrollIntoView({ behavior: 'smooth' }); }}>Suroviny</a>
           <span className="plan-nav-sep" aria-hidden>|</span>
@@ -631,26 +663,14 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
           )}
 
           {hasParsedDays && (
-            <div className="plan-week-parts" role="note">
-              <p className="plan-week-parts-title">Týdenní plán obsahuje</p>
-              <ul className="plan-week-parts-list">
-                <li><strong>Jídelníček</strong> – jídla podle dne níže</li>
-                <li><strong>Suroviny</strong> – nákupní seznam (celý týden nebo po dnech)</li>
-                <li><strong>Varianty</strong> – u jídla tlačítko „Nahradit jiným“</li>
-              </ul>
+            <div className="plan-week-parts plan-week-parts-compact" role="note">
+              <p className="plan-week-parts-single">
+                Dny níže sledují tvůj uložený týden: jídla, automaticky dopočítaná makra z receptů a kde je dostupný i trénink.
+                Dnešní den je v seznamu zvýrazněný.
+              </p>
             </div>
           )}
 
-          {/* Dnes banner – jen u aktuálního plánu, ne u náhledu příštího týdne */}
-          {!isFuturePlan && (
-            <div className="plan-today-banner">
-              <span className="plan-today-emoji">📅</span>
-              <div>
-                <h3>Dnes ({todayStr})</h3>
-                <p>Níže najdeš přehled jídel a výživových hodnot na dnešek a následující dny.</p>
-              </div>
-            </div>
-          )}
 
           {/* Když parser nevrátil dny, ale máme rawSections – zobrazit plán po sekcích */}
           {showGraphical && !hasParsedDays && Object.keys(parsed?.rawSections || {}).length > 0 && (
@@ -720,56 +740,19 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
           {/* Jídelníček – od dneška dál (dynamicky podle aktuálního dne) */}
           {planWeekDays?.length > 0 && (
             <div id="plan-jidelnicek" className="plan-block">
-              <h3 className="plan-block-title">Tvůj plán na celý týden</h3>
+              <h3 className="plan-block-title">Týden po dnech</h3>
               <p className="plan-block-subtitle">
-                Zobrazuje se celý vygenerovaný týden. Aktuální den je zvýrazněný.
+                Každý řádek je jeden kalendářní den platnosti tvého plánu. Rozbalením dostaneš detaily receptu, automaticky dopočítané suroviny a trénink.
               </p>
-              <div id="plan-tyden-cely" className="plan-week-overview-card">
-                  <h4 className="plan-week-overview-title">Rychlý přehled celého týdne</h4>
-                  <p className="plan-week-overview-hint" style={{ margin: '0 0 12px', fontSize: 13, color: '#94a3b8', lineHeight: 1.45 }}>
-                    První den odpovídá začátku platnosti plánu (obvykle den registrace). Jídelníček i trénink jsou seřazené podle kalendářních dat od tohoto dne.
-                  </p>
-                  <p className="plan-week-overview-lead">
-                    Stejné dny jako při rozbalení jednotlivých karet — pouze jídla na jednom místě.
-                  </p>
-                  <div className="plan-week-full-body plan-week-overview-body">
-                    {planWeekDays.map((wday, wi) => (
-                      <div key={wi} className={`plan-week-full-day ${wday.afterPlanEnd ? 'plan-week-full-day-muted' : ''}`}>
-                        <h4 className="plan-week-full-day-title">
-                          {(wday.dayName || 'Den') + (wday.dateStr ? ` (${wday.dateStr})` : '')}{wday.isToday ? ' – dnes' : ''}
-                          {wday.afterPlanEnd ? <span className="plan-week-after-badge"> po konci platnosti</span> : null}
-                        </h4>
-                        <p className="plan-week-full-meals-label">Jídla</p>
-                        <ul className="plan-week-full-meals">
-                          {(wday.meals || []).map((m, mj) => {
-                            const ok = `${wday.originalIndex ?? wi}_${mj}`;
-                            const ovr = mealOverrides[ok];
-                            const rawLine = ovr
-                              ? (ovr.title || 'Náhrada')
-                              : (m.text && String(m.text).trim()
-                                ? String(m.text).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-                                : '');
-                            const line = rawLine || (m.type ? '—' : '');
-                            return (
-                              <li key={mj}>
-                                <strong>{m.type || 'Jídlo'}:</strong> {line}
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               <p id="plan-varianty-jidel" className="plan-variant-hint">
-                <strong>Varianty jídel:</strong> u každého jídla můžeš zvolit <strong>„Nahradit jiným“</strong> a získat alternativní recept na stejný den.
+                <strong>Tip:</strong> u každého jídla najdeš tlačítko „Nahradit jiným“ pro alternativu se zachovanými makry.
               </p>
               {plan.valid_from && plan.valid_until && (
                 <p className="plan-validity-range">
                   Platnost plánu: {new Date(plan.valid_from).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' })} – {new Date(plan.valid_until).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' })}
                 </p>
               )}
-              <div className="plan-days">
+              <div id="plan-days" className="plan-days">
                 {planWeekDays.map((day, di) => {
                   const isDayExpanded = expandedDays === null ? (day.isToday || (isFuturePlan && di === 0)) : expandedDays.has(di);
                   const toggleDay = () => {
@@ -781,6 +764,18 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                       return next;
                     });
                   };
+                  const mealPeek = collapsedDayMealsPeekLine(day, di, mealOverrides, structuredPlan, plan.plan_html || '');
+                  const dIdxPeek = day.originalIndex ?? di;
+                  const workoutExercises = structuredPlan?.days?.[dIdxPeek]?.workout?.exercises;
+                  const wc = Array.isArray(workoutExercises) ? workoutExercises.length : 0;
+                  const trainingPeek =
+                    showTrainingInProfile && wc > 0
+                      ? `Trénink: ${wc} ${wc === 1 ? 'cvik' : wc >= 2 && wc <= 4 ? 'cviky' : 'cviků'}`
+                      : '';
+                  const peekPieces = [];
+                  if (mealPeek) peekPieces.push(mealPeek);
+                  if (trainingPeek) peekPieces.push(trainingPeek);
+                  const peekLine = peekPieces.join(' · ');
                   return (
                   <div id={day.isToday ? 'plan-day-card-today' : undefined} key={di} className={`plan-day-card ${day._placeholder ? 'plan-day-placeholder' : ''} ${day.isToday ? 'plan-day-today' : ''} ${isDayExpanded ? 'plan-day-expanded' : ''}`}>
                     <button type="button" className="plan-day-header-btn" onClick={toggleDay} aria-expanded={isDayExpanded}>
@@ -789,6 +784,16 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                       </h4>
                       <span className="plan-day-chevron" aria-hidden>{isDayExpanded ? '▼' : '▶'}</span>
                     </button>
+                    {!isDayExpanded && peekLine ? (
+                      <button
+                        type="button"
+                        className="plan-day-peek-btn"
+                        onClick={toggleDay}
+                        aria-label={`Rozbalit ${day.dayName || 'den'}: ${peekLine}`}
+                      >
+                        {peekLine}
+                      </button>
+                    ) : null}
                     {isDayExpanded && (
                     <>
                     <nav className="plan-day-nav" aria-label="Jídla dne">
@@ -1701,40 +1706,20 @@ const planSectionStyles = `
     line-height: 1.6;
   }
   .plan-week-parts-list li { margin: 4px 0; }
-
-  .plan-week-overview-card {
-    margin: 0 0 22px;
-    padding: 16px 16px 8px;
-    border-radius: 14px;
-    background: rgba(30, 41, 59, 0.65);
-    border: 1px solid rgba(167, 139, 250, 0.35);
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+  .plan-week-parts-compact {
+    margin: 0 0 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(30, 41, 59, 0.42);
+    border: 1px solid rgba(139, 92, 255, 0.22);
   }
-  .plan-week-overview-title {
-    margin: 0 0 6px;
-    font-size: 16px;
-    font-weight: 700;
-    color: #f5f3ff;
-  }
-  .plan-week-overview-lead {
-    margin: 0 0 12px;
+  .plan-week-parts-single {
+    margin: 0;
     font-size: 13px;
-    color: #94a3b8;
     line-height: 1.55;
+    color: #cbd5e1;
   }
-  .plan-week-overview-body {
-    border-top: 1px solid rgba(71, 85, 105, 0.45);
-    padding-top: 10px;
-  }
-  .plan-week-full-day-muted {
-    opacity: 0.72;
-  }
-  .plan-week-after-badge {
-    font-size: 11px;
-    font-weight: 600;
-    color: #fbbf24;
-    margin-left: 6px;
-  }
+
   .plan-day-after-validity {
     margin: 8px 16px 0;
     font-size: 12px;
@@ -1743,60 +1728,6 @@ const planSectionStyles = `
   }
   .plan-training-supplement {
     margin-top: 10px;
-    font-size: 13px;
-    color: #94a3b8;
-    line-height: 1.5;
-  }
-  .plan-week-full-body {
-    padding: 12px 14px 16px;
-    max-height: 70vh;
-    overflow-y: auto;
-    border-top: 1px solid rgba(71, 85, 105, 0.4);
-  }
-  .plan-week-full-day {
-    margin-bottom: 18px;
-    padding-bottom: 14px;
-    border-bottom: 1px solid rgba(51, 65, 85, 0.6);
-  }
-  .plan-week-full-day:last-child {
-    margin-bottom: 0;
-    padding-bottom: 0;
-    border-bottom: none;
-  }
-  .plan-week-full-day-title {
-    margin: 0 0 8px;
-    font-size: 16px;
-    font-weight: 700;
-    color: #c4b5fd;
-  }
-  .plan-week-full-meals-label,
-  .plan-week-full-training-label {
-    margin: 0 0 6px;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: #94a3b8;
-  }
-  .plan-week-full-meals {
-    margin: 0 0 12px;
-    padding-left: 1.15rem;
-    color: #e2e8f0;
-    font-size: 14px;
-    line-height: 1.55;
-  }
-  .plan-week-full-meals li { margin: 4px 0; }
-  .plan-week-full-training {
-    margin: 0;
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: rgba(15, 23, 42, 0.45);
-    font-size: 14px;
-    line-height: 1.55;
-    color: #e2e8f0;
-  }
-  .plan-week-full-training-empty {
-    margin: 0;
     font-size: 13px;
     color: #94a3b8;
     line-height: 1.5;
@@ -2299,6 +2230,26 @@ const planSectionStyles = `
     color: #94a3b8;
   }
   .plan-day-expanded .plan-day-chevron { color: #c4b5fd; }
+  .plan-day-peek-btn {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 10px 18px 14px;
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    background: rgba(15, 23, 42, 0.35);
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #94a3b8;
+    transition: background 0.15s, color 0.15s;
+  }
+  .plan-day-peek-btn:hover {
+    background: rgba(124, 58, 237, 0.1);
+    color: #e2e8f0;
+  }
   .plan-day-nav {
     display: flex;
     align-items: center;

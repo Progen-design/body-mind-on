@@ -3,6 +3,7 @@
 -- service_role RLS neřeší (Supabase bypass) — viz https://supabase.com/docs/guides/database/postgres/row-level-security
 --
 -- Řeší: rls_disabled_in_public, sensitive_columns_exposed na trainer_calendar_tokens.
+-- Verze záznamu v supabase_migrations: 20260429112110 (shoda s produkční DB).
 
 ALTER TABLE public.ai_agent_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ai_agent_tools ENABLE ROW LEVEL SECURITY;

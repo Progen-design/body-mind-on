@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 
-import { formatPlanHtmlForEmail, stripPlanMediaAttrsFromHtml } from '../lib/emailTemplates.js';
+import {
+  formatPlanHtmlForEmail,
+  stripPlanMediaAttrsFromHtml,
+  stripNutritionOnlyTrainingFromPlanHtml,
+} from '../lib/emailTemplates.js';
+import { buildPlanPromptProfileJson } from '../lib/compactPlanPrompt.js';
 import {
   buildShoppingItemsForMeal,
   buildShoppingSectionsForWeek,
@@ -26,17 +31,17 @@ const sampleHtml = `
 `;
 
 const stripped = stripPlanMediaAttrsFromHtml(sampleHtml);
+const strippedTrain = stripNutritionOnlyTrainingFromPlanHtml(sampleHtml);
 const formatted = formatPlanHtmlForEmail(sampleHtml);
 
-const forbiddenMedia = [
-  '<img',
-  'data-image-url',
-  'data-gif-url',
-  '.gif',
-];
+const forbiddenMedia = ['<img', 'data-image-url', 'data-gif-url', '.gif', 'exercise_media'];
 
-const forbiddenNutrition = [
+const forbiddenTrainingInEmail = [
   ...forbiddenMedia,
+  'Trénink tento den',
+  'Tréninkový plán',
+  'wger',
+  'wger.de',
 ];
 
 function assertNoForbiddenToken(value, label, tokens) {
@@ -49,7 +54,12 @@ function assertNoForbiddenToken(value, label, tokens) {
 }
 
 assertNoForbiddenToken(stripped, 'stripPlanMediaAttrsFromHtml output', forbiddenMedia);
-assertNoForbiddenToken(formatted, 'formatPlanHtmlForEmail output', forbiddenNutrition);
+assertNoForbiddenToken(strippedTrain, 'stripNutritionOnlyTrainingFromPlanHtml output', [
+  ...forbiddenMedia,
+  'Trénink tento den',
+  'Tréninkový plán',
+]);
+assertNoForbiddenToken(formatted, 'formatPlanHtmlForEmail output', forbiddenTrainingInEmail);
 
 if (!/Ovesná kaše/i.test(formatted)) {
   console.error('Nutrition-only smoke test failed: jídla zmizela z výstupu.');
@@ -59,16 +69,24 @@ if (!/Denní cíle|Kalorie|Bílkoviny/i.test(formatted)) {
   console.error('Nutrition-only smoke test failed: makra zmizela z výstupu.');
   process.exit(1);
 }
-if (!/Trénink tento den|Tréninkový plán/i.test(formatted)) {
-  console.error('Nutrition-only smoke test failed: trénink se nezobrazil v e-mailovém výstupu.');
-  process.exit(1);
-}
 if (!/Co dnes jíst/i.test(formatted)) {
   console.error('Nutrition-only smoke test failed: denní karta se nevykreslila.');
   process.exit(1);
 }
 if (!/Součet dne \(orientačně\)/i.test(formatted)) {
   console.error('Nutrition-only smoke test failed: součet dne se nezobrazil.');
+  process.exit(1);
+}
+
+const profileJson = buildPlanPromptProfileJson({
+  goal: 'hubnuti',
+  user_id: 'must-not-appear',
+  email: 'secret@example.com',
+  meals_per_day: 3,
+  allergies: 'kešu',
+});
+if (/user_id|secret@|must-not-appear/i.test(profileJson)) {
+  console.error('Nutrition-only smoke test failed: buildPlanPromptProfileJson obsahuje identifikátory.');
   process.exit(1);
 }
 
@@ -83,8 +101,8 @@ const twoDaysNoExplicitWorkout = `
 `;
 const formattedTwo = formatPlanHtmlForEmail(twoDaysNoExplicitWorkout);
 const trainHeadings = formattedTwo.match(/Trénink tento den/gi) || [];
-if (trainHeadings.length < 2) {
-  console.error('Nutrition-only smoke test failed: chybí výchozí tréninková karta u dne bez explicitního bloku.');
+if (trainHeadings.length > 0) {
+  console.error('Nutrition-only smoke test failed: neočekávaný trénink v e-mailu u dní bez tréninku.');
   process.exit(1);
 }
 
@@ -137,6 +155,6 @@ if (!mealEstimated.isEstimated || mealEstimated.source !== 'estimated' || !mealE
   process.exit(1);
 }
 
-assertNoForbiddenToken(JSON.stringify(mealFromRecipe), 'buildShoppingItemsForMeal output', forbiddenNutrition);
+assertNoForbiddenToken(JSON.stringify(mealFromRecipe), 'buildShoppingItemsForMeal output', forbiddenMedia);
 
 console.log('Nutrition-only smoke test passed.');

@@ -9,6 +9,7 @@
     "migrate:trainer-calendar": "node scripts/run-trainer-calendar-migration.js",
     "test:expired-trial": "node scripts/set-expired-trial-for-test.js",
     "smoke-test": "node scripts/smoke-test-critical-path.mjs",
+    "smoke-test:prod": "node scripts/smoke-test-critical-path.mjs --prod",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

@@ -3,21 +3,39 @@
  * Smoke test kritické cesty: POST /api/body-metrics
  * Očekává 200 (plán ready/pending/sent) nebo 503 s hasUserId: true
  *
- * Spustit: node scripts/smoke-test-critical-path.mjs
- * Lokální API: BASE_URL=http://localhost:3000 node scripts/smoke-test-critical-path.mjs
+ * Spuštění:
+ *   npm run smoke-test
+ *   npm run smoke-test:prod
+ *   BASE_URL=https://app.bodyandmindon.cz npm run smoke-test
  *
- * Proti produkci (app.bodyandmindon.cz / *.vercel.app) výchozí příjemce:
- *   info+bm-smoke-<čas>@bodyandmindon.cz (plus-adresa na stejnou schránku jako info@).
- * Volitelný přepínač: SMOKE_TEST_RECIPIENT=jiny@email.cz → použije se local+bm-smoke-…@domain
+ * Lokální API musí běžet (npm run dev), jinak test ihned skončí s nápovědou — nečeká 90 s.
+ *
+ * Proti produkci výchozí příjemce (+ alias):
+ *   info+bm-smoke-<čas>@bodyandmindon.cz
+ * Volitelně: SMOKE_TEST_RECIPIENT=jiny@email.cz
  */
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+
+const HEALTH_TIMEOUT_MS = 4000;
+const MAIN_TIMEOUT_MS = 90000;
 
 const DEFAULT_SMOKE_LOCAL = 'info';
+
+function resolveBaseUrl() {
+  if (process.env.BASE_URL && String(process.env.BASE_URL).trim()) {
+    return String(process.env.BASE_URL).trim().replace(/\/$/, '');
+  }
+  if (process.argv.includes('--prod')) {
+    return 'https://app.bodyandmindon.cz';
+  }
+  return 'http://localhost:3000';
+}
+
+const BASE_URL = resolveBaseUrl();
 
 function buildSmokeRecipientEmail(baseUrl) {
   const raw = process.env.SMOKE_TEST_RECIPIENT?.trim();
@@ -45,6 +63,38 @@ function buildSmokeRecipientEmail(baseUrl) {
   return `bm-smoke-${Date.now()}@example.com`;
 }
 
+async function assertApiReachable(baseUrl) {
+  const healthUrl = `${baseUrl.replace(/\/$/, '')}/api/integrations-status`;
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS);
+  try {
+    const res = await fetch(healthUrl, { method: 'GET', signal: controller.signal });
+    clearTimeout(t);
+    if (!res.ok) {
+      console.error(`Health check: ${healthUrl} vrátil ${res.status}.`);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    clearTimeout(t);
+    const isLocal =
+      /^https?:\/\/localhost\b/i.test(baseUrl) ||
+      /^https?:\/\/127\.0\.0\.1\b/i.test(baseUrl);
+    if (isLocal) {
+      console.error('');
+      console.error('Lokální server neběží. Spusť npm run dev, nebo použij');
+      console.error('  BASE_URL=https://app.bodyandmindon.cz npm run smoke-test');
+      console.error('nebo');
+      console.error('  npm run smoke-test:prod');
+      console.error('');
+      console.error(`Detail: ${e.name === 'AbortError' ? 'timeout health check' : e.message}`);
+    } else {
+      console.error(`Health check selhal (${healthUrl}): ${e.message}`);
+    }
+    return false;
+  }
+}
+
 const payloadPath = join(__dirname, 'smoke-test-payload.json');
 let payload;
 try {
@@ -54,6 +104,11 @@ try {
   process.exit(1);
 }
 
+console.log('BASE_URL:', BASE_URL);
+
+const okHealth = await assertApiReachable(BASE_URL);
+if (!okHealth) process.exit(1);
+
 payload.email = buildSmokeRecipientEmail(BASE_URL);
 console.log('Smoke recipient:', payload.email);
 
@@ -61,9 +116,8 @@ const url = `${BASE_URL.replace(/\/$/, '')}/api/body-metrics`;
 console.log('POST', url);
 
 const start = Date.now();
-const TIMEOUT_MS = 90000; // body-metrics + OpenAI + Spoonacular + wger může trvat i ~70s na cold start
 const controller = new AbortController();
-const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+const timeoutId = setTimeout(() => controller.abort(), MAIN_TIMEOUT_MS);
 let res;
 try {
   res = await fetch(url, {
@@ -76,7 +130,7 @@ try {
 } catch (e) {
   clearTimeout(timeoutId);
   if (e.name === 'AbortError') {
-    console.error(`Chyba: timeout po ${TIMEOUT_MS / 1000}s`);
+    console.error(`Chyba: timeout po ${MAIN_TIMEOUT_MS / 1000}s`);
   } else {
     console.error('Chyba připojení:', e.message);
   }

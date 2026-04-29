@@ -29,6 +29,9 @@
     },
     "pages/api/cron/daily-digest.js": {
       "maxDuration": 300
+    },
+    "pages/api/admin/regenerate-user-plan.js": {
+      "maxDuration": 300
     }
   }
 }

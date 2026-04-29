@@ -9,6 +9,9 @@
  *   ADMIN_TOKEN        — povinné
  *   REGEN_APP_URL      — výchozí https://app.bodyandmindon.cz (pro lokál: http://localhost:3000)
  *   REGEN_PLAN_EMAIL   — výchozí info@bodyandmindon.cz
+ *
+ * E-mail se neposílá. Testovací odeslání plánu na jinou adresu:
+ *   npm run send-test-plan-email -- --yes
  */
 import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';

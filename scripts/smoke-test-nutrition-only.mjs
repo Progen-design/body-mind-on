@@ -15,6 +15,12 @@ import {
   buildShoppingSectionsForWeek,
   flattenShoppingSections,
 } from '../lib/shoppingListBuilder.js';
+import {
+  getPlanOutputMode,
+  normalizePlanOutputMode,
+  shouldIncludeTrainingInEmail,
+  shouldRenderTraining,
+} from '../lib/planOutputMode.js';
 
 const sampleHtml = `
 <h3>Tvoje čísla</h3>
@@ -81,6 +87,38 @@ if (!/Součet dne \(orientačně\)/i.test(formatted)) {
   console.error('Nutrition-only smoke test failed: součet dne se nezobrazil.');
   process.exit(1);
 }
+
+if (normalizePlanOutputMode('nutrition-training') !== 'nutrition_training') {
+  console.error('Nutrition-only smoke test failed: normalizePlanOutputMode.');
+  process.exit(1);
+}
+if (!shouldIncludeTrainingInEmail('nutrition_training') || shouldIncludeTrainingInEmail('nutrition_only')) {
+  console.error('Nutrition-only smoke test failed: shouldIncludeTrainingInEmail.');
+  process.exit(1);
+}
+if (!shouldRenderTraining('nutrition_training') || shouldRenderTraining('nutrition_only')) {
+  console.error('Nutrition-only smoke test failed: shouldRenderTraining.');
+  process.exit(1);
+}
+if (getPlanOutputMode({ output_mode: 'nutrition_training' }, null, {}) !== 'nutrition_training') {
+  console.error('Nutrition-only smoke test failed: getPlanOutputMode from plan.');
+  process.exit(1);
+}
+
+const emailTrainingSample = `
+<h3>Jídelníček (celý týden)</h3>
+<h4>Pondělí</h4>
+<p><b>Snídaně:</b> Ovesná kaše</p>
+<p><small><em>Součet dne (orientačně): 400 kcal, B 20 g, S 40 g, T 10 g</em></small></p>
+<p><b>Trénink tento den:</b></p>
+<ul><li>Dřepy 4×10</li></ul>
+`;
+const formattedTrainingMode = formatPlanHtmlForEmail(emailTrainingSample, { planOutputMode: 'nutrition_training' });
+if (!/Dřepy|Trénink tento den/i.test(formattedTrainingMode)) {
+  console.error('Nutrition-only smoke test failed: nutrition_training e-mail měl obsahovat trénink.');
+  process.exit(1);
+}
+assertNoForbiddenToken(formattedTrainingMode, 'formatPlanHtmlForEmail nutrition_training', forbiddenMedia);
 
 const profileJson = buildPlanPromptProfileJson({
   goal: 'hubnuti',

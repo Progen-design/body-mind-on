@@ -1,4 +1,4 @@
-// /components/PlanViewer.js – Zobrazení AI plánu (jídelníček, makra, nákupní seznam; bez obrázků jídel a cviků)
+// /components/PlanViewer.js – Zobrazení AI plánu; trénink v UI jen v režimu nutrition_training (lib/planOutputMode.js).
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
@@ -14,6 +14,7 @@ import {
 import { portionIngredientsFromStructuredMeal } from '../lib/mealPortionIngredients';
 import { mealDisplayTitleForStructuredMeal } from '../lib/mealDisplayNameHelpers';
 import { parsePlanHtml } from '../lib/parsePlanHtml';
+import { getPlanOutputMode, shouldRenderTraining } from '../lib/planOutputMode.js';
 
 export { parsePlanHtml };
 
@@ -287,7 +288,7 @@ function normalizeMealTextForPin(text) {
   return s.normalize('NFD').replace(/\p{Diacritic}/gu, '');
 }
 
-export default function PlanViewer({ plan, userName: _userName, hideHero, hideShoppingList = false, dietaryPreferences = '', canPinMeals = true, onToast }) {
+export default function PlanViewer({ plan, userName: _userName, hideHero, hideShoppingList = false, dietaryPreferences = '', canPinMeals = true, onToast, outputMode: outputModeProp }) {
   const [parsed, setParsed] = useState(null);
   const [recipeModal, setRecipeModal] = useState(null); // { title, content, anchorRect, hasRecipe, openId? }
   const [mealIngredientsModal, setMealIngredientsModal] = useState(null); // { title, items, note, isEstimated }
@@ -307,15 +308,20 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
   const [showRawPlanFallback, setShowRawPlanFallback] = useState(false);
   const recipeOpenIdRef = useRef(0);
 
-  /** Odstraní nebezpečné tagy z HTML pro zobrazení v fallbacku (bez tréninku a bez obrázků). */
+  const outputMode = getPlanOutputMode(plan, null, { outputMode: outputModeProp });
+  const showTrainingInProfile = shouldRenderTraining(outputMode);
+
+  /** Odstraní nebezpečné tagy z HTML pro zobrazení v fallbacku (bez obrázků; trénink dle output mode). */
   const sanitizeHtmlForFallback = (raw) => {
     if (!raw || typeof raw !== 'string') return '';
     let s = raw
       .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
       .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
       .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, '');
-    s = s.replace(/<h3[^>]*>[^<]*(?:Tréninkový plán|Trénink)[^<]*<\/h3>[\s\S]*?(?=<h3[^>]*>|$)/gi, '');
-    s = stripInlineTrainingDayBlockFromHtml(s);
+    if (!showTrainingInProfile) {
+      s = s.replace(/<h3[^>]*>[^<]*(?:Tréninkový plán|Trénink)[^<]*<\/h3>[\s\S]*?(?=<h3[^>]*>|$)/gi, '');
+      s = stripInlineTrainingDayBlockFromHtml(s);
+    }
     s = stripPlanMediaAttrsFromHtml(s);
     return s.trim();
   };
@@ -1010,7 +1016,8 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                         );
                       })}
                     </div>
-                    {(() => {
+                    {showTrainingInProfile
+                      ? (() => {
                       const dIdx = day.originalIndex ?? di;
                       const wk = structuredPlan?.days?.[dIdx]?.workout;
                       const list = wk?.exercises;
@@ -1070,7 +1077,8 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                           </ul>
                         </div>
                       );
-                    })()}
+                    })()
+                      : null}
                     {day.afterPlanEnd ? (
                       <p className="plan-day-after-validity">Tento den už spadá mimo datum platnosti uloženého plánu — zobrazení je orientační.</p>
                     ) : null}

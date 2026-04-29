@@ -134,6 +134,13 @@ supabase db push
 | OpenAI timeout | Fallback v planOrchestrator; last-resort `buildDeterministicFallbackPlanHtml` v body-metrics |
 | Migrace neexistuje | Insert fallback bez `structured_plan_json` |
 
+## 3. Režim výstupu (nutrition_only / nutrition_training)
+
+- **Generování** (`runUnifiedPlanPipeline` → `generateStructuredPlan`) vždy produkuje strukturovaný plán včetně **meal_plan** a **workout_plan** dle `workouts_per_week` a profilu. Odstranění legacy `runAgent('trainer')` nesmí ořezat tréninková data v JSON.
+- **Zobrazení** řídí `lib/planOutputMode.js`: `nutrition_only` skrývá trénink v profilu (`PlanViewer`) a v těle plánovacího e-mailu / digestu; `nutrition_training` je může zobrazit. Obrázky jídel a GIFy v e-mailu zůstávají vypnuté (strip médií).
+- Konfigurace: `PLAN_OUTPUT_MODE` a/nebo `NEXT_PUBLIC_PLAN_OUTPUT_MODE` (výchozí `nutrition_only`). Volitelně budoucí sloupec `output_mode` u řádku plánu.
+- **Coach memory** zůstává krátký souhrn v `PROFIL_JSON`; nesmí přebít alergie, makra a tvrdé dietary constraints.
+
 ### Co otestovat
 
 1. **Registrace** – body-metrics → plán → e-mail.

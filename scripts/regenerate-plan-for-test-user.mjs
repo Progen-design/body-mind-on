@@ -7,10 +7,8 @@
  *
  * Env (např. z .env.local):
  *   ADMIN_TOKEN        — povinné
- *   REGEN_APP_URL      — výchozí http://localhost:3000 (nebo https://app.bodyandmindon.cz)
+ *   REGEN_APP_URL      — výchozí https://app.bodyandmindon.cz (pro lokál: http://localhost:3000)
  *   REGEN_PLAN_EMAIL   — výchozí info@bodyandmindon.cz
- *
- * Lokálně musí běžet npm run dev, pokud REGEN_APP_URL ukazuje na localhost.
  */
 import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -42,13 +40,16 @@ function loadEnvLocal() {
 loadEnvLocal();
 
 const TARGET = (process.env.REGEN_PLAN_EMAIL || 'info@bodyandmindon.cz').trim().toLowerCase();
-const APP_URL = String(process.env.REGEN_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
+const APP_URL = String(process.env.REGEN_APP_URL || 'https://app.bodyandmindon.cz').replace(
+  /\/$/,
+  ''
+);
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN?.trim();
 const FETCH_TIMEOUT_MS = 300_000;
 
 if (!process.argv.includes('--yes')) {
   console.error('Pro volání admin API přidej příznak --yes .');
-  console.error(`Cíl: ${TARGET}`);
+  console.error(`Testovací e-mail: ${TARGET}`);
   console.error(`URL: ${APP_URL}/api/admin/regenerate-user-plan`);
   process.exit(1);
 }
@@ -59,6 +60,13 @@ if (!ADMIN_TOKEN) {
 }
 
 const url = `${APP_URL}/api/admin/regenerate-user-plan`;
+
+console.log('');
+console.log('[regenerate-plan] Testovací účet:', TARGET);
+console.log('[regenerate-plan] Endpoint:', url);
+console.log('[regenerate-plan] Generování na serveru (unified pipeline) může trvat 1–5 minut…');
+console.log('');
+
 const controller = new AbortController();
 const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
@@ -85,9 +93,11 @@ try {
     console.error('Chyba:', res.status, body.message || body.error || body);
     process.exit(1);
   }
+  console.log('[regenerate-plan] Hotovo:');
   console.log(
     JSON.stringify({
       ok: true,
+      email: TARGET,
       plan_id: body.plan_id ?? null,
       valid_from: body.valid_from ?? null,
       valid_until: body.valid_until ?? null,
@@ -104,6 +114,6 @@ try {
     console.error('  REGEN_APP_URL=https://app.bodyandmindon.cz');
     console.error('');
   }
-  console.error(e.message || String(e));
+  console.error('[regenerate-plan] Selhalo:', e.message || String(e));
   process.exit(1);
 }

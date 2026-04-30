@@ -206,6 +206,34 @@ main { padding: 40px 0; }
 .habit-summary-negative { color: #fca5a5; }
 .habit-summary-note { font-size: 13px; color: var(--muted); margin: 0; }
 
+/* ---- Habit edit (proklik na wizard) ---- */
+.habit-edit-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 12px;
+}
+.habit-edit-btn {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ddd6fe;
+  background: rgba(124, 58, 237, 0.18);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.12s;
+}
+.habit-edit-btn:hover {
+  background: rgba(124, 58, 237, 0.28);
+  border-color: rgba(167, 139, 250, 0.6);
+  color: #fff;
+}
+.habit-edit-btn:active { transform: scale(0.98); }
+@media (max-width: 480px) {
+  .habit-edit-row { justify-content: stretch; }
+  .habit-edit-btn { width: 100%; }
+}
+
 /* ---- Form ---- */
 .form { display: grid; gap: 14px; }
 .label { font-size: 14px; color: #cfcfcf; }

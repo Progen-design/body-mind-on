@@ -2658,6 +2658,22 @@ export default function Profil() {
                 <p className="habit-summary-note">Odhad váhy v profilu vychází z tréninků. Na výsledky má vliv i strava a to, jak plníš zdravé návyky a vyhýbáš se zlozvykům.</p>
               </div>
             )}
+            {(program === 'ON_CLUB' || program === 'VIP') && (
+              <div className="habit-edit-row">
+                <button
+                  type="button"
+                  className="habit-edit-btn"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      try { localStorage.removeItem('habitEntryWizardSeen'); } catch (_) {}
+                    }
+                    setShowHabitEntryWizard(true);
+                  }}
+                >
+                  Upravit moje návyky
+                </button>
+              </div>
+            )}
             <HabitTracker
               session={session}
               userHabits={profile?.user_habits}

@@ -355,7 +355,6 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
   const [parsed, setParsed] = useState(null);
   const [recipeModal, setRecipeModal] = useState(null); // { title, content, anchorRect, hasRecipe, openId? }
   const [mealIngredientsModal, setMealIngredientsModal] = useState(null); // { title, items, note, isEstimated }
-  const [mealOrderModal, setMealOrderModal] = useState(null); // { title, items, note, isEstimated, copied }
   const [mealOverrides, setMealOverrides] = useState({}); // { "di_mi": { title, content } }
   const [swapModal, setSwapModal] = useState(null); // { dayIndex, mealIndex, dishQuery, loading, html }
   const [mealPins, setMealPins] = useState([]); // { meal_type, meal_text }[]
@@ -558,13 +557,13 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    if (recipeModal || swapModal || mealIngredientsModal || mealOrderModal || exerciseHintModal) {
+    if (recipeModal || swapModal || mealIngredientsModal || exerciseHintModal) {
       document.body.style.overflow = 'hidden';
       return () => {
         document.body.style.overflow = '';
       };
     }
-  }, [recipeModal, swapModal, mealIngredientsModal, mealOrderModal, exerciseHintModal]);
+  }, [recipeModal, swapModal, mealIngredientsModal, exerciseHintModal]);
 
   if (!plan || !plan.plan_html) {
     return (
@@ -964,11 +963,6 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                           e.stopPropagation();
                           setMealIngredientsModal(buildMealIngredientPayload());
                         };
-                        const openOrderIngredients = (e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setMealOrderModal({ ...buildMealIngredientPayload(), copied: false });
-                        };
                         const handleSwap = () => {
                           const dishQuery = `${meal.type || 'Jídlo'} alternativa, do 500 kcal`.slice(0, 150);
                           setSwapModal({ dayIndex: day.originalIndex ?? di, mealIndex: mi, dishQuery, mealType: meal.type || 'Jídlo', loading: true, html: null });
@@ -1030,9 +1024,6 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                                 </button>
                                 <button type="button" className="plan-meal-secondary-btn" onClick={openIngredients}>
                                   Suroviny
-                                </button>
-                                <button type="button" className="plan-meal-secondary-btn" onClick={openOrderIngredients}>
-                                  Nákupní seznam
                                 </button>
                                 <button type="button" className="plan-meal-swap" onClick={(e) => { e.stopPropagation(); handleSwap(); }}>Nahradit jiným</button>
                                 {canPinMeals && (
@@ -1356,61 +1347,6 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                   >
                     Zobrazit v nákupním seznamu
                   </button>
-                  <button
-                    type="button"
-                    className="plan-meal-secondary-btn plan-modal-inline-btn"
-                    onClick={() => {
-                      setMealOrderModal({ ...mealIngredientsModal, copied: false });
-                      setMealIngredientsModal(null);
-                    }}
-                  >
-                    Nákupní seznam
-                  </button>
-                </div>
-              </div>
-            </div>,
-            document.body
-          )}
-
-          {mealOrderModal && typeof document !== 'undefined' && createPortal(
-            <div className="plan-recipe-modal-overlay" onClick={() => setMealOrderModal(null)}>
-              <div className="plan-recipe-modal plan-recipe-modal-dynamic plan-meal-ingredients-modal" onClick={(e) => e.stopPropagation()}>
-                <div className="plan-recipe-modal-header">
-                  <h3>Nákupní seznam</h3>
-                  <button type="button" className="plan-recipe-modal-close" onClick={() => setMealOrderModal(null)} aria-label="Zavřít">×</button>
-                </div>
-                <div className="plan-recipe-modal-body">
-                  <p className="plan-order-intro">Seznam surovin je připravený ke zkopírování.</p>
-                  {mealOrderModal.items?.length ? (
-                    <pre className="plan-order-pre">{mealOrderModal.items.join('\n')}</pre>
-                  ) : (
-                    <p className="plan-no-recipe-msg">Suroviny zatím nejsou dostupné.</p>
-                  )}
-                  {mealOrderModal.note ? <p className="plan-no-recipe-hint">{mealOrderModal.note}</p> : null}
-                  <p className="plan-no-recipe-hint">Otevři e-shop a vlož seznam do vyhledávání nebo nákupního seznamu. Přímé vložení do košíku zatím není napojené.</p>
-                </div>
-                <div className="plan-recipe-modal-actions">
-                  <button
-                    type="button"
-                    className="plan-recipe-modal-replace-btn"
-                    onClick={async () => {
-                      try {
-                        const text = (mealOrderModal.items || []).join('\n');
-                        if (!text) return;
-                        await navigator.clipboard.writeText(text);
-                        setMealOrderModal((prev) => prev ? { ...prev, copied: true } : prev);
-                      } catch (_) {
-                        if (onToast) onToast({ message: 'Seznam se nepodařilo zkopírovat.', type: 'error' });
-                      }
-                    }}
-                  >
-                    Kopírovat seznam
-                  </button>
-                  <div className="plan-modal-links-row">
-                    <a className="plan-meal-secondary-btn plan-modal-link-btn" href="https://www.rohlik.cz/" target="_blank" rel="noopener noreferrer">Otevřít Rohlík</a>
-                    <a className="plan-meal-secondary-btn plan-modal-link-btn" href="https://www.kosik.cz/" target="_blank" rel="noopener noreferrer">Otevřít Košík</a>
-                  </div>
-                  {mealOrderModal.copied ? <p className="plan-copy-hint">Seznam zkopírován do schránky.</p> : null}
                 </div>
               </div>
             </div>,
@@ -1591,7 +1527,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                 <div id="plan-nakupni-seznam" className="plan-block plan-shopping-block plan-shopping-empty-anchor">
                   <h3 className="plan-block-title">Suroviny a nákup</h3>
                   <p className="plan-block-subtitle">
-                    Hromadný nákupní seznam zatím není k dispozici. Suroviny najdeš u jednotlivých jídel a u každého dne tlačítko „Nákupní seznam“ (zkopíruješ řádky a vložíš je do e-shopu).
+                    Hromadný nákupní seznam zatím není k dispozici. Suroviny najdeš u jednotlivých jídel (tlačítko Suroviny) a u každého dne pod jídly můžeš zkopírovat řádky přes týdenní nákupní sekci níže.
                   </p>
                 </div>
               ) : null;

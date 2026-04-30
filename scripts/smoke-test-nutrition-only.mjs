@@ -79,11 +79,11 @@ if (!/Denní cíle|Kalorie|Bílkoviny/i.test(formatted)) {
   console.error('Nutrition-only smoke test failed: makra zmizela z výstupu.');
   process.exit(1);
 }
-if (!/Co dnes jíst/i.test(formatted)) {
+if (!/class="email-day-head"/i.test(formatted)) {
   console.error('Nutrition-only smoke test failed: denní karta se nevykreslila.');
   process.exit(1);
 }
-if (!/Součet dne \(orientačně\)/i.test(formatted)) {
+if (!/Orientační součet dne/i.test(formatted)) {
   console.error('Nutrition-only smoke test failed: součet dne se nezobrazil.');
   process.exit(1);
 }

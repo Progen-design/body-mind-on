@@ -129,6 +129,15 @@ export default async function handler(req, res) {
       userChosePassword = authResult.userChosePassword === true;
     }
 
+    // Existující účet: veřejný START formulář nesmí znovu vložit metriky ani spustit initial_plan (ten by přeskočil generování
+    // a uživatel by viděl starý plán s blízkým valid_until). Přihlášení / obnova hesla je jediná bezpečná cesta.
+    if (!authResult.error && authResult.existing === true) {
+      return res.status(400).json({
+        error:
+          'Účet s tímto e-mailem už existuje. Přihlas se nebo si nech poslat odkaz k obnově hesla — registraci START se stejným e-mailem nelze opakovat.',
+      });
+    }
+
     const { data: insertedRows, error: dbErr } = await supabaseServer
       .from('body_metrics')
       .insert([payload])

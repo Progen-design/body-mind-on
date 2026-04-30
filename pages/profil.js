@@ -2266,6 +2266,7 @@ export default function Profil() {
                     (currentPlan && currentPlan.plan_html) ? (
                     <PlanViewer
                       plan={currentPlan}
+                      outputMode="nutrition_training"
                       userName={userName}
                       hideHero
                       hideShoppingList
@@ -2289,6 +2290,7 @@ export default function Profil() {
                   ) : (nextPlan && nextPlan.plan_html) ? (
                     <PlanViewer
                       plan={nextPlan}
+                      outputMode="nutrition_training"
                       userName={userName}
                       hideHero
                       hideShoppingList
@@ -2320,6 +2322,7 @@ export default function Profil() {
                 </div>
                 <PlanViewer
                   plan={currentPlan}
+                  outputMode="nutrition_training"
                   userName={userName}
                   hideHero
                   hideShoppingList
@@ -2351,6 +2354,7 @@ export default function Profil() {
                 </div>
                 <PlanViewer
                   plan={nextPlan}
+                  outputMode="nutrition_training"
                   userName={userName}
                   hideHero
                   hideShoppingList

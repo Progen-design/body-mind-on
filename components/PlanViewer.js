@@ -812,11 +812,15 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                   };
                   const mealPeek = collapsedDayMealsPeekLine(day, di, mealOverrides, structuredPlan, plan.plan_html || '');
                   const dIdxPeek = day.originalIndex ?? di;
-                  const workoutExercises = structuredPlan?.days?.[dIdxPeek]?.workout?.exercises;
+                  const wkPeek = day.structDay?.workout ?? structuredPlan?.days?.[dIdxPeek]?.workout;
+                  const workoutExercises = wkPeek?.exercises;
                   const wc = Array.isArray(workoutExercises) ? workoutExercises.length : 0;
+                  const htmlTrainingPeek = showTrainingInProfile && String(day.trainingHtml || '').trim().length > 0;
                   const trainingPeek =
-                    showTrainingInProfile && wc > 0
-                      ? `Trénink: ${wc} ${wc === 1 ? 'cvik' : wc >= 2 && wc <= 4 ? 'cviky' : 'cviků'}`
+                    showTrainingInProfile && (wc > 0 || htmlTrainingPeek)
+                      ? wc > 0
+                        ? `Trénink: ${wc} ${wc === 1 ? 'cvik' : wc >= 2 && wc <= 4 ? 'cviky' : 'cviků'}`
+                        : 'Trénink: v plánu'
                       : '';
                   const peekPieces = [];
                   if (mealPeek) peekPieces.push(mealPeek);
@@ -1055,63 +1059,79 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                       const dIdx = day.originalIndex ?? di;
                       const wk = day.structDay?.workout ?? structuredPlan?.days?.[dIdx]?.workout;
                       const list = wk?.exercises;
-                      if (!Array.isArray(list) || list.length === 0) return null;
-                      return (
-                        <div className="plan-day-training">
-                          <h4 className="plan-day-training-title">Trénink tento den</h4>
-                          <ul className="plan-day-training-list" style={{ listStyle: 'disc', paddingLeft: 22 }}>
-                            {list.map((ex, xi) => {
-                              const name = ex.display_name_cs || ex.name_cs || ex.name || 'Cvik';
-                              const wgerId =
-                                ex.wger_exercise_id != null && Number.isFinite(Number(ex.wger_exercise_id))
-                                  ? Number(ex.wger_exercise_id)
-                                  : null;
-                              const reps = ex.reps != null ? String(ex.reps) : '';
-                              const part = reps
-                                ? `${ex.sets ?? 3}×${reps}`
-                                : ex.duration_sec
-                                  ? `${Math.round(Number(ex.duration_sec) / 60)} min`
-                                  : `${ex.sets ?? 3} sérií`;
-                              const openWgerExercise = () => {
-                                if (wgerId == null) {
-                                  setExerciseHintModal({ name, part, wgerId: null });
-                                  return;
-                                }
-                                const url = `https://wger.de/en/exercise/${Number(wgerId)}/view/`;
-                                const w = typeof window !== 'undefined' ? window.open(url, '_blank', 'noopener,noreferrer') : null;
-                                if (!w) {
-                                  setExerciseHintModal({ name, part, wgerId });
-                                }
-                              };
-                              return (
-                                <li key={xi} style={{ marginBottom: 10 }}>
-                                  <strong>{name}</strong>
-                                  {' '}
-                                  – {part}
-                                  <span style={{ display: 'block', marginTop: 6, fontSize: 13 }}>
-                                    <button
-                                      type="button"
-                                      className="plan-exercise-hint-btn"
-                                      onClick={openWgerExercise}
-                                      style={{
-                                        background: 'none',
-                                        border: 'none',
-                                        padding: 0,
-                                        cursor: 'pointer',
-                                        color: '#a78bfa',
-                                        textDecoration: 'underline',
-                                        font: 'inherit',
-                                      }}
-                                    >
-                                      Jak cvik provést (krátký popis)
-                                    </button>
-                                  </span>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </div>
-                      );
+                      const htmlTrain = String(day.trainingHtml || '').trim();
+                      if (Array.isArray(list) && list.length > 0) {
+                        return (
+                          <div className="plan-day-training">
+                            <h4 className="plan-day-training-title">Trénink tento den</h4>
+                            <ul className="plan-day-training-list" style={{ listStyle: 'disc', paddingLeft: 22 }}>
+                              {list.map((ex, xi) => {
+                                const name = ex.display_name_cs || ex.name_cs || ex.name || 'Cvik';
+                                const wgerId =
+                                  ex.wger_exercise_id != null && Number.isFinite(Number(ex.wger_exercise_id))
+                                    ? Number(ex.wger_exercise_id)
+                                    : null;
+                                const reps = ex.reps != null ? String(ex.reps) : '';
+                                const part = reps
+                                  ? `${ex.sets ?? 3}×${reps}`
+                                  : ex.duration_sec
+                                    ? `${Math.round(Number(ex.duration_sec) / 60)} min`
+                                    : `${ex.sets ?? 3} sérií`;
+                                const openWgerExercise = () => {
+                                  if (wgerId == null) {
+                                    setExerciseHintModal({ name, part, wgerId: null });
+                                    return;
+                                  }
+                                  const url = `https://wger.de/en/exercise/${Number(wgerId)}/view/`;
+                                  const w = typeof window !== 'undefined' ? window.open(url, '_blank', 'noopener,noreferrer') : null;
+                                  if (!w) {
+                                    setExerciseHintModal({ name, part, wgerId });
+                                  }
+                                };
+                                return (
+                                  <li key={xi} style={{ marginBottom: 10 }}>
+                                    <strong>{name}</strong>
+                                    {' '}
+                                    – {part}
+                                    <span style={{ display: 'block', marginTop: 6, fontSize: 13 }}>
+                                      <button
+                                        type="button"
+                                        className="plan-exercise-hint-btn"
+                                        onClick={openWgerExercise}
+                                        style={{
+                                          background: 'none',
+                                          border: 'none',
+                                          padding: 0,
+                                          cursor: 'pointer',
+                                          color: '#a78bfa',
+                                          textDecoration: 'underline',
+                                          font: 'inherit',
+                                        }}
+                                      >
+                                        Jak cvik provést (krátký popis)
+                                      </button>
+                                    </span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        );
+                      }
+                      if (htmlTrain) {
+                        return (
+                          <div className="plan-day-training">
+                            <h4 className="plan-day-training-title">Trénink tento den</h4>
+                            <div
+                              className="plan-day-training-html plan-day-training-fallback"
+                              dangerouslySetInnerHTML={{
+                                __html: stripPlanMediaAttrsFromHtml(htmlTrain),
+                              }}
+                            />
+                          </div>
+                        );
+                      }
+                      return null;
                     })()
                       : null}
                     {day.afterPlanEnd ? (

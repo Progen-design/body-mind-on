@@ -175,7 +175,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   };
 
   const handleToggle = async (habitId, dateStr) => {
-    if (dateStr > todayStr) return;
+    if (dateStr !== todayStr) return;
     const key = `${habitId}-${dateStr}`;
     if (!session?.access_token) return;
     if (togglingKeys.has(key)) return;
@@ -381,17 +381,18 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   const GAP = '8px';
   const gridCols = `${LABEL_W}px repeat(${days.length}, ${CELL_W}px)`;
 
-  const getCellStyle = (completed, isToday, isFuture, busy, isNegative) => {
+  const getCellStyle = (completed, isToday, isFuture, isPast, busy, isNegative) => {
+    const readOnly = isFuture || isPast;
     const base = {
       appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none',
       width: `${CELL_W}px`, height: '56px', padding: 0, margin: 0,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      borderRadius: '11px', cursor: isFuture ? 'default' : 'pointer',
+      borderRadius: '11px', cursor: readOnly ? 'default' : 'pointer',
       border: 'none', outline: 'none', position: 'relative', overflow: 'hidden',
       transition: 'transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s, opacity 0.18s',
       touchAction: 'manipulation',
-      opacity: isFuture ? 0.18 : busy ? 0.55 : 1,
-      pointerEvents: isFuture ? 'none' : 'auto',
+      opacity: isFuture ? 0.18 : busy ? 0.55 : isPast ? 0.88 : 1,
+      pointerEvents: readOnly ? 'none' : 'auto',
     };
     if (completed) {
       if (isNegative) {
@@ -433,20 +434,23 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         const completed = getCompleted(h.id, dateStr);
         const isToday = dateStr === todayStr;
         const isFuture = dateStr > todayStr;
+        const isPast = dateStr < todayStr;
         const busy = togglingKeys.has(`${h.id}-${dateStr}`);
+        const editable = !isFuture && !isPast && !busy;
         return (
           <button
             key={`${h.id}-${dateStr}`}
             type="button"
-            style={getCellStyle(completed, isToday, isFuture, busy, isNegative)}
-            onClick={() => !isFuture && !busy && handleToggle(h.id, dateStr)}
-            disabled={isFuture || busy}
+            className={`hg-habit-cell${isPast ? ' hg-habit-cell--past' : ''}${isFuture ? ' hg-habit-cell--future' : ''}`}
+            style={getCellStyle(completed, isToday, isFuture, isPast, busy, isNegative)}
+            onClick={() => editable && handleToggle(h.id, dateStr)}
+            disabled={isFuture || isPast || busy}
             aria-pressed={completed}
-            aria-label={`${h.label}, ${formatShortDate(dateStr)}${completed ? ', splněno' : ', nesplněno'}`}
-            onMouseEnter={(e) => { if (!isFuture && !busy) { e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)'; e.currentTarget.style.boxShadow = completed ? (isNegative ? '0 8px 24px rgba(239,68,68,0.6)' : '0 8px 24px rgba(34,197,94,0.6)') : isToday ? '0 0 0 1.5px rgba(139,92,246,0.8) inset, 0 8px 20px rgba(0,0,0,0.3)' : '0 0 0 1.5px rgba(255,255,255,0.25) inset, 0 8px 20px rgba(0,0,0,0.25)'; } }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = getCellStyle(completed, isToday, isFuture, busy, isNegative).boxShadow; }}
-            onMouseDown={(e) => { if (!isFuture && !busy) e.currentTarget.style.transform = 'scale(0.9)'; }}
-            onMouseUp={(e) => { if (!isFuture && !busy) e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)'; }}
+            aria-label={`${h.label}, ${formatShortDate(dateStr)}${completed ? ', splněno' : ', nesplněno'}${isPast ? ', jen zobrazení' : ''}`}
+            onMouseEnter={(e) => { if (editable) { e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)'; e.currentTarget.style.boxShadow = completed ? (isNegative ? '0 8px 24px rgba(239,68,68,0.6)' : '0 8px 24px rgba(34,197,94,0.6)') : isToday ? '0 0 0 1.5px rgba(139,92,246,0.8) inset, 0 8px 20px rgba(0,0,0,0.3)' : '0 0 0 1.5px rgba(255,255,255,0.25) inset, 0 8px 20px rgba(0,0,0,0.25)'; } }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = getCellStyle(completed, isToday, isFuture, isPast, busy, isNegative).boxShadow; }}
+            onMouseDown={(e) => { if (editable) e.currentTarget.style.transform = 'scale(0.9)'; }}
+            onMouseUp={(e) => { if (editable) e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)'; }}
           >
             {busy ? (
               <span className="hg-spin" />
@@ -475,20 +479,23 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
       const completed = getCompleted(h.id, dateStr);
       const isToday = dateStr === todayStr;
       const isFuture = dateStr > todayStr;
+      const isPast = dateStr < todayStr;
       const busy = togglingKeys.has(`${h.id}-${dateStr}`);
+      const editable = !isFuture && !isPast && !busy;
       return (
         <button
           key={`${h.id}-${dateStr}`}
           type="button"
-          style={getCellStyle(completed, isToday, isFuture, busy, isNegative)}
-          onClick={() => !isFuture && !busy && handleToggle(h.id, dateStr)}
-          disabled={isFuture || busy}
+          className={`hg-habit-cell${isPast ? ' hg-habit-cell--past' : ''}${isFuture ? ' hg-habit-cell--future' : ''}`}
+          style={getCellStyle(completed, isToday, isFuture, isPast, busy, isNegative)}
+          onClick={() => editable && handleToggle(h.id, dateStr)}
+          disabled={isFuture || isPast || busy}
           aria-pressed={completed}
-          aria-label={`${h.label}, ${formatShortDate(dateStr)}${completed ? ', splněno' : ', nesplněno'}`}
-          onMouseEnter={(e) => { if (!isFuture && !busy) { e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)'; e.currentTarget.style.boxShadow = completed ? (isNegative ? '0 8px 24px rgba(239,68,68,0.6)' : '0 8px 24px rgba(34,197,94,0.6)') : isToday ? '0 0 0 1.5px rgba(139,92,246,0.8) inset, 0 8px 20px rgba(0,0,0,0.3)' : '0 0 0 1.5px rgba(255,255,255,0.25) inset, 0 8px 20px rgba(0,0,0,0.25)'; } }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = getCellStyle(completed, isToday, isFuture, busy, isNegative).boxShadow; }}
-          onMouseDown={(e) => { if (!isFuture && !busy) e.currentTarget.style.transform = 'scale(0.9)'; }}
-          onMouseUp={(e) => { if (!isFuture && !busy) e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)'; }}
+          aria-label={`${h.label}, ${formatShortDate(dateStr)}${completed ? ', splněno' : ', nesplněno'}${isPast ? ', jen zobrazení' : ''}`}
+          onMouseEnter={(e) => { if (editable) { e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)'; e.currentTarget.style.boxShadow = completed ? (isNegative ? '0 8px 24px rgba(239,68,68,0.6)' : '0 8px 24px rgba(34,197,94,0.6)') : isToday ? '0 0 0 1.5px rgba(139,92,246,0.8) inset, 0 8px 20px rgba(0,0,0,0.3)' : '0 0 0 1.5px rgba(255,255,255,0.25) inset, 0 8px 20px rgba(0,0,0,0.25)'; } }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = getCellStyle(completed, isToday, isFuture, isPast, busy, isNegative).boxShadow; }}
+          onMouseDown={(e) => { if (editable) e.currentTarget.style.transform = 'scale(0.9)'; }}
+          onMouseUp={(e) => { if (editable) e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)'; }}
         >
           {busy ? (
             <span className="hg-spin" />
@@ -518,13 +525,13 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
             {displayDateStr === todayStr ? (
               <>Aktivní den: <strong>{todayFormatted}</strong> (dnes)</>
             ) : (
-              <>Zobrazený den: <strong>{displayDateFormatted}</strong>{displayDateStr > todayStr && ' (budoucí)'}</>
+              <>Zobrazený den: <strong>{displayDateFormatted}</strong>{displayDateStr > todayStr && ' (budoucí)'}{displayDateStr < todayStr && ' (minulost, jen zobrazení)'}</>
             )}
             {displayDateStr !== todayStr && (
               <button type="button" className="ht-date-back" onClick={() => setViewingDateStr(todayStr)}>Zpět na dnes</button>
             )}
           </p>
-          <p className="ht-hint">Odškrtávej návyky po dnech. Minulé dny se zobrazí jen tam, kde už máš záznam. Datum nahoře můžeš kliknout pro zvýraznění dne.</p>
+          <p className="ht-hint">Odškrtávat lze jen dnešní den. Minulost je jen pro přehled (sloupce jen u dnů se záznamem). Datum nahoře můžeš kliknout pro zvýraznění dne.</p>
         </div>
         <div className="ht-progress-inline">
           <span className="ht-prog-nums">{completedToday}<span className="ht-prog-sep">/</span>{totalHabits}</span>
@@ -917,6 +924,13 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           padding: 18px 28px 24px 20px;
           min-width: max-content;
           box-sizing: border-box;
+        }
+        .hg-habit-cell--past:disabled {
+          opacity: 1 !important;
+          cursor: default !important;
+        }
+        .hg-habit-cell--future:disabled {
+          cursor: default !important;
         }
         .hg-corner {
           height: 60px;

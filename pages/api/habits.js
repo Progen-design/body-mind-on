@@ -3,6 +3,35 @@ import { supabaseServer } from '../../lib/supabaseServer';
 import { requireActiveMembership } from '../../lib/membershipHelpers';
 import { isValidHabitId } from '../../lib/habits';
 
+/** YYYY-MM-DD v Europe/Prague (stejná logika „dnes“ jako u většiny uživatelů v CZ). */
+function getTodayStrPrague() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Prague',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
+/**
+ * Zapisovat / mazat jen dnešní den — žádné zpětné úpravy u běžných návyků.
+ * Výjimka: návyk „trénink“ (`training`) jde vázat na datum tréninku (i minulost), ne na dnešek.
+ */
+function assertEditableLogDate(logDateRaw, habitId) {
+  const d = String(logDateRaw || '').trim().slice(0, 10);
+  const today = getTodayStrPrague();
+  if (habitId === 'training') {
+    if (d > today) {
+      return { error: 'Nelze zapisovat trénink do budoucna.', status: 400 };
+    }
+    return null;
+  }
+  if (d !== today) {
+    return { error: 'Návyky lze měnit jen pro dnešní den.', status: 400 };
+  }
+  return null;
+}
+
 function getAuthUser(req) {
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
@@ -77,6 +106,10 @@ export default async function handler(req, res) {
           if (!isValidHabitId(habit_id)) {
             return res.status(400).json({ error: `Invalid habit_id: ${habit_id}` });
           }
+          const dateErr = assertEditableLogDate(log_date, habit_id);
+          if (dateErr) {
+            return res.status(dateErr.status).json({ error: dateErr.error });
+          }
           const payload = {
             user_id: user.id,
             log_date: String(log_date).trim().slice(0, 10),
@@ -107,6 +140,11 @@ export default async function handler(req, res) {
       }
       if (!isValidHabitId(habit_id)) {
         return res.status(400).json({ error: 'Invalid habit_id' });
+      }
+
+      const dateErr = assertEditableLogDate(log_date, habit_id);
+      if (dateErr) {
+        return res.status(dateErr.status).json({ error: dateErr.error });
       }
 
       const payload = {
@@ -140,7 +178,7 @@ export default async function handler(req, res) {
       }
       const { data: existing, error: fetchErr } = await supabaseServer
         .from('habit_logs')
-        .select('id, user_id')
+        .select('id, user_id, log_date, habit_id')
         .eq('id', id)
         .single();
 
@@ -149,6 +187,10 @@ export default async function handler(req, res) {
       }
       if (existing.user_id !== user.id) {
         return res.status(403).json({ error: 'Not authorized to delete this log' });
+      }
+      const delDateErr = assertEditableLogDate(existing.log_date, existing.habit_id);
+      if (delDateErr) {
+        return res.status(delDateErr.status).json({ error: delDateErr.error });
       }
 
       const { error: deleteErr } = await supabaseServer

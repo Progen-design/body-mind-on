@@ -1008,7 +1008,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                                   Suroviny
                                 </button>
                                 <button type="button" className="plan-meal-secondary-btn" onClick={openOrderIngredients}>
-                                  Objednat suroviny
+                                  Nákupní seznam
                                 </button>
                                 <button type="button" className="plan-meal-swap" onClick={(e) => { e.stopPropagation(); handleSwap(); }}>Nahradit jiným</button>
                                 {canPinMeals && (
@@ -1016,7 +1016,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                                     type="button"
                                     className={`plan-meal-pin ${mealPinned ? 'plan-meal-pin-active' : ''}`}
                                     onClick={(e) => { e.stopPropagation(); handleTogglePin(meal.type || '', mealTextForPin, overrideKey); }}
-                                    title="Přidá toto jídlo do dalšího týdne – při příštím generování plánu ho AI zahrne."
+                                    title="Označíš si jídlo pro příští týden — při dalším generování ho zkusíme znovu zapracovat."
                                   >
                                     {mealPinned ? '✓ Zahrnuto do dalšího týdne' : 'Zahrnout do dalšího týdne'}
                                   </button>
@@ -1063,25 +1063,9 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                                         href={`https://wger.de/en/exercise/${wgerId}/view`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        style={{ color: '#a78bfa', marginRight: 10 }}
+                                        style={{ color: '#a78bfa' }}
                                       >
-                                        Popis cviku (wger)
-                                      </a>
-                                      <a
-                                        href={`https://wger.de/api/v2/exerciseimage/?exercise=${wgerId}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        style={{ color: '#93c5fd', marginRight: 10 }}
-                                      >
-                                        Obrázky (API)
-                                      </a>
-                                      <a
-                                        href={`https://wger.de/api/v2/video/?exercise=${wgerId}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        style={{ color: '#86efac' }}
-                                      >
-                                        Video (API)
+                                        Jak cvik provést (krátký popis)
                                       </a>
                                     </span>
                                   ) : null}
@@ -1180,7 +1164,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                         <div className="plan-day-shopping-actions plan-order-ingredients">
                           <div className="plan-shopping-actions">
                             <button type="button" className="plan-btn-order" onClick={copyAndOpenDay}>
-                              🛒 Objednat suroviny
+                              🛒 Nákupní seznam
                             </button>
                             <button type="button" className="plan-btn-share" onClick={handleSendEmailDay} disabled={dayState.email.loading}>
                               {dayState.email.loading ? 'Odesílám…' : '✉️ Poslat e-mailem'}
@@ -1323,7 +1307,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                       setMealIngredientsModal(null);
                     }}
                   >
-                    Objednat suroviny
+                    Nákupní seznam
                   </button>
                 </div>
               </div>
@@ -1335,7 +1319,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
             <div className="plan-recipe-modal-overlay" onClick={() => setMealOrderModal(null)}>
               <div className="plan-recipe-modal plan-recipe-modal-dynamic plan-meal-ingredients-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="plan-recipe-modal-header">
-                  <h3>Objednat suroviny</h3>
+                  <h3>Nákupní seznam</h3>
                   <button type="button" className="plan-recipe-modal-close" onClick={() => setMealOrderModal(null)} aria-label="Zavřít">×</button>
                 </div>
                 <div className="plan-recipe-modal-body">
@@ -1503,7 +1487,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                 <div id="plan-nakupni-seznam" className="plan-block plan-shopping-block plan-shopping-empty-anchor">
                   <h3 className="plan-block-title">Suroviny a nákup</h3>
                   <p className="plan-block-subtitle">
-                    Hromadný nákupní seznam zatím není k dispozici. Suroviny máš u jednotlivých jídel v závorkách a u každého dne tlačítko „Objednat suroviny“.
+                    Hromadný nákupní seznam zatím není k dispozici. Suroviny najdeš u jednotlivých jídel a u každého dne tlačítko „Nákupní seznam“ (zkopíruješ řádky a vložíš je do e-shopu).
                   </p>
                 </div>
               ) : null;
@@ -1550,7 +1534,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                         <div className="plan-order-ingredients">
                           <div className="plan-shopping-actions">
                             <button type="button" className="plan-btn-order" onClick={copyAndOpen}>
-                              🛒 Objednat suroviny
+                              🛒 Nákupní seznam
                             </button>
                             <button type="button" className="plan-btn-share" onClick={handleSendEmail} disabled={shoppingSendEmail.loading}>
                               {shoppingSendEmail.loading ? 'Odesílám…' : '✉️ Poslat e-mailem'}

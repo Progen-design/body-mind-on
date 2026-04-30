@@ -8,7 +8,6 @@ import { stripInlineTrainingDayBlockFromHtml, stripPlanMediaAttrsFromHtml } from
 import {
   buildShoppingSectionForDay,
   buildShoppingSectionsForWeek,
-  buildShoppingItemsForMeal,
   flattenShoppingSections,
 } from '../lib/shoppingListBuilder';
 import { mealDisplayTitleForStructuredMeal } from '../lib/mealDisplayNameHelpers';
@@ -354,7 +353,6 @@ function normalizeMealTextForPin(text) {
 export default function PlanViewer({ plan, userName: _userName, hideHero, hideShoppingList = false, dietaryPreferences = '', canPinMeals = true, onToast, outputMode: outputModeProp }) {
   const [parsed, setParsed] = useState(null);
   const [recipeModal, setRecipeModal] = useState(null); // { title, content, anchorRect, hasRecipe, openId? }
-  const [mealIngredientsModal, setMealIngredientsModal] = useState(null); // { title, items, note, isEstimated }
   const [mealOverrides, setMealOverrides] = useState({}); // { "di_mi": { title, content } }
   const [swapModal, setSwapModal] = useState(null); // { dayIndex, mealIndex, dishQuery, loading, html }
   const [mealPins, setMealPins] = useState([]); // { meal_type, meal_text }[]
@@ -557,13 +555,13 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    if (recipeModal || swapModal || mealIngredientsModal || exerciseHintModal) {
+    if (recipeModal || swapModal || exerciseHintModal) {
       document.body.style.overflow = 'hidden';
       return () => {
         document.body.style.overflow = '';
       };
     }
-  }, [recipeModal, swapModal, mealIngredientsModal, exerciseHintModal]);
+  }, [recipeModal, swapModal, exerciseHintModal]);
 
   if (!plan || !plan.plan_html) {
     return (
@@ -656,7 +654,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
             el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }}>Na dnešek</a>
           <span className="plan-nav-sep" aria-hidden>|</span>
-          <a href="#plan-nakupni-seznam" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-nakupni-seznam')?.scrollIntoView({ behavior: 'smooth' }); }}>Suroviny</a>
+          <a href="#plan-nakupni-seznam" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-nakupni-seznam')?.scrollIntoView({ behavior: 'smooth' }); }}>Nákup</a>
           <span className="plan-nav-sep" aria-hidden>|</span>
           <a href="#plan-varianty-jidel" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-varianty-jidel')?.scrollIntoView({ behavior: 'smooth' }); }}>Varianty</a>
         </nav>
@@ -787,7 +785,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
             <div id="plan-jidelnicek" className="plan-block">
               <h3 className="plan-block-title">Týden po dnech</h3>
               <p className="plan-block-subtitle">
-                Každý řádek je jeden kalendářní den platnosti tvého plánu. Rozbalením dostaneš detaily receptu, automaticky dopočítané suroviny a trénink.
+                Každý řádek je jeden kalendářní den platnosti tvého plánu. Rozbalením dostaneš recept a trénink.
               </p>
               <p id="plan-varianty-jidel" className="plan-variant-hint">
                 <strong>Tip:</strong> u každého jídla najdeš tlačítko „Nahradit jiným“ pro alternativu se zachovanými makry.
@@ -932,7 +930,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                             // 4) srozumitelná finální fallback hláška
                             return `
                               <p class="plan-no-recipe-msg">Recept se nepodařilo automaticky dohledat.</p>
-                              <p class="plan-no-recipe-hint">Zkus vygenerovat náhradní variantu jídla nebo použij suroviny níže.</p>
+                              <p class="plan-no-recipe-hint">Zkus vygenerovat náhradní variantu jídla.</p>
                             `;
                           };
                           loadRecipe().then((html) => {
@@ -941,27 +939,6 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                           }).catch(() => {
                             setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení nebo zkus znovu.</p>', loading: false } : prev));
                           });
-                        };
-                        const buildMealIngredientPayload = () => {
-                          const mealTitle = mealTextFromMeal(meal, override?.title || '');
-                          const built = buildShoppingItemsForMeal({
-                            meal,
-                            mealText: mealTitle,
-                            recipeHtml: override?.content || matchingRecipeHtml || '',
-                            structuredMeal: meal,
-                          });
-                          return {
-                            title: modalTitle,
-                            items: built.items || [],
-                            note: built.note || '',
-                            isEstimated: !!built.isEstimated,
-                            source: built.source || 'estimated',
-                          };
-                        };
-                        const openIngredients = (e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setMealIngredientsModal(buildMealIngredientPayload());
                         };
                         const handleSwap = () => {
                           const dishQuery = `${meal.type || 'Jídlo'} alternativa, do 500 kcal`.slice(0, 150);
@@ -1021,9 +998,6 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                               <div className="plan-meal-actions">
                                 <button type="button" className="plan-meal-recipe-btn" onClick={openRecipe}>
                                   Recept
-                                </button>
-                                <button type="button" className="plan-meal-secondary-btn" onClick={openIngredients}>
-                                  Suroviny
                                 </button>
                                 <button type="button" className="plan-meal-swap" onClick={(e) => { e.stopPropagation(); handleSwap(); }}>Nahradit jiným</button>
                                 {canPinMeals && (
@@ -1303,56 +1277,6 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
             document.body
           )}
 
-          {mealIngredientsModal && typeof document !== 'undefined' && createPortal(
-            <div className="plan-recipe-modal-overlay" onClick={() => setMealIngredientsModal(null)}>
-              <div className="plan-recipe-modal plan-recipe-modal-dynamic plan-meal-ingredients-modal" onClick={(e) => e.stopPropagation()}>
-                <div className="plan-recipe-modal-header">
-                  <h3>Suroviny: {mealIngredientsModal.title}</h3>
-                  <button type="button" className="plan-recipe-modal-close" onClick={() => setMealIngredientsModal(null)} aria-label="Zavřít">×</button>
-                </div>
-                <div className="plan-recipe-modal-body">
-                  {mealIngredientsModal.items?.length ? (
-                    <ul className="plan-modal-ingredients-list">
-                      {mealIngredientsModal.items.map((item, idx) => <li key={`${item}-${idx}`}>{item}</li>)}
-                    </ul>
-                  ) : (
-                    <p className="plan-no-recipe-msg">Suroviny zatím nejsou dostupné.</p>
-                  )}
-                  {mealIngredientsModal.note ? <p className="plan-no-recipe-hint">{mealIngredientsModal.note}</p> : null}
-                </div>
-                <div className="plan-recipe-modal-actions">
-                  <button
-                    type="button"
-                    className="plan-recipe-modal-replace-btn"
-                    onClick={async () => {
-                      try {
-                        const text = (mealIngredientsModal.items || []).join('\n');
-                        if (!text) return;
-                        await navigator.clipboard.writeText(text);
-                        if (onToast) onToast({ message: 'Suroviny zkopírovány.', type: 'success' });
-                      } catch (_) {
-                        if (onToast) onToast({ message: 'Suroviny se nepodařilo zkopírovat.', type: 'error' });
-                      }
-                    }}
-                  >
-                    Kopírovat suroviny
-                  </button>
-                  <button
-                    type="button"
-                    className="plan-meal-secondary-btn plan-modal-inline-btn"
-                    onClick={() => {
-                      document.getElementById('plan-nakupni-seznam')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      setMealIngredientsModal(null);
-                    }}
-                  >
-                    Zobrazit v nákupním seznamu
-                  </button>
-                </div>
-              </div>
-            </div>,
-            document.body
-          )}
-
           {exerciseHintModal && typeof document !== 'undefined' && createPortal(
             <div className="plan-recipe-modal-overlay" onClick={() => setExerciseHintModal(null)}>
               <div
@@ -1527,7 +1451,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                 <div id="plan-nakupni-seznam" className="plan-block plan-shopping-block plan-shopping-empty-anchor">
                   <h3 className="plan-block-title">Suroviny a nákup</h3>
                   <p className="plan-block-subtitle">
-                    Hromadný nákupní seznam zatím není k dispozici. Suroviny najdeš u jednotlivých jídel (tlačítko Suroviny) a u každého dne pod jídly můžeš zkopírovat řádky přes týdenní nákupní sekci níže.
+                    Hromadný nákupní seznam zatím není k dispozici. U každého dne pod jídly můžeš zkopírovat řádky přes týdenní nákupní sekci níže nebo použít odkaz Nákup.
                   </p>
                 </div>
               ) : null;

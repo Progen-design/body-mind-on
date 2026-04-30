@@ -1,4 +1,4 @@
-// components/HabitTracker.js – Denní návyky (dnes + dny dopředu, jen dnes editovatelné)
+// components/HabitTracker.js – Denní návyky (dnes + blízká budoucnost; minulé dny jen pokud existují logy)
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { POSITIVE_HABITS, NEGATIVE_HABITS, getHabitById } from '../lib/habits';
 
@@ -54,8 +54,8 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     return { pos, neg };
   }, []);
 
-  /** Sloupce vždy chronologicky (starší vlevo → dnes → budoucí), aby to dávalo smysl jako kalendář. */
-  const days = useMemo(() => {
+  /** Plné okno pro načtení logů z API (včetně minulosti). */
+  const baseDays = useMemo(() => {
     const result = [];
     const today = new Date();
     today.setHours(12, 0, 0, 0);
@@ -68,9 +68,14 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
       result.push(getLocalDateStr(d));
     }
     return result;
-  }, []);
+  }, [todayStr]);
 
-  const daysChronological = useMemo(() => [...days], [days]);
+  /** Viditelné sloupce: dnes a budoucnost vždy; minulé jen když pro ten den existuje habit log. */
+  const days = useMemo(() => {
+    const logs = allLogs || [];
+    const hasLogOnDate = (dateStr) => logs.some((l) => l.log_date === dateStr);
+    return baseDays.filter((dateStr) => (dateStr >= todayStr ? true : hasLogOnDate(dateStr)));
+  }, [baseDays, todayStr, allLogs]);
 
   useEffect(() => {
     const { pos, neg } = buildHabitsLists(userHabits);
@@ -111,7 +116,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     }
     setFetchError(null);
     Promise.all([
-      fetchLogs(days[0], days[days.length - 1], habitIds),
+      fetchLogs(baseDays[0], baseDays[baseDays.length - 1], habitIds),
       fetchLogs(fromStr, todayStr, habitIds),
     ])
       .then(([rangeData, weekData]) => {
@@ -129,7 +134,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         initialLogsLoadDoneRef.current = true;
         setLoading(false);
       });
-  }, [positiveHabits, negativeHabits, days, todayStr, fetchLogs]);
+  }, [positiveHabits, negativeHabits, baseDays, todayStr, fetchLogs]);
 
   useEffect(() => {
     loadLogs();
@@ -300,21 +305,21 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     const pctToday = Math.round((completedToday / totalHabits) * 100);
     const avgWeek = Math.round(avgWeekCompletion);
     if (completedToday === totalHabits) {
-      return 'Výborně! Dnes máš vše splněno. Každý den se počítá – pokračuj takhle.';
+      return 'Dnes máš všechny návyky splněné.';
     }
     if (pctToday >= 70) {
-      return `Dnes máš ${pctToday} % splněno. Skvělé! Zbývá jen pár návyků – zkus je doplnit před večerem.`;
+      return `Dnes cca ${pctToday} % — doplníš zbytek?`;
     }
     if (avgWeek >= 4 && avgWeek < 7) {
-      return `Za posledních 7 dní máš v průměru ${avgWeek} splnění na návyk. Dobrý trend – pokračuj v pravidelnosti.`;
+      return 'Poslední týden docela pravidelně — pokračuj.';
     }
     if (avgWeek >= 7) {
-      return 'Za poslední týden jsi byl/a velmi konzistentní. Taková pravidelnost přináší výsledky.';
+      return 'Minulý týden velmi pravidelně.';
     }
     if (completedToday === 0) {
-      return 'Začni malým krokem – odškrtni alespoň jeden návyk dnes. I jeden je lepší než žádný.';
+      return 'Dnes ještě nic — odškrtni aspoň jeden návyk.';
     }
-    return `Dnes máš ${completedToday} z ${totalHabits} splněno. Každý malý krok se počítá – zkus přidat ještě jeden.`;
+    return `Dnes ${completedToday} z ${totalHabits}.`;
   };
 
   const recommendation = getRecommendation();
@@ -322,7 +327,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   const chartData = useMemo(() => {
     const totalHabitsCount = positiveHabits.length + negativeHabits.length;
     const maxCount = Math.max(1, totalHabitsCount);
-    return daysChronological.map((dateStr) => {
+    return days.map((dateStr) => {
       const posCount = (positiveHabits || []).filter((h) => getCompleted(h.id, dateStr)).length;
       const negCount = (negativeHabits || []).filter((h) => getCompleted(h.id, dateStr)).length;
       return {
@@ -334,7 +339,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         pct: ((posCount + negCount) / maxCount) * 100,
       };
     });
-  }, [daysChronological, todayStr, positiveHabits, negativeHabits, allLogs]);
+  }, [days, todayStr, positiveHabits, negativeHabits, allLogs]);
 
   const chartMaxVal = useMemo(() => {
     let maxPos = 0, maxNeg = 0;
@@ -422,7 +427,6 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         <span className="hg-emoji" aria-hidden="true">{h.emoji}</span>
         <div className="hg-name-wrap">
           <span className="hg-name">{h.label}</span>
-          {h.description && <span className="hg-hint"> ({h.description})</span>}
         </div>
       </div>
       {days.map((dateStr) => {
@@ -520,7 +524,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
               <button type="button" className="ht-date-back" onClick={() => setViewingDateStr(todayStr)}>Zpět na dnes</button>
             )}
           </p>
-          <p className="ht-hint">Odškrtnutí se ukládá pro konkrétní datum. Sloupce jsou chronologicky zleva doprava (minulost → dnes → blízká budoucnost). Každá buňka je samostatný návyk — můžeš jich za sebou označit víc. Klikni na datum nahoře pro zvýraznění dne.</p>
+          <p className="ht-hint">Odškrtávej návyky po dnech. Minulé dny se zobrazí jen tam, kde už máš záznam. Datum nahoře můžeš kliknout pro zvýraznění dne.</p>
         </div>
         <div className="ht-progress-inline">
           <span className="ht-prog-nums">{completedToday}<span className="ht-prog-sep">/</span>{totalHabits}</span>
@@ -557,7 +561,6 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
                         <span className="hg-emoji" aria-hidden="true">{h.emoji}</span>
                         <div className="hg-name-wrap">
                           <span className="hg-name">{h.label}</span>
-                          {h.description && <span className="hg-hint"> ({h.description})</span>}
                         </div>
                       </div>
                     ))}
@@ -573,7 +576,6 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
                         <span className="hg-emoji" aria-hidden="true">{h.emoji}</span>
                         <div className="hg-name-wrap">
                           <span className="hg-name">{h.label}</span>
-                          {h.description && <span className="hg-hint"> ({h.description})</span>}
                         </div>
                       </div>
                     ))}
@@ -618,7 +620,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
             </div>
 
             <div className="ht-chart-wrap">
-              <p className="ht-chart-title">Zdravé návyky (zelená) a zlozvyky (červená) po dnech</p>
+              <p className="ht-chart-title">Přehled po dnech (zelená / červená)</p>
               <div className="ht-chart-inner">
                 <div className="ht-chart-y-axis">
                   {Array.from({ length: 2 * chartMaxVal + 1 }, (_, i) => chartMaxVal - i).map((n) => (

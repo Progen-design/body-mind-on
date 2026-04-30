@@ -3,6 +3,7 @@ import { supabaseServer } from '../../lib/supabaseServer';
 import { requireActiveMembership } from '../../lib/membershipHelpers';
 import { sendPlanEmail } from '../../lib/mail';
 import { getDefaultLoginUrl } from '../../lib/siteUrls.js';
+import { buildDayHeadingOverridesFromStructuredPlan } from '../../lib/planDayHeadingFormat.js';
 
 const loginUrl = getDefaultLoginUrl();
 
@@ -29,7 +30,7 @@ export default async function handler(req, res) {
 
     let { data: plans } = await supabaseServer
       .from('ai_generated_plans')
-      .select('id, plan_html, created_at')
+      .select('id, plan_html, created_at, structured_plan_json, valid_from')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1);
@@ -37,7 +38,7 @@ export default async function handler(req, res) {
     if (!plans?.length && email) {
       const { data: plansByEmail } = await supabaseServer
         .from('ai_generated_plans')
-        .select('id, plan_html, created_at')
+        .select('id, plan_html, created_at, structured_plan_json, valid_from')
         .eq('email', email)
         .order('created_at', { ascending: false })
         .limit(1);
@@ -50,24 +51,31 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'Nemáš žádný uložený plán. Vygeneruje se při registraci.' });
     }
 
-    let firstName = null;
+    let bmRow = null;
     try {
-      const { data: bmRow } = await supabaseServer
+      const { data } = await supabaseServer
         .from('body_metrics')
-        .select('name')
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      firstName = bmRow?.name ?? null;
+      bmRow = data ?? null;
     } catch {
-      firstName = null;
+      bmRow = null;
     }
+
+    const dayHeadingOverrides = buildDayHeadingOverridesFromStructuredPlan(
+      plan?.structured_plan_json,
+      plan?.valid_from
+    );
 
     const result = await sendPlanEmail(email, planHtml, {
       loginUrl,
       existingAccount: true,
-      firstName,
+      firstName: bmRow?.name ?? null,
+      bodyMetrics: bmRow ?? undefined,
+      dayHeadingOverrides: dayHeadingOverrides ?? undefined,
     });
 
     if (!result.ok) {

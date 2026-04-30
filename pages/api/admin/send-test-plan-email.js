@@ -11,6 +11,7 @@ import { sendPlanEmail } from '../../../lib/mail';
 import { getDefaultLoginUrl } from '../../../lib/siteUrls.js';
 import { normalizePlanOutputMode } from '../../../lib/planOutputMode';
 import { renderPlanHtmlFromStructured } from '../../../lib/planRenderer';
+import { buildDayHeadingOverridesFromStructuredPlan } from '../../../lib/planDayHeadingFormat.js';
 
 function isAdmin(req) {
   const auth = req.headers.authorization || '';
@@ -157,12 +158,16 @@ export default async function handler(req, res) {
     firstName = null;
   }
 
+  const dayHeadingOverrides = buildDayHeadingOverridesFromStructuredPlan(plan.structured_plan_json, plan.valid_from);
+
   const sendResult = await sendPlanEmail(recipientEmail, htmlSource, {
     loginUrl: getDefaultLoginUrl(),
     existingAccount: true,
     firstName,
     planOutputMode,
     accountEmailForLoginBlock: ownerEmail,
+    bodyMetrics: bmFull ?? undefined,
+    dayHeadingOverrides: dayHeadingOverrides ?? undefined,
   });
 
   if (!sendResult?.ok) {

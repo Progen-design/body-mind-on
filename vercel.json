@@ -1,4 +1,8 @@
 {
+  "env": {
+    "PLAN_OUTPUT_MODE": "nutrition_training",
+    "NEXT_PUBLIC_PLAN_OUTPUT_MODE": "nutrition_training"
+  },
   "crons": [
     {
       "path": "/api/cron/daily-digest",

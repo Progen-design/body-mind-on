@@ -13,6 +13,7 @@ import {
 import { mealDisplayTitleForStructuredMeal } from '../lib/mealDisplayNameHelpers';
 import { parsePlanHtml } from '../lib/parsePlanHtml';
 import { getPlanOutputMode, shouldRenderTraining } from '../lib/planOutputMode.js';
+import { buildPlanPdfHtml } from '../lib/planPdf';
 
 export { parsePlanHtml };
 
@@ -742,30 +743,21 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                   btn.textContent = 'Generuji PDF…';
                   btn.disabled = true;
                   try {
-                    // PDF should always contain full weekly plan, not only days from "today".
-                    let rows = '';
-                    (planWeekDays || []).forEach((day, di) => {
-                      const dayLabel = (day.dayName || 'Den') + (day.dateStr ? ` (${day.dateStr})` : '') + (day.isToday ? ' – dnes' : '');
-                      rows += `<div style="margin-bottom:18px;page-break-inside:avoid;"><div style="font-size:15px;font-weight:700;background:#eff6ff;color:#1e40af;padding:8px 14px;border-radius:7px;margin-bottom:10px;">${dayLabel.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>`;
-                      (day.meals || []).forEach((meal, mi) => {
-                        const key = `${day.originalIndex ?? di}_${mi}`;
-                        const ov = mealOverrides[key];
-                        const text = ov ? ov.title : (meal.text || meal.fullHtml || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-                        const dishTitle = (text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                        rows += `<div style="display:flex;gap:12px;align-items:center;margin-bottom:8px;background:#f8fafc;border-radius:8px;padding:10px;"><div style="flex-shrink:0;width:80px;height:56px;background:#e2e8f0;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:22px;">${meal.type === 'Snídaně' ? '🍳' : meal.type === 'Oběd' ? '🥗' : meal.type === 'Večeře' ? '🍽️' : '🥪'}</div><div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;letter-spacing:0.04em;margin-bottom:3px;">${(meal.type || 'Jídlo').replace(/</g, '&lt;')}</div><div style="font-size:12px;color:#1e293b;line-height:1.45;">${dishTitle}</div></div></div>`;
-                      });
-                      rows += '</div>';
+                    const htmlStr = buildPlanPdfHtml({
+                      days: planWeekDays || [],
+                      mealOverrides,
+                      planValidFrom: plan?.valid_from || null,
+                      planValidUntil: plan?.valid_until || null,
                     });
-
-                    const htmlStr = `<div style="font-family:Arial,Helvetica,sans-serif;color:#1e293b;padding:10px;"><h1 style="font-size:22px;font-weight:700;margin:0 0 20px;padding-bottom:12px;border-bottom:3px solid #e2e8f0;color:#0f172a;">Jídelníček na týden – Body &amp; Mind ON</h1>${rows}</div>`;
 
                     const html2pdf = (await import('html2pdf.js')).default;
                     await html2pdf().from(htmlStr).set({
-                      margin: [12, 12, 12, 12],
+                      margin: [10, 10, 10, 10],
                       filename: 'jidelnicek-tyden.pdf',
-                      image: { type: 'jpeg', quality: 0.85 },
-                      html2canvas: { scale: 2, useCORS: false, logging: false },
+                      image: { type: 'jpeg', quality: 0.92 },
+                      html2canvas: { scale: 2, useCORS: false, logging: false, backgroundColor: '#ffffff' },
                       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                      pagebreak: { mode: ['css', 'legacy'] },
                     }).save();
                   } catch (err) {
                     console.error('PDF error:', err);

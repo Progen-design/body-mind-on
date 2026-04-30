@@ -6,13 +6,18 @@
  *   node scripts/send-test-plan-email.mjs
  *   node scripts/send-test-plan-email.mjs --yes
  *
- * Env (.env.local):
- *   ADMIN_TOKEN
- *   TEST_PLAN_OWNER_EMAIL   (default info@bodyandmindon.cz)
- *   TEST_PLAN_RECIPIENT     (default janprikopa@gmail.com)
- *   TEST_APP_URL            (default https://app.bodyandmindon.cz)
- *   TEST_PLAN_ID            (volitelné – konkrétní řádek ai_generated_plans)
- *   TEST_PLAN_EMAIL_OUTPUT_MODE (volitelné; výchozí nutrition_training = e-mail vč. tréninku)
+ * Výchozí hodnoty (lze přepsat env před spuštěním — už nastavené klíče nepřepíše .env.local):
+ *   TEST_PLAN_OWNER_EMAIL=info@bodyandmindon.cz
+ *   TEST_PLAN_RECIPIENT=janprikopa@gmail.com
+ *   TEST_APP_URL=https://app.bodyandmindon.cz
+ *
+ * Env (.env.local doplní jen klíče, které ještě nejsou v prostředí):
+ *   ADMIN_TOKEN               (povinné)
+ *   TEST_PLAN_OWNER_EMAIL
+ *   TEST_PLAN_RECIPIENT
+ *   TEST_APP_URL
+ *   TEST_PLAN_ID              (volitelné – konkrétní řádek ai_generated_plans)
+ *   TEST_PLAN_EMAIL_OUTPUT_MODE (volitelné; výchozí nutrition_training)
  */
 import { readFileSync, existsSync } from 'fs';
 import { createInterface } from 'node:readline/promises';
@@ -53,6 +58,15 @@ const PLAN_ID = process.env.TEST_PLAN_ID?.trim() || '';
 const PLAN_OUTPUT = (process.env.TEST_PLAN_EMAIL_OUTPUT_MODE || 'nutrition_training').trim();
 const URL = `${APP_URL}/api/admin/send-test-plan-email`;
 
+if (/localhost|127\.0\.0\.1/i.test(APP_URL)) {
+  console.warn('');
+  console.warn('══════════════════════════════════════════════════════════════════');
+  console.warn('⚠️  Pozor: TEST_APP_URL míří na localhost.');
+  console.warn('   Pro produkční test použij TEST_APP_URL=https://app.bodyandmindon.cz');
+  console.warn('══════════════════════════════════════════════════════════════════');
+  console.warn('');
+}
+
 if (!ADMIN_TOKEN) {
   console.error('Chybí ADMIN_TOKEN (.env.local).');
   process.exit(1);
@@ -81,6 +95,7 @@ async function post(body) {
 }
 
 console.log('');
+console.log('[send-test-plan-email] Efektivní TEST_APP_URL:', APP_URL);
 console.log('[send-test-plan-email] Kontrolní náhled (dry_run)…');
 
 const preview = await post({

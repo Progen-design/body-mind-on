@@ -58,88 +58,128 @@ export default async function handler(req, res) {
     return res.status(403).json({ ok: false, error: 'Neoprávněný přístup' });
   }
 
-  const ownerEmail = String(req.body?.owner_email ?? '').trim().toLowerCase();
-  const recipientEmail = String(req.body?.recipient_email ?? '').trim().toLowerCase();
-  const planIdRaw = req.body?.plan_id != null ? String(req.body.plan_id).trim() : '';
-  const dryRun = req.body?.dry_run === true || req.body?.dryRun === true;
+  try {
+    const ownerEmail = String(req.body?.owner_email ?? '').trim().toLowerCase();
+    const recipientEmail = String(req.body?.recipient_email ?? '').trim().toLowerCase();
+    const planIdRaw = req.body?.plan_id != null ? String(req.body.plan_id).trim() : '';
+    const dryRun = req.body?.dry_run === true || req.body?.dryRun === true;
 
-  const rawMode =
-    req.body?.plan_output_mode ??
-    req.body?.planOutputMode ??
-    process.env.TEST_PLAN_EMAIL_OUTPUT_MODE ??
-    'nutrition_training';
-  const planOutputMode = normalizePlanOutputMode(rawMode);
+    const rawMode =
+      req.body?.plan_output_mode ??
+      req.body?.planOutputMode ??
+      process.env.TEST_PLAN_EMAIL_OUTPUT_MODE ??
+      'nutrition_training';
+    const planOutputMode = normalizePlanOutputMode(rawMode);
 
-  if (!ownerEmail || !ownerEmail.includes('@')) {
-    return res.status(400).json({ ok: false, error: 'Chybí platný owner_email.' });
-  }
-  if (!recipientEmail || !recipientEmail.includes('@')) {
-    return res.status(400).json({
-      ok: false,
-      error: 'Chybí platný recipient_email (vždy explicitně v těle požadavku).',
-    });
-  }
+    if (!ownerEmail || !ownerEmail.includes('@')) {
+      return res.status(400).json({ ok: false, error: 'Chybí platný owner_email.' });
+    }
+    if (!recipientEmail || !recipientEmail.includes('@')) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Chybí platný recipient_email (vždy explicitně v těle požadavku).',
+      });
+    }
 
-  const userId = await resolveUserIdByOwnerEmail(ownerEmail);
-  if (!userId) {
-    return res.status(404).json({ ok: false, error: 'Vlastník (owner_email) nenalezen.' });
-  }
+    const userId = await resolveUserIdByOwnerEmail(ownerEmail);
+    if (!userId) {
+      return res.status(404).json({ ok: false, error: 'Vlastník (owner_email) nenalezen.' });
+    }
 
-  let plan = null;
-  let planErr = null;
+    let plan = null;
+    let planErr = null;
 
-  if (planIdRaw) {
-    const r = await supabaseServer
-      .from('ai_generated_plans')
-      .select('id, plan_html, structured_plan_json, user_id, valid_from, valid_until, email')
-      .eq('user_id', userId)
-      .eq('id', planIdRaw)
-      .maybeSingle();
-    plan = r.data;
-    planErr = r.error;
-  } else {
-    const r = await supabaseServer
-      .from('ai_generated_plans')
-      .select('id, plan_html, structured_plan_json, user_id, valid_from, valid_until, email')
+    if (planIdRaw) {
+      const r = await supabaseServer
+        .from('ai_generated_plans')
+        .select('id, plan_html, structured_plan_json, user_id, valid_from, valid_until, email')
+        .eq('user_id', userId)
+        .eq('id', planIdRaw)
+        .maybeSingle();
+      plan = r.data;
+      planErr = r.error;
+    } else {
+      const r = await supabaseServer
+        .from('ai_generated_plans')
+        .select('id, plan_html, structured_plan_json, user_id, valid_from, valid_until, email')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      plan = r.data;
+      planErr = r.error;
+    }
+
+    if (planErr) {
+      return res.status(500).json({ ok: false, error: planErr.message });
+    }
+    if (!plan || plan.user_id !== userId) {
+      return res.status(404).json({ ok: false, error: 'Plán nenalezen nebo nepatří vlastníkovi.' });
+    }
+
+    const { data: bmFull } = await supabaseServer
+      .from('body_metrics')
+      .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-    plan = r.data;
-    planErr = r.error;
-  }
 
-  if (planErr) {
-    return res.status(500).json({ ok: false, error: planErr.message });
-  }
-  if (!plan || plan.user_id !== userId) {
-    return res.status(404).json({ ok: false, error: 'Plán nenalezen nebo nepatří vlastníkovi.' });
-  }
+    const htmlSource = buildHtmlForEmail(plan, userId, ownerEmail, bmFull);
+    if (!htmlSource || typeof htmlSource !== 'string' || !htmlSource.trim()) {
+      return res.status(404).json({ ok: false, error: 'Nepodařilo se sestavit HTML plánu (chybí structured_plan_json i plan_html).' });
+    }
 
-  const { data: bmFull } = await supabaseServer
-    .from('body_metrics')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    const renderedFromStructured = !!(
+      plan.structured_plan_json &&
+      typeof plan.structured_plan_json === 'object' &&
+      Array.isArray(plan.structured_plan_json.days) &&
+      plan.structured_plan_json.days.length > 0
+    );
 
-  const htmlSource = buildHtmlForEmail(plan, userId, ownerEmail, bmFull);
-  if (!htmlSource || typeof htmlSource !== 'string' || !htmlSource.trim()) {
-    return res.status(404).json({ ok: false, error: 'Nepodařilo se sestavit HTML plánu (chybí structured_plan_json i plan_html).' });
-  }
+    if (dryRun) {
+      return res.status(200).json({
+        ok: true,
+        dry_run: true,
+        owner_email: ownerEmail,
+        recipient_email: recipientEmail,
+        plan_id: plan.id,
+        valid_from: plan.valid_from ?? null,
+        valid_until: plan.valid_until ?? null,
+        plan_html_length: htmlSource.length,
+        rendered_from_structured: renderedFromStructured,
+        plan_output_mode: planOutputMode,
+      });
+    }
 
-  const renderedFromStructured = !!(
-    plan.structured_plan_json &&
-    typeof plan.structured_plan_json === 'object' &&
-    Array.isArray(plan.structured_plan_json.days) &&
-    plan.structured_plan_json.days.length > 0
-  );
+    let firstName = null;
+    try {
+      firstName = bmFull?.name ?? null;
+    } catch {
+      firstName = null;
+    }
 
-  if (dryRun) {
+    const dayHeadingOverrides = buildDayHeadingOverridesFromStructuredPlan(plan.structured_plan_json, plan.valid_from);
+
+    const sendResult = await sendPlanEmail(recipientEmail, htmlSource, {
+      loginUrl: getDefaultLoginUrl(),
+      existingAccount: true,
+      firstName,
+      planOutputMode,
+      accountEmailForLoginBlock: ownerEmail,
+      bodyMetrics: bmFull ?? undefined,
+      dayHeadingOverrides: dayHeadingOverrides ?? undefined,
+    });
+
+    if (!sendResult?.ok) {
+      return res.status(500).json({
+        ok: false,
+        error: sendResult?.message || 'Odeslání selhalo.',
+      });
+    }
+
     return res.status(200).json({
       ok: true,
-      dry_run: true,
       owner_email: ownerEmail,
       recipient_email: recipientEmail,
       plan_id: plan.id,
@@ -149,43 +189,12 @@ export default async function handler(req, res) {
       rendered_from_structured: renderedFromStructured,
       plan_output_mode: planOutputMode,
     });
-  }
-
-  let firstName = null;
-  try {
-    firstName = bmFull?.name ?? null;
-  } catch {
-    firstName = null;
-  }
-
-  const dayHeadingOverrides = buildDayHeadingOverridesFromStructuredPlan(plan.structured_plan_json, plan.valid_from);
-
-  const sendResult = await sendPlanEmail(recipientEmail, htmlSource, {
-    loginUrl: getDefaultLoginUrl(),
-    existingAccount: true,
-    firstName,
-    planOutputMode,
-    accountEmailForLoginBlock: ownerEmail,
-    bodyMetrics: bmFull ?? undefined,
-    dayHeadingOverrides: dayHeadingOverrides ?? undefined,
-  });
-
-  if (!sendResult?.ok) {
+  } catch (err) {
+    const msg = err && typeof err.message === 'string' ? err.message.slice(0, 240) : 'internal_error';
+    console.error('[send-test-plan-email]', { route: 'send-test-plan-email', message: msg });
     return res.status(500).json({
       ok: false,
-      error: sendResult?.message || 'Odeslání selhalo.',
+      error: msg || 'Interní chyba při přípravě testovacího e-mailu.',
     });
   }
-
-  return res.status(200).json({
-    ok: true,
-    owner_email: ownerEmail,
-    recipient_email: recipientEmail,
-    plan_id: plan.id,
-    valid_from: plan.valid_from ?? null,
-    valid_until: plan.valid_until ?? null,
-    plan_html_length: htmlSource.length,
-    rendered_from_structured: renderedFromStructured,
-    plan_output_mode: planOutputMode,
-  });
 }

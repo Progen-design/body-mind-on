@@ -64,6 +64,14 @@ function assertNoForbiddenToken(value, label, tokens) {
 }
 
 assertNoForbiddenToken(stripped, 'stripPlanMediaAttrsFromHtml output', forbiddenMedia);
+
+const strippedExerciseIds = stripPlanMediaAttrsFromHtml(
+  '<ul><li data-wger-exercise-id="99" data-exercise-key="bench_press">Test cvik</li></ul>'
+);
+if (/data-wger-exercise-id|data-exercise-key/i.test(strippedExerciseIds)) {
+  console.error('Nutrition-only smoke test failed: stripPlanMediaAttrs neodstranil interní atributy cviku.');
+  process.exit(1);
+}
 assertNoForbiddenToken(strippedTrain, 'stripNutritionOnlyTrainingFromPlanHtml output', [
   ...forbiddenMedia,
   'Trénink tento den',

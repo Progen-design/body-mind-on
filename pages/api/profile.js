@@ -3,6 +3,7 @@ import { supabaseServer } from '../../lib/supabaseServer';
 import { POSITIVE_HABITS, NEGATIVE_HABITS } from '../../lib/habits';
 import { validatePublishedPlanHtml } from '../../lib/validatePlanHtml';
 import { ensureInitialPlanTask } from '../../lib/ensureInitialPlanTask';
+import { getRegistrationAnchoredWeek } from '../../lib/profileWeekRange';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -21,15 +22,7 @@ export default async function handler(req, res) {
     const email = user.email?.toLowerCase();
 
     const now = new Date();
-    const regDate = user.created_at ? new Date(user.created_at) : null;
-    const regDow = regDate != null ? regDate.getDay() : 1;
-    const daysSinceWeekStart = (now.getDay() - regDow + 7) % 7;
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - daysSinceWeekStart);
-    const weekStartStr = weekStart.toISOString().split('T')[0];
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-    const weekEndStr = weekEnd.toISOString().split('T')[0];
+    const { weekStartStr, weekEndStr } = getRegistrationAnchoredWeek(now, user.created_at);
 
     const [metricsRes, plansRes, workoutsRes, userHabitsRes, membershipRes, habitLogsRes, profileRes, coachMessagesRes, initialPlanTaskRes] = await Promise.allSettled([
       supabaseServer
@@ -243,7 +236,10 @@ export default async function handler(req, res) {
       .map(([date, weight]) => ({ date, weight }))
       .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
-    const workoutsThisWeek = workouts.filter(w => (w.workout_date || '') >= weekStartStr).length;
+    const wd = (w) => String(w.workout_date || '').slice(0, 10);
+    const workoutsThisWeek = workouts.filter(
+      (w) => wd(w) >= weekStartStr && wd(w) <= weekEndStr
+    ).length;
 
     const positiveIds = new Set(POSITIVE_HABITS.map((h) => h.id));
     const negativeIds = new Set(NEGATIVE_HABITS.map((h) => h.id));

@@ -1,6 +1,7 @@
 // GET /api/trainer/clients – seznam klientů (uživatelé s body_metrics, kromě trenéra). Pouze pro přihlášeného trenéra.
 import { supabaseServer } from '../../../lib/supabaseServer';
 import { POSITIVE_HABITS, NEGATIVE_HABITS } from '../../../lib/habits';
+import { getRegistrationAnchoredWeek } from '../../../lib/profileWeekRange';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -79,15 +80,6 @@ export default async function handler(req, res) {
       }
     });
 
-    // Týden (Po–Ne) pro habit summary – stejná logika jako v profile
-    const now = new Date();
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-    const weekStartStr = weekStart.toISOString().split('T')[0];
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-    const weekEndStr = weekEnd.toISOString().split('T')[0];
-
     const positiveIds = new Set(POSITIVE_HABITS.map((h) => h.id));
     const negativeIds = new Set(NEGATIVE_HABITS.map((h) => h.id));
 
@@ -103,19 +95,49 @@ export default async function handler(req, res) {
       userHabitsByUserId[row.user_id].push({ habit_id: row.habit_id });
     });
 
-    // habit_logs pro tento týden (všechny klienty)
+    const { data: { users: authUsers }, error: listErr } = await supabaseServer.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000,
+    });
+    if (listErr) {
+      console.error('[trainer/clients] listUsers:', listErr);
+      return res.status(500).json({ error: 'Nepodařilo se načíst uživatele', clients: [] });
+    }
+
+    const now = new Date();
+    const weekBoundsByUserId = {};
+    let minHabitDate = null;
+    let maxHabitDate = null;
+    (authUsers || []).forEach((u) => {
+      if (!u?.id || !clientUserIds.includes(u.id)) return;
+      const uEmail = (u.email || '').toLowerCase();
+      if (uEmail === trainerEmail) return;
+      const { weekStartStr, weekEndStr } = getRegistrationAnchoredWeek(now, u.created_at);
+      weekBoundsByUserId[u.id] = { weekStartStr, weekEndStr };
+      if (minHabitDate == null || weekStartStr < minHabitDate) minHabitDate = weekStartStr;
+      if (maxHabitDate == null || weekEndStr > maxHabitDate) maxHabitDate = weekEndStr;
+    });
+    if (minHabitDate == null || maxHabitDate == null) {
+      const fb = getRegistrationAnchoredWeek(now, null);
+      minHabitDate = fb.weekStartStr;
+      maxHabitDate = fb.weekEndStr;
+    }
+
     const { data: habitLogsRows } = await supabaseServer
       .from('habit_logs')
       .select('user_id, log_date, habit_id, completed')
       .in('user_id', clientUserIds)
-      .gte('log_date', weekStartStr)
-      .lte('log_date', weekEndStr);
+      .gte('log_date', minHabitDate)
+      .lte('log_date', maxHabitDate);
 
     const habitSummaryByUserId = {};
     (habitLogsRows || []).forEach((log) => {
       if (log.completed !== true) return;
       const uid = log.user_id;
       if (!uid) return;
+      const b = weekBoundsByUserId[uid];
+      const d = String(log.log_date || '').slice(0, 10);
+      if (!b || d < b.weekStartStr || d > b.weekEndStr) return;
       if (!habitSummaryByUserId[uid]) habitSummaryByUserId[uid] = { positiveDone: 0, negativeDone: 0, byHabit: {} };
       if (positiveIds.has(log.habit_id)) {
         habitSummaryByUserId[uid].positiveDone += 1;
@@ -142,16 +164,6 @@ export default async function handler(req, res) {
         });
       }
     });
-
-    // Auth uživatelé – jen ti, kteří jsou v clientUserIds a nejsou trenér
-    const { data: { users: authUsers }, error: listErr } = await supabaseServer.auth.admin.listUsers({
-      page: 1,
-      perPage: 1000,
-    });
-    if (listErr) {
-      console.error('[trainer/clients] listUsers:', listErr);
-      return res.status(500).json({ error: 'Nepodařilo se načíst uživatele', clients: [] });
-    }
 
     const clients = [];
     (authUsers || []).forEach((u) => {

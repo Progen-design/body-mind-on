@@ -21,6 +21,14 @@ import { getHabitById } from '../lib/habits';
 import { normalizeOccupationForForm, activityToFormLabel, goalToFormLabel, normalizeFrequency, getFrequencyDayRange } from '../lib/preferenceConstants';
 import { useProfileData } from '../hooks/useProfileData';
 import { PLAN_GENERATION_DURATION_HINT } from '../lib/planGenerationUiCopy';
+import { getRegistrationAnchoredWeek } from '../lib/profileWeekRange';
+import {
+  KCAL_PER_KG_BODY_FAT,
+  HABIT_ADJ_KG_PER_NEGATIVE,
+  HABIT_ADJ_KG_PER_POSITIVE,
+  habitWeightCorrectionKg,
+  roundLoadTotal,
+} from '../lib/progressModel';
 
 const PricingTable = dynamic(() => import('../components/PricingTable'), { ssr: false });
 const PlanViewer = dynamic(() => import('../components/PlanViewer'), { ssr: false, loading: () => null });
@@ -1251,26 +1259,19 @@ export default function Profil() {
     const latestWorkout = w.length > 0 ? w[0] : null;
 
     const now = new Date();
-    const regDate = profile?.user?.created_at ? new Date(profile.user.created_at) : null;
-    const regDow = regDate != null ? regDate.getDay() : 1;
-    const daysSinceWeekStart = (now.getDay() - regDow + 7) % 7;
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - daysSinceWeekStart);
-    const weekStartStr = getLocalDateStr(weekStart);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-    const weekEndStr = getLocalDateStr(weekEnd);
+    const { weekStartStr, weekEndStr } = getRegistrationAnchoredWeek(now, profile?.user?.created_at);
     const getDate = (x) => (x.workout_date || '').toString().slice(0, 10);
-    const thisWeek = w.filter((x) => getDate(x) >= weekStartStr);
+    const thisWeek = w.filter((x) => {
+      const d = getDate(x);
+      return d >= weekStartStr && d <= weekEndStr;
+    });
     const thisWeekDates = [...new Set(thisWeek.map((x) => getDate(x)))].sort().map((d) => formatShortDate(d));
     const minWeek = thisWeek.reduce((s, x) => s + getWorkoutDurationMinutes(x), 0);
     const kcalWeek = thisWeek.reduce((s, x) => s + estimatedCalories(x), 0);
     const loadWeek = thisWeek.reduce((s, x) => s + getWorkoutLoadPoints(x), 0);
     const minTotal = w.reduce((s, x) => s + getWorkoutDurationMinutes(x), 0);
     const kcalTotal = w.reduce((s, x) => s + estimatedCalories(x), 0);
-    const lastWeekStart = new Date(weekStart);
-    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
-    const lastWeekStartStr = getLocalDateStr(lastWeekStart);
+    const lastWeekStartStr = dateStrAddDays(weekStartStr, -7);
     const lastWeek = w.filter((x) => getDate(x) >= lastWeekStartStr && getDate(x) < weekStartStr);
     const lastWeekMin = lastWeek.reduce((s, x) => s + getWorkoutDurationMinutes(x), 0);
     const workoutTrend = lastWeek.length > 0 || thisWeek.length > 0
@@ -1284,8 +1285,7 @@ export default function Profil() {
     const startWeight = registrationMetric?.weight_kg != null ? Number(registrationMetric.weight_kg) : (profile?.user?.start_weight_kg != null ? Number(profile.user.start_weight_kg) : null);
     const heightCm = registrationMetric?.height_cm != null ? Number(registrationMetric.height_cm) : (profile?.user?.height_cm != null ? Number(profile.user.height_cm) : null);
     const goalWeight = profile?.user?.goal_weight_kg != null ? Number(profile.user.goal_weight_kg) : null;
-    const KCAL_PER_KG = 7700;
-    const estimatedKgLostTotal = kcalTotal / KCAL_PER_KG;
+    const estimatedKgLostTotal = kcalTotal / KCAL_PER_KG_BODY_FAT;
     const estimatedCurrentWeight = startWeight != null ? Math.max(goalWeight != null ? goalWeight : 0, startWeight - estimatedKgLostTotal) : null;
     const estimatedCurrentWeightRounded = estimatedCurrentWeight != null ? Math.round(estimatedCurrentWeight * 10) / 10 : null;
 
@@ -1307,12 +1307,12 @@ export default function Profil() {
         cumulativeKcal += estimatedCalories(workout);
         if (seenDates.has(d)) return;
         seenDates.add(d);
-        const est = startWeight - cumulativeKcal / KCAL_PER_KG;
+        const est = startWeight - cumulativeKcal / KCAL_PER_KG_BODY_FAT;
         const capped = goalWeight != null && est < goalWeight ? goalWeight : est;
         chartData.push({ date: d, weight: Math.round(capped * 10) / 10 });
       });
     }
-    const kgPerWeekFromWeek = minWeek > 0 ? kcalWeek / KCAL_PER_KG : 0;
+    const kgPerWeekFromWeek = minWeek > 0 ? kcalWeek / KCAL_PER_KG_BODY_FAT : 0;
     let weeksToGoal = null;
     if (goalWeight != null && estimatedCurrentWeight != null && goalWeight < estimatedCurrentWeight && kgPerWeekFromWeek > 0) {
       weeksToGoal = (estimatedCurrentWeight - goalWeight) / kgPerWeekFromWeek;
@@ -1320,7 +1320,7 @@ export default function Profil() {
 
     const positiveDone = profile?.habit_summary_7d?.positiveDone ?? 0;
     const negativeDone = profile?.habit_summary_7d?.negativeDone ?? 0;
-    const habitCorrectionKg = (negativeDone * 0.05) - (positiveDone * 0.02);
+    const habitCorrectionKg = habitWeightCorrectionKg(positiveDone, negativeDone);
     const habitAdjustedWeight = estimatedCurrentWeightRounded != null
       ? (goalWeight != null && (estimatedCurrentWeightRounded + habitCorrectionKg) < goalWeight
           ? goalWeight
@@ -1390,7 +1390,7 @@ export default function Profil() {
       workoutsThisWeek: thisWeek,
       totalMinutesThisWeek: minWeek,
       estimatedCaloriesThisWeek: kcalWeek,
-      workoutLoadThisWeek: Math.round(loadWeek),
+      workoutLoadThisWeek: roundLoadTotal(loadWeek),
       totalMinutes: minTotal,
       estimatedCaloriesAll: kcalTotal,
       chartWeightData: chartData,
@@ -2762,7 +2762,7 @@ export default function Profil() {
               <div className="workload-panels">
                 <section className="workload-card">
                   <h3 className="workload-title">Zátěž týdne podle typu</h3>
-                  <p className="workload-sub">Skóre = typ aktivity + délka/vzdálenost + náročnost.</p>
+                  <p className="workload-sub">Typ, délka/vzdálenost, náročnost — stejný výpočet jako u součtu níže.</p>
                   {weeklyTypeLoadBars.length > 0 ? (
                     <ul className="workload-bars">
                       {weeklyTypeLoadBars.map((item) => (
@@ -2782,7 +2782,7 @@ export default function Profil() {
 
                 <section className="workload-card">
                   <h3 className="workload-title">Denní zátěž (tento týden)</h3>
-                  <p className="workload-sub">Lépe uvidíš, které dny jsou přetížené a které volnější.</p>
+                  <p className="workload-sub">Součet bodů zátěže za daný den v aktuálním týdnu.</p>
                   <ul className="workload-bars">
                     {weeklyDayLoadBars.map((item) => (
                       <li key={item.date} className="workload-row">
@@ -2804,7 +2804,7 @@ export default function Profil() {
               <h2 className="section-head">Vývoj váhy</h2>
               {(chartWeightData || []).length >= 1 ? (
                 <>
-                <p className="chart-hint">Odhad váhy z tréninků – jeden bod = den s tréninkem. Vlevo nejstarší, vpravo nejnovější. Vše se přepočítá hned po zápisu tréninku.</p>
+                <p className="chart-hint">Bod = den s tréninkem; váha = výchozí mínus kumulativní odhad výdeje (7700 kcal/kg). Návyky tento graf nemění.</p>
                 {(chartWeightData || []).length >= 2 ? (
                   <>
                     <div className="chart-wrapper">
@@ -2932,7 +2932,8 @@ export default function Profil() {
                         </p>
                         {hasHabitData && habitAdjustedWeight != null && (
                           <p className="progress-calc-line progress-habit-line">
-                            S návyky ({positiveDone}× zdravé, {negativeDone}× zlozvyky): <strong>{habitAdjustedWeight} kg</strong>.
+                            S návyky ({positiveDone}× zdravé, {negativeDone}× zlozvyky): <strong>{habitAdjustedWeight} kg</strong>
+                            {' '}(heuristika: −{HABIT_ADJ_KG_PER_POSITIVE * 1000} g / zdravý záznam, +{HABIT_ADJ_KG_PER_NEGATIVE * 1000} g / zlozvyk).
                           </p>
                         )}
                       </>
@@ -2941,7 +2942,7 @@ export default function Profil() {
                       <p className="progress-calc-line">
                         Do cíle <strong>{goalWeight} kg</strong> zbývá <strong>{(estimatedCurrentWeight - goalWeight).toFixed(1)} kg</strong>
                         {weeksToGoal != null && weeksToGoal > 0 && (
-                          <> · odhad <strong>{weeksToGoal.toFixed(0)} týdnů</strong></>
+                          <> · při dnešním tempu z tohoto týdne odhad <strong>{weeksToGoal.toFixed(0)} týdnů</strong></>
                         )}.
                       </p>
                     )}

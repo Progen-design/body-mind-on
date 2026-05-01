@@ -53,7 +53,10 @@ const rawHtml = `<h3>Tvoje čísla</h3>
 <h3>Nákupní seznam</h3>
 <p>Orientační suroviny.</p>
 <ul><li>Jogurt</li><li>Čokoláda</li></ul>`;
-const safePlanHtml = formatPlanHtmlForEmail(rawHtml);
+const safePlanHtml = formatPlanHtmlForEmail(rawHtml, {
+  firstName: 'Jan',
+  bodyMetricsForEmail: { height_cm: 195, weight_kg: 111, goal: 'nabirani_svaly' },
+});
 const doc = buildPlanEmailDocument({
   safePlanHtml,
   loginBlock: '<p style="margin:0 0 16px;color:#94a3b8;font-size:14px;">(náhled: přihlašovací blok by zde byl v ostrém e-mailu)</p>',

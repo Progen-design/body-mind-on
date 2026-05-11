@@ -70,7 +70,7 @@ function structuredMealForStructuredDay(sd, mealTypeLabel, fallbackMi) {
  * Jednoradý přehled jídel pro sbalený den (český název z struktury nebo ořezání HTML).
  * @returns {string}
  */
-function collapsedDayMealsPeekLine(day, di, mealOverrides, structuredPlan, planHtml) {
+function collapsedDayMealsPeekParts(day, di, mealOverrides, structuredPlan, planHtml) {
   const structDayIdx = day.originalIndex ?? di;
   const parts = [];
   (day.meals || []).forEach((m, mj) => {
@@ -86,14 +86,12 @@ function collapsedDayMealsPeekLine(day, di, mealOverrides, structuredPlan, planH
     }
     if (!title && m.text) title = String(m.text).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
     if (!title && m.fullHtml) title = String(m.fullHtml).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (title.length > 120) title = `${title.slice(0, 117)}…`;
     if (m.type && title) parts.push(`${m.type}: ${title}`);
     else if (title) parts.push(title);
     else if (m.type) parts.push(m.type);
   });
-  const joined = parts.join(' · ');
-  if (!joined) return '';
-  if (joined.length <= 260) return joined;
-  return `${joined.slice(0, 257)}…`;
+  return parts;
 }
 
 /** Pořadí dnů odpovídající getDay(): 0=Neděle, 1=Pondělí, …, 6=Sobota */
@@ -271,7 +269,7 @@ function mergeTrustWithStructuredPlanMeal(baseTrust, structMeal) {
   const rid = ridRaw != null && Number.isFinite(Number(ridRaw)) ? Number(ridRaw) : null;
   const patch = {};
   if (rid != null) patch.recipe_id = rid;
-  if (structMeal.recipe_verified === true && r) {
+  if (r) {
     if (r.calories != null && Number.isFinite(Number(r.calories))) patch.calories = Number(r.calories);
     if (r.protein_g != null && Number.isFinite(Number(r.protein_g))) patch.protein_g = Number(r.protein_g);
     if (r.carbs_g != null && Number.isFinite(Number(r.carbs_g))) patch.carbs_g = Number(r.carbs_g);
@@ -293,26 +291,25 @@ function mealTypeEmojiFromLabel(mealType) {
 }
 
 /** Řádek maker z enrichment mapy (kcal, B/S/T). */
-function mealMacroLineFromTrust(mealTrust) {
-  if (!mealTrust) return null;
-  const parts = [];
+function mealMacroItemsFromTrust(mealTrust) {
+  if (!mealTrust) return [];
+  const items = [];
   if (mealTrust.calories != null && Number.isFinite(Number(mealTrust.calories))) {
-    parts.push(`cca ${Math.round(Number(mealTrust.calories))} kcal`);
+    items.push({ key: 'kcal', label: 'cca', value: `${Math.round(Number(mealTrust.calories))} kcal`, tone: 'kcal' });
   }
   if (mealTrust.protein_g != null && Number.isFinite(Number(mealTrust.protein_g))) {
-    parts.push(`B ${Math.round(Number(mealTrust.protein_g))} g`);
+    items.push({ key: 'b', label: 'Bílkoviny', value: `${Math.round(Number(mealTrust.protein_g))} g`, tone: 'protein' });
   }
   if (mealTrust.carbs_g != null && Number.isFinite(Number(mealTrust.carbs_g))) {
-    parts.push(`S ${Math.round(Number(mealTrust.carbs_g))} g`);
+    items.push({ key: 's', label: 'Sacharidy', value: `${Math.round(Number(mealTrust.carbs_g))} g`, tone: 'carbs' });
   }
   if (mealTrust.fat_g != null && Number.isFinite(Number(mealTrust.fat_g))) {
-    parts.push(`T ${Math.round(Number(mealTrust.fat_g))} g`);
+    items.push({ key: 't', label: 'Tuky', value: `${Math.round(Number(mealTrust.fat_g))} g`, tone: 'fat' });
   }
   if (mealTrust.fiber_g != null && Number.isFinite(Number(mealTrust.fiber_g))) {
-    parts.push(`Vláknina ${Math.round(Number(mealTrust.fiber_g))} g`);
+    items.push({ key: 'fiber', label: 'Vláknina', value: `${Math.round(Number(mealTrust.fiber_g))} g`, tone: 'fiber' });
   }
-  if (!parts.length) return null;
-  return parts.join(' · ');
+  return items;
 }
 
 function recipeContentOnly(html) {
@@ -366,6 +363,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
   const [shoppingListOpen, setShoppingListOpen] = useState(false); // rozbalovací sekce
   const [expandedDays, setExpandedDays] = useState(null); // null = dnes rozbalený; Set(di) = které dny jsou rozbalené
   const [mealTrustMap, setMealTrustMap] = useState({});
+  const [exerciseMediaMap, setExerciseMediaMap] = useState({});
   const [showRawPlanFallback, setShowRawPlanFallback] = useState(false);
   const [exerciseHintModal, setExerciseHintModal] = useState(null); // { name, part, wgerId }
   const recipeOpenIdRef = useRef(0);
@@ -491,6 +489,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
   useEffect(() => {
     if (!plan?.plan_html || typeof document === 'undefined') {
       setMealTrustMap({});
+      setExerciseMediaMap({});
       return;
     }
     let cancelled = false;
@@ -510,9 +509,11 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
         const data = await res.json();
         if (cancelled) return;
         setMealTrustMap(data?.meal_trust && typeof data.meal_trust === 'object' ? data.meal_trust : {});
+        setExerciseMediaMap(data?.exercise_media && typeof data.exercise_media === 'object' ? data.exercise_media : {});
       } catch (_) {
         if (!cancelled) {
           setMealTrustMap({});
+          setExerciseMediaMap({});
         }
       }
     })();
@@ -799,7 +800,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                       return next;
                     });
                   };
-                  const mealPeek = collapsedDayMealsPeekLine(day, di, mealOverrides, structuredPlan, plan.plan_html || '');
+                  const mealPeekParts = collapsedDayMealsPeekParts(day, di, mealOverrides, structuredPlan, plan.plan_html || '');
                   const dIdxPeek = day.originalIndex ?? di;
                   const wkPeek = day.structDay?.workout ?? structuredPlan?.days?.[dIdxPeek]?.workout;
                   const workoutExercises = wkPeek?.exercises;
@@ -811,10 +812,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                         ? `Trénink: ${wc} ${wc === 1 ? 'cvik' : wc >= 2 && wc <= 4 ? 'cviky' : 'cviků'}`
                         : 'Trénink: v plánu'
                       : '';
-                  const peekPieces = [];
-                  if (mealPeek) peekPieces.push(mealPeek);
-                  if (trainingPeek) peekPieces.push(trainingPeek);
-                  const peekLine = peekPieces.join(' · ');
+                  const peekSummary = [...mealPeekParts, ...(trainingPeek ? [trainingPeek] : [])].join(' · ');
                   return (
                   <div id={day.isToday ? 'plan-day-card-today' : undefined} key={di} className={`plan-day-card ${day._placeholder ? 'plan-day-placeholder' : ''} ${day.isToday ? 'plan-day-today' : ''} ${isDayExpanded ? 'plan-day-expanded' : ''}`}>
                     <button type="button" className="plan-day-header-btn" onClick={toggleDay} aria-expanded={isDayExpanded}>
@@ -823,14 +821,19 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                       </h4>
                       <span className="plan-day-chevron" aria-hidden>{isDayExpanded ? '▼' : '▶'}</span>
                     </button>
-                    {!isDayExpanded && peekLine ? (
+                    {!isDayExpanded && (mealPeekParts.length > 0 || trainingPeek) ? (
                       <button
                         type="button"
                         className="plan-day-peek-btn"
                         onClick={toggleDay}
-                        aria-label={`Rozbalit ${day.dayName || 'den'}: ${peekLine}`}
+                        aria-label={`Rozbalit ${day.dayName || 'den'}: ${peekSummary}`}
                       >
-                        {peekLine}
+                        <span className="plan-day-peek-list">
+                          {mealPeekParts.map((line, peekIdx) => (
+                            <span key={`meal-${peekIdx}`} className="plan-day-peek-line">{line}</span>
+                          ))}
+                          {trainingPeek ? <span className="plan-day-peek-line plan-day-peek-line-training">{trainingPeek}</span> : null}
+                        </span>
                       </button>
                     ) : null}
                     {isDayExpanded && (
@@ -941,7 +944,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                         };
                         const mealTextForPin = override ? (override.title || '') : (meal.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().replace(/\s*\([^)]*\)\s*$/g, '').trim();
                         const mealPinned = isPinned(meal.type || '', mealTextForPin);
-                        const macroLine = mealMacroLineFromTrust(mealTrust);
+                        const macroItems = mealMacroItemsFromTrust(mealTrust);
                         const mealTypeLabel = (meal.type || 'Jídlo').trim();
                         return (
                           <div key={mi} className="plan-meal-card">
@@ -986,7 +989,16 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                                   }}
                                 />
                               )}
-                              {macroLine ? <p className="plan-meal-macros">{macroLine}</p> : null}
+                              {macroItems.length > 0 ? (
+                                <div className="plan-meal-macros" aria-label="Nutriční hodnoty jídla">
+                                  {macroItems.map((item) => (
+                                    <span key={item.key} className={`plan-meal-macro-pill plan-meal-macro-pill--${item.tone}`}>
+                                      <span className="plan-meal-macro-pill-label">{item.label}</span>
+                                      <span className="plan-meal-macro-pill-value">{item.value}</span>
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : null}
                               <div className="plan-meal-actions">
                                 <button type="button" className="plan-meal-recipe-btn" onClick={openRecipe}>
                                   Recept
@@ -1035,15 +1047,26 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                                     ? `${Math.round(Number(ex.duration_sec) / 60)} min`
                                     : `${ex.sets ?? 3} sérií`;
                                 const openWgerExercise = () => {
-                                  if (wgerId == null) {
-                                    setExerciseHintModal({ name, part, wgerId: null });
-                                    return;
-                                  }
-                                  const url = `https://wger.de/en/exercise/${Number(wgerId)}/view/`;
-                                  const w = typeof window !== 'undefined' ? window.open(url, '_blank', 'noopener,noreferrer') : null;
-                                  if (!w) {
-                                    setExerciseHintModal({ name, part, wgerId });
-                                  }
+                                  const mediaKey = ex.canonical_key ? normalizeLookupKey(ex.canonical_key) : normalizeLookupKey(name);
+                                  const mediaFromMap =
+                                    (wgerId != null ? exerciseMediaMap[`wger:${Number(wgerId)}`] : null) ||
+                                    (mediaKey ? exerciseMediaMap[mediaKey] : null) ||
+                                    null;
+                                  const imageUrl =
+                                    (ex.image_url && String(ex.image_url).trim()) ||
+                                    mediaFromMap?.image_url ||
+                                    null;
+                                  const gifUrl =
+                                    (ex.video_url && String(ex.video_url).trim()) ||
+                                    mediaFromMap?.gif_url ||
+                                    null;
+                                  setExerciseHintModal({
+                                    name,
+                                    part,
+                                    wgerId,
+                                    imageUrl,
+                                    gifUrl,
+                                  });
                                 };
                                 return (
                                   <li key={xi} style={{ marginBottom: 10 }}>
@@ -1065,7 +1088,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                                           font: 'inherit',
                                         }}
                                       >
-                                        Jak cvik provést (krátký popis)
+                                        Jak cvik provést (ukázka)
                                       </button>
                                     </span>
                                   </li>
@@ -1292,9 +1315,25 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                 </div>
                 <div className="plan-recipe-modal-body">
                   <p style={{ marginTop: 0 }}><strong>Plán:</strong> {exerciseHintModal.part}</p>
-                  <p className="plan-no-recipe-hint" style={{ marginBottom: 0 }}>
-                    Krátký popis provedení je na stránce cviku ve veřejné databázi wger (otevře se v novém okně). Pokud se okno neotevřelo, použij tlačítko níže — prohlížeč mohl vyskakovací okno zablokovat.
-                  </p>
+                  {exerciseHintModal.gifUrl ? (
+                    <img
+                      src={exerciseHintModal.gifUrl}
+                      alt={`Ukázka cviku ${exerciseHintModal.name}`}
+                      className="plan-exercise-media"
+                      loading="lazy"
+                    />
+                  ) : exerciseHintModal.imageUrl ? (
+                    <img
+                      src={exerciseHintModal.imageUrl}
+                      alt={`Ukázka cviku ${exerciseHintModal.name}`}
+                      className="plan-exercise-media"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <p className="plan-no-recipe-hint" style={{ marginBottom: 0 }}>
+                      Ilustraci cviku zobrazíme po načtení plánu z databáze wger. Pokud se obrázek neobjeví, otevři detail cviku níže.
+                    </p>
+                  )}
                   {exerciseHintModal.wgerId != null ? (
                     <button
                       type="button"
@@ -1305,7 +1344,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                         window.open(`https://wger.de/en/exercise/${Number(id)}/view/`, '_blank', 'noopener,noreferrer');
                       }}
                     >
-                      Otevřít návod na wger.de →
+                      Otevřít detail cviku na wger.de →
                     </button>
                   ) : (
                     <p className="plan-no-recipe-msg" style={{ marginTop: 12 }}>Pro tento cvik není v plánu uložené ID ve wger — kontaktuj podporu, pokud potřebuješ doplnit.</p>
@@ -2076,11 +2115,11 @@ const planSectionStyles = `
   .plan-macro-card {
     flex: 1;
     min-width: 80px;
-    background: rgba(0,0,0,0.2);
-    border-radius: 12px;
-    padding: 16px;
+    background: rgba(15, 23, 42, 0.55);
+    border-radius: 999px;
+    padding: 12px 18px;
     text-align: center;
-    border: 1px solid rgba(255,255,255,0.06);
+    border: 2px solid rgba(167, 139, 250, 0.35);
   }
   .plan-macro-value {
     display: block;
@@ -2185,6 +2224,18 @@ const planSectionStyles = `
     line-height: 1.45;
     color: #94a3b8;
     transition: background 0.15s, color 0.15s;
+  }
+  .plan-day-peek-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .plan-day-peek-line {
+    display: block;
+  }
+  .plan-day-peek-line-training {
+    color: #c4b5fd;
+    font-weight: 600;
   }
   .plan-day-peek-btn:hover {
     background: rgba(124, 58, 237, 0.1);
@@ -2626,10 +2677,59 @@ const planSectionStyles = `
     color: #e9d5ff;
   }
   .plan-meal-macros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
     margin: 0 0 10px;
-    font-size: 12px;
-    color: #64748b;
-    line-height: 1.45;
+  }
+  .plan-meal-macro-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 2px solid rgba(148, 163, 184, 0.35);
+    background: rgba(15, 23, 42, 0.55);
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .plan-meal-macro-pill-label {
+    font-weight: 700;
+    color: #cbd5e1;
+  }
+  .plan-meal-macro-pill-value {
+    font-weight: 800;
+    color: #f8fafc;
+  }
+  .plan-meal-macro-pill--kcal {
+    border-color: rgba(167, 139, 250, 0.55);
+    background: rgba(76, 29, 149, 0.22);
+  }
+  .plan-meal-macro-pill--protein {
+    border-color: rgba(59, 130, 246, 0.65);
+    background: rgba(30, 58, 138, 0.22);
+  }
+  .plan-meal-macro-pill--carbs {
+    border-color: rgba(234, 179, 8, 0.65);
+    background: rgba(120, 53, 15, 0.22);
+  }
+  .plan-meal-macro-pill--fat {
+    border-color: rgba(239, 68, 68, 0.65);
+    background: rgba(127, 29, 29, 0.22);
+  }
+  .plan-meal-macro-pill--fiber {
+    border-color: rgba(34, 197, 94, 0.65);
+    background: rgba(20, 83, 45, 0.22);
+  }
+  .plan-exercise-media {
+    display: block;
+    width: 100%;
+    max-height: 280px;
+    object-fit: contain;
+    margin: 12px 0 0;
+    border-radius: 14px;
+    border: 1px solid rgba(167, 139, 250, 0.25);
+    background: rgba(15, 23, 42, 0.45);
   }
   .plan-meal-title-link {
     margin: 0;

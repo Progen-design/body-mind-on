@@ -27,6 +27,11 @@ export default function FullscreenOverlay({
   const panelRef = useRef(null);
   const lastFocusedRef = useRef(null);
   const initialFocusDoneRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   const panelClassName = useMemo(() => {
     if (size === 'large') return 'overlay-panel overlay-panel--large';
@@ -63,7 +68,7 @@ export default function FullscreenOverlay({
       if (event.key === 'Escape') {
         if (!canClose) return;
         event.preventDefault();
-        onClose?.();
+        onCloseRef.current?.();
         return;
       }
 
@@ -101,7 +106,7 @@ export default function FullscreenOverlay({
         lastFocusedRef.current.focus();
       }
     };
-  }, [open, canClose, onClose]);
+  }, [open, canClose]);
 
   if (!open || typeof document === 'undefined') return null;
 
@@ -111,7 +116,7 @@ export default function FullscreenOverlay({
       role="presentation"
       onMouseDown={(event) => {
         if (event.target !== event.currentTarget || !canClose) return;
-        onClose?.();
+        onCloseRef.current?.();
       }}
     >
       <div
@@ -127,7 +132,7 @@ export default function FullscreenOverlay({
             <button
               type="button"
               className="overlay-back-button"
-              onClick={() => onClose?.()}
+              onClick={() => onCloseRef.current?.()}
               disabled={!canClose}
               aria-label="Zavřít pracovní plochu"
             >

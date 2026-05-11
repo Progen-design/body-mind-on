@@ -76,6 +76,8 @@ export default async function handler(req, res) {
       firstName: bmRow?.name ?? null,
       bodyMetrics: bmRow ?? undefined,
       dayHeadingOverrides: dayHeadingOverrides ?? undefined,
+      structuredPlanJson: plan?.structured_plan_json ?? undefined,
+      validFrom: plan?.valid_from ?? undefined,
     });
 
     if (!result.ok) {

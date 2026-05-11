@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>Tvůj týdenní plán · Body & Mind ON</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+  body { margin:0; padding:0; background:#08060F; font-family:'Inter', Arial, sans-serif; -webkit-text-size-adjust:100%; }
+  .mono { font-family:'JetBrains Mono', 'Courier New', monospace; }
+  a { text-decoration:none; }
+  table { border-collapse:collapse; }
+
+  /* MOBILE */
+  @media only screen and (max-width:600px){
+    .container { width:100% !important; max-width:100% !important; }
+    .hero-headline { font-size:38px !important; line-height:1.1 !important; }
+    .section-title { font-size:24px !important; }
+    .hero-num { font-size:48px !important; }
+    .stat-num { font-size:28px !important; }
+    .kcal-hero { font-size:64px !important; }
+    .meal-name { font-size:20px !important; }
+    .macro-num { font-size:22px !important; }
+    .macro-label { font-size:11px !important; }
+    .px-mobile { padding-left:20px !important; padding-right:20px !important; }
+    .py-mobile { padding-top:32px !important; padding-bottom:32px !important; }
+    .stack-mobile { display:block !important; width:100% !important; }
+    .stack-mobile-tile { display:inline-block !important; width:48% !important; margin-bottom:8px !important; }
+    .hide-mobile { display:none !important; }
+    .day-headline { font-size:26px !important; }
+    .body-text { font-size:16px !important; }
+    .btn-recipe { font-size:12px !important; padding:10px 16px !important; }
+    .cta-headline { font-size:26px !important; }
+    .cta-btn { font-size:14px !important; padding:18px 28px !important; }
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#08060F;">
+
+<!-- ============ OUTER WRAPPER - FULL WIDTH ============ -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#08060F;width:100%;">
+
+<!-- ============ TOP STATUS BAR - FULL WIDTH ============ -->
+<tr><td style="padding:0;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td style="background:#A855F7;height:4px;line-height:4px;font-size:0;">&nbsp;</td>
+      <td style="background:#EC4899;height:4px;line-height:4px;font-size:0;width:40%;">&nbsp;</td>
+      <td style="background:#22D3EE;height:4px;line-height:4px;font-size:0;width:15%;">&nbsp;</td>
+    </tr>
+  </table>
+</td></tr>
+
+<!-- ============ HEADER BAR - FULL WIDTH ============ -->
+<tr><td style="background:#0D0A1A;border-bottom:1px solid #1F1A2E;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="720" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:720px;">
+        <tr>
+          <td class="px-mobile" style="padding:20px 40px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#A855F7;letter-spacing:2px;font-weight:700;">
+                  ◆ BODY &amp; MIND ON
+                </td>
+                <td align="right" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#6B6480;letter-spacing:1px;">
+                  TÝDEN {{week_number}} · {{year}}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!--BMON_LOGIN_BLOCK-->
+
+<!-- ============ HERO SECTION - FULL WIDTH BACKGROUND ============ -->
+<tr><td style="background:#0D0A1A;background-image:radial-gradient(circle at 20% 30%, rgba(168,85,247,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(236,72,153,0.12) 0%, transparent 50%);">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="720" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:720px;">
+        <tr><td class="px-mobile py-mobile" style="padding:64px 40px 56px 40px;">
+
+          <!-- Index label -->
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#EC4899;letter-spacing:3px;font-weight:700;margin-bottom:28px;">
+            ▌ TVŮJ TÝDEN · NAPLÁNOVÁN
+          </div>
+
+          <!-- Headline -->
+          <div class="hero-headline" style="font-family:'Inter',Arial,sans-serif;font-size:52px;line-height:1.05;color:#FFFFFF;font-weight:800;letter-spacing:-1.8px;margin-bottom:24px;">
+            Ahoj {{user_name}},<br>
+            <span style="color:#A855F7;">tvůj plán</span><br>
+            <span style="color:#EC4899;">je v provozu.</span>
+          </div>
+
+          <div class="body-text" style="font-size:18px;line-height:1.6;color:#B8B0CC;margin-bottom:44px;max-width:540px;">
+            Sedm dní. Tři jídla denně. Tréninky napasované na tvůj cíl. Všechno v jednom přehledu.
+          </div>
+
+          <!-- HERO STATS GRID -->
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #2A2440;border-bottom:1px solid #2A2440;">
+            <tr>
+              <td width="33%" class="stack-mobile-tile" style="padding:28px 0;border-right:1px solid #2A2440;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6B6480;letter-spacing:2px;margin-bottom:12px;">01 / DNÍ</div>
+                <div class="hero-num" style="font-family:'JetBrains Mono',monospace;font-size:52px;color:#FFFFFF;font-weight:700;line-height:1;">{{days_count}}</div>
+              </td>
+              <td width="33%" class="stack-mobile-tile" style="padding:28px 0 28px 32px;border-right:1px solid #2A2440;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6B6480;letter-spacing:2px;margin-bottom:12px;">02 / JÍDLA</div>
+                <div class="hero-num" style="font-family:'JetBrains Mono',monospace;font-size:52px;color:#FFFFFF;font-weight:700;line-height:1;">{{meals_count}}</div>
+              </td>
+              <td width="33%" class="stack-mobile-tile" style="padding:28px 0 28px 32px;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6B6480;letter-spacing:2px;margin-bottom:12px;">03 / TRÉNINKŮ</div>
+                <div class="hero-num" style="font-family:'JetBrains Mono',monospace;font-size:52px;color:#FFFFFF;font-weight:700;line-height:1;">{{workouts_count}}</div>
+              </td>
+            </tr>
+          </table>
+
+          <!-- CTA -->
+          <table cellpadding="0" cellspacing="0" border="0" style="margin-top:44px;">
+            <tr>
+              <td style="background:#A855F7;">
+                <a href="{{app_base_url}}" class="cta-btn" style="display:inline-block;padding:20px 40px;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#FFFFFF;letter-spacing:2px;text-decoration:none;">
+                  OTEVŘÍT APLIKACI &nbsp;→
+                </a>
+              </td>
+            </tr>
+          </table>
+
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- ============ 01 / SNAPSHOT - FULL WIDTH BG ============ -->
+<tr><td style="background:#0A0814;background-image:linear-gradient(180deg, #0A0814 0%, #0D0A1A 100%);">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="720" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:720px;">
+
+        <!-- Section header -->
+        <tr><td class="px-mobile" style="padding:64px 40px 24px 40px;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#A855F7;letter-spacing:3px;font-weight:700;margin-bottom:12px;">
+            ▌ 01 · PROFIL
+          </div>
+          <div class="section-title" style="font-family:'Inter',Arial,sans-serif;font-size:32px;color:#FFFFFF;font-weight:800;letter-spacing:-0.8px;line-height:1.1;">
+            Tvůj profil &amp; cílová bilance
+          </div>
+          <div class="body-text" style="font-size:16px;color:#9690AB;margin-top:12px;line-height:1.6;">
+            Údaje z registrace + denní makra, podle kterých jsme plán postavili.
+          </div>
+        </td></tr>
+
+        <!-- Profile mini grid -->
+        <tr><td class="px-mobile" style="padding:24px 40px 0 40px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td width="33%" class="stack-mobile-tile" style="background:#15101F;border:1px solid #2A2440;padding:24px;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6B6480;letter-spacing:2px;margin-bottom:12px;">VÝŠKA</div>
+                <div class="stat-num" style="font-family:'JetBrains Mono',monospace;font-size:36px;color:#FFFFFF;font-weight:700;line-height:1;">{{height}}<span style="font-size:16px;color:#6B6480;font-weight:400;"> cm</span></div>
+              </td>
+              <td class="hide-mobile" style="width:8px;font-size:0;">&nbsp;</td>
+              <td width="33%" class="stack-mobile-tile" style="background:#15101F;border:1px solid #2A2440;padding:24px;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6B6480;letter-spacing:2px;margin-bottom:12px;">VÁHA</div>
+                <div class="stat-num" style="font-family:'JetBrains Mono',monospace;font-size:36px;color:#FFFFFF;font-weight:700;line-height:1;">{{weight}}<span style="font-size:16px;color:#6B6480;font-weight:400;"> kg</span></div>
+              </td>
+              <td class="hide-mobile" style="width:8px;font-size:0;">&nbsp;</td>
+              <td width="33%" class="stack-mobile" style="background:#15101F;border:1px solid #2A2440;padding:24px;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6B6480;letter-spacing:2px;margin-bottom:12px;">CÍL</div>
+                <div style="font-family:'Inter',Arial,sans-serif;font-size:20px;color:#EC4899;font-weight:700;line-height:1.2;">{{goal}}</div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- Kalorie hero box -->
+        <tr><td class="px-mobile" style="padding:32px 40px 0 40px;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#22D3EE;letter-spacing:3px;font-weight:700;margin-bottom:16px;">
+            ▌ CÍLOVÁ DENNÍ BILANCE
+          </div>
+
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#15101F;border:1px solid #2A2440;border-left:4px solid #A855F7;background-image:radial-gradient(circle at 90% 50%, rgba(168,85,247,0.08) 0%, transparent 60%);">
+            <tr>
+              <td style="padding:32px;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#A855F7;letter-spacing:2px;font-weight:700;margin-bottom:12px;">KALORIE / DEN</div>
+                <table cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td class="kcal-hero" style="font-family:'JetBrains Mono',monospace;font-size:72px;color:#FFFFFF;font-weight:700;line-height:1;letter-spacing:-3px;">
+                      {{target_kcal}}
+                    </td>
+                    <td style="padding-left:16px;vertical-align:bottom;padding-bottom:10px;">
+                      <span style="font-family:'JetBrains Mono',monospace;font-size:16px;color:#6B6480;letter-spacing:3px;font-weight:700;">KCAL</span>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- BÍLKOVINY -->
+        <tr><td class="px-mobile" style="padding:16px 40px 0 40px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#15101F;border:1px solid #2A2440;">
+            <tr>
+              <td style="padding:24px 28px;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="font-family:'Inter',Arial,sans-serif;font-size:16px;color:#22D3EE;letter-spacing:1px;font-weight:700;text-transform:uppercase;">Bílkoviny</td>
+                    <td align="right" style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#FFFFFF;font-weight:700;">{{target_protein_g}}<span style="font-size:14px;color:#6B6480;font-weight:400;"> g</span></td>
+                  </tr>
+                </table>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px;">
+                  <tr>
+                    <td style="background:#22D3EE;height:6px;line-height:6px;font-size:0;width:{{protein_bar_width}}%;">&nbsp;</td>
+                    <td style="background:#1F1A2E;height:6px;line-height:6px;font-size:0;width:{{protein_bar_rest}}%;">&nbsp;</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- SACHARIDY -->
+        <tr><td class="px-mobile" style="padding:8px 40px 0 40px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#15101F;border:1px solid #2A2440;">
+            <tr>
+              <td style="padding:24px 28px;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="font-family:'Inter',Arial,sans-serif;font-size:16px;color:#FBBF24;letter-spacing:1px;font-weight:700;text-transform:uppercase;">Sacharidy</td>
+                    <td align="right" style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#FFFFFF;font-weight:700;">{{target_carbs_g}}<span style="font-size:14px;color:#6B6480;font-weight:400;"> g</span></td>
+                  </tr>
+                </table>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px;">
+                  <tr>
+                    <td style="background:#FBBF24;height:6px;line-height:6px;font-size:0;width:{{carbs_bar_width}}%;">&nbsp;</td>
+                    <td style="background:#1F1A2E;height:6px;line-height:6px;font-size:0;width:{{carbs_bar_rest}}%;">&nbsp;</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- TUKY -->
+        <tr><td class="px-mobile" style="padding:8px 40px 0 40px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#15101F;border:1px solid #2A2440;">
+            <tr>
+              <td style="padding:24px 28px;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="font-family:'Inter',Arial,sans-serif;font-size:16px;color:#EC4899;letter-spacing:1px;font-weight:700;text-transform:uppercase;">Tuky</td>
+                    <td align="right" style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#FFFFFF;font-weight:700;">{{target_fat_g}}<span style="font-size:14px;color:#6B6480;font-weight:400;"> g</span></td>
+                  </tr>
+                </table>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px;">
+                  <tr>
+                    <td style="background:#EC4899;height:6px;line-height:6px;font-size:0;width:{{fat_bar_width}}%;">&nbsp;</td>
+                    <td style="background:#1F1A2E;height:6px;line-height:6px;font-size:0;width:{{fat_bar_rest}}%;">&nbsp;</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- INFO line -->
+        <tr><td class="px-mobile" style="padding:24px 40px 64px 40px;">
+          <div style="font-size:15px;color:#B8B0CC;line-height:1.6;padding:18px 22px;background:#15101F;border-left:3px solid #22D3EE;">
+            <span style="color:#22D3EE;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:1px;font-weight:700;">► INFO</span> &nbsp;Plán je nastaven přesně podle tvých čísel — recepty i tréninky tomu odpovídají.
+          </div>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- ============ 02 / NÁVYKY - FULL WIDTH BG ============ -->
+<tr><td style="background:#0D0A1A;background-image:radial-gradient(circle at 0% 50%, rgba(236,72,153,0.1) 0%, transparent 50%), radial-gradient(circle at 100% 50%, rgba(168,85,247,0.08) 0%, transparent 50%);">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="720" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:720px;">
+
+        <tr><td class="px-mobile" style="padding:64px 40px 24px 40px;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#EC4899;letter-spacing:3px;font-weight:700;margin-bottom:12px;">
+            ▌ 02 · PRAVIDLA
+          </div>
+          <div class="section-title" style="font-family:'Inter',Arial,sans-serif;font-size:32px;color:#FFFFFF;font-weight:800;letter-spacing:-0.8px;line-height:1.1;">
+            Návyky pro tento týden
+          </div>
+          <div class="body-text" style="font-size:16px;color:#9690AB;margin-top:12px;line-height:1.6;">
+            Tři až pět zásad, které drží plán pohromadě.
+          </div>
+        </td></tr>
+
+        <tr><td class="px-mobile" style="padding:24px 40px 0 40px;">
+          <!--BMON_HABITS-->
+        </td></tr>
+
+        <tr><td style="padding:0 0 64px 0;">&nbsp;</td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- ============ 03 / TÝDEN - FULL WIDTH BG ============ -->
+<tr><td style="background:#0A0814;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="720" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:720px;">
+
+        <tr><td class="px-mobile" style="padding:64px 40px 24px 40px;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#22D3EE;letter-spacing:3px;font-weight:700;margin-bottom:12px;">
+            ▌ 03 · ROZPIS TÝDNE
+          </div>
+          <div class="section-title" style="font-family:'Inter',Arial,sans-serif;font-size:32px;color:#FFFFFF;font-weight:800;letter-spacing:-0.8px;line-height:1.1;">
+            Tvůj jídelníček · 7 dní
+          </div>
+          <div class="body-text" style="font-size:16px;color:#9690AB;margin-top:12px;line-height:1.6;">
+            Každý den vlastní karta. Jídla, makra, trénink.
+          </div>
+        </td></tr>
+
+        <!--BMON_DAYS-->
+
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- ============ FINAL CTA - FULL WIDTH GRADIENT BG ============ -->
+<tr><td style="background:linear-gradient(135deg,#7C3AED 0%,#A855F7 35%,#EC4899 100%);background-image:linear-gradient(135deg,#7C3AED 0%,#A855F7 35%,#EC4899 100%);">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="720" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:720px;">
+        <tr><td class="px-mobile py-mobile" style="padding:80px 40px;text-align:center;">
+
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#FFFFFF;letter-spacing:3px;font-weight:700;opacity:0.85;margin-bottom:20px;">
+            ▌ PŘIPRAVENÝ ZAČÍT
+          </div>
+          <div class="cta-headline" style="font-family:'Inter',Arial,sans-serif;font-size:42px;color:#FFFFFF;font-weight:800;letter-spacing:-1px;line-height:1.1;margin-bottom:32px;">
+            Otevři aplikaci<br>a pojďme do toho.
+          </div>
+
+          <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;">
+            <tr>
+              <td style="background:#08060F;">
+                <a href="{{cta_url}}" class="cta-btn" style="display:inline-block;padding:22px 48px;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#FFFFFF;letter-spacing:2px;text-decoration:none;">
+                  OTEVŘÍT V APLIKACI &nbsp;→
+                </a>
+              </td>
+            </tr>
+          </table>
+
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- ============ FOOTER - FULL WIDTH ============ -->
+<tr><td style="background:#08060F;border-top:1px solid #1F1A2E;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="720" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:720px;">
+        <tr><td class="px-mobile" style="padding:40px 40px;">
+
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#A855F7;letter-spacing:2px;font-weight:700;">◆ BODY &amp; MIND ON</div>
+                <div class="body-text" style="font-size:14px;color:#6B6480;margin-top:10px;line-height:1.6;">
+                  Digitální fitness systém · Tělo. Hlava. Systém.<br>
+                  <a href="https://bodyandmindon.cz" style="color:#9690AB;text-decoration:none;">bodyandmindon.cz</a> &nbsp;·&nbsp;
+                  <a href="mailto:info@bodyandmindon.cz" style="color:#9690AB;text-decoration:none;">info@bodyandmindon.cz</a>
+                </div>
+              </td>
+              <td align="right" valign="top" class="hide-mobile" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6B6480;letter-spacing:1px;line-height:1.6;">
+                v2.0<br>2026
+              </td>
+            </tr>
+          </table>
+
+          <div style="margin-top:28px;padding-top:24px;border-top:1px solid #1F1A2E;font-size:12px;color:#6B6480;line-height:1.6;">
+            Tento email jsi dostal, protože jsi člen ON Club. <a href="#" style="color:#9690AB;text-decoration:underline;">Odhlásit</a> &nbsp;·&nbsp; <a href="#" style="color:#9690AB;text-decoration:underline;">Nastavení</a>
+          </div>
+
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- Bottom status bar -->
+<tr><td style="padding:0;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td style="background:#22D3EE;height:4px;line-height:4px;font-size:0;width:15%;">&nbsp;</td>
+      <td style="background:#EC4899;height:4px;line-height:4px;font-size:0;width:40%;">&nbsp;</td>
+      <td style="background:#A855F7;height:4px;line-height:4px;font-size:0;">&nbsp;</td>
+    </tr>
+  </table>
+</td></tr>
+
+</table>
+
+</body>
+</html>

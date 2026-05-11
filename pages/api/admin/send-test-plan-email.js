@@ -169,6 +169,8 @@ export default async function handler(req, res) {
       accountEmailForLoginBlock: ownerEmail,
       bodyMetrics: bmFull ?? undefined,
       dayHeadingOverrides: dayHeadingOverrides ?? undefined,
+      structuredPlanJson: plan.structured_plan_json ?? undefined,
+      validFrom: plan.valid_from ?? undefined,
     });
 
     if (!sendResult?.ok) {

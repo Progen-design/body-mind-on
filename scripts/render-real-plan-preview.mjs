@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
 import { buildWeeklyPlanEmailV2Document } from '../lib/weeklyPlanEmailV2.js';
 import { buildWeeklyPlanEmailV4Document } from '../lib/weeklyPlanEmailV4.js';
+import { buildWeeklyPlanEmailV5Document } from '../lib/weeklyPlanEmailV5.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -38,12 +39,13 @@ if (!url || !key) {
 const sb = createClient(url, key);
 
 const planId = process.argv[2];
-const versionArg = (process.argv[3] || 'v4').toLowerCase();
+const versionArg = (process.argv[3] || 'v5').toLowerCase();
 if (!planId) {
-  console.error('Usage: node render-real-plan-preview.mjs <plan_id> [v2|v4]');
+  console.error('Usage: node render-real-plan-preview.mjs <plan_id> [v2|v4|v5]');
   process.exit(1);
 }
-const useV4 = versionArg !== 'v2';
+const validVersions = ['v2', 'v4', 'v5'];
+const version = validVersions.includes(versionArg) ? versionArg : 'v5';
 
 const { data: plan } = await sb
   .from('ai_generated_plans')
@@ -63,7 +65,12 @@ const { data: bm } = await sb
   .limit(1)
   .maybeSingle();
 
-const builder = useV4 ? buildWeeklyPlanEmailV4Document : buildWeeklyPlanEmailV2Document;
+const builders = {
+  v2: buildWeeklyPlanEmailV2Document,
+  v4: buildWeeklyPlanEmailV4Document,
+  v5: buildWeeklyPlanEmailV5Document,
+};
+const builder = builders[version];
 const html = builder({
   structuredPlanJson: plan.structured_plan_json,
   bodyMetrics: bm,
@@ -73,6 +80,9 @@ const html = builder({
   validFrom: plan.valid_from,
 });
 
-const out = join(tmpdir(), `body-mind-on-real-plan-${useV4 ? 'v4-' : 'v2-'}${planId}.html`);
+const out = join(tmpdir(), `body-mind-on-real-plan-${version}-${planId}.html`);
 writeFileSync(out, html, 'utf8');
 console.log(out);
+console.log(`size: ${html.length} bytes`);
+console.log(`no placeholders: ${!/\{\{[a-zA-Z_]+\}\}/.test(html)}`);
+console.log(`v5 marker: ${html.includes('v5.0')}`);

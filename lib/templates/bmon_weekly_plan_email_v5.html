@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>Tvůj týden · Body & Mind ON</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap');
+
+  body { margin:0; padding:0; background:#06050A; font-family:'Geist','Inter',Arial,sans-serif; -webkit-text-size-adjust:100%; }
+  a { text-decoration:none; }
+  table { border-collapse:collapse; }
+  .mono { font-family:'Geist Mono','JetBrains Mono','Courier New',monospace; }
+
+  @media only screen and (max-width:600px){
+    .container { width:100% !important; max-width:100% !important; }
+    .name-mega { font-size:64px !important; line-height:0.95 !important; letter-spacing:-2.5px !important; }
+    .section-mega { font-size:38px !important; line-height:1.0 !important; }
+    .stat-giant { font-size:80px !important; }
+    .motto-big { font-size:30px !important; line-height:1.25 !important; }
+    .day-mega { font-size:48px !important; line-height:0.95 !important; }
+    .kcal-mega { font-size:80px !important; }
+    .meal-title { font-size:22px !important; }
+    .macro-big { font-size:22px !important; }
+    .px-mobile { padding-left:20px !important; padding-right:20px !important; }
+    .py-mobile { padding-top:64px !important; padding-bottom:64px !important; }
+    .stack-mobile-tile { display:inline-block !important; width:48% !important; margin-bottom:8px !important; }
+    .hide-mobile { display:none !important; }
+    .cta-mega { font-size:36px !important; }
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#06050A;">
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#06050A;width:100%;">
+
+<!-- STATUS BAR -->
+<tr><td style="padding:0;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td style="background:{{palette_primary}};height:3px;line-height:3px;font-size:0;width:60%;">&nbsp;</td>
+      <td style="background:{{palette_secondary}};height:3px;line-height:3px;font-size:0;width:25%;">&nbsp;</td>
+      <td style="background:{{palette_accent}};height:3px;line-height:3px;font-size:0;width:15%;">&nbsp;</td>
+    </tr>
+  </table>
+</td></tr>
+
+<!-- HEADER BAR -->
+<tr><td style="background:#06050A;border-bottom:1px solid {{palette_primary_alpha15}};">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="1100" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:1100px;">
+        <tr><td class="px-mobile" style="padding:20px 48px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="font-family:'Geist',Arial,sans-serif;font-size:14px;color:#F0EBFF;letter-spacing:-0.3px;font-weight:700;">
+                <span style="color:{{palette_primary}};">●</span>&nbsp; BODY &amp; MIND ON
+              </td>
+              <td align="right" style="font-family:'Geist Mono',monospace;font-size:11px;color:#6B5C8F;letter-spacing:1px;text-transform:uppercase;font-weight:500;">
+                {{week_label}}
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- HERO -->
+<tr><td style="background:#0A0815;background-image:radial-gradient(ellipse 80% 60% at 20% 10%, {{palette_primary_alpha35}} 0%, {{palette_primary_alpha08}} 35%, transparent 65%), radial-gradient(ellipse 70% 50% at 90% 30%, {{palette_secondary_alpha25}} 0%, {{palette_secondary_alpha05}} 40%, transparent 70%), radial-gradient(circle at 50% 100%, {{palette_accent_alpha18}} 0%, transparent 50%), linear-gradient(180deg, #0F0820 0%, #0A0815 50%, #06050A 100%);">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="1100" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:1100px;">
+        <tr><td class="px-mobile py-mobile" style="padding:96px 64px 80px 64px;">
+
+          <div class="mono" style="font-family:'Geist Mono',monospace;font-size:11px;color:{{palette_primary}};letter-spacing:3px;font-weight:600;margin-bottom:32px;text-transform:uppercase;">
+            <span style="background:{{palette_primary_alpha15}};padding:6px 12px;border:1px solid {{palette_primary_alpha30}};">▲ NEW WEEK</span>
+          </div>
+
+          <div style="font-family:'Geist',Arial,sans-serif;font-size:20px;color:#9F8FC0;font-weight:400;margin-bottom:8px;letter-spacing:-0.3px;">
+            {{greeting}}
+          </div>
+
+          <div class="name-mega" style="font-family:'Geist',Arial,sans-serif;font-size:96px;line-height:0.9;color:#F8F4FF;font-weight:800;letter-spacing:-4px;margin-bottom:48px;">
+            {{user_vocative}}.
+          </div>
+
+          <div style="font-family:'Geist',Arial,sans-serif;font-size:32px;line-height:1.2;color:#F8F4FF;font-weight:500;max-width:520px;margin-bottom:24px;letter-spacing:-0.8px;">
+            {{hero_tagline_main}}<br>
+            <span style="background:linear-gradient(90deg,{{palette_primary}} 0%,{{palette_secondary}} 50%,{{palette_accent}} 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;color:{{palette_secondary}};font-weight:700;">{{hero_tagline_accent}}</span>
+          </div>
+
+          <div style="font-family:'Geist',Arial,sans-serif;font-size:17px;line-height:1.6;color:#9F8FC0;max-width:480px;font-weight:400;margin-bottom:72px;">
+            {{coach_intro}}
+          </div>
+
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td class="stack-mobile-tile" style="padding:0;">
+                <div class="stat-giant" style="font-family:'Geist',Arial,sans-serif;font-size:128px;color:#F8F4FF;font-weight:800;line-height:0.9;letter-spacing:-6px;background:linear-gradient(180deg,#F8F4FF 0%,{{palette_primary}} 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">{{stat_days}}</div>
+                <div class="mono" style="font-family:'Geist Mono',monospace;font-size:12px;color:{{palette_primary}};letter-spacing:2px;margin-top:14px;font-weight:600;text-transform:uppercase;">DNÍ</div>
+              </td>
+              <td class="stack-mobile-tile" style="padding:0;">
+                <div class="stat-giant" style="font-family:'Geist',Arial,sans-serif;font-size:128px;color:#F8F4FF;font-weight:800;line-height:0.9;letter-spacing:-6px;background:linear-gradient(180deg,#F8F4FF 0%,{{palette_secondary}} 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">{{stat_meals}}</div>
+                <div class="mono" style="font-family:'Geist Mono',monospace;font-size:12px;color:{{palette_secondary}};letter-spacing:2px;margin-top:14px;font-weight:600;text-transform:uppercase;">JÍDEL</div>
+              </td>
+              <td class="stack-mobile-tile" style="padding:0;">
+                <div class="stat-giant" style="font-family:'Geist',Arial,sans-serif;font-size:128px;color:#F8F4FF;font-weight:800;line-height:0.9;letter-spacing:-6px;background:linear-gradient(180deg,#F8F4FF 0%,{{palette_accent}} 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">{{stat_workouts}}</div>
+                <div class="mono" style="font-family:'Geist Mono',monospace;font-size:12px;color:{{palette_accent}};letter-spacing:2px;margin-top:14px;font-weight:600;text-transform:uppercase;">TRÉNINKY</div>
+              </td>
+            </tr>
+          </table>
+
+          <table cellpadding="0" cellspacing="0" border="0" style="margin-top:72px;">
+            <tr>
+              <td style="background:linear-gradient(135deg,{{palette_primary}} 0%,{{palette_secondary}} 100%);">
+                <a href="{{cta_url}}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:22px 48px;font-family:'Geist',Arial,sans-serif;font-size:15px;font-weight:600;color:#FFFFFF;letter-spacing:-0.2px;text-decoration:none;">
+                  Otevřít aplikaci &nbsp;→
+                </a>
+              </td>
+            </tr>
+          </table>
+
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!--BMON_LOGIN_BLOCK-->
+
+<!-- SECTION 1 — Profile -->
+<tr><td style="background:#06050A;background-image:radial-gradient(ellipse 50% 80% at 100% 0%, {{palette_primary_alpha12}} 0%, transparent 50%), radial-gradient(ellipse 60% 50% at 0% 80%, {{palette_secondary_alpha08}} 0%, transparent 50%);">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="1100" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:1100px;">
+
+        <tr><td class="px-mobile" style="padding:112px 64px 56px 64px;">
+          <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:32px;">
+            <tr>
+              <td style="background:{{palette_primary}};width:4px;font-size:0;line-height:0;">&nbsp;</td>
+              <td style="padding-left:16px;font-family:'Geist Mono',monospace;font-size:11px;color:{{palette_primary}};letter-spacing:3px;font-weight:600;text-transform:uppercase;">
+                {{section1_label}}
+              </td>
+            </tr>
+          </table>
+
+          <div class="section-mega" style="font-family:'Geist',Arial,sans-serif;font-size:56px;color:#F8F4FF;font-weight:700;letter-spacing:-2px;line-height:1.0;max-width:600px;">
+            {{section1_title_line1}}<br>
+            <span style="color:{{palette_primary}};">{{section1_title_line2}}</span>
+          </div>
+        </td></tr>
+
+        <tr><td class="px-mobile" style="padding:32px 64px 0 64px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td width="33%" class="stack-mobile-tile" style="background:linear-gradient(135deg, {{palette_primary_alpha12}} 0%, {{palette_primary_alpha02}} 100%);border-top:1px solid {{palette_primary_alpha30}};padding:36px 28px;">
+                <div class="mono" style="font-family:'Geist Mono',monospace;font-size:10px;color:{{palette_primary}};letter-spacing:2.5px;margin-bottom:20px;font-weight:600;text-transform:uppercase;">VÝŠKA</div>
+                <div style="font-family:'Geist',Arial,sans-serif;font-size:56px;color:#F8F4FF;font-weight:700;line-height:0.95;letter-spacing:-2px;">
+                  {{height_cm}}<span style="font-size:18px;color:#6B5C8F;font-weight:400;letter-spacing:0;"> cm</span>
+                </div>
+              </td>
+              <td class="hide-mobile" style="width:12px;font-size:0;">&nbsp;</td>
+              <td width="33%" class="stack-mobile-tile" style="background:linear-gradient(135deg, {{palette_secondary_alpha12}} 0%, {{palette_secondary_alpha02}} 100%);border-top:1px solid {{palette_secondary_alpha30}};padding:36px 28px;">
+                <div class="mono" style="font-family:'Geist Mono',monospace;font-size:10px;color:{{palette_secondary}};letter-spacing:2.5px;margin-bottom:20px;font-weight:600;text-transform:uppercase;">VÁHA</div>
+                <div style="font-family:'Geist',Arial,sans-serif;font-size:56px;color:#F8F4FF;font-weight:700;line-height:0.95;letter-spacing:-2px;">
+                  {{weight_kg}}<span style="font-size:18px;color:#6B5C8F;font-weight:400;letter-spacing:0;"> kg</span>
+                </div>
+              </td>
+              <td class="hide-mobile" style="width:12px;font-size:0;">&nbsp;</td>
+              <td width="33%" class="stack-mobile-tile" style="background:linear-gradient(135deg, {{palette_accent_alpha12}} 0%, {{palette_accent_alpha02}} 100%);border-top:1px solid {{palette_accent_alpha30}};padding:36px 28px;">
+                <div class="mono" style="font-family:'Geist Mono',monospace;font-size:10px;color:{{palette_accent}};letter-spacing:2.5px;margin-bottom:20px;font-weight:600;text-transform:uppercase;">CÍL</div>
+                <div style="font-family:'Geist',Arial,sans-serif;font-size:28px;color:#F8F4FF;font-weight:700;line-height:1.1;letter-spacing:-0.8px;">
+                  {{goal_text}}
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <tr><td class="px-mobile" style="padding:72px 64px 0 64px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="background:{{palette_primary_alpha04}};border-left:3px solid {{palette_primary}};padding:28px 32px;">
+                <div style="font-family:'Geist',Arial,sans-serif;font-size:18px;line-height:1.6;color:#D4C7F0;font-weight:400;max-width:640px;">
+                  „{{coach_quote_text}} <strong style="color:#F8F4FF;font-weight:500;">{{coach_quote_highlight}}</strong>"
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <tr><td class="px-mobile" style="padding:96px 64px 0 64px;">
+          <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
+            <tr>
+              <td style="background:{{palette_secondary}};width:4px;font-size:0;line-height:0;">&nbsp;</td>
+              <td style="padding-left:16px;font-family:'Geist Mono',monospace;font-size:11px;color:{{palette_secondary}};letter-spacing:3px;font-weight:600;text-transform:uppercase;">
+                CO DÁŠ TĚLU DENNĚ
+              </td>
+            </tr>
+          </table>
+
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="padding-bottom:48px;">
+                <table cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td class="kcal-mega" style="font-family:'Geist',Arial,sans-serif;font-size:144px;color:#F8F4FF;font-weight:800;line-height:0.9;letter-spacing:-7px;background:linear-gradient(135deg,#F8F4FF 0%,{{palette_primary}} 50%,{{palette_secondary}} 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
+                      {{target_kcal}}
+                    </td>
+                    <td style="padding-left:24px;vertical-align:bottom;padding-bottom:24px;">
+                      <div class="mono" style="font-family:'Geist Mono',monospace;font-size:24px;color:{{palette_secondary}};font-weight:600;letter-spacing:1px;">kcal</div>
+                      <div style="font-family:'Geist',Arial,sans-serif;font-size:14px;color:#6B5C8F;margin-top:6px;font-weight:400;">/ den</div>
+                    </td>
+                  </tr>
+                </table>
+                <div style="font-family:'Geist',Arial,sans-serif;font-size:17px;color:#9F8FC0;font-weight:400;margin-top:28px;line-height:1.6;max-width:520px;">
+                  {{kcal_lead_in}}
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <tr><td class="px-mobile" style="padding:0 64px 0 64px;">
+          <!--BMON_MACROS-->
+        </td></tr>
+
+        <tr><td style="padding:0 0 120px 0;">&nbsp;</td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- MID-MOTTO -->
+<tr><td style="background:#0F0820;background-image:radial-gradient(ellipse 100% 100% at 50% 50%, {{palette_primary_alpha30}} 0%, {{palette_secondary_alpha15}} 30%, {{palette_accent_alpha05}} 55%, transparent 75%), linear-gradient(135deg,#0F0820 0%,#150A26 100%);">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="1100" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:1100px;">
+        <tr><td class="px-mobile" style="padding:160px 64px;text-align:center;">
+
+          <div class="mono" style="font-family:'Geist Mono',monospace;font-size:11px;color:{{palette_accent}};letter-spacing:4px;font-weight:600;margin-bottom:48px;text-transform:uppercase;">
+            ▲ &nbsp; PRAVIDLO TÝDNE &nbsp; ▲
+          </div>
+
+          <div class="motto-big" style="font-family:'Geist',Arial,sans-serif;font-size:56px;line-height:1.05;color:#F8F4FF;font-weight:700;letter-spacing:-2px;max-width:780px;margin:0 auto;">
+            „{{weekly_motto_line1}}<br>
+            <span style="background:linear-gradient(90deg,{{palette_primary}} 0%,{{palette_secondary}} 50%,{{palette_accent}} 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;color:{{palette_secondary}};">{{weekly_motto_line2}}</span>"
+          </div>
+
+          <div style="font-family:'Geist',Arial,sans-serif;font-size:15px;color:#9F8FC0;font-weight:400;margin-top:56px;letter-spacing:0.3px;">
+            — {{coach_signature_short}}
+          </div>
+
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- SECTION 2 — Rules -->
+<tr><td style="background:#06050A;background-image:radial-gradient(ellipse 50% 60% at 0% 50%, {{palette_secondary_alpha08}} 0%, transparent 60%);">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="1100" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:1100px;">
+
+        <tr><td class="px-mobile" style="padding:112px 64px 56px 64px;">
+          <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:32px;">
+            <tr>
+              <td style="background:{{palette_secondary}};width:4px;font-size:0;line-height:0;">&nbsp;</td>
+              <td style="padding-left:16px;font-family:'Geist Mono',monospace;font-size:11px;color:{{palette_secondary}};letter-spacing:3px;font-weight:600;text-transform:uppercase;">
+                {{section2_label}}
+              </td>
+            </tr>
+          </table>
+
+          <div class="section-mega" style="font-family:'Geist',Arial,sans-serif;font-size:56px;color:#F8F4FF;font-weight:700;letter-spacing:-2px;line-height:1.0;max-width:680px;">
+            {{section2_title_line1}}<br>
+            <span style="color:{{palette_secondary}};">{{section2_title_line2}}</span>
+          </div>
+        </td></tr>
+
+        <tr><td class="px-mobile" style="padding:32px 64px 0 64px;">
+          <!--BMON_HABITS-->
+        </td></tr>
+
+        <tr><td style="padding:0 0 120px 0;">&nbsp;</td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- SECTION 3 — Week breakdown -->
+<tr><td style="background:#06050A;background-image:radial-gradient(ellipse 60% 70% at 100% 0%, {{palette_primary_alpha10}} 0%, transparent 60%);">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="1100" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:1100px;">
+
+        <tr><td class="px-mobile" style="padding:0 64px 56px 64px;">
+          <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:32px;">
+            <tr>
+              <td style="background:{{palette_accent}};width:4px;font-size:0;line-height:0;">&nbsp;</td>
+              <td style="padding-left:16px;font-family:'Geist Mono',monospace;font-size:11px;color:{{palette_accent}};letter-spacing:3px;font-weight:600;text-transform:uppercase;">
+                {{section3_label}}
+              </td>
+            </tr>
+          </table>
+
+          <div class="section-mega" style="font-family:'Geist',Arial,sans-serif;font-size:56px;color:#F8F4FF;font-weight:700;letter-spacing:-2px;line-height:1.0;max-width:680px;">
+            {{section3_title_line1}}<br>
+            <span style="color:{{palette_accent}};">{{section3_title_line2}}</span>
+          </div>
+        </td></tr>
+
+        <!--BMON_DAYS-->
+
+        <tr><td style="padding:0 0 120px 0;">&nbsp;</td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- FINAL CTA -->
+<tr><td style="background:linear-gradient(135deg, #1A0B33 0%, {{palette_primary_dark}} 20%, {{palette_primary}} 40%, {{palette_secondary}} 70%, {{palette_accent}} 100%);">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="1100" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:1100px;">
+        <tr><td class="px-mobile py-mobile" style="padding:144px 64px;text-align:center;">
+
+          <div class="mono" style="font-family:'Geist Mono',monospace;font-size:11px;color:rgba(255,255,255,0.85);letter-spacing:4px;font-weight:600;margin-bottom:40px;text-transform:uppercase;">
+            ▲ &nbsp; READY TO GO &nbsp; ▲
+          </div>
+
+          <div class="cta-mega" style="font-family:'Geist',Arial,sans-serif;font-size:64px;color:#FFFFFF;font-weight:800;letter-spacing:-3px;line-height:1.0;margin-bottom:36px;">
+            Tak co,<br>
+            pustíme se do toho?
+          </div>
+
+          <div style="font-family:'Geist',Arial,sans-serif;font-size:18px;color:rgba(255,255,255,0.85);font-weight:400;line-height:1.6;margin-bottom:56px;max-width:480px;margin-left:auto;margin-right:auto;">
+            Všechno v aplikaci. Recepty, videa, denní check.
+          </div>
+
+          <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;">
+            <tr>
+              <td style="background:#06050A;">
+                <a href="{{cta_url}}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:26px 56px;font-family:'Geist',Arial,sans-serif;font-size:16px;font-weight:700;color:#FFFFFF;letter-spacing:-0.2px;text-decoration:none;">
+                  Otevřít v aplikaci &nbsp;→
+                </a>
+              </td>
+            </tr>
+          </table>
+
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- COACH SIGNATURE -->
+<tr><td style="background:#06050A;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="1100" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:1100px;">
+        <tr><td class="px-mobile" style="padding:80px 64px;">
+          <table cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="background:{{palette_primary}};width:4px;font-size:0;line-height:0;">&nbsp;</td>
+              <td style="padding-left:24px;">
+                <div style="font-family:'Geist',Arial,sans-serif;font-size:20px;color:#D4C7F0;font-weight:400;line-height:1.6;max-width:520px;">
+                  {{coach_signature_body}}
+                </div>
+                <div style="font-family:'Geist',Arial,sans-serif;font-size:18px;color:{{palette_primary}};font-weight:600;margin-top:20px;letter-spacing:-0.3px;">
+                  {{coach_signature_name}}
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- FOOTER -->
+<tr><td style="background:#040308;border-top:1px solid {{palette_primary_alpha15}};">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="1100" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:1100px;">
+        <tr><td class="px-mobile" style="padding:48px 64px;">
+
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td>
+                <div style="font-family:'Geist',Arial,sans-serif;font-size:14px;color:{{palette_primary}};font-weight:700;letter-spacing:-0.3px;">
+                  <span style="color:{{palette_primary}};">●</span>&nbsp; BODY &amp; MIND ON
+                </div>
+                <div style="font-family:'Geist',Arial,sans-serif;font-size:13px;color:#6B5C8F;margin-top:10px;line-height:1.6;font-weight:400;">
+                  <a href="https://bodyandmindon.cz" style="color:#6B5C8F;text-decoration:none;">bodyandmindon.cz</a> &nbsp;·&nbsp;
+                  <a href="mailto:info@bodyandmindon.cz" style="color:#6B5C8F;text-decoration:none;">info@bodyandmindon.cz</a>
+                </div>
+              </td>
+              <td align="right" class="hide-mobile">
+                <div class="mono" style="font-family:'Geist Mono',monospace;font-size:10px;color:#6B5C8F;letter-spacing:2px;line-height:1.6;text-transform:uppercase;">v5.0<br>{{footer_year}}</div>
+              </td>
+            </tr>
+          </table>
+
+          <div style="margin-top:32px;padding-top:24px;border-top:1px solid {{palette_primary_alpha10}};font-family:'Geist',Arial,sans-serif;font-size:12px;color:#6B5C8F;line-height:1.6;">
+            Tento email jsi dostal jako člen ON Club.
+          </div>
+
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- Bottom status bar -->
+<tr><td style="padding:0;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td style="background:{{palette_accent}};height:3px;line-height:3px;font-size:0;width:15%;">&nbsp;</td>
+      <td style="background:{{palette_secondary}};height:3px;line-height:3px;font-size:0;width:25%;">&nbsp;</td>
+      <td style="background:{{palette_primary}};height:3px;line-height:3px;font-size:0;width:60%;">&nbsp;</td>
+    </tr>
+  </table>
+</td></tr>
+
+</table>
+
+</body>
+</html>

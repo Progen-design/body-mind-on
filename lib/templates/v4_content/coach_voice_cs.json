@@ -1,0 +1,54 @@
+{
+  "weekly_mottos": [
+    { "week_mod_10": 0, "text": "Nemusíš to mít rád. Stačí, že to děláš.", "attribution": "pravidlo tohoto týdne" },
+    { "week_mod_10": 1, "text": "Pomalý progres je pořád progres.", "attribution": "pravidlo tohoto týdne" },
+    { "week_mod_10": 2, "text": "Tělo dělá, co mu hlava řekne.", "attribution": "pravidlo tohoto týdne" },
+    { "week_mod_10": 3, "text": "Disciplína tě dostane tam, kam motivace nedoběhne.", "attribution": "pravidlo tohoto týdne" },
+    { "week_mod_10": 4, "text": "Každý den, kdy se nevzdáš, je vítězství.", "attribution": "pravidlo tohoto týdne" },
+    { "week_mod_10": 5, "text": "Tělo se mění tak, jak ho učíš.", "attribution": "pravidlo tohoto týdne" },
+    { "week_mod_10": 6, "text": "Den, který nezačneš, se nikdy nedokončí.", "attribution": "pravidlo tohoto týdne" },
+    { "week_mod_10": 7, "text": "Síla není v intenzitě. Síla je v opakování.", "attribution": "pravidlo tohoto týdne" },
+    { "week_mod_10": 8, "text": "Co děláš dnes, vidíš za měsíc.", "attribution": "pravidlo tohoto týdne" },
+    { "week_mod_10": 9, "text": "Tvůj nejlepší tréninkový partner jsi ty sám.", "attribution": "pravidlo tohoto týdne" }
+  ],
+  "coach_intros": {
+    "muscle_gain": "Postavil jsem ho na tom, co o tobě vím. Drž se ho a uvidíš změnu. Není potřeba spěchat.",
+    "weight_loss": "Tenhle týden je o disciplíně. Plán je reálný — drž se ho a výsledky přijdou.",
+    "maintenance": "Pokračujeme. Stejně jako minulý týden, jen s drobnými úpravami. Drž se.",
+    "endurance": "Cílíme na vytrvalost. Tělo si zvyká, dej mu čas a sleduj progres."
+  },
+  "macro_commentary": {
+    "muscle_gain": {
+      "protein": "Hodně. To je to, co potřebuješ pro svaly.",
+      "carbs": "Energie na tréninky a celý den.",
+      "fat": "Olivový olej, ořechy, avokádo. Drží tě v rovnováze."
+    },
+    "weight_loss": {
+      "protein": "Drží tě sytého a chrání svaly.",
+      "carbs": "Méně než obvykle. Tělo bude sahat po tucích.",
+      "fat": "Kvalitní zdroje. Ne moc, ale ne málo."
+    },
+    "maintenance": {
+      "protein": "Dostatek na regeneraci a sílu.",
+      "carbs": "V rovnováze s výdejem.",
+      "fat": "Zdravé tuky pro hormony a mozek."
+    },
+    "endurance": {
+      "protein": "Pro regeneraci a stabilní svalovou hmotu.",
+      "carbs": "Hlavní palivo pro vytrvalost. Nešetři.",
+      "fat": "Dlouhodobá energie. Kvalitní zdroje."
+    }
+  },
+  "kcal_lead_in": {
+    "muscle_gain": "Trochu nad tvou udržovací hodnotou. Přesně tolik, aby tělo mělo z čeho stavět.",
+    "weight_loss": "O něco méně, než spálíš. Deficit, ale ne hladovění.",
+    "maintenance": "Tolik, kolik tělo spálí. Žádný posun — jen klid.",
+    "endurance": "Vyšší, ale s mírou. Energie musí být tam, kdy ji potřebuješ."
+  },
+  "hero_subtitle": "Sedm dní. Začínáme.",
+  "workout_rest_text": "Pohyb. Dnes odpočinek. Tělo to potřebuje.",
+  "workout_intro": "Krátký, ale poctivý.",
+  "workout_fallback": "Třicet minut. Žádné výmluvy. Pokud nezvládneš všechno, udělej alespoň první cvik.",
+  "coach_signature_text": "Drž se. Když budeš mít otázky, napiš mi. Vidíme se za týden.",
+  "coach_signature_name": "— Tvůj kouč"
+}

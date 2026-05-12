@@ -1,0 +1,96 @@
+{
+  "version": "v5",
+  "weekly_mottos": [
+    { "week_mod_10": 0, "text": "Nemusíš to mít rád. Stačí, že to děláš.", "attribution": "pravidlo tohoto týdne" },
+    { "week_mod_10": 1, "text": "Pomalý progres je pořád progres.", "attribution": "pravidlo tohoto týdne" },
+    { "week_mod_10": 2, "text": "Tělo dělá, co mu hlava řekne.", "attribution": "pravidlo tohoto týdne" },
+    { "week_mod_10": 3, "text": "Disciplína tě dostane tam, kam motivace nedoběhne.", "attribution": "pravidlo tohoto týdne" },
+    { "week_mod_10": 4, "text": "Každý den, kdy se nevzdáš, je vítězství.", "attribution": "pravidlo tohoto týdne" },
+    { "week_mod_10": 5, "text": "Tělo se mění tak, jak ho učíš.", "attribution": "pravidlo tohoto týdne" },
+    { "week_mod_10": 6, "text": "Den, který nezačneš, se nikdy nedokončí.", "attribution": "pravidlo tohoto týdne" },
+    { "week_mod_10": 7, "text": "Síla není v intenzitě. Síla je v opakování.", "attribution": "pravidlo tohoto týdne" },
+    { "week_mod_10": 8, "text": "Co děláš dnes, vidíš za měsíc.", "attribution": "pravidlo tohoto týdne" },
+    { "week_mod_10": 9, "text": "Tvůj nejlepší tréninkový partner jsi ty sám.", "attribution": "pravidlo tohoto týdne" }
+  ],
+  "coach_intros": {
+    "muscle_gain": "Plán je postavený přesně na tobě. Drž se ho a uvidíš změnu. Bez spěchu.",
+    "weight_loss": "Tenhle týden je o disciplíně. Plán je reálný — drž se ho a výsledky přijdou.",
+    "maintenance": "Pokračujeme. Stejně jako minulý týden, jen s drobnými úpravami.",
+    "endurance": "Cílíme na vytrvalost. Tělo si zvyká, dej mu čas."
+  },
+  "coach_quotes": {
+    "muscle_gain": {
+      "text": "Když chceš nabrat svaly, potřebuješ tři věci — dost jídla, dost spánku a trpělivost.",
+      "highlight": "Na první se postaráme tady."
+    },
+    "weight_loss": {
+      "text": "Hubnutí není o hladu. Je o disciplíně, kterou si vybuduješ.",
+      "highlight": "Tenhle týden začínáme."
+    },
+    "maintenance": {
+      "text": "Udržování není nuda. Je to umění držet to, co jsi vybudoval.",
+      "highlight": "Pokračujeme."
+    },
+    "endurance": {
+      "text": "Vytrvalost je o opakování. Den po dni.",
+      "highlight": "Nebudeš tam za týden, ale za tři měsíce ano."
+    }
+  },
+  "macro_commentary": {
+    "muscle_gain": {
+      "protein": "Hodně. To je to, co potřebuješ pro svaly.",
+      "carbs": "Energie na tréninky a celý den.",
+      "fat": "Olivový olej, ořechy, avokádo. Drží tě v rovnováze."
+    },
+    "weight_loss": {
+      "protein": "Drží tě sytého a chrání svaly.",
+      "carbs": "Méně než obvykle. Tělo bude sahat po tucích.",
+      "fat": "Kvalitní zdroje. Ne moc, ale ne málo."
+    },
+    "maintenance": {
+      "protein": "Dostatek na regeneraci a sílu.",
+      "carbs": "V rovnováze s výdejem.",
+      "fat": "Zdravé tuky pro hormony a mozek."
+    },
+    "endurance": {
+      "protein": "Pro regeneraci a stabilní svalovou hmotu.",
+      "carbs": "Hlavní palivo pro vytrvalost. Nešetři.",
+      "fat": "Dlouhodobá energie. Kvalitní zdroje."
+    }
+  },
+  "kcal_leadins": {
+    "muscle_gain": "Trochu nad udržovací hodnotou. Přesně tolik, aby tělo mělo z čeho stavět.",
+    "weight_loss": "Mírně pod udržovací hodnotou. Bezpečný deficit, který funguje.",
+    "maintenance": "Tvoje udržovací hodnota. Tělo má vše, co potřebuje.",
+    "endurance": "Dostatek energie pro tréninky i regeneraci."
+  },
+  "workout_intros": {
+    "easy": "Lehký pohyb.",
+    "medium": "Krátký. Poctivý.",
+    "hard": "Naplno.",
+    "rest": "Dnes odpočinek."
+  },
+  "workout_descriptions": {
+    "easy": "Dej tělu prostor. Nepřehánej to.",
+    "medium": "30 minut. Žádné výmluvy. Pokud nezvládneš všechno, udělej alespoň první cvik.",
+    "hard": "Dnes naplno. Pak si zasloužíš odpočinek.",
+    "rest": "Pohyb. Dnes odpočinek. Tělo to potřebuje."
+  },
+  "coach_signature": {
+    "body": "Drž se. Když budeš mít otázky, napiš mi. Vidíme se za týden.",
+    "name": "— Tvůj kouč"
+  },
+  "hero_tagline_main": "Tvůj týden je tady.",
+  "hero_tagline_accent": "Sedm dní. Začínáme.",
+  "section_titles": {
+    "profile_label": "01 / PROFIL",
+    "profile_title_line1": "Začneme",
+    "profile_title_line2": "u tebe.",
+    "rules_label": "02 / PRAVIDLA",
+    "rules_title_line1": "Když všechno selže,",
+    "rules_title_line2": "drž se těchto tří.",
+    "week_label": "03 / ROZPIS TÝDNE",
+    "week_title_line1": "Den po dni.",
+    "week_title_line2": "Bez spěchu."
+  }
+}

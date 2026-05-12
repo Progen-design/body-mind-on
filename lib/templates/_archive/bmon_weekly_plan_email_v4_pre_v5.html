@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>Tvůj týden · Body & Mind ON</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;0,600;0,700;0,900;1,300;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  body { margin:0; padding:0; background:#0B0908; font-family:'Inter', Arial, sans-serif; -webkit-text-size-adjust:100%; }
+  a { text-decoration:none; }
+  table { border-collapse:collapse; }
+  .serif { font-family:'Fraunces', Georgia, serif; }
+  .mono { font-family:'JetBrains Mono', 'Courier New', monospace; }
+
+  @media only screen and (max-width:600px){
+    .container { width:100% !important; max-width:100% !important; }
+    .name-hero { font-size:72px !important; line-height:0.95 !important; letter-spacing:-3px !important; }
+    .section-title { font-size:32px !important; }
+    .motto-text { font-size:24px !important; line-height:1.3 !important; }
+    .stat-num { font-size:36px !important; }
+    .kcal-hero { font-size:64px !important; }
+    .meal-name { font-size:24px !important; }
+    .macro-num { font-size:24px !important; }
+    .px-mobile { padding-left:28px !important; padding-right:28px !important; }
+    .py-mobile { padding-top:64px !important; padding-bottom:64px !important; }
+    .stack-mobile-tile { display:inline-block !important; width:48% !important; margin-bottom:8px !important; }
+    .hide-mobile { display:none !important; }
+    .day-headline { font-size:34px !important; }
+    .cta-headline { font-size:36px !important; }
+    .greeting { font-size:18px !important; }
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#0B0908;">
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0B0908;width:100%;">
+
+<!-- QUIET HEADER -->
+<tr><td style="background:#0B0908;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="720" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:720px;">
+        <tr><td class="px-mobile" style="padding:36px 64px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="font-family:'Fraunces',Georgia,serif;font-size:14px;color:#8B7355;letter-spacing:1px;font-weight:400;font-style:italic;">
+                Body &amp; Mind ON
+              </td>
+              <td align="right" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#5C5043;letter-spacing:2px;text-transform:uppercase;">
+                {{header_date_label}}
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- HERO -->
+<tr><td style="background:#0B0908;background-image:radial-gradient(ellipse 60% 80% at 50% 0%, rgba(231,176,98,0.18) 0%, rgba(231,176,98,0.06) 25%, rgba(231,176,98,0.015) 50%, transparent 75%), linear-gradient(180deg, #100A07 0%, #0B0908 100%);">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="720" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:720px;">
+        <tr><td class="px-mobile py-mobile" style="padding:140px 64px 120px 64px;">
+
+          <div class="greeting" style="font-family:'Fraunces',Georgia,serif;font-size:20px;color:#8B7355;font-style:italic;font-weight:300;margin-bottom:28px;letter-spacing:0.3px;">
+            Ahoj,
+          </div>
+
+          <div class="name-hero serif" style="font-family:'Fraunces',Georgia,serif;font-size:96px;line-height:0.95;color:#F4E9D8;font-weight:300;letter-spacing:-3.5px;margin-bottom:48px;">
+            {{user_vocative}}.
+          </div>
+
+          <div class="serif" style="font-family:'Fraunces',Georgia,serif;font-size:28px;line-height:1.4;color:#D9C7AB;font-weight:300;max-width:480px;margin-bottom:24px;letter-spacing:-0.3px;">
+            Tvůj týden je tady.<br>
+            <em style="font-style:italic;color:#E7B062;font-weight:400;">{{hero_subtitle}}</em>
+          </div>
+
+          <div style="font-family:'Inter',Arial,sans-serif;font-size:16px;line-height:1.75;color:#9B8B72;max-width:440px;font-weight:400;margin-bottom:80px;">
+            {{hero_coach_intro}}
+          </div>
+
+          <table cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid rgba(231,176,98,0.18);">
+            <tr>
+              <td class="stack-mobile-tile" style="padding:32px 56px 0 0;border-right:1px solid rgba(231,176,98,0.12);">
+                <div class="stat-num serif" style="font-family:'Fraunces',Georgia,serif;font-size:44px;color:#F4E9D8;font-weight:300;line-height:1;letter-spacing:-1px;">{{days_count}}</div>
+                <div style="font-family:'Fraunces',Georgia,serif;font-size:13px;color:#8B7355;letter-spacing:0.5px;margin-top:10px;font-style:italic;">dní</div>
+              </td>
+              <td class="stack-mobile-tile" style="padding:32px 56px 0 56px;border-right:1px solid rgba(231,176,98,0.12);">
+                <div class="stat-num serif" style="font-family:'Fraunces',Georgia,serif;font-size:44px;color:#F4E9D8;font-weight:300;line-height:1;letter-spacing:-1px;">{{meals_count}}</div>
+                <div style="font-family:'Fraunces',Georgia,serif;font-size:13px;color:#8B7355;letter-spacing:0.5px;margin-top:10px;font-style:italic;">jídel</div>
+              </td>
+              <td class="stack-mobile-tile" style="padding:32px 0 0 56px;">
+                <div class="stat-num serif" style="font-family:'Fraunces',Georgia,serif;font-size:44px;color:#F4E9D8;font-weight:300;line-height:1;letter-spacing:-1px;">{{workouts_count}}</div>
+                <div style="font-family:'Fraunces',Georgia,serif;font-size:13px;color:#8B7355;letter-spacing:0.5px;margin-top:10px;font-style:italic;">tréninky</div>
+              </td>
+            </tr>
+          </table>
+
+          <table cellpadding="0" cellspacing="0" border="0" style="margin-top:64px;">
+            <tr>
+              <td style="background:#E7B062;">
+                <a href="{{cta_url}}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:22px 44px;font-family:'Inter',Arial,sans-serif;font-size:14px;font-weight:500;color:#0B0908;letter-spacing:0.3px;text-decoration:none;">
+                  Otevřít v aplikaci →
+                </a>
+              </td>
+            </tr>
+          </table>
+
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!--BMON_LOGIN_BLOCK-->
+
+<!-- SEKCE 1 — Začneme u tebe -->
+<tr><td style="background:#0B0908;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="720" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:720px;">
+
+        <tr><td class="px-mobile" style="padding:120px 64px 48px 64px;">
+          <div style="font-family:'Fraunces',Georgia,serif;font-size:14px;color:#8B7355;font-style:italic;letter-spacing:0.5px;margin-bottom:32px;">
+            — Začneme u tebe
+          </div>
+          <div class="section-title serif" style="font-family:'Fraunces',Georgia,serif;font-size:46px;color:#F4E9D8;font-weight:300;letter-spacing:-1.5px;line-height:1.05;max-width:520px;">
+            Tohle je tvůj plán.<br>
+            <em style="font-style:italic;color:#E7B062;">Postavili jsme ho na tobě.</em>
+          </div>
+        </td></tr>
+
+        <tr><td class="px-mobile" style="padding:32px 64px 0 64px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td width="33%" class="stack-mobile-tile" style="background:linear-gradient(180deg, rgba(231,176,98,0.04) 0%, transparent 100%);border-top:1px solid rgba(231,176,98,0.2);padding:36px 4px 0 4px;">
+                <div class="serif" style="font-family:'Fraunces',Georgia,serif;font-size:48px;color:#F4E9D8;font-weight:300;line-height:1;letter-spacing:-1.5px;">
+                  {{height}}<span style="font-size:18px;color:#8B7355;font-weight:300;font-style:italic;letter-spacing:0;"> cm</span>
+                </div>
+                <div style="font-family:'Fraunces',Georgia,serif;font-size:14px;color:#8B7355;font-style:italic;margin-top:14px;">Výška</div>
+              </td>
+              <td width="33%" class="stack-mobile-tile" style="background:linear-gradient(180deg, rgba(231,176,98,0.04) 0%, transparent 100%);border-top:1px solid rgba(231,176,98,0.2);padding:36px 4px 0 28px;">
+                <div class="serif" style="font-family:'Fraunces',Georgia,serif;font-size:48px;color:#F4E9D8;font-weight:300;line-height:1;letter-spacing:-1.5px;">
+                  {{weight}}<span style="font-size:18px;color:#8B7355;font-weight:300;font-style:italic;letter-spacing:0;"> kg</span>
+                </div>
+                <div style="font-family:'Fraunces',Georgia,serif;font-size:14px;color:#8B7355;font-style:italic;margin-top:14px;">Váha</div>
+              </td>
+              <td width="33%" style="background:linear-gradient(180deg, rgba(231,176,98,0.04) 0%, transparent 100%);border-top:1px solid rgba(231,176,98,0.2);padding:36px 4px 0 28px;">
+                <div class="serif" style="font-family:'Fraunces',Georgia,serif;font-size:28px;color:#E7B062;font-weight:400;line-height:1.15;font-style:italic;letter-spacing:-0.5px;">
+                  {{goal_text}}
+                </div>
+                <div style="font-family:'Fraunces',Georgia,serif;font-size:14px;color:#8B7355;font-style:italic;margin-top:14px;">Tvůj cíl</div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <tr><td class="px-mobile" style="padding:80px 64px 0 64px;">
+          <div style="font-family:'Fraunces',Georgia,serif;font-size:14px;color:#8B7355;font-style:italic;letter-spacing:0.5px;margin-bottom:32px;">
+            — Co dáš tělu denně
+          </div>
+
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="padding-bottom:48px;border-bottom:1px solid rgba(231,176,98,0.15);">
+                <table cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td class="kcal-hero serif" style="font-family:'Fraunces',Georgia,serif;font-size:104px;color:#F4E9D8;font-weight:300;line-height:1;letter-spacing:-5px;">
+                      {{target_kcal_formatted}}
+                    </td>
+                    <td style="padding-left:24px;vertical-align:bottom;padding-bottom:18px;">
+                      <div style="font-family:'Fraunces',Georgia,serif;font-size:18px;color:#E7B062;font-style:italic;font-weight:400;letter-spacing:0.5px;">kcal</div>
+                      <div style="font-family:'Fraunces',Georgia,serif;font-size:13px;color:#8B7355;font-style:italic;margin-top:6px;">denně</div>
+                    </td>
+                  </tr>
+                </table>
+                <div style="font-family:'Fraunces',Georgia,serif;font-size:17px;color:#B5A081;font-style:italic;font-weight:300;margin-top:24px;line-height:1.6;max-width:480px;">
+                  {{kcal_lead_in}}
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <tr><td class="px-mobile" style="padding:48px 64px 0 64px;">
+
+          <!--BMON_MACROS-->
+
+        </td></tr>
+
+        <tr><td style="padding:0 0 96px 0;">&nbsp;</td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- MID-MOTTO -->
+<tr><td style="background:#1A0F08;background-image:radial-gradient(ellipse 70% 100% at 50% 50%, rgba(231,176,98,0.15) 0%, rgba(231,176,98,0.05) 30%, transparent 65%);">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="720" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:720px;">
+        <tr><td class="px-mobile" style="padding:140px 64px;text-align:center;">
+
+          <div style="font-family:'Fraunces',Georgia,serif;font-size:12px;color:#8B7355;letter-spacing:3px;font-style:italic;font-weight:400;margin-bottom:48px;text-transform:uppercase;">
+            · k zamyšlení ·
+          </div>
+
+          <div class="motto-text serif" style="font-family:'Fraunces',Georgia,serif;font-size:34px;line-height:1.4;color:#F4E9D8;font-weight:300;font-style:italic;letter-spacing:-0.5px;max-width:560px;margin:0 auto;">
+            „{{weekly_motto}}"
+          </div>
+
+          <div style="font-family:'Fraunces',Georgia,serif;font-size:14px;color:#8B7355;letter-spacing:1px;font-style:italic;font-weight:400;margin-top:48px;">
+            — {{weekly_motto_attribution}}
+          </div>
+
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- SEKCE 2 — Tři věci, na kterých záleží -->
+<tr><td style="background:#0B0908;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="720" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:720px;">
+
+        <tr><td class="px-mobile" style="padding:120px 64px 48px 64px;">
+          <div style="font-family:'Fraunces',Georgia,serif;font-size:14px;color:#8B7355;font-style:italic;letter-spacing:0.5px;margin-bottom:32px;">
+            — Tři věci, na kterých záleží
+          </div>
+          <div class="section-title serif" style="font-family:'Fraunces',Georgia,serif;font-size:46px;color:#F4E9D8;font-weight:300;letter-spacing:-1.5px;line-height:1.05;max-width:540px;">
+            Když všechno selže,<br>
+            <em style="font-style:italic;color:#E7B062;">drž se tohoto.</em>
+          </div>
+        </td></tr>
+
+        <tr><td class="px-mobile" style="padding:48px 64px 0 64px;">
+          <!--BMON_HABITS-->
+        </td></tr>
+
+        <tr><td style="padding:0 0 120px 0;">&nbsp;</td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- SEKCE 3 — Tvojich sedm dní -->
+<tr><td style="background:#0B0908;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="720" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:720px;">
+
+        <tr><td class="px-mobile" style="padding:0 64px 48px 64px;">
+          <div style="font-family:'Fraunces',Georgia,serif;font-size:14px;color:#8B7355;font-style:italic;letter-spacing:0.5px;margin-bottom:32px;">
+            — Tvojich sedm dní
+          </div>
+          <div class="section-title serif" style="font-family:'Fraunces',Georgia,serif;font-size:46px;color:#F4E9D8;font-weight:300;letter-spacing:-1.5px;line-height:1.05;max-width:540px;">
+            Den po dni.<br>
+            <em style="font-style:italic;color:#E7B062;">Bez spěchu.</em>
+          </div>
+        </td></tr>
+
+        <!--BMON_DAYS-->
+
+        <tr><td style="padding:0 0 120px 0;">&nbsp;</td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- CTA -->
+<tr><td style="background:#0B0908;background-image:radial-gradient(ellipse 80% 80% at 50% 50%, rgba(231,176,98,0.25) 0%, rgba(231,176,98,0.08) 35%, rgba(231,176,98,0.02) 60%, transparent 80%);">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="720" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:720px;">
+        <tr><td class="px-mobile py-mobile" style="padding:160px 64px;text-align:center;">
+
+          <div class="cta-headline serif" style="font-family:'Fraunces',Georgia,serif;font-size:56px;color:#F4E9D8;font-weight:300;letter-spacing:-2px;line-height:1.05;margin-bottom:32px;">
+            Tak co,<br>
+            <em style="font-style:italic;color:#E7B062;">pustíme se do toho?</em>
+          </div>
+
+          <div style="font-family:'Fraunces',Georgia,serif;font-size:18px;color:#9B8B72;font-style:italic;font-weight:300;line-height:1.7;margin-bottom:56px;max-width:440px;margin-left:auto;margin-right:auto;">
+            Všechno najdeš v aplikaci.<br>
+            Recepty, videa, denní check.
+          </div>
+
+          <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;">
+            <tr>
+              <td style="background:#E7B062;">
+                <a href="{{cta_url}}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:24px 56px;font-family:'Inter',Arial,sans-serif;font-size:14px;font-weight:600;color:#0B0908;letter-spacing:0.3px;text-decoration:none;">
+                  Otevřít v aplikaci →
+                </a>
+              </td>
+            </tr>
+          </table>
+
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- COACH SIGNATURE -->
+<tr><td style="background:#0B0908;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="720" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:720px;">
+        <tr><td class="px-mobile" style="padding:0 64px 80px 64px;">
+          <div style="border-top:1px solid rgba(231,176,98,0.15);padding-top:48px;">
+            <div style="font-family:'Fraunces',Georgia,serif;font-size:18px;color:#B5A081;font-style:italic;font-weight:300;line-height:1.7;max-width:480px;">
+              {{coach_signature_text}}
+            </div>
+            <div style="font-family:'Fraunces',Georgia,serif;font-size:20px;color:#E7B062;font-style:italic;font-weight:400;margin-top:24px;letter-spacing:0.3px;">
+              {{coach_signature_name}}
+            </div>
+          </div>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- FOOTER -->
+<tr><td style="background:#080605;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table class="container" width="720" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:720px;">
+        <tr><td class="px-mobile" style="padding:56px 64px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td>
+                <div style="font-family:'Fraunces',Georgia,serif;font-size:16px;color:#8B7355;font-style:italic;font-weight:400;">Body &amp; Mind ON</div>
+                <div style="font-family:'Fraunces',Georgia,serif;font-size:13px;color:#5C5043;margin-top:8px;line-height:1.7;font-style:italic;">
+                  <a href="https://bodyandmindon.cz" style="color:#5C5043;text-decoration:none;">bodyandmindon.cz</a> &nbsp;·&nbsp;
+                  <a href="mailto:info@bodyandmindon.cz" style="color:#5C5043;text-decoration:none;">info@bodyandmindon.cz</a>
+                </div>
+              </td>
+            </tr>
+          </table>
+
+          <div style="margin-top:36px;padding-top:24px;border-top:1px solid rgba(231,176,98,0.08);font-family:'Fraunces',Georgia,serif;font-size:12px;color:#5C5043;line-height:1.7;font-style:italic;">
+            Dostáváš to, protože jsi součástí ON Club.
+          </div>
+
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+
+</table>
+
+</body>
+</html>

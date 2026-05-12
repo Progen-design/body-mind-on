@@ -125,8 +125,50 @@ node scripts/render-real-plan-preview.mjs <plan_id> v5
 # - velikost ≤ 102 KB (Gmail clip; nad limitem se zobrazí varování)
 ```
 
+## Pravidla pro Gmail iOS / Outlook desktop (po fix 031a672)
+
+Šablona se po reportu z reálných screenshotů změnila tak, aby přežila Gmail iOS
+auto-invert i Outlook desktop bez VML support:
+
+- **`background-clip:text` zakázáno**. Žádný gradient text fill, žádné
+  `-webkit-text-fill-color:transparent`. Místo toho pevná barva (`#F8F4FF`,
+  `#A855F7`, atd.) + `text-shadow:0 0 N px rgba(R,G,B,A)` glow tam, kde má být
+  efekt. Bezpečné napříč klienty.
+- **Každý `<td>` s background má atribut `bgcolor` i inline `background-color`**.
+  Outlook desktop bere `bgcolor`, Gmail iOS bere inline `background-color`,
+  ostatní klienti čtou oba. Žádná sekce se nesmí "převrátit" na světlou.
+- **`<meta name="color-scheme" content="dark only">`** plus
+  `<meta name="supported-color-schemes" content="dark only">`. Spolu s
+  `:root{color-scheme:dark only}` a `[data-ogsc] td{background-color:#06050A !important}`
+  to vypne Gmail iOS dark-mode auto-invert.
+- **Žádné `#FFFFFF` / `#000000`**. Místo nich `#F8F4FF` / `#06050A` (palette).
+  Pure black/white spustí dark-mode auto-invert na klientech, které jinak
+  respektují color-scheme. `rgba(0,0,0,*)` se v šabloně používá výhradně v
+  `text-shadow` jako drop-shadow, nikdy ne v background.
+- **Žádný `BMON_LOGIN_BLOCK` ve v5 weekly plan emailu**. Reminder na obnovu
+  hesla patří do separátního welcome flow, ne do týdenního plánu. `lib/mail.js`
+  loginBlock stále generuje pro v2 / legacy, ale `weeklyPlanEmailV5.js` ho
+  v5 šabloně ignoruje (varianta A z fix promptu).
+- **Outlook MSO VML hero gradient** přes `<v:rect>` – Outlook desktop tak vidí
+  diagonální gradient místo flat čerň.
+- **`cellpadding="0" cellspacing="0" border="0"`** atributy na všech tabulkách
+  (i když mají inline style) – povinné pro Outlook desktop.
+- **Font stack** v inline stylech `'Geist',Arial,sans-serif`, plný stack
+  `'Geist','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif`
+  je v `<body>` přes `<style>` (dědí Gmail/Apple Mail; Outlook si stejně Geist
+  nenačte a padne na Arial).
+
 ## Známá omezení v5
 
-- **HTML size ~150–165 KB** pro plný 7-denní plán s 3 jídly. Gmail web nad 102 KB email "clipne" a uživatel musí kliknout "Zobrazit celou zprávu". Nelze obejít bez velkého přepisu šablony (extrakce stylů do `<style>` tag, který Outlook ignoruje). v4 byl stejně velký, akceptováno.
-- **Geist font** – Geist se v emailu načítá přes `@import url(...fonts.googleapis.com...)`. Některé klienty (Outlook) tento import ignorují a použijí `Arial`. Šablona má fallback chain `'Geist','Inter',Arial,sans-serif`.
-- **Webkit gradient text** (`-webkit-background-clip:text`) funguje v Gmailu, Apple Mail a moderním Outlook web. V starší Outlooku se zobrazí prostý text barvy `color:` fallback (purple pro most prvky).
+- **HTML size ~125–130 KB** pro plný 7-denní plán s 3 jídly (po minifikaci
+  z původních ~160 KB). Gmail web nad 102 KB email "clipne" a uživatel musí
+  kliknout "Zobrazit celou zprávu". Mobilní Gmail / Apple Mail / Outlook
+  limit nemají. Další snížení by vyžadovalo úplné odstranění gradientů a
+  text-shadow efektů (nepřijatelné pro brand vibe).
+- **Geist font** – Geist se v emailu nahraje pouze v klientech, které
+  respektují `@font-face` (Apple Mail, Gmail iOS s vlastním fontu off).
+  Gmail web a Outlook si Geist nikdy nenahrají → fallback na Arial.
+  Šablona má font-stack `'Geist',Arial,sans-serif`.
+- **VML gradient v Outlook desktop** je jen na hero sekci. Zbytek šablony
+  v Outlook desktopu vidí flat-color sekce (žádné radial gradients), ale
+  čitelné a v brand paletě.

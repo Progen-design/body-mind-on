@@ -461,6 +461,7 @@ export default async function handler(req, res) {
                 userChosePassword,
                 firstName: fallbackResult.bm?.name ?? payload.name ?? null,
                 bodyMetrics: fallbackResult.bm,
+                planId: fallbackResult.plan_id ?? null,
               });
               fallbackPlanSent = !!sendRes?.ok;
             } catch (mailErr) {

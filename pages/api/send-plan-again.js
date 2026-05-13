@@ -78,6 +78,7 @@ export default async function handler(req, res) {
       dayHeadingOverrides: dayHeadingOverrides ?? undefined,
       structuredPlanJson: plan?.structured_plan_json ?? undefined,
       validFrom: plan?.valid_from ?? undefined,
+      planId: plan?.id ?? undefined,
     });
 
     if (!result.ok) {

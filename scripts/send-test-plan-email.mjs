@@ -158,6 +158,9 @@ console.log(
     plan_html_length: sent.plan_html_length,
     rendered_from_structured: sent.rendered_from_structured,
     plan_output_mode: sent.plan_output_mode,
+    mail_provider: sent.mail_provider ?? null,
+    mail_message_id: sent.mail_message_id ?? null,
+    mail_template_used: sent.mail_template_used ?? null,
   })
 );
 console.log('');

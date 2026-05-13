@@ -191,6 +191,11 @@ export default async function handler(req, res) {
       plan_html_length: htmlSource.length,
       rendered_from_structured: renderedFromStructured,
       plan_output_mode: planOutputMode,
+      mail_provider: sendResult?.provider ?? null,
+      mail_message_id: sendResult?.message_id ?? null,
+      mail_template_used: sendResult?.template_used ?? null,
+      mail_template_version_requested: sendResult?.template_version_requested ?? null,
+      mail_fallback_triggered: sendResult?.fallback_triggered ?? null,
     });
   } catch (err) {
     const msg = err && typeof err.message === 'string' ? err.message.slice(0, 240) : 'internal_error';

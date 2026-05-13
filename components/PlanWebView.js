@@ -4,6 +4,7 @@ import { toCzechVocative } from '../lib/utils/czechVocative.js';
 import { formatDayDateWords, formatDayDateNumeric, dayOrdinalCs } from '../lib/utils/czechDateWords.js';
 import { mealDisplayTitleForStructuredMeal } from '../lib/mealDisplayNameHelpers.js';
 import { addCalendarDaysIsoPrague } from '../lib/czechCalendar.js';
+import { exerciseDurationSecondsForDisplay } from '../lib/planDataIntegrity.js';
 
 const MEAL_TIME_META = {
   breakfast: { icon: '☀', label: 'Snídaně', time_word: 'Ráno', time: '07:30', color: '#22D3EE' },
@@ -207,7 +208,13 @@ function WorkoutBlock({ day, coachVoice }) {
           const name = String(ex?.name || ex?.exercise_name || 'Cvik');
           const sets = ex?.sets != null ? String(ex.sets) : '—';
           const reps = ex?.reps != null ? String(ex.reps) : '—';
-          const repsUnit = ex?.duration_seconds ? `${ex.sets ?? '—'}×${ex.duration_seconds}\u00A0s` : `${sets}×${reps}`;
+          const hasReps = reps !== '—' && String(reps).trim() !== '';
+          const durSec = exerciseDurationSecondsForDisplay(ex);
+          let repsUnit;
+          if (durSec != null) repsUnit = `${ex.sets ?? '—'}×${durSec}\u00A0s`;
+          else if (hasReps) repsUnit = `${sets}×${reps}`;
+          else if (sets !== '—') repsUnit = `${sets} sady`;
+          else repsUnit = '—';
           return (
             <span key={i}>
               {i > 0 ? ' · ' : ''}{name} <strong>{repsUnit}</strong>

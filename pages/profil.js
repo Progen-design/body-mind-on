@@ -20,6 +20,7 @@ import { validatePublishedPlanHtml } from '../lib/validatePlanHtml';
 import { getHabitById } from '../lib/habits';
 import { normalizeOccupationForForm, activityToFormLabel, goalToFormLabel, normalizeFrequency, getFrequencyDayRange } from '../lib/preferenceConstants';
 import { useProfileData } from '../hooks/useProfileData';
+import { usePlanStatus } from '../hooks/usePlanStatus';
 import { PLAN_GENERATION_DURATION_HINT } from '../lib/planGenerationUiCopy';
 import { getRegistrationAnchoredWeek } from '../lib/profileWeekRange';
 import {
@@ -339,6 +340,7 @@ export default function Profil() {
   });
 
   const loading = !authReady || profileLoading;
+  const { currentPlan, nextPlan, planState, showReadyBanner } = usePlanStatus(profile, { loading });
   const error = profileError;
 
   const [showWorkoutModal, setShowWorkoutModal] = useState(false);
@@ -1569,47 +1571,11 @@ export default function Profil() {
   const hasValidPlanHtml = (plan) => {
     const html = plan?.plan_html;
     if (!html || typeof html !== 'string') return false;
-    return validatePublishedPlanHtml(html).ok;
+    return validatePublishedPlanHtml(html, {
+      structured_plan_json: plan?.structured_plan_json,
+      generation_source: profile?._diagnostics?.generation_source ?? null,
+    }).ok;
   };
-
-  // Najít plán platný pro aktuální týden / dnes – jídelníček se mění s časem
-  const currentPlan = useMemo(() => {
-    if (!profile?.plans || !Array.isArray(profile.plans) || profile.plans.length === 0) {
-      return null;
-    }
-    const today = new Date();
-    // 1) Plány, jejichž interval (valid_from, valid_until) obsahuje dnes
-    const containingToday = profile.plans.filter((p) => {
-      const from = p.valid_from ? new Date(p.valid_from) : null;
-      const until = p.valid_until ? new Date(p.valid_until) : null;
-      if (!from || !until) return false;
-      return from <= today && until >= today;
-    });
-    if (containingToday.length > 0) {
-      // Preferuj plán s nejpozdějším valid_from (aktuální týden při víc plánech)
-      containingToday.sort((a, b) => (b.valid_from || '').localeCompare(a.valid_from || ''));
-      return containingToday[0];
-    }
-    // 2) Jinak plán, který ještě nevypršel (valid_until >= dnes)
-    const stillValid = profile.plans.find((p) => p.valid_until && new Date(p.valid_until) >= today);
-    if (stillValid) return stillValid;
-    // 3) Fallback: nejnovější plán
-    return profile.plans[0];
-  }, [profile?.plans]);
-
-  // Plán na příští týden (valid_from až po dnešním datu – porovnání jen datum, ne čas kvůli timezone)
-  const nextPlan = useMemo(() => {
-    if (!profile?.plans || !Array.isArray(profile.plans)) return null;
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    const future = profile.plans.filter((p) => {
-      const fromStr = (p.valid_from || '').split('T')[0];
-      return fromStr && fromStr > todayStr;
-    });
-    if (future.length === 0) return null;
-    future.sort((a, b) => (a.valid_from || '').localeCompare(b.valid_from || ''));
-    return future[0];
-  }, [profile?.plans]);
 
   useEffect(() => {
     if (typeof document === 'undefined' || !currentPlan?.plan_html) {
@@ -1623,13 +1589,15 @@ export default function Profil() {
   useEffect(() => {
     if (typeof document === 'undefined' || !currentPlan?.plan_html) return;
     const parsed = parsePlanHtml(currentPlan.plan_html);
-    const plan_state = profile?._diagnostics?.plan_state;
     const current_plan_html_length = (currentPlan?.plan_html || '').length;
-    const current_plan_structure = validatePublishedPlanHtml(currentPlan?.plan_html || '');
+    const current_plan_structure = validatePublishedPlanHtml(currentPlan?.plan_html || '', {
+      structured_plan_json: currentPlan?.structured_plan_json,
+      generation_source: currentPlan?.generation_source ?? profile?._diagnostics?.generation_source,
+    });
     const generation_source = currentPlan?.generation_source ?? profile?._diagnostics?.generation_source;
     const fallback_used = currentPlan?.fallback_used ?? profile?._diagnostics?.fallback_used;
-    console.debug('[profil] plan_state', plan_state, 'current_plan_html_length', current_plan_html_length, 'current_plan_structure', current_plan_structure, 'generation_source', generation_source, 'fallback_used', fallback_used, 'parsePlanHtml_result', parsed ? { daysCount: parsed.days?.length ?? 0, rawSectionsKeys: Object.keys(parsed.rawSections || {}), hasPersonal: (parsed.personal?.length ?? 0) > 0 } : null);
-  }, [currentPlan, profile?._diagnostics]);
+    console.debug('[profil] plan_state', planState, 'current_plan_html_length', current_plan_html_length, 'current_plan_structure', current_plan_structure, 'generation_source', generation_source, 'fallback_used', fallback_used, 'parsePlanHtml_result', parsed ? { daysCount: parsed.days?.length ?? 0, rawSectionsKeys: Object.keys(parsed.rawSections || {}), hasPersonal: (parsed.personal?.length ?? 0) > 0 } : null);
+  }, [currentPlan, profile?._diagnostics, planState]);
 
   if (!session && !loading) return null;
 
@@ -2129,7 +2097,7 @@ export default function Profil() {
             )}
 
             {/* Krátký tip – pro uživatele bez tréninku (jen klienti) */}
-            {!profile?.can_create_calendar_events && workouts.length === 0 && currentPlan && (
+            {!profile?.can_create_calendar_events && workouts.length === 0 && showReadyBanner && (
               <div className="first-action-banner">
                 <p className="first-action-banner-lead">Tvůj plán je připraven.</p>
                 <p className="first-action-banner-text">Rozklikni sekce níže – <strong>Jídelníček a tréninkový plán</strong> nebo <strong>Denní návyky</strong>. Trénink zapíšeš tlačítkem nahoře v hlavní kartě.</p>
@@ -2205,14 +2173,19 @@ export default function Profil() {
                 <span className={`profile-bubble-chevron ${profileOpenSections.has('muj-plan') ? 'open' : ''}`} aria-hidden>▼</span>
               </button>
               <div id="profile-bubble-body-muj-plan" role="region" aria-labelledby="profile-bubble-header-muj-plan" className="profile-bubble-body" data-open={profileOpenSections.has('muj-plan')}>
-              {profile?._diagnostics?.plan_state === 'processing' && (
+              {planState === 'loading' && (
+                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                  <p className="plan-preparing-text">Načítám plán…</p>
+                </div>
+              )}
+              {planState === 'processing' && (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
                   <p className="plan-preparing-text">Plán se dokončuje – automaticky se obnoví, jakmile bude hotový.</p>
                   <p className="plan-preparing-hint">{PLAN_GENERATION_DURATION_HINT}</p>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
                 </div>
               )}
-              {profile?._diagnostics?.plan_state === 'failed' && (
+              {planState === 'failed' && (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
                   <p className="plan-preparing-text">Plán se nepodařilo dokončit.</p>
                   <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '12px' }}>
@@ -2223,7 +2196,7 @@ export default function Profil() {
                   </div>
                 </div>
               )}
-              {profile?._diagnostics?.plan_state === 'invalid' && (
+              {planState === 'invalid' && (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
                   <p className="plan-preparing-text">Plán byl vytvořen neúplně nebo neprošel validací.</p>
                   <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '12px' }}>
@@ -2234,7 +2207,7 @@ export default function Profil() {
                   </div>
                 </div>
               )}
-              {profile?._diagnostics?.plan_state === 'missing' && (
+              {planState === 'missing' && (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
                   <p className="plan-preparing-text">Plán zatím nebyl vytvořen.</p>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRetryPlan} disabled={retryingPlan} style={{ marginTop: '12px' }}>
@@ -2242,7 +2215,7 @@ export default function Profil() {
                   </button>
                 </div>
               )}
-              {profile?._diagnostics?.plan_state !== 'processing' && profile?._diagnostics?.plan_state !== 'invalid' && profile?._diagnostics?.plan_state !== 'failed' && profile?._diagnostics?.plan_state !== 'missing' && (currentPlan || nextPlan) && (
+              {planState !== 'loading' && planState !== 'processing' && planState !== 'invalid' && planState !== 'failed' && planState !== 'missing' && (currentPlan || nextPlan) && (
               <>
               {!(currentPlan?.plan_html) && !(nextPlan?.plan_html) ? (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
@@ -2379,7 +2352,7 @@ export default function Profil() {
               ) : null}
               </>
               )}
-              {(!currentPlan && !nextPlan) && profile?._diagnostics?.plan_state !== 'processing' && profile?._diagnostics?.plan_state !== 'invalid' && profile?._diagnostics?.plan_state !== 'failed' && profile?._diagnostics?.plan_state !== 'missing' && (
+              {(!currentPlan && !nextPlan) && planState !== 'loading' && planState !== 'processing' && planState !== 'invalid' && planState !== 'failed' && planState !== 'missing' && (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
                   <p className="plan-preparing-text">Plán zatím nebyl vytvořen.</p>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRetryPlan} disabled={retryingPlan} style={{ marginTop: '12px' }}>
@@ -3064,7 +3037,7 @@ export default function Profil() {
           min-height: 100vh;
           padding: 0 20px 100px;
           background: transparent;
-          color: #fff;
+          color: #e2e8f0;
           font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
@@ -3082,9 +3055,9 @@ export default function Profil() {
           pointer-events: none;
           z-index: 0;
           overflow: hidden;
-          background-color: #0a0a0f;
+          background-color: #0b1220;
           background-image:
-            linear-gradient(180deg, rgba(10,10,15,0.75) 0%, rgba(10,10,15,0.65) 50%, rgba(10,10,15,0.78) 100%),
+            linear-gradient(180deg, rgba(11, 18, 32, 0.92) 0%, rgba(15, 23, 42, 0.88) 50%, rgba(11, 18, 32, 0.94) 100%),
             url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1920&q=80');
           background-size: cover;
           background-position: center;
@@ -3100,14 +3073,14 @@ export default function Profil() {
         .page-bg-decor::before {
           width: 550px;
           height: 550px;
-          background: radial-gradient(circle, rgba(139, 92, 255, 0.5) 0%, transparent 65%);
+          background: radial-gradient(circle, rgba(14, 165, 233, 0.22) 0%, transparent 65%);
           top: -180px;
           right: -120px;
         }
         .page-bg-decor::after {
           width: 450px;
           height: 450px;
-          background: radial-gradient(circle, rgba(34, 197, 94, 0.2) 0%, transparent 65%);
+          background: radial-gradient(circle, rgba(167, 139, 250, 0.18) 0%, transparent 65%);
           bottom: -120px;
           left: -100px;
         }
@@ -3120,7 +3093,7 @@ export default function Profil() {
         .page-bg-orb--center {
           width: 350px;
           height: 350px;
-          background: radial-gradient(circle, rgba(124, 58, 237, 0.4) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(14, 165, 233, 0.16) 0%, transparent 70%);
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
@@ -3146,11 +3119,11 @@ export default function Profil() {
           flex-wrap: wrap;
           padding: 26px 34px 30px;
           border-radius: 24px;
-          background: linear-gradient(135deg, rgba(109,40,217,0.28), rgba(59,130,246,0.18));
-          border: 1px solid rgba(139,92,255,0.45);
+          background: linear-gradient(135deg, rgba(14, 165, 233, 0.22) 0%, rgba(167, 139, 250, 0.18) 100%);
+          border: 1px solid rgba(14, 165, 233, 0.35);
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
-          box-shadow: 0 4px 20px rgba(109,40,217,0.12);
+          box-shadow: 0 4px 24px rgba(15, 23, 42, 0.45);
         }
         .profile-hero--with-program .profile-hero-main {
           margin-left: auto;
@@ -3213,9 +3186,9 @@ export default function Profil() {
           transition: border-color 0.25s, transform 0.2s, box-shadow 0.25s;
         }
         .profile-hero-avatar-btn:hover {
-          border-color: rgba(196, 181, 253, 0.8);
+          border-color: rgba(14, 165, 233, 0.75);
           transform: scale(1.03);
-          box-shadow: 0 0 32px rgba(139, 92, 246, 0.35);
+          box-shadow: 0 0 28px rgba(14, 165, 233, 0.28);
         }
         .profile-hero-avatar,
         .profile-hero-avatar-placeholder {
@@ -3273,7 +3246,7 @@ export default function Profil() {
           line-height: 1.08;
         }
         .profile-hero-title > span {
-          background: linear-gradient(135deg, #e9d5ff, #a78bfa);
+          background: linear-gradient(135deg, #e0f2fe, #a78bfa);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
@@ -3558,11 +3531,11 @@ export default function Profil() {
           width: 100%;
           max-width: 380px;
           border-radius: 50px;
-          border: 1px solid rgba(255, 255, 255, 0.18);
-          background: linear-gradient(145deg, rgba(36, 36, 52, 0.55), rgba(24, 24, 36, 0.5));
+          border: 1px solid #1e293b;
+          background: #121826;
           backdrop-filter: blur(6px);
           -webkit-backdrop-filter: blur(6px);
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
           overflow: hidden;
           transition: border-color 0.2s, box-shadow 0.2s, max-width 0.35s ease, border-radius 0.3s ease;
         }
@@ -3584,7 +3557,7 @@ export default function Profil() {
           padding: 14px 24px;
           background: transparent;
           border: none;
-          color: #f1f5f9;
+          color: #e2e8f0;
           font-size: 1.05rem;
           font-weight: 600;
           cursor: pointer;
@@ -3652,7 +3625,7 @@ export default function Profil() {
         }
         .profile-bubble-tab--active {
           color: #e2e8f0;
-          background: rgba(139, 92, 246, 0.25);
+          background: rgba(14, 165, 233, 0.22);
         }
 
         .hero {
@@ -4015,8 +3988,8 @@ export default function Profil() {
         .first-action-banner {
           margin-bottom: 28px;
           padding: 20px 24px;
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(99, 102, 241, 0.08));
-          border: 1px solid rgba(139, 92, 255, 0.25);
+          background: linear-gradient(135deg, rgba(14, 165, 233, 0.14) 0%, rgba(167, 139, 250, 0.12) 100%);
+          border: 1px solid rgba(14, 165, 233, 0.28);
           border-radius: 16px;
           text-align: center;
           max-width: 520px;
@@ -4033,10 +4006,10 @@ export default function Profil() {
         .first-action-banner-text {
           margin: 0;
           font-size: 14px;
-          color: #c4b5fd;
+          color: #cbd5e1;
           line-height: 1.55;
         }
-        .first-action-banner strong { color: #e9d5ff; font-weight: 600; }
+        .first-action-banner strong { color: #e2e8f0; font-weight: 600; }
 
         .milestones-block {
           margin-bottom: 28px;

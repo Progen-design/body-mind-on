@@ -99,9 +99,11 @@ export default async function handler(req, res) {
       recovery_reason = 'no_body_metrics_skip_recovery';
     } else if (!initialPlanTaskExists && bodyMetrics.length > 0) {
       recovery_attempted = true;
-      const planValidationEarly = validatePublishedPlanHtml(
-        (plansData.find((p) => p.plan_html && typeof p.plan_html === 'string')?.plan_html) ?? ''
-      );
+      const earlyPlanRow = plansData.find((p) => p.plan_html && typeof p.plan_html === 'string');
+      const planValidationEarly = validatePublishedPlanHtml(earlyPlanRow?.plan_html ?? '', {
+        structured_plan_json: earlyPlanRow?.structured_plan_json,
+        generation_source: initialPlanTask?.result?.generation_source ?? null,
+      });
       if (planValidationEarly.ok) {
         recovery_reason = 'valid_plan_exists_skip_recovery';
       } else {
@@ -130,12 +132,15 @@ export default async function handler(req, res) {
     const currentPlanForDiagnostics = activePlan || plansData.find((p) => p.plan_html && typeof p.plan_html === 'string' && p.plan_html.length > 0);
     const currentPlanHtml = currentPlanForDiagnostics?.plan_html ?? '';
     const currentPlanHtmlLength = currentPlanHtml.length;
-    const planValidation = validatePublishedPlanHtml(currentPlanHtml);
+    const initialPlanResult = initialPlanTask?.result;
+    const generation_source = initialPlanResult?.generation_source ?? null;
+    const planValidation = validatePublishedPlanHtml(currentPlanHtml, {
+      structured_plan_json: currentPlanForDiagnostics?.structured_plan_json,
+      generation_source,
+    });
     const hasValidPlan = planValidation.ok;
     const currentPlanMissingSections = planValidation.missingCoreSections ?? [];
     const currentPlanStructure = planValidation.structure ?? null;
-    const initialPlanResult = initialPlanTask?.result;
-    const generation_source = initialPlanResult?.generation_source ?? null;
     const fallback_used = initialPlanResult?.fallback_used ?? null;
     const truth_check = initialPlanResult?.truth_check ?? null;
     const last_task_status = initialPlanTask?.status ?? null;

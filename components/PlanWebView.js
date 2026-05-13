@@ -235,15 +235,36 @@ function DayCard({ day, index, planJson, appBaseUrl, coachVoice, validFrom, isFu
   const fullDate = dateWords && yearStr
     ? `${dateWords.charAt(0).toUpperCase()}${dateWords.slice(1)} ${yearStr}`
     : (formatDayDateNumeric(iso) || '');
+  const dateShort = formatDayDateNumeric(iso) || '';
   const ordinal = `Den ${String(index + 1).padStart(2, '0')} · ${dayOrdinalCs(index + 1)}`;
   const meals = Array.isArray(day?.meals) ? day.meals : [];
+  const dayDeepLink = `${appBaseUrl}/?den=${index + 1}`;
 
   return (
-    <div className={`${styles.dayCard} ${isFull ? styles.dayCardFull : ''}`}>
+    <div className={`${styles.dayCard} ${isFull ? styles.dayCardFull : styles.dayCardCompact}`}>
       <div className={styles.dayHeader}>
-        <div className={styles.dayHeaderOrdinal}>{ordinal}</div>
-        <h3 className={styles.dayHeaderName}>{dayName}</h3>
-        <div className={styles.dayHeaderDate}>{fullDate}</div>
+        {isFull ? (
+          <>
+            <div className={styles.dayHeaderOrdinal}>{ordinal}</div>
+            <h3 className={styles.dayHeaderName}>{dayName}</h3>
+            <div className={styles.dayHeaderDate}>{fullDate}</div>
+          </>
+        ) : (
+          <div className={styles.dayHeaderCompactInner}>
+            <div>
+              <div className={styles.dayHeaderOrdinal}>{ordinal}</div>
+              <h3 className={styles.dayHeaderNameCompact}>
+                {dayName}
+                {dateShort ? (
+                  <span className={styles.dayHeaderDateInline}> · {dateShort}</span>
+                ) : null}
+              </h3>
+            </div>
+            <a className={styles.dayOpenPill} href={dayDeepLink} target="_blank" rel="noopener noreferrer">
+              Otevřít →
+            </a>
+          </div>
+        )}
       </div>
       <div className={styles.dayBody}>
         {meals.map((meal, idx) => (

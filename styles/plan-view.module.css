@@ -458,6 +458,45 @@
   padding: 16px 22px;
   color: #FFFFFF;
 }
+.dayHeaderCompactInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+.dayCardCompact .dayHeader {
+  padding: 12px 20px;
+}
+.dayHeaderNameCompact {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  line-height: 1.15;
+  margin: 0;
+  color: #FFFFFF;
+}
+.dayHeaderDateInline {
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+.dayOpenPill {
+  flex-shrink: 0;
+  display: inline-block;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #FFFFFF;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.dayOpenPill:hover {
+  background-color: rgba(255, 255, 255, 0.22);
+}
 .dayHeaderOrdinal {
   font-size: 10px;
   font-weight: 600;
@@ -497,7 +536,7 @@
 }
 
 .mealCard {
-  background-color: #1E293B;
+  background-color: #121826;
   border: 1px solid rgba(14, 165, 233, 0.14);
   border-left: 3px solid var(--accent, #0EA5E9);
   border-radius: 12px;
@@ -547,7 +586,7 @@
 }
 
 .dailyPill {
-  background-color: #1E293B;
+  background-color: #121826;
   border: 1px solid rgba(14, 165, 233, 0.20);
   border-radius: 999px;
   padding: 12px 20px;
@@ -561,7 +600,7 @@
 .dailyPillUnit { font-size: 11px; color: #94A3B8; font-weight: 500; }
 
 .workoutBlock {
-  background-color: #1E293B;
+  background-color: #121826;
   border: 1px solid var(--workout-rgba, rgba(167, 139, 250, 0.22));
   border-left: 3px solid var(--workout-color, #A78BFA);
   border-radius: 12px;
@@ -594,8 +633,8 @@
 
 /* ---------- FINAL CTA ---------- */
 .finalCta {
-  background-color: #121826;
-  background-image: linear-gradient(135deg, #0A1018 0%, #1E40AF 30%, #4338CA 70%, #7C3AED 100%);
+  background-color: #0EA5E9;
+  background-image: linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%);
   border-radius: 24px;
   padding: 56px 32px;
   text-align: center;
@@ -624,7 +663,7 @@
   gap: 8px;
   padding: 16px 32px;
   border-radius: 12px;
-  background-color: rgba(10, 16, 24, 0.85);
+  background-color: rgba(14, 165, 233, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.30);
   color: #FFFFFF;
   font-size: 15px;
@@ -632,7 +671,7 @@
   letter-spacing: 0.3px;
   text-decoration: none;
 }
-.finalCtaBtn:hover { background-color: rgba(10, 16, 24, 0.95); }
+.finalCtaBtn:hover { background-color: rgba(255, 255, 255, 0.12); }
 
 /* ---------- FOOTER ---------- */
 .footer {

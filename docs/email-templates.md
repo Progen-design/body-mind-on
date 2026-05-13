@@ -7,10 +7,13 @@ Provozní dokument pro emailové šablony týdenního plánu Body & Mind ON.
 | Component | Status |
 |---|---|
 | **Default šablona** | `v7` (Dark Rounded Modern · pure HTML, no PNG) |
+| **Brand paleta** | Sky `#0EA5E9` + Lavender `#A78BFA` + Cyan `#22D3EE` na slate-900/800 backgrounds (sladěno s logem `public/favicon.svg`) |
 | **Env var** | `EMAIL_TEMPLATE_VERSION=v7` v production / development |
 | **Fallback chain** | v7 → v6 → v5 → v4 → v2 → legacy (HTML doc) |
 | **Code path** | `lib/mail.js → sendPlanEmail()` |
 | **Asset host** | žádný (pure HTML, container 540 px) |
+| **Web view** | `pages/plan/[id].js` + `components/PlanWebView.js` (multi-column responzivní) |
+| **"View in browser" link** | v hlavičce emailu jako `{{web_view_url}}` → `${appBaseUrl}/plan/${planId}` |
 
 ## Soubory podle verze
 
@@ -70,10 +73,70 @@ v7 řeší 4 kritické problémy v6 hybridní šablony pure-HTML přístupem:
   (~90 %+ uživatelů). Outlook desktop dostane funkčně identický email,
   jen square corners.
 - **Outlook desktop nemá gradient na motto / final CTA**. `background-image:linear-gradient`
-  fallbackuje na flat `bgcolor` (purple resp. dark purple). Estetika OK, jen
+  fallbackuje na flat `bgcolor` (sky resp. dark navy). Estetika OK, jen
   méně dramatická.
 - **Coach voice intros** jsou zatím sdílené s v5/v6. Pokud chceme jiný "vibe"
   textů, bude potřeba nový `coach_voice_v7_cs.json`.
+
+## Brand paleta v7 (commit 50f668c)
+
+Logo `public/favicon.svg` používá sky blue `#0EA5E9` – proto v7 přepnul
+z neonové purple/pink/gold palety na sladěnou brand paletu:
+
+| Účel | Hex | Komentář |
+|---|---|---|
+| Primary brand | `#0EA5E9` | sky-500 – z loga, hlavní akcent |
+| Secondary | `#A78BFA` | violet-400 – tlumený lavender (místo `#A855F7`) |
+| Tertiary | `#22D3EE` | cyan-400 (místo gold `#F59E0B`) |
+| Workout success | `#10B981` | emerald-500 – easy / rest signal |
+| Workout warning | `#EF4444` | red-500 – hard intensity signal |
+| Page background | `#0A1018` | deep navy s nádechem modré |
+| Card background | `#121826` | slate-900-ish |
+| Card alt | `#1E293B` | slate-800 |
+| Text primary | `#E2E8F0` | slate-200 |
+| Text secondary | `#94A3B8` | slate-400 |
+| Text muted | `#64748B` | slate-500 |
+| Footer note | `#475569` | slate-600 |
+
+Retoning byl proveden idempotentním skriptem `scripts/rebrand-v7-colors.mjs`
+(kept for traceability – další úpravy palety lze udělat ručně přes StrReplace).
+
+## Public web view (multi-column responzivní stránka)
+
+Email v hlavičce nese link **"Zobrazit plán v prohlížeči →"** mířící na
+veřejnou stránku `${appBaseUrl}/plan/${planId}`. Stránka:
+
+| Aspekt | Detail |
+|---|---|
+| Route | `pages/plan/[id].js` (Pages Router, getServerSideProps) |
+| Komponent | `components/PlanWebView.js` |
+| Styly | `styles/plan-view.module.css` (CSS module, žádný Tailwind dep) |
+| Data | `supabaseServer.from('ai_generated_plans').eq('id', uuid)` + `body_metrics` |
+| Permission | UUID v4 (~122 bitů entropie) = neexploitovatelné brute-force. Žádný login. |
+| Cache | `Cache-Control: public, max-age=0, s-maxage=300, stale-while-revalidate=3600` |
+| SEO | `<meta name="robots" content="noindex,nofollow">` |
+| Layout | Sticky brand nav · hero s 3 stats · 2-col profil+motto · habits grid · 7 dnů (Day 1 full + 6 compact) · final CTA · footer |
+| Responsive grid | Days grid: 3-col desktop ≥1024 px → 2-col tablet 641-1024 px → 1-col mobile <640 px |
+
+### Mapování dat z `structured_plan_json`
+
+Identické s emailem v7 – stejné helper funkce (`mealDisplayTitleForStructuredMeal`,
+`czechVocative`, `czechDateWords`, workout intensity coloring). Den 1 dostane
+plnou meal-card mřížku se vším (recipe button, P/S/T řádek, daily total pill,
+workout block s inline cviky). Dny 2-7 mají kompaktní karty (stejné meal cards
+ale v 1-col layoutu uvnitř karty místo 2-col).
+
+### Cross-browser
+
+Stránka funguje na všech moderních prohlížečích (Chromium, Firefox, Safari, Edge)
+i mobile Safari / Chrome. Layout drží:
+
+- **Desktop ≥1024 px**: 3-col days grid, 2-col profil+motto, full hero stats
+- **Tablet 641-1023 px**: 2-col days grid, 1-col profil+motto
+- **Mobile <640 px**: 1-col all sections, hero stats 3 vedle sebe (compact)
+
+Inter + JetBrains Mono se načítají z Google Fonts přes `pages/_document.js`.
+Žádné fontové fallbacky se neprojeví na běžných uživatelských setupech.
 
 ## Co dělá v6 jinak (zachováno pro fallback / historický kontext)
 

@@ -8,6 +8,7 @@
  * wger: exercise-translation, exerciseinfo?name_search=, exerciseimage.
  */
 import { WGER_API_V2_BASE } from '../../lib/wgerApiConstants';
+import { spoonacularLiveOutboundEnabled } from '../../lib/spoonacularQuotaGate';
 
 const SPOONACULAR_KEY = process.env.SPOONACULAR_API_KEY || '';
 
@@ -107,11 +108,17 @@ export default async function handler(req, res) {
   result.spoonacular.configured = hasSpoonacular;
 
   if (hasSpoonacular) {
-    try {
-      const sp = deep ? await verifySpoonacularDeep() : await verifySpoonacularMinimal();
-      Object.assign(result.spoonacular, sp);
-    } catch (e) {
-      result.spoonacular.error = e?.message || 'Chyba volání';
+    if (!spoonacularLiveOutboundEnabled(false)) {
+      result.spoonacular.error =
+        'Přeskočeno: živé Spoonacular je v režimu jen generování plánu. Pro test API nastav SPOONACULAR_PLAN_GENERATION_ONLY=false.';
+      result.spoonacular.complexSearch_skipped = true;
+    } else {
+      try {
+        const sp = deep ? await verifySpoonacularDeep() : await verifySpoonacularMinimal();
+        Object.assign(result.spoonacular, sp);
+      } catch (e) {
+        result.spoonacular.error = e?.message || 'Chyba volání';
+      }
     }
   } else {
     result.spoonacular.error = 'SPOONACULAR_API_KEY chybí';
@@ -170,9 +177,11 @@ export default async function handler(req, res) {
     cviky_ok: result.wger.working,
     cviky_zdroj: result.wger.working ? 'wger.de' : null,
     duvod_nesouladu_jidel: !result.spoonacular.working
-      ? verifyMode === 'deep'
-        ? 'Spoonacular (complexSearch + information) nefunguje – jídla v plánu mohou selhat'
-        : 'Spoonacular (information) nefunguje – klíč / kvóta / API; zkus také ?deep=1 pro complexSearch'
+      ? /Přeskočeno:/.test(String(result.spoonacular.error || ''))
+        ? String(result.spoonacular.error)
+        : verifyMode === 'deep'
+          ? 'Spoonacular (complexSearch + information) nefunguje – jídla v plánu mohou selhat'
+          : 'Spoonacular (information) nefunguje – klíč / kvóta / API; zkus také ?deep=1 pro complexSearch'
       : null,
   };
 

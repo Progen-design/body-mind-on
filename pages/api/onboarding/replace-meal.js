@@ -1,8 +1,7 @@
 /**
  * POST /api/onboarding/replace-meal
- * Nahradí jedno jídlo v plánu novým receptem ze Spoonacular.
- * Trust-aware pipeline, display_name_cs – nikdy raw anglický název.
- * @see docs/ONBOARDING_PRODUCTION_SPEC.md § Replace Meal Flow
+ * POZASTAVENO: živé Spoonacular (pouze registrace přes body-metrics). Kód níže ponechán pro budoucí zapnutí.
+ * @see lib/spoonacularQuotaGate.js
  */
 import { getMealData } from '../../../lib/spoonacularClient';
 import { MEAL_CONFIDENCE_THRESHOLD, mapSpoonacularRecipe } from '../../../lib/mealEnrichment';
@@ -40,6 +39,23 @@ export default async function handler(req, res) {
     }
 
     const query = hint_query && typeof hint_query === 'string' ? hint_query.trim().slice(0, 100) : getDefaultQuery(meal_type);
+
+    /** Zapnout až po obnovení Spoonacular kvóty – viz lib/spoonacularQuotaGate.js */
+    const SPOONACULAR_REPLACE_MEAL_LIVE = false;
+    if (!SPOONACULAR_REPLACE_MEAL_LIVE) {
+      return res.status(200).json({
+        ok: true,
+        meal: {
+          type: meal_type,
+          display_name: 'Jídlo (neověřeno)',
+          display_name_cs: 'Jídlo (neověřeno)',
+          recipe_verified: false,
+          recipe: null,
+        },
+        _request_id: requestId,
+        _spoonacular_paused: true,
+      });
+    }
 
     const spoonacularContext = buildSpoonacularContext(body_metrics || null, targets || {}, meal_type);
     const meta = await getMealData(query, {

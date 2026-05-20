@@ -3,7 +3,7 @@
  * Fetches full recipe from Spoonacular by ID and returns localized (Czech) HTML for the recipe modal.
  * Zahrnuje nutriční hodnoty (česky) s progress bary. Raw angličtina se nikdy nedostane do UI.
  */
-import { isSpoonacularPlanGenerationOnlyMode, spoonacularLiveOutboundEnabled } from '../../lib/spoonacularQuotaGate';
+import { spoonacularLiveOutboundEnabled } from '../../lib/spoonacularQuotaGate';
 
 const SPOONACULAR_KEY = process.env.SPOONACULAR_API_KEY || '';
 const API_TIMEOUT_MS = 10000;
@@ -208,9 +208,8 @@ export default async function handler(req, res) {
   }
 
   if (!spoonacularLiveOutboundEnabled(false)) {
-    const hint = isSpoonacularPlanGenerationOnlyMode()
-      ? 'Živé načítání receptu je vypnuté mimo generování jídelníčku (úspora Spoonacular kreditu). Po vygenerování nového plánu máš vše v plánu; detail receptu zde zatím není.'
-      : 'Recept se teď nepodařilo načíst.';
+    const hint =
+      'Spoonacular je dočasně vypnuté (kromě registrace). Detail receptu z uloženého plánu zatím není k dispozici.';
     return respondRecipeError(req, res, 503, hint);
   }
 

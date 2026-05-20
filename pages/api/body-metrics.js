@@ -170,7 +170,9 @@ export default async function handler(req, res) {
     // SYNC: Plán musí být vždy vygenerován před odpovědí – čekáme na AI v rámci requestu
     if (payload.user_id) {
       try {
-        const taskResult = await createInitialAITasks(payload.user_id, emailOptions);
+        const taskResult = await createInitialAITasks(payload.user_id, emailOptions, {
+          spoonacularRegistrationOnly: true,
+        });
         console.info('[body-metrics] initial tasks', { user_id: payload.user_id, tasksCreated: taskResult?.tasksCreated ?? true });
       } catch (taskErr) {
         console.error('[body-metrics] createInitialAITasks failed', { user_id: payload.user_id, error: taskErr?.message });

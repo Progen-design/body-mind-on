@@ -1,48 +1,15 @@
 {
-  "env": {
-    "PLAN_OUTPUT_MODE": "nutrition_training",
-    "NEXT_PUBLIC_PLAN_OUTPUT_MODE": "nutrition_training"
-  },
-  "crons": [
-    {
-      "path": "/api/cron/daily-digest",
-      "schedule": "0 5 * * *"
+    "env": {
+          "PLAN_OUTPUT_MODE": "nutrition_training",
+          "NEXT_PUBLIC_PLAN_OUTPUT_MODE": "nutrition_training"
     },
-    {
-      "path": "/api/ai/run-scheduler",
-      "schedule": "*/5 * * * *"
+    "crons": [],
+    "functions": {
+          "pages/api/ai/run-scheduler.js": {
+                  "maxDuration": 300
+          },
+          "pages/api/body-metrics.js": {
+                  "maxDuration": 90
+          }
     }
-  ],
-  "functions": {
-    "pages/api/ai/run-scheduler.js": {
-      "maxDuration": 300
-    },
-    "pages/api/body-metrics.js": {
-      "maxDuration": 90
-    },
-    "pages/api/retry-initial-plan.js": {
-      "maxDuration": 90
-    },
-    "pages/api/generate-plan.js": {
-      "maxDuration": 300
-    },
-    "pages/api/generate-plan-next-week.js": {
-      "maxDuration": 300
-    },
-    "pages/api/assistant-intake.js": {
-      "maxDuration": 300
-    },
-    "pages/api/onboarding/generate-plan.js": {
-      "maxDuration": 300
-    },
-    "pages/api/cron/daily-digest.js": {
-      "maxDuration": 300
-    },
-    "pages/api/admin/regenerate-user-plan.js": {
-      "maxDuration": 300
-    },
-    "pages/api/admin/send-test-plan-email.js": {
-      "maxDuration": 60
-    }
-  }
 }

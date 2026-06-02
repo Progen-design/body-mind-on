@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="color-scheme" content="dark only">
+<meta name="supported-color-schemes" content="dark only">
+<meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no">
+<title>Tvůj plán · Body & Mind ON</title>
+<style type="text/css">
+:root{color-scheme:dark only;}
+body{margin:0;padding:0;background:#06070D;font-family:'Inter','-apple-system','BlinkMacSystemFont','Segoe UI','Roboto','Arial',sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;}
+table{border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;}
+img{border:0;outline:none;text-decoration:none;display:block;}
+a{text-decoration:none;color:inherit;}
+.mono{font-family:'JetBrains Mono','Menlo','Courier New',monospace;}
+
+/* Aurora gradient - signature element */
+.aurora-bg{background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(141,99,239,0.35),transparent 70%),radial-gradient(ellipse 60% 40% at 100% 0%,rgba(80,200,255,0.18),transparent 60%),radial-gradient(ellipse 50% 50% at 0% 100%,rgba(255,134,87,0.12),transparent 60%),#06070D;}
+
+/* Mobile responsive */
+@media only screen and (max-width:600px){
+.container{width:100% !important;max-width:100% !important;}
+.px-mobile{padding-left:16px !important;padding-right:16px !important;}
+.hero-name{font-size:32px !important;letter-spacing:-0.02em !important;}
+.hero-tagline{font-size:14px !important;}
+.metric-num{font-size:32px !important;}
+.metric-label{font-size:11px !important;}
+.section-title{font-size:22px !important;}
+.day-title{font-size:20px !important;}
+.meal-name{font-size:15px !important;}
+.kcal-big{font-size:36px !important;}
+.cta-title{font-size:24px !important;}
+.cta-sub{font-size:14px !important;}
+.hide-mobile{display:none !important;}
+.stack-mobile{display:block !important;width:100% !important;}
+.stack-pad{padding:12px 0 !important;}
+}
+</style>
+</head>
+<body bgcolor="#06070D" style="margin:0;padding:0;background-color:#06070D;">
+
+<!-- Preheader -->
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#06070D;">{{preheader_text|Tvůj nový týdenní plán je připravený. Pojď se na něj podívat.}}</div>
+
+<!-- Outer wrapper -->
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#06070D" style="background-color:#06070D;">
+<tr><td align="center" style="padding:0;">
+
+<!-- Email container -->
+<table role="presentation" class="container" width="640" border="0" cellspacing="0" cellpadding="0" style="width:640px;max-width:640px;">
+
+<!-- ====== HERO with Aurora background ====== -->
+<tr><td class="aurora-bg px-mobile" style="background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(141,99,239,0.35),transparent 70%),radial-gradient(ellipse 60% 40% at 100% 0%,rgba(80,200,255,0.18),transparent 60%),radial-gradient(ellipse 50% 50% at 0% 100%,rgba(255,134,87,0.12),transparent 60%),#06070D;padding:64px 56px 72px;">
+
+<!-- Brand mark -->
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+<tr><td style="padding-bottom:48px;">
+<table role="presentation" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<td style="padding-right:10px;vertical-align:middle;">
+<div style="width:8px;height:8px;background:#A78BFA;border-radius:50%;box-shadow:0 0 12px rgba(167,139,250,0.8);"></div>
+</td>
+<td style="vertical-align:middle;">
+<span style="font-size:13px;font-weight:600;color:#A78BFA;letter-spacing:0.18em;text-transform:uppercase;">BODY &amp; MIND ON</span>
+</td>
+</tr>
+</table>
+</td></tr>
+</table>
+
+<!-- Week badge -->
+<div style="display:inline-block;padding:6px 14px;background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.25);border-radius:999px;margin-bottom:24px;">
+<span class="mono" style="font-size:12px;color:#C4B5FD;letter-spacing:0.08em;text-transform:uppercase;">Týden {{week_label|01 / 2026}}</span>
+</div>
+
+<!-- Hero title -->
+<h1 class="hero-name" style="margin:0 0 16px;font-size:48px;font-weight:700;color:#FFFFFF;line-height:1.05;letter-spacing:-0.03em;font-family:'Inter','-apple-system',sans-serif;">
+Ahoj {{user_first_name|Honzo}},
+</h1>
+<p class="hero-name" style="margin:0 0 28px;font-size:48px;font-weight:300;color:rgba(255,255,255,0.65);line-height:1.05;letter-spacing:-0.03em;font-family:'Inter','-apple-system',sans-serif;">
+tvůj týden je<br>
+<span style="background:linear-gradient(135deg,#A78BFA 0%,#60A5FA 50%,#F472B6 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#A78BFA;font-weight:700;">připravený.</span>
+</p>
+
+<!-- Hero tagline -->
+<p class="hero-tagline" style="margin:0;font-size:16px;color:rgba(255,255,255,0.55);line-height:1.6;max-width:440px;">
+{{hero_message|Personalizovaný plán pro tvůj cíl. Sedm dní, sedm jídelníčků a tréninků navržených na míru tvému tělu, životnímu stylu a preferencím.}}
+</p>
+
+</td></tr>
+<!-- ====== /HERO ====== -->
+
+<!-- ====== METRIC CARDS (3 stat tiles) ====== -->
+<tr><td style="background:#06070D;padding:0 56px;" class="px-mobile">
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+<tr>
+
+<td class="stack-mobile" style="width:33.33%;padding-right:8px;vertical-align:top;">
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background:#0D0F1A;border:1px solid rgba(167,139,250,0.15);border-radius:16px;">
+<tr><td style="padding:24px 20px;">
+<p class="metric-label" style="margin:0 0 8px;font-size:11px;color:rgba(167,139,250,0.7);letter-spacing:0.12em;text-transform:uppercase;font-weight:600;">Kalorie</p>
+<p class="metric-num" style="margin:0;font-size:36px;font-weight:700;color:#FFFFFF;line-height:1;letter-spacing:-0.02em;">
+{{target_kcal|2100}}
+<span style="font-size:14px;color:rgba(255,255,255,0.4);font-weight:400;letter-spacing:0;">kcal</span>
+</p>
+<p style="margin:6px 0 0;font-size:12px;color:rgba(255,255,255,0.45);">denní cíl</p>
+</td></tr>
+</table>
+</td>
+
+<td class="stack-mobile" style="width:33.33%;padding:0 4px;vertical-align:top;">
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background:#0D0F1A;border:1px solid rgba(96,165,250,0.15);border-radius:16px;">
+<tr><td style="padding:24px 20px;">
+<p class="metric-label" style="margin:0 0 8px;font-size:11px;color:rgba(96,165,250,0.7);letter-spacing:0.12em;text-transform:uppercase;font-weight:600;">Trénink</p>
+<p class="metric-num" style="margin:0;font-size:36px;font-weight:700;color:#FFFFFF;line-height:1;letter-spacing:-0.02em;">
+{{workout_days|4}}
+<span style="font-size:14px;color:rgba(255,255,255,0.4);font-weight:400;letter-spacing:0;">/ 7</span>
+</p>
+<p style="margin:6px 0 0;font-size:12px;color:rgba(255,255,255,0.45);">dní v týdnu</p>
+</td></tr>
+</table>
+</td>
+
+<td class="stack-mobile" style="width:33.33%;padding-left:8px;vertical-align:top;">
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background:#0D0F1A;border:1px solid rgba(244,114,182,0.15);border-radius:16px;">
+<tr><td style="padding:24px 20px;">
+<p class="metric-label" style="margin:0 0 8px;font-size:11px;color:rgba(244,114,182,0.7);letter-spacing:0.12em;text-transform:uppercase;font-weight:600;">Bílkoviny</p>
+<p class="metric-num" style="margin:0;font-size:36px;font-weight:700;color:#FFFFFF;line-height:1;letter-spacing:-0.02em;">
+{{target_protein|140}}
+<span style="font-size:14px;color:rgba(255,255,255,0.4);font-weight:400;letter-spacing:0;">g</span>
+</p>
+<p style="margin:6px 0 0;font-size:12px;color:rgba(255,255,255,0.45);">denně</p>
+</td></tr>
+</table>
+</td>
+
+</tr>
+</table>
+</td></tr>
+<!-- ====== /METRIC CARDS ====== -->
+
+<!-- spacer -->
+<tr><td style="background:#06070D;padding:48px 56px 16px;" class="px-mobile">
+
+<!-- Section title -->
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<td style="vertical-align:middle;padding-right:16px;">
+<h2 class="section-title" style="margin:0;font-size:28px;font-weight:700;color:#FFFFFF;letter-spacing:-0.02em;line-height:1.1;">
+Tvůj týden, den po dni
+</h2>
+</td>
+<td align="right" style="vertical-align:middle;" class="hide-mobile">
+<div class="mono" style="display:inline-block;padding:6px 12px;background:rgba(255,255,255,0.05);border-radius:8px;font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:0.1em;text-transform:uppercase;">{{date_range|2. 6. — 8. 6.}}</div>
+</td>
+</tr>
+</table>
+
+</td></tr>
+
+<!-- ====== DAY CARDS (loop placeholder for 7 days) ====== -->
+<!-- DAY 1 - PONDĚLÍ -->
+<tr><td style="background:#06070D;padding:12px 56px 0;" class="px-mobile">
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background:#0D0F1A;border:1px solid rgba(255,255,255,0.06);border-radius:20px;overflow:hidden;">
+
+<!-- Day header with gradient accent -->
+<tr><td style="padding:24px 28px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<td style="vertical-align:middle;">
+<table role="presentation" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<td style="padding-right:12px;vertical-align:middle;">
+<div style="width:6px;height:48px;background:linear-gradient(180deg,#A78BFA 0%,#60A5FA 100%);border-radius:3px;"></div>
+</td>
+<td style="vertical-align:middle;">
+<p style="margin:0 0 2px;font-size:11px;color:#A78BFA;letter-spacing:0.18em;text-transform:uppercase;font-weight:600;" class="mono">Den 1</p>
+<h3 class="day-title" style="margin:0;font-size:26px;font-weight:700;color:#FFFFFF;letter-spacing:-0.02em;line-height:1;">{{day_1_name|Pondělí}}</h3>
+</td>
+</tr>
+</table>
+</td>
+<td align="right" style="vertical-align:middle;">
+<div style="display:inline-block;padding:8px 14px;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.2);border-radius:10px;">
+<span style="font-size:13px;color:#C4B5FD;font-weight:600;">{{day_1_kcal|2100}} kcal</span>
+</div>
+</td>
+</tr>
+</table>
+</td></tr>
+
+<!-- MEALS for day 1 -->
+<tr><td style="padding:8px 28px 8px;">
+<!-- Meal: breakfast -->
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom:8px;">
+<tr><td style="padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<td style="vertical-align:top;padding-right:16px;">
+<p style="margin:0 0 4px;font-size:11px;color:rgba(167,139,250,0.6);letter-spacing:0.12em;text-transform:uppercase;font-weight:600;" class="mono">Snídaně</p>
+<p class="meal-name" style="margin:0 0 6px;font-size:16px;color:#FFFFFF;font-weight:500;line-height:1.3;">{{day_1_breakfast_name|Ovesná kaše s borůvkami a mandlemi}}</p>
+<p style="margin:0;font-size:13px;color:rgba(255,255,255,0.45);line-height:1.5;">{{day_1_breakfast_macros|B 24g · S 58g · T 16g}}</p>
+</td>
+<td align="right" style="vertical-align:top;white-space:nowrap;">
+<p class="kcal-big" style="margin:0;font-size:24px;font-weight:700;color:#FFFFFF;line-height:1;letter-spacing:-0.02em;">{{day_1_breakfast_kcal|480}}</p>
+<p style="margin:2px 0 0;font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:0.05em;">kcal</p>
+</td>
+</tr>
+</table>
+</td></tr>
+</table>
+
+<!-- Meal: lunch -->
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom:8px;">
+<tr><td style="padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<td style="vertical-align:top;padding-right:16px;">
+<p style="margin:0 0 4px;font-size:11px;color:rgba(96,165,250,0.6);letter-spacing:0.12em;text-transform:uppercase;font-weight:600;" class="mono">Oběd</p>
+<p class="meal-name" style="margin:0 0 6px;font-size:16px;color:#FFFFFF;font-weight:500;line-height:1.3;">{{day_1_lunch_name|Kuřecí prsa s quinoa a pečenou zeleninou}}</p>
+<p style="margin:0;font-size:13px;color:rgba(255,255,255,0.45);line-height:1.5;">{{day_1_lunch_macros|B 52g · S 62g · T 14g}}</p>
+</td>
+<td align="right" style="vertical-align:top;white-space:nowrap;">
+<p class="kcal-big" style="margin:0;font-size:24px;font-weight:700;color:#FFFFFF;line-height:1;letter-spacing:-0.02em;">{{day_1_lunch_kcal|620}}</p>
+<p style="margin:2px 0 0;font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:0.05em;">kcal</p>
+</td>
+</tr>
+</table>
+</td></tr>
+</table>!-- Meal: dinner -->
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom:0;">
+<tr><td style="padding:14px 0 0;">
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<td style="vertical-align:top;padding-right:16px;">
+<p style="margin:0 0 4px;font-size:11px;color:rgba(244,114,182,0.6);letter-spacing:0.12em;text-transform:uppercase;font-weight:600;" class="mono">Večeře</p>
+<p class="meal-name" style="margin:0 0 6px;font-size:16px;color:#FFFFFF;font-weight:500;line-height:1.3;">{{day_1_dinner_name|Losos s pečenými brambory a špenátem}}</p>
+<p style="margin:0;font-size:13px;color:rgba(255,255,255,0.45);line-height:1.5;">{{day_1_dinner_macros|B 42g · S 38g · T 28g}}</p>
+</td>
+<td align="right" style="vertical-align:top;white-space:nowrap;">
+<p class="kcal-big" style="margin:0;font-size:24px;font-weight:700;color:#FFFFFF;line-height:1;letter-spacing:-0.02em;">{{day_1_dinner_kcal|580}}</p>
+<p style="margin:2px 0 0;font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:0.05em;">kcal</p>
+</td>
+</tr>
+</table>
+</td></tr>
+</table>
+
+</td></tr>
+
+<!-- WORKOUT for day 1 -->
+<tr><td style="padding:20px 28px 24px;background:linear-gradient(180deg,rgba(96,165,250,0.04) 0%,transparent 100%);border-top:1px solid rgba(255,255,255,0.04);">
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<td style="vertical-align:middle;">
+<table role="presentation" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<td style="padding-right:10px;vertical-align:middle;">
+<div style="width:32px;height:32px;background:rgba(96,165,250,0.15);border-radius:8px;text-align:center;line-height:32px;">
+<span style="font-size:16px;color:#60A5FA;">⚡</span>
+</div>
+</td>
+<td style="vertical-align:middle;">
+<p style="margin:0 0 2px;font-size:11px;color:rgba(96,165,250,0.7);letter-spacing:0.12em;text-transform:uppercase;font-weight:600;" class="mono">Trénink</p>
+<p style="margin:0;font-size:15px;color:#FFFFFF;font-weight:600;line-height:1.2;">{{day_1_workout_name|Síla horní polovina těla}}</p>
+</td>
+</tr>
+</table>
+</td>
+<td align="right" style="vertical-align:middle;">
+<p style="margin:0;font-size:13px;color:rgba(255,255,255,0.5);">{{day_1_workout_duration|45 min · 6 cviků}}</p>
+</td>
+</tr>
+</table>
+</td></tr>
+
+</table>
+</td></tr>
+
+<!-- DAY 2 - ÚTERÝ (compact placeholder showing the pattern) -->
+<tr><td style="background:#06070D;padding:12px 56px 0;" class="px-mobile">
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background:#0D0F1A;border:1px solid rgba(255,255,255,0.06);border-radius:20px;overflow:hidden;">
+<tr><td style="padding:24px 28px;">
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<td style="vertical-align:middle;">
+<table role="presentation" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<td style="padding-right:12px;vertical-align:middle;">
+<div style="width:6px;height:48px;background:linear-gradient(180deg,#60A5FA 0%,#34D399 100%);border-radius:3px;"></div>
+</td>
+<td style="vertical-align:middle;">
+<p style="margin:0 0 2px;font-size:11px;color:#60A5FA;letter-spacing:0.18em;text-transform:uppercase;font-weight:600;" class="mono">Den 2</p>
+<h3 class="day-title" style="margin:0;font-size:26px;font-weight:700;color:#FFFFFF;letter-spacing:-0.02em;line-height:1;">{{day_2_name|Úterý}}</h3>
+</td>
+</tr>
+</table>
+</td>
+<td align="right" style="vertical-align:middle;">
+<div style="display:inline-block;padding:8px 14px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.2);border-radius:10px;">
+<span style="font-size:13px;color:#6EE7B7;font-weight:600;">Odpočinek</span>
+</div>
+</td>
+</tr>
+</table>
+</td></tr>
+</table>
+</td></tr>
+
+<!-- (Days 3-7 follow same pattern in production - showing 1 expanded + 1 compact in mockup) -->
+
+<!-- ====== CTA SECTION ====== -->
+<tr><td style="background:#06070D;padding:56px 56px 24px;" class="px-mobile">
+
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background:linear-gradient(135deg,rgba(167,139,250,0.12) 0%,rgba(96,165,250,0.08) 100%);border:1px solid rgba(167,139,250,0.2);border-radius:24px;">
+<tr><td style="padding:48px 40px;text-align:center;">
+
+<h2 class="cta-title" style="margin:0 0 12px;font-size:32px;font-weight:700;color:#FFFFFF;letter-spacing:-0.02em;line-height:1.1;">
+Otevři plán v aplikaci
+</h2>
+<p class="cta-sub" style="margin:0 0 32px;font-size:16px;color:rgba(255,255,255,0.6);line-height:1.5;max-width:380px;margin-left:auto;margin-right:auto;">
+Sleduj progress, označuj splněné jídla a tréninky, uprav cíle.
+</p>
+
+<!-- CTA button -->
+<table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin:0 auto;">
+<tr><td style="background:#FFFFFF;border-radius:14px;">
+<a href="{{app_link|https://app.bodyandmindon.cz/profil}}" target="_blank" style="display:inline-block;padding:18px 44px;font-size:15px;font-weight:600;color:#06070D;text-decoration:none;letter-spacing:-0.01em;border-radius:14px;">
+Otevřít aplikaci →
+</a>
+</td></tr>
+</table>
+
+</td></tr>
+</table>
+
+</td></tr>
+<!-- ====== /CTA ====== -->
+
+<!-- ====== FOOTER ====== -->
+<tr><td style="background:#06070D;padding:48px 56px 56px;border-top:1px solid rgba(255,255,255,0.05);" class="px-mobile">
+
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<td style="vertical-align:middle;">
+<table role="presentation" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<td style="padding-right:10px;vertical-align:middle;">
+<div style="width:6px;height:6px;background:#A78BFA;border-radius:50%;"></div>
+</td>
+<td style="vertical-align:middle;">
+<span style="font-size:11px;font-weight:600;color:rgba(167,139,250,0.7);letter-spacing:0.18em;text-transform:uppercase;">BODY &amp; MIND ON</span>
+</td>
+</tr>
+</table>
+</td>
+<td align="right" style="vertical-align:middle;">
+<a href="{{unsubscribe_link|https://app.bodyandmindon.cz/unsubscribe}}" style="font-size:12px;color:rgba(255,255,255,0.35);text-decoration:underline;">Zrušit odběr</a>
+</td>
+</tr>
+</table>
+
+<p style="margin:32px 0 0;font-size:12px;color:rgba(255,255,255,0.3);line-height:1.6;">
+Tento email byl vygenerován AI na základě tvých dat. Pokud chceš úpravu plánu, otevři aplikaci a uprav cíle nebo preference.
+</p>
+
+<p style="margin:16px 0 0;font-size:11px;color:rgba(255,255,255,0.2);">
+&copy; 2026 Body &amp; Mind ON · Praha, Česká republika
+</p>
+
+</td></tr>
+<!-- ====== /FOOTER ====== -->
+
+</table>
+
+</td></tr>
+</table>
+
+</body>
+</html>

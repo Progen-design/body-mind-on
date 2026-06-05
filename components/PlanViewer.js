@@ -14,6 +14,7 @@ import { mealDisplayTitleForStructuredMeal } from '../lib/mealDisplayNameHelpers
 import { parsePlanHtml } from '../lib/parsePlanHtml';
 import { getPlanOutputMode, shouldRenderTraining } from '../lib/planOutputMode.js';
 import { buildPlanPdfHtml } from '../lib/planPdf';
+import { formatExerciseSetsRepsDisplay } from '../lib/planDataIntegrity.js';
 
 export { parsePlanHtml };
 
@@ -361,7 +362,6 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
   const [dayShoppingState, setDayShoppingState] = useState({}); // { dayIndex: { copyDone, email: { loading, done, error } } }
   const [shoppingFilter, setShoppingFilter] = useState('week'); // 'week' | day originalIndex (number)
   const [shoppingListOpen, setShoppingListOpen] = useState(false); // rozbalovací sekce
-  const [expandedDays, setExpandedDays] = useState(null); // null = dnes rozbalený; Set(di) = které dny jsou rozbalené
   const [mealTrustMap, setMealTrustMap] = useState({});
   const [exerciseMediaMap, setExerciseMediaMap] = useState({});
   const [showRawPlanFallback, setShowRawPlanFallback] = useState(false);
@@ -778,7 +778,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
             <div id="plan-jidelnicek" className="plan-block">
               <h3 className="plan-block-title">Týden po dnech</h3>
               <p className="plan-block-subtitle">
-                Každý řádek je jeden kalendářní den platnosti tvého plánu. Rozbalením dostaneš recept a trénink.
+                Každý den je plně rozepsaný — jídla s makry, součet kalorií a trénink.
               </p>
               <p id="plan-varianty-jidel" className="plan-variant-hint">
                 <strong>Tip:</strong> u každého jídla najdeš tlačítko „Nahradit jiným“ pro alternativu se zachovanými makry.
@@ -790,53 +790,26 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
               )}
               <div id="plan-days" className="plan-days">
                 {planWeekDays.map((day, di) => {
-                  const isDayExpanded = expandedDays === null ? (day.isToday || (isFuturePlan && di === 0)) : expandedDays.has(di);
-                  const toggleDay = () => {
-                    setExpandedDays((prev) => {
-                      const todayIdx = planWeekDays.findIndex((d) => d.isToday);
-                      const next = new Set(prev === null ? [todayIdx >= 0 ? todayIdx : 0] : Array.from(prev));
-                      if (next.has(di)) next.delete(di);
-                      else next.add(di);
-                      return next;
-                    });
-                  };
-                  const mealPeekParts = collapsedDayMealsPeekParts(day, di, mealOverrides, structuredPlan, plan.plan_html || '');
-                  const dIdxPeek = day.originalIndex ?? di;
-                  const wkPeek = day.structDay?.workout ?? structuredPlan?.days?.[dIdxPeek]?.workout;
-                  const workoutExercises = wkPeek?.exercises;
-                  const wc = Array.isArray(workoutExercises) ? workoutExercises.length : 0;
-                  const htmlTrainingPeek = showTrainingInProfile && String(day.trainingHtml || '').trim().length > 0;
-                  const trainingPeek =
-                    showTrainingInProfile && (wc > 0 || htmlTrainingPeek)
-                      ? wc > 0
-                        ? `Trénink: ${wc} ${wc === 1 ? 'cvik' : wc >= 2 && wc <= 4 ? 'cviky' : 'cviků'}`
-                        : 'Trénink: v plánu'
-                      : '';
-                  const peekSummary = [...mealPeekParts, ...(trainingPeek ? [trainingPeek] : [])].join(' · ');
+                  const dIdxForMeals = day.originalIndex ?? di;
+                  const structDayForTotal =
+                    day.structDay ||
+                    (structuredPlan?.days &&
+                    Array.isArray(structuredPlan.days) &&
+                    dIdxForMeals >= 0 &&
+                    dIdxForMeals < structuredPlan.days.length
+                      ? structuredPlan.days[dIdxForMeals]
+                      : null);
+                  const dayKcalTotal = (structDayForTotal?.meals || []).reduce((sum, m) => {
+                    const k = Number(m?.kcal ?? m?.recipe?.calories);
+                    return Number.isFinite(k) && k > 0 ? sum + k : sum;
+                  }, 0);
                   return (
-                  <div id={day.isToday ? 'plan-day-card-today' : undefined} key={di} className={`plan-day-card ${day._placeholder ? 'plan-day-placeholder' : ''} ${day.isToday ? 'plan-day-today' : ''} ${isDayExpanded ? 'plan-day-expanded' : ''}`}>
-                    <button type="button" className="plan-day-header-btn" onClick={toggleDay} aria-expanded={isDayExpanded}>
+                  <div id={day.isToday ? 'plan-day-card-today' : undefined} key={di} className={`plan-day-card plan-day-expanded ${day._placeholder ? 'plan-day-placeholder' : ''} ${day.isToday ? 'plan-day-today' : ''}`}>
+                    <div className="plan-day-header-static">
                       <h4 className="plan-day-name">
                         {day.dayName}{day.dateStr ? ` (${day.dateStr})` : ''}{day.isToday ? ' – dnes' : ''}
                       </h4>
-                      <span className="plan-day-chevron" aria-hidden>{isDayExpanded ? '▼' : '▶'}</span>
-                    </button>
-                    {!isDayExpanded && (mealPeekParts.length > 0 || trainingPeek) ? (
-                      <button
-                        type="button"
-                        className="plan-day-peek-btn"
-                        onClick={toggleDay}
-                        aria-label={`Rozbalit ${day.dayName || 'den'}: ${peekSummary}`}
-                      >
-                        <span className="plan-day-peek-list">
-                          {mealPeekParts.map((line, peekIdx) => (
-                            <span key={`meal-${peekIdx}`} className="plan-day-peek-line">{line}</span>
-                          ))}
-                          {trainingPeek ? <span className="plan-day-peek-line plan-day-peek-line-training">{trainingPeek}</span> : null}
-                        </span>
-                      </button>
-                    ) : null}
-                    {isDayExpanded && (
+                    </div>
                     <>
                     <nav className="plan-day-nav" aria-label="Jídla dne">
                       <span className="plan-day-nav-static">Co dnes jíst</span>
@@ -1023,6 +996,11 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                         );
                       })}
                     </div>
+                    {dayKcalTotal > 0 ? (
+                      <p className="plan-day-kcal-total">
+                        <strong>Celkem za den:</strong> {Math.round(dayKcalTotal).toLocaleString('cs-CZ')} kcal
+                      </p>
+                    ) : null}
                     {showTrainingInProfile
                       ? (() => {
                       const dIdx = day.originalIndex ?? di;
@@ -1040,12 +1018,7 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                                   ex.wger_exercise_id != null && Number.isFinite(Number(ex.wger_exercise_id))
                                     ? Number(ex.wger_exercise_id)
                                     : null;
-                                const reps = ex.reps != null ? String(ex.reps) : '';
-                                const part = reps
-                                  ? `${ex.sets ?? 3}×${reps}`
-                                  : ex.duration_sec
-                                    ? `${Math.round(Number(ex.duration_sec) / 60)} min`
-                                    : `${ex.sets ?? 3} sérií`;
+                                const part = formatExerciseSetsRepsDisplay(ex);
                                 const openWgerExercise = () => {
                                   const mediaKey = ex.canonical_key ? normalizeLookupKey(ex.canonical_key) : normalizeLookupKey(name);
                                   const mediaFromMap =
@@ -1224,7 +1197,6 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
                       );
                     })()}
                     </>
-                    )}
                   </div>
                   );
                 })}

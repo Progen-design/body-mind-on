@@ -4,7 +4,7 @@ import { toCzechVocative } from '../lib/utils/czechVocative.js';
 import { formatDayDateWords, formatDayDateNumeric, dayOrdinalCs } from '../lib/utils/czechDateWords.js';
 import { mealDisplayTitleForStructuredMeal } from '../lib/mealDisplayNameHelpers.js';
 import { addCalendarDaysIsoPrague } from '../lib/czechCalendar.js';
-import { exerciseDurationSecondsForDisplay } from '../lib/planDataIntegrity.js';
+import { formatExerciseSetsRepsDisplay } from '../lib/planDataIntegrity.js';
 
 const MEAL_TIME_META = {
   breakfast: { icon: '☀', label: 'Snídaně', time_word: 'Ráno', time: '07:30', color: '#22D3EE' },
@@ -67,11 +67,13 @@ function isSafeExternalUrl(value) {
   return !!trimmed && /^https?:\/\//i.test(trimmed);
 }
 function mealRecipeUrl(meal, appBaseUrl) {
+  const fromCatalog = Boolean(meal?.catalog_id) || meal?.recipe?.source === 'catalog';
   const r = meal?.recipe;
+  const direct = r?.sourceUrl || r?.source_url || r?.url || meal?.spoonacular_url || null;
+  if (fromCatalog && isSafeExternalUrl(direct)) return String(direct).trim();
   const recipeId = r?.id ?? meal?.recipe_id ?? null;
   const ridNum = recipeId != null && Number.isFinite(Number(recipeId)) ? Number(recipeId) : null;
   if (ridNum != null) return `${appBaseUrl}/api/spoonacular-recipe?id=${ridNum}&format=html`;
-  const direct = r?.sourceUrl || r?.source_url || r?.url || null;
   if (isSafeExternalUrl(direct)) return String(direct).trim();
   return '';
 }
@@ -204,24 +206,15 @@ function WorkoutBlock({ day, coachVoice }) {
       <h5 className={styles.workoutTitle}>{intro}</h5>
       <p className={styles.workoutDesc}>{desc}</p>
       <p className={styles.workoutDesc} style={{ marginTop: 10 }}>
-        {exercises.slice(0, 5).map((ex, i) => {
-          const name = String(ex?.name || ex?.exercise_name || 'Cvik');
-          const sets = ex?.sets != null ? String(ex.sets) : '—';
-          const reps = ex?.reps != null ? String(ex.reps) : '—';
-          const hasReps = reps !== '—' && String(reps).trim() !== '';
-          const durSec = exerciseDurationSecondsForDisplay(ex);
-          let repsUnit;
-          if (durSec != null) repsUnit = `${ex.sets ?? '—'}×${durSec}\u00A0s`;
-          else if (hasReps) repsUnit = `${sets}×${reps}`;
-          else if (sets !== '—') repsUnit = `${sets} sady`;
-          else repsUnit = '—';
+        {exercises.slice(0, 8).map((ex, i) => {
+          const name = String(ex?.name || ex?.exercise_name || ex?.display_name_cs || 'Cvik');
+          const repsUnit = formatExerciseSetsRepsDisplay(ex, { nbsp: true });
           return (
             <span key={i}>
               {i > 0 ? ' · ' : ''}{name} <strong>{repsUnit}</strong>
             </span>
           );
         })}
-        {exercises.length > 5 ? <span style={{ color: '#64748B' }}>{' '}+ {exercises.length - 5} dalších</span> : null}
       </p>
     </div>
   );
@@ -234,7 +227,7 @@ function dayIso(day, index, validFrom) {
   return '';
 }
 
-function DayCard({ day, index, planJson, appBaseUrl, coachVoice, validFrom, isFull }) {
+function DayCard({ day, index, planJson, appBaseUrl, coachVoice, validFrom }) {
   const dayName = day?.day_name || `Den ${index + 1}`;
   const iso = dayIso(day, index, validFrom);
   const dateWords = formatDayDateWords(iso);
@@ -242,36 +235,15 @@ function DayCard({ day, index, planJson, appBaseUrl, coachVoice, validFrom, isFu
   const fullDate = dateWords && yearStr
     ? `${dateWords.charAt(0).toUpperCase()}${dateWords.slice(1)} ${yearStr}`
     : (formatDayDateNumeric(iso) || '');
-  const dateShort = formatDayDateNumeric(iso) || '';
   const ordinal = `Den ${String(index + 1).padStart(2, '0')} · ${dayOrdinalCs(index + 1)}`;
   const meals = Array.isArray(day?.meals) ? day.meals : [];
-  const dayDeepLink = `${appBaseUrl}/?den=${index + 1}`;
 
   return (
-    <div className={`${styles.dayCard} ${isFull ? styles.dayCardFull : styles.dayCardCompact}`}>
+    <div className={`${styles.dayCard} ${styles.dayCardFull}`}>
       <div className={styles.dayHeader}>
-        {isFull ? (
-          <>
-            <div className={styles.dayHeaderOrdinal}>{ordinal}</div>
-            <h3 className={styles.dayHeaderName}>{dayName}</h3>
-            <div className={styles.dayHeaderDate}>{fullDate}</div>
-          </>
-        ) : (
-          <div className={styles.dayHeaderCompactInner}>
-            <div>
-              <div className={styles.dayHeaderOrdinal}>{ordinal}</div>
-              <h3 className={styles.dayHeaderNameCompact}>
-                {dayName}
-                {dateShort ? (
-                  <span className={styles.dayHeaderDateInline}> · {dateShort}</span>
-                ) : null}
-              </h3>
-            </div>
-            <a className={styles.dayOpenPill} href={dayDeepLink} target="_blank" rel="noopener noreferrer">
-              Otevřít →
-            </a>
-          </div>
-        )}
+        <div className={styles.dayHeaderOrdinal}>{ordinal}</div>
+        <h3 className={styles.dayHeaderName}>{dayName}</h3>
+        <div className={styles.dayHeaderDate}>{fullDate}</div>
       </div>
       <div className={styles.dayBody}>
         {meals.map((meal, idx) => (
@@ -451,7 +423,7 @@ export default function PlanWebView({ planJson, bodyMetrics, firstName, validFro
             <div className={styles.card} style={{ marginBottom: 20 }}>
               <span className={`${styles.cardBadge} ${styles.cardBadgeCyan}`}>03 · Tvojich 7 dní</span>
               <h2 className={styles.sectionTitle}>Den po dni, bez spěchu.</h2>
-              <p className={styles.sectionSub}>První den máš plně rozepsaný napříč jídly i tréninkem. Zbytek týdne pokračuje ve stejném rytmu.</p>
+              <p className={styles.sectionSub}>Každý den máš plně rozepsaná jídla, součet kalorií a trénink.</p>
             </div>
             <div className={styles.daysGrid}>
               {days.map((day, idx) => (
@@ -463,7 +435,6 @@ export default function PlanWebView({ planJson, bodyMetrics, firstName, validFro
                   appBaseUrl={safeAppBase}
                   coachVoice={coachVoice}
                   validFrom={validFromIso}
-                  isFull={idx === 0}
                 />
               ))}
             </div>

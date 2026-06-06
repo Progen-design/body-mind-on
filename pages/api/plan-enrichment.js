@@ -134,6 +134,7 @@ export default async function handler(req, res) {
       const media = {
         image_url: ex?.image_url || null,
         gif_url: ex?.gif_url || null,
+        video_url: ex?.video_url || null,
         source: ex?.source || 'none',
         canonical_key: ex?.canonical_key || null,
         trust_level: ex?.trust_level || 'none',

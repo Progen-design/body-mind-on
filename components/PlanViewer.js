@@ -15,8 +15,62 @@ import { parsePlanHtml } from '../lib/parsePlanHtml';
 import { getPlanOutputMode, shouldRenderTraining } from '../lib/planOutputMode.js';
 import { buildPlanPdfHtml } from '../lib/planPdf';
 import { formatExerciseSetsRepsDisplay } from '../lib/planDataIntegrity.js';
+import { collectExerciseMediaSources, hasDisplayableExerciseMedia, isVideoMediaUrl } from '../lib/exerciseMediaHelpers.js';
 
 export { parsePlanHtml };
+
+function renderExerciseMediaPreview(media, name, onMediaError) {
+  const { gifUrl, imageUrl, videoUrl } = media || {};
+  const alt = `Ukázka cviku ${name}`;
+  if (gifUrl) {
+    return (
+      <img
+        src={gifUrl}
+        alt={alt}
+        className="plan-exercise-media"
+        loading="lazy"
+        onError={onMediaError}
+      />
+    );
+  }
+  if (imageUrl && !isVideoMediaUrl(imageUrl)) {
+    return (
+      <img
+        src={imageUrl}
+        alt={alt}
+        className="plan-exercise-media"
+        loading="lazy"
+        onError={onMediaError}
+      />
+    );
+  }
+  if (videoUrl || (imageUrl && isVideoMediaUrl(imageUrl))) {
+    const src = videoUrl || imageUrl;
+    return (
+      <video
+        src={src}
+        className="plan-exercise-media"
+        controls
+        playsInline
+        preload="metadata"
+        onError={onMediaError}
+      />
+    );
+  }
+  return null;
+}
+
+async function fetchExerciseMediaFromApi({ canonicalKey, wgerId, name }) {
+  const params = new URLSearchParams();
+  if (canonicalKey) params.set('canonical_key', canonicalKey);
+  if (wgerId != null) params.set('wger_id', String(wgerId));
+  if (name) params.set('name', name);
+  const res = await fetch(`/api/exercise-media?${params.toString()}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (!data?.ok) return null;
+  return collectExerciseMediaSources(data);
+}
 
 const PERSONAL_ICONS = {
   'Věk': '🎂',
@@ -1062,26 +1116,50 @@ export default function PlanViewer({
                                     ? Number(ex.wger_exercise_id)
                                     : null;
                                 const part = formatExerciseSetsRepsDisplay(ex);
-                                const openWgerExercise = () => {
+                                const openWgerExercise = async () => {
                                   const mediaKey = ex.canonical_key ? normalizeLookupKey(ex.canonical_key) : normalizeLookupKey(name);
+                                  const canonicalKey = ex.canonical_key || mediaKey || null;
                                   const mediaFromMap =
                                     (wgerId != null ? exerciseMediaMap[`wger:${Number(wgerId)}`] : null) ||
                                     (mediaKey ? exerciseMediaMap[mediaKey] : null) ||
                                     null;
-                                  const imageUrl =
-                                    (ex.image_url && String(ex.image_url).trim()) ||
-                                    mediaFromMap?.image_url ||
-                                    null;
-                                  const gifUrl =
-                                    (ex.video_url && String(ex.video_url).trim()) ||
-                                    mediaFromMap?.gif_url ||
-                                    null;
+                                  let media = collectExerciseMediaSources({
+                                    image_url: ex.image_url,
+                                    gif_url: ex.gif_url,
+                                    video_url: ex.video_url,
+                                    imageUrl: mediaFromMap?.image_url,
+                                    gifUrl: mediaFromMap?.gif_url,
+                                    videoUrl: mediaFromMap?.video_url,
+                                  });
                                   setExerciseHintModal({
                                     name,
                                     part,
                                     wgerId,
-                                    imageUrl,
-                                    gifUrl,
+                                    canonicalKey,
+                                    ...media,
+                                    loading: true,
+                                  });
+                                  try {
+                                    if (canonicalKey || !hasDisplayableExerciseMedia(media)) {
+                                      const fetched = await fetchExerciseMediaFromApi({
+                                        canonicalKey,
+                                        wgerId,
+                                        name,
+                                      });
+                                      if (fetched && hasDisplayableExerciseMedia(fetched)) {
+                                        media = fetched;
+                                      }
+                                    }
+                                  } catch {
+                                    /* ponechat embedded media */
+                                  }
+                                  setExerciseHintModal({
+                                    name,
+                                    part,
+                                    wgerId,
+                                    canonicalKey,
+                                    ...media,
+                                    loading: false,
                                   });
                                 };
                                 return (
@@ -1330,25 +1408,31 @@ export default function PlanViewer({
                 </div>
                 <div className="plan-recipe-modal-body">
                   <p style={{ marginTop: 0 }}><strong>Plán:</strong> {exerciseHintModal.part}</p>
-                  {exerciseHintModal.gifUrl ? (
-                    <img
-                      src={exerciseHintModal.gifUrl}
-                      alt={`Ukázka cviku ${exerciseHintModal.name}`}
-                      className="plan-exercise-media"
-                      loading="lazy"
-                    />
-                  ) : exerciseHintModal.imageUrl ? (
-                    <img
-                      src={exerciseHintModal.imageUrl}
-                      alt={`Ukázka cviku ${exerciseHintModal.name}`}
-                      className="plan-exercise-media"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <p className="plan-no-recipe-hint" style={{ marginBottom: 0 }}>
-                      Ilustraci cviku zobrazíme po načtení plánu z databáze wger. Pokud se obrázek neobjeví, otevři detail cviku níže.
-                    </p>
-                  )}
+                  {exerciseHintModal.loading ? (
+                    <p className="plan-no-recipe-hint" style={{ marginBottom: 0 }}>Načítám ukázku cviku…</p>
+                  ) : (() => {
+                    const media = collectExerciseMediaSources(exerciseHintModal);
+                    const preview = renderExerciseMediaPreview(media, exerciseHintModal.name, async () => {
+                      try {
+                        const fetched = await fetchExerciseMediaFromApi({
+                          canonicalKey: exerciseHintModal.canonicalKey,
+                          wgerId: exerciseHintModal.wgerId,
+                          name: exerciseHintModal.name,
+                        });
+                        if (fetched && hasDisplayableExerciseMedia(fetched)) {
+                          setExerciseHintModal((prev) => (prev ? { ...prev, ...fetched, loading: false } : prev));
+                        }
+                      } catch {
+                        /* keep fallback text */
+                      }
+                    });
+                    if (preview) return preview;
+                    return (
+                      <p className="plan-no-recipe-hint" style={{ marginBottom: 0 }}>
+                        Ilustraci cviku zobrazíme po načtení z databáze. Pokud se obrázek neobjeví, otevři detail cviku níže.
+                      </p>
+                    );
+                  })()}
                   {exerciseHintModal.wgerId != null ? (
                     <button
                       type="button"
@@ -1362,7 +1446,17 @@ export default function PlanViewer({
                       Otevřít detail cviku na wger.de →
                     </button>
                   ) : (
-                    <p className="plan-no-recipe-msg" style={{ marginTop: 12 }}>Pro tento cvik není v plánu uložené ID ve wger — kontaktuj podporu, pokud potřebuješ doplnit.</p>
+                    <button
+                      type="button"
+                      className="plan-meal-recipe-btn"
+                      style={{ marginTop: 14 }}
+                      onClick={() => {
+                        const term = encodeURIComponent(exerciseHintModal.name || 'exercise');
+                        window.open(`https://wger.de/en/exercise/search/?term=${term}`, '_blank', 'noopener,noreferrer');
+                      }}
+                    >
+                      Vyhledat cvik na wger.de →
+                    </button>
                   )}
                 </div>
               </div>
@@ -2767,6 +2861,9 @@ const planSectionStyles = `
     border-radius: 14px;
     border: 1px solid rgba(167, 139, 250, 0.25);
     background: rgba(15, 23, 42, 0.45);
+  }
+  video.plan-exercise-media {
+    background: #000;
   }
   .plan-meal-title-link {
     margin: 0;

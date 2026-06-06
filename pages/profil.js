@@ -1449,6 +1449,13 @@ export default function Profil() {
     profile?.habit_summary_7d?.negativeDone,
   ]);
 
+  const canRegeneratePlan = membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired);
+  const regenerateBlockedMessage = isTrialExpired
+    ? 'Tvůj START trial vypršel. Pro nový plán zaplať předplatné výše.'
+    : (membershipStatus === 'cancelled' || membershipStatus === 'inactive')
+      ? 'Pro nový plán potřebuješ aktivní předplatné.'
+      : null;
+
   async function handleGenerateNextWeek() {
     setGeneratingNextWeek(true);
     try {
@@ -1522,6 +1529,16 @@ export default function Profil() {
   };
 
   const handleRetryPlan = async () => {
+    if (!canRegeneratePlan) {
+      setToast({
+        message: regenerateBlockedMessage || 'Pro nový plán potřebuješ aktivní předplatné.',
+        type: 'warning',
+      });
+      if (isTrialExpired && typeof document !== 'undefined') {
+        document.querySelector('.trial-banner')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
     setRetryingPlan(true);
     try {
       const { data: { session: fresh } } = await supabase.auth.refreshSession();
@@ -1536,11 +1553,29 @@ export default function Profil() {
       });
       const json = await res.json();
       if (res.ok && json?.ok) {
-        setToast({
-          message: json.message || `Plán se generuje na pozadí. ${PLAN_GENERATION_DURATION_HINT} Obnov stránku za chvíli.`,
-          type: 'success',
-        });
-        await refetch(token);
+        if (json.plan_created) {
+          setToast({ message: 'Nový plán je hotový.', type: 'success' });
+          await refetch(token);
+        } else if (json.plan_pending) {
+          setToast({
+            message: `Plán se generuje… ${PLAN_GENERATION_DURATION_HINT}`,
+            type: 'success',
+          });
+          for (let i = 0; i < 10; i += 1) {
+            await new Promise((resolve) => setTimeout(resolve, 4000));
+            const result = await refetch(token);
+            const plans = result?.profile?.plans;
+            if (Array.isArray(plans) && plans.some((p) => p.is_active === true)) {
+              setToast({ message: 'Nový plán je připraven.', type: 'success' });
+              break;
+            }
+          }
+        } else {
+          setToast({
+            message: json.message || 'Plán se nepodařilo vygenerovat. Zkus to znovu nebo kontaktuj podporu.',
+            type: 'warning',
+          });
+        }
       } else {
         setToast({ message: json?.error || 'Nepodařilo spustit generování.', type: 'error' });
       }
@@ -2253,6 +2288,10 @@ export default function Profil() {
                       })()}
                       onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
                       canPinMeals={membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired)}
+                      onRegeneratePlan={handleRetryPlan}
+                      regeneratingPlan={retryingPlan}
+                      canRegeneratePlan={canRegeneratePlan}
+                      regenerateBlockedMessage={regenerateBlockedMessage}
                     />
                     ) : (
                     <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
@@ -2277,6 +2316,10 @@ export default function Profil() {
                       })()}
                       onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
                       canPinMeals={false}
+                      onRegeneratePlan={handleRetryPlan}
+                      regeneratingPlan={retryingPlan}
+                      canRegeneratePlan={canRegeneratePlan}
+                      regenerateBlockedMessage={regenerateBlockedMessage}
                     />
                   ) : (
                     <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
@@ -2309,6 +2352,10 @@ export default function Profil() {
                       })()}
                   onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
                   canPinMeals={membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired)}
+                  onRegeneratePlan={handleRetryPlan}
+                  regeneratingPlan={retryingPlan}
+                  canRegeneratePlan={canRegeneratePlan}
+                  regenerateBlockedMessage={regenerateBlockedMessage}
                 />
                 </>
                 ) : (
@@ -2341,6 +2388,10 @@ export default function Profil() {
                       })()}
                   onToast={(t) => setToast({ message: t.message, type: t.type || 'success' })}
                   canPinMeals={false}
+                  onRegeneratePlan={handleRetryPlan}
+                  regeneratingPlan={retryingPlan}
+                  canRegeneratePlan={canRegeneratePlan}
+                  regenerateBlockedMessage={regenerateBlockedMessage}
                 />
                 </>
                 ) : (

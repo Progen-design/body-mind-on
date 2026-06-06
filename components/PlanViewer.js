@@ -349,7 +349,20 @@ function normalizeMealTextForPin(text) {
   return s.normalize('NFD').replace(/\p{Diacritic}/gu, '');
 }
 
-export default function PlanViewer({ plan, userName: _userName, hideHero, hideShoppingList = false, dietaryPreferences = '', canPinMeals = true, onToast, outputMode: outputModeProp }) {
+export default function PlanViewer({
+  plan,
+  userName: _userName,
+  hideHero,
+  hideShoppingList = false,
+  dietaryPreferences = '',
+  canPinMeals = true,
+  onToast,
+  outputMode: outputModeProp,
+  onRegeneratePlan,
+  regeneratingPlan = false,
+  canRegeneratePlan = false,
+  regenerateBlockedMessage = null,
+}) {
   const [parsed, setParsed] = useState(null);
   const [recipeModal, setRecipeModal] = useState(null); // { title, content, anchorRect, hasRecipe, openId? }
   const [mealOverrides, setMealOverrides] = useState({}); // { "di_mi": { title, content } }
@@ -665,12 +678,42 @@ export default function PlanViewer({ plan, userName: _userName, hideHero, hideSh
       {!isValid && (
         <div className="plan-expired">
           <p>⚠️ Tento plán již vypršel.</p>
-          <p><Link href="/start">Vygeneruj si nový plán</Link></p>
+          {canRegeneratePlan && onRegeneratePlan ? (
+            <p>
+              <button
+                type="button"
+                className="plan-expired-btn"
+                onClick={onRegeneratePlan}
+                disabled={regeneratingPlan}
+              >
+                {regeneratingPlan ? 'Generuji nový plán…' : 'Vygenerovat nový plán'}
+              </button>
+            </p>
+          ) : (
+            <p className="plan-expired-blocked">
+              {regenerateBlockedMessage || 'Pro nový plán potřebuješ aktivní předplatné – zaplať ho výše na profilu.'}
+            </p>
+          )}
         </div>
       )}
       {planExpiresSoon && (
         <p className="plan-expires-soon">
-          Plán vyprší {daysUntilExpiry === 0 ? 'dnes' : daysUntilExpiry === 1 ? 'zítra' : `za ${daysUntilExpiry} dny`} ({plan.valid_until ? new Date(plan.valid_until).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' }) : ''}). Pro nový plán přejdi na <Link href="/start">stránku START</Link>.
+          Plán vyprší {daysUntilExpiry === 0 ? 'dnes' : daysUntilExpiry === 1 ? 'zítra' : `za ${daysUntilExpiry} dny`} ({plan.valid_until ? new Date(plan.valid_until).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' }) : ''}).
+          {canRegeneratePlan && onRegeneratePlan ? (
+            <>
+              {' '}
+              <button
+                type="button"
+                className="plan-expires-soon-btn"
+                onClick={onRegeneratePlan}
+                disabled={regeneratingPlan}
+              >
+                {regeneratingPlan ? 'Generuji…' : 'Vygenerovat nový týden'}
+              </button>
+            </>
+          ) : regenerateBlockedMessage ? (
+            <> {regenerateBlockedMessage}</>
+          ) : null}
         </p>
       )}
 
@@ -1740,6 +1783,28 @@ const planSectionStyles = `
   .plan-expired p:last-child { margin-bottom: 0; }
   .plan-expired a { color: #a78bfa; text-decoration: none; }
   .plan-expired a:hover { text-decoration: underline; }
+  .plan-expired-btn,
+  .plan-expires-soon-btn {
+    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .plan-expired-btn:disabled,
+  .plan-expires-soon-btn:disabled { opacity: 0.7; cursor: wait; }
+  .plan-expired-blocked { color: #fca5a5; font-size: 0.92rem; }
+  .plan-expires-soon-btn {
+    background: transparent;
+    color: #a78bfa;
+    padding: 0;
+    font-size: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+  }
   .plan-expires-soon {
     background: rgba(234, 179, 8, 0.15);
     border: 1px solid rgba(234, 179, 8, 0.4);

@@ -7,6 +7,7 @@ import { supabaseServer } from '../../lib/supabaseServer';
 import { createInitialAITasks } from '../../lib/createInitialAITasks';
 import { executeAITask } from '../../lib/taskExecutors';
 import { runAIScheduler } from '../../lib/aiScheduler';
+import { requireActiveMembership } from '../../lib/membershipHelpers';
 import { getDefaultLoginUrl } from '../../lib/siteUrls.js';
 
 const loginUrl = getDefaultLoginUrl();
@@ -27,6 +28,11 @@ export default async function handler(req, res) {
     const userId = user.id;
     const email = user.email?.toLowerCase();
     if (!email) return res.status(400).json({ error: 'Uživatel nemá e-mail' });
+
+    const membershipCheck = await requireActiveMembership(userId);
+    if (!membershipCheck.allowed) {
+      return res.status(membershipCheck.status || 403).json({ error: membershipCheck.error });
+    }
 
     // Načíst body_metrics pro emailOptions
     const { data: bm } = await supabaseServer

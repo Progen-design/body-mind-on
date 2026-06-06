@@ -8,7 +8,8 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { resolve, join } from 'path';
 import { createClient } from '@supabase/supabase-js';
 
-const TEST_EMAIL = process.env.E2E_EMAIL || 'janprikopa+catalog2@gmail.com';
+/** @see .cursor/rules/10-user-preferences.mdc – testovací maily vždy na tento účet */
+const TEST_EMAIL = (process.env.E2E_EMAIL || 'janprikopa@gmail.com').trim().toLowerCase();
 const BASE_URL = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
 const OUT_DIR = resolve(process.cwd(), 'scripts', 'e2e-output');
 const KCAL_MIN = Number(process.env.E2E_KCAL_MIN || 2100);

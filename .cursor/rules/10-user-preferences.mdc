@@ -14,3 +14,11 @@ alwaysApply: true
 - **Výchozí cíl je produkce na webu** (Vercel Production pro `main` / propojenou produkční větev), ne jen lokální změny.
 - Po smysluplné úpravě kódu: **commit + `git push origin main`** (nebo domluvená produkční větev), aby se změny dostaly na živý web; ověřit v Vercel dashboardu úspěšný deploy.
 - Preview deploy ponechat jen když to uživatel výslovně chce nebo jde o rizikovou změnu před produkcí.
+
+## Testovací a E2E e-maily
+- **Výchozí příjemce** pro E2E skripty, smoke testy plánových e-mailů a ruční ověření odeslání: **janprikopa@gmail.com**
+- Maily posílat **přímo na tento účet** – nepoužívat náhodné Gmail +aliasy (`+emailsent…`, `+catalog…`, timestamp suffixy apod.), pokud to uživatel výslovně nepožaduje.
+- Jiný e-mail jen přes env `E2E_EMAIL` / `TEST_PLAN_RECIPIENT`, a jen když to uživatel explicitně řekne.
+- Opakovaná plná registrace se stejným e-mailem: před testem smazat účet (`node scripts/delete-user-by-email.mjs janprikopa@gmail.com`), jinak registrace selže na „účet už existuje“.
+- **E2E skript `e2e-email-sent-guard.mjs`**: výchozí režim `--guard-only` (bez registrace, bez nového mailu). Plná registrace jen s `--full` – neopakovat, každý běh pošle další plán.
+- Gmail +aliasy (`+emailsent…`) doručují do stejné schránky jako `janprikopa@gmail.com` – nepoužívat, jinak vypadají jako duplicitní maily.

@@ -13,7 +13,13 @@ import {
 import { createAuthUserIfNew } from '../../lib/authHelpers';
 import { createInitialAITasks } from '../../lib/createInitialAITasks';
 import { runAIScheduler } from '../../lib/aiScheduler';
-import { executeAITask, persistPublishableFallbackPlanForUser } from '../../lib/taskExecutors';
+import {
+  executeAITask,
+  persistPublishableFallbackPlanForUser,
+  isPlanEmailAlreadySent,
+  tryClaimPlanEmailSend,
+  releasePlanEmailSendClaim,
+} from '../../lib/taskExecutors';
 import { sendPlanEmail } from '../../lib/mail';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getWeeklySessions } from '../../lib/preferenceConstants';
@@ -192,8 +198,25 @@ export default async function handler(req, res) {
         .maybeSingle();
 
       const runDirectExecute = async () => {
-        const { data: t } = await supabaseServer.from('ai_tasks').select('id, user_id, agent_slug, task_type, payload').eq('id', taskRow.id).eq('status', 'pending').maybeSingle();
-        if (!t) return false;
+        const claimNow = new Date().toISOString();
+        let claimRes = await supabaseServer
+          .from('ai_tasks')
+          .update({ status: 'processing', processing_started_at: claimNow })
+          .eq('id', taskRow.id)
+          .eq('status', 'pending')
+          .select('id, user_id, agent_slug, task_type, payload')
+          .maybeSingle();
+        if (claimRes.error && /processing_started_at|does not exist|neexistuje/i.test(claimRes.error.message || '')) {
+          claimRes = await supabaseServer
+            .from('ai_tasks')
+            .update({ status: 'processing' })
+            .eq('id', taskRow.id)
+            .eq('status', 'pending')
+            .select('id, user_id, agent_slug, task_type, payload')
+            .maybeSingle();
+        }
+        const t = claimRes.data;
+        if (!t?.id) return false;
         const exec = await executeAITask(t);
         const hasPlanId = exec?.result?.outcome_type === 'plan_generated' && (exec?.result?.plan_id != null && exec?.result?.plan_id !== '');
         const ok = exec?.ok && (hasPlanId || exec?.result?.outcome_type !== 'plan_generated');
@@ -231,9 +254,10 @@ export default async function handler(req, res) {
             if (initialPlanTaskStatus === 'pending') {
               await runDirectExecute().catch(() => {});
             }
+          } else if (process.env.AI_RUN_COACH_AFTER_INITIAL_PLAN !== 'false') {
+            const schedCoach = await runAIScheduler();
+            console.info('[body-metrics] coach/onboarding scheduler after initial_plan ok', schedCoach);
           }
-          const schedAll = await runAIScheduler();
-          console.info('[body-metrics] all agents run', schedAll);
         } catch (execErr) {
           console.warn('[body-metrics] direct execute failed', { error: execErr?.message, stack: execErr?.stack?.slice?.(0, 300) });
           await runAIScheduler().catch((schedErr) => console.warn('[body-metrics] scheduler catch', schedErr?.message));
@@ -453,21 +477,37 @@ export default async function handler(req, res) {
           savedPlanId = fallbackResult.plan_id;
           savedPlanExists = true;
           let fallbackPlanSent = false;
-          if (fallbackResult.bm?.email && fallbackResult.planHtml) {
-            try {
-              const sendRes = await sendPlanEmail(fallbackResult.bm.email, fallbackResult.planHtml, {
-                loginPassword,
-                loginUrl,
-                existingAccount,
-                loginUnavailable: payload.user_id == null,
-                userChosePassword,
-                firstName: fallbackResult.bm?.name ?? payload.name ?? null,
-                bodyMetrics: fallbackResult.bm,
-                planId: fallbackResult.plan_id ?? null,
-              });
-              fallbackPlanSent = !!sendRes?.ok;
-            } catch (mailErr) {
-              console.warn('[body-metrics] last-resort sendPlanEmail failed:', mailErr?.message);
+          const fallbackPlanId = fallbackResult.plan_id ?? null;
+          if (fallbackPlanId && (await isPlanEmailAlreadySent(fallbackPlanId))) {
+            fallbackPlanSent = true;
+            console.info('[body-metrics] last-resort email skipped – already sent for plan', { plan_id: fallbackPlanId });
+          } else if (fallbackResult.bm?.email && fallbackResult.planHtml) {
+            const claimedFallback = fallbackPlanId ? await tryClaimPlanEmailSend(fallbackPlanId) : false;
+            if (fallbackPlanId && !claimedFallback && (await isPlanEmailAlreadySent(fallbackPlanId))) {
+              fallbackPlanSent = true;
+              console.info('[body-metrics] last-resort email skipped – claim lost to parallel send', { plan_id: fallbackPlanId });
+            } else if (fallbackPlanId && !claimedFallback) {
+              console.warn('[body-metrics] last-resort email claim failed', { plan_id: fallbackPlanId });
+            } else {
+              try {
+                const sendRes = await sendPlanEmail(fallbackResult.bm.email, fallbackResult.planHtml, {
+                  loginPassword,
+                  loginUrl,
+                  existingAccount,
+                  loginUnavailable: payload.user_id == null,
+                  userChosePassword,
+                  firstName: fallbackResult.bm?.name ?? payload.name ?? null,
+                  bodyMetrics: fallbackResult.bm,
+                  planId: fallbackPlanId,
+                });
+                fallbackPlanSent = !!sendRes?.ok;
+                if (!fallbackPlanSent && fallbackPlanId) {
+                  await releasePlanEmailSendClaim(fallbackPlanId);
+                }
+              } catch (mailErr) {
+                if (fallbackPlanId) await releasePlanEmailSendClaim(fallbackPlanId);
+                console.warn('[body-metrics] last-resort sendPlanEmail failed:', mailErr?.message);
+              }
             }
           }
           planSent = fallbackPlanSent;

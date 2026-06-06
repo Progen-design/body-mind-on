@@ -1,5 +1,6 @@
 // /pages/api/habits.js
 import { supabaseServer } from '../../lib/supabaseServer';
+import { createSupabaseUserClient } from '../../lib/supabaseUserClient';
 import { requireActiveMembership } from '../../lib/membershipHelpers';
 import { isValidHabitId } from '../../lib/habits';
 
@@ -44,7 +45,7 @@ async function requireUser(req) {
   if (error) return { error, status };
   const { data: { user }, error: userErr } = await supabaseServer.auth.getUser(token);
   if (userErr || !user) return { error: 'Invalid or expired token', status: 401 };
-  return { user };
+  return { user, token };
 }
 
 export default async function handler(req, res) {
@@ -57,7 +58,8 @@ export default async function handler(req, res) {
     if (userResult.error) {
       return res.status(userResult.status).json({ error: userResult.error });
     }
-    const { user } = userResult;
+    const { user, token } = userResult;
+    const db = createSupabaseUserClient(token);
 
     if (req.method === 'POST' || req.method === 'DELETE') {
       const membershipCheck = await requireActiveMembership(user.id);
@@ -68,7 +70,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') {
       const { from, to, habit_ids } = req.query;
-      let query = supabaseServer
+      let query = db
         .from('habit_logs')
         .select('*')
         .eq('user_id', user.id)
@@ -117,7 +119,7 @@ export default async function handler(req, res) {
             completed: row.completed !== false,
             notes: row.notes != null ? String(row.notes).trim() : null,
           };
-          const { data, error } = await supabaseServer
+          const { data, error } = await db
             .from('habit_logs')
             .upsert(payload, {
               onConflict: 'user_id,log_date,habit_id',
@@ -155,7 +157,7 @@ export default async function handler(req, res) {
         notes: notes != null ? String(notes).trim() : null,
       };
 
-      const { data, error } = await supabaseServer
+      const { data, error } = await db
         .from('habit_logs')
         .upsert(payload, {
           onConflict: 'user_id,log_date,habit_id',
@@ -176,7 +178,7 @@ export default async function handler(req, res) {
       if (!id) {
         return res.status(400).json({ error: 'Habit log id is required' });
       }
-      const { data: existing, error: fetchErr } = await supabaseServer
+      const { data: existing, error: fetchErr } = await db
         .from('habit_logs')
         .select('id, user_id, log_date, habit_id')
         .eq('id', id)
@@ -193,7 +195,7 @@ export default async function handler(req, res) {
         return res.status(delDateErr.status).json({ error: delDateErr.error });
       }
 
-      const { error: deleteErr } = await supabaseServer
+      const { error: deleteErr } = await db
         .from('habit_logs')
         .delete()
         .eq('id', id);

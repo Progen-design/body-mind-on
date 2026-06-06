@@ -1,5 +1,6 @@
 // /pages/api/workouts.js
 import { supabaseServer } from '../../lib/supabaseServer';
+import { createSupabaseUserClient } from '../../lib/supabaseUserClient';
 import { requireActiveMembership } from '../../lib/membershipHelpers';
 
 const WORKOUT_TYPE_LABELS = {
@@ -30,7 +31,7 @@ async function requireUser(req) {
   if (error) return { error, status };
   const { data: { user }, error: userErr } = await supabaseServer.auth.getUser(token);
   if (userErr || !user) return { error: 'Invalid or expired token', status: 401 };
-  return { user };
+  return { user, token };
 }
 
 export default async function handler(req, res) {
@@ -43,7 +44,8 @@ export default async function handler(req, res) {
     if (userResult.error) {
       return res.status(userResult.status).json({ error: userResult.error });
     }
-    const { user } = userResult;
+    const { user, token } = userResult;
+    const db = createSupabaseUserClient(token);
 
     if (req.method === 'POST' || req.method === 'DELETE') {
       const membershipCheck = await requireActiveMembership(user.id);
@@ -54,7 +56,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') {
       const { from, to, limit } = req.query;
-      let query = supabaseServer
+      let query = db
         .from('workouts')
         .select('*')
         .eq('user_id', user.id)
@@ -93,7 +95,7 @@ export default async function handler(req, res) {
       };
       if (Number.isNaN(payload.duration_min)) payload.duration_min = null;
 
-      const { data, error } = await supabaseServer
+      const { data, error } = await db
         .from('workouts')
         .insert([payload])
         .select()
@@ -111,7 +113,7 @@ export default async function handler(req, res) {
       if (!id) {
         return res.status(400).json({ error: 'Workout id is required' });
       }
-      const { data: existing, error: fetchErr } = await supabaseServer
+      const { data: existing, error: fetchErr } = await db
         .from('workouts')
         .select('id, user_id')
         .eq('id', id)
@@ -124,7 +126,7 @@ export default async function handler(req, res) {
         return res.status(403).json({ error: 'Not authorized to delete this workout' });
       }
 
-      const { error: deleteErr } = await supabaseServer
+      const { error: deleteErr } = await db
         .from('workouts')
         .delete()
         .eq('id', id);

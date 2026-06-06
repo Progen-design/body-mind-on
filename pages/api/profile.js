@@ -383,6 +383,10 @@ export default async function handler(req, res) {
           ? (initialPlanResult?.summary === 'deterministic_fallback_after_failure' ? 'fallback_success' : 'ai_success')
           : (initialPlanTask?.status === 'failed' || initialPlanTask?.status === 'dlq' ? 'failed' : undefined),
         self_heal_applied: selfHealApplied || undefined,
+        required_modules: initialPlanResult?.required_modules ?? ['nutrition', 'training', 'habits'],
+        completed_modules: initialPlanResult?.completed_modules ?? undefined,
+        plan_scope: initialPlanResult?.plan_scope ?? 'initial_7_day_trial',
+        missing_modules: initialPlanResult?.missing_modules ?? undefined,
       },
       weight_history: weightHistory,
       stats: {

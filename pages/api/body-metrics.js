@@ -454,6 +454,10 @@ export default async function handler(req, res) {
         plan_saved_id: savedPlanId ?? undefined,
         last_resort_ran: false,
         last_resort_failed: false,
+        required_modules: trainerResult?.required_modules ?? ['nutrition', 'training', 'habits'],
+        completed_modules: trainerResult?.completed_modules ?? undefined,
+        plan_scope: trainerResult?.plan_scope ?? 'initial_7_day_trial',
+        missing_modules: trainerResult?.missing_modules ?? undefined,
       };
     } else {
       response.hasUserId = false;

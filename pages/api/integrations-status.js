@@ -18,6 +18,8 @@ export default async function handler(req, res) {
 
   const capabilities = getAIRuntimeCapabilities();
   const app_url = getPublicAppUrl();
+  const supabase_url = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').trim();
+  const supabase_project_ref = supabase_url.match(/https:\/\/([^.]+)\.supabase\.co/i)?.[1] || null;
 
   const supabase_db = { ok: false, latency_ms: null, error: null };
   const t0 = Date.now();
@@ -48,6 +50,8 @@ export default async function handler(req, res) {
   return res.status(200).json({
     ok: true,
     app_url,
+    supabase_url: supabase_url || null,
+    supabase_project_ref,
     vercel_env: process.env.VERCEL_ENV || null,
     checks: {
       supabase_env: db,

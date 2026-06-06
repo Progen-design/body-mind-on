@@ -4,6 +4,7 @@ import { POSITIVE_HABITS, NEGATIVE_HABITS } from '../../lib/habits';
 import { validatePublishedPlanHtml } from '../../lib/validatePlanHtml';
 import { ensureInitialPlanTask } from '../../lib/ensureInitialPlanTask';
 import { getRegistrationAnchoredWeek } from '../../lib/profileWeekRange';
+import { reconcileUserDataByEmail } from '../../lib/reconcileUserDataByEmail';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -20,6 +21,15 @@ export default async function handler(req, res) {
 
     const userId = user.id;
     const email = user.email?.toLowerCase();
+
+    const reconciliation = await reconcileUserDataByEmail({ userId, email });
+    if (reconciliation?.reason === 'reconciled') {
+      console.info('[profile] user data reconciled by email', {
+        userId,
+        movedFromUserIds: reconciliation.movedFromUserIds,
+        hadNullMetrics: reconciliation.hadNullMetrics,
+      });
+    }
 
     const now = new Date();
     const { weekStartStr, weekEndStr } = getRegistrationAnchoredWeek(now, user.created_at);

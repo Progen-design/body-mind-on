@@ -6,6 +6,7 @@ import { supabaseServer } from '../../lib/supabaseServer';
 import { enrichExercise } from '../../lib/exerciseEnrichment';
 import { resolveToCanonicalKey } from '../../lib/exerciseCanonicalMap';
 import { collectExerciseMediaSources, hasDisplayableExerciseMedia } from '../../lib/exerciseMediaHelpers';
+import { mergeWithTrustedRegistryMedia } from '../../lib/exerciseRegistryMedia';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -30,10 +31,8 @@ export default async function handler(req, res) {
         .maybeSingle();
 
       if (data) {
-        const media = collectExerciseMediaSources({
-          gif_url: data.gif_url,
-          image_url: data.image_url || data.wger_exercise_image_url,
-        });
+        const merged = mergeWithTrustedRegistryMedia(canonicalKey, data);
+        const media = collectExerciseMediaSources(merged);
         if (hasDisplayableExerciseMedia(media)) {
           return res.status(200).json({
             ok: true,

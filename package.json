@@ -18,6 +18,8 @@
     "check": "npm run lint:ci && npm run build",
     "smoke:nutrition": "node scripts/smoke-test-nutrition-only.mjs",
     "send-test-plan-email": "node scripts/send-test-plan-email.mjs",
+    "export:recipes-catalog": "node scripts/export-recipes-catalog.mjs",
+    "verify:plan-meals": "node scripts/verify-plan-meals-against-catalog.mjs",
     "preview:plan-email": "node scripts/preview-plan-email.mjs",
     "check:cursor-access": "node scripts/check-cursor-access.mjs",
     "env:pull": "vercel env pull .env.local --environment production --yes",

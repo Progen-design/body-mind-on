@@ -1,0 +1,15 @@
+{
+  "exported_at": "2026-06-06T20:40:24.164Z",
+  "total": 161,
+  "active": 161,
+  "by_meal_type": {
+    "obed": 45,
+    "snidane": 50,
+    "svacina": 25,
+    "vecere": 41
+  },
+  "files": {
+    "json": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\data\\recipes_catalog\\recipes_catalog.json",
+    "csv": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\data\\recipes_catalog\\recipes_catalog.csv"
+  }
+}

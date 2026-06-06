@@ -50,23 +50,6 @@ if (!url || !key) {
 
 const supabase = createClient(url, key, { auth: { persistSession: false } });
 
-/** Tabulky s user_id – mazání ignoruje chyby (tabulka/sloupec nemusí existovat v každém prostředí). */
-const TABLES_WITH_USER_ID = [
-  'habit_logs',
-  'workouts',
-  'user_meal_pins',
-  'user_habits',
-  'user_checkins',
-  'user_ai_memory',
-  'ai_messages',
-  'ai_content_drafts',
-  'ai_tasks',
-  'ai_generated_plans',
-  'body_metrics',
-  'memberships',
-  'ai_logs',
-];
-
 async function findAuthUserIdByEmail(targetEmail) {
   const needle = targetEmail.toLowerCase();
   let page = 1;
@@ -87,16 +70,11 @@ async function findAuthUserIdByEmail(targetEmail) {
 }
 
 async function deleteRowsForUser(userId) {
-  for (const table of TABLES_WITH_USER_ID) {
-    const { error } = await supabase.from(table).delete().eq('user_id', userId);
-    if (error && !/relation|does not exist|column/i.test(error.message)) {
-      console.warn(`[${table}]`, error.message);
-    }
+  const { data, error } = await supabase.rpc('delete_user_data', { target_user_id: userId });
+  if (error) {
+    throw new Error(`delete_user_data: ${error.message}`);
   }
-  const { error: profErr } = await supabase.from('profiles').delete().eq('id', userId);
-  if (profErr && !/relation|does not exist/i.test(profErr.message)) {
-    console.warn('[profiles]', profErr.message);
-  }
+  console.log('delete_user_data:', data);
 }
 
 async function deleteOrphanBodyMetricsByEmail(targetEmail) {

@@ -35,20 +35,16 @@ export default async function handler(req, res) {
 
     const userId = user.id;
 
-    // 1. Smazat data z tabulek (v pořadí kvůli případným FK)
-    const tables = ['habit_logs', 'workouts', 'ai_generated_plans', 'body_metrics'];
-    for (const table of tables) {
-      const { error: delErr } = await supabaseServer
-        .from(table)
-        .delete()
-        .eq('user_id', userId);
-      if (delErr) {
-        // Tabulka může neexistovat nebo nemít user_id – ignorujeme
-        console.warn(`[delete-account] Delete from ${table}:`, delErr.message);
-      }
+    const { data: deleted, error: rpcErr } = await supabaseServer.rpc('delete_user_data', {
+      target_user_id: userId,
+    });
+    if (rpcErr) {
+      console.error('[delete-account] delete_user_data:', rpcErr);
+      return res.status(500).json({
+        error: rpcErr.message || 'Nepodařilo se smazat data účtu. Kontaktujte nás na info@bodyandmindon.cz.',
+      });
     }
 
-    // 2. Smazat auth uživatele (vyžaduje service role)
     const { error: authErr } = await supabaseServer.auth.admin.deleteUser(userId);
     if (authErr) {
       console.error('[delete-account] auth.admin.deleteUser:', authErr);
@@ -57,7 +53,7 @@ export default async function handler(req, res) {
       });
     }
 
-    return res.status(200).json({ ok: true, message: 'Účet byl úspěšně smazán.' });
+    return res.status(200).json({ ok: true, message: 'Účet byl úspěšně smazán.', deleted: deleted ?? null });
   } catch (err) {
     console.error('[delete-account] ERROR:', err);
     return res.status(500).json({ error: 'Chyba serveru při mazání účtu.' });

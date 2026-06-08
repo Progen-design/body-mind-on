@@ -210,6 +210,24 @@ function formatDayLabel(isoStr) {
   return new Date(isoStr + 'T12:00:00').toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' });
 }
 
+const SHORT_DAY_LABELS = [
+  ['Pondělí', 'Po'],
+  ['Úterý', 'Út'],
+  ['Středa', 'St'],
+  ['Čtvrtek', 'Čt'],
+  ['Pátek', 'Pá'],
+  ['Sobota', 'So'],
+  ['Neděle', 'Ne'],
+];
+
+function shortDayNavLabel(dayName) {
+  const n = String(dayName || '');
+  for (const [full, short] of SHORT_DAY_LABELS) {
+    if (n.includes(full)) return short;
+  }
+  return n.slice(0, 2) || 'Den';
+}
+
 /** Stejná normalizace jako backend (plan-enrichment) pro spolehlivý lookup. */
 function normalizeLookupKey(value) {
   if (!value || typeof value !== 'string') return '';
@@ -543,7 +561,14 @@ export default function PlanViewer({
     const todayIsoStr = calendarDateIsoInPrague(new Date());
     if (planFromStr && planFromStr > todayIsoStr) return; // náhled budoucího týdne – neposouvat
     const t = setTimeout(() => {
-      const el = document.getElementById('plan-day-card-today');
+      let todayIdx = -1;
+      for (let i = 0; i < 7; i += 1) {
+        if (addDaysToDateStr(planFromStr, i) === todayIsoStr) {
+          todayIdx = i;
+          break;
+        }
+      }
+      const el = document.getElementById(todayIdx >= 0 ? `plan-day-card-${todayIdx}` : 'plan-days');
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 300);
     return () => clearTimeout(t);
@@ -714,10 +739,11 @@ export default function PlanViewer({
           <span className="plan-nav-sep" aria-hidden>|</span>
           <a href="#plan-jidelnicek" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-jidelnicek')?.scrollIntoView({ behavior: 'smooth' }); }}>Jídelníček</a>
           <span className="plan-nav-sep" aria-hidden>|</span>
-          <a href="#plan-day-card-today" className="plan-nav-item" onClick={(e) => {
+          <a href="#plan-day-nav" className="plan-nav-item" onClick={(e) => {
             e.preventDefault();
-            const el = document.getElementById('plan-day-card-today') || document.getElementById('plan-days');
-            el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const todayIdx = planWeekDays.findIndex((d) => d.isToday);
+            const targetId = todayIdx >= 0 ? `plan-day-card-${todayIdx}` : 'plan-days';
+            document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }}>Na dnešek</a>
           <span className="plan-nav-sep" aria-hidden>|</span>
           <a href="#plan-nakupni-seznam" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-nakupni-seznam')?.scrollIntoView({ behavior: 'smooth' }); }}>Nákup</a>
@@ -882,6 +908,21 @@ export default function PlanViewer({
                   Platnost plánu: {new Date(plan.valid_from).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' })} – {new Date(plan.valid_until).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' })}
                 </p>
               )}
+              <nav className="plan-week-day-nav" aria-label="Přejít na den v týdnu">
+                {planWeekDays.map((day, di) => (
+                  <button
+                    key={di}
+                    type="button"
+                    className={`plan-week-day-pill${day.isToday ? ' plan-week-day-pill--today' : ''}`}
+                    onClick={() => {
+                      document.getElementById(`plan-day-card-${di}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                  >
+                    {shortDayNavLabel(day.dayName)}
+                    {day.dateStr ? ` ${day.dateStr}` : ''}
+                  </button>
+                ))}
+              </nav>
               <div id="plan-days" className="plan-days">
                 {planWeekDays.map((day, di) => {
                   const dIdxForMeals = day.originalIndex ?? di;
@@ -898,7 +939,11 @@ export default function PlanViewer({
                     return Number.isFinite(k) && k > 0 ? sum + k : sum;
                   }, 0);
                   return (
-                  <div id={day.isToday ? 'plan-day-card-today' : undefined} key={di} className={`plan-day-card plan-day-expanded ${day._placeholder ? 'plan-day-placeholder' : ''} ${day.isToday ? 'plan-day-today' : ''}`}>
+                  <div
+                    id={`plan-day-card-${di}`}
+                    key={di}
+                    className={`plan-day-card plan-day-expanded ${day._placeholder ? 'plan-day-placeholder' : ''} ${day.isToday ? 'plan-day-today' : ''}`}
+                  >
                     <div className="plan-day-header-static">
                       <h4 className="plan-day-name">
                         {day.dayName}{day.dateStr ? ` (${day.dateStr})` : ''}{day.isToday ? ' – dnes' : ''}
@@ -1701,7 +1746,7 @@ const planSectionStyles = `
     margin-bottom: 40px;
   }
   .plan-section-premium {
-    overflow: hidden;
+    overflow: visible;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -2048,6 +2093,55 @@ const planSectionStyles = `
     margin: -8px 0 12px;
     font-size: 13px;
     color: #94a3b8;
+  }
+  .plan-week-day-nav {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 4px 2px 14px;
+    margin: 0 0 8px;
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    background: linear-gradient(180deg, rgba(15, 15, 26, 0.98) 70%, rgba(15, 15, 26, 0));
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+  }
+  .plan-week-day-nav::-webkit-scrollbar {
+    height: 6px;
+  }
+  .plan-week-day-nav::-webkit-scrollbar-thumb {
+    background: rgba(167, 139, 250, 0.35);
+    border-radius: 999px;
+  }
+  .plan-week-day-pill {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    border: 1px solid rgba(139, 92, 255, 0.35);
+    background: rgba(30, 41, 59, 0.65);
+    color: #c4b5fd;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    touch-action: manipulation;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .plan-week-day-pill:hover {
+    background: rgba(124, 58, 237, 0.2);
+    border-color: rgba(167, 139, 250, 0.55);
+    color: #e9d5ff;
+  }
+  .plan-week-day-pill--today {
+    background: rgba(124, 58, 237, 0.35);
+    border-color: #a78bfa;
+    color: #fff;
   }
   .plan-day-today {
     border-left: 3px solid #c4b5fd;

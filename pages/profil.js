@@ -3653,6 +3653,14 @@ export default function Profil() {
           padding: 0 20px 20px;
           box-sizing: border-box;
         }
+        /* Můj plán: 7 dní + jídla přesahují 5000px — bez ořezu a s page scroll */
+        #profile-bubble-body-muj-plan[data-open="true"] {
+          max-height: none;
+          overflow: visible;
+        }
+        .profile-bubble:has(#profile-bubble-body-muj-plan[data-open="true"]) {
+          overflow: visible;
+        }
         .profile-bubble-tabs {
           display: flex;
           gap: 4px;

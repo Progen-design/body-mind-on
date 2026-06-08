@@ -10,6 +10,7 @@ import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
+import { addCalendarDaysIsoPrague, calendarDateIsoInPrague } from '../lib/czechCalendar.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
@@ -88,7 +89,7 @@ async function pollUntilReady(userId, startedAt) {
 
     const { data: plan } = await sb
       .from('ai_generated_plans')
-      .select('id, generated_by, email_sent, structured_plan_json, daily_calories, created_at')
+      .select('id, generated_by, email_sent, structured_plan_json, daily_calories, created_at, valid_from, valid_until')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -216,12 +217,25 @@ async function main() {
     fail(`initial_plan status = ${JSON.stringify(taskStatus)}; last_error: ${err}`);
   }
 
+  const expectedFrom = calendarDateIsoInPrague(new Date());
+  const expectedUntil = addCalendarDaysIsoPrague(expectedFrom, 6);
+  const planFrom = String(plan?.valid_from || '').split('T')[0];
+  const planUntil = String(plan?.valid_until || '').split('T')[0];
+  if (planFrom === expectedFrom) ok(`valid_from = ${planFrom} (dnešní Prague)`);
+  else fail(`valid_from = ${planFrom} (očekáváno ${expectedFrom})`);
+  if (planUntil === expectedUntil) ok(`valid_until = ${planUntil} (+6 dní)`);
+  else fail(`valid_until = ${planUntil} (očekáváno ${expectedUntil})`);
+  if (dayCount === 7) ok(`structured_plan_json má 7 dní`);
+  else fail(`structured_plan_json má ${dayCount} dní (očekáváno 7)`);
+
   console.log('');
   console.log('=== P1 HIGH-CAL SMOKE RESULT ===');
   console.log('email:', email);
   console.log('user_id:', userId);
   console.log('generated_by:', generatedBy);
   console.log('daily_calories:', plan?.daily_calories ?? null);
+  console.log('valid_from:', planFrom, '| valid_until:', planUntil);
+  console.log('expected_from:', expectedFrom, '| expected_until:', expectedUntil);
   console.log('structured days:', dayCount);
   console.log('meals per day:', mealCounts.map((d) => d.count).join(', ') || '—');
   console.log('email_sent:', plan?.email_sent ?? null);

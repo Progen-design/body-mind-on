@@ -16,6 +16,7 @@ import { getPlanOutputMode, shouldRenderTraining } from '../lib/planOutputMode.j
 import { buildPlanPdfHtml } from '../lib/planPdf';
 import { formatExerciseSetsRepsDisplay } from '../lib/planDataIntegrity.js';
 import { collectExerciseMediaSources, hasDisplayableExerciseMedia, isVideoMediaUrl } from '../lib/exerciseMediaHelpers.js';
+import { addCalendarDaysIsoPrague, calendarDateIsoInPrague, weekdayIndexJsFromPragueIso } from '../lib/czechCalendar';
 
 export { parsePlanHtml };
 
@@ -152,24 +153,21 @@ function collapsedDayMealsPeekParts(day, di, mealOverrides, structuredPlan, plan
 /** Pořadí dnů odpovídající getDay(): 0=Neděle, 1=Pondělí, …, 6=Sobota */
 const CZECH_DAYS_BY_DOW = ['Neděle', 'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota'];
 
-/** Připočte dny k datu (YYYY-MM-DD), vrátí ISO. */
+/** Připočte dny k ISO datu (YYYY-MM-DD) v Europe/Prague. */
 function addDaysToDateStr(dateStr, days) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr + 'T12:00:00');
-  d.setDate(d.getDate() + days);
-  return d.toISOString().split('T')[0];
+  return addCalendarDaysIsoPrague(String(dateStr || '').split('T')[0], days);
 }
 
-/** Pro dané datum vrátí očekávaný název dne v češtině. */
-function getExpectedDayName(dateIso) {
-  if (!dateIso) return '';
-  const dow = new Date(dateIso + 'T12:00:00').getDay();
-  return CZECH_DAYS_BY_DOW[dow] || '';
+/** Pro slot týdne (valid_from + index) vrátí český název dne v Europe/Prague. */
+function getDayNameForPlanSlot(validFromIso, slotIndex) {
+  const vf = String(validFromIso || '').split('T')[0];
+  if (!vf) return '';
+  return CZECH_DAYS_BY_DOW[weekdayIndexJsFromPragueIso(vf, slotIndex)] || '';
 }
 
-/** Vybere den z pole days, který odpovídá dateIso. Fallback pro plány s nesprávným pořadím dnů. */
-function findDayForDate(days, dateIso, origIdx) {
-  const expected = getExpectedDayName(dateIso);
+/** Vybere den z pole days, který odpovídá slotu týdne. Fallback pro plány s nesprávným pořadím dnů. */
+function findDayForDate(days, dateIso, origIdx, validFromIso) {
+  const expected = getDayNameForPlanSlot(validFromIso, origIdx);
   if (!expected || !days.length) return days[origIdx] || days[0];
   const byIndex = days[origIdx];
   const nameMatch = (d) => (d?.dayName || '').toLowerCase().includes(expected.toLowerCase());
@@ -542,10 +540,8 @@ export default function PlanViewer({
   useEffect(() => {
     if (typeof document === 'undefined' || !parsed?.days?.length || !plan?.valid_from) return;
     const planFromStr = (plan.valid_from || '').split('T')[0];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayIsoStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    if (planFromStr && planFromStr > todayIsoStr) return; // náhled příštího týdne – neposouvat
+    const todayIsoStr = calendarDateIsoInPrague(new Date());
+    if (planFromStr && planFromStr > todayIsoStr) return; // náhled budoucího týdne – neposouvat
     const t = setTimeout(() => {
       const el = document.getElementById('plan-day-card-today');
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -644,11 +640,10 @@ export default function PlanViewer({
     );
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayIsoStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const todayIsoStr = calendarDateIsoInPrague(new Date());
   const planFromStr = (plan.valid_from || '').split('T')[0];
   const isFuturePlan = !!planFromStr && planFromStr > todayIsoStr;
+  const today = new Date(`${todayIsoStr}T12:00:00`);
   const todayStr = today.toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
   const isValid = plan.valid_until ? new Date(plan.valid_until + 'T23:59:59') >= today : true;
   const validUntilDate = plan.valid_until ? new Date(plan.valid_until + 'T12:00:00') : null;
@@ -661,29 +656,31 @@ export default function PlanViewer({
     ? plan.structured_plan_json
     : null;
 
-  /** Vždy 7 dní od začátku platnosti plánu (valid_from). Jídla ber z structured_plan_json, pokud má 7 dnů — shoda s kalendářem. */
+  /** Vždy 7 dní od valid_from — jídla primárně ze structured_plan_json (index = den platnosti). */
   const planWeekDays = (() => {
     const daysArr = parsed?.days || [];
-    if (daysArr.length === 0 || !plan?.valid_from) {
+    const planFrom = (plan?.valid_from || '').split('T')[0];
+    if (!planFrom) {
       return daysArr.map((d, i) => ({ ...d, dateStr: '', isToday: false, originalIndex: i, afterPlanEnd: false }));
     }
     const structDays = Array.isArray(structuredPlan?.days) ? structuredPlan.days : null;
-    const useStruct = structDays && structDays.length === 7;
+    const useStruct = structDays && structDays.length >= 7;
     const validUntilStr = (plan.valid_until || '').split('T')[0];
     const result = [];
     for (let origIdx = 0; origIdx < 7; origIdx++) {
-      const dateIso = addDaysToDateStr(plan.valid_from, origIdx);
-      const htmlDay = findDayForDate(daysArr, dateIso, origIdx);
+      const dateIso = addDaysToDateStr(planFrom, origIdx);
+      const dayNameFromDate = getDayNameForPlanSlot(planFrom, origIdx);
+      const htmlDay = daysArr.length > 0 ? findDayForDate(daysArr, dateIso, origIdx, planFrom) : null;
       const structDay = useStruct
-        ? structDays.find((d) => (d.date || '').split('T')[0] === dateIso) ?? structDays[origIdx]
+        ? structDays[origIdx] ?? structDays.find((d) => (d.date || '').split('T')[0] === dateIso)
         : null;
       const structMeals = structDay ? buildMealsFromStructuredDay(structDay, plan.plan_html || '') : null;
       const meals = structMeals && structMeals.length > 0 ? structMeals : htmlDay?.meals || [];
       const afterPlanEnd = !!(validUntilStr && dateIso > validUntilStr);
       result.push({
-        ...htmlDay,
+        ...(htmlDay || {}),
         structDay: structDay || null,
-        dayName: structDay?.day_name || htmlDay?.dayName,
+        dayName: dayNameFromDate || structDay?.day_name || htmlDay?.dayName || `Den ${origIdx + 1}`,
         meals,
         dateStr: dateIso ? formatDayLabel(dateIso) : '',
         isToday: dateIso === todayIsoStr && !isFuturePlan,

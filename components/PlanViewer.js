@@ -869,6 +869,10 @@ export default function PlanViewer({
                       mealOverrides,
                       planValidFrom: plan?.valid_from || null,
                       planValidUntil: plan?.valid_until || null,
+                      dailyMacros: parsed?.macros || [],
+                      planId: plan?.id || null,
+                      appBaseUrl: typeof window !== 'undefined' ? window.location.origin : undefined,
+                      planHtml: plan?.plan_html || '',
                     });
 
                     const html2pdf = (await import('html2pdf.js')).default;
@@ -876,7 +880,7 @@ export default function PlanViewer({
                       margin: [10, 10, 10, 10],
                       filename: 'jidelnicek-tyden.pdf',
                       image: { type: 'jpeg', quality: 0.92 },
-                      html2canvas: { scale: 2, useCORS: false, logging: false, backgroundColor: '#ffffff' },
+                      html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#0b1220' },
                       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
                       pagebreak: { mode: ['css', 'legacy'] },
                     }).save();

@@ -1,9 +1,10 @@
 // /pages/api/send-plan-again.js – pošle aktuální plán znovu na e-mail přihlášeného uživatele
 import { supabaseServer } from '../../lib/supabaseServer';
 import { requireActiveMembership } from '../../lib/membershipHelpers';
-import { sendPlanEmail } from '../../lib/mail';
+import { sendPlanEmail, persistSentPlanEmailHtml } from '../../lib/mail';
 import { getDefaultLoginUrl } from '../../lib/siteUrls.js';
 import { buildDayHeadingOverridesFromStructuredPlan } from '../../lib/planDayHeadingFormat.js';
+import { renderPlanHtmlFromStructured } from '../../lib/planRenderer';
 
 const loginUrl = getDefaultLoginUrl();
 
@@ -46,8 +47,14 @@ export default async function handler(req, res) {
     }
 
     const plan = plans?.[0];
-    const planHtml = plan?.plan_html;
-    if (!planHtml || typeof planHtml !== 'string') {
+    const storedPlanHtml = plan?.plan_html;
+    const structuredJson =
+      plan?.structured_plan_json && typeof plan.structured_plan_json === 'object'
+        ? plan.structured_plan_json
+        : null;
+    const canRenderFromStructured =
+      structuredJson && Array.isArray(structuredJson.days) && structuredJson.days.length > 0;
+    if ((!storedPlanHtml || typeof storedPlanHtml !== 'string') && !canRenderFromStructured) {
       return res.status(404).json({ error: 'Nemáš žádný uložený plán. Vygeneruje se při registraci.' });
     }
 
@@ -64,6 +71,12 @@ export default async function handler(req, res) {
     } catch {
       bmRow = null;
     }
+
+    // Vždy re-render čistého plan_html ze structured_plan_json — uložené plan_html může být
+    // už zabalený e-mailový dokument z minulého odeslání (persistSentPlanEmailHtml).
+    const planHtml = canRenderFromStructured
+      ? renderPlanHtmlFromStructured(structuredJson, bmRow ?? undefined)
+      : storedPlanHtml;
 
     const dayHeadingOverrides = buildDayHeadingOverridesFromStructuredPlan(
       plan?.structured_plan_json,
@@ -83,6 +96,9 @@ export default async function handler(req, res) {
 
     if (!result.ok) {
       return res.status(500).json({ error: result.message || 'E-mail se nepodařilo odeslat.' });
+    }
+    if (result.sent_html && plan?.id) {
+      await persistSentPlanEmailHtml(plan.id, result.sent_html);
     }
     return res.status(200).json({ ok: true, message: 'Plán byl odeslán na tvůj e-mail.' });
   } catch (err) {

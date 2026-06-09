@@ -1,7 +1,7 @@
 // /pages/api/send-plan-again.js – pošle aktuální plán znovu na e-mail přihlášeného uživatele
 import { supabaseServer } from '../../lib/supabaseServer';
 import { requireActiveMembership } from '../../lib/membershipHelpers';
-import { sendPlanEmail, persistSentPlanEmailHtml } from '../../lib/mail';
+import { sendPlanEmail } from '../../lib/mail';
 import { getDefaultLoginUrl } from '../../lib/siteUrls.js';
 import { buildDayHeadingOverridesFromStructuredPlan } from '../../lib/planDayHeadingFormat.js';
 import { renderPlanHtmlFromStructured } from '../../lib/planRenderer';
@@ -73,7 +73,7 @@ export default async function handler(req, res) {
     }
 
     // Vždy re-render čistého plan_html ze structured_plan_json — uložené plan_html může být
-    // už zabalený e-mailový dokument z minulého odeslání (persistSentPlanEmailHtml).
+    // historicky zabalený e-mailový dokument z minulého odeslání.
     const planHtml = canRenderFromStructured
       ? renderPlanHtmlFromStructured(structuredJson, bmRow ?? undefined)
       : storedPlanHtml;
@@ -96,9 +96,6 @@ export default async function handler(req, res) {
 
     if (!result.ok) {
       return res.status(500).json({ error: result.message || 'E-mail se nepodařilo odeslat.' });
-    }
-    if (result.sent_html && plan?.id) {
-      await persistSentPlanEmailHtml(plan.id, result.sent_html);
     }
     return res.status(200).json({ ok: true, message: 'Plán byl odeslán na tvůj e-mail.' });
   } catch (err) {

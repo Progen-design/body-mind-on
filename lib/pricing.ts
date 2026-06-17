@@ -1,15 +1,31 @@
+/** START – nabídka pro nového uživatele (trial ještě nevyčerpán). */
+export const START_TRIAL_OFFER = {
+  priceLabel: '7 dní zdarma, pak 499 Kč/měsíc',
+  subtitle: null as string | null,
+  cta: { label: 'Začít zdarma', href: '/start' },
+};
+
+/** START – po vypršení 7denního programu (trial už vyčerpán). */
+export const START_POST_TRIAL_OFFER = {
+  priceLabel: '499 Kč/měsíc',
+  subtitle: 'Pokračuj v programu START za 499 Kč/měsíc.',
+  cta: { label: 'Aktivovat předplatné' },
+};
+
+export const START_FEATURES = [
+  'Osobní tréninkový plán',
+  'Týdenní jídelníček',
+  '7 pilířů zdraví',
+];
+
 export const PRICING = [
   {
     id: 'start',
     name: 'Start',
     priceCzk: 0,
-    priceLabel: '7 dní zdarma, pak 499 Kč/měsíc',
-    features: [
-      'Osobní tréninkový plán',
-      'Týdenní jídelníček',
-      '7 pilířů zdraví',
-    ],
-    cta: { label: 'Začít zdarma', href: '/start' },
+    priceLabel: START_TRIAL_OFFER.priceLabel,
+    features: START_FEATURES,
+    cta: START_TRIAL_OFFER.cta,
   },
   {
     id: 'on-club',

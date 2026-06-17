@@ -31,7 +31,7 @@ import {
   roundLoadTotal,
 } from '../lib/progressModel';
 
-const PricingTable = dynamic(() => import('../components/PricingTable'), { ssr: false });
+const TrialExpiredPaywall = dynamic(() => import('../components/TrialExpiredPaywall'), { ssr: false });
 const PlanViewer = dynamic(() => import('../components/PlanViewer'), { ssr: false, loading: () => null });
 
 const PROGRAM_LABELS = {
@@ -1451,7 +1451,7 @@ export default function Profil() {
 
   const canRegeneratePlan = membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired);
   const regenerateBlockedMessage = isTrialExpired
-    ? 'Tvůj START trial vypršel. Pro nový plán zaplať předplatné výše.'
+    ? 'Tvůj 7denní START program vypršel. Pro nový plán aktivuj předplatné výše.'
     : (membershipStatus === 'cancelled' || membershipStatus === 'inactive')
       ? 'Pro nový plán potřebuješ aktivní předplatné.'
       : null;
@@ -1769,8 +1769,8 @@ export default function Profil() {
                     Zapsat trénink
                   </button>
                   <div className="membership-status-block">
-                    <span className={`membership-status-badge membership-status--${membershipStatus}`}>
-                      {membershipStatus === 'active' ? 'Aktivní' : membershipStatus === 'trial' ? 'Zkušební' : membershipStatus === 'cancelled' ? 'Zrušeno' : 'Neaktivní'}
+                    <span className={`membership-status-badge membership-status--${isTrialExpired && membershipStatus === 'trial' ? 'expired' : membershipStatus}`}>
+                      {membershipStatus === 'active' ? 'Aktivní' : (membershipStatus === 'trial' && isTrialExpired) ? 'Vypršelo' : membershipStatus === 'trial' ? 'Zkušební' : membershipStatus === 'cancelled' ? 'Zrušeno' : 'Neaktivní'}
                     </span>
                   </div>
                   <div className="profile-quick-nav-account">
@@ -1816,30 +1816,7 @@ export default function Profil() {
             {program === 'START' && (isTrialExpired || (daysUntilTrialEnd != null && daysUntilTrialEnd >= 0 && daysUntilTrialEnd <= 2)) && (
               <div className={`trial-banner trial-banner--${isTrialExpired ? 'expired' : 'soon'}`}>
                 {isTrialExpired ? (
-                  <>
-                    <p className="trial-banner-text">Tvůj 7denní START program vypršel. Pro pokračování zaplať předplatné 499 Kč/měsíc.</p>
-                    <div className="trial-banner-stripe">
-                      <PricingTable />
-                    </div>
-                    <div className="trial-banner-upgrade">
-                      <p className="trial-banner-upgrade-headline">Nebo zvol vyšší program – víc benefitů, víc výsledků</p>
-                      <div className="trial-banner-upgrade-cards">
-                        <a href="/on-club" className="trial-upgrade-card trial-upgrade-card--club">
-                          <span className="trial-upgrade-badge">Doporučeno</span>
-                          <h3 className="trial-upgrade-title">ON Club</h3>
-                          <p className="trial-upgrade-subtitle">AI trenér 24/7, habit tracker, komunita a video konzultace</p>
-                          <span className="trial-upgrade-price">1 499 Kč/měsíc</span>
-                          <span className="trial-upgrade-cta">Připojit se k ON Clubu →</span>
-                        </a>
-                        <a href="/chci-vip" className="trial-upgrade-card trial-upgrade-card--vip">
-                          <h3 className="trial-upgrade-title">VIP Coaching</h3>
-                          <p className="trial-upgrade-subtitle">Elitní lidský kouč, týdenní 1:1 konzultace, strategie na míru</p>
-                          <span className="trial-upgrade-price">3 999 Kč/měsíc</span>
-                          <span className="trial-upgrade-cta">Chci VIP přístup →</span>
-                        </a>
-                      </div>
-                    </div>
-                  </>
+                  <TrialExpiredPaywall />
                 ) : (
                   <p className="trial-banner-text">
                     Tvůj START program vyprší za {daysUntilTrialEnd === 0 ? 'dnes' : daysUntilTrialEnd === 1 ? '1 den' : `${daysUntilTrialEnd} dny`}. Připoj se k <a href="/on-club">ON Clubu</a> pro plný přístup.
@@ -3887,6 +3864,12 @@ export default function Profil() {
         .trial-banner-upgrade-cards {
           display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%;
         }
+        .trial-paywall-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+        @media (max-width: 900px) {
+          .trial-paywall-grid { grid-template-columns: 1fr; }
+        }
         @media (max-width: 640px) {
           .trial-banner-upgrade-cards { grid-template-columns: 1fr; }
         }
@@ -3903,6 +3886,28 @@ export default function Profil() {
           box-shadow: 0 8px 24px rgba(34,197,94,0.2);
         }
         .trial-upgrade-card--club:hover { box-shadow: 0 12px 32px rgba(34,197,94,0.35); }
+        .trial-upgrade-card--start {
+          background: rgba(24,24,36,0.95);
+          border-color: rgba(139,92,246,0.5);
+          box-shadow: 0 8px 24px rgba(139,92,246,0.2);
+        }
+        .trial-upgrade-card--start:hover { box-shadow: 0 12px 32px rgba(139,92,246,0.35); }
+        .trial-upgrade-card--start .trial-upgrade-price { color: #a78bfa; }
+        .trial-upgrade-card--start .trial-upgrade-cta { background: #7c3aed; }
+        .trial-upgrade-card--start:hover .trial-upgrade-cta { filter: brightness(1.1); box-shadow: 0 0 16px rgba(124,58,237,0.5); }
+        .trial-paywall-features {
+          list-style: none; padding: 0; margin: 0 0 16px; text-align: left;
+          font-size: 13px; color: rgba(255,255,255,0.88); line-height: 1.45;
+        }
+        .trial-paywall-features li {
+          position: relative; padding: 3px 0 3px 20px;
+        }
+        .trial-paywall-features li::before {
+          content: '✓'; position: absolute; left: 0; color: #a78bfa; font-weight: 700;
+        }
+        .trial-upgrade-cta--button {
+          border: none; cursor: pointer; font-family: inherit; width: 100%;
+        }
         .trial-upgrade-card--vip {
           background: rgba(24,24,36,0.95);
           border-color: rgba(239,68,68,0.5);

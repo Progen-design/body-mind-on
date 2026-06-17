@@ -3,6 +3,11 @@
  * Dávkový import ze Spoonacular → recipes_catalog.
  * Pouze při SPOONACULAR_MODE=seed. Budget cap MAX_POINTS (default 400).
  *
+ * meal_type se NEPŘIŘAZUJE podle seed bucketu dotazu (Spoonacular fulltext vrací
+ * i hlavní jídla na dotaz "protein snack"), ale klasifikátorem
+ * scripts/mealTypeClassifier.mjs (OpenAI) — stejná logika jako recategorizeMeals.mjs.
+ * Bucket dotazu je jen fallback při selhání klasifikace.
+ *
  * Spustit: SPOONACULAR_MODE=seed node scripts/seedRecipes.js
  */
 const fs = require('fs');
@@ -176,6 +181,24 @@ async function complexSearch(apiKey, query, diet, offset, number) {
   return { results: Array.isArray(data.results) ? data.results : [], quota };
 }
 
+let openaiClient = null;
+let classifyMealTypesWithOpenAI = null;
+
+async function setupMealTypeClassifier() {
+  if (!process.env.OPENAI_API_KEY) {
+    console.warn('OPENAI_API_KEY chybí — meal_type se přiřadí podle seed bucketu (méně přesné).');
+    return;
+  }
+  try {
+    const OpenAI = require('openai');
+    const mod = await import('./mealTypeClassifier.mjs');
+    classifyMealTypesWithOpenAI = mod.classifyMealTypesWithOpenAI;
+    openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  } catch (e) {
+    console.warn('Klasifikátor meal_type nelze načíst — fallback na seed bucket:', e.message);
+  }
+}
+
 async function main() {
   if (getMode() !== 'seed') {
     console.error('seedRecipes.js vyžaduje SPOONACULAR_MODE=seed (aktuálně:', getMode(), ')');
@@ -186,6 +209,7 @@ async function main() {
     process.exit(1);
   }
   const apiKey = spoonacularKey();
+  await setupMealTypeClassifier();
 
   const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -233,15 +257,37 @@ async function main() {
           }
           if (!results.length) break;
 
+          // Správný meal_type podle obsahu receptu (ne podle bucketu dotazu).
+          let classifiedTypes = new Map();
+          if (openaiClient && classifyMealTypesWithOpenAI) {
+            try {
+              classifiedTypes = await classifyMealTypesWithOpenAI(
+                openaiClient,
+                results.map((r) => ({
+                  id: r.id,
+                  name_cs: r.title,
+                  name_en: r.title,
+                  kcal: nutrientAmount(r, 'Calories'),
+                  protein_g: nutrientAmount(r, 'Protein'),
+                  carbs_g: nutrientAmount(r, 'Carbohydrates'),
+                  fat_g: nutrientAmount(r, 'Fat'),
+                }))
+              );
+            } catch (e) {
+              console.warn('Klasifikace meal_type selhala, používám bucket dotazu:', e.message);
+            }
+          }
+
           for (const recipe of results) {
             if (pointsUsed >= MAX_POINTS) break;
-            const row = mapRecipeToCatalogRow(recipe, mealType, dietPass.extraTags);
+            const finalMealType = classifiedTypes.get(String(recipe.id)) || mealType;
+            const row = mapRecipeToCatalogRow(recipe, finalMealType, dietPass.extraTags);
             const { error } = await supabase
               .from('recipes_catalog')
               .upsert(row, { onConflict: 'source,source_id' });
             if (!error) {
               saved++;
-              byMealType[mealType] = (byMealType[mealType] || 0) + 1;
+              byMealType[finalMealType] = (byMealType[finalMealType] || 0) + 1;
             }
             fetchedForQuery++;
           }

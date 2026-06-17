@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 /**
  * Import receptů z meal_metadata_cache → recipes_catalog (0 Spoonacular pointů).
+ * meal_type přiřazuje OpenAI klasifikátor (scripts/mealTypeClassifier.mjs) —
+ * stejná logika jako recategorizeMeals.mjs; regex heuristika jen jako fallback.
  * Spustit: node scripts/importRecipesFromMealCache.mjs
  */
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
+import OpenAI from 'openai';
+import { classifyMealTypesWithOpenAI } from './mealTypeClassifier.mjs';
 
 for (const name of ['.env.local', '.env']) {
   const p = resolve(process.cwd(), name);
@@ -28,6 +32,7 @@ if (!url || !key) {
 
 const supabase = createClient(url, key);
 
+/** Regex fallback, když OpenAI klasifikace není k dispozici. */
 function inferMealType(name) {
   const n = String(name || '').toLowerCase();
   if (/smoothie|ovesn|jogurt|vejce|tvaroh|toast|müsli|muesli|palačink|omelet|kaše|snídan/i.test(n)) return 'snidane';
@@ -46,13 +51,41 @@ async function main() {
   let upserted = 0;
   const byType = { snidane: 0, obed: 0, vecere: 0, svacina: 0 };
 
-  for (const row of rows || []) {
+  const importable = (rows || []).filter((row) => {
     const nameCs = String(row.name || row.meal_name || '').trim();
-    if (!nameCs) continue;
     const kcal = Math.round(Number(row.calories) || 0);
-    if (kcal < 80) continue;
+    return nameCs && kcal >= 80;
+  });
 
-    const mealType = inferMealType(nameCs);
+  let classifiedTypes = new Map();
+  if (process.env.OPENAI_API_KEY) {
+    try {
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      classifiedTypes = await classifyMealTypesWithOpenAI(
+        openai,
+        importable.map((row, idx) => ({
+          id: idx,
+          name_cs: String(row.name || row.meal_name || '').trim(),
+          name_en: String(row.name || row.meal_name || '').trim(),
+          kcal: Math.round(Number(row.calories) || 0),
+          protein_g: row.protein_g != null ? Number(row.protein_g) : null,
+          carbs_g: row.carbs_g != null ? Number(row.carbs_g) : null,
+          fat_g: row.fat_g != null ? Number(row.fat_g) : null,
+        }))
+      );
+    } catch (e) {
+      console.warn('OpenAI klasifikace selhala — fallback na regex heuristiku:', e.message);
+    }
+  } else {
+    console.warn('OPENAI_API_KEY chybí — meal_type podle regex heuristiky (méně přesné).');
+  }
+
+  for (let idx = 0; idx < importable.length; idx++) {
+    const row = importable[idx];
+    const nameCs = String(row.name || row.meal_name || '').trim();
+    const kcal = Math.round(Number(row.calories) || 0);
+
+    const mealType = classifiedTypes.get(String(idx)) || inferMealType(nameCs);
     const sourceId = String(row.name_key || row.id || nameCs).slice(0, 120);
     const spoonacularId = row.spoonacular_id ?? null;
     const spoonacularUrl =

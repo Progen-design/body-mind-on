@@ -1,0 +1,284 @@
+/* Sdílené styly paywallu na /profil – platí pro trial banner i TrialExpiredPaywall */
+
+.trial-banner {
+  margin-bottom: 20px;
+  width: 100%;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid;
+}
+
+.trial-banner--expired {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(185, 28, 28, 0.08));
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.trial-banner--soon {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.15), rgba(180, 130, 20, 0.08));
+  border-color: rgba(234, 179, 8, 0.4);
+}
+
+.trial-banner-text {
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: #e2e8f0;
+  line-height: 1.5;
+}
+
+.trial-banner-text:last-child {
+  margin-bottom: 0;
+}
+
+.trial-banner-text a {
+  color: #a78bfa;
+  text-decoration: none;
+}
+
+.trial-banner-text a:hover {
+  text-decoration: underline;
+}
+
+.trial-banner-text--small {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-top: 12px;
+}
+
+.trial-banner-stripe {
+  margin: 16px 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.trial-banner-upgrade {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.trial-banner-upgrade-headline {
+  font-size: 17px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0 0 20px;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+.trial-banner-upgrade-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  width: 100%;
+}
+
+.trial-paywall-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 900px) {
+  .trial-paywall-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .trial-banner-upgrade-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.trial-upgrade-card {
+  display: block;
+  text-decoration: none;
+  padding: 24px 20px;
+  border-radius: 16px;
+  border: 2px solid transparent;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  text-align: center;
+}
+
+.trial-upgrade-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.trial-upgrade-card--club {
+  background: rgba(24, 24, 36, 0.95);
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.2);
+}
+
+.trial-upgrade-card--club:hover {
+  box-shadow: 0 12px 32px rgba(34, 197, 94, 0.35);
+}
+
+.trial-upgrade-card--start {
+  background: rgba(24, 24, 36, 0.95);
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2);
+}
+
+.trial-upgrade-card--start:hover {
+  box-shadow: 0 12px 32px rgba(139, 92, 246, 0.35);
+}
+
+.trial-upgrade-card--start .trial-upgrade-price {
+  color: #a78bfa;
+}
+
+.trial-upgrade-card--start .trial-upgrade-cta {
+  background: #7c3aed;
+}
+
+.trial-upgrade-card--start:hover .trial-upgrade-cta {
+  filter: brightness(1.1);
+  box-shadow: 0 0 16px rgba(124, 58, 237, 0.5);
+}
+
+.trial-paywall-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  text-align: left;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.45;
+}
+
+.trial-paywall-features li {
+  position: relative;
+  padding: 3px 0 3px 20px;
+}
+
+.trial-paywall-features li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #a78bfa;
+  font-weight: 700;
+}
+
+.trial-upgrade-cta--button {
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  width: 100%;
+}
+
+.trial-upgrade-card--vip {
+  background: rgba(24, 24, 36, 0.95);
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.2);
+}
+
+.trial-upgrade-card--vip:hover {
+  box-shadow: 0 12px 32px rgba(239, 68, 68, 0.35);
+}
+
+.trial-upgrade-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #fff;
+  background: linear-gradient(90deg, #1e40af, #0ea5e9);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.trial-upgrade-badge--expired {
+  background: linear-gradient(90deg, #b91c1c, #ef4444);
+}
+
+.trial-upgrade-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 8px;
+  letter-spacing: 0.02em;
+}
+
+.trial-upgrade-subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.45;
+  margin: 0 0 16px;
+  min-height: 2.9em;
+}
+
+.trial-upgrade-price {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.trial-upgrade-card--club .trial-upgrade-price {
+  color: #22c55e;
+}
+
+.trial-upgrade-card--vip .trial-upgrade-price {
+  color: #ef4444;
+}
+
+.trial-upgrade-cta {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 10px;
+  transition: filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+.trial-upgrade-card--club .trial-upgrade-cta {
+  background: #22c55e;
+}
+
+.trial-upgrade-card--club:hover .trial-upgrade-cta {
+  filter: brightness(1.1);
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.5);
+}
+
+.trial-upgrade-card--vip .trial-upgrade-cta {
+  background: #dc2626;
+}
+
+.trial-upgrade-card--vip:hover .trial-upgrade-cta {
+  filter: brightness(1.1);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.5);
+}
+
+.trial-banner-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.trial-banner-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: #fff;
+  border: none;
+}
+
+.trial-banner-btn:hover {
+  opacity: 0.9;
+}
+
+.trial-banner-btn--vip {
+  background: linear-gradient(135deg, #ca8a04, #a16207);
+}

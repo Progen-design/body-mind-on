@@ -18,6 +18,7 @@ export default function TrialExpiredPaywall() {
       </p>
       <div className="trial-banner-upgrade-cards trial-paywall-grid">
         <article className="trial-upgrade-card trial-upgrade-card--start">
+          <span className="trial-upgrade-badge trial-upgrade-badge--expired">Vypršelo</span>
           <h3 className="trial-upgrade-title">START</h3>
           <p className="trial-upgrade-subtitle">{START_POST_TRIAL_OFFER.subtitle}</p>
           <span className="trial-upgrade-price">{START_POST_TRIAL_OFFER.priceLabel}</span>

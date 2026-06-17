@@ -1,7 +1,6 @@
 /**
- * GET /api/spoonacular-recipe?id=123
- * Legacy alias — přesměrovává na recipes_catalog (žádné Spoonacular HTTP).
- * @deprecated Používej /api/recipe-from-catalog
+ * GET /api/recipe-from-catalog?id=123
+ * Detail receptu z recipes_catalog (suroviny, postup, makra, obrázek) — bez Spoonacular.
  */
 import { handleRecipeFromCatalogRequest } from '../../lib/recipeDetailFromCatalog';
 

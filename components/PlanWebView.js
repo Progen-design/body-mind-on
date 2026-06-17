@@ -5,6 +5,7 @@ import { formatDayDateWords, formatDayDateNumeric, dayOrdinalCs } from '../lib/u
 import { mealDisplayTitleForStructuredMeal } from '../lib/mealDisplayNameHelpers.js';
 import { addCalendarDaysIsoPrague } from '../lib/czechCalendar.js';
 import { formatExerciseSetsRepsDisplay } from '../lib/planDataIntegrity.js';
+import { recipeFromCatalogApiUrl, catalogLookupIdFromMeal } from '../lib/recipeDetailUrl.js';
 
 const MEAL_TIME_META = {
   breakfast: { icon: '☀', label: 'Snídaně', time_word: 'Ráno', time: '07:30', color: '#22D3EE' },
@@ -67,13 +68,10 @@ function isSafeExternalUrl(value) {
   return !!trimmed && /^https?:\/\//i.test(trimmed);
 }
 function mealRecipeUrl(meal, appBaseUrl) {
-  const fromCatalog = Boolean(meal?.catalog_id) || meal?.recipe?.source === 'catalog';
+  const lookupId = catalogLookupIdFromMeal(meal);
+  if (lookupId != null) return recipeFromCatalogApiUrl(lookupId, appBaseUrl, { format: 'html' });
   const r = meal?.recipe;
   const direct = r?.sourceUrl || r?.source_url || r?.url || meal?.spoonacular_url || null;
-  if (fromCatalog && isSafeExternalUrl(direct)) return String(direct).trim();
-  const recipeId = r?.id ?? meal?.recipe_id ?? null;
-  const ridNum = recipeId != null && Number.isFinite(Number(recipeId)) ? Number(recipeId) : null;
-  if (ridNum != null) return `${appBaseUrl}/api/spoonacular-recipe?id=${ridNum}&format=html`;
   if (isSafeExternalUrl(direct)) return String(direct).trim();
   return '';
 }

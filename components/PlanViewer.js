@@ -15,6 +15,7 @@ import { parsePlanHtml } from '../lib/parsePlanHtml';
 import { getPlanOutputMode, shouldRenderTraining } from '../lib/planOutputMode.js';
 import { buildPlanPdfHtml } from '../lib/planPdf';
 import { formatExerciseSetsRepsDisplay } from '../lib/planDataIntegrity.js';
+import { catalogLookupIdFromMeal } from '../lib/recipeDetailUrl.js';
 import { collectExerciseMediaSources, hasDisplayableExerciseMedia, isVideoMediaUrl } from '../lib/exerciseMediaHelpers.js';
 import { addCalendarDaysIsoPrague, calendarDateIsoInPrague, weekdayIndexJsFromPragueIso } from '../lib/czechCalendar';
 
@@ -323,11 +324,11 @@ function resolveMealTrustMerged(meal, mealText, mealTrustMap, preferredKey) {
   };
 }
 
-/** Odstraní z HTML jména jídla vložené odkazy na /api/spoonacular-recipe (duplicita vedle tlačítka Recept). */
-function stripInlineSpoonacularRecipeAnchors(html) {
+/** Odstraní z HTML jména jídla vložené odkazy na detail receptu (duplicita vedle tlačítka Recept). */
+function stripInlineRecipeDetailAnchors(html) {
   if (!html || typeof html !== 'string') return html;
   return html
-    .replace(/<a\b[^>]*href\s*=\s*["'][^"']*spoonacular-recipe[^"']*["'][^>]*>[\s\S]*?<\/a>/gi, '')
+    .replace(/<a\b[^>]*href\s*=\s*["'][^"']*(?:spoonacular-recipe|recipe-from-catalog)[^"']*["'][^>]*>[\s\S]*?<\/a>/gi, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
@@ -495,9 +496,9 @@ export default function PlanViewer({
     return matched?.content || '';
   };
 
-  const getSpoonacularRecipe = (recipeId) => {
+  const getCatalogRecipeDetail = (recipeId) => {
     if (!recipeId || !Number.isInteger(Number(recipeId))) return Promise.resolve(null);
-    return fetch('/api/spoonacular-recipe?id=' + encodeURIComponent(String(recipeId)), {
+    return fetch('/api/recipe-from-catalog?id=' + encodeURIComponent(String(recipeId)), {
       headers: { Accept: 'application/json' },
     })
       .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
@@ -992,10 +993,11 @@ export default function PlanViewer({
                           resolveMealTrustMerged(meal, mealFullText || meal.text || meal.type, mealTrustMap, mealLookupKey),
                           structMeal
                         );
-                        const recipeIdForModal =
-                          mealTrust?.recipe_id != null &&
-                          String(mealTrust.recipe_id).trim() !== '' &&
-                          Number.isFinite(Number(mealTrust.recipe_id))
+                        const catalogLookupIdForModal = structMeal
+                          ? catalogLookupIdFromMeal(structMeal)
+                          : mealTrust?.recipe_id != null &&
+                              String(mealTrust.recipe_id).trim() !== '' &&
+                              Number.isFinite(Number(mealTrust.recipe_id))
                             ? Number(mealTrust.recipe_id)
                             : null;
                         const openRecipe = (e) => {
@@ -1012,7 +1014,7 @@ export default function PlanViewer({
                           }
                           const dishName = (mealFullText.replace(/\s*\([^)]*\)\s*$/g, '').trim() || meal.type || 'Jídlo').slice(0, 150);
                           const isUnverifiedPlaceholder = mealFullText?.toLowerCase().includes('neověřeno') || dishName === 'Jídlo';
-                          const recipeId = recipeIdForModal;
+                          const recipeId = catalogLookupIdForModal;
                           const htmlRecipeFallback = matchingRecipeHtml
                             ? recipeContentOnly(matchingRecipeHtml)
                             : null;
@@ -1025,16 +1027,16 @@ export default function PlanViewer({
                             loading: true,
                           });
                           const loadRecipe = async () => {
-                            // 1) recipe_id / Spoonacular detail
+                            // 1) catalog_id (nebo recipe_id u starých plánů) → detail z recipes_catalog
                             if (recipeId != null) {
-                              const spoon = await getSpoonacularRecipe(recipeId);
-                              if (spoon) return spoon;
+                              const catalogRecipe = await getCatalogRecipeDetail(recipeId);
+                              if (catalogRecipe) return catalogRecipe;
                             }
                             // 2) strict match v lokálních receptech
                             if (htmlRecipeFallback) return htmlRecipeFallback;
                             // 3) fallback přes /api/recipe?dish=
                             if (isUnverifiedPlaceholder) {
-                              return recipeErrorHtml('Recept pro toto jídlo není k dispozici – Spoonacular ho nenalezl. Zkus ho nahradit jiným.');
+                              return recipeErrorHtml('Recept pro toto jídlo není v katalogu. Zkus ho nahradit jiným.');
                             }
                             const fallbackRecipe = await getRecipeForDish(dishName);
                             if (fallbackRecipe) return fallbackRecipe;
@@ -1073,7 +1075,7 @@ export default function PlanViewer({
                               </div>
                               {override ? (
                                 <p className="plan-meal-name">{override.title || 'Náhrada'}</p>
-                              ) : recipeIdForModal ? (
+                              ) : catalogLookupIdForModal ? (
                                 <p className="plan-meal-name">
                                   <button
                                     type="button"
@@ -1090,7 +1092,7 @@ export default function PlanViewer({
                                 <div
                                   className="plan-meal-name plan-meal-name-html"
                                   dangerouslySetInnerHTML={{
-                                    __html: stripInlineSpoonacularRecipeAnchors(
+                                    __html: stripInlineRecipeDetailAnchors(
                                       stripPlanMediaAttrsFromHtml(meal.text)
                                     ),
                                   }}
@@ -1099,7 +1101,7 @@ export default function PlanViewer({
                                 <div
                                   className="plan-meal-name plan-meal-name-html"
                                   dangerouslySetInnerHTML={{
-                                    __html: stripInlineSpoonacularRecipeAnchors(
+                                    __html: stripInlineRecipeDetailAnchors(
                                       stripPlanMediaAttrsFromHtml(meal.fullHtml || '')
                                     ),
                                   }}

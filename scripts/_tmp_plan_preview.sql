@@ -1,0 +1,1 @@
+SELECT (structured_plan_json IS NOT NULL) AS has_structured, left(coalesce(structured_plan_json::text, meal_plan::text, ''), 200) AS preview FROM ai_generated_plans WHERE user_id = 'c4f29011-567a-4a71-a2b0-07ffa2b84020' ORDER BY created_at DESC LIMIT 1;

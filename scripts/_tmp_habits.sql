@@ -1,0 +1,1 @@
+SELECT (meal_plan::text LIKE '%habit%' OR workout_plan::text LIKE '%habit%' OR structured_plan_json::text LIKE '%habit%') AS has_habits_hint FROM ai_generated_plans WHERE user_id = 'c4f29011-567a-4a71-a2b0-07ffa2b84020' ORDER BY created_at DESC LIMIT 1;

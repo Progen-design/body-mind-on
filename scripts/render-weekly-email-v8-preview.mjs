@@ -1,4 +1,4 @@
-import { writeFileSync } from 'fs';
+import { writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
@@ -124,7 +124,7 @@ function auditChecks(label, html) {
   if (!/'Inter'/.test(html)) issues.push("'Inter' font missing");
   if (/Geist/.test(html)) issues.push('Geist font reference present');
 
-  const diacriticsExpected = ['Tvůj', 'týden', 'Začínáme', 'Pondělí', 'máš'];
+  const diacriticsExpected = ['Tvůj', 'týden', 'Pondělí', 'připraven'];
   for (const word of diacriticsExpected) {
     if (!html.includes(word)) issues.push(`missing diacritic word: "${word}"`);
   }
@@ -136,10 +136,11 @@ function auditChecks(label, html) {
   if (!/border-radius:16/.test(html)) issues.push('border-radius:16 missing');
   if (!/border-radius:12/.test(html)) issues.push('border-radius:12 missing');
   if (!/border-radius:10/.test(html)) issues.push('border-radius:10 missing');
-  if (!/border-radius:8/.test(html)) issues.push('border-radius:8 missing');
+  if (!/border-radius:10/.test(html)) issues.push('border-radius:10 missing');
   if (!/border-radius:999/.test(html)) issues.push('border-radius:999 missing');
 
-  if (!/max-width:540/.test(html)) issues.push('max-width:540 missing');
+  if (!/max-width:840/.test(html)) issues.push('max-width:840 missing');
+  if (!/@media only screen and \(max-width:640px\)/.test(html)) issues.push('mobile media query @640px missing');
 
   if (/background-clip\s*:\s*text/i.test(html)) issues.push('background-clip:text present');
   if (/text-shadow/i.test(html)) issues.push('text-shadow present');
@@ -187,21 +188,29 @@ const variants = [
 ];
 
 const tmp = tmpdir();
+const localPreviewDir = join(repoRoot, 'tmp');
+mkdirSync(localPreviewDir, { recursive: true });
 console.log('--- v8 PREVIEW AUDIT ---');
 let allOk = true;
+let primaryPreviewPath = null;
 for (const v of variants) {
   const planJson = buildPlan(v);
   const html = buildWeeklyPlanEmailV8Document({
     structuredPlanJson: planJson,
-    bodyMetrics: { height_cm: 195, weight_kg: 95, goal: v.goal },
+    bodyMetrics: { height_cm: 195, weight_kg: 95, goal: v.goal, activity: 'Střední', weekly_sessions_user: 4 },
     firstName: v.firstName,
   });
   const outPath = join(tmp, `body-mind-on-weekly-plan-email-v8-${v.label}.html`);
   writeFileSync(outPath, html, 'utf8');
+  if (v.label === 'muscle_gain-Jan') {
+    primaryPreviewPath = join(localPreviewDir, 'email-preview-bodymindon.html');
+    writeFileSync(primaryPreviewPath, html, 'utf8');
+  }
   const ok = auditChecks(v.label, html);
   if (!ok) allOk = false;
   console.log(`     → ${outPath}`);
 }
 
 console.log(`\n${allOk ? 'ALL VARIANTS PASS' : 'SOME VARIANTS FAIL'}`);
+if (primaryPreviewPath) console.log(`Local preview: ${primaryPreviewPath}`);
 process.exit(allOk ? 0 : 1);

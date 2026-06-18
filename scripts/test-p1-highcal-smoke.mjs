@@ -195,8 +195,19 @@ async function main() {
   const ok = (msg) => checks.push({ pass: true, msg });
 
   const generatedBy = plan?.generated_by ?? null;
+  const diagGenSrc = plan?.structured_plan_json?._diagnostics?.generation_source ?? null;
   if (generatedBy === 'ai-task:initial_plan') ok(`generated_by = ${generatedBy}`);
   else fail(`generated_by = ${JSON.stringify(generatedBy)} (očekáváno ai-task:initial_plan, NE reg_deterministic)`);
+
+  if (diagGenSrc === 'catalog' || diagGenSrc === 'fallback') {
+    ok(`generation_source = ${diagGenSrc} (deterministický katalog, ne openai)`);
+  } else if (diagGenSrc === 'openai') {
+    fail(`generation_source = openai (očekáváno catalog bez sync GPT)`);
+  } else if (diagGenSrc) {
+    ok(`generation_source = ${diagGenSrc}`);
+  } else {
+    fail('generation_source v _diagnostics chybí');
+  }
 
   if (plan?.structured_plan_json) ok('structured_plan_json IS NOT NULL');
   else fail('structured_plan_json je NULL');

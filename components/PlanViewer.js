@@ -2808,6 +2808,14 @@ const planSectionStyles = `
     line-height: 1.6;
     -webkit-overflow-scrolling: touch;
   }
+  .plan-recipe-modal-body :global(.recipe-detail-image) {
+    max-width: 100%;
+    max-height: 280px;
+    border-radius: 12px;
+    object-fit: cover;
+    display: block;
+    margin: 0 0 16px;
+  }
   .plan-recipe-modal-body :global(p) { margin: 10px 0; }
   .plan-recipe-modal-body :global(b) { color: #e9d5ff; }
   .plan-recipe-modal-body :global(ul) { margin: 10px 0; padding-left: 20px; }

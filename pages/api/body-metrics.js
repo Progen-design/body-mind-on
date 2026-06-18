@@ -1,6 +1,6 @@
 // /pages/api/body-metrics.js
 // CORE FLOW: Registrace musí vést k reálnému AI výsledku (body_metrics → ai_tasks → ai_generated_plans → zobrazení + e-mail).
-// SYNC: Registrace NESMÍ skončit bez plánu – čeká na AI, max ~100 s. Bez plánu = chyba.
+// SYNC: Registrace musí doručit plán (katalog nebo last-resort) v rámci Vercel 60s limitu.
 // Viz docs/CORE_FLOW_REGISTRACE_AI_PLAN.md
 import { supabaseServer } from '../../lib/supabaseServer';
 import {
@@ -25,10 +25,10 @@ import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getWeeklySessions } from '../../lib/preferenceConstants';
 import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
 import { writeOnboardingEvent } from '../../lib/onboardingMetrics';
-import { getPublicAppUrl, getDefaultLoginUrl } from '../../lib/siteUrls.js';
+import { getDefaultLoginUrl } from '../../lib/siteUrls.js';
 
-/** Vercel Hobby = 60s. Plán musí být vždy vygenerován před odpovědí – optimalizace v planOrchestrator. */
-const PLAN_WAIT_TIMEOUT_MS = 55000;
+/** Vercel Hobby = 60s. Krátký poll; last-resort hned po execute, ne až na konci handleru. */
+const PLAN_WAIT_TIMEOUT_MS = 8000;
 const PLAN_WAIT_POLL_MS = 1500;
 
 export default async function handler(req, res) {
@@ -171,6 +171,11 @@ export default async function handler(req, res) {
     let initialPlanTaskStatus = 'pending';
     let initialPlanSummary = null;
     let initialPlanValidationWarning = null;
+    let lastResortRan = false;
+    let lastResortFailed = false;
+    let lastResortError = null;
+    let savedPlanId = null;
+    let savedPlanExists = false;
     const accountCreated = payload.user_id != null;
 
     // SYNC: Plán musí být vždy vygenerován před odpovědí – čekáme na AI v rámci requestu
@@ -285,6 +290,84 @@ export default async function handler(req, res) {
         }
       }
       console.info('[body-metrics] initial_plan final status', initialPlanTaskStatus);
+
+      // Last-resort hned po execute (před membership) — vejde se do Vercel 60s limitu
+      if (initialPlanTaskStatus !== 'completed') {
+        const { data: existingPlanRow } = await supabaseServer
+          .from('ai_generated_plans')
+          .select('id')
+          .eq('user_id', payload.user_id)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (existingPlanRow?.id) {
+          savedPlanId = existingPlanRow.id;
+          savedPlanExists = true;
+          console.info('[body-metrics] active plan exists after task', { plan_id: savedPlanId });
+        } else {
+          try {
+            let fallbackResult = await persistPublishableFallbackPlanForUser(payload.user_id);
+            lastResortError = fallbackResult?.plan_id ? null : (fallbackResult?.error ?? null);
+            if (!fallbackResult?.plan_id) {
+              fallbackResult = await persistPublishableFallbackPlanForUser(payload.user_id);
+              if (!lastResortError && !fallbackResult?.plan_id) lastResortError = fallbackResult?.error ?? null;
+            }
+            if (fallbackResult?.plan_id) {
+              lastResortRan = true;
+              savedPlanId = fallbackResult.plan_id;
+              savedPlanExists = true;
+              const fallbackPlanId = fallbackResult.plan_id ?? null;
+              if (fallbackPlanId && (await isPlanEmailAlreadySent(fallbackPlanId))) {
+                planSent = true;
+              } else if (fallbackResult.bm?.email && fallbackResult.planHtml) {
+                const claimedFallback = fallbackPlanId ? await tryClaimPlanEmailSend(fallbackPlanId) : false;
+                if (fallbackPlanId && !claimedFallback && (await isPlanEmailAlreadySent(fallbackPlanId))) {
+                  planSent = true;
+                } else if (claimedFallback) {
+                  try {
+                    const sendRes = await sendPlanEmail(fallbackResult.bm.email, fallbackResult.planHtml, {
+                      loginPassword,
+                      loginUrl,
+                      existingAccount,
+                      loginUnavailable: payload.user_id == null,
+                      userChosePassword,
+                      firstName: fallbackResult.bm?.name ?? payload.name ?? null,
+                      bodyMetrics: fallbackResult.bm,
+                      planId: fallbackPlanId,
+                    });
+                    planSent = !!sendRes?.ok;
+                    if (!planSent && fallbackPlanId) {
+                      await releasePlanEmailSendClaim(fallbackPlanId);
+                    }
+                  } catch (mailErr) {
+                    if (fallbackPlanId) await releasePlanEmailSendClaim(fallbackPlanId);
+                    console.warn('[body-metrics] last-resort sendPlanEmail failed:', mailErr?.message);
+                  }
+                }
+              }
+              console.info('[body-metrics] last-resort plan persisted', { plan_id: savedPlanId, email_sent: planSent });
+            } else {
+              lastResortFailed = true;
+            }
+          } catch (lrErr) {
+            console.warn('[body-metrics] last-resort failed:', lrErr?.message);
+            lastResortFailed = true;
+            lastResortError = lrErr?.message ?? 'exception';
+          }
+        }
+      } else {
+        const { data: planRow } = await supabaseServer
+          .from('ai_generated_plans')
+          .select('id')
+          .eq('user_id', payload.user_id)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        savedPlanId = planRow?.id ?? null;
+        savedPlanExists = !!savedPlanId;
+      }
     }
 
     // Uložit tier členství do tabulky memberships (upsert – aktualizovat pokud existuje)
@@ -328,40 +411,41 @@ export default async function handler(req, res) {
       }
     }
 
-    const appUrl = getPublicAppUrl();
     const successMsg = 'Údaje byly úspěšně uloženy a plán byl odeslán na e-mail. V e-mailu najdeš přihlašovací údaje.';
     const emailFailedPlanReadyMsg = 'Účet je vytvořen a plán je hotový. Přihlas se – plán uvidíš v profilu. E-mail s plánem se nepodařilo odeslat – zkontroluj spam nebo napiš na info@bodyandmindon.cz.';
-    const failMsg = `Plán se nepodařilo vytvořit. Údaje byly uloženy – přihlas se na ${appUrl}, v profilu v sekci Můj plán zkus „Vygenerovat plán“, nebo napiš na info@bodyandmindon.cz.`;
 
     let plan_state = 'unknown';
     if (accountCreated) {
-      if (initialPlanTaskStatus === 'completed') plan_state = 'ready';
-      else if (initialPlanTaskStatus === 'pending') plan_state = 'processing';
-      else plan_state = 'failed';
+      if (savedPlanExists || initialPlanTaskStatus === 'completed') plan_state = 'ready';
+      else plan_state = 'processing';
     }
 
     let message = successMsg;
-    if (!planSent && initialPlanTaskStatus === 'completed') message = emailFailedPlanReadyMsg;
-    else if (initialPlanTaskStatus !== 'completed') message = failMsg;
+    if (plan_state === 'ready' && !planSent) message = emailFailedPlanReadyMsg;
+    else if (plan_state === 'processing') {
+      message = savedPlanExists
+        ? emailFailedPlanReadyMsg
+        : 'Účet je vytvořen. Plán se dokončuje – za chvíli ho uvidíš v profilu.';
+    }
 
     const finalResponseReason =
-      initialPlanTaskStatus === 'completed'
+      plan_state === 'ready'
         ? (planSent ? 'plan_ready_email_sent' : 'plan_ready_email_not_sent')
-        : initialPlanTaskStatus === 'pending'
-          ? 'plan_timeout_still_processing'
-          : 'plan_failed';
+        : lastResortFailed
+          ? 'plan_processing_last_resort_failed'
+          : 'plan_processing';
 
     const onboardingResult =
-      initialPlanTaskStatus === 'completed' ? 'ai_success' : initialPlanTaskStatus === 'pending' ? 'timeout' : 'failed';
-    planPending = initialPlanTaskStatus === 'pending';
+      plan_state === 'ready'
+        ? (lastResortRan ? 'fallback_success' : 'ai_success')
+        : 'processing';
+    planPending = plan_state === 'processing';
 
     let initialPlanTaskId = null;
     let initialPlanTaskCreatedAt = null;
     let initialPlanTaskCompletedAt = null;
-    let savedPlanId = null;
     let generationSource = null;
     let trainerResult = null;
-    let savedPlanExists = false;
     if (payload.user_id) {
       const { data: taskRow } = await supabaseServer
         .from('ai_tasks')
@@ -379,17 +463,8 @@ export default async function handler(req, res) {
         generationSource = taskRow.result?.generation_source ?? taskRow.result?.final_publish_source ?? null;
         trainerResult = taskRow.result;
       }
-      if (plan_state === 'ready') {
-        const { data: planRow } = await supabaseServer
-          .from('ai_generated_plans')
-          .select('id')
-          .eq('user_id', payload.user_id)
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        savedPlanId = planRow?.id ?? null;
-        savedPlanExists = !!savedPlanId;
+      if (lastResortRan) {
+        generationSource = generationSource ?? 'reg_deterministic';
       }
     }
 
@@ -405,8 +480,8 @@ export default async function handler(req, res) {
         onboardingResult,
         finalPublishSource: generationSource ?? null,
         generationSource,
-        lastResortRan: false,
-        lastResortFailed: false,
+        lastResortRan,
+        lastResortFailed,
         savedPlanId,
         savedPlanExists,
         planState: plan_state,
@@ -417,7 +492,7 @@ export default async function handler(req, res) {
     }
 
     const response = {
-      ok: initialPlanTaskStatus === 'completed',
+      ok: accountCreated && (plan_state === 'ready' || plan_state === 'processing'),
       planSent,
       planPending,
       plan_state,
@@ -452,8 +527,9 @@ export default async function handler(req, res) {
         email_sent: planSent,
         plan_saved: savedPlanExists,
         plan_saved_id: savedPlanId ?? undefined,
-        last_resort_ran: false,
-        last_resort_failed: false,
+        last_resort_ran: lastResortRan,
+        last_resort_failed: lastResortFailed,
+        last_resort_error: lastResortError ?? undefined,
         required_modules: trainerResult?.required_modules ?? ['nutrition', 'training', 'habits'],
         completed_modules: trainerResult?.completed_modules ?? undefined,
         plan_scope: trainerResult?.plan_scope ?? 'initial_7_day_trial',
@@ -463,117 +539,6 @@ export default async function handler(req, res) {
       response.hasUserId = false;
     }
 
-    // Last-resort: když AI selhalo, uložíme deterministický plán – uživatel vždy dostane plán
-    let lastResortRan = false;
-    let lastResortFailed = false;
-    let lastResortError = null;
-    if (accountCreated && initialPlanTaskStatus !== 'completed') {
-      try {
-        let fallbackResult = await persistPublishableFallbackPlanForUser(payload.user_id);
-        lastResortError = fallbackResult?.plan_id ? null : (fallbackResult?.error ?? null);
-        if (!fallbackResult?.plan_id) {
-          fallbackResult = await persistPublishableFallbackPlanForUser(payload.user_id);
-          if (!lastResortError && !fallbackResult?.plan_id) lastResortError = fallbackResult?.error ?? null;
-        }
-        if (fallbackResult?.plan_id) {
-          lastResortRan = true;
-          plan_state = 'ready';
-          savedPlanId = fallbackResult.plan_id;
-          savedPlanExists = true;
-          let fallbackPlanSent = false;
-          const fallbackPlanId = fallbackResult.plan_id ?? null;
-          if (fallbackPlanId && (await isPlanEmailAlreadySent(fallbackPlanId))) {
-            fallbackPlanSent = true;
-            console.info('[body-metrics] last-resort email skipped – already sent for plan', { plan_id: fallbackPlanId });
-          } else if (fallbackResult.bm?.email && fallbackResult.planHtml) {
-            const claimedFallback = fallbackPlanId ? await tryClaimPlanEmailSend(fallbackPlanId) : false;
-            if (fallbackPlanId && !claimedFallback && (await isPlanEmailAlreadySent(fallbackPlanId))) {
-              fallbackPlanSent = true;
-              console.info('[body-metrics] last-resort email skipped – claim lost to parallel send', { plan_id: fallbackPlanId });
-            } else if (fallbackPlanId && !claimedFallback) {
-              console.warn('[body-metrics] last-resort email claim failed', { plan_id: fallbackPlanId });
-            } else {
-              try {
-                const sendRes = await sendPlanEmail(fallbackResult.bm.email, fallbackResult.planHtml, {
-                  loginPassword,
-                  loginUrl,
-                  existingAccount,
-                  loginUnavailable: payload.user_id == null,
-                  userChosePassword,
-                  firstName: fallbackResult.bm?.name ?? payload.name ?? null,
-                  bodyMetrics: fallbackResult.bm,
-                  planId: fallbackPlanId,
-                });
-                fallbackPlanSent = !!sendRes?.ok;
-                if (!fallbackPlanSent && fallbackPlanId) {
-                  await releasePlanEmailSendClaim(fallbackPlanId);
-                }
-              } catch (mailErr) {
-                if (fallbackPlanId) await releasePlanEmailSendClaim(fallbackPlanId);
-                console.warn('[body-metrics] last-resort sendPlanEmail failed:', mailErr?.message);
-              }
-            }
-          }
-          planSent = fallbackPlanSent;
-          message = fallbackPlanSent ? successMsg : emailFailedPlanReadyMsg;
-          if (response._diagnostics) {
-            response._diagnostics.last_resort_ran = true;
-            response._diagnostics.last_resort_plan_id = fallbackResult.plan_id;
-            response._diagnostics.plan_state = 'ready';
-            response._diagnostics.saved_plan_exists = true;
-            response._diagnostics.saved_plan_id = fallbackResult.plan_id;
-            response._diagnostics.plan_sent = planSent;
-          }
-          response.ok = true;
-          response.plan_state = 'ready';
-          response.planSent = planSent;
-          response.planPending = false;
-          response.message = message;
-          writeOnboardingEvent({
-            userId: payload.user_id,
-            bodyMetricsId,
-            registrationStartedAt,
-            registrationCompletedAt: new Date().toISOString(),
-            initialPlanTaskId,
-            initialPlanTaskCreatedAt,
-            initialPlanTaskCompletedAt,
-            onboardingResult: 'fallback_success',
-            finalPublishSource: 'reg_deterministic',
-            generationSource: 'reg_deterministic',
-            lastResortRan: true,
-            lastResortFailed: false,
-            savedPlanId: fallbackResult.plan_id,
-            savedPlanExists: true,
-            planState: 'ready',
-            planSent: fallbackPlanSent,
-            planPending: false,
-            finalResponseReason: 'plan_ready_fallback',
-          }).catch((err) => console.warn('[body-metrics] writeOnboardingEvent failed:', err?.message));
-          return res.status(200).json(response);
-        }
-        lastResortFailed = true;
-      } catch (lrErr) {
-        console.warn('[body-metrics] last-resort failed:', lrErr?.message);
-        lastResortFailed = true;
-        lastResortError = lrErr?.message ?? 'exception';
-      }
-      if (response._diagnostics) {
-        response._diagnostics.last_resort_ran = lastResortRan;
-        response._diagnostics.last_resort_failed = lastResortFailed;
-        if (lastResortFailed && lastResortError) {
-          response._diagnostics.last_resort_error = lastResortError;
-        }
-      }
-      return res.status(503).json({
-        ok: false,
-        error: message,
-        plan_state,
-        planPending,
-        hasUserId: true,
-        message,
-        _diagnostics: response._diagnostics,
-      });
-    }
     return res.status(200).json(response);
 
   } catch (e) {

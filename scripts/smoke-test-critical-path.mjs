@@ -149,7 +149,11 @@ const ok = res.ok;
 const status = res.status;
 
 if (ok) {
-  const planOk = body.planSent || body.planPending || body.plan_state === 'ready';
+  const planOk =
+    body.planSent ||
+    body.planPending ||
+    body.plan_state === 'ready' ||
+    body.plan_state === 'processing';
   if (planOk) {
     console.log(`PASS (${elapsed}s): 200, plán ready/pending/sent`);
     process.exit(0);

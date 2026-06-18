@@ -197,9 +197,16 @@ export default async function handler(req, res) {
     const initialPlanCompleted = initialPlanTask?.status === 'completed';
     let plan_state = 'missing';
     let plan_state_reason = '';
-    if (hasValidPlan) {
+    const hasPublishableSavedPlan = plansData.some(
+      (p) =>
+        p.is_active === true &&
+        p.plan_html &&
+        typeof p.plan_html === 'string' &&
+        p.plan_html.length > 0
+    );
+    if (hasValidPlan || hasPublishableSavedPlan) {
       plan_state = 'ready';
-      plan_state_reason = 'valid_plan_exists';
+      plan_state_reason = hasValidPlan ? 'valid_plan_exists' : 'active_plan_html_exists';
     } else if (initialPlanTaskQueryFailed && plansData.length === 0) {
       plan_state = 'processing';
       plan_state_reason = 'task_query_failed_assume_processing';

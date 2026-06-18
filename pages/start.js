@@ -159,7 +159,7 @@ export default function Start() {
       }
 
       if (res.ok) {
-        if (result.planSent || result.planPending || result.plan_state === 'ready') {
+        if (result.plan_state === 'ready' || result.plan_state === 'processing') {
           setStatus("✅ " + (result.message || "Účet je vytvořen. Přesměrování na tvůj plán…"));
           setPlanFailedWithAccount(false);
           const doRedirect = async () => {

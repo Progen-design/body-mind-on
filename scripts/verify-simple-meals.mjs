@@ -3,7 +3,7 @@
  * Ověření simple meal scoring + simulace výběru z katalogu (bez DB).
  *   node scripts/verify-simple-meals.mjs
  */
-import { scoreRecipeSimplicity, simplifyMealDisplayName, sortCatalogRowsForSimplePick } from '../lib/recipeSimplicityScore.js';
+import { scoreRecipeSimplicity, simplifyMealDisplayName, sortCatalogRowsForSimplePick, sanitizeIngredientLineForDisplay } from '../lib/recipeSimplicityScore.js';
 
 const BAD = [
   'Lososová frittata',
@@ -69,6 +69,11 @@ if (!/kuře|tvaroh/i.test(top)) {
 } else {
   console.log(`OK top pick "${top}"`);
 }
+
+console.log('\n--- Ingredient sanitize ---');
+const ingOk = sanitizeIngredientLineForDisplay('4 porce soli, 2 tbsp olive oil, 1 cup rice') === 'sůl dle chuti, olive oil, rice';
+console.log(`${ingOk ? 'OK' : 'FAIL'} imperial/salt sanitize`);
+if (!ingOk) failed += 1;
 
 console.log(failed ? `\n${failed} CHECK(S) FAILED` : '\nALL CHECKS PASS');
 process.exit(failed ? 1 : 0);

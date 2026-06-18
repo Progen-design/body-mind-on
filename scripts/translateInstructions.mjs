@@ -1,24 +1,27 @@
 #!/usr/bin/env node
 /**
  * scripts/translateInstructions.mjs
- * Jednorázový překlad recipes_catalog.instructions (EN → CS) přes OpenAI.
+ * Batch backfill recipes_catalog.instructions_cs (EN→CS překlad nebo generování z názvu+surovin).
+ * API: Anthropic (ANTHROPIC_API_KEY) — žádný runtime překlad v aplikaci.
  *
- * DEFAULT = DRY-RUN: 3 vzorky, nic nezapisuje.
+ * DEFAULT = dry-run (5 vzorků, nic nezapisuje):
  *   node scripts/translateInstructions.mjs
- * Plný zápis (idempotentní — přeskočí už česky vypadající postupy):
+ *   node scripts/translateInstructions.mjs --dry-run
+ * Plný zápis (idempotentní — přeskočí neprázdné instructions_cs):
  *   node scripts/translateInstructions.mjs --apply
  * Volitelně: --limit N
  */
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
 
 const APPLY = process.argv.includes('--apply');
 const limitArgIdx = process.argv.indexOf('--limit');
 const LIMIT = limitArgIdx > -1 ? Math.max(1, Number(process.argv[limitArgIdx + 1]) || 0) : null;
-const DRY_RUN_SAMPLE = 3;
-const OPENAI_CHUNK = 3;
+const DRY_RUN_SAMPLE = 5;
+const ANTHROPIC_CHUNK = 2;
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_INSTRUCTION_MODEL || 'claude-3-5-haiku-20241022';
+const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 
 function loadEnvFiles() {
   const loadFile = (name, keysFilter = null) => {
@@ -38,6 +41,8 @@ function loadEnvFiles() {
     'SUPABASE_URL',
     'NEXT_PUBLIC_SUPABASE_URL',
     'SUPABASE_SERVICE_ROLE_KEY',
+    'ANTHROPIC_API_KEY',
+    'ANTHROPIC_INSTRUCTION_MODEL',
   ]);
 }
 
@@ -49,38 +54,52 @@ if (!url || !key) {
   console.error('Chybí SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY');
   process.exit(1);
 }
-if (!process.env.OPENAI_API_KEY) {
-  console.error('Chybí OPENAI_API_KEY');
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error('Chybí ANTHROPIC_API_KEY');
   process.exit(1);
 }
 
 const supabase = createClient(url, key);
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const OPENAI_MODEL = process.env.INSTRUCTION_TRANSLATE_MODEL || 'gpt-4o-mini';
 
-const stats = { openai_calls: 0, updated: 0, failed: 0, skipped_already_cs: 0, skipped_empty: 0 };
+const stats = {
+  anthropic_calls: 0,
+  updated: 0,
+  copied_cs: 0,
+  failed: 0,
+  skipped_has_instructions_cs: 0,
+};
 
 const EN_HINT =
-  /\b(the|and|with|heat|add|mix|stir|bake|boil|minutes|until|bowl|pan|oven|tablespoon|teaspoon|preheat|serve|combine|whisk|season|slice|chop)\b/i;
+  /\b(the|and|with|heat|add|mix|stir|bake|boil|minutes|until|bowl|pan|oven|tablespoon|teaspoon|preheat|serve|combine|whisk|season|slice|chop|cups?|ounces?|pounds?)\b/i;
 const CS_HINT = /[ěščřžýáíéúůňťď]/i;
 
-function parseInstructions(raw) {
-  if (raw == null) return { format: 'empty', original: null, lines: [] };
+function parseInstructionLines(raw) {
+  if (raw == null) return [];
   if (Array.isArray(raw)) {
-    if (!raw.length) return { format: 'empty', original: raw, lines: [] };
-    if (typeof raw[0] === 'object' && raw[0] !== null) {
-      const lines = raw
-        .map((step) => String(step.step || step.text || step.original || '').trim())
-        .filter(Boolean);
-      return { format: 'objects', original: raw, lines };
-    }
-    const lines = raw.map((s) => String(s).trim()).filter(Boolean);
-    return { format: 'strings', original: raw, lines };
+    if (!raw.length) return [];
+    return raw
+      .map((step) => {
+        if (typeof step === 'string') return step.trim();
+        if (step && typeof step === 'object') {
+          return String(step.step || step.text || step.original || '').trim();
+        }
+        return '';
+      })
+      .filter(Boolean);
   }
-  if (typeof raw === 'string' && raw.trim()) {
-    return { format: 'string', original: raw, lines: [raw.trim()] };
-  }
-  return { format: 'empty', original: raw, lines: [] };
+  if (typeof raw === 'string' && raw.trim()) return [raw.trim()];
+  return [];
+}
+
+function ingredientLines(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((i) => {
+      if (typeof i === 'string') return i.trim();
+      if (i && typeof i === 'object') return String(i.original || i.name || i.text || '').trim();
+      return '';
+    })
+    .filter(Boolean);
 }
 
 function looksEnglish(lines) {
@@ -92,82 +111,122 @@ function looksEnglish(lines) {
   return false;
 }
 
-function rebuildInstructions(parsed, translatedLines) {
-  if (!translatedLines.length) return null;
-  if (parsed.format === 'objects' && Array.isArray(parsed.original)) {
-    return parsed.original.map((step, i) => {
-      const next = translatedLines[i] || String(step.step || step.text || step.original || '').trim();
-      if (step && typeof step === 'object') {
-        return { ...step, step: next, text: next, original: next };
-      }
-      return next;
-    });
+async function callAnthropic(system, user, maxTokens = 4096) {
+  const res = await fetch(ANTHROPIC_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: ANTHROPIC_MODEL,
+      max_tokens: maxTokens,
+      temperature: 0,
+      system,
+      messages: [{ role: 'user', content: user }],
+    }),
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Anthropic HTTP ${res.status}: ${errText.slice(0, 400)}`);
   }
-  if (parsed.format === 'string') {
-    return translatedLines.join('\n\n');
-  }
-  return translatedLines;
+  const data = await res.json();
+  const block = data?.content?.find((c) => c.type === 'text');
+  return block?.text?.trim() || '';
 }
 
-async function translateInstructionsCs(recipes) {
+function parseJsonFromAnthropic(raw) {
+  if (!raw) return null;
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const text = (fenced ? fenced[1] : raw).trim();
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+async function translateBatch(recipes) {
   const out = new Map();
-  for (let i = 0; i < recipes.length; i += OPENAI_CHUNK) {
-    const chunk = recipes.slice(i, i + OPENAI_CHUNK);
-    const completion = await openai.chat.completions.create({
-      model: OPENAI_MODEL,
-      temperature: 0,
-      max_tokens: 4000,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: `Překládáš kroky vaření receptů z angličtiny do češtiny.
-Zachovej počet kroků a pořadí. Piš srozumitelně pro domácí kuchaře v ČR (metrické jednotky v textu nech).
-Odpověz POUZE validním JSON: {"results":[{"id":<id>,"steps":["krok 1 česky",...]}]} — stejná id jako vstup.`,
-        },
-        {
-          role: 'user',
-          content: JSON.stringify({
-            recipes: chunk.map((r) => ({
-              id: r.id,
-              name_cs: r.name_cs,
-              steps_en: r.lines,
-            })),
-          }),
-        },
-      ],
-    });
-    stats.openai_calls++;
-    const raw = completion.choices?.[0]?.message?.content;
-    if (!raw) continue;
-    try {
-      const parsed = JSON.parse(raw);
-      for (const res of parsed?.results || []) {
-        const steps = Array.isArray(res?.steps)
-          ? res.steps.map((s) => String(s).trim()).filter(Boolean)
-          : [];
-        if (res?.id != null && steps.length) out.set(String(res.id), steps);
-      }
-    } catch {
-      /* chunk skip */
+  for (let i = 0; i < recipes.length; i += ANTHROPIC_CHUNK) {
+    const chunk = recipes.slice(i, i + ANTHROPIC_CHUNK);
+    const raw = await callAnthropic(
+      `Překládáš kroky vaření z angličtiny do češtiny pro domácí kuchaře v ČR.
+Pravidla:
+- Zachovej přesně počet kroků a pořadí.
+- Piš kulinářskou češtinu (srozumitelně, stručně).
+- Převeď imperiální jednotky na metrické: oz→g/ml, cup→ml nebo „hrnek“ konzistentně v rámci receptu, lb→g, °F→°C.
+- Oprav artefakty: „porce soli a pepře“ → „sůl a pepř dle chuti“, „season to taste“ → „dochutit dle chuti“.
+- Vrať POUZE validní JSON: {"results":[{"id":<id>,"steps":["krok 1",...]}]} se stejnými id jako vstup.`,
+      JSON.stringify({
+        recipes: chunk.map((r) => ({
+          id: r.id,
+          name_cs: r.name_cs,
+          steps_en: r.lines,
+        })),
+      })
+    );
+    stats.anthropic_calls++;
+    const parsed = parseJsonFromAnthropic(raw);
+    for (const res of parsed?.results || []) {
+      const steps = Array.isArray(res?.steps)
+        ? res.steps.map((s) => String(s).trim()).filter(Boolean)
+        : [];
+      if (res?.id != null && steps.length) out.set(String(res.id), steps);
     }
   }
   return out;
 }
 
-function printSample(row, beforeLines, afterLines) {
+async function generateBatch(recipes) {
+  const out = new Map();
+  for (let i = 0; i < recipes.length; i += ANTHROPIC_CHUNK) {
+    const chunk = recipes.slice(i, i + ANTHROPIC_CHUNK);
+    const raw = await callAnthropic(
+      `Generuješ postup vaření v češtině pro recepty bez existujícího postupu.
+Pravidla:
+- 3–6 kroků, jsonb pole stringů.
+- Vycházej z name_cs a ingredients — nepřidávej suroviny, které nejsou v seznamu.
+- Metrické jednotky, 1 porce, kulinářská čeština.
+- Vrať POUZE validní JSON: {"results":[{"id":<id>,"steps":["krok 1",...]}]} se stejnými id jako vstup.`,
+      JSON.stringify({
+        recipes: chunk.map((r) => ({
+          id: r.id,
+          name_cs: r.name_cs,
+          ingredients: r.ingredients.slice(0, 24),
+        })),
+      })
+    );
+    stats.anthropic_calls++;
+    const parsed = parseJsonFromAnthropic(raw);
+    for (const res of parsed?.results || []) {
+      const steps = Array.isArray(res?.steps)
+        ? res.steps.map((s) => String(s).trim()).filter(Boolean)
+        : [];
+      if (res?.id != null && steps.length >= 3 && steps.length <= 8) out.set(String(res.id), steps);
+    }
+  }
+  return out;
+}
+
+function printSample(row, beforeLines, afterLines, mode) {
   console.log('');
-  console.log(`--- #${row.id} ${row.name_cs} (${row.source || '?'}) ---`);
-  console.log('PŘED (EN):');
-  beforeLines.forEach((s, i) => console.log(`  ${i + 1}. ${s.slice(0, 160)}${s.length > 160 ? '…' : ''}`));
-  console.log('PO (CS):');
-  afterLines.forEach((s, i) => console.log(`  ${i + 1}. ${s.slice(0, 160)}${s.length > 160 ? '…' : ''}`));
+  console.log(`--- #${row.id} ${row.name_cs} (${row.source || '?'}) [${mode}] ---`);
+  if (beforeLines?.length) {
+    console.log('PŘED:');
+    beforeLines.forEach((s, i) => console.log(`  ${i + 1}. ${s.slice(0, 180)}${s.length > 180 ? '…' : ''}`));
+  } else {
+    console.log('PŘED: (prázdné instructions)');
+  }
+  console.log('PO (instructions_cs):');
+  afterLines.forEach((s, i) => console.log(`  ${i + 1}. ${s.slice(0, 180)}${s.length > 180 ? '…' : ''}`));
 }
 
 async function main() {
   const { data: rows, error } = await supabase
     .from('recipes_catalog')
-    .select('id, source, name_cs, instructions')
+    .select('id, source, name_cs, name_en, ingredients, instructions, instructions_cs')
     .eq('active', true)
     .order('id', { ascending: true });
 
@@ -176,69 +235,81 @@ async function main() {
     process.exit(1);
   }
 
-  const candidates = [];
+  const toTranslate = [];
+  const toGenerate = [];
+  const toCopy = [];
+
   for (const row of rows || []) {
-    const parsed = parseInstructions(row.instructions);
-    if (!parsed.lines.length) {
-      stats.skipped_empty++;
+    const existingCs = parseInstructionLines(row.instructions_cs);
+    if (existingCs.length) {
+      stats.skipped_has_instructions_cs++;
       continue;
     }
-    if (!looksEnglish(parsed.lines)) {
-      stats.skipped_already_cs++;
+
+    const enLines = parseInstructionLines(row.instructions);
+    if (enLines.length) {
+      if (looksEnglish(enLines)) {
+        toTranslate.push({ ...row, lines: enLines, mode: 'translate' });
+      } else {
+        toCopy.push({ ...row, lines: enLines, mode: 'copy' });
+      }
       continue;
     }
-    candidates.push({ ...row, parsed, lines: parsed.lines });
+
+    toGenerate.push({
+      ...row,
+      ingredients: ingredientLines(row.ingredients),
+      mode: 'generate',
+    });
   }
 
-  const limited = LIMIT ? candidates.slice(0, LIMIT) : candidates;
   const estimate = {
     active_total: (rows || []).length,
-    needs_translation: candidates.length,
-    est_openai_calls: Math.ceil(limited.length / OPENAI_CHUNK),
+    needs_translate: toTranslate.length,
+    needs_generate: toGenerate.length,
+    needs_copy: toCopy.length,
+    est_anthropic_calls:
+      Math.ceil(toTranslate.length / ANTHROPIC_CHUNK) + Math.ceil(toGenerate.length / ANTHROPIC_CHUNK),
   };
 
-  console.log(JSON.stringify({ mode: APPLY ? 'APPLY' : 'DRY-RUN', ...estimate }, null, 2));
+  console.log(JSON.stringify({ mode: APPLY ? 'APPLY' : 'DRY-RUN', model: ANTHROPIC_MODEL, ...estimate }, null, 2));
 
-  const proc = APPLY ? limited : limited.slice(0, DRY_RUN_SAMPLE);
-  if (!proc.length) {
-    console.log('Žádné anglické postupy k překladu.');
+  const workQueue = [...toTranslate, ...toGenerate];
+  const limitedWork = LIMIT ? workQueue.slice(0, LIMIT) : workQueue;
+
+  if (!limitedWork.length && !toCopy.length) {
+    console.log('Žádné recepty k backfillu (všechny mají instructions_cs).');
     return;
   }
 
   if (!APPLY) {
-    console.log('');
-    console.log(`=== VZORKY K PŘEKLADU (${proc.length} receptů) — aktuální EN postup v DB ===`);
-    for (const row of proc) {
-      console.log('');
-      console.log(`--- #${row.id} ${row.name_cs} (${row.source || '?'}) ---`);
-      row.lines.forEach((s, i) => console.log(`  ${i + 1}. ${s.slice(0, 200)}${s.length > 200 ? '…' : ''}`));
-    }
-  }
+    const sample = limitedWork.slice(0, DRY_RUN_SAMPLE);
+    const sampleTranslate = sample.filter((r) => r.mode === 'translate');
+    const sampleGenerate = sample.filter((r) => r.mode === 'generate');
 
-  let translated = new Map();
-  try {
-    translated = await translateInstructionsCs(proc);
-  } catch (err) {
-    const msg = err?.message || String(err);
-    console.warn('');
-    console.warn(`⚠️ OpenAI volání selhalo: ${msg.slice(0, 240)}`);
-    if (!APPLY) {
-      console.warn('Dry-run ukázal vzorky z DB výše. Po obnovení kvóty spusť znovu pro náhled CS překladu.');
-      console.log('');
-      console.log(JSON.stringify({ dry_run: true, stats, estimate_full_run: estimate, openai_error: msg.slice(0, 200) }, null, 2));
-      console.log('Nic nebylo zapsáno. Plný zápis: node scripts/translateInstructions.mjs --apply');
-      return;
+    let translated = new Map();
+    let generated = new Map();
+    try {
+      if (sampleTranslate.length) translated = await translateBatch(sampleTranslate);
+      if (sampleGenerate.length) generated = await generateBatch(sampleGenerate);
+    } catch (err) {
+      console.error('Anthropic selhalo:', err?.message || err);
+      process.exit(1);
     }
-    throw err;
-  }
 
-  if (!APPLY) {
     console.log('');
-    console.log(`=== DRY-RUN VZOREK (${proc.length} receptů) — tvar, který by se zapsal do recipes_catalog.instructions ===`);
-    for (const row of proc) {
-      const csSteps = translated.get(String(row.id));
-      if (csSteps) printSample(row, row.lines, csSteps);
-      else console.log(`— #${row.id} ${row.name_cs}: BEZ VÝSLEDKU`);
+    console.log(`=== DRY-RUN VZOREK (${sample.length} receptů) — zápis do instructions_cs ===`);
+    for (const row of sample) {
+      const steps =
+        row.mode === 'translate'
+          ? translated.get(String(row.id))
+          : generated.get(String(row.id));
+      if (steps?.length) printSample(row, row.lines || [], steps, row.mode);
+      else console.log(`— #${row.id} ${row.name_cs}: BEZ VÝSLEDKU z Anthropic`);
+    }
+    if (toCopy.length) {
+      console.log('');
+      console.log(`(+ ${toCopy.length} receptů s již českým instructions → kopie do instructions_cs bez API)`);
     }
     console.log('');
     console.log(JSON.stringify({ dry_run: true, stats, estimate_full_run: estimate }, null, 2));
@@ -246,24 +317,62 @@ async function main() {
     return;
   }
 
-  for (const row of proc) {
-    const csSteps = translated.get(String(row.id));
-    if (!csSteps?.length) {
+  const procTranslate = limitedWork.filter((r) => r.mode === 'translate');
+  const procGenerate = limitedWork.filter((r) => r.mode === 'generate');
+  const procCopy = LIMIT
+    ? toCopy.slice(0, Math.max(0, LIMIT - limitedWork.length))
+    : toCopy;
+
+  let translated = new Map();
+  let generated = new Map();
+  if (procTranslate.length) translated = await translateBatch(procTranslate);
+  if (procGenerate.length) generated = await generateBatch(procGenerate);
+
+  for (const row of procCopy) {
+    const { error: upErr } = await supabase
+      .from('recipes_catalog')
+      .update({ instructions_cs: row.lines })
+      .eq('id', row.id);
+    if (upErr) {
       stats.failed++;
-      continue;
+      console.error('[copy-fail]', row.id, upErr.message);
+    } else {
+      stats.copied_cs++;
+      stats.updated++;
     }
-    const nextInstructions = rebuildInstructions(row.parsed, csSteps);
-    if (!nextInstructions) {
+  }
+
+  for (const row of procTranslate) {
+    const steps = translated.get(String(row.id));
+    if (!steps?.length) {
       stats.failed++;
       continue;
     }
     const { error: upErr } = await supabase
       .from('recipes_catalog')
-      .update({ instructions: nextInstructions })
+      .update({ instructions_cs: steps })
       .eq('id', row.id);
     if (upErr) {
       stats.failed++;
-      console.error('[update-fail]', row.id, upErr.message);
+      console.error('[translate-fail]', row.id, upErr.message);
+    } else {
+      stats.updated++;
+    }
+  }
+
+  for (const row of procGenerate) {
+    const steps = generated.get(String(row.id));
+    if (!steps?.length) {
+      stats.failed++;
+      continue;
+    }
+    const { error: upErr } = await supabase
+      .from('recipes_catalog')
+      .update({ instructions_cs: steps })
+      .eq('id', row.id);
+    if (upErr) {
+      stats.failed++;
+      console.error('[generate-fail]', row.id, upErr.message);
     } else {
       stats.updated++;
     }

@@ -8,6 +8,9 @@
           "pages/api/ai/run-scheduler.js": {
                   "maxDuration": 300
           },
+          "pages/api/ai/run-coach-scheduler.js": {
+                  "maxDuration": 120
+          },
           "pages/api/body-metrics.js": {
                   "maxDuration": 90
           }

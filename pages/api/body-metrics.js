@@ -12,7 +12,7 @@ import {
 } from '../../lib/registrationRules';
 import { createAuthUserIfNew } from '../../lib/authHelpers';
 import { createInitialAITasks } from '../../lib/createInitialAITasks';
-import { runAIScheduler } from '../../lib/aiScheduler';
+import { runAIScheduler, runAICoachScheduler } from '../../lib/aiScheduler';
 import {
   executeAITask,
   persistPublishableFallbackPlanForUser,
@@ -260,8 +260,8 @@ export default async function handler(req, res) {
               await runDirectExecute().catch(() => {});
             }
           } else if (process.env.AI_RUN_COACH_AFTER_INITIAL_PLAN !== 'false') {
-            const schedCoach = await runAIScheduler();
-            console.info('[body-metrics] coach/onboarding scheduler after initial_plan ok', schedCoach);
+            const schedCoach = await runAICoachScheduler({ limit: 1 });
+            console.info('[body-metrics] coach scheduler after initial_plan ok', schedCoach);
           }
         } catch (execErr) {
           console.warn('[body-metrics] direct execute failed', { error: execErr?.message, stack: execErr?.stack?.slice?.(0, 300) });

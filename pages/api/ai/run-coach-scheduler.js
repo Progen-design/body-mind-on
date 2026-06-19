@@ -1,0 +1,31 @@
+// /pages/api/ai/run-coach-scheduler.js — coach-only task queue (bez plan tasků)
+import { runAICoachScheduler } from '../../../lib/aiScheduler';
+
+export const config = { maxDuration: 120 };
+
+export default async function handler(req, res) {
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const secret = process.env.CRON_SECRET || process.env.AI_SCHEDULER_SECRET;
+  if (!secret) {
+    return res.status(500).json({ error: 'CRON_SECRET or AI_SCHEDULER_SECRET is not configured' });
+  }
+  const authHeader = req.headers.authorization || '';
+  const bearer = `Bearer ${secret}`;
+  const querySecret = req.query?.secret || req.query?.cron_secret || '';
+  const isAuthorized = authHeader === bearer || (querySecret && querySecret === secret);
+  if (!isAuthorized) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const run = await runAICoachScheduler();
+    console.info('[run-coach-scheduler] completed', run);
+    return res.status(200).json({ ok: true, scheduler: run });
+  } catch (err) {
+    console.error('[run-coach-scheduler] error', err);
+    return res.status(500).json({ error: String(err?.message || err) });
+  }
+}

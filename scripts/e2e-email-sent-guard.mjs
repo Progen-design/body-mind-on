@@ -11,6 +11,11 @@
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { createClient } from '@supabase/supabase-js';
+import {
+  fetchWithTimeout,
+  FETCH_TIMEOUT,
+  formatFetchError,
+} from './lib/fetchWithTimeout.mjs';
 
 const BASE_URL = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
 const FULL_REGISTRATION = process.argv.includes('--full');
@@ -61,13 +66,22 @@ async function register() {
     diet_type: 'standard',
   };
 
+  const regUrl = `${BASE_URL}/api/body-metrics`;
   console.log('1) POST /api/body-metrics →', TEST_EMAIL);
-  const res = await fetch(`${BASE_URL}/api/body-metrics`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(120000),
-  });
+  let res;
+  try {
+    res = await fetchWithTimeout(
+      regUrl,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      },
+      FETCH_TIMEOUT.BODY_METRICS
+    );
+  } catch (err) {
+    throw new Error(formatFetchError(err, regUrl));
+  }
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(`Registrace ${res.status}: ${JSON.stringify(json).slice(0, 300)}`);
@@ -146,11 +160,20 @@ async function runSecondPass(userId) {
   if (insertErr) throw new Error(`Insert duplicate task: ${insertErr.message}`);
   console.log('3) Vložen druhý pending initial_plan task', inserted.id);
 
-  const schedRes = await fetch(`${BASE_URL}/api/ai/run-scheduler`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${cronSecret}` },
-    signal: AbortSignal.timeout(180000),
-  });
+  const schedUrl = `${BASE_URL}/api/ai/run-scheduler`;
+  let schedRes;
+  try {
+    schedRes = await fetchWithTimeout(
+      schedUrl,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${cronSecret}` },
+      },
+      FETCH_TIMEOUT.SCHEDULER
+    );
+  } catch (err) {
+    throw new Error(formatFetchError(err, schedUrl));
+  }
   const schedJson = await schedRes.json().catch(() => ({}));
   if (!schedRes.ok) {
     throw new Error(`Scheduler ${schedRes.status}: ${JSON.stringify(schedJson).slice(0, 200)}`);
@@ -166,10 +189,14 @@ async function runSecondPass(userId) {
 }
 
 async function main() {
-  const health = await fetch(`${BASE_URL}/api/integrations-status`, {
-    signal: AbortSignal.timeout(5000),
-  });
-  if (!health.ok) throw new Error(`API health ${health.status}`);
+  const healthUrl = `${BASE_URL}/api/integrations-status`;
+  let health;
+  try {
+    health = await fetchWithTimeout(healthUrl, { method: 'GET' }, FETCH_TIMEOUT.HEALTH);
+  } catch (err) {
+    throw new Error(formatFetchError(err, healthUrl));
+  }
+  if (!health.ok) throw new Error(`API health HTTP ${health.status}: ${healthUrl}`);
 
   let { plan, task, bm } = await loadArtifacts();
 

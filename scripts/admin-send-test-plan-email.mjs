@@ -1,6 +1,11 @@
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import {
+  fetchWithTimeout,
+  FETCH_TIMEOUT,
+  formatFetchError,
+} from './lib/fetchWithTimeout.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -39,22 +44,33 @@ if (!token) {
 const base = (process.env.NEXT_PUBLIC_APP_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '');
 const ownerEmail = process.argv[2] || 'janprikopa@gmail.com';
 const recipientEmail = process.argv[3] || 'prikopa@pro-security.cz';
+const url = `${base}/api/admin/send-test-plan-email`;
 
-const res = await fetch(`${base}/api/admin/send-test-plan-email`, {
-  method: 'POST',
-  headers: {
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    owner_email: ownerEmail,
-    recipient_email: recipientEmail,
-  }),
-});
+let res;
+try {
+  res = await fetchWithTimeout(
+    url,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        owner_email: ownerEmail,
+        recipient_email: recipientEmail,
+      }),
+    },
+    FETCH_TIMEOUT.ADMIN
+  );
+} catch (err) {
+  console.error(formatFetchError(err, url));
+  process.exit(1);
+}
 
 const body = await res.json().catch(() => ({}));
 if (!res.ok || body?.ok !== true) {
-  console.error('request failed', res.status, body);
+  console.error('request failed', `HTTP ${res.status}`, url, body);
   process.exit(1);
 }
 

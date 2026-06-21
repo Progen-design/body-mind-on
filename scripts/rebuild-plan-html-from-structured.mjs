@@ -15,6 +15,11 @@
 import { readFileSync, existsSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import {
+  fetchWithTimeout,
+  FETCH_TIMEOUT,
+  formatFetchError,
+} from './lib/fetchWithTimeout.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, '..');
@@ -62,14 +67,18 @@ const body = {
 };
 
 try {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
+  const res = await fetchWithTimeout(
+    url,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
-  });
+    FETCH_TIMEOUT.ADMIN
+  );
   const text = await res.text();
   if (!res.ok) {
     console.error(`HTTP ${res.status} ${res.statusText} — ${url}`);
@@ -91,6 +100,6 @@ try {
   }
   process.exit(0);
 } catch (e) {
-  console.error(e?.message || e);
+  console.error(formatFetchError(e, url));
   process.exit(1);
 }

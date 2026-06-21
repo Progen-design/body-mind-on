@@ -4,6 +4,11 @@
  * Env: NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (or run via Supabase MCP output)
  */
 import { createClient } from '@supabase/supabase-js';
+import {
+  fetchWithTimeout,
+  FETCH_TIMEOUT,
+  formatFetchError,
+} from './lib/fetchWithTimeout.mjs';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -11,10 +16,10 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 async function checkUrl(url) {
   if (!url || typeof url !== 'string') return { url, status: 'missing' };
   try {
-    const res = await fetch(url, { method: 'HEAD', redirect: 'follow' });
+    const res = await fetchWithTimeout(url, { method: 'HEAD', redirect: 'follow' }, FETCH_TIMEOUT.GET);
     return { url, status: res.ok ? 'ok' : `http_${res.status}` };
   } catch (e) {
-    return { url, status: `error:${e?.message || 'fetch'}` };
+    return { url, status: `error:${formatFetchError(e, url)}` };
   }
 }
 

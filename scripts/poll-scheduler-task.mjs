@@ -3,6 +3,11 @@
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { createClient } from '@supabase/supabase-js';
+import {
+  fetchWithTimeout,
+  FETCH_TIMEOUT,
+  formatFetchError,
+} from './lib/fetchWithTimeout.mjs';
 
 const taskId = process.argv[2];
 const appUrl = (process.env.TEST_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
@@ -26,13 +31,23 @@ const supabase = createClient(
 );
 
 async function runScheduler() {
-  const res = await fetch(`${appUrl}/api/ai/run-scheduler`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${cronSecret}` },
-    signal: AbortSignal.timeout(300000),
-  });
+  const url = `${appUrl}/api/ai/run-scheduler`;
+  let res;
+  try {
+    res = await fetchWithTimeout(
+      url,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${cronSecret}` },
+      },
+      FETCH_TIMEOUT.SCHEDULER
+    );
+  } catch (err) {
+    console.error(formatFetchError(err, url));
+    throw err;
+  }
   const json = await res.json().catch(() => ({}));
-  console.log('scheduler', res.status, JSON.stringify(json).slice(0, 300));
+  console.log('scheduler', `HTTP ${res.status}`, url, JSON.stringify(json).slice(0, 300));
   return json;
 }
 
@@ -56,11 +71,11 @@ async function main() {
     await runScheduler();
     await new Promise((r) => setTimeout(r, 5000));
   }
-  console.error('timeout');
+  console.error('timeout waiting for task', taskId);
   process.exit(1);
 }
 
 main().catch((e) => {
-  console.error(e);
+  console.error(e.message || e);
   process.exit(1);
 });

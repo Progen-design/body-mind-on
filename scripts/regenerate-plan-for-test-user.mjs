@@ -16,6 +16,12 @@
 import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import {
+  fetchWithTimeout,
+  FETCH_TIMEOUT,
+  formatFetchError,
+  FetchTimeoutError,
+} from './lib/fetchWithTimeout.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -48,7 +54,7 @@ const APP_URL = String(process.env.REGEN_APP_URL || 'https://app.bodyandmindon.c
   ''
 );
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN?.trim();
-const FETCH_TIMEOUT_MS = 300_000;
+const FETCH_TIMEOUT_MS = FETCH_TIMEOUT.ADMIN_LONG;
 
 if (!process.argv.includes('--yes')) {
   console.error('Pro volání admin API přidej příznak --yes .');
@@ -68,22 +74,22 @@ console.log('');
 console.log('[regenerate-plan] Testovací účet:', TARGET);
 console.log('[regenerate-plan] Endpoint:', url);
 console.log('[regenerate-plan] Generování na serveru (unified pipeline) může trvat 1–5 minut…');
+console.log('[regenerate-plan] timeout:', `${FETCH_TIMEOUT_MS} ms`);
 console.log('');
 
-const controller = new AbortController();
-const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
 try {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${ADMIN_TOKEN}`,
+  const res = await fetchWithTimeout(
+    url,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${ADMIN_TOKEN}`,
+      },
+      body: JSON.stringify({ email: TARGET, skip_email: true }),
     },
-    body: JSON.stringify({ email: TARGET, skip_email: true }),
-    signal: controller.signal,
-  });
-  clearTimeout(timer);
+    FETCH_TIMEOUT_MS
+  );
   const text = await res.text();
   let body;
   try {
@@ -109,14 +115,13 @@ try {
     })
   );
 } catch (e) {
-  clearTimeout(timer);
   const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)\b/i.test(APP_URL);
-  if (isLocal && (e.name === 'AbortError' || /fetch failed|ECONNREFUSED/i.test(String(e.message)))) {
+  if (isLocal && (e instanceof FetchTimeoutError || /fetch failed|ECONNREFUSED/i.test(String(e.message)))) {
     console.error('');
     console.error('Server pravděpodobně neběží. Spusť npm run dev, nebo nastav');
     console.error('  REGEN_APP_URL=https://app.bodyandmindon.cz');
     console.error('');
   }
-  console.error('[regenerate-plan] Selhalo:', e.message || String(e));
+  console.error('[regenerate-plan] Selhalo:', formatFetchError(e, url));
   process.exit(1);
 }

@@ -6,6 +6,11 @@
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { createClient } from '@supabase/supabase-js';
+import {
+  fetchWithTimeout,
+  FETCH_TIMEOUT,
+  formatFetchError,
+} from './lib/fetchWithTimeout.mjs';
 
 const email = (process.argv[2] || 'janprikopa@gmail.com').trim().toLowerCase();
 const APP_URL = (process.env.TEST_APP_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '');
@@ -47,11 +52,20 @@ async function findUserId(targetEmail) {
 }
 
 async function runScheduler() {
-  const res = await fetch(`${APP_URL}/api/ai/run-scheduler`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${cronSecret}` },
-    signal: AbortSignal.timeout(300000),
-  });
+  const url = `${APP_URL}/api/ai/run-scheduler`;
+  let res;
+  try {
+    res = await fetchWithTimeout(
+      url,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${cronSecret}` },
+      },
+      FETCH_TIMEOUT.SCHEDULER
+    );
+  } catch (err) {
+    throw new Error(formatFetchError(err, url));
+  }
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(`Scheduler ${res.status}: ${JSON.stringify(json).slice(0, 200)}`);
   return json;

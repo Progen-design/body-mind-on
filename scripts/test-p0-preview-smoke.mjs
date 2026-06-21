@@ -15,6 +15,11 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import {
+  fetchWithTimeout,
+  FETCH_TIMEOUT,
+  formatFetchError,
+} from './lib/fetchWithTimeout.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
@@ -64,7 +69,13 @@ if (!DEV_KEY) {
 const devSb = createClient(DEV_URL, DEV_KEY, { auth: { persistSession: false } });
 
 async function verifyPreviewDbTarget() {
-  const res = await fetch(`${BASE_URL}/api/integrations-status`);
+  const url = `${BASE_URL}/api/integrations-status`;
+  let res;
+  try {
+    res = await fetchWithTimeout(url, { method: 'GET' }, FETCH_TIMEOUT.HEALTH);
+  } catch (err) {
+    throw new Error(formatFetchError(err, url));
+  }
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(`integrations-status ${res.status}`);
   if (body.supabase_project_ref !== DEV_REF) {
@@ -101,9 +112,12 @@ async function getTrainerToken() {
 async function testT4() {
   try {
     const token = await getTrainerToken();
-    const res = await fetch(`${BASE_URL}/api/trainer/clients`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const url = `${BASE_URL}/api/trainer/clients`;
+    const res = await fetchWithTimeout(
+      url,
+      { headers: { Authorization: `Bearer ${token}` } },
+      FETCH_TIMEOUT.GET
+    );
     const body = await res.json().catch(() => ({}));
     if (res.status !== 200) throw new Error(`HTTP ${res.status}: ${body.error || JSON.stringify(body)}`);
     pass('T4', { summary: `200, clients=${(body.clients || []).length}` });
@@ -118,12 +132,16 @@ async function testT8() {
   payload.email = `p0-preview-${Date.now()}@example.com`;
   payload.password = 'P0TestPass1!';
   try {
-    const res = await fetch(`${BASE_URL}/api/body-metrics`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(120000),
-    });
+    const regUrl = `${BASE_URL}/api/body-metrics`;
+    const res = await fetchWithTimeout(
+      regUrl,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      },
+      FETCH_TIMEOUT.BODY_METRICS
+    );
     const body = await res.json().catch(() => ({}));
     const ok = res.ok || (res.status === 503 && body.hasUserId);
     if (!ok) throw new Error(`HTTP ${res.status}: ${body.error || body.message || JSON.stringify(body)}`);
@@ -150,9 +168,12 @@ async function testT8() {
     });
     if (signInErr) checks.profile_api = `sign-in failed: ${signInErr.message}`;
     else {
-      const profileRes = await fetch(`${BASE_URL}/api/profile`, {
-        headers: { Authorization: `Bearer ${signInData.session.access_token}` },
-      });
+      const profileUrl = `${BASE_URL}/api/profile`;
+      const profileRes = await fetchWithTimeout(
+        profileUrl,
+        { headers: { Authorization: `Bearer ${signInData.session.access_token}` } },
+        FETCH_TIMEOUT.GET
+      );
       checks.profile_api = profileRes.status;
     }
 
@@ -198,11 +219,16 @@ async function testT9(userInfo) {
     };
     const payload = JSON.stringify(eventPayload);
     const sig = stripe.webhooks.generateTestHeaderString({ payload, secret: whSecret });
-    const res = await fetch(`${BASE_URL}/api/webhooks/stripe`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'stripe-signature': sig },
-      body: payload,
-    });
+    const webhookUrl = `${BASE_URL}/api/webhooks/stripe`;
+    const res = await fetchWithTimeout(
+      webhookUrl,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'stripe-signature': sig },
+        body: payload,
+      },
+      FETCH_TIMEOUT.POST
+    );
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${JSON.stringify(body)}`);
     const { data: membership } = await devSb.from('memberships').select('status, tier').eq('user_id', userInfo.uid).maybeSingle();
@@ -216,7 +242,8 @@ async function testT9(userInfo) {
 async function testT13() {
   try {
     const status = await verifyPreviewDbTarget();
-    const community = await fetch(`${BASE_URL}/api/community`);
+    const communityUrl = `${BASE_URL}/api/community`;
+    const community = await fetchWithTimeout(communityUrl, { method: 'GET' }, FETCH_TIMEOUT.GET);
     const commStatus = community.status;
     pass('T13', {
       summary: `integrations OK, community HTTP ${commStatus}`,

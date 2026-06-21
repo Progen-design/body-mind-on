@@ -11,6 +11,11 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
 import { addCalendarDaysIsoPrague, calendarDateIsoInPrague } from '../lib/czechCalendar.js';
+import {
+  fetchWithTimeout,
+  FETCH_TIMEOUT,
+  formatFetchError,
+} from './lib/fetchWithTimeout.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
@@ -125,9 +130,16 @@ async function main() {
   console.log('TEST EMAIL:', email);
   console.log('');
 
-  const health = await fetch(`${TARGET_URL}/api/integrations-status`, { signal: AbortSignal.timeout(10000) });
+  const healthUrl = `${TARGET_URL}/api/integrations-status`;
+  let health;
+  try {
+    health = await fetchWithTimeout(healthUrl, { method: 'GET' }, FETCH_TIMEOUT.HEALTH);
+  } catch (err) {
+    console.error(formatFetchError(err, healthUrl));
+    process.exit(1);
+  }
   if (!health.ok) {
-    console.error('FAIL: integrations-status HTTP', health.status);
+    console.error('FAIL: integrations-status HTTP', health.status, healthUrl);
     process.exit(1);
   }
   const healthBody = await health.json().catch(() => ({}));
@@ -137,17 +149,21 @@ async function main() {
   const regStarted = Date.now();
   let regBody = {};
   let regStatus = 0;
+  const regUrl = `${TARGET_URL}/api/body-metrics`;
   try {
-    const res = await fetch(`${TARGET_URL}/api/body-metrics`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
+    const res = await fetchWithTimeout(
+      regUrl,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      },
+      FETCH_TIMEOUT.BODY_METRICS
+    );
     regStatus = res.status;
     regBody = await res.json().catch(() => ({}));
   } catch (e) {
-    console.error('FAIL: registrace selhala:', e.message);
+    console.error('FAIL: registrace selhala:', formatFetchError(e, regUrl));
     process.exit(1);
   }
 

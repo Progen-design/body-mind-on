@@ -6,12 +6,18 @@ import {
   TRUSTED_EXERCISE_GIF_BY_KEY,
   TRUSTED_EXTENDED_GIF_BY_KEY,
 } from '../lib/exerciseRegistryMedia.js';
+import {
+  fetchWithTimeout,
+  FETCH_TIMEOUT,
+  formatFetchError,
+} from './lib/fetchWithTimeout.mjs';
 
 async function headOk(url) {
   try {
-    const res = await fetch(url, { method: 'HEAD', redirect: 'follow' });
+    const res = await fetchWithTimeout(url, { method: 'HEAD', redirect: 'follow' }, FETCH_TIMEOUT.GET);
     return res.ok;
-  } catch {
+  } catch (err) {
+    console.error(formatFetchError(err, url));
     return false;
   }
 }

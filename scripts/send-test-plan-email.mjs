@@ -24,6 +24,11 @@ import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import {
+  fetchWithTimeout,
+  FETCH_TIMEOUT,
+  formatFetchError,
+} from './lib/fetchWithTimeout.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -73,23 +78,32 @@ if (!ADMIN_TOKEN) {
 }
 
 async function post(body) {
-  const res = await fetch(URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${ADMIN_TOKEN}`,
-    },
-    body: JSON.stringify(body),
-  });
+  let res;
+  try {
+    res = await fetchWithTimeout(
+      URL,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${ADMIN_TOKEN}`,
+        },
+        body: JSON.stringify(body),
+      },
+      FETCH_TIMEOUT.ADMIN
+    );
+  } catch (err) {
+    throw new Error(formatFetchError(err, URL));
+  }
   const text = await res.text();
   let json;
   try {
     json = JSON.parse(text);
   } catch {
-    throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
+    throw new Error(`HTTP ${res.status} ${URL}: ${text.slice(0, 200)}`);
   }
   if (!res.ok || !json.ok) {
-    throw new Error(json.error || json.message || `HTTP ${res.status}`);
+    throw new Error(json.error || json.message || `HTTP ${res.status} ${URL}`);
   }
   return json;
 }

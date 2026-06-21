@@ -17,11 +17,13 @@
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import {
+  fetchWithTimeout,
+  FETCH_TIMEOUT,
+  formatFetchError,
+} from './lib/fetchWithTimeout.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
-const HEALTH_TIMEOUT_MS = 4000;
-const MAIN_TIMEOUT_MS = 90000;
 
 const DEFAULT_SMOKE_LOCAL = 'info';
 
@@ -65,18 +67,14 @@ function buildSmokeRecipientEmail(baseUrl) {
 
 async function assertApiReachable(baseUrl) {
   const healthUrl = `${baseUrl.replace(/\/$/, '')}/api/integrations-status`;
-  const controller = new AbortController();
-  const t = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS);
   try {
-    const res = await fetch(healthUrl, { method: 'GET', signal: controller.signal });
-    clearTimeout(t);
+    const res = await fetchWithTimeout(healthUrl, { method: 'GET' }, FETCH_TIMEOUT.HEALTH);
     if (!res.ok) {
-      console.error(`Health check: ${healthUrl} vrátil ${res.status}.`);
+      console.error(`Health check: ${healthUrl} vrátil HTTP ${res.status}.`);
       return false;
     }
     return true;
   } catch (e) {
-    clearTimeout(t);
     const isLocal =
       /^https?:\/\/localhost\b/i.test(baseUrl) ||
       /^https?:\/\/127\.0\.0\.1\b/i.test(baseUrl);
@@ -87,10 +85,8 @@ async function assertApiReachable(baseUrl) {
       console.error('nebo');
       console.error('  npm run smoke-test:prod');
       console.error('');
-      console.error(`Detail: ${e.name === 'AbortError' ? 'timeout health check' : e.message}`);
-    } else {
-      console.error(`Health check selhal (${healthUrl}): ${e.message}`);
     }
+    console.error(formatFetchError(e, healthUrl));
     return false;
   }
 }
@@ -114,26 +110,22 @@ console.log('Smoke recipient:', payload.email);
 
 const url = `${BASE_URL.replace(/\/$/, '')}/api/body-metrics`;
 console.log('POST', url);
+console.log('timeout:', `${FETCH_TIMEOUT.BODY_METRICS} ms`);
 
 const start = Date.now();
-const controller = new AbortController();
-const timeoutId = setTimeout(() => controller.abort(), MAIN_TIMEOUT_MS);
 let res;
 try {
-  res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-    signal: controller.signal,
-  });
-  clearTimeout(timeoutId);
+  res = await fetchWithTimeout(
+    url,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+    FETCH_TIMEOUT.BODY_METRICS
+  );
 } catch (e) {
-  clearTimeout(timeoutId);
-  if (e.name === 'AbortError') {
-    console.error(`Chyba: timeout po ${MAIN_TIMEOUT_MS / 1000}s`);
-  } else {
-    console.error('Chyba připojení:', e.message);
-  }
+  console.error(formatFetchError(e, url));
   process.exit(1);
 }
 
@@ -167,5 +159,5 @@ if (status === 503 && body.hasUserId === true) {
   process.exit(0);
 }
 
-console.error(`FAIL (${elapsed}s): ${status}`, body.error || body.message || body);
+console.error(`FAIL (${elapsed}s): HTTP ${status} ${url}`, body.error || body.message || body);
 process.exit(1);

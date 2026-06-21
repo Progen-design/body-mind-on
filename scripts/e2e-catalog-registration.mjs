@@ -7,6 +7,11 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { resolve, join } from 'path';
 import { createClient } from '@supabase/supabase-js';
+import {
+  fetchWithTimeout,
+  FETCH_TIMEOUT,
+  formatFetchError,
+} from './lib/fetchWithTimeout.mjs';
 
 /** @see .cursor/rules/10-user-preferences.mdc – testovací maily vždy na tento účet */
 const TEST_EMAIL = (process.env.E2E_EMAIL || 'janprikopa@gmail.com').trim().toLowerCase();
@@ -77,8 +82,14 @@ function looksCzech(text) {
 }
 
 async function assertApiUp() {
-  const res = await fetch(`${BASE_URL}/api/integrations-status`, { signal: AbortSignal.timeout(5000) });
-  if (!res.ok) throw new Error(`API health ${res.status}`);
+  const healthUrl = `${BASE_URL}/api/integrations-status`;
+  let res;
+  try {
+    res = await fetchWithTimeout(healthUrl, { method: 'GET' }, FETCH_TIMEOUT.HEALTH);
+  } catch (err) {
+    throw new Error(formatFetchError(err, healthUrl));
+  }
+  if (!res.ok) throw new Error(`API health HTTP ${res.status}: ${healthUrl}`);
 }
 
 async function runRegistration() {
@@ -100,13 +111,22 @@ async function runRegistration() {
     diet_type: 'standard',
   };
 
-  console.log('POST', `${BASE_URL}/api/body-metrics`, '→', TEST_EMAIL);
-  const res = await fetch(`${BASE_URL}/api/body-metrics`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(120000),
-  });
+  const regUrl = `${BASE_URL}/api/body-metrics`;
+  console.log('POST', regUrl, '→', TEST_EMAIL);
+  let res;
+  try {
+    res = await fetchWithTimeout(
+      regUrl,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      },
+      FETCH_TIMEOUT.BODY_METRICS
+    );
+  } catch (err) {
+    throw new Error(formatFetchError(err, regUrl));
+  }
   const text = await res.text();
   let json;
   try {

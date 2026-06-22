@@ -23,6 +23,7 @@
     "verify:recipe-from-catalog": "node scripts/verify-recipe-from-catalog.mjs",
     "verify:simple-start-meals": "node scripts/verify-simple-start-meals.mjs",
     "verify:agent-simple-meals": "node scripts/verify-agent-simple-meal-planner.mjs",
+    "verify:ai-instructions": "node scripts/verify-ai-instruction-standards.mjs",
     "verify:run-coach-scheduler": "node scripts/verify-run-coach-scheduler.mjs",
     "preview:plan-email": "node scripts/preview-plan-email.mjs",
     "check:cursor-access": "node scripts/check-cursor-access.mjs",

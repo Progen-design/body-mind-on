@@ -69,7 +69,7 @@ function isSafeExternalUrl(value) {
 }
 function mealRecipeUrl(meal, appBaseUrl) {
   const lookupId = catalogLookupIdFromMeal(meal);
-  if (lookupId != null) return recipeFromCatalogApiUrl(lookupId, appBaseUrl, { format: 'html' });
+  if (lookupId != null) return recipeFromCatalogApiUrl(lookupId, appBaseUrl, { format: 'html', meal });
   const r = meal?.recipe;
   const direct = r?.sourceUrl || r?.source_url || r?.url || meal?.spoonacular_url || null;
   if (isSafeExternalUrl(direct)) return String(direct).trim();

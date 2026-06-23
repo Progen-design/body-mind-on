@@ -118,6 +118,16 @@ check(
   getFullContentStartBlockReason(ryzeMismatch, 'lunch', { name_cs: 'Rýže s vejcem a zeleninou', type: 'lunch' })
 );
 
+const allowAligned = row({
+  name_cs: 'Kuře s rýží a zeleninou',
+  ingredients: ['150 g kuřecích prsou', '100 g rýže', '150 g zeleniny', '1 lžíce oleje'],
+});
+check(
+  'kuře s rýží se správnými surovinami = povolit',
+  isAllowedForSimpleStartPlan(allowAligned, { name_cs: 'Kuře s rýží a zeleninou', type: 'lunch', allowed_catalog_match_terms: ['kuře', 'rýž'] }),
+  getFullContentStartBlockReason(allowAligned, 'lunch', { name_cs: 'Kuře s rýží a zeleninou', type: 'lunch' }) || 'none'
+);
+
 console.log('\n--- Fallback output ---');
 const fallback = buildStartSafeFallbackMeal(
   { type: 'dinner', name_cs: 'Brambory s vejcem', planner_source: 'simple_meal_planner_agent' },

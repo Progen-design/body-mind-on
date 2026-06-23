@@ -11,6 +11,8 @@ import {
   findStartFallbackTemplate,
 } from '../lib/startSimpleMealFilter.js';
 import { recipePartsToHtml } from '../lib/recipeDetailHtml.js';
+import { getMealNutritionDisplay, sumMealCalories } from '../lib/mealNutritionDisplay.js';
+import { getMealRecipeUrl } from '../lib/mealRecipeDisplay.js';
 
 function row(partial) {
   return {
@@ -148,6 +150,26 @@ check(
   getFullContentStartBlockReason(jogurtFruitAligned, 'snack', { name_cs: 'Jogurt s ovocem', type: 'snack' }) || 'none'
 );
 
+const ovesnaComplex = row({
+  name_cs: 'Ovesná kaše s proteinem',
+  ingredients: ['150 g brusinek', '120 ml smetany', '100 g ovesných vloček', 'fíky 80 g'],
+});
+check(
+  'Ovesná kaše se smetanou/fíky = odmítnout',
+  Boolean(getFullContentStartBlockReason(ovesnaComplex, 'breakfast', { name_cs: 'Ovesná kaše s proteinem', type: 'breakfast' })),
+  getFullContentStartBlockReason(ovesnaComplex, 'breakfast', { name_cs: 'Ovesná kaše s proteinem', type: 'breakfast' })
+);
+
+const ovesnaSimple = row({
+  name_cs: 'Ovesná kaše s proteinem',
+  ingredients: ['ovesné vločky 60 g', 'mléko 200 ml', 'protein 30 g', 'banán 1 ks', 'skořice 1 špetka'],
+});
+check(
+  'Ovesná kaše s vločkami/mlékem/proteinem/banánem = povolit',
+  isAllowedForSimpleStartPlan(ovesnaSimple, { name_cs: 'Ovesná kaše s proteinem', type: 'breakfast', allowed_catalog_match_terms: ['ovesn', 'protein'] }),
+  getFullContentStartBlockReason(ovesnaSimple, 'breakfast', { name_cs: 'Ovesná kaše s proteinem', type: 'breakfast' }) || 'none'
+);
+
 const ryzeMismatch = row({
   name_cs: 'Rýže s vejcem a zeleninou',
   ingredients: ['150 g kuřecích prsou', '100 g rýže', '50 g avokáda', '10 g olivového oleje'],
@@ -181,6 +203,20 @@ const fbOk =
   fallback.shopping_ingredient_lines.length <= 6 &&
   !/pastitsio|kari|pesto|frittata/i.test(fallback.shopping_ingredient_lines.join(' '));
 check('5) fallback vrací jednoduchý nákupní seznam', fbOk, fallback.shopping_ingredient_lines.join('; '));
+
+const fallbackNutrients = getMealNutritionDisplay(fallback);
+const fallbackUrl = getMealRecipeUrl(fallback, 'https://app.bodyandmindon.cz');
+const fallbackDayKcal = sumMealCalories([fallback]);
+check(
+  'fallback má web/email nutrition mapping (kcal+makra)',
+  fallbackNutrients.calories != null && fallbackNutrients.protein_g != null && fallbackNutrients.carbs_g != null && fallbackNutrients.fat_g != null && fallbackDayKcal != null,
+  JSON.stringify(fallbackNutrients)
+);
+check(
+  'fallback má recipe detail URL pro web',
+  /recipe-from-catalog/.test(fallbackUrl) && /fallback=1/.test(fallbackUrl),
+  fallbackUrl
+);
 
 console.log('\n--- Recipe detail safety ---');
 const blocked = Boolean(pastitsioReason);

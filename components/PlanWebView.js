@@ -5,7 +5,8 @@ import { formatDayDateWords, formatDayDateNumeric, dayOrdinalCs } from '../lib/u
 import { mealDisplayTitleForStructuredMeal } from '../lib/mealDisplayNameHelpers.js';
 import { addCalendarDaysIsoPrague } from '../lib/czechCalendar.js';
 import { formatExerciseSetsRepsDisplay } from '../lib/planDataIntegrity.js';
-import { recipeFromCatalogApiUrl, catalogLookupIdFromMeal } from '../lib/recipeDetailUrl.js';
+import { getMealNutritionDisplay, sumMealCalories } from '../lib/mealNutritionDisplay.js';
+import { getMealRecipeUrl } from '../lib/mealRecipeDisplay.js';
 
 const MEAL_TIME_META = {
   breakfast: { icon: '☀', label: 'Snídaně', time_word: 'Ráno', time: '07:30', color: '#22D3EE' },
@@ -43,39 +44,9 @@ function isoWeekNumber(isoDateYmd) {
   return Math.ceil(((date - yearStart) / 86400000 + 1) / 7);
 }
 
-function toMacroNumber(value) {
-  if (value == null) return null;
-  const num = Number(value);
-  if (!Number.isFinite(num)) return null;
-  return Math.round(num);
-}
 function mealMacros(meal) {
-  const r = meal?.recipe;
-  if (!r || meal?.recipe_verified !== true) {
-    return { protein_g: null, carbs_g: null, fat_g: null, fiber_g: null, calories: null };
-  }
-  return {
-    protein_g: toMacroNumber(r.protein_g),
-    carbs_g: toMacroNumber(r.carbs_g),
-    fat_g: toMacroNumber(r.fat_g),
-    fiber_g: toMacroNumber(r.fiber_g),
-    calories: toMacroNumber(r.calories),
-  };
+  return getMealNutritionDisplay(meal);
 }
-function isSafeExternalUrl(value) {
-  if (typeof value !== 'string') return false;
-  const trimmed = value.trim();
-  return !!trimmed && /^https?:\/\//i.test(trimmed);
-}
-function mealRecipeUrl(meal, appBaseUrl) {
-  const lookupId = catalogLookupIdFromMeal(meal);
-  if (lookupId != null) return recipeFromCatalogApiUrl(lookupId, appBaseUrl, { format: 'html', meal });
-  const r = meal?.recipe;
-  const direct = r?.sourceUrl || r?.source_url || r?.url || meal?.spoonacular_url || null;
-  if (isSafeExternalUrl(direct)) return String(direct).trim();
-  return '';
-}
-
 function fmtKcal(value) {
   if (!Number.isFinite(Number(value))) return '—';
   const v = Math.round(Number(value));
@@ -143,7 +114,7 @@ function MealCard({ meal, day, planJson, appBaseUrl }) {
   const dayName = day?.day_name ?? day?.date ?? 'Den';
   const title = mealDisplayTitleForStructuredMeal(meal, planJson?.html || '', dayName);
   const macros = mealMacros(meal);
-  const url = mealRecipeUrl(meal, appBaseUrl);
+  const url = getMealRecipeUrl(meal, appBaseUrl);
   const accentVars = { '--accent': meta.color };
   return (
     <div className={styles.mealCard} style={accentVars}>
@@ -165,11 +136,8 @@ function MealCard({ meal, day, planJson, appBaseUrl }) {
 
 function DailyTotalPill({ day }) {
   const meals = Array.isArray(day?.meals) ? day.meals : [];
-  const total = meals.reduce((sum, m) => {
-    const mm = mealMacros(m);
-    return mm.calories != null ? sum + mm.calories : sum;
-  }, 0);
-  const kcalDisplay = total > 0 ? fmtKcal(total) : '—';
+  const total = sumMealCalories(meals);
+  const kcalDisplay = total != null && total > 0 ? fmtKcal(total) : '—';
   return (
     <div className={styles.dailyPill}>
       <span className={styles.dailyPillLabel}>Celkem za den</span>

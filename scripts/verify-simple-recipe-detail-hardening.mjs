@@ -100,12 +100,42 @@ check(
 const jogurtComplex = row({
   name_cs: 'Jogurt s ovocem',
   name_en: 'Raspberry yogurt dessert',
-  ingredients: ['4 porce amaretti', '2 plátky želatiny', '1 hrnek řeckého jogurtu', '4 hrnky malin'],
+  ingredients: ['4 porce marshmallow', '2 plátky želatiny', '1 hrnek řeckého jogurtu', '4 hrnky malin'],
 });
 check(
-  'jogurt + amaretti/želatina = odmítnout',
+  'jogurt + marshmallow/želatina = odmítnout',
   Boolean(getFullContentStartBlockReason(jogurtComplex, 'snack', { name_cs: 'Jogurt s ovocem', type: 'snack' })),
   getFullContentStartBlockReason(jogurtComplex, 'snack', { name_cs: 'Jogurt s ovocem', type: 'snack' })
+);
+
+const eggsBreadNoPastry = row({
+  name_cs: 'Vejce s pečivem a zeleninou',
+  ingredients: ['4 ks vejce', '150 g brokolice', '45 ml mléka'],
+});
+check(
+  'Vejce s pečivem bez pečiva = odmítnout',
+  Boolean(getFullContentStartBlockReason(eggsBreadNoPastry, 'breakfast', { name_cs: 'Vejce s pečivem a zeleninou', type: 'breakfast' })),
+  getFullContentStartBlockReason(eggsBreadNoPastry, 'breakfast', { name_cs: 'Vejce s pečivem a zeleninou', type: 'breakfast' })
+);
+
+const eggsBreadAligned = row({
+  name_cs: 'Vejce s pečivem a zeleninou',
+  ingredients: ['4 ks vejce', '2 plátky celozrného pečiva', '100 g zeleniny'],
+});
+check(
+  'Vejce s pečivem + pečivo + vejce + zelenina = povolit',
+  isAllowedForSimpleStartPlan(eggsBreadAligned, { name_cs: 'Vejce s pečivem a zeleninou', type: 'breakfast', allowed_catalog_match_terms: ['vejce', 'pečiv'] }),
+  getFullContentStartBlockReason(eggsBreadAligned, 'breakfast', { name_cs: 'Vejce s pečivem a zeleninou', type: 'breakfast' }) || 'none'
+);
+
+const jogurtFruitAligned = row({
+  name_cs: 'Jogurt s ovocem',
+  ingredients: ['jogurt 180 g', 'banán 1 ks', 'jahody 80 g'],
+});
+check(
+  'Jogurt s ovocem + jogurt + banán/jahody = povolit',
+  isAllowedForSimpleStartPlan(jogurtFruitAligned, { name_cs: 'Jogurt s ovocem', type: 'snack', allowed_catalog_match_terms: ['jogurt', 'ovoc'] }),
+  getFullContentStartBlockReason(jogurtFruitAligned, 'snack', { name_cs: 'Jogurt s ovocem', type: 'snack' }) || 'none'
 );
 
 const ryzeMismatch = row({

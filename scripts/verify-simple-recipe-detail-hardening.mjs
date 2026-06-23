@@ -97,6 +97,27 @@ check(
   getFullContentStartBlockReason(manyIng, 'lunch')
 );
 
+const jogurtComplex = row({
+  name_cs: 'Jogurt s ovocem',
+  name_en: 'Raspberry yogurt dessert',
+  ingredients: ['4 porce amaretti', '2 plátky želatiny', '1 hrnek řeckého jogurtu', '4 hrnky malin'],
+});
+check(
+  'jogurt + amaretti/želatina = odmítnout',
+  Boolean(getFullContentStartBlockReason(jogurtComplex, 'snack', { name_cs: 'Jogurt s ovocem', type: 'snack' })),
+  getFullContentStartBlockReason(jogurtComplex, 'snack', { name_cs: 'Jogurt s ovocem', type: 'snack' })
+);
+
+const ryzeMismatch = row({
+  name_cs: 'Rýže s vejcem a zeleninou',
+  ingredients: ['150 g kuřecích prsou', '100 g rýže', '50 g avokáda', '10 g olivového oleje'],
+});
+check(
+  'rýže s vejcem bez vejce v surovinách = odmítnout',
+  Boolean(getFullContentStartBlockReason(ryzeMismatch, 'lunch', { name_cs: 'Rýže s vejcem a zeleninou', type: 'lunch' })),
+  getFullContentStartBlockReason(ryzeMismatch, 'lunch', { name_cs: 'Rýže s vejcem a zeleninou', type: 'lunch' })
+);
+
 console.log('\n--- Fallback output ---');
 const fallback = buildStartSafeFallbackMeal(
   { type: 'dinner', name_cs: 'Brambory s vejcem', planner_source: 'simple_meal_planner_agent' },

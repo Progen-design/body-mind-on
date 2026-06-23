@@ -118,6 +118,16 @@ check(
   getFullContentStartBlockReason(eggsBreadNoPastry, 'breakfast', { name_cs: 'Vejce s pečivem a zeleninou', type: 'breakfast' })
 );
 
+const eggsBreadWithBakingPowderOnly = row({
+  name_cs: 'Vejce s pečivem a zeleninou',
+  ingredients: ['4 ks vejce', '10 g prášku do pečiva', '100 g zeleniny'],
+});
+check(
+  'Vejce s pečivem + prášek do pečiva (bez pečiva) = odmítnout',
+  Boolean(getFullContentStartBlockReason(eggsBreadWithBakingPowderOnly, 'breakfast', { name_cs: 'Vejce s pečivem a zeleninou', type: 'breakfast' })),
+  getFullContentStartBlockReason(eggsBreadWithBakingPowderOnly, 'breakfast', { name_cs: 'Vejce s pečivem a zeleninou', type: 'breakfast' })
+);
+
 const eggsBreadAligned = row({
   name_cs: 'Vejce s pečivem a zeleninou',
   ingredients: ['4 ks vejce', '2 plátky celozrného pečiva', '100 g zeleniny'],

@@ -13,6 +13,13 @@ import {
 import { recipePartsToHtml } from '../lib/recipeDetailHtml.js';
 import { getMealNutritionDisplay, sumMealCalories } from '../lib/mealNutritionDisplay.js';
 import { getMealRecipeUrl } from '../lib/mealRecipeDisplay.js';
+import {
+  buildMealRecipeModalHtml,
+  buildMealRecipeRateLimitFallbackHtml,
+  hasLocalMealRecipeDetail,
+  mergeRecipeApiErrorWithLocalFallback,
+  shouldFetchMealRecipeFromApi,
+} from '../lib/mealRecipeDisplay.js';
 import { createMealDisplayModel } from '../lib/mealDisplayModel.js';
 import { findSimpleStartRecipeByTitle } from '../lib/simpleStartRecipeLibrary.js';
 import { readFileSync } from 'fs';
@@ -37,6 +44,10 @@ function row(partial) {
 
 function htmlText(html) {
   return String(html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function normText(value) {
+  return htmlText(value).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
 let failed = 0;
@@ -483,6 +494,87 @@ check(
     && idempotencyText.includes('[email-idempotency] sent weekly plan email')
     && idempotencyText.includes('[email-idempotency] manual resend weekly plan email'),
   'email-idempotency-log-strings'
+);
+
+console.log('\n--- Profile recipe modal (local source) ---');
+
+const libraryMeal = {
+  type: 'snack',
+  planner_source: 'simple_meal_planner_agent',
+  display_name_cs: 'Cottage s pečivem',
+  name_cs: 'Cottage s pečivem',
+};
+const libraryModel = createMealDisplayModel(libraryMeal);
+check(
+  '1) simple_start_library modal nepoužije API',
+  hasLocalMealRecipeDetail(libraryModel) && !shouldFetchMealRecipeFromApi(libraryModel),
+  libraryModel.source
+);
+const libraryModalHtml = buildMealRecipeModalHtml(libraryModel);
+const libraryModalText = normText(libraryModalHtml);
+check(
+  '4) Cottage s pečivem modal obsahuje cottage + pečivo',
+  libraryModalText.includes('cottage') && /peciv|chleb/.test(libraryModalText),
+  libraryModel.ingredients.join('; ')
+);
+
+const fallbackMeal = createMealDisplayModel({
+  type: 'lunch',
+  planner_source: 'simple_meal_planner_agent',
+  display_name_cs: 'Omeleta se zeleninou',
+  name_cs: 'Omeleta se zeleninou',
+  catalog_source: 'simple_start_fallback',
+});
+check(
+  '2) simple_start_fallback modal nepoužije API',
+  hasLocalMealRecipeDetail(fallbackMeal) && !shouldFetchMealRecipeFromApi(fallbackMeal),
+  fallbackMeal.source
+);
+
+const riceModel = createMealDisplayModel({
+  type: 'lunch',
+  planner_source: 'simple_meal_planner_agent',
+  display_name_cs: 'Rýže s vejcem a zeleninou',
+  name_cs: 'Rýže s vejcem a zeleninou',
+});
+const riceModalText = normText(buildMealRecipeModalHtml(riceModel));
+check(
+  '5) Rýže s vejcem modal obsahuje rýži + vejce',
+  /ryz|rýž/.test(riceModalText) && riceModalText.includes('vejce'),
+  riceModel.ingredients.join('; ')
+);
+
+const pastaModel = createMealDisplayModel({
+  type: 'lunch',
+  planner_source: 'simple_meal_planner_agent',
+  display_name_cs: 'Těstoviny s kuřetem',
+  name_cs: 'Těstoviny s kuřetem',
+});
+const pastaModalText = normText(buildMealRecipeModalHtml(pastaModel));
+check(
+  '6) Těstoviny s kuřetem modal obsahuje těstoviny + kuře',
+  /testovin|těstovin/.test(pastaModalText) && /kur|kuř/.test(pastaModalText),
+  pastaModel.ingredients.join('; ')
+);
+
+const rateLimitMerged = mergeRecipeApiErrorWithLocalFallback(
+  '<p class="plan-no-recipe-msg">Překročen limit požadavků. Zkus to znovu za chvíli.</p>',
+  libraryModel
+);
+check(
+  '3) rate limit modal zobrazí lokální fallback',
+  htmlText(rateLimitMerged).includes('Základní údaje k jídlu máš níže')
+    && normText(rateLimitMerged).includes('cottage'),
+  htmlText(rateLimitMerged).slice(0, 120)
+);
+
+const planViewerSource = readFileSync(new URL('../components/PlanViewer.js', import.meta.url), 'utf8');
+check(
+  '7) mobile layout nemá úzký sloupec karet',
+  planViewerSource.includes('grid-template-columns: 1fr')
+    && planViewerSource.includes('plan-meal-recipe-btn--primary')
+    && planViewerSource.includes('hasLocalMealRecipeDetail'),
+  'PlanViewer local modal + full-width meals'
 );
 
 console.log(failed ? `\n${failed} CHECK(S) FAILED` : '\nALL CHECKS PASS');

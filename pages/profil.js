@@ -3536,6 +3536,14 @@ export default function Profil() {
           .plan-goal-stat-label { font-size: 10px; }
           .plan-goal-actions { min-width: 0; width: 100%; }
           .hero-prefs-btn, .plan-goal-prefs-btn { min-height: 48px; padding: 12px 18px; width: 100%; touch-action: manipulation; }
+          .profile-bubbles { padding: 0 12px; width: 100%; box-sizing: border-box; }
+          #muj-plan.profile-bubble:has(.profile-bubble-body[data-open="true"]) {
+            max-width: 100%;
+            border-radius: 16px;
+          }
+          #muj-plan .profile-bubble-body[data-open="true"] {
+            padding: 0;
+          }
         }
 
         /* ── Rozbalovací bubliny profilu (oválné, centrované) ── */

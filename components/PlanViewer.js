@@ -16,6 +16,14 @@ import { getPlanOutputMode, shouldRenderTraining } from '../lib/planOutputMode.j
 import { buildPlanPdfHtml } from '../lib/planPdf';
 import { formatExerciseSetsRepsDisplay } from '../lib/planDataIntegrity.js';
 import { catalogLookupIdFromMeal } from '../lib/recipeDetailUrl.js';
+import {
+  buildMealRecipeModalHtml,
+  buildMealRecipeRateLimitFallbackHtml,
+  createMealDisplayModelFromStructuredMeal,
+  hasLocalMealRecipeDetail,
+  mergeRecipeApiErrorWithLocalFallback,
+  shouldFetchMealRecipeFromApi,
+} from '../lib/mealRecipeDisplay.js';
 import { collectExerciseMediaSources, hasDisplayableExerciseMedia, isVideoMediaUrl } from '../lib/exerciseMediaHelpers.js';
 import { addCalendarDaysIsoPrague, calendarDateIsoInPrague, weekdayIndexJsFromPragueIso } from '../lib/czechCalendar';
 
@@ -496,7 +504,7 @@ export default function PlanViewer({
     return matched?.content || '';
   };
 
-  const getCatalogRecipeDetail = (recipeId) => {
+  const getCatalogRecipeDetail = (recipeId, displayModel = null) => {
     if (!recipeId || !Number.isInteger(Number(recipeId))) return Promise.resolve(null);
     return fetch('/api/recipe-from-catalog?id=' + encodeURIComponent(String(recipeId)), {
       headers: { Accept: 'application/json' },
@@ -505,12 +513,15 @@ export default function PlanViewer({
       .then(({ ok, data }) => {
         const html = ok && data?.ok && data?.html ? data.html : null;
         const errMsg = !html && data?.error ? data.error : null;
-        return html || (errMsg ? recipeErrorHtml(errMsg) : null);
+        const result = html || (errMsg ? recipeErrorHtml(errMsg) : null);
+        return mergeRecipeApiErrorWithLocalFallback(result, displayModel) || result;
       })
-      .catch(() => null);
+      .catch(() => (displayModel && hasLocalMealRecipeDetail(displayModel)
+        ? buildMealRecipeModalHtml(displayModel)
+        : null));
   };
 
-  const getRecipeForDish = (dishName, avoid = '') => {
+  const getRecipeForDish = (dishName, avoid = '', displayModel = null) => {
     if (!(dishName || '').trim()) return Promise.resolve(null);
     let url = '/api/recipe?dish=' + encodeURIComponent((dishName || '').trim().slice(0, 150));
     if (avoid && typeof avoid === 'string' && avoid.trim()) url += '&avoid=' + encodeURIComponent(avoid.trim().slice(0, 300));
@@ -519,9 +530,12 @@ export default function PlanViewer({
       .then(({ ok, data }) => {
         const html = ok && data?.ok && data?.html ? data.html : null;
         const errMsg = !html && data?.error ? data.error : null;
-        return html || (errMsg ? recipeErrorHtml(errMsg) : null);
+        const result = html || (errMsg ? recipeErrorHtml(errMsg) : null);
+        return mergeRecipeApiErrorWithLocalFallback(result, displayModel) || result;
       })
-      .catch(() => null);
+      .catch(() => (displayModel && hasLocalMealRecipeDetail(displayModel)
+        ? buildMealRecipeModalHtml(displayModel)
+        : null));
   };
 
   useEffect(() => {
@@ -1005,16 +1019,47 @@ export default function PlanViewer({
                           e.stopPropagation();
                           const button = e?.currentTarget;
                           const rect = button?.getBoundingClientRect?.();
-                          const anchorRect = rect ? { top: rect.bottom + 8, left: rect.left, width: rect.width } : null;
+                          const useAnchoredModal = typeof window !== 'undefined' && window.innerWidth >= 768;
+                          const anchorRect = useAnchoredModal && rect
+                            ? { top: rect.bottom + 8, left: rect.left, width: rect.width }
+                            : null;
                           recipeOpenIdRef.current += 1;
                           const thisOpenId = recipeOpenIdRef.current;
+                          const displayModel = structMeal
+                            ? createMealDisplayModelFromStructuredMeal(structMeal)
+                            : null;
+
                           if (override?.content) {
-                            setRecipeModal({ openId: thisOpenId, title: override.title || modalTitle, content: recipeContentOnly(override.content), anchorRect, hasRecipe: true, loading: false });
+                            setRecipeModal({
+                              openId: thisOpenId,
+                              title: override.title || modalTitle,
+                              content: recipeContentOnly(override.content),
+                              anchorRect,
+                              hasRecipe: true,
+                              loading: false,
+                            });
                             return;
                           }
+
+                          if (displayModel && hasLocalMealRecipeDetail(displayModel)) {
+                            setRecipeModal({
+                              openId: thisOpenId,
+                              title: modalTitle,
+                              content: buildMealRecipeModalHtml(displayModel, { includeSourceMeta: true }),
+                              anchorRect,
+                              hasRecipe: true,
+                              loading: false,
+                              source: displayModel.source,
+                              consistencyStatus: displayModel.consistencyStatus,
+                            });
+                            return;
+                          }
+
                           const dishName = (mealFullText.replace(/\s*\([^)]*\)\s*$/g, '').trim() || meal.type || 'Jídlo').slice(0, 150);
                           const isUnverifiedPlaceholder = mealFullText?.toLowerCase().includes('neověřeno') || dishName === 'Jídlo';
-                          const recipeId = catalogLookupIdForModal;
+                          const recipeId = displayModel?.normalizedMeal
+                            ? catalogLookupIdFromMeal(displayModel.normalizedMeal)
+                            : catalogLookupIdForModal;
                           const htmlRecipeFallback = matchingRecipeHtml
                             ? recipeContentOnly(matchingRecipeHtml)
                             : null;
@@ -1027,30 +1072,37 @@ export default function PlanViewer({
                             loading: true,
                           });
                           const loadRecipe = async () => {
-                            // 1) catalog_id (nebo recipe_id u starých plánů) → detail z recipes_catalog
+                            if (displayModel && !shouldFetchMealRecipeFromApi(displayModel)) {
+                              return buildMealRecipeModalHtml(displayModel, { includeSourceMeta: true });
+                            }
                             if (recipeId != null) {
-                              const catalogRecipe = await getCatalogRecipeDetail(recipeId);
+                              const catalogRecipe = await getCatalogRecipeDetail(recipeId, displayModel);
                               if (catalogRecipe) return catalogRecipe;
                             }
-                            // 2) strict match v lokálních receptech
                             if (htmlRecipeFallback) return htmlRecipeFallback;
-                            // 3) fallback přes /api/recipe?dish=
                             if (isUnverifiedPlaceholder) {
                               return recipeErrorHtml('Recept pro toto jídlo není v katalogu. Zkus ho nahradit jiným.');
                             }
-                            const fallbackRecipe = await getRecipeForDish(dishName);
+                            const fallbackRecipe = await getRecipeForDish(dishName, '', displayModel);
                             if (fallbackRecipe) return fallbackRecipe;
-                            // 4) srozumitelná finální fallback hláška
+                            if (displayModel?.title) {
+                              return buildMealRecipeRateLimitFallbackHtml(displayModel);
+                            }
                             return `
                               <p class="plan-no-recipe-msg">Recept se nepodařilo automaticky dohledat.</p>
                               <p class="plan-no-recipe-hint">Zkus vygenerovat náhradní variantu jídla.</p>
                             `;
                           };
                           loadRecipe().then((html) => {
-                            const fallback = '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení nebo zkus znovu.</p>';
+                            const fallback = displayModel?.title
+                              ? buildMealRecipeRateLimitFallbackHtml(displayModel)
+                              : '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení nebo znovu.</p>';
                             setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: html || fallback, loading: false } : prev));
                           }).catch(() => {
-                            setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení nebo zkus znovu.</p>', loading: false } : prev));
+                            const fallback = displayModel?.title
+                              ? buildMealRecipeRateLimitFallbackHtml(displayModel)
+                              : '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení nebo znovu.</p>';
+                            setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: fallback, loading: false } : prev));
                           });
                         };
                         const handleSwap = () => {
@@ -1118,20 +1170,22 @@ export default function PlanViewer({
                                 </div>
                               ) : null}
                               <div className="plan-meal-actions">
-                                <button type="button" className="plan-meal-recipe-btn" onClick={openRecipe}>
+                                <button type="button" className="plan-meal-recipe-btn plan-meal-recipe-btn--primary" onClick={openRecipe}>
                                   Recept
                                 </button>
-                                <button type="button" className="plan-meal-swap" onClick={(e) => { e.stopPropagation(); handleSwap(); }}>Nahradit jiným</button>
-                                {canPinMeals && (
-                                  <button
-                                    type="button"
-                                    className={`plan-meal-pin ${mealPinned ? 'plan-meal-pin-active' : ''}`}
-                                    onClick={(e) => { e.stopPropagation(); handleTogglePin(meal.type || '', mealTextForPin, overrideKey); }}
-                                    title="Označíš si jídlo pro příští týden — při dalším generování ho zkusíme znovu zapracovat."
-                                  >
-                                    {mealPinned ? '✓ Zahrnuto do dalšího týdne' : 'Zahrnout do dalšího týdne'}
-                                  </button>
-                                )}
+                                <div className="plan-meal-secondary-actions">
+                                  <button type="button" className="plan-meal-swap plan-meal-secondary-btn" onClick={(e) => { e.stopPropagation(); handleSwap(); }}>Nahradit jiným</button>
+                                  {canPinMeals && (
+                                    <button
+                                      type="button"
+                                      className={`plan-meal-pin plan-meal-secondary-btn ${mealPinned ? 'plan-meal-pin-active' : ''}`}
+                                      onClick={(e) => { e.stopPropagation(); handleTogglePin(meal.type || '', mealTextForPin, overrideKey); }}
+                                      title="Označíš si jídlo pro příští týden — při dalším generování ho zkusíme znovu zapracovat."
+                                    >
+                                      {mealPinned ? '✓ Zahrnuto do dalšího týdne' : 'Zahrnout do dalšího týdne'}
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                               {pinToastMsg?.key === overrideKey && (
                                 <span className={`plan-pin-toast plan-pin-toast-${pinToastMsg.type || 'success'}`}>{pinToastMsg.message}</span>
@@ -1423,7 +1477,7 @@ export default function PlanViewer({
                 {recipeModal.loading ? (
                   <div className="plan-recipe-modal-loading">
                     <span className="plan-recipe-modal-spinner" />
-                    <p>Načítám recept z internetu…</p>
+                    <p>Načítám recept…</p>
                   </div>
                 ) : (
                   <div className="plan-recipe-modal-body" dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(recipeModal.content || '') }} />
@@ -2494,9 +2548,16 @@ const planSectionStyles = `
   }
   .plan-meals {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: 1fr;
     gap: 16px;
     padding: 16px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  @media (min-width: 900px) {
+    .plan-meals {
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
   }
   .plan-day-training {
     margin: 0 16px 16px;
@@ -2639,8 +2700,10 @@ const planSectionStyles = `
     border-radius: 12px;
     padding: 20px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 16px;
+    width: 100%;
+    box-sizing: border-box;
     transition: transform 0.2s, box-shadow 0.2s;
   }
   .plan-meal-card:hover {
@@ -2681,15 +2744,18 @@ const planSectionStyles = `
   }
   .plan-meal-recipe-btn {
     flex-shrink: 0;
-    padding: 8px 14px;
+    padding: 10px 18px;
     border-radius: 999px;
     border: 1px solid rgba(124, 58, 237, 0.75);
-    background: linear-gradient(135deg, rgba(124, 58, 237, 0.72), rgba(99, 102, 241, 0.72));
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.92), rgba(99, 102, 241, 0.92));
     color: #f8fafc;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
     cursor: pointer;
     font-family: inherit;
+  }
+  .plan-meal-recipe-btn--primary {
+    width: 100%;
   }
   .plan-meal-recipe-btn:hover {
     background: rgba(124, 58, 237, 0.4);
@@ -2827,6 +2893,20 @@ const planSectionStyles = `
   .plan-recipe-modal-body :global(.plan-no-recipe-hint) {
     color: #94a3b8;
     font-size: 13px;
+  }
+  .plan-recipe-modal-body :global(.plan-recipe-rate-limit-msg) {
+    color: #fbbf24;
+    font-weight: 600;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(251, 191, 36, 0.08);
+    border: 1px solid rgba(251, 191, 36, 0.25);
+  }
+  .plan-recipe-modal-body :global(.plan-recipe-source-meta) {
+    margin-top: 12px;
+    color: #64748b;
+    font-size: 12px;
   }
   .plan-recipe-modal-body :global(.recipe-nutrition-block) {
     margin: 16px 0 20px;
@@ -3034,10 +3114,17 @@ const planSectionStyles = `
   }
   .plan-meal-actions {
     display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+    margin-top: 8px;
+    width: 100%;
+  }
+  .plan-meal-secondary-actions {
+    display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    align-items: center;
-    margin-top: 4px;
+    width: 100%;
   }
   .plan-meal-swap {
     font-size: 11px;
@@ -3045,8 +3132,10 @@ const planSectionStyles = `
     background: transparent;
     border: 1px solid rgba(255,255,255,0.15);
     border-radius: 8px;
-    padding: 4px 10px;
+    padding: 6px 10px;
     cursor: pointer;
+    flex: 1 1 auto;
+    min-width: 0;
   }
   .plan-meal-swap:hover { color: #c4b5fd; border-color: rgba(139, 92, 255, 0.5); }
   .plan-meal-pin {
@@ -3055,8 +3144,10 @@ const planSectionStyles = `
     background: transparent;
     border: 1px solid rgba(255,255,255,0.15);
     border-radius: 8px;
-    padding: 4px 10px;
+    padding: 6px 10px;
     cursor: pointer;
+    flex: 1 1 auto;
+    min-width: 0;
   }
   .plan-meal-pin:hover { color: #22c55e; border-color: rgba(34, 197, 94, 0.5); }
   .plan-meal-pin-active {
@@ -3230,6 +3321,22 @@ const planSectionStyles = `
     }
   }
 
+  @media (min-width: 768px) {
+    .plan-meal-recipe-btn--primary {
+      width: auto;
+      align-self: flex-start;
+    }
+    .plan-meal-actions {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .plan-meal-secondary-actions {
+      width: auto;
+      flex: 1 1 auto;
+    }
+  }
+
   @media (max-width: 767px) {
     .plan-nav { flex-wrap: wrap; gap: 10px; padding: 12px 16px; justify-content: center; }
     .plan-nav-item { font-size: 14px; padding: 10px 14px; min-height: 48px; display: inline-flex; align-items: center; touch-action: manipulation; }
@@ -3244,7 +3351,8 @@ const planSectionStyles = `
     .plan-meal-icon { width: 44px; height: 44px; font-size: 20px; }
     .plan-meal-name, .plan-meal-name-html { font-size: 15px; }
     .plan-meal-macros { font-size: 11px; }
-    .plan-meal-actions { gap: 12px; flex-wrap: wrap; }
+    .plan-meal-actions { gap: 10px; }
+    .plan-meal-secondary-actions { flex-direction: column; }
     .plan-meal-secondary-btn,
     .plan-meal-swap, .plan-meal-pin, .plan-meal-recipe-btn {
       min-height: 48px;
@@ -3273,8 +3381,16 @@ const planSectionStyles = `
     .plan-day-training-list { padding-left: 16px; }
     .plan-day-training-item { padding: 12px 0; }
     .plan-day-training-detail { padding: 12px 10px; font-size: 13px; }
-    .plan-recipe-modal-overlay { padding: 10px; align-items: center; }
-    .plan-recipe-modal { max-width: 100%; max-height: 90vh; border-radius: 16px; }
+    .plan-recipe-modal-overlay { padding: 10px; align-items: center; justify-content: center; }
+    .plan-recipe-modal { max-width: 100%; max-height: min(90vh, 720px); border-radius: 16px; }
+    .plan-recipe-modal-dynamic {
+      top: 50% !important;
+      left: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      width: calc(100vw - 20px) !important;
+      height: auto !important;
+      max-height: min(90vh, 720px) !important;
+    }
     .plan-recipe-modal-header { padding: 14px 16px; }
   }
   @media (max-width: 380px) {

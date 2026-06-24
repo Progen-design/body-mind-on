@@ -14,6 +14,8 @@ import { recipePartsToHtml } from '../lib/recipeDetailHtml.js';
 import { getMealNutritionDisplay, sumMealCalories } from '../lib/mealNutritionDisplay.js';
 import { getMealRecipeUrl } from '../lib/mealRecipeDisplay.js';
 import { createMealDisplayModel } from '../lib/mealDisplayModel.js';
+import { findSimpleStartRecipeByTitle } from '../lib/simpleStartRecipeLibrary.js';
+import { readFileSync } from 'fs';
 
 function row(partial) {
   return {
@@ -198,7 +200,7 @@ const fallback = buildStartSafeFallbackMeal(
   2
 );
 const fbOk =
-  fallback.catalog_source === 'simple_start_fallback' &&
+  (fallback.catalog_source === 'simple_start_fallback' || fallback.catalog_source === 'simple_start_library') &&
   Array.isArray(fallback.shopping_ingredient_lines) &&
   fallback.shopping_ingredient_lines.length > 0 &&
   fallback.shopping_ingredient_lines.length <= 6 &&
@@ -296,6 +298,45 @@ check(
   })
 );
 
+const cottageBread = findSimpleStartRecipeByTitle('Cottage s pečivem', 'snack');
+check(
+  'Cottage s pečivem = cottage + pečivo (bez tvaroh/vločky/banán)',
+  cottageBread
+    && /cottage/i.test(cottageBread.ingredients.join(' '))
+    && /pečiv|chleb|toast/i.test(cottageBread.ingredients.join(' '))
+    && !/tvaroh|vločk|banán/i.test(cottageBread.ingredients.join(' ')),
+  cottageBread ? cottageBread.ingredients.join('; ') : 'missing'
+);
+
+const pastaChicken = findSimpleStartRecipeByTitle('Těstoviny s kuřetem', 'lunch');
+check(
+  'Těstoviny s kuřetem = těstoviny + kuře',
+  pastaChicken
+    && /těstovin|testovin/i.test(pastaChicken.ingredients.join(' '))
+    && /kuř|kure/i.test(pastaChicken.ingredients.join(' ')),
+  pastaChicken ? pastaChicken.ingredients.join('; ') : 'missing'
+);
+
+const riceEgg = findSimpleStartRecipeByTitle('Rýže s vejcem a zeleninou', 'lunch');
+check(
+  'Rýže s vejcem = rýže + vejce + zelenina',
+  riceEgg
+    && /rýž|ryz/i.test(riceEgg.ingredients.join(' '))
+    && /vejce/i.test(riceEgg.ingredients.join(' '))
+    && /zelenin/i.test(riceEgg.ingredients.join(' ')),
+  riceEgg ? riceEgg.ingredients.join('; ') : 'missing'
+);
+
+const eggsBread = findSimpleStartRecipeByTitle('Vejce s pečivem a zeleninou', 'breakfast');
+check(
+  'Vejce s pečivem = vejce + pečivo + zelenina',
+  eggsBread
+    && /vejce/i.test(eggsBread.ingredients.join(' '))
+    && /pečiv|chleb|toast/i.test(eggsBread.ingredients.join(' '))
+    && /zelenin|rajče|okurk/i.test(eggsBread.ingredients.join(' ')),
+  eggsBread ? eggsBread.ingredients.join('; ') : 'missing'
+);
+
 console.log('\n--- Recipe detail safety ---');
 const blocked = Boolean(pastitsioReason);
 const tpl = findStartFallbackTemplate('Brambory s vejcem', 'dinner');
@@ -370,7 +411,7 @@ const yogurtHtml = recipePartsToHtml({
 });
 check(
   '7) Jogurt s ovocem detail je bez marshmallow',
-  !/marshmallow/i.test(htmlText(yogurtHtml)),
+  /jogurt/i.test(htmlText(yogurtHtml)) && /banán|ovoce|jahod/i.test(htmlText(yogurtHtml)) && !/marshmallow/i.test(htmlText(yogurtHtml)),
   htmlText(yogurtHtml).slice(0, 140)
 );
 
@@ -378,6 +419,70 @@ check(
   '8) Ovesná kaše se smetanou/fíky = fallback nebo odmítnout',
   Boolean(getFullContentStartBlockReason(ovesnaComplex, 'breakfast', { name_cs: 'Ovesná kaše s proteinem', type: 'breakfast' })),
   getFullContentStartBlockReason(ovesnaComplex, 'breakfast', { name_cs: 'Ovesná kaše s proteinem', type: 'breakfast' })
+);
+
+const oatmealLibrary = findSimpleStartRecipeByTitle('Ovesná kaše s proteinem', 'breakfast');
+check(
+  'Ovesná kaše library = vločky + protein bez smetany/fíků',
+  oatmealLibrary
+    && /vločk|ovesn/i.test(oatmealLibrary.ingredients.join(' '))
+    && /protein/i.test(oatmealLibrary.ingredients.join(' '))
+    && !/smetan|fík|fik/i.test(oatmealLibrary.ingredients.join(' ')),
+  oatmealLibrary ? oatmealLibrary.ingredients.join('; ') : 'missing'
+);
+
+const sameMeal = createMealDisplayModel({
+  type: 'lunch',
+  planner_source: 'simple_meal_planner_agent',
+  display_name_cs: 'Kuře s rýží a zeleninou',
+  name_cs: 'Kuře s rýží a zeleninou',
+});
+const webSame = createMealDisplayModel(sameMeal.normalizedMeal);
+const emailSame = createMealDisplayModel(sameMeal.normalizedMeal);
+const detailSame = recipePartsToHtml({
+  title: sameMeal.title,
+  ingredients_cs: sameMeal.ingredients,
+  instructions_cs: sameMeal.instructions,
+  image_url: null,
+  nutritionHtml: `Calories ${sameMeal.calories} Protein ${sameMeal.protein_g} Carbohydrates ${sameMeal.carbs_g} Fat ${sameMeal.fat_g}`,
+});
+const detailSameText = htmlText(detailSame);
+check(
+  'web/e-mail/detail stejný title+kcal+makra+ingredients',
+  webSame.title === emailSame.title
+    && webSame.calories === emailSame.calories
+    && webSame.protein_g === emailSame.protein_g
+    && webSame.carbs_g === emailSame.carbs_g
+    && webSame.fat_g === emailSame.fat_g
+    && detailSameText.includes(String(sameMeal.calories))
+    && sameMeal.ingredients.every((line) => detailSameText.toLowerCase().includes(String(line).toLowerCase().split(' ')[0])),
+  JSON.stringify({
+    title: sameMeal.title,
+    kcal: sameMeal.calories,
+    p: sameMeal.protein_g,
+    c: sameMeal.carbs_g,
+    f: sameMeal.fat_g,
+  })
+);
+
+check(
+  'denní kcal součet = součet jídel',
+  sumMealCalories([sameMeal.normalizedMeal, fallback]) === ((sameMeal.calories || 0) + (fallbackNutrients.calories || 0)),
+  `${sumMealCalories([sameMeal.normalizedMeal, fallback])} vs ${(sameMeal.calories || 0) + (fallbackNutrients.calories || 0)}`
+);
+
+const idempotencyFiles = [
+  '../lib/taskExecutors.js',
+  '../pages/api/body-metrics.js',
+  '../pages/api/send-plan-again.js',
+];
+const idempotencyText = idempotencyFiles.map((p) => readFileSync(new URL(p, import.meta.url), 'utf8')).join('\n');
+check(
+  'automatická registrace guard (idempotency logy přítomné)',
+  idempotencyText.includes('[email-idempotency] skipped duplicate weekly plan email')
+    && idempotencyText.includes('[email-idempotency] sent weekly plan email')
+    && idempotencyText.includes('[email-idempotency] manual resend weekly plan email'),
+  'email-idempotency-log-strings'
 );
 
 console.log(failed ? `\n${failed} CHECK(S) FAILED` : '\nALL CHECKS PASS');

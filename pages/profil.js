@@ -30,8 +30,8 @@ import {
   habitWeightCorrectionKg,
   roundLoadTotal,
 } from '../lib/progressModel';
+import ProgramContinuationPanel from '../components/ProgramContinuationPanel';
 
-const TrialExpiredPaywall = dynamic(() => import('../components/TrialExpiredPaywall'), { ssr: false });
 const PlanViewer = dynamic(() => import('../components/PlanViewer'), { ssr: false, loading: () => null });
 
 const PROGRAM_LABELS = {
@@ -1813,17 +1813,12 @@ export default function Profil() {
                 </div>
               )}
             </div>
-            {program === 'START' && (isTrialExpired || (daysUntilTrialEnd != null && daysUntilTrialEnd >= 0 && daysUntilTrialEnd <= 2)) && (
-              <div className={`trial-banner trial-banner--${isTrialExpired ? 'expired' : 'soon'}`}>
-                {isTrialExpired ? (
-                  <TrialExpiredPaywall />
-                ) : (
-                  <p className="trial-banner-text">
-                    Tvůj START program vyprší za {daysUntilTrialEnd === 0 ? 'dnes' : daysUntilTrialEnd === 1 ? '1 den' : `${daysUntilTrialEnd} dny`}. Připoj se k <a href="/on-club">ON Clubu</a> pro plný přístup.
-                  </p>
-                )}
-              </div>
-            )}
+            {program === 'START' && (isTrialExpired || (daysUntilTrialEnd != null && daysUntilTrialEnd >= 0 && daysUntilTrialEnd <= 5)) ? (
+              <ProgramContinuationPanel
+                isExpired={Boolean(isTrialExpired)}
+                daysUntilTrialEnd={daysUntilTrialEnd}
+              />
+            ) : null}
           </>
         )}
 

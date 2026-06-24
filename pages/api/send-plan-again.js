@@ -97,6 +97,10 @@ export default async function handler(req, res) {
     if (!result.ok) {
       return res.status(500).json({ error: result.message || 'E-mail se nepodařilo odeslat.' });
     }
+    console.info('[email-idempotency] manual resend weekly plan email', {
+      plan_id: plan?.id ?? null,
+      source: 'send-plan-again',
+    });
     return res.status(200).json({ ok: true, message: 'Plán byl odeslán na tvůj e-mail.' });
   } catch (err) {
     console.error('[send-plan-again]', err);

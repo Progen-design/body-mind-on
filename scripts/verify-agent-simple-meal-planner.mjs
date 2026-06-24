@@ -112,10 +112,11 @@ for (const { name, terms } of mustAllowCatalog) {
 console.log('\n--- Fallback from agent skeleton ---');
 const lunchMeal = days[2]?.meals?.find((m) => m.type === 'lunch');
 const fallback = buildStartSafeFallbackMeal(lunchMeal, lunchMeal?.target_kcal || 650, 1);
+const expectedVerified = fallback.catalog_source === 'simple_start_library' ? true : false;
 const fbOk =
-  fallback.catalog_source === 'simple_start_fallback' &&
+  (fallback.catalog_source === 'simple_start_fallback' || fallback.catalog_source === 'simple_start_library') &&
   fallback.display_name_cs === lunchMeal?.name_cs &&
-  fallback.recipe_verified === false &&
+  fallback.recipe_verified === expectedVerified &&
   fallback.shopping_ingredient_lines?.length > 0;
 if (fbOk) ok(`fallback "${fallback.display_name_cs}" source=${fallback.catalog_source}`);
 else fail('agent skeleton fallback');

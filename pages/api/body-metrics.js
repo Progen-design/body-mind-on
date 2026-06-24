@@ -320,10 +320,20 @@ export default async function handler(req, res) {
               const fallbackPlanId = fallbackResult.plan_id ?? null;
               if (fallbackPlanId && (await isPlanEmailAlreadySent(fallbackPlanId))) {
                 planSent = true;
+                console.info('[email-idempotency] skipped duplicate weekly plan email', {
+                  plan_id: fallbackPlanId,
+                  source: 'body_metrics_last_resort',
+                  reason: 'already_sent',
+                });
               } else if (fallbackResult.bm?.email && fallbackResult.planHtml) {
                 const claimedFallback = fallbackPlanId ? await tryClaimPlanEmailSend(fallbackPlanId) : false;
                 if (fallbackPlanId && !claimedFallback && (await isPlanEmailAlreadySent(fallbackPlanId))) {
                   planSent = true;
+                  console.info('[email-idempotency] skipped duplicate weekly plan email', {
+                    plan_id: fallbackPlanId,
+                    source: 'body_metrics_last_resort',
+                    reason: 'claim_lost_parallel_send',
+                  });
                 } else if (claimedFallback) {
                   try {
                     const sendRes = await sendPlanEmail(fallbackResult.bm.email, fallbackResult.planHtml, {
@@ -337,6 +347,12 @@ export default async function handler(req, res) {
                       planId: fallbackPlanId,
                     });
                     planSent = !!sendRes?.ok;
+                    if (planSent && fallbackPlanId) {
+                      console.info('[email-idempotency] sent weekly plan email', {
+                        plan_id: fallbackPlanId,
+                        source: 'body_metrics_last_resort',
+                      });
+                    }
                     if (!planSent && fallbackPlanId) {
                       await releasePlanEmailSendClaim(fallbackPlanId);
                     }

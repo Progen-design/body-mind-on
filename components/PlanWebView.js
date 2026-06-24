@@ -7,6 +7,7 @@ import { addCalendarDaysIsoPrague } from '../lib/czechCalendar.js';
 import { formatExerciseSetsRepsDisplay } from '../lib/planDataIntegrity.js';
 import { getMealNutritionDisplay, sumMealCalories } from '../lib/mealNutritionDisplay.js';
 import { getMealRecipeUrl } from '../lib/mealRecipeDisplay.js';
+import { createMealDisplayModel } from '../lib/mealDisplayModel.js';
 
 const MEAL_TIME_META = {
   breakfast: { icon: '☀', label: 'Snídaně', time_word: 'Ráno', time: '07:30', color: '#22D3EE' },
@@ -112,9 +113,10 @@ function MealCard({ meal, day, planJson, appBaseUrl }) {
   const type = meal?.type ?? 'breakfast';
   const meta = MEAL_TIME_META[type] || MEAL_TIME_META.breakfast;
   const dayName = day?.day_name ?? day?.date ?? 'Den';
-  const title = mealDisplayTitleForStructuredMeal(meal, planJson?.html || '', dayName);
-  const macros = mealMacros(meal);
-  const url = getMealRecipeUrl(meal, appBaseUrl);
+  const model = createMealDisplayModel(meal, appBaseUrl);
+  const title = model.title || mealDisplayTitleForStructuredMeal(model.normalizedMeal || meal, planJson?.html || '', dayName);
+  const macros = mealMacros(model.normalizedMeal || meal);
+  const url = model.recipeUrl || getMealRecipeUrl(model.normalizedMeal || meal, appBaseUrl);
   const accentVars = { '--accent': meta.color };
   return (
     <div className={styles.mealCard} style={accentVars}>

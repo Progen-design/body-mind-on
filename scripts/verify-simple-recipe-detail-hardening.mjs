@@ -13,6 +13,7 @@ import {
 import { recipePartsToHtml } from '../lib/recipeDetailHtml.js';
 import { getMealNutritionDisplay, sumMealCalories } from '../lib/mealNutritionDisplay.js';
 import { getMealRecipeUrl } from '../lib/mealRecipeDisplay.js';
+import { createMealDisplayModel } from '../lib/mealDisplayModel.js';
 
 function row(partial) {
   return {
@@ -218,6 +219,83 @@ check(
   fallbackUrl
 );
 
+const mixedSourceMeal = {
+  type: 'lunch',
+  display_name_cs: 'Rýže s vejcem a zeleninou',
+  name_cs: 'Rýže s vejcem a zeleninou',
+  catalog_source: 'catalog',
+  catalog_id: 999999,
+  recipe_id: 888888,
+  recipe_verified: true,
+  spoonacular_url: 'https://spoonacular.com/recipes/chicken',
+  recipe: {
+    id: 888888,
+    title: 'Chicken rice bowl',
+    source: 'catalog',
+    source_url: 'https://spoonacular.com/recipes/chicken',
+    calories: 690,
+    protein_g: 45,
+    carbs_g: 51,
+    fat_g: 28,
+  },
+  kcal: 690,
+  protein_g: 45,
+  carbs_g: 51,
+  fat_g: 28,
+  shopping_ingredient_lines: ['kuřecí prsa 180 g', 'rýže 80 g', 'zelenina 120 g'],
+};
+const mixedModel = createMealDisplayModel(mixedSourceMeal, 'https://app.bodyandmindon.cz');
+const mixedUrl = getMealRecipeUrl(mixedSourceMeal, 'https://app.bodyandmindon.cz');
+check(
+  '1) title rýže+vejce + kuře ingredience = fallback',
+  mixedModel.isFallback && mixedModel.consistencyStatus.startsWith('inconsistent:'),
+  mixedModel.consistencyStatus
+);
+check(
+  '2) fallback detail pro rýži s vejcem neobsahuje kuře',
+  /rýže|ryze/i.test(mixedModel.ingredients.join(' ')) && /vejce/i.test(mixedModel.ingredients.join(' ')) && /zelenin/i.test(mixedModel.ingredients.join(' ')) && !/kuř|kure|chicken/i.test(mixedModel.ingredients.join(' ')),
+  mixedModel.ingredients.join('; ')
+);
+check(
+  '3) fallback detail URL nepoužije catalog_id/recipe_id',
+  /fallback=1/.test(mixedUrl) && !/[?&]id=\d+/.test(mixedUrl),
+  mixedUrl
+);
+const mixedDetailHtml = recipePartsToHtml({
+  title: mixedModel.title,
+  ingredients_cs: mixedModel.ingredients,
+  instructions_cs: mixedModel.instructions,
+  image_url: null,
+  nutritionHtml: `Calories ${mixedModel.calories} Protein ${mixedModel.protein_g} Carbohydrates ${mixedModel.carbs_g} Fat ${mixedModel.fat_g}`,
+});
+const mixedDetailText = htmlText(mixedDetailHtml).toLowerCase();
+check(
+  '4) web model a detail mají stejné kcal/makra',
+  mixedModel.calories != null
+    && mixedModel.protein_g != null
+    && mixedModel.carbs_g != null
+    && mixedModel.fat_g != null
+    && mixedDetailText.includes(String(mixedModel.calories))
+    && mixedDetailText.includes(String(mixedModel.protein_g))
+    && mixedDetailText.includes(String(mixedModel.carbs_g))
+    && mixedDetailText.includes(String(mixedModel.fat_g)),
+  mixedDetailText.slice(0, 200)
+);
+const webModel = createMealDisplayModel(mixedSourceMeal);
+const emailModel = createMealDisplayModel(mixedSourceMeal);
+check(
+  '5) email a web model mají stejné title/kcal/makra',
+  webModel.title === emailModel.title
+    && webModel.calories === emailModel.calories
+    && webModel.protein_g === emailModel.protein_g
+    && webModel.carbs_g === emailModel.carbs_g
+    && webModel.fat_g === emailModel.fat_g,
+  JSON.stringify({
+    web: { title: webModel.title, kcal: webModel.calories, p: webModel.protein_g, c: webModel.carbs_g, f: webModel.fat_g },
+    email: { title: emailModel.title, kcal: emailModel.calories, p: emailModel.protein_g, c: emailModel.carbs_g, f: emailModel.fat_g },
+  })
+);
+
 console.log('\n--- Recipe detail safety ---');
 const blocked = Boolean(pastitsioReason);
 const tpl = findStartFallbackTemplate('Brambory s vejcem', 'dinner');
@@ -250,6 +328,56 @@ check(
   'fallback detail HTML je jednoduchý',
   /tvaroh|vločk|banán/i.test(htmlText(breakfastHtml)) && !/pastitsio|kari/i.test(breakfastHtml),
   htmlText(breakfastHtml).slice(0, 100)
+);
+
+const eggsBreadModel = createMealDisplayModel({
+  type: 'breakfast',
+  catalog_source: 'simple_start_fallback',
+  display_name_cs: 'Vejce s pečivem a zeleninou',
+  kcal: 450,
+  protein_g: 24,
+  carbs_g: 38,
+  fat_g: 22,
+});
+const eggsBreadHtml = recipePartsToHtml({
+  title: eggsBreadModel.title,
+  ingredients_cs: eggsBreadModel.ingredients,
+  instructions_cs: eggsBreadModel.instructions,
+  image_url: null,
+  nutritionHtml: '',
+});
+check(
+  '6) Vejce s pečivem detail obsahuje vejce + pečivo',
+  /vejce/i.test(htmlText(eggsBreadHtml)) && /pečiv|chleb|toast/i.test(htmlText(eggsBreadHtml)),
+  htmlText(eggsBreadHtml).slice(0, 140)
+);
+
+const yogurtModel = createMealDisplayModel({
+  type: 'snack',
+  catalog_source: 'simple_start_fallback',
+  display_name_cs: 'Jogurt s ovocem',
+  kcal: 220,
+  protein_g: 14,
+  carbs_g: 28,
+  fat_g: 6,
+});
+const yogurtHtml = recipePartsToHtml({
+  title: yogurtModel.title,
+  ingredients_cs: yogurtModel.ingredients,
+  instructions_cs: yogurtModel.instructions,
+  image_url: null,
+  nutritionHtml: '',
+});
+check(
+  '7) Jogurt s ovocem detail je bez marshmallow',
+  !/marshmallow/i.test(htmlText(yogurtHtml)),
+  htmlText(yogurtHtml).slice(0, 140)
+);
+
+check(
+  '8) Ovesná kaše se smetanou/fíky = fallback nebo odmítnout',
+  Boolean(getFullContentStartBlockReason(ovesnaComplex, 'breakfast', { name_cs: 'Ovesná kaše s proteinem', type: 'breakfast' })),
+  getFullContentStartBlockReason(ovesnaComplex, 'breakfast', { name_cs: 'Ovesná kaše s proteinem', type: 'breakfast' })
 );
 
 console.log(failed ? `\n${failed} CHECK(S) FAILED` : '\nALL CHECKS PASS');

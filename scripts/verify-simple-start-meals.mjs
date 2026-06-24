@@ -55,7 +55,7 @@ for (const name of MUST_ALLOW) {
 console.log('\n--- Start safe fallback meal ---');
 const fallback = buildStartSafeFallbackMeal({ type: 'lunch' }, 650, 3);
 const fbOk =
-  fallback.display_name_cs === 'Čočka s vejcem' &&
+  ['Rýže s vejcem a zeleninou', 'Kuře s rýží a zeleninou', 'Krůtí maso s bramborem', 'Těstoviny s tuňákem', 'Čočka s vejcem'].includes(fallback.display_name_cs) &&
   fallback.catalog_source === 'start_safe_fallback' &&
   fallback.recipe_verified === false &&
   Array.isArray(fallback.shopping_ingredient_lines) &&

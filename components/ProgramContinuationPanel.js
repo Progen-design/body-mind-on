@@ -28,20 +28,22 @@ export default function ProgramContinuationPanel({ daysUntilTrialEnd, isExpired 
       </div>
 
       <div className="program-continuation__actions">
-        <a href="/on-club" className="program-continuation__cta program-continuation__cta--primary">Pokračovat v programu</a>
-        <a href="/pricing" className="program-continuation__cta">Vybrat plán</a>
-        <a href="/chci-vip" className="program-continuation__cta">Prodloužit přístup</a>
+        <a href="#program-variants" className="program-continuation__cta program-continuation__cta--primary">Vybrat další krok</a>
+        <a href="/on-club" className="program-continuation__cta">Vstoupit do ON CLUBU</a>
       </div>
 
       <style jsx>{`
         .program-continuation {
-          margin: 10px 0 20px;
-          padding: 22px;
+          width: 100%;
+          max-width: min(1180px, 100%);
+          margin: 10px auto 14px;
+          padding: clamp(1rem, 3vw, 1.25rem);
           border-radius: 18px;
           border: 1px solid rgba(59, 130, 246, 0.35);
           background: radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.24), transparent 48%),
             linear-gradient(135deg, rgba(10, 15, 30, 0.95), rgba(18, 11, 38, 0.95));
           box-shadow: 0 14px 34px rgba(2, 6, 23, 0.45);
+          box-sizing: border-box;
         }
         .program-continuation--expired {
           border-color: rgba(244, 63, 94, 0.45);

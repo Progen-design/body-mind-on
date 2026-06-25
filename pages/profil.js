@@ -31,6 +31,7 @@ import {
   roundLoadTotal,
 } from '../lib/progressModel';
 import ProgramContinuationPanel from '../components/ProgramContinuationPanel';
+import ProgramVariantsSection from '../components/ProgramVariantsSection';
 
 const PlanViewer = dynamic(() => import('../components/PlanViewer'), { ssr: false, loading: () => null });
 
@@ -1819,6 +1820,11 @@ export default function Profil() {
                 daysUntilTrialEnd={daysUntilTrialEnd}
               />
             ) : null}
+            <ProgramVariantsSection
+              currentProgram={program}
+              isTrialExpired={Boolean(isTrialExpired)}
+              daysUntilTrialEnd={daysUntilTrialEnd}
+            />
           </>
         )}
 

@@ -1804,6 +1804,13 @@ export default function PlanViewer({
 const planSectionStyles = `
   .plan-section {
     margin-bottom: 40px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .plan-section.card {
+    padding: clamp(1rem, 2.5vw, 1.5rem);
+    border-radius: 16px;
   }
   .plan-section-premium {
     overflow: visible;
@@ -2549,14 +2556,21 @@ const planSectionStyles = `
   .plan-meals {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 16px;
-    padding: 16px;
+    gap: clamp(0.75rem, 2.5vw, 1rem);
+    padding-inline: clamp(0.5rem, 2.5vw, 1rem);
+    padding-block: clamp(0.75rem, 2.5vw, 1rem);
     width: 100%;
     box-sizing: border-box;
   }
-  @media (min-width: 900px) {
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .plan-meals {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1024px) {
     .plan-meals {
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      padding-inline: clamp(0.75rem, 2vw, 1rem);
     }
   }
   .plan-day-training {
@@ -3338,16 +3352,25 @@ const planSectionStyles = `
   }
 
   @media (max-width: 767px) {
-    .plan-nav { flex-wrap: wrap; gap: 10px; padding: 12px 16px; justify-content: center; }
+    .plan-section.card {
+      padding-inline: 0;
+      padding-block: 0.5rem 0;
+      border-radius: 0;
+      border: none;
+      background: transparent;
+      margin-bottom: 0;
+      box-shadow: none;
+    }
+    .plan-nav { flex-wrap: wrap; gap: 10px; padding: 12px clamp(0.75rem, 3vw, 1rem); justify-content: center; }
     .plan-nav-item { font-size: 14px; padding: 10px 14px; min-height: 48px; display: inline-flex; align-items: center; touch-action: manipulation; }
-    .plan-block { padding: 16px; }
+    .plan-block { padding-inline: 0; padding-block: 0.75rem; }
     .plan-days { gap: 20px; }
     .plan-day-card { border-radius: 14px; }
     .plan-day-header-btn { padding: 0; }
-    .plan-day-name { padding: 14px 16px; font-size: 15px; }
-    .plan-day-chevron { padding: 14px 16px; }
-    .plan-meals { grid-template-columns: 1fr; gap: 16px; padding: 16px; }
-    .plan-meal-card { border-radius: 12px; padding: 16px; gap: 14px; }
+    .plan-day-name { padding: 14px clamp(0.75rem, 3vw, 1rem); font-size: 15px; }
+    .plan-day-chevron { padding: 14px clamp(0.75rem, 3vw, 1rem); }
+    .plan-meals { grid-template-columns: 1fr; gap: clamp(0.75rem, 2.5vw, 1rem); padding-inline: 0; padding-block: 0.75rem; }
+    .plan-meal-card { border-radius: 12px; padding: clamp(0.875rem, 3vw, 1rem); gap: 14px; width: 100%; }
     .plan-meal-icon { width: 44px; height: 44px; font-size: 20px; }
     .plan-meal-name, .plan-meal-name-html { font-size: 15px; }
     .plan-meal-macros { font-size: 11px; }
@@ -3375,7 +3398,10 @@ const planSectionStyles = `
     .plan-today-banner p { font-size: 13px; }
   }
   @media (max-width: 640px) {
-    .plan-hero { padding: 20px 16px 24px; margin-left: -16px; margin-right: -16px; }
+    .plan-hero {
+      padding: 20px clamp(0.75rem, 3vw, 1rem) 24px;
+      margin-inline: calc(-1 * clamp(0.5rem, 2.5vw, 0.75rem));
+    }
     .plan-hero-title { font-size: 18px; }
     .plan-cards-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
     .plan-day-training-list { padding-left: 16px; }

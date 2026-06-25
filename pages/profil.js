@@ -3058,7 +3058,8 @@ export default function Profil() {
       <style jsx>{`
         .page {
           min-height: 100vh;
-          padding: 0 20px 100px;
+          padding-block: 0 100px;
+          padding-inline: clamp(0.75rem, 4vw, 1.25rem);
           background: transparent;
           color: #e2e8f0;
           font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -3129,10 +3130,12 @@ export default function Profil() {
         /* ── TOP profil: jeden hero panel, profil úplně napravo ── */
         .profile-hero {
           margin-bottom: 24px;
-          padding: 0 24px;
+          padding: 0;
+          width: min(1180px, 100%);
           max-width: 1180px;
           margin-left: auto;
           margin-right: auto;
+          box-sizing: border-box;
         }
         .profile-hero-inner {
           display: flex;
@@ -3500,7 +3503,7 @@ export default function Profil() {
         }
 
         @media (max-width: 768px) {
-          .profile-hero { padding: 0 12px; margin-bottom: 12px; }
+          .profile-hero { padding: 0; margin-bottom: 12px; }
           .profile-hero-inner { padding: 14px 16px 18px; gap: 12px; flex-wrap: wrap; }
           .profile-hero-brand-label { font-size: 24px; }
           .profile-hero-brand-welcome { font-size: 14px; }
@@ -3536,10 +3539,39 @@ export default function Profil() {
           .plan-goal-stat-label { font-size: 10px; }
           .plan-goal-actions { min-width: 0; width: 100%; }
           .hero-prefs-btn, .plan-goal-prefs-btn { min-height: 48px; padding: 12px 18px; width: 100%; touch-action: manipulation; }
-          .profile-bubbles { padding: 0 12px; width: 100%; box-sizing: border-box; }
+          .profile-bubbles {
+            padding-inline: 0;
+            width: 100%;
+            box-sizing: border-box;
+            align-items: stretch;
+          }
+          .profile-bubble {
+            max-width: 100%;
+            width: 100%;
+          }
+          .profile-bubble:has(.profile-bubble-body[data-open="true"]) {
+            width: 100%;
+            max-width: 100%;
+          }
           #muj-plan.profile-bubble:has(.profile-bubble-body[data-open="true"]) {
             max-width: 100%;
             border-radius: 16px;
+          }
+          #muj-plan .profile-bubble-body[data-open="true"] {
+            padding: 0;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .page {
+            padding-inline: clamp(0.75rem, 3vw, 1rem);
+          }
+          .profile-bubbles {
+            padding-inline: 0;
+          }
+          .profile-bubble-body[data-open="true"]:not(#profile-bubble-body-muj-plan) {
+            padding-inline: clamp(0.75rem, 3vw, 1rem);
+            padding-bottom: 1rem;
           }
           #muj-plan .profile-bubble-body[data-open="true"] {
             padding: 0;
@@ -3553,14 +3585,16 @@ export default function Profil() {
           align-items: center;
           gap: 16px;
           margin-bottom: 32px;
-          padding: 0 16px;
+          padding-inline: clamp(0.75rem, 4vw, 1rem);
+          width: min(1180px, 100%);
           max-width: 1180px;
           margin-left: auto;
           margin-right: auto;
+          box-sizing: border-box;
         }
         .profile-bubble {
-          width: 100%;
-          max-width: 380px;
+          width: min(380px, 100%);
+          max-width: min(380px, 100%);
           border-radius: 50px;
           border: 1px solid #1e293b;
           background: #121826;
@@ -3571,7 +3605,8 @@ export default function Profil() {
           transition: border-color 0.2s, box-shadow 0.2s, max-width 0.35s ease, border-radius 0.3s ease;
         }
         .profile-bubble:has(.profile-bubble-body[data-open="true"]) {
-          max-width: 100%;
+          width: min(720px, 100%);
+          max-width: min(720px, 100%);
           border-radius: 20px;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
         }
@@ -3630,7 +3665,8 @@ export default function Profil() {
         }
         .profile-bubble-body[data-open="true"] {
           max-height: 5000px;
-          padding: 0 20px 20px;
+          padding-inline: clamp(0.75rem, 4vw, 1.25rem);
+          padding-bottom: clamp(0.75rem, 3vw, 1.25rem);
           box-sizing: border-box;
         }
         /* Můj plán: 7 dní + jídla přesahují 5000px — bez ořezu a s page scroll */
@@ -5096,11 +5132,18 @@ export default function Profil() {
         .error-banner span { color: #888; }
 
         @media (max-width: 640px) {
-          .page { padding: 0 12px 80px; width: 100%; box-sizing: border-box; }
+          .page {
+            padding-block: 0 80px;
+            padding-inline: clamp(0.75rem, 4vw, 1rem);
+            width: 100%;
+            box-sizing: border-box;
+          }
           .profile-hero { padding: 0; max-width: 100%; }
           .profile-membership-plan-card { margin-left: 0; margin-right: 0; max-width: 100%; }
-          .profile-bubbles { max-width: 100%; }
-          .profile-bubble-body { padding-left: 12px; padding-right: 12px; }
+          .profile-bubbles { max-width: 100%; padding-inline: 0; }
+          .profile-bubble-body:not(#profile-bubble-body-muj-plan) {
+            padding-inline: clamp(0.75rem, 3vw, 1rem);
+          }
           .progress-section, .progress-detail-end { padding: 18px 16px; margin-left: -4px; margin-right: -4px; border-radius: 14px; }
           .progress-lead, .progress-period-hint { font-size: 14px; line-height: 1.5; }
           .progress-dates { font-size: 14px; margin-bottom: 16px; }
@@ -5176,10 +5219,16 @@ export default function Profil() {
           .action-buttons { gap: 10px; }
         }
         @media (max-width: 480px) {
-          .page { padding: 0 10px 80px; }
+          .page {
+            padding-inline: clamp(0.75rem, 3vw, 1rem);
+            padding-block-end: 80px;
+          }
         }
         @media (max-width: 380px) {
-          .page { padding: 0 8px 80px; }
+          .page {
+            padding-inline: clamp(0.5rem, 3vw, 0.75rem);
+            padding-block-end: 80px;
+          }
           .progress-big-num { font-size: 20px; }
           .kpi-item { min-width: 64px; }
         }

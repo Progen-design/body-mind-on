@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
-import { START_FEATURES, START_POST_TRIAL_OFFER } from '../lib/pricing';
+import { START_FEATURES, START_POST_TRIAL_OFFER, VIP_PRICE_LABEL } from '../lib/pricing';
 
 const PricingTable = dynamic(() => import('./PricingTable'), { ssr: false });
 
@@ -50,7 +50,7 @@ export default function TrialExpiredPaywall() {
         <a href="/chci-vip" className="trial-upgrade-card trial-upgrade-card--vip">
           <h3 className="trial-upgrade-title">VIP Coaching</h3>
           <p className="trial-upgrade-subtitle">Elitní lidský kouč, týdenní 1:1 konzultace, strategie na míru</p>
-          <span className="trial-upgrade-price">3 999 Kč/měsíc</span>
+          <span className="trial-upgrade-price">{VIP_PRICE_LABEL}</span>
           <span className="trial-upgrade-cta">Chci VIP přístup →</span>
         </a>
       </div>

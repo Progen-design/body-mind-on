@@ -149,12 +149,12 @@ export default function Home() {
                 <li>Záznam tréninků a aktivit</li>
                 <li>Statistiky a přehled progresu</li>
               </ul>
-              <a href={`${APP_URL}/start?plan=club`} className="btn btn-primary">Připojit se k ON Clubu</a>
+              <a href={`${APP_URL}/on-club`} className="btn btn-primary">Připojit se k ON Clubu</a>
             </div>
             <div className="price-card">
               <h3>VIP Coaching</h3>
               <p className="price-desc">Luxusní péče pro ty, co chtějí víc.</p>
-              <div className="price-value">3 999 Kč/měsíc</div>
+              <div className="price-value">5 990–6 990 Kč/měsíc</div>
               <ul>
                 <li>VŠE z ON Club +</li>
                 <li>Elitní lidský kouč</li>
@@ -162,7 +162,7 @@ export default function Home() {
                 <li>Týdenní 1:1 video konzultace</li>
                 <li>Prioritní podpora</li>
               </ul>
-              <a href={`${APP_URL}/start?plan=vip`} className="btn btn-primary">Chci VIP přístup</a>
+              <a href={`${APP_URL}/chci-vip`} className="btn btn-primary">Chci VIP přístup</a>
             </div>
           </div>
         </section>

@@ -27,6 +27,8 @@
     "verify:ai-instructions": "node scripts/verify-ai-instruction-standards.mjs",
     "verify:program-variants": "node scripts/verify-program-variants-section.mjs",
     "verify:email-and-recipe-content": "node scripts/verify-email-and-recipe-content.mjs",
+    "verify:start-meals-library-only": "node scripts/verify-start-meals-library-only.mjs",
+    "verify:product-consistency": "node scripts/verify-product-consistency.mjs",
     "verify:run-coach-scheduler": "node scripts/verify-run-coach-scheduler.mjs",
     "preview:plan-email": "node scripts/preview-plan-email.mjs",
     "check:cursor-access": "node scripts/check-cursor-access.mjs",

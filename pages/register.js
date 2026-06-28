@@ -7,7 +7,15 @@ export default function Register() {
   const { plan } = router.query
 
   useEffect(() => {
-    // Přesměrovat na /start s parametrem plan, pokud existuje
+    if (!router.isReady) return
+    if (plan === 'club') {
+      router.replace('/on-club')
+      return
+    }
+    if (plan === 'vip') {
+      router.replace('/chci-vip')
+      return
+    }
     if (plan) {
       router.replace(`/start?plan=${plan}`)
     } else {

@@ -260,8 +260,8 @@ const mixedSourceMeal = {
 const mixedModel = createMealDisplayModel(mixedSourceMeal, 'https://app.bodyandmindon.cz');
 const mixedUrl = getMealRecipeUrl(mixedSourceMeal, 'https://app.bodyandmindon.cz');
 check(
-  '1) title rýže+vejce + kuře ingredience = fallback',
-  mixedModel.isFallback && mixedModel.consistencyStatus.startsWith('inconsistent:'),
+  '1) title rýže+vejce + kuře ingredience = library override',
+  mixedModel.isSimpleStartLibrary && mixedModel.consistencyStatus === 'consistent:simple_start_library',
   mixedModel.consistencyStatus
 );
 check(

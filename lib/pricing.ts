@@ -18,6 +18,8 @@ export const START_FEATURES = [
   '7 pilířů zdraví',
 ];
 
+export const VIP_PRICE_LABEL = '5 990–6 990 Kč / měsíc';
+
 export const PRICING = [
   {
     id: 'start',
@@ -47,7 +49,8 @@ export const PRICING = [
   {
     id: 'vip',
     name: 'VIP Coaching',
-    priceCzk: 3999,
+    priceCzk: 5990,
+    priceLabel: VIP_PRICE_LABEL,
     subtitle: 'Luxusní péče pro ty, co chtějí víc.',
     features: [
       'VŠE z ON Club +',

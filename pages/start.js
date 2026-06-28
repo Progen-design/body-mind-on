@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "../lib/supabaseClient";
 import Header from "../components/Header";
@@ -43,6 +43,18 @@ export default function Start() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [selectedHabits, setSelectedHabits] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    const plan = String(router.query?.plan || '').toLowerCase();
+    if (plan === 'club') {
+      router.replace('/on-club');
+      return;
+    }
+    if (plan === 'vip') {
+      router.replace('/chci-vip');
+    }
+  }, [router.isReady, router.query?.plan, router]);
 
   const normalizeData = (data) => {
     const cleaned = { ...data };

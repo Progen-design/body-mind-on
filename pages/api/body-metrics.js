@@ -26,6 +26,7 @@ import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal,
 import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
 import { writeOnboardingEvent } from '../../lib/onboardingMetrics';
 import { getDefaultLoginUrl } from '../../lib/siteUrls.js';
+import { trainingEnvironmentNotesSuffix } from '../../lib/trainingEnvironment.js';
 
 /** Vercel Hobby = 60s. Krátký poll; last-resort hned po execute, ne až na konci handleru. */
 const PLAN_WAIT_TIMEOUT_MS = 8000;
@@ -58,6 +59,15 @@ export default async function handler(req, res) {
     if (dietLabel) notesParts.push('Typ stravy: ' + dietLabel);
     if (dietaryRestrictions) notesParts.push('Co nejí: ' + dietaryRestrictions);
     if (foodsToAvoid) notesParts.push('Potraviny k vynechání: ' + foodsToAvoid);
+    const trainingEnvironment = ['gym', 'home_bodyweight', 'home_equipment'].includes(String(b.training_environment || '').trim())
+      ? String(b.training_environment).trim()
+      : null;
+    const availableEquipment = Array.isArray(b.available_equipment)
+      ? b.available_equipment.map((item) => String(item || '').trim()).filter(Boolean)
+      : [];
+    if (trainingEnvironment) {
+      notesParts.push(trainingEnvironmentNotesSuffix(trainingEnvironment, availableEquipment));
+    }
     const notesFinal = notesParts.length ? notesParts.join('. ') : (b.notes?.trim() || null);
 
     const wd = b.workout_days;

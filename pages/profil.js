@@ -1237,7 +1237,7 @@ export default function Profil() {
 
   // Všechny parametry se přepočítají při každé změně profile (trénink, váha)
   // Použít _updated timestamp jako závislost, aby se vždy přepočítalo při změně
-  const { program, membershipStatus, membershipSince, trialEndsAt, isTrialExpired, daysUntilTrialEnd, metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, workoutLoadThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, weeklyTypeLoadBars, weeklyDayLoadBars, userName, firstName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, periodStartFormatted, periodEndFormatted, thisWeekDates, startWeightDate, lastWeightDate, habitAdjustedWeight, hasHabitData, positiveDone, negativeDone, habitCorrectionKg } = useMemo(() => {
+  const { program, membershipStatus, membershipSince, trialEndsAt, isTrialExpired, daysUntilTrialEnd, metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, workoutLoadThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, weeklyTypeLoadBars, weeklyDayLoadBars, userName, firstName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, periodStartFormatted, periodEndFormatted, thisWeekDates, startWeightDate, lastWeightDate, habitAdjustedWeight, hasHabitData, positiveDone, negativeDone, habitCorrectionKg, profileDisplayWeight, showEstimatedWeightFromWorkouts, hasManualWeightUpdate } = useMemo(() => {
     // Zajistit, že máme vždy nové reference na pole pro správnou detekci změn
     // A SORT podle data - nejnovější první
     const m = profile?.body_metrics 
@@ -1330,6 +1330,14 @@ export default function Profil() {
           : Math.round((estimatedCurrentWeightRounded + habitCorrectionKg) * 10) / 10)
       : null;
     const hasHabitData = (profile?.habit_summary_7d != null) && (positiveDone > 0 || negativeDone > 0);
+    const hasManualWeightUpdate = m.length > 1
+      && latest?.weight_kg != null
+      && first?.weight_kg != null
+      && Number(latest.weight_kg) !== Number(first.weight_kg);
+    const profileDisplayWeight = hasManualWeightUpdate
+      ? Number(latest.weight_kg)
+      : (startWeight ?? cw);
+    const showEstimatedWeightFromWorkouts = w.length > 0 && estimatedCurrentWeightRounded != null;
 
     const typeLoadMap = {};
     thisWeek.forEach((workout) => {
@@ -1424,6 +1432,9 @@ export default function Profil() {
       positiveDone,
       negativeDone,
       habitCorrectionKg,
+      profileDisplayWeight,
+      showEstimatedWeightFromWorkouts,
+      hasManualWeightUpdate,
     };
   }, [
     profile, 
@@ -1449,6 +1460,8 @@ export default function Profil() {
     profile?.habit_summary_7d?.positiveDone,
     profile?.habit_summary_7d?.negativeDone,
   ]);
+
+  const heroWeightKg = profileDisplayWeight != null ? Number(profileDisplayWeight).toFixed(1) : null;
 
   const canRegeneratePlan = membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired);
   const regenerateBlockedMessage = isTrialExpired
@@ -1794,7 +1807,7 @@ export default function Profil() {
                           <span className="plan-goal-stat-label">V pohybu</span>
                         </div>
                         <div className="plan-goal-stat">
-                          <span className="plan-goal-stat-value">{(hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : estimatedCurrentWeight) != null ? `${(hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : estimatedCurrentWeight).toFixed(1)} kg` : '—'}</span>
+                          <span className="plan-goal-stat-value">{heroWeightKg != null ? `${heroWeightKg} kg` : '—'}</span>
                           <span className="plan-goal-stat-label">{hasHabitData ? 'Odhad (tréninky + návyky)' : 'Odhad z tréninků'}</span>
                         </div>
                       </div>
@@ -1897,7 +1910,7 @@ export default function Profil() {
                 <span className="hero-stat-label">V pohybu</span>
               </div>
               <div className="hero-stat">
-                <span className="hero-stat-value">{(hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : estimatedCurrentWeight) != null ? `${(hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : estimatedCurrentWeight).toFixed(1)} kg` : '—'}</span>
+                <span className="hero-stat-value">{heroWeightKg != null ? `${heroWeightKg} kg` : '—'}</span>
                 <span className="hero-stat-label">{hasHabitData ? 'Odhad (tréninky + návyky)' : 'Odhad z tréninků'}</span>
               </div>
             </div>
@@ -2773,7 +2786,7 @@ export default function Profil() {
                 <div className="kpi-divider" />
                 <div className="kpi-item">
                   <span className="kpi-icon">⚖️</span>
-                  <span className="kpi-num">{(hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : estimatedCurrentWeightRounded) != null ? `${(hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : estimatedCurrentWeightRounded)} kg` : '—'}</span>
+                  <span className="kpi-num">{heroWeightKg != null ? `${heroWeightKg} kg` : '—'}</span>
                   <span className="kpi-label">{hasHabitData ? 'odhad (tréninky + návyky)' : 'odhad z tréninků'}</span>
                 </div>
               </div>
@@ -2942,7 +2955,7 @@ export default function Profil() {
                       Odhad z výdeje při trénincích: <strong>~{Math.round(estimatedCaloriesAll)} kcal</strong> → model{' '}
                       <strong>~{estimatedKgLostTotal.toFixed(1)} kg</strong> tuku (7700 kcal/kg). Skutečná váha závisí i na jídle, které aplikace nesleduje.
                     </p>
-                    {estimatedCurrentWeightRounded != null && (
+                    {showEstimatedWeightFromWorkouts && estimatedCurrentWeightRounded != null && (
                       <>
                         <p className="progress-calc-line">
                           Z tréninků (odhad): <strong>{estimatedCurrentWeightRounded} kg</strong>
@@ -2975,14 +2988,14 @@ export default function Profil() {
                       <span className="body-figure-arrow" aria-hidden>→</span>
                       <div className="body-figure-box body-figure-now">
                         <BodyFigure
-                          weight={hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : (estimatedCurrentWeightRounded ?? startWeight)}
+                          weight={profileDisplayWeight ?? startWeight}
                           height={heightCm}
                           size={130}
                           variant="now"
-                          label={hasHabitData ? 'Odhad (tréninky + návyky)' : 'Odhad z tréninků'}
-                          weightDiff={estimatedCurrentWeight != null && startWeight != null ? ((hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : estimatedCurrentWeightRounded) - startWeight).toFixed(1) : null}
+                          label={hasManualWeightUpdate ? 'Aktuální' : 'Aktuální (z registrace)'}
+                          weightDiff={profileDisplayWeight != null && startWeight != null ? (profileDisplayWeight - startWeight).toFixed(1) : null}
                         />
-                        <span className="figure-weight">{(hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : estimatedCurrentWeightRounded) != null ? `${(hasHabitData && habitAdjustedWeight != null ? habitAdjustedWeight : estimatedCurrentWeightRounded)} kg` : '—'}</span>
+                        <span className="figure-weight">{heroWeightKg != null ? `${heroWeightKg} kg` : '—'}</span>
                         {lastWeightDate && <span className="figure-date">k {formatShortDate(lastWeightDate)}</span>}
                       </div>
                     </div>

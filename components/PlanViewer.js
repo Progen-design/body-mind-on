@@ -25,7 +25,28 @@ import {
   shouldFetchMealRecipeFromApi,
 } from '../lib/mealRecipeDisplay.js';
 import { collectExerciseMediaSources, hasDisplayableExerciseMedia, isVideoMediaUrl } from '../lib/exerciseMediaHelpers.js';
+import { getExerciseInstructionGuide } from '../lib/exerciseInstructions.js';
+import { resolveToCanonicalKey } from '../lib/exerciseCanonicalMap.js';
 import { addCalendarDaysIsoPrague, calendarDateIsoInPrague, weekdayIndexJsFromPragueIso } from '../lib/czechCalendar';
+
+function exerciseMediaMatchesName(name, canonicalKey) {
+  const nameKey = resolveToCanonicalKey(name);
+  const mediaKey = canonicalKey || nameKey;
+  if (!nameKey || !mediaKey) return true;
+  return nameKey === mediaKey;
+}
+
+function renderExerciseInstructionBlock(canonicalKey) {
+  const guide = getExerciseInstructionGuide(canonicalKey);
+  if (!guide) return null;
+  return (
+    <div className="plan-exercise-guide" style={{ marginTop: 14, fontSize: 14, lineHeight: 1.5 }}>
+      <p style={{ margin: '0 0 8px 0' }}><strong>Jak na to:</strong> {guide.how}</p>
+      <p style={{ margin: '0 0 8px 0' }}><strong>Na co si dát pozor:</strong> {guide.caution}</p>
+      <p style={{ margin: 0 }}><strong>Lehčí varianta:</strong> {guide.easier}</p>
+    </div>
+  );
+}
 
 export { parsePlanHtml };
 
@@ -1249,8 +1270,14 @@ export default function PlanViewer({
                                         name,
                                       });
                                       if (fetched && hasDisplayableExerciseMedia(fetched)) {
-                                        media = fetched;
+                                        if (exerciseMediaMatchesName(name, canonicalKey)) {
+                                          media = fetched;
+                                        } else {
+                                          media = { imageUrl: null, gifUrl: null, videoUrl: null };
+                                        }
                                       }
+                                    } else if (!exerciseMediaMatchesName(name, canonicalKey)) {
+                                      media = { imageUrl: null, gifUrl: null, videoUrl: null };
                                     }
                                   } catch {
                                     /* ponechat embedded media */
@@ -1510,11 +1537,16 @@ export default function PlanViewer({
                 </div>
                 <div className="plan-recipe-modal-body">
                   <p style={{ marginTop: 0 }}><strong>Plán:</strong> {exerciseHintModal.part}</p>
+                  {renderExerciseInstructionBlock(exerciseHintModal.canonicalKey || resolveToCanonicalKey(exerciseHintModal.name))}
                   {exerciseHintModal.loading ? (
                     <p className="plan-no-recipe-hint" style={{ marginBottom: 0 }}>Načítám ukázku cviku…</p>
                   ) : (() => {
                     const media = collectExerciseMediaSources(exerciseHintModal);
-                    const preview = renderExerciseMediaPreview(media, exerciseHintModal.name, async () => {
+                    const safeMedia = exerciseMediaMatchesName(
+                      exerciseHintModal.name,
+                      exerciseHintModal.canonicalKey
+                    ) ? media : { imageUrl: null, gifUrl: null, videoUrl: null };
+                    const preview = renderExerciseMediaPreview(safeMedia, exerciseHintModal.name, async () => {
                       try {
                         const fetched = await fetchExerciseMediaFromApi({
                           canonicalKey: exerciseHintModal.canonicalKey,

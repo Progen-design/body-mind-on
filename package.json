@@ -10,6 +10,7 @@
     "test:expired-trial": "node scripts/set-expired-trial-for-test.js",
     "smoke-test": "node scripts/smoke-test-critical-path.mjs",
     "smoke-test:prod": "node scripts/smoke-test-critical-path.mjs --prod",
+    "e2e:profile-mobile": "node scripts/e2e-profile-mobile.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -72,6 +73,7 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "14.2.5",
     "pg": "^8.19.0",
+    "playwright": "^1.61.1",
     "supabase": "^2.76.15"
   }
 }

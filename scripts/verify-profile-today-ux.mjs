@@ -36,6 +36,8 @@ check('sekce „Dnešní jídla“', todayPanels.includes('Dnešní jídla'));
 check('sekce „Dnešní trénink“', todayPanels.includes('Dnešní trénink'));
 check('CTA Recept u dnešních jídel', todayPanels.includes('profile-today-recipe-btn') && todayPanels.includes('Recept'));
 check('CTA Jak cvik dělat', todayPanels.includes('Jak cvik dělat'));
+check('MacroRatioChart v dnešních jídlech', todayPanels.includes('MacroRatioChart'));
+check('MacroRatioChart v PlanViewer u jídel', planViewer.includes('MacroRatioChart'));
 
 check('týdenní accordion Celý týdenní plán', planViewer.includes('Celý týdenní plán'));
 check('tlačítko Rozbalit týden', planViewer.includes('Rozbalit týden'));

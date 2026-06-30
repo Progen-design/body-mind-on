@@ -1,4 +1,5 @@
 import { getMealNutritionDisplay } from '../../lib/mealNutritionDisplay.js';
+import MacroRatioChart from '../MacroRatioChart.js';
 import { mealDisplayTitleForStructuredMeal } from '../../lib/mealDisplayNameHelpers.js';
 import { createMealDisplayModelFromStructuredMeal } from '../../lib/mealRecipeDisplay.js';
 import { formatExerciseSetsRepsDisplay } from '../../lib/planDataIntegrity.js';
@@ -98,6 +99,13 @@ export default function ProfileTodayPanels({
             <p className="profile-today-macros">
               B {Math.round(dayNutrition.protein) || '—'} g · S {Math.round(dayNutrition.carbs) || '—'} g · T {Math.round(dayNutrition.fat) || '—'} g
             </p>
+            <MacroRatioChart
+              protein_g={dayNutrition.protein}
+              carbs_g={dayNutrition.carbs}
+              fat_g={dayNutrition.fat}
+              calories={dayNutrition.kcal}
+              compact
+            />
             <button type="button" className="profile-today-cta" onClick={onScrollToMeals}>
               Zobrazit dnešní jídla
             </button>
@@ -157,6 +165,13 @@ export default function ProfileTodayPanels({
                   {nutrition.carbs_g != null ? ` · S ${nutrition.carbs_g} g` : ''}
                   {nutrition.fat_g != null ? ` · T ${nutrition.fat_g} g` : ''}
                 </p>
+                <MacroRatioChart
+                  protein_g={nutrition.protein_g}
+                  carbs_g={nutrition.carbs_g}
+                  fat_g={nutrition.fat_g}
+                  calories={nutrition.calories}
+                  compact
+                />
                 {ings.length > 0 ? (
                   <p className="profile-today-meal-ingredients">{ings.join(' · ')}</p>
                 ) : null}

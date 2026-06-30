@@ -29,6 +29,7 @@ import { getExerciseInstructionGuide } from '../lib/exerciseInstructions.js';
 import { resolveToCanonicalKey } from '../lib/exerciseCanonicalMap.js';
 import { addCalendarDaysIsoPrague, calendarDateIsoInPrague, weekdayIndexJsFromPragueIso } from '../lib/czechCalendar';
 import ProfileTodayPanels from './profile/ProfileTodayPanels';
+import MacroRatioChart from './MacroRatioChart';
 
 function exerciseMediaMatchesName(name, canonicalKey) {
   const nameKey = resolveToCanonicalKey(name);
@@ -1279,6 +1280,14 @@ export default function PlanViewer({
                                       <span className="plan-meal-macro-pill-value">{item.value}</span>
                                     </span>
                                   ))}
+                                  <MacroRatioChart
+                                    protein_g={mealTrust?.protein_g}
+                                    carbs_g={mealTrust?.carbs_g}
+                                    fat_g={mealTrust?.fat_g}
+                                    calories={mealTrust?.calories}
+                                    compact
+                                    className="plan-meal-macro-chart"
+                                  />
                                 </div>
                               ) : null}
                               <div className="plan-meal-actions">
@@ -3156,6 +3165,10 @@ const planSectionStyles = `
     flex-wrap: wrap;
     gap: 8px;
     margin: 0 0 10px;
+  }
+  .plan-meal-macros :global(.plan-meal-macro-chart) {
+    flex: 1 1 100%;
+    width: 100%;
   }
   .plan-meal-macro-pill {
     display: inline-flex;

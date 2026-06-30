@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/router";
+import Link from "next/link";
 import { supabase } from "../lib/supabaseClient";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -57,6 +58,17 @@ export default function Start() {
       router.replace('/chci-vip');
     }
   }, [router.isReady, router.query?.plan, router]);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    let cancelled = false;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled || !session) return;
+      router.replace('/profil');
+    })();
+    return () => { cancelled = true; };
+  }, [router.isReady, router]);
 
   const normalizeData = (data) => {
     const cleaned = { ...data };
@@ -237,6 +249,15 @@ export default function Start() {
             Vyzkoušej systém bez rizika – AI ti zdarma připraví osobní plán tréninku, jídelníček i regeneraci.
           </p>
         </section>
+
+        <div className="max-w-3xl mx-auto mb-6 rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-3 text-center">
+          <p className="text-gray-200 text-sm md:text-base">
+            Už máš účet?{' '}
+            <Link href="/login?redirect=/profil" className="text-sky-400 font-semibold hover:underline">
+              Přihlas se a otevři svůj plán
+            </Link>
+          </p>
+        </div>
 
         {/* Progress bar */}
         <div className="progress-bar-wrap max-w-3xl mx-auto mb-8">

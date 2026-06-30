@@ -37,6 +37,8 @@ export default function Login() {
     ? router.query.redirect
     : '/profil';
 
+  const isPlanAccessFlow = redirectTo === '/profil' || router.query.from === 'plan';
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setCheckingSession(false);
@@ -130,8 +132,14 @@ export default function Login() {
               <Link href="/on-club" className="login-top-link">ON Club</Link>
             </div>
             <div className="login-hero">
-              <h2 className="login-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
-              <p className="login-hero-sub">Zapni své tělo i mysl a pokračuj ve svém plánu.</p>
+              <h2 className="login-hero-title">
+                {isPlanAccessFlow ? 'Přihlas se a otevři svůj plán' : 'Tvůj osobní AI plán Body & Mind ON'}
+              </h2>
+              <p className="login-hero-sub">
+                {isPlanAccessFlow
+                  ? 'Tvůj plán už je připravený. Přihlas se stejným e-mailem, který jsi použil při registraci.'
+                  : 'Zapni své tělo i mysl a pokračuj ve svém plánu.'}
+              </p>
             </div>
             <div className="login-content">
               <p className="login-loading">Načítám…</p>
@@ -160,8 +168,14 @@ export default function Login() {
             <Link href="/on-club" className="login-top-link">ON Club</Link>
           </div>
           <div className="login-hero">
-            <h2 className="login-hero-title">Tvůj osobní AI plán Body & Mind ON</h2>
-            <p className="login-hero-sub">Zapni své tělo i mysl a pokračuj ve svém plánu.</p>
+            <h2 className="login-hero-title">
+              {isPlanAccessFlow ? 'Přihlas se a otevři svůj plán' : 'Tvůj osobní AI plán Body & Mind ON'}
+            </h2>
+            <p className="login-hero-sub">
+              {isPlanAccessFlow
+                ? 'Tvůj plán už je připravený. Přihlas se stejným e-mailem, který jsi použil při registraci.'
+                : 'Zapni své tělo i mysl a pokračuj ve svém plánu.'}
+            </p>
           </div>
           <div className="login-content">
             {router.query.registered === '1' && (
@@ -170,7 +184,9 @@ export default function Login() {
               </div>
             )}
             <p className="login-hint">
-              Zadej stejný e-mail a heslo, které jsi použil při registraci.
+              {isPlanAccessFlow
+                ? 'Zadej e-mail a heslo z registrace — po přihlášení tě přesměrujeme do profilu s plánem.'
+                : 'Zadej stejný e-mail a heslo, které jsi použil při registraci.'}
             </p>
             <form onSubmit={handleSubmit} className="login-form">
               <div className="login-field">
@@ -204,8 +220,17 @@ export default function Login() {
               {message && <p className="login-error" role="alert">{message}</p>}
             </form>
             <p className="login-register-hint">
-              Ještě nemáš účet?{' '}
-              <Link href="/start">Vytvořit účet a plán (START)</Link>
+              {isPlanAccessFlow ? (
+                <>
+                  Už máš účet — přihlas se výše. Ještě nemáš účet?{' '}
+                  <Link href="/start">Vytvořit nový účet (START)</Link>
+                </>
+              ) : (
+                <>
+                  Ještě nemáš účet?{' '}
+                  <Link href="/start">Vytvořit účet a plán (START)</Link>
+                </>
+              )}
               {' · '}
               <Link href="/on-club">ON Club</Link>
             </p>

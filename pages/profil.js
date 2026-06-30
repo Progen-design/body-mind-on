@@ -336,7 +336,7 @@ export default function Profil() {
     onSessionRefreshed: (s) => setSession(s),
     onAuthFailure: async () => {
       await supabase.auth.signOut();
-      router.replace('/login');
+      router.replace('/login?redirect=/profil');
     },
   });
 
@@ -475,7 +475,7 @@ export default function Profil() {
       const { data: { session: s }, error: sessionErr } = await supabase.auth.getSession();
       if (cancelled) return;
       if (sessionErr || !s) {
-        router.replace('/login');
+        router.replace('/login?redirect=/profil');
         return;
       }
       const { data: { session: fresh }, error: refreshErr } = await supabase.auth.refreshSession();
@@ -753,7 +753,7 @@ export default function Profil() {
 
   async function handleLogout() {
     await supabase.auth.signOut();
-    router.replace('/login');
+    router.replace('/login?redirect=/profil');
   }
 
   async function handleDeleteAccount() {

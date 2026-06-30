@@ -55,7 +55,7 @@ export function middleware(request) {
   }
 
   if (isAppSite && pathname === '/') {
-    return NextResponse.redirect(new URL('/start', appBaseUrl), 302);
+    return NextResponse.redirect(new URL('/login?redirect=/profil', appBaseUrl), 302);
   }
 
   return NextResponse.next();

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { computeMacroRatio } from '../lib/macroRatioDisplay.js';
 import { getMacroCalorieDelta } from '../lib/macroKcalConsistency.js';
 
@@ -17,12 +18,20 @@ export default function MacroRatioChart({
 
   const { proteinPct, carbsPct, fatPct, computedKcal, statedKcal } = ratio;
   const delta = getMacroCalorieDelta(statedKcal ?? computedKcal, protein_g, carbs_g, fat_g);
-  const kcalNote = statedKcal != null && Math.abs(statedKcal - computedKcal) > 15
-    ? ` (${computedKcal} kcal z maker)`
-    : '';
-  const statusClass = delta.status === 'OK' ? 'macro-ratio-status--ok'
-    : delta.status === 'WARNING' ? 'macro-ratio-status--warn'
-      : delta.status === 'ERROR' ? 'macro-ratio-status--error' : '';
+
+  useEffect(() => {
+    if (delta.status === 'ERROR' && typeof window !== 'undefined') {
+      console.warn('[macro-kcal] meal calorie vs macro inconsistency', {
+        statedKcal: delta.statedKcal,
+        kcalFromMacros: delta.kcalFromMacros,
+        deltaPercent: delta.deltaPercent,
+      });
+    }
+  }, [delta.status, delta.statedKcal, delta.kcalFromMacros, delta.deltaPercent]);
+
+  const proteinLabel = compact ? `B ${proteinPct}%` : `Bílkoviny ${proteinPct}%`;
+  const carbsLabel = compact ? `S ${carbsPct}%` : `Sacharidy ${carbsPct}%`;
+  const fatLabel = compact ? `T ${fatPct}%` : `Tuky ${fatPct}%`;
 
   return (
     <div
@@ -41,21 +50,22 @@ export default function MacroRatioChart({
         ) : null}
       </div>
       <p className="macro-ratio-legend">
-        <span className="macro-ratio-legend-item macro-ratio-legend-item--protein">B {proteinPct}%</span>
-        <span className="macro-ratio-legend-item macro-ratio-legend-item--carbs">S {carbsPct}%</span>
-        <span className="macro-ratio-legend-item macro-ratio-legend-item--fat">T {fatPct}%</span>
+        <span className="macro-ratio-legend-item macro-ratio-legend-item--protein">{proteinLabel}</span>
+        <span className="macro-ratio-legend-item macro-ratio-legend-item--carbs">{carbsLabel}</span>
+        <span className="macro-ratio-legend-item macro-ratio-legend-item--fat">{fatLabel}</span>
         {!compact && statedKcal != null ? (
-          <span className="macro-ratio-kcal-note">· cca {statedKcal} kcal{kcalNote}</span>
-        ) : null}
-        {delta.status !== 'UNKNOWN' ? (
-          <span className={`macro-ratio-status ${statusClass}`}>
-            · makra {delta.status === 'OK' ? 'sedí' : delta.status === 'WARNING' ? 'cca sedí' : 'nesedí'}
-          </span>
+          <span className="macro-ratio-kcal-note">· cca {statedKcal} kcal</span>
         ) : null}
       </p>
+      {delta.status === 'WARNING' ? (
+        <p className="macro-ratio-warning">Kalorie jsou zaokrouhlené podle porcí.</p>
+      ) : null}
       <style jsx>{`
         .macro-ratio-chart {
           margin-top: 8px;
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
         }
         .macro-ratio-bar {
           display: flex;
@@ -63,6 +73,8 @@ export default function MacroRatioChart({
           border-radius: 4px;
           overflow: hidden;
           background: rgba(255, 255, 255, 0.08);
+          width: 100%;
+          max-width: 100%;
         }
         .macro-ratio-chart--compact .macro-ratio-bar {
           height: 6px;
@@ -95,9 +107,12 @@ export default function MacroRatioChart({
         .macro-ratio-kcal-note {
           color: #64748b;
         }
-        .macro-ratio-status--ok { color: #86efac; }
-        .macro-ratio-status--warn { color: #fcd34d; }
-        .macro-ratio-status--error { color: #fca5a5; }
+        .macro-ratio-warning {
+          margin: 4px 0 0;
+          font-size: 11px;
+          color: #fcd34d;
+          line-height: 1.4;
+        }
       `}</style>
     </div>
   );

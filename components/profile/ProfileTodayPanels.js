@@ -43,6 +43,13 @@ function sumDayNutrition(meals, structDay) {
   return { kcal: kcal || null, protein, carbs, fat };
 }
 
+function envLabelPlain(trainingEnvironmentLabel, structuredPlan) {
+  if (trainingEnvironmentLabel) {
+    return String(trainingEnvironmentLabel).replace(/^Typ:\s*/i, '').trim();
+  }
+  return structuredPlan?.training_environment_label || '';
+}
+
 export default function ProfileTodayPanels({
   todayLabel,
   todayDay,
@@ -50,7 +57,13 @@ export default function ProfileTodayPanels({
   structuredPlan,
   program = 'START',
   planHtml = '',
+  trainingEnvironmentLabel = '',
+  canPinMeals = true,
   onRecipeClick,
+  onSwapClick,
+  onPinClick,
+  isMealPinned,
+  pinToastByKey = {},
   onExerciseClick,
   onScrollToMeals,
   onScrollToWorkout,
@@ -69,6 +82,7 @@ export default function ProfileTodayPanels({
   const dayNutrition = sumDayNutrition(meals, structDay);
   const targets = structuredPlan?.targets || {};
   const targetKcal = Number(targets.calories_per_day) || null;
+  const envPlain = envLabelPlain(trainingEnvironmentLabel, structuredPlan);
 
   const workout = structDay?.workout;
   const exercises = Array.isArray(workout?.exercises) ? workout.exercises.filter((ex) => {
@@ -92,8 +106,8 @@ export default function ProfileTodayPanels({
           <article className="profile-today-card">
             <h3>Jídlo dnes</h3>
             <p className="profile-today-stat">{meals.length} jídel</p>
-            <p className="profile-today-stat">
-              {dayNutrition.kcal != null ? `${Math.round(dayNutrition.kcal)} kcal` : '— kcal'}
+            <p className="profile-today-stat profile-today-stat--kcal">
+              {dayNutrition.kcal != null ? `cca ${Math.round(dayNutrition.kcal)} kcal` : '— kcal'}
               {targetKcal ? ` / cíl ${Math.round(targetKcal)}` : ''}
             </p>
             <p className="profile-today-macros">
@@ -112,6 +126,9 @@ export default function ProfileTodayPanels({
           </article>
           <article className="profile-today-card">
             <h3>Trénink dnes</h3>
+            {envPlain ? (
+              <p className="profile-today-env-badge">{envPlain}</p>
+            ) : null}
             {hasWorkout ? (
               <>
                 <p className="profile-today-stat">{exercises.length} cviků</p>
@@ -122,9 +139,9 @@ export default function ProfileTodayPanels({
               </>
             ) : (
               <>
-                <p className="profile-today-stat">Dnes máš volnější den / regeneraci</p>
+                <p className="profile-today-stat">Dnes nemáš naplánovaný trénink.</p>
                 <button type="button" className="profile-today-cta" onClick={onScrollToWeek}>
-                  Zobrazit plán týdne
+                  Zobrazit týdenní trénink
                 </button>
               </>
             )}
@@ -151,19 +168,20 @@ export default function ProfileTodayPanels({
             const nutrition = getMealNutritionDisplay(structMeal || meal);
             const ings = topIngredients(structMeal);
             const origIdx = meals.indexOf(meal);
+            const mealKey = `${todayDay.originalIndex ?? todayDayIndex}_${origIdx >= 0 ? origIdx : mi}`;
+            const pinned = isMealPinned?.(meal.type || '', title) || false;
+            const pinToast = pinToastByKey[mealKey];
             return (
               <article key={`${meal.type}-${mi}`} className="profile-today-meal-card">
-                <div className="profile-today-meal-head">
-                  <span className="profile-today-meal-type">{mealTypeLabel(meal.type)}</span>
-                  {nutrition.calories != null ? (
-                    <span className="profile-today-meal-kcal">{nutrition.calories} kcal</span>
-                  ) : null}
-                </div>
+                <span className="profile-today-meal-type">{mealTypeLabel(meal.type)}</span>
                 <h4 className="profile-today-meal-title">{title || mealTypeLabel(meal.type)}</h4>
+                {nutrition.calories != null ? (
+                  <p className="profile-today-meal-kcal-main">{nutrition.calories} kcal</p>
+                ) : null}
                 <p className="profile-today-meal-macros">
-                  {nutrition.protein_g != null ? `B ${nutrition.protein_g} g` : ''}
-                  {nutrition.carbs_g != null ? ` · S ${nutrition.carbs_g} g` : ''}
-                  {nutrition.fat_g != null ? ` · T ${nutrition.fat_g} g` : ''}
+                  {nutrition.protein_g != null ? `Bílkoviny ${nutrition.protein_g} g` : ''}
+                  {nutrition.carbs_g != null ? ` · Sacharidy ${nutrition.carbs_g} g` : ''}
+                  {nutrition.fat_g != null ? ` · Tuky ${nutrition.fat_g} g` : ''}
                 </p>
                 <MacroRatioChart
                   protein_g={nutrition.protein_g}
@@ -175,49 +193,80 @@ export default function ProfileTodayPanels({
                 {ings.length > 0 ? (
                   <p className="profile-today-meal-ingredients">{ings.join(' · ')}</p>
                 ) : null}
-                <button
-                  type="button"
-                  className="profile-today-recipe-btn"
-                  onClick={() => onRecipeClick?.(origIdx >= 0 ? origIdx : mi)}
-                >
-                  Recept
-                </button>
+                <div className="profile-today-meal-actions">
+                  <button
+                    type="button"
+                    className="profile-today-recipe-btn"
+                    onClick={() => onRecipeClick?.(origIdx >= 0 ? origIdx : mi)}
+                  >
+                    Recept
+                  </button>
+                  <button
+                    type="button"
+                    className="profile-today-secondary-btn"
+                    onClick={() => onSwapClick?.(origIdx >= 0 ? origIdx : mi)}
+                  >
+                    Nahradit jiným
+                  </button>
+                  {canPinMeals ? (
+                    <button
+                      type="button"
+                      className={`profile-today-secondary-btn ${pinned ? 'profile-today-secondary-btn--active' : ''}`}
+                      onClick={() => onPinClick?.(origIdx >= 0 ? origIdx : mi)}
+                    >
+                      {pinned ? '✓ Zahrnuto od dalšího týdne' : 'Zahrnout od dalšího týdne'}
+                    </button>
+                  ) : null}
+                </div>
+                {pinToast ? (
+                  <p className={`profile-today-pin-toast profile-today-pin-toast--${pinToast.type || 'success'}`}>
+                    {pinToast.message}
+                  </p>
+                ) : null}
               </article>
             );
           })}
         </div>
         <button type="button" className="profile-today-link-btn" onClick={onScrollToWeek}>
-          Zobrazit celý jídelníček
+          Celý týdenní jídelníček
         </button>
       </section>
 
       <section id="profile-today-workout" className="profile-today-section" aria-labelledby="profile-today-workout-heading">
         <h3 id="profile-today-workout-heading" className="profile-today-section-title">Dnešní trénink</h3>
+        {envPlain ? (
+          <p className="profile-today-workout-env">Typ: {envPlain}</p>
+        ) : null}
         {hasWorkout ? (
-          <ul className="profile-today-workout-list">
-            {exercises.map((ex, xi) => {
-              const name = ex.display_name_cs || ex.name_cs || ex.name || 'Cvik';
-              const part = formatExerciseSetsRepsDisplay(ex);
-              return (
-                <li key={xi} className="profile-today-workout-item">
-                  <div>
-                    <strong>{name}</strong>
-                    <span className="profile-today-workout-part"> · {part}</span>
-                  </div>
-                  <button
-                    type="button"
-                    className="profile-today-exercise-btn"
-                    onClick={() => onExerciseClick?.(xi)}
-                  >
-                    Jak cvik dělat
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+          <>
+            <p className="profile-today-workout-meta">
+              {exercises.length} cviků · {workoutMinutes ? `~${workoutMinutes} min` : 'dle plánu'}
+            </p>
+            <ul className="profile-today-workout-list">
+              {exercises.map((ex, xi) => {
+                const name = ex.display_name_cs || ex.name_cs || ex.name || 'Cvik';
+                const part = formatExerciseSetsRepsDisplay(ex);
+                return (
+                  <li key={xi} className="profile-today-workout-item">
+                    <div>
+                      <strong>{name}</strong>
+                      <span className="profile-today-workout-part"> · {part}</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="profile-today-exercise-btn"
+                      onClick={() => onExerciseClick?.(xi)}
+                    >
+                      Jak cvik provést
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
         ) : (
           <div className="profile-today-rest">
-            <p>Dnes nemáš naplánovaný trénink. Soustřeď se na jídlo, kroky a regeneraci.</p>
+            <p>Dnes nemáš naplánovaný trénink.</p>
             <button type="button" className="profile-today-link-btn" onClick={onScrollToWeek}>
               Zobrazit týdenní trénink
             </button>
@@ -231,6 +280,7 @@ export default function ProfileTodayPanels({
           max-width: 100%;
           box-sizing: border-box;
           margin-bottom: 20px;
+          overflow-x: hidden;
         }
         .profile-today-hero {
           margin-bottom: 24px;
@@ -268,6 +318,7 @@ export default function ProfileTodayPanels({
           border-radius: 14px;
           padding: 16px;
           min-width: 0;
+          max-width: 100%;
         }
         .profile-today-card h3 {
           margin: 0 0 10px;
@@ -283,6 +334,21 @@ export default function ProfileTodayPanels({
           color: #e2e8f0;
           font-weight: 600;
         }
+        .profile-today-stat--kcal {
+          font-size: 17px;
+          color: #f8fafc;
+        }
+        .profile-today-env-badge {
+          display: inline-block;
+          margin: 0 0 10px;
+          padding: 4px 10px;
+          border-radius: 999px;
+          font-size: 12px;
+          font-weight: 700;
+          color: #e0f2fe;
+          background: rgba(14, 165, 233, 0.2);
+          border: 1px solid rgba(56, 189, 248, 0.35);
+        }
         .profile-today-macros {
           margin: 0 0 12px;
           font-size: 13px;
@@ -296,7 +362,7 @@ export default function ProfileTodayPanels({
         }
         .profile-today-cta {
           width: 100%;
-          min-height: 44px;
+          min-height: 48px;
           border: none;
           border-radius: 10px;
           background: linear-gradient(135deg, #0ea5e9, #7c3aed);
@@ -330,28 +396,26 @@ export default function ProfileTodayPanels({
           border-radius: 12px;
           padding: 14px;
           min-width: 0;
-        }
-        .profile-today-meal-head {
-          display: flex;
-          justify-content: space-between;
-          gap: 8px;
-          margin-bottom: 6px;
+          max-width: 100%;
         }
         .profile-today-meal-type {
+          display: block;
           font-size: 12px;
           font-weight: 700;
           color: #38bdf8;
           text-transform: uppercase;
-        }
-        .profile-today-meal-kcal {
-          font-size: 12px;
-          color: #94a3b8;
-          font-weight: 600;
+          margin-bottom: 6px;
         }
         .profile-today-meal-title {
           margin: 0 0 6px;
           font-size: 16px;
           color: #f1f5f9;
+        }
+        .profile-today-meal-kcal-main {
+          margin: 0 0 8px;
+          font-size: 18px;
+          font-weight: 800;
+          color: #f8fafc;
         }
         .profile-today-meal-macros,
         .profile-today-meal-ingredients {
@@ -360,9 +424,15 @@ export default function ProfileTodayPanels({
           color: #94a3b8;
           line-height: 1.45;
         }
+        .profile-today-meal-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin-top: 12px;
+        }
         .profile-today-recipe-btn {
           width: 100%;
-          min-height: 44px;
+          min-height: 48px;
           border: none;
           border-radius: 10px;
           background: rgba(124, 58, 237, 0.35);
@@ -371,6 +441,30 @@ export default function ProfileTodayPanels({
           font-weight: 700;
           font-size: 15px;
           cursor: pointer;
+        }
+        .profile-today-secondary-btn {
+          width: 100%;
+          min-height: 48px;
+          border-radius: 10px;
+          background: rgba(30, 41, 59, 0.6);
+          border: 1px solid rgba(148, 163, 184, 0.35);
+          color: #e2e8f0;
+          font-weight: 600;
+          font-size: 14px;
+          cursor: pointer;
+          padding: 10px 14px;
+        }
+        .profile-today-secondary-btn--active {
+          border-color: rgba(74, 222, 128, 0.5);
+          color: #bbf7d0;
+        }
+        .profile-today-pin-toast {
+          margin: 8px 0 0;
+          font-size: 13px;
+          color: #86efac;
+        }
+        .profile-today-pin-toast--error {
+          color: #fca5a5;
         }
         .profile-today-link-btn {
           margin-top: 12px;
@@ -382,7 +476,18 @@ export default function ProfileTodayPanels({
           cursor: pointer;
           text-decoration: underline;
           padding: 8px 0;
-          min-height: 44px;
+          min-height: 48px;
+        }
+        .profile-today-workout-env {
+          margin: 0 0 8px;
+          font-size: 14px;
+          font-weight: 700;
+          color: #7dd3fc;
+        }
+        .profile-today-workout-meta {
+          margin: 0 0 12px;
+          font-size: 14px;
+          color: #94a3b8;
         }
         .profile-today-workout-list {
           list-style: none;
@@ -400,6 +505,7 @@ export default function ProfileTodayPanels({
           display: flex;
           flex-direction: column;
           gap: 10px;
+          min-width: 0;
         }
         .profile-today-workout-part {
           color: #94a3b8;
@@ -407,7 +513,7 @@ export default function ProfileTodayPanels({
         }
         .profile-today-exercise-btn {
           align-self: flex-start;
-          min-height: 44px;
+          min-height: 48px;
           padding: 10px 16px;
           border-radius: 10px;
           border: 1px solid rgba(56, 189, 248, 0.45);

@@ -30,16 +30,22 @@ check('profil importuje ProfileTodayPanels přes PlanViewer', planViewer.include
 check('PlanViewer má prop todayFirstLayout', planViewer.includes('todayFirstLayout'));
 check('profil předává todayFirstLayout', profil.includes('todayFirstLayout'));
 check('profil předává program do PlanViewer', profil.includes('program={program}'));
+check('profil předává trainingEnvironmentLabel', profil.includes('trainingEnvironmentLabelFromMetrics'));
 
 check('sekce „Dnes máš jasno“', todayPanels.includes('Dnes máš jasno'));
 check('sekce „Dnešní jídla“', todayPanels.includes('Dnešní jídla'));
 check('sekce „Dnešní trénink“', todayPanels.includes('Dnešní trénink'));
 check('CTA Recept u dnešních jídel', todayPanels.includes('profile-today-recipe-btn') && todayPanels.includes('Recept'));
-check('CTA Jak cvik dělat', todayPanels.includes('Jak cvik dělat'));
+check('CTA Nahradit jiným u dnešních jídel', todayPanels.includes('Nahradit jiným'));
+check('CTA Zahrnout od dalšího týdne u dnešních jídel', todayPanels.includes('Zahrnout od dalšího týdne'));
+check('CTA Jak cvik provést', todayPanels.includes('Jak cvik provést'));
+check('typ prostředí v tréninku', todayPanels.includes('profile-today-env-badge') || todayPanels.includes('profile-today-workout-env'));
 check('MacroRatioChart v dnešních jídlech', todayPanels.includes('MacroRatioChart'));
 check('MacroRatioChart v PlanViewer u jídel', planViewer.includes('MacroRatioChart'));
+check('denní makro graf v today hero', todayPanels.includes('Jídlo dnes') && todayPanels.includes('MacroRatioChart'));
 
 check('týdenní accordion Celý týdenní plán', planViewer.includes('Celý týdenní plán'));
+check('odkaz Celý týdenní jídelníček', todayPanels.includes('Celý týdenní jídelníček'));
 check('tlačítko Rozbalit týden', planViewer.includes('Rozbalit týden'));
 check('týdenní plán lze sbalit', planViewer.includes('weeklyPlanOpen'));
 
@@ -71,9 +77,13 @@ check(
     && exerciseModalChunk.indexOf('Série / opakování') < exerciseModalChunk.indexOf('renderExerciseInstructionBlock')
 );
 
+check('CTA Nahradit jiným v týdenním plánu', planViewer.includes('Nahradit jiným'));
+check('CTA Zahrnout od dalšího týdne v týdenním plánu', planViewer.includes('Zahrnout od dalšího týdne'));
+
 const badFixedWidths = (todayPanels.match(/width:\s*(\d{4,})px/g) || [])
   .filter((w) => !w.includes('100'));
 check('mobilní today CSS bez extrémních fixed width', badFixedWidths.length === 0, badFixedWidths.join(', ') || 'none');
+check('today root overflow-x hidden', todayPanels.includes('overflow-x: hidden'));
 check('modaly používají min(…, calc(100vw', planViewer.includes('calc(100vw - 24px)'));
 
 check('npm script verify:profile-today-ux', packageJson.includes('"verify:profile-today-ux"'));

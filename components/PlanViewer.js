@@ -489,6 +489,8 @@ export default function PlanViewer({
   const [expandedDayCards, setExpandedDayCards] = useState(() => new Set());
   const recipeOpenHandlersRef = useRef({});
   const exerciseOpenHandlersRef = useRef({});
+  const swapOpenHandlersRef = useRef({});
+  const pinOpenHandlersRef = useRef({});
   const recipeOpenIdRef = useRef(0);
 
   const outputMode = getPlanOutputMode(plan, null, { outputMode: outputModeProp });
@@ -867,11 +869,23 @@ export default function PlanViewer({
               structuredPlan={structuredPlan}
               program={program}
               planHtml={plan?.plan_html || ''}
+              trainingEnvironmentLabel={resolvedTrainingLabel}
+              canPinMeals={canPinMeals}
               onRecipeClick={(mi) => {
                 const di = todayWeekIdx >= 0 ? todayWeekIdx : 0;
                 const fn = recipeOpenHandlersRef.current[`${di}_${mi}`];
                 if (fn) fn({ preventDefault: () => {}, stopPropagation: () => {}, currentTarget: null });
               }}
+              onSwapClick={(mi) => {
+                const di = todayWeekIdx >= 0 ? todayWeekIdx : 0;
+                swapOpenHandlersRef.current[`${di}_${mi}`]?.();
+              }}
+              onPinClick={(mi) => {
+                const di = todayWeekIdx >= 0 ? todayWeekIdx : 0;
+                pinOpenHandlersRef.current[`${di}_${mi}`]?.();
+              }}
+              isMealPinned={(mealType, mealText) => isPinned(mealType, mealText)}
+              pinToastByKey={pinToastMsg?.key ? { [pinToastMsg.key]: pinToastMsg } : {}}
               onExerciseClick={(xi) => {
                 const di = todayWeekIdx >= 0 ? todayWeekIdx : 0;
                 const fn = exerciseOpenHandlersRef.current[`${di}_${xi}`];
@@ -994,7 +1008,10 @@ export default function PlanViewer({
             {todayFirstLayout ? (
               <div className="plan-block plan-week-accordion" id="plan-tyden-accordion">
                 <div className="plan-week-accordion-header">
-                  <h3 className="plan-block-title" style={{ margin: 0 }}>Celý týdenní plán</h3>
+                  <div className="plan-week-accordion-titles">
+                    <h3 className="plan-block-title" style={{ margin: 0 }}>Celý týdenní plán</h3>
+                    <p className="plan-week-accordion-sub">Celý týdenní jídelníček a tréninky po dnech</p>
+                  </div>
                   <button
                     type="button"
                     className="plan-week-accordion-toggle"
@@ -1274,7 +1291,9 @@ export default function PlanViewer({
                             } : null);
                           }
                         };
+                        swapOpenHandlersRef.current[`${di}_${mi}`] = handleSwap;
                         const mealTextForPin = override ? (override.title || '') : (meal.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().replace(/\s*\([^)]*\)\s*$/g, '').trim();
+                        pinOpenHandlersRef.current[`${di}_${mi}`] = () => handleTogglePin(meal.type || '', mealTextForPin, overrideKey);
                         const mealPinned = isPinned(meal.type || '', mealTextForPin);
                         const macroItems = mealMacroItemsFromTrust(mealTrust);
                         const mealTypeLabel = (meal.type || 'Jídlo').trim();
@@ -1352,7 +1371,7 @@ export default function PlanViewer({
                                       onClick={(e) => { e.stopPropagation(); handleTogglePin(meal.type || '', mealTextForPin, overrideKey); }}
                                       title="Označíš si jídlo pro příští týden — při dalším generování ho zkusíme znovu zapracovat."
                                     >
-                                      {mealPinned ? '✓ Zahrnuto do dalšího týdne' : 'Zahrnout do dalšího týdne'}
+                                      {mealPinned ? '✓ Zahrnuto od dalšího týdne' : 'Zahrnout od dalšího týdne'}
                                     </button>
                                   )}
                                 </div>
@@ -1462,7 +1481,7 @@ export default function PlanViewer({
                                           minHeight: 44,
                                         }}
                                       >
-                                        Jak cvik dělat
+                                        Jak cvik provést
                                       </button>
                                     </span>
                                   </li>
@@ -2679,6 +2698,16 @@ const planSectionStyles = `
     justify-content: space-between;
     gap: 12px;
     margin-bottom: 8px;
+  }
+  .plan-week-accordion-titles {
+    flex: 1 1 200px;
+    min-width: 0;
+  }
+  .plan-week-accordion-sub {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.4;
   }
   .plan-week-accordion-toggle {
     min-height: 44px;

@@ -78,6 +78,9 @@ if (!planViewer.includes('plan-badge-env')) fail('PlanViewer missing training en
 if (!orchestrator.includes('training_environment_label')) fail('planOrchestrator missing structured training label');
 const env = parseTrainingEnvironment({ notes: 'Kde cvičí: Posilovna' });
 if (env !== 'gym' || TRAINING_ENVIRONMENT_LABELS[env] !== 'Posilovna') fail('parseTrainingEnvironment gym label');
+const homeBw = parseTrainingEnvironment({ notes: 'Kde cvičí: Doma bez vybavení' });
+if (homeBw !== 'home_bodyweight') fail(`parseTrainingEnvironment home_bodyweight from notes got ${homeBw}`);
+if (TRAINING_ENVIRONMENT_LABELS[homeBw] !== 'Doma bez vybavení') fail('home_bodyweight label mismatch');
 else ok('training environment label pipeline present');
 
 console.log(failed ? `\nRESULT: FAIL (${failed})` : '\nRESULT: PASS');

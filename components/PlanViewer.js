@@ -3275,6 +3275,57 @@ const planSectionStyles = `
   .plan-recipe-modal-body :global(.recipe-nutrient-bar-micro) {
     background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
   }
+  .plan-recipe-modal-body :global(.recipe-macro-energy-bar) {
+    display: flex;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.1);
+    width: 100%;
+    max-width: 100%;
+    margin: 12px 0 14px;
+    box-sizing: border-box;
+  }
+  .plan-recipe-modal-body :global(.recipe-macro-energy-seg) {
+    display: block;
+    height: 100%;
+    min-width: 2px;
+  }
+  .plan-recipe-modal-body :global(.recipe-macro-energy-seg--protein),
+  .plan-recipe-modal-body :global(.recipe-nutrient-bar.recipe-macro-energy-seg--protein) {
+    background: #f472b6;
+  }
+  .plan-recipe-modal-body :global(.recipe-macro-energy-seg--carbs),
+  .plan-recipe-modal-body :global(.recipe-nutrient-bar.recipe-macro-energy-seg--carbs) {
+    background: #60a5fa;
+  }
+  .plan-recipe-modal-body :global(.recipe-macro-energy-seg--fat),
+  .plan-recipe-modal-body :global(.recipe-nutrient-bar.recipe-macro-energy-seg--fat) {
+    background: #fbbf24;
+  }
+  .plan-recipe-modal-body :global(.recipe-macro-kcal-line) {
+    margin: 0 0 8px;
+    font-size: 15px;
+    color: #e2e8f0;
+  }
+  .plan-recipe-modal-body :global(.recipe-macro-kcal-label) {
+    color: #94a3b8;
+    margin-right: 6px;
+  }
+  .plan-recipe-modal-body :global(.recipe-macro-unavailable) {
+    margin: 8px 0 0;
+    color: #94a3b8;
+    font-size: 13px;
+  }
+  .plan-recipe-modal-body :global(.recipe-macro-kcal-warning) {
+    margin: 10px 0 0;
+    font-size: 12px;
+    color: #fcd34d;
+    line-height: 1.4;
+  }
+  .plan-recipe-modal-body :global(.recipe-nutrients--macro-energy .recipe-nutrient-top) {
+    grid-template-columns: 1fr auto;
+  }
   .plan-meal-name {
     margin: 0 0 4px;
     font-size: 16px;

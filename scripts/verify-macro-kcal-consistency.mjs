@@ -6,6 +6,10 @@ import {
   calculateCaloriesFromMacros,
   getMacroCalorieDelta,
 } from '../lib/macroKcalConsistency.js';
+import {
+  getMacroEnergyBreakdown,
+  normalizeMacroNutritionFields,
+} from '../lib/macroNutrition.js';
 import { buildSimpleStartMealSkeleton } from '../lib/services/simpleMealPlannerAgent.js';
 import { resolveSimpleStartLocalSlot } from '../lib/startSimpleMealFilter.js';
 import { planMealTypeToWeightKey, slotTargetKcal } from '../lib/nutrition/portionScaling.js';
@@ -20,7 +24,28 @@ function ok(msg) { console.log(`OK ${msg}`); }
 console.log('--- macro/kcal helpers ---');
 if (typeof calculateCaloriesFromMacros !== 'function') fail('calculateCaloriesFromMacros missing');
 if (typeof getMacroCalorieDelta !== 'function') fail('getMacroCalorieDelta missing');
+if (typeof getMacroEnergyBreakdown !== 'function') fail('getMacroEnergyBreakdown missing');
+if (typeof normalizeMacroNutritionFields !== 'function') fail('normalizeMacroNutritionFields missing');
 else ok('helpers exported');
+
+const egg = getMacroEnergyBreakdown({ kcal: 260, protein_g: 16, carbs_g: 8, fat_g: 18 });
+if (egg.proteinPercent < 24 || egg.proteinPercent > 26) fail(`egg protein % expected ~25, got ${egg.proteinPercent}`);
+if (egg.carbsPercent < 11 || egg.carbsPercent > 13) fail(`egg carbs % expected ~12, got ${egg.carbsPercent}`);
+if (egg.fatPercent < 62 || egg.fatPercent > 64) fail(`egg fat % expected ~63, got ${egg.fatPercent}`);
+else ok('260/16/8/18 energy %');
+
+const eggDelta = getMacroCalorieDelta(260, 16, 8, 18);
+if (eggDelta.status !== 'OK') fail(`260/16/8/18 should be OK, got ${eggDelta.status}`);
+else ok('260/16/8/18 = OK');
+
+const normalized = normalizeMacroNutritionFields({
+  calories: 260,
+  protein: 16,
+  carbs: 8,
+  fat: 18,
+});
+if (normalized.kcal !== 260 || normalized.protein_g !== 16) fail('normalizeMacroNutritionFields aliases');
+else ok('normalizeMacroNutritionFields aliases calories/protein');
 
 const sample = getMacroCalorieDelta(945, 42, 112, 35);
 if (sample.kcalFromMacros !== 931) fail(`expected 931 kcal from macros, got ${sample.kcalFromMacros}`);

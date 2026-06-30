@@ -55,6 +55,14 @@ const todayRecipeHandler = planViewer.match(/onRecipeClick=\{[\s\S]*?\}\s*onSwap
 const todayPinHandler = planViewer.match(/onPinClick=\{[\s\S]*?\}\s*isMealPinned=/)?.[0] || '';
 check('today onRecipeClick does not use recipeOpenHandlersRef', !todayRecipeHandler.includes('recipeOpenHandlersRef'));
 check('today onPinClick does not use pinOpenHandlersRef', !todayPinHandler.includes('pinOpenHandlersRef'));
+check('today exercise calls performOpenExercise directly', /onExerciseClick=\{[\s\S]*?performOpenExercise\(di, xi/.test(planViewer));
+check('performOpenExercise helper exists', planViewer.includes('const performOpenExercise ='));
+check('buildExerciseActionContext shared helper', planViewer.includes('const buildExerciseActionContext ='));
+const todayExerciseHandler = planViewer.match(/onExerciseClick=\{[\s\S]*?\}\s*onScrollToMeals=/)?.[0] || '';
+check('today onExerciseClick does not use exerciseOpenHandlersRef', !todayExerciseHandler.includes('exerciseOpenHandlersRef'));
+check('no exerciseOpenHandlersRef ref', !planViewer.includes('exerciseOpenHandlersRef'));
+check('weekly exercise button uses performOpenExercise', planViewer.includes('onClick={() => performOpenExercise(di, xi)}'));
+check('today exercise excludes rest entries', planViewer.includes('performOpenExercise(di, xi, { excludeRest: true })'));
 check('replace API uses local replaceMealInStructuredPlan', planReplaceApi.includes('replaceMealInStructuredPlan'));
 check('replace API does not call Spoonacular/OpenAI', !planReplaceApi.match(/spoonacular|openai/i));
 check('planMealReplace uses day slot index', planReplaceLib.includes('daySlotIndex'));

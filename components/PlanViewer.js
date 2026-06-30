@@ -38,6 +38,12 @@ function exerciseMediaMatchesName(name, canonicalKey) {
   return nameKey === mediaKey;
 }
 
+function workoutExercisesList(workout, { excludeRest = false } = {}) {
+  const raw = Array.isArray(workout?.exercises) ? workout.exercises : [];
+  if (!excludeRest) return raw;
+  return raw.filter((ex) => String(ex?.canonical_key || '').toLowerCase() !== 'rest');
+}
+
 function renderExerciseInstructionBlock(canonicalKey) {
   const guide = getExerciseInstructionGuide(canonicalKey);
   if (!guide) return null;
@@ -494,7 +500,6 @@ export default function PlanViewer({
   const [weeklyPlanOpen, setWeeklyPlanOpen] = useState(!todayFirstLayout);
   const [expandedDayCards, setExpandedDayCards] = useState(() => new Set());
   const recipeOpenHandlersRef = useRef({});
-  const exerciseOpenHandlersRef = useRef({});
   const swapOpenHandlersRef = useRef({});
   const pinOpenHandlersRef = useRef({});
   const recipeOpenIdRef = useRef(0);
@@ -957,6 +962,79 @@ export default function PlanViewer({
     return handleTogglePin(meal.type || '', mealTextForPin, overrideKey);
   };
 
+  const buildExerciseActionContext = (di, xi, { excludeRest = false } = {}) => {
+    const day = planWeekDays[di];
+    if (!day) return null;
+    const dIdx = day.originalIndex ?? di;
+    const wk = day.structDay?.workout ?? structuredPlan?.days?.[dIdx]?.workout;
+    const list = workoutExercisesList(wk, { excludeRest });
+    const ex = list[xi];
+    if (!ex) return null;
+    return { day, ex, dIdx, list };
+  };
+
+  const performOpenExercise = async (di, xi, { excludeRest = false } = {}) => {
+    const ctx = buildExerciseActionContext(di, xi, { excludeRest });
+    if (!ctx) return;
+    const { ex } = ctx;
+    const name = ex.display_name_cs || ex.name_cs || ex.name || 'Cvik';
+    const wgerId =
+      ex.wger_exercise_id != null && Number.isFinite(Number(ex.wger_exercise_id))
+        ? Number(ex.wger_exercise_id)
+        : null;
+    const part = formatExerciseSetsRepsDisplay(ex);
+    const mediaKey = ex.canonical_key ? normalizeLookupKey(ex.canonical_key) : normalizeLookupKey(name);
+    const canonicalKey = ex.canonical_key || mediaKey || null;
+    const mediaFromMap =
+      (wgerId != null ? exerciseMediaMap[`wger:${Number(wgerId)}`] : null) ||
+      (mediaKey ? exerciseMediaMap[mediaKey] : null) ||
+      null;
+    let media = collectExerciseMediaSources({
+      image_url: ex.image_url,
+      gif_url: ex.gif_url,
+      video_url: ex.video_url,
+      imageUrl: mediaFromMap?.image_url,
+      gifUrl: mediaFromMap?.gif_url,
+      videoUrl: mediaFromMap?.video_url,
+    });
+    setExerciseHintModal({
+      name,
+      part,
+      wgerId,
+      canonicalKey,
+      ...media,
+      loading: true,
+    });
+    try {
+      if (canonicalKey || !hasDisplayableExerciseMedia(media)) {
+        const fetched = await fetchExerciseMediaFromApi({
+          canonicalKey,
+          wgerId,
+          name,
+        });
+        if (fetched && hasDisplayableExerciseMedia(fetched)) {
+          if (exerciseMediaMatchesName(name, canonicalKey)) {
+            media = fetched;
+          } else {
+            media = { imageUrl: null, gifUrl: null, videoUrl: null };
+          }
+        }
+      } else if (!exerciseMediaMatchesName(name, canonicalKey)) {
+        media = { imageUrl: null, gifUrl: null, videoUrl: null };
+      }
+    } catch {
+      /* ponechat embedded media */
+    }
+    setExerciseHintModal({
+      name,
+      part,
+      wgerId,
+      canonicalKey,
+      ...media,
+      loading: false,
+    });
+  };
+
   const performMealSwap = async (di, mi) => {
     const day = planWeekDays[di];
     if (!day) return;
@@ -1119,8 +1197,7 @@ export default function PlanViewer({
               pinToastByKey={pinToastMsg?.key ? { [pinToastMsg.key]: pinToastMsg } : {}}
               onExerciseClick={(xi) => {
                 const di = todayWeekIdx >= 0 ? todayWeekIdx : 0;
-                const fn = exerciseOpenHandlersRef.current[`${di}_${xi}`];
-                if (fn) fn();
+                performOpenExercise(di, xi, { excludeRest: true });
               }}
               onScrollToMeals={() => document.getElementById('profile-today-meals')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
               onScrollToWorkout={() => document.getElementById('profile-today-workout')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
@@ -1472,64 +1549,7 @@ export default function PlanViewer({
                             <ul className="plan-day-training-list" style={{ listStyle: 'disc', paddingLeft: 22 }}>
                               {list.map((ex, xi) => {
                                 const name = ex.display_name_cs || ex.name_cs || ex.name || 'Cvik';
-                                const wgerId =
-                                  ex.wger_exercise_id != null && Number.isFinite(Number(ex.wger_exercise_id))
-                                    ? Number(ex.wger_exercise_id)
-                                    : null;
                                 const part = formatExerciseSetsRepsDisplay(ex);
-                                const openWgerExercise = async () => {
-                                  const mediaKey = ex.canonical_key ? normalizeLookupKey(ex.canonical_key) : normalizeLookupKey(name);
-                                  const canonicalKey = ex.canonical_key || mediaKey || null;
-                                  const mediaFromMap =
-                                    (wgerId != null ? exerciseMediaMap[`wger:${Number(wgerId)}`] : null) ||
-                                    (mediaKey ? exerciseMediaMap[mediaKey] : null) ||
-                                    null;
-                                  let media = collectExerciseMediaSources({
-                                    image_url: ex.image_url,
-                                    gif_url: ex.gif_url,
-                                    video_url: ex.video_url,
-                                    imageUrl: mediaFromMap?.image_url,
-                                    gifUrl: mediaFromMap?.gif_url,
-                                    videoUrl: mediaFromMap?.video_url,
-                                  });
-                                  setExerciseHintModal({
-                                    name,
-                                    part,
-                                    wgerId,
-                                    canonicalKey,
-                                    ...media,
-                                    loading: true,
-                                  });
-                                  try {
-                                    if (canonicalKey || !hasDisplayableExerciseMedia(media)) {
-                                      const fetched = await fetchExerciseMediaFromApi({
-                                        canonicalKey,
-                                        wgerId,
-                                        name,
-                                      });
-                                      if (fetched && hasDisplayableExerciseMedia(fetched)) {
-                                        if (exerciseMediaMatchesName(name, canonicalKey)) {
-                                          media = fetched;
-                                        } else {
-                                          media = { imageUrl: null, gifUrl: null, videoUrl: null };
-                                        }
-                                      }
-                                    } else if (!exerciseMediaMatchesName(name, canonicalKey)) {
-                                      media = { imageUrl: null, gifUrl: null, videoUrl: null };
-                                    }
-                                  } catch {
-                                    /* ponechat embedded media */
-                                  }
-                                  setExerciseHintModal({
-                                    name,
-                                    part,
-                                    wgerId,
-                                    canonicalKey,
-                                    ...media,
-                                    loading: false,
-                                  });
-                                };
-                                exerciseOpenHandlersRef.current[`${di}_${xi}`] = openWgerExercise;
                                 return (
                                   <li key={xi} style={{ marginBottom: 10 }}>
                                     <strong>{name}</strong>
@@ -1539,7 +1559,7 @@ export default function PlanViewer({
                                       <button
                                         type="button"
                                         className="plan-exercise-hint-btn"
-                                        onClick={openWgerExercise}
+                                        onClick={() => performOpenExercise(di, xi)}
                                         style={{
                                           background: 'none',
                                           border: 'none',

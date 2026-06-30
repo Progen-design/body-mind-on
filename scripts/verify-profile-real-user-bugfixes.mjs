@@ -45,6 +45,7 @@ check('todayFirstLayout hides legacy plan-nav', planViewer.includes('!todayFirst
 console.log('\n--- B: local meal replacement ---');
 check('PlanViewer uses plan-replace-meal API', planViewer.includes("'/api/plan-replace-meal'"));
 check('PlanViewer sends day_slot_index', planViewer.includes('day_slot_index'));
+check('today swap calls performMealSwap directly', planViewer.includes('performMealSwap'));
 check('replace API uses local replaceMealInStructuredPlan', planReplaceApi.includes('replaceMealInStructuredPlan'));
 check('replace API does not call Spoonacular/OpenAI', !planReplaceApi.match(/spoonacular|openai/i));
 check('planMealReplace uses day slot index', planReplaceLib.includes('daySlotIndex'));

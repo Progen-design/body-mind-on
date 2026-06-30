@@ -792,6 +792,67 @@ export default function PlanViewer({
     mealOverrides,
   });
 
+  const performMealSwap = async (di, mi) => {
+    const day = planWeekDays[di];
+    if (!day) return;
+    const structDay = day.structDay || structuredPlan?.days?.[day.originalIndex ?? di];
+    const meal = day.meals?.[mi];
+    const structMeal = structDay?.meals?.[mi]
+      || structDay?.meals?.find((m) => (m?.type || '') === (meal?.type || ''));
+    const currentTitle = structMeal
+      ? mealDisplayTitleForStructuredMeal(structMeal, effectivePlan?.plan_html || '', day.dayName || '')
+      : (meal?.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    setSwapModal({
+      dayIndex: day.originalIndex ?? di,
+      mealIndex: mi,
+      mealType: meal?.type || 'Jídlo',
+      currentTitle,
+      loading: true,
+      error: null,
+      newTitle: null,
+    });
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Pro nahrazení jídla se přihlas.');
+      if (!plan?.id) throw new Error('Plán není k dispozici — obnov stránku.');
+      const res = await fetch('/api/plan-replace-meal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          plan_id: plan.id,
+          day_slot_index: di,
+          day_index: day.originalIndex ?? di,
+          meal_index: mi,
+          current_title: currentTitle,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        const errMsg = String(data?.error || '');
+        if (/překročen limit|rate limit|429/i.test(errMsg)) {
+          throw new Error('Náhrada jídla probíhá lokálně — zkus to znovu za chvíli nebo obnov stránku.');
+        }
+        throw new Error(errMsg || 'Nepodařilo nahradit jídlo');
+      }
+      setPlanPatch({
+        plan_html: data.plan_html,
+        structured_plan_json: data.structured_plan_json,
+      });
+      setSwapModal(null);
+      if (onToast) onToast({ message: `Nahrazeno: ${data.new_title}`, type: 'success' });
+    } catch (err) {
+      setSwapModal((prev) => prev ? {
+        ...prev,
+        loading: false,
+        error: err.message || 'Nepodařilo nahradit jídlo',
+      } : null);
+      if (onToast) onToast({ message: err.message || 'Nepodařilo nahradit jídlo', type: 'error' });
+    }
+  };
+
   return (
     <section id="plan-overview" className="card plan-section plan-section-premium">
       {/* Hero nadpis (lze skrýt, když je vykreslen nahoře na stránce) */}
@@ -884,7 +945,7 @@ export default function PlanViewer({
               }}
               onSwapClick={(mi) => {
                 const di = todayWeekIdx >= 0 ? todayWeekIdx : 0;
-                swapOpenHandlersRef.current[`${di}_${mi}`]?.();
+                performMealSwap(di, mi);
               }}
               onPinClick={(mi) => {
                 const di = todayWeekIdx >= 0 ? todayWeekIdx : 0;
@@ -1250,60 +1311,7 @@ export default function PlanViewer({
                           });
                         };
                         recipeOpenHandlersRef.current[`${di}_${mi}`] = openRecipe;
-                        const handleSwap = async () => {
-                          const structMeal = structDay?.meals?.[mi]
-                            || structDay?.meals?.find((m) => (m?.type || '') === (meal?.type || ''));
-                          const currentTitle = structMeal
-                            ? mealDisplayTitleForStructuredMeal(structMeal, effectivePlan?.plan_html || '', day.dayName || '')
-                            : (meal.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-                          setSwapModal({
-                            dayIndex: day.originalIndex ?? di,
-                            mealIndex: mi,
-                            mealType: meal.type || 'Jídlo',
-                            currentTitle,
-                            loading: true,
-                            error: null,
-                            newTitle: null,
-                          });
-                          try {
-                            const { data: { session } } = await supabase.auth.getSession();
-                            if (!session?.access_token) throw new Error('Pro nahrazení jídla se přihlas.');
-                            const res = await fetch('/api/plan-replace-meal', {
-                              method: 'POST',
-                              headers: {
-                                'Content-Type': 'application/json',
-                                Authorization: `Bearer ${session.access_token}`,
-                              },
-                              body: JSON.stringify({
-                                plan_id: plan?.id,
-                                day_slot_index: di,
-                                day_index: day.originalIndex ?? di,
-                                meal_index: mi,
-                                current_title: currentTitle,
-                              }),
-                            });
-                            const data = await res.json();
-                            if (!res.ok || !data?.ok) {
-                              const errMsg = String(data?.error || '');
-                              if (/překročen limit|rate limit|429/i.test(errMsg)) {
-                                throw new Error('Náhrada jídla probíhá lokálně — zkus to znovu za chvíli nebo obnov stránku.');
-                              }
-                              throw new Error(errMsg || 'Nepodařilo nahradit jídlo');
-                            }
-                            setPlanPatch({
-                              plan_html: data.plan_html,
-                              structured_plan_json: data.structured_plan_json,
-                            });
-                            setSwapModal(null);
-                            if (onToast) onToast({ message: `Nahrazeno: ${data.new_title}`, type: 'success' });
-                          } catch (err) {
-                            setSwapModal((prev) => prev ? {
-                              ...prev,
-                              loading: false,
-                              error: err.message || 'Nepodařilo nahradit jídlo',
-                            } : null);
-                          }
-                        };
+                        const handleSwap = () => performMealSwap(di, mi);
                         swapOpenHandlersRef.current[`${di}_${mi}`] = handleSwap;
                         const mealTextForPin = override ? (override.title || '') : (meal.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().replace(/\s*\([^)]*\)\s*$/g, '').trim();
                         pinOpenHandlersRef.current[`${di}_${mi}`] = () => handleTogglePin(meal.type || '', mealTextForPin, overrideKey);

@@ -466,8 +466,10 @@ export default function PlanViewer({
   regenerateBlockedMessage = null,
   todayFirstLayout = false,
   program = 'START',
+  trainingEnvironmentLabel = '',
 }) {
   const [parsed, setParsed] = useState(null);
+  const [planPatch, setPlanPatch] = useState(null);
   const [recipeModal, setRecipeModal] = useState(null); // { title, content, anchorRect, hasRecipe, openId? }
   const [mealOverrides, setMealOverrides] = useState({}); // { "di_mi": { title, content } }
   const [swapModal, setSwapModal] = useState(null); // { dayIndex, mealIndex, dishQuery, loading, html }
@@ -568,15 +570,16 @@ export default function PlanViewer({
   };
 
   useEffect(() => {
-    if (plan?.plan_html && typeof document !== 'undefined') {
-      const result = parsePlanHtml(plan.plan_html);
+    const html = planPatch?.plan_html || plan?.plan_html;
+    if (html && typeof document !== 'undefined') {
+      const result = parsePlanHtml(html);
       setParsed(result);
       const noGraphical = !result || ((result.days?.length ?? 0) === 0 && Object.keys(result.rawSections || {}).length === 0);
       if (noGraphical) setShowRawPlanFallback(true);
     } else {
       setParsed(null);
     }
-  }, [plan?.plan_html]);
+  }, [plan?.plan_html, planPatch?.plan_html]);
 
   useEffect(() => {
     if (!plan?.plan_html || typeof document === 'undefined') return;
@@ -675,7 +678,7 @@ export default function PlanViewer({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Chyba');
       if (data.pins) setMealPins(data.pins);
-      const msg = pinned ? 'Odebráno z dalšího týdne.' : 'Přidáno do dalšího týdne.';
+      const msg = pinned ? 'Odebráno z preferencí.' : 'Zařadíme častěji do dalšího plánu.';
       if (onToast) onToast({ message: msg, type: 'success' });
       setPinToastMsg({ message: msg, type: 'success', key: toastKey });
       setTimeout(() => setPinToastMsg(null), 2500);
@@ -697,7 +700,7 @@ export default function PlanViewer({
     }
   }, [recipeModal, swapModal, exerciseHintModal]);
 
-  if (!plan || !plan.plan_html) {
+  if (!plan || !(planPatch?.plan_html || plan.plan_html)) {
     return (
       <section className="card plan-section">
         <h2>Můj plán</h2>
@@ -721,9 +724,14 @@ export default function PlanViewer({
   const showGraphical = parsed && (parsed.personal?.length > 0 || parsed.days?.length > 0 || Object.keys(parsed.rawSections || {}).length > 0);
   const hasParsedDays = (parsed?.days?.length ?? 0) > 0;
 
-  const structuredPlan = plan?.structured_plan_json && typeof plan.structured_plan_json === 'object'
-    ? plan.structured_plan_json
+  const effectivePlan = planPatch ? { ...plan, ...planPatch } : plan;
+  const structuredPlan = effectivePlan?.structured_plan_json && typeof effectivePlan.structured_plan_json === 'object'
+    ? effectivePlan.structured_plan_json
     : null;
+  const resolvedTrainingLabel = trainingEnvironmentLabel
+    || (structuredPlan?.training_environment_label
+      ? `Typ: ${structuredPlan.training_environment_label}`
+      : '');
 
   /** Vždy 7 dní od valid_from — jídla primárně ze structured_plan_json (index = den platnosti). */
   const planWeekDays = (() => {
@@ -783,6 +791,7 @@ export default function PlanViewer({
         <div className="plan-hero">
           <h2 className="plan-hero-title">Tvůj osobní jídelní plán Body & Mind ON</h2>
           {plan.plan_type && <span className="plan-badge">{getPlanTypeLabel(plan.plan_type)}</span>}
+          {resolvedTrainingLabel ? <span className="plan-badge plan-badge-env">{resolvedTrainingLabel}</span> : null}
         </div>
       )}
 
@@ -1218,12 +1227,52 @@ export default function PlanViewer({
                           });
                         };
                         recipeOpenHandlersRef.current[`${di}_${mi}`] = openRecipe;
-                        const handleSwap = () => {
-                          const dishQuery = `${meal.type || 'Jídlo'} alternativa, do 500 kcal`.slice(0, 150);
-                          setSwapModal({ dayIndex: day.originalIndex ?? di, mealIndex: mi, dishQuery, mealType: meal.type || 'Jídlo', loading: true, html: null });
-                          getRecipeForDish(dishQuery, dietaryPreferences).then((html) => {
-                            setSwapModal((prev) => prev ? { ...prev, loading: false, html: html || '' } : null);
+                        const handleSwap = async () => {
+                          const structMeal = structDay?.meals?.[mi]
+                            || structDay?.meals?.find((m) => (m?.type || '') === (meal?.type || ''));
+                          const currentTitle = structMeal
+                            ? mealDisplayTitleForStructuredMeal(structMeal, effectivePlan?.plan_html || '', day.dayName || '')
+                            : (meal.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+                          setSwapModal({
+                            dayIndex: day.originalIndex ?? di,
+                            mealIndex: mi,
+                            mealType: meal.type || 'Jídlo',
+                            currentTitle,
+                            loading: true,
+                            error: null,
+                            newTitle: null,
                           });
+                          try {
+                            const { data: { session } } = await supabase.auth.getSession();
+                            if (!session?.access_token) throw new Error('Pro nahrazení jídla se přihlas.');
+                            const res = await fetch('/api/plan-replace-meal', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${session.access_token}`,
+                              },
+                              body: JSON.stringify({
+                                plan_id: plan?.id,
+                                day_index: day.originalIndex ?? di,
+                                meal_index: mi,
+                                current_title: currentTitle,
+                              }),
+                            });
+                            const data = await res.json();
+                            if (!res.ok || !data?.ok) throw new Error(data?.error || 'Nepodařilo nahradit jídlo');
+                            setPlanPatch({
+                              plan_html: data.plan_html,
+                              structured_plan_json: data.structured_plan_json,
+                            });
+                            setSwapModal(null);
+                            if (onToast) onToast({ message: `Nahrazeno: ${data.new_title}`, type: 'success' });
+                          } catch (err) {
+                            setSwapModal((prev) => prev ? {
+                              ...prev,
+                              loading: false,
+                              error: err.message || 'Nepodařilo nahradit jídlo',
+                            } : null);
+                          }
                         };
                         const mealTextForPin = override ? (override.title || '') : (meal.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().replace(/\s*\([^)]*\)\s*$/g, '').trim();
                         const mealPinned = isPinned(meal.type || '', mealTextForPin);
@@ -1697,32 +1746,23 @@ export default function PlanViewer({
             document.body
           )}
 
-          {/* Swap modal – alternativa jídla */}
+          {/* Swap modal – náhrada jídla ze START knihovny */}
           {swapModal && typeof document !== 'undefined' && createPortal(
-            <div className="plan-recipe-modal-overlay" onClick={() => setSwapModal(null)}>
+            <div className="plan-recipe-modal-overlay" onClick={() => !swapModal.loading && setSwapModal(null)}>
               <div className="plan-recipe-modal plan-recipe-modal-dynamic" onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'min(520px, calc(100vw - 24px))', maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#1a1a2e', borderRadius: '16px', border: '1px solid #333', zIndex: 10001 }}>
                 <div className="plan-recipe-modal-header">
-                  <h3>Alternativa: {swapModal.loading ? swapModal.dishQuery : (extractMealNameFromRecipeHtml(swapModal.html) || swapModal.dishQuery)}</h3>
+                  <h3>Nahrazuji: {swapModal.currentTitle || swapModal.mealType}</h3>
                   <button type="button" className="plan-recipe-modal-close" onClick={() => setSwapModal(null)} aria-label="Zavřít">×</button>
                 </div>
                 {swapModal.loading ? (
                   <div className="plan-recipe-modal-loading">
                     <span className="plan-recipe-modal-spinner" />
-                    <p>Generuji alternativu…</p>
+                    <p>Hledám vhodnou alternativu…</p>
                   </div>
                 ) : (
-                  <>
-                    <div className="plan-recipe-modal-body" dangerouslySetInnerHTML={{ __html: stripPlanMediaAttrsFromHtml(swapModal.html || '<p>Recept se nepodařilo načíst.</p>') }} />
-                    <div className="plan-recipe-modal-actions">
-                      <button type="button" className="plan-recipe-modal-replace-btn" onClick={() => {
-                        const mealName = extractMealNameFromRecipeHtml(swapModal.html) || `${swapModal.mealType || 'Náhrada'} alternativa`;
-                        setMealOverrides((o) => ({ ...o, [`${swapModal.dayIndex}_${swapModal.mealIndex}`]: { title: mealName, content: swapModal.html } }));
-                        setSwapModal(null);
-                      }}>
-                        Nahradit toto jídlo v plánu
-                      </button>
-                    </div>
-                  </>
+                  <div className="plan-recipe-modal-body">
+                    <p>{swapModal.error || 'Hotovo.'}</p>
+                  </div>
                 )}
               </div>
             </div>,

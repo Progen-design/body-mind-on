@@ -1,4 +1,5 @@
 import { computeMacroRatio } from '../lib/macroRatioDisplay.js';
+import { getMacroCalorieDelta } from '../lib/macroKcalConsistency.js';
 
 /**
  * Kompaktní stacked bar — poměr B/S/T z kalorií (4/4/9).
@@ -15,9 +16,13 @@ export default function MacroRatioChart({
   if (!ratio) return null;
 
   const { proteinPct, carbsPct, fatPct, computedKcal, statedKcal } = ratio;
+  const delta = getMacroCalorieDelta(statedKcal ?? computedKcal, protein_g, carbs_g, fat_g);
   const kcalNote = statedKcal != null && Math.abs(statedKcal - computedKcal) > 15
     ? ` (${computedKcal} kcal z maker)`
     : '';
+  const statusClass = delta.status === 'OK' ? 'macro-ratio-status--ok'
+    : delta.status === 'WARNING' ? 'macro-ratio-status--warn'
+      : delta.status === 'ERROR' ? 'macro-ratio-status--error' : '';
 
   return (
     <div
@@ -40,7 +45,12 @@ export default function MacroRatioChart({
         <span className="macro-ratio-legend-item macro-ratio-legend-item--carbs">S {carbsPct}%</span>
         <span className="macro-ratio-legend-item macro-ratio-legend-item--fat">T {fatPct}%</span>
         {!compact && statedKcal != null ? (
-          <span className="macro-ratio-kcal-note">· {statedKcal} kcal{kcalNote}</span>
+          <span className="macro-ratio-kcal-note">· cca {statedKcal} kcal{kcalNote}</span>
+        ) : null}
+        {delta.status !== 'UNKNOWN' ? (
+          <span className={`macro-ratio-status ${statusClass}`}>
+            · makra {delta.status === 'OK' ? 'sedí' : delta.status === 'WARNING' ? 'cca sedí' : 'nesedí'}
+          </span>
         ) : null}
       </p>
       <style jsx>{`
@@ -85,6 +95,9 @@ export default function MacroRatioChart({
         .macro-ratio-kcal-note {
           color: #64748b;
         }
+        .macro-ratio-status--ok { color: #86efac; }
+        .macro-ratio-status--warn { color: #fcd34d; }
+        .macro-ratio-status--error { color: #fca5a5; }
       `}</style>
     </div>
   );

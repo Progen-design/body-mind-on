@@ -20,38 +20,40 @@ function ok(msg) {
 const TOLERANCE = 0.15;
 
 function resolveSkeletonDays(skeleton, bodyMetrics) {
-  const dailyTarget = Number(skeleton.targets.calories_per_day);
+  const baseTarget = Number(skeleton.targets.calories_per_day);
   const mealsPerDay = skeleton.meal_plan.meals_per_day || 3;
   const days = [];
   for (const day of skeleton.meal_plan.days || []) {
+    const dayTarget = Number(day.daily_target_kcal) || baseTarget;
     const dayMeals = [];
     for (let mi = 0; mi < (day.meals || []).length; mi += 1) {
       const slotMeal = day.meals[mi];
       const slotTarget = slotTargetKcal(
-        dailyTarget,
+        dayTarget,
         mealsPerDay,
         planMealTypeToWeightKey(slotMeal.type || 'lunch')
       );
       const { meal } = resolveSimpleStartLocalSlot(slotMeal, slotTarget, mi, bodyMetrics);
       dayMeals.push(meal);
     }
-    balanceDayMealsToCalorieTarget(dayMeals, dailyTarget, TOLERANCE);
-    days.push({ day_index: day.day_index, meals: dayMeals });
+    balanceDayMealsToCalorieTarget(dayMeals, dayTarget, TOLERANCE);
+    days.push({ day_index: day.day_index, daily_target_kcal: dayTarget, meals: dayMeals });
   }
   return days;
 }
 
 function checkPlan(label, bodyMetrics) {
   const skeleton = buildSimpleStartMealSkeleton({ bodyMetrics });
-  const target = Number(skeleton.targets.calories_per_day);
+  const baseTarget = Number(skeleton.targets.calories_per_day);
   const resolved = resolveSkeletonDays(skeleton, bodyMetrics);
 
   for (const day of resolved) {
+    const dayTarget = Number(day.daily_target_kcal) || baseTarget;
     const sum = sumScaledDayKcal(day.meals);
-    const minOk = Math.round(target * (1 - TOLERANCE));
-    const maxOk = Math.round(target * (1 + TOLERANCE));
+    const minOk = Math.round(dayTarget * (1 - TOLERANCE));
+    const maxOk = Math.round(dayTarget * (1 + TOLERANCE));
     if (sum < minOk || sum > maxOk) {
-      fail(`${label} day ${day.day_index}: ${sum} kcal outside ${minOk}-${maxOk} (target ${target})`);
+      fail(`${label} day ${day.day_index}: ${sum} kcal outside ${minOk}-${maxOk} (target ${dayTarget})`);
     }
   }
 }

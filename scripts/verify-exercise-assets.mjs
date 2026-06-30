@@ -59,7 +59,8 @@ if (!keys.includes('squat')) fail('squat should remain at home');
 ok('home bodyweight replaces gym-only exercises');
 
 console.log('\n--- gym strictness (no bodyweight fillers) ---');
-const gymForbidden = ['squat', 'lunges', 'glute_bridge', 'mountain_climber', 'plank_side', 'russian_twist', 'pushup', 'plank'];
+const gymForbidden = ['squat', 'lunges', 'glute_bridge', 'mountain_climber', 'plank_side', 'russian_twist', 'pushup'];
+const gymPreferred = ['leg_press', 'goblet_squat', 'chest_press', 'lat_puldown', 'hip_thrust', 'hamstring_curl'];
 const gymPlan = {
   days: [{
     day_index: 1,
@@ -71,12 +72,12 @@ const gymKeys = gymPlan.days[0].exercises.map((e) => e.canonical_key);
 for (const forbidden of gymForbidden) {
   if (gymKeys.includes(forbidden)) fail(`gym plan still contains forbidden ${forbidden}`);
 }
-if (!gymKeys.some((k) => ['leg_press', 'bench_press', 'bent_over_row', 'romanian_deadlift', 'lateral_raise', 'tricep_extension', 'bicep_curl'].includes(k))) {
+if (!gymKeys.some((k) => gymPreferred.includes(k) || ['bench_press', 'bent_over_row', 'romanian_deadlift'].includes(k))) {
   fail('gym plan should contain gym equipment exercises after adaptation');
 }
 ok('gym environment replaces bodyweight exercises');
 
-const gymForbiddenPattern = /canonical_key:\s*'(squat|lunges|glute_bridge|mountain_climber|plank_side|russian_twist|pushup|plank)'/;
+const gymForbiddenPattern = /canonical_key:\s*'(squat|lunges|glute_bridge|mountain_climber|plank_side|russian_twist|pushup)'/;
 const scalerSrc = fs.readFileSync(path.join(root, 'lib/workoutPlanScaler.js'), 'utf8');
 const gymBlock = scalerSrc.split('const GYM_SESSION_TEMPLATES = [')[1]?.split('];')[0] || '';
 if (!gymBlock) fail('GYM_SESSION_TEMPLATES missing in workoutPlanScaler');

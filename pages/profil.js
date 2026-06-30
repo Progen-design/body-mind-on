@@ -23,6 +23,7 @@ import { useProfileData } from '../hooks/useProfileData';
 import { usePlanStatus } from '../hooks/usePlanStatus';
 import { PLAN_GENERATION_DURATION_HINT } from '../lib/planGenerationUiCopy';
 import { getRegistrationAnchoredWeek } from '../lib/profileWeekRange';
+import { parseTrainingEnvironment, TRAINING_ENVIRONMENT_LABELS } from '../lib/trainingEnvironment.js';
 import {
   KCAL_PER_KG_BODY_FAT,
   HABIT_ADJ_KG_PER_NEGATIVE,
@@ -34,6 +35,12 @@ import ProgramContinuationPanel from '../components/ProgramContinuationPanel';
 import ProgramVariantsSection from '../components/ProgramVariantsSection';
 
 const PlanViewer = dynamic(() => import('../components/PlanViewer'), { ssr: false, loading: () => null });
+
+function trainingEnvironmentLabelFromMetrics(bm) {
+  if (!bm) return '';
+  const env = parseTrainingEnvironment(bm);
+  return `Typ: ${TRAINING_ENVIRONMENT_LABELS[env] || TRAINING_ENVIRONMENT_LABELS.gym}`;
+}
 
 const PROGRAM_LABELS = {
   START: { subtitle: 'Každý trénink, každé měření.' },
@@ -2274,6 +2281,7 @@ export default function Profil() {
                       regenerateBlockedMessage={regenerateBlockedMessage}
                       todayFirstLayout
                       program={program}
+                      trainingEnvironmentLabel={trainingEnvironmentLabelFromMetrics(profile?.body_metrics?.[0])}
                     />
                     ) : (
                     <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
@@ -2302,6 +2310,7 @@ export default function Profil() {
                       regeneratingPlan={retryingPlan}
                       canRegeneratePlan={canRegeneratePlan}
                       regenerateBlockedMessage={regenerateBlockedMessage}
+                      trainingEnvironmentLabel={trainingEnvironmentLabelFromMetrics(profile?.body_metrics?.[0])}
                     />
                   ) : (
                     <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
@@ -2340,6 +2349,7 @@ export default function Profil() {
                   regenerateBlockedMessage={regenerateBlockedMessage}
                   todayFirstLayout
                   program={program}
+                  trainingEnvironmentLabel={trainingEnvironmentLabelFromMetrics(profile?.body_metrics?.[0])}
                 />
                 </>
                 ) : (
@@ -2376,6 +2386,7 @@ export default function Profil() {
                   regeneratingPlan={retryingPlan}
                   canRegeneratePlan={canRegeneratePlan}
                   regenerateBlockedMessage={regenerateBlockedMessage}
+                  trainingEnvironmentLabel={trainingEnvironmentLabelFromMetrics(profile?.body_metrics?.[0])}
                 />
                 </>
                 ) : (

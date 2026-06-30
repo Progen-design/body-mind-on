@@ -4,6 +4,7 @@ import {
   markWithingsSyncError,
   syncWithingsForUser,
 } from '../../../lib/withingsServer.js';
+import { importLatestWithingsToProfile } from '../../../lib/withingsProfileImport.js';
 
 export default async function handler(req, res) {
   if (!['GET', 'POST'].includes(req.method)) {
@@ -17,7 +18,11 @@ export default async function handler(req, res) {
     const full = req.query.full === '1' || req.body?.full === true;
     const startdate = req.query.startdate || req.body?.startdate || null;
     const result = await syncWithingsForUser(auth.user.id, { full, startdate });
-    return res.status(200).json(result);
+    const profileImport = await importLatestWithingsToProfile(auth.user.id);
+    return res.status(200).json({
+      ...result,
+      profile_import: profileImport,
+    });
   } catch (err) {
     console.error('[withings/sync]', err);
     await markWithingsSyncError(auth.user.id, err).catch(() => {});

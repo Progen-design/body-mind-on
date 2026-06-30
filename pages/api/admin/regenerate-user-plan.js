@@ -9,6 +9,11 @@ function isAdmin(req) {
   return process.env.ADMIN_TOKEN && token === process.env.ADMIN_TOKEN;
 }
 
+function optionalIsoDate(value) {
+  const s = String(value ?? '').trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
@@ -24,17 +29,25 @@ export default async function handler(req, res) {
 
   const skipEmail = req.body?.skip_email !== false && req.body?.skipEmail !== false;
   const deactivateOld = req.body?.deactivate_old !== false && req.body?.deactivateOld !== false;
+  const validFromOverride = optionalIsoDate(req.body?.valid_from ?? req.body?.validFrom);
+  const validUntilOverride = optionalIsoDate(req.body?.valid_until ?? req.body?.validUntil);
+  const generatedBy = String(req.body?.generated_by ?? req.body?.generatedBy ?? 'admin-regenerate-user-plan').trim()
+    || 'admin-regenerate-user-plan';
 
-  const validFrom = calendarDateIsoInPrague(new Date());
-  const validUntil = addCalendarDaysIsoPrague(validFrom, 6);
+  const validFrom = validFromOverride || calendarDateIsoInPrague(new Date());
+  const validUntil = validUntilOverride || addCalendarDaysIsoPrague(validFrom, 6);
+
+  const simpleStartMode = req.body?.simple_start_mode === true || req.body?.simpleStartMode === true;
+  const plan_scope = req.body?.plan_scope ?? (simpleStartMode ? 'initial_7_day_trial' : null);
 
   try {
     const result = await generatePlanForEmailViaUnified(email, {
       skipEmail,
       validFromOverride: validFrom,
       validUntilOverride: validUntil,
-      generatedBy: 'admin-regenerate-user-plan',
+      generatedBy,
       deactivateOld,
+      ...(simpleStartMode ? { simpleStartMode: true, plan_scope: plan_scope || 'initial_7_day_trial', onboardingSoftGate: true } : {}),
     });
 
     if (!result.ok) {

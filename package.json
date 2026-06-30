@@ -33,6 +33,7 @@
     "verify:start-calorie-consistency": "node scripts/verify-start-calorie-consistency.mjs",
     "verify:profile-weight-consistency": "node scripts/verify-profile-weight-consistency.mjs",
     "verify:exercise-assets": "node scripts/verify-exercise-assets.mjs",
+    "regenerate:legacy-start-plans": "node scripts/regenerate-legacy-start-plans.mjs",
     "verify:run-coach-scheduler": "node scripts/verify-run-coach-scheduler.mjs",
     "preview:plan-email": "node scripts/preview-plan-email.mjs",
     "check:cursor-access": "node scripts/check-cursor-access.mjs",

@@ -792,6 +792,171 @@ export default function PlanViewer({
     mealOverrides,
   });
 
+  const buildMealActionContext = (di, mi) => {
+    const day = planWeekDays[di];
+    if (!day) return null;
+    const meal = day.meals?.[mi];
+    if (!meal) return null;
+    const overrideKey = `${day.originalIndex ?? di}_${mi}`;
+    const override = mealOverrides[overrideKey];
+    const mealFullText = override
+      ? `${meal.type || ''} ${override.title || ''}`.trim()
+      : `${meal.type || ''} ${meal.text || ''}`.trim();
+    const matchingRecipeHtml = recipeHtmlByMealName(mealFullText, parsed?.recipes || []);
+    const dishTitle = (meal.text || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+    const mealLookupKey = meal.meal_key || null;
+    const structDayIdx = day.originalIndex ?? di;
+    const structDay = day.structDay
+      || (structuredPlan?.days?.[structDayIdx] ?? null);
+    const structMeal = structDay
+      ? structuredMealForStructuredDay(structDay, meal.type, mi)
+      : structuredPlan?.days
+        && Array.isArray(structuredPlan.days)
+        && structDayIdx >= 0
+        && structDayIdx < structuredPlan.days.length
+        ? structuredMealForDaySlot(structuredPlan, structDayIdx, meal.type, mi)
+        : null;
+    const displayMealTitle = structMeal
+      ? mealDisplayTitleForStructuredMeal(structMeal, plan.plan_html || '', day.dayName || '')
+      : dishTitle;
+    const modalTitle = meal.type && displayMealTitle
+      ? `${meal.type}: ${displayMealTitle}`
+      : displayMealTitle || meal.type || mealFullText || 'Jídlo';
+    const mealTrust = mergeTrustWithStructuredPlanMeal(
+      resolveMealTrustMerged(meal, mealFullText || meal.text || meal.type, mealTrustMap, mealLookupKey),
+      structMeal
+    );
+    const catalogLookupIdForModal = structMeal
+      ? catalogLookupIdFromMeal(structMeal)
+      : mealTrust?.recipe_id != null
+        && String(mealTrust.recipe_id).trim() !== ''
+        && Number.isFinite(Number(mealTrust.recipe_id))
+        ? Number(mealTrust.recipe_id)
+        : null;
+    const displayModel = structMeal ? createMealDisplayModelFromStructuredMeal(structMeal) : null;
+    const mealTextForPin = override
+      ? (override.title || '')
+      : (meal.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().replace(/\s*\([^)]*\)\s*$/g, '').trim();
+    return {
+      day,
+      meal,
+      overrideKey,
+      override,
+      mealFullText,
+      matchingRecipeHtml,
+      modalTitle,
+      mealTrust,
+      catalogLookupIdForModal,
+      displayModel,
+      mealTextForPin,
+    };
+  };
+
+  const performOpenRecipe = (di, mi, e) => {
+    const ctx = buildMealActionContext(di, mi);
+    if (!ctx) return;
+    const {
+      override,
+      modalTitle,
+      displayModel,
+      mealFullText,
+      matchingRecipeHtml,
+      catalogLookupIdForModal,
+      meal,
+    } = ctx;
+    if (e?.preventDefault) e.preventDefault();
+    if (e?.stopPropagation) e.stopPropagation();
+    const button = e?.currentTarget;
+    const rect = button?.getBoundingClientRect?.();
+    const useAnchoredModal = typeof window !== 'undefined' && window.innerWidth >= 768;
+    const anchorRect = useAnchoredModal && rect
+      ? { top: rect.bottom + 8, left: rect.left, width: rect.width }
+      : null;
+    recipeOpenIdRef.current += 1;
+    const thisOpenId = recipeOpenIdRef.current;
+
+    if (override?.content) {
+      setRecipeModal({
+        openId: thisOpenId,
+        title: override.title || modalTitle,
+        content: recipeContentOnly(override.content),
+        anchorRect,
+        hasRecipe: true,
+        loading: false,
+      });
+      return;
+    }
+
+    if (displayModel && hasLocalMealRecipeDetail(displayModel)) {
+      setRecipeModal({
+        openId: thisOpenId,
+        title: modalTitle,
+        content: buildMealRecipeModalHtml(displayModel, { includeSourceMeta: true }),
+        anchorRect,
+        hasRecipe: true,
+        loading: false,
+        source: displayModel.source,
+        consistencyStatus: displayModel.consistencyStatus,
+      });
+      return;
+    }
+
+    const dishName = (mealFullText.replace(/\s*\([^)]*\)\s*$/g, '').trim() || meal.type || 'Jídlo').slice(0, 150);
+    const isUnverifiedPlaceholder = mealFullText?.toLowerCase().includes('neověřeno') || dishName === 'Jídlo';
+    const recipeId = displayModel?.normalizedMeal
+      ? catalogLookupIdFromMeal(displayModel.normalizedMeal)
+      : catalogLookupIdForModal;
+    const htmlRecipeFallback = matchingRecipeHtml ? recipeContentOnly(matchingRecipeHtml) : null;
+    setRecipeModal({
+      openId: thisOpenId,
+      title: modalTitle,
+      content: null,
+      anchorRect,
+      hasRecipe: true,
+      loading: true,
+    });
+    const loadRecipe = async () => {
+      if (displayModel && !shouldFetchMealRecipeFromApi(displayModel)) {
+        return buildMealRecipeModalHtml(displayModel, { includeSourceMeta: true });
+      }
+      if (recipeId != null) {
+        const catalogRecipe = await getCatalogRecipeDetail(recipeId, displayModel);
+        if (catalogRecipe) return catalogRecipe;
+      }
+      if (htmlRecipeFallback) return htmlRecipeFallback;
+      if (isUnverifiedPlaceholder) {
+        return recipeErrorHtml('Recept pro toto jídlo není v katalogu. Zkus ho nahradit jiným.');
+      }
+      const fallbackRecipe = await getRecipeForDish(dishName, '', displayModel);
+      if (fallbackRecipe) return fallbackRecipe;
+      if (displayModel?.title) {
+        return buildMealRecipeRateLimitFallbackHtml(displayModel);
+      }
+      return `
+        <p class="plan-no-recipe-msg">Recept se nepodařilo automaticky dohledat.</p>
+        <p class="plan-no-recipe-hint">Zkus vygenerovat náhradní variantu jídla.</p>
+      `;
+    };
+    loadRecipe().then((html) => {
+      const fallback = displayModel?.title
+        ? buildMealRecipeRateLimitFallbackHtml(displayModel)
+        : '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení nebo znovu.</p>';
+      setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: html || fallback, loading: false } : prev));
+    }).catch(() => {
+      const fallback = displayModel?.title
+        ? buildMealRecipeRateLimitFallbackHtml(displayModel)
+        : '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení nebo znovu.</p>';
+      setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: fallback, loading: false } : prev));
+    });
+  };
+
+  const performPinMealForNextWeek = (di, mi) => {
+    const ctx = buildMealActionContext(di, mi);
+    if (!ctx) return;
+    const { meal, mealTextForPin, overrideKey } = ctx;
+    return handleTogglePin(meal.type || '', mealTextForPin, overrideKey);
+  };
+
   const performMealSwap = async (di, mi) => {
     const day = planWeekDays[di];
     if (!day) return;
@@ -940,8 +1105,7 @@ export default function PlanViewer({
               canPinMeals={canPinMeals}
               onRecipeClick={(mi) => {
                 const di = todayWeekIdx >= 0 ? todayWeekIdx : 0;
-                const fn = recipeOpenHandlersRef.current[`${di}_${mi}`];
-                if (fn) fn({ preventDefault: () => {}, stopPropagation: () => {}, currentTarget: null });
+                performOpenRecipe(di, mi);
               }}
               onSwapClick={(mi) => {
                 const di = todayWeekIdx >= 0 ? todayWeekIdx : 0;
@@ -949,7 +1113,7 @@ export default function PlanViewer({
               }}
               onPinClick={(mi) => {
                 const di = todayWeekIdx >= 0 ? todayWeekIdx : 0;
-                pinOpenHandlersRef.current[`${di}_${mi}`]?.();
+                performPinMealForNextWeek(di, mi);
               }}
               isMealPinned={(mealType, mealText) => isPinned(mealType, mealText)}
               pinToastByKey={pinToastMsg?.key ? { [pinToastMsg.key]: pinToastMsg } : {}}
@@ -1182,139 +1346,24 @@ export default function PlanViewer({
                         <p className="plan-day-placeholder-msg">Pro tento den se nepodařilo načíst jídla. Zkus znovu načíst plán nebo kontaktuj podporu.</p>
                       ) : null}
                       {day.meals.map((meal, mi) => {
-                        const overrideKey = `${day.originalIndex ?? di}_${mi}`;
-                        const override = mealOverrides[overrideKey];
-                        const mealFullText = override ? `${meal.type || ''} ${override.title || ''}`.trim() : `${meal.type || ''} ${meal.text || ''}`.trim();
-                        const matchingRecipeHtml = recipeHtmlByMealName(mealFullText, parsed?.recipes || []);
-                        const dishTitle = (meal.text || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
-                        const mealLookupKey = meal.meal_key || null;
-                        const structDayIdx = day.originalIndex ?? di;
-                        const structMeal = day.structDay
-                          ? structuredMealForStructuredDay(day.structDay, meal.type, mi)
-                          : structuredPlan?.days &&
-                              Array.isArray(structuredPlan.days) &&
-                              structDayIdx >= 0 &&
-                              structDayIdx < structuredPlan.days.length
-                            ? structuredMealForDaySlot(structuredPlan, structDayIdx, meal.type, mi)
-                            : null;
-                        const displayMealTitle = structMeal
-                          ? mealDisplayTitleForStructuredMeal(
-                              structMeal,
-                              plan.plan_html || '',
-                              day.dayName || ''
-                            )
-                          : dishTitle;
-                        const modalTitle =
-                          meal.type && displayMealTitle
-                            ? `${meal.type}: ${displayMealTitle}`
-                            : displayMealTitle || meal.type || mealFullText || 'Jídlo';
-                        const mealTrust = mergeTrustWithStructuredPlanMeal(
-                          resolveMealTrustMerged(meal, mealFullText || meal.text || meal.type, mealTrustMap, mealLookupKey),
-                          structMeal
-                        );
-                        const catalogLookupIdForModal = structMeal
-                          ? catalogLookupIdFromMeal(structMeal)
-                          : mealTrust?.recipe_id != null &&
-                              String(mealTrust.recipe_id).trim() !== '' &&
-                              Number.isFinite(Number(mealTrust.recipe_id))
-                            ? Number(mealTrust.recipe_id)
-                            : null;
-                        const openRecipe = (e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          const button = e?.currentTarget;
-                          const rect = button?.getBoundingClientRect?.();
-                          const useAnchoredModal = typeof window !== 'undefined' && window.innerWidth >= 768;
-                          const anchorRect = useAnchoredModal && rect
-                            ? { top: rect.bottom + 8, left: rect.left, width: rect.width }
-                            : null;
-                          recipeOpenIdRef.current += 1;
-                          const thisOpenId = recipeOpenIdRef.current;
-                          const displayModel = structMeal
-                            ? createMealDisplayModelFromStructuredMeal(structMeal)
-                            : null;
-
-                          if (override?.content) {
-                            setRecipeModal({
-                              openId: thisOpenId,
-                              title: override.title || modalTitle,
-                              content: recipeContentOnly(override.content),
-                              anchorRect,
-                              hasRecipe: true,
-                              loading: false,
-                            });
-                            return;
-                          }
-
-                          if (displayModel && hasLocalMealRecipeDetail(displayModel)) {
-                            setRecipeModal({
-                              openId: thisOpenId,
-                              title: modalTitle,
-                              content: buildMealRecipeModalHtml(displayModel, { includeSourceMeta: true }),
-                              anchorRect,
-                              hasRecipe: true,
-                              loading: false,
-                              source: displayModel.source,
-                              consistencyStatus: displayModel.consistencyStatus,
-                            });
-                            return;
-                          }
-
-                          const dishName = (mealFullText.replace(/\s*\([^)]*\)\s*$/g, '').trim() || meal.type || 'Jídlo').slice(0, 150);
-                          const isUnverifiedPlaceholder = mealFullText?.toLowerCase().includes('neověřeno') || dishName === 'Jídlo';
-                          const recipeId = displayModel?.normalizedMeal
-                            ? catalogLookupIdFromMeal(displayModel.normalizedMeal)
-                            : catalogLookupIdForModal;
-                          const htmlRecipeFallback = matchingRecipeHtml
-                            ? recipeContentOnly(matchingRecipeHtml)
-                            : null;
-                          setRecipeModal({
-                            openId: thisOpenId,
-                            title: modalTitle,
-                            content: null,
-                            anchorRect,
-                            hasRecipe: true,
-                            loading: true,
-                          });
-                          const loadRecipe = async () => {
-                            if (displayModel && !shouldFetchMealRecipeFromApi(displayModel)) {
-                              return buildMealRecipeModalHtml(displayModel, { includeSourceMeta: true });
-                            }
-                            if (recipeId != null) {
-                              const catalogRecipe = await getCatalogRecipeDetail(recipeId, displayModel);
-                              if (catalogRecipe) return catalogRecipe;
-                            }
-                            if (htmlRecipeFallback) return htmlRecipeFallback;
-                            if (isUnverifiedPlaceholder) {
-                              return recipeErrorHtml('Recept pro toto jídlo není v katalogu. Zkus ho nahradit jiným.');
-                            }
-                            const fallbackRecipe = await getRecipeForDish(dishName, '', displayModel);
-                            if (fallbackRecipe) return fallbackRecipe;
-                            if (displayModel?.title) {
-                              return buildMealRecipeRateLimitFallbackHtml(displayModel);
-                            }
-                            return `
-                              <p class="plan-no-recipe-msg">Recept se nepodařilo automaticky dohledat.</p>
-                              <p class="plan-no-recipe-hint">Zkus vygenerovat náhradní variantu jídla.</p>
-                            `;
-                          };
-                          loadRecipe().then((html) => {
-                            const fallback = displayModel?.title
-                              ? buildMealRecipeRateLimitFallbackHtml(displayModel)
-                              : '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení nebo znovu.</p>';
-                            setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: html || fallback, loading: false } : prev));
-                          }).catch(() => {
-                            const fallback = displayModel?.title
-                              ? buildMealRecipeRateLimitFallbackHtml(displayModel)
-                              : '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení nebo znovu.</p>';
-                            setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: fallback, loading: false } : prev));
-                          });
-                        };
+                        const ctx = buildMealActionContext(di, mi);
+                        if (!ctx) return null;
+                        const {
+                          overrideKey,
+                          override,
+                          mealFullText,
+                          structMeal,
+                          displayMealTitle,
+                          modalTitle,
+                          mealTrust,
+                          catalogLookupIdForModal,
+                          mealTextForPin,
+                        } = ctx;
+                        const openRecipe = (e) => performOpenRecipe(di, mi, e);
                         recipeOpenHandlersRef.current[`${di}_${mi}`] = openRecipe;
                         const handleSwap = () => performMealSwap(di, mi);
                         swapOpenHandlersRef.current[`${di}_${mi}`] = handleSwap;
-                        const mealTextForPin = override ? (override.title || '') : (meal.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().replace(/\s*\([^)]*\)\s*$/g, '').trim();
-                        pinOpenHandlersRef.current[`${di}_${mi}`] = () => handleTogglePin(meal.type || '', mealTextForPin, overrideKey);
+                        pinOpenHandlersRef.current[`${di}_${mi}`] = () => performPinMealForNextWeek(di, mi);
                         const mealPinned = isPinned(meal.type || '', mealTextForPin);
                         const macroItems = mealMacroItemsFromTrust(mealTrust);
                         const mealTypeLabel = (meal.type || 'Jídlo').trim();
@@ -1389,7 +1438,7 @@ export default function PlanViewer({
                                     <button
                                       type="button"
                                       className={`plan-meal-pin plan-meal-secondary-btn ${mealPinned ? 'plan-meal-pin-active' : ''}`}
-                                      onClick={(e) => { e.stopPropagation(); handleTogglePin(meal.type || '', mealTextForPin, overrideKey); }}
+                                      onClick={(e) => { e.stopPropagation(); performPinMealForNextWeek(di, mi); }}
                                       title="Označíš si jídlo pro příští týden — při dalším generování ho zkusíme znovu zapracovat."
                                     >
                                       {mealPinned ? '✓ Zahrnuto od dalšího týdne' : 'Zahrnout od dalšího týdne'}

@@ -20,10 +20,10 @@ export default async function handler(req, res) {
 
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {};
     const planId = body.plan_id;
-    const dayIndex = Number(body.day_index);
+    const daySlotIndex = body.day_slot_index != null ? Number(body.day_slot_index) : Number(body.day_index);
     const mealIndex = Number(body.meal_index);
-    if (!planId || !Number.isFinite(dayIndex) || !Number.isFinite(mealIndex)) {
-      return res.status(400).json({ ok: false, error: 'Chybí plan_id, day_index nebo meal_index' });
+    if (!planId || !Number.isFinite(daySlotIndex) || !Number.isFinite(mealIndex)) {
+      return res.status(400).json({ ok: false, error: 'Chybí plan_id, day_slot_index nebo meal_index' });
     }
 
     const { data: planRow, error: planErr } = await supabaseServer
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
       .limit(1);
     const bodyMetrics = bmRows?.[0] || { user_id: user.id };
 
-    const result = await replaceMealInStructuredPlan(structured, dayIndex, mealIndex, bodyMetrics);
+    const result = await replaceMealInStructuredPlan(structured, daySlotIndex, mealIndex, bodyMetrics);
 
     const { error: updateErr } = await supabaseServer
       .from('ai_generated_plans')
@@ -70,7 +70,8 @@ export default async function handler(req, res) {
 
     console.info('[plan-replace-meal] replaced', {
       plan_id: planId,
-      day_index: dayIndex,
+      day_slot_index: daySlotIndex,
+      day_index: daySlotIndex,
       meal_index: mealIndex,
       from: result.previous_title,
       to: result.new_title,
@@ -89,7 +90,10 @@ export default async function handler(req, res) {
   } catch (err) {
     const code = String(err?.message || '');
     if (code === 'NO_ALTERNATIVE') {
-      return res.status(409).json({ ok: false, error: 'Nenašli jsme jinou vhodnou alternativu.' });
+      return res.status(409).json({
+        ok: false,
+        error: 'Teď nemáme vhodnou náhradu, která by držela tvoje kalorie a omezení. Zkus jiné jídlo nebo uprav omezení v profilu.',
+      });
     }
     if (code === 'DAY_KCAL_OUT_OF_TOLERANCE') {
       return res.status(409).json({ ok: false, error: 'Náhrada by rozbila denní kalorie — zkus jiné jídlo.' });

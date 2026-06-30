@@ -66,7 +66,7 @@ console.log('\n--- pin next week ---');
 const mealPins = fs.readFileSync(path.join(root, 'pages/api/meal-pins.js'), 'utf8');
 const agent = fs.readFileSync(path.join(root, 'lib/services/simpleMealPlannerAgent.js'), 'utf8');
 if (!mealPins.includes('user_meal_pins')) fail('meal-pins API missing table');
-if (!planViewer.includes('Zařadíme častěji do dalšího plánu')) fail('pin confirmation copy missing');
+if (!planViewer.includes('Uloženo. Tohle jídlo budeme preferovat v dalších plánech.')) fail('pin confirmation copy missing');
 if (!agent.includes('pinnedMeals')) fail('agent missing pinned meals support');
 else ok('pin preference stored + UI copy + agent hook');
 

@@ -44,6 +44,12 @@ function renderExerciseInstructionBlock(canonicalKey) {
   return (
     <div className="plan-exercise-guide" style={{ marginTop: 14, fontSize: 14, lineHeight: 1.5 }}>
       <p style={{ margin: '0 0 8px 0' }}><strong>Jak na to:</strong> {guide.how}</p>
+      {guide.breathing ? (
+        <p style={{ margin: '0 0 8px 0' }}><strong>Dýchání:</strong> {guide.breathing}</p>
+      ) : null}
+      {guide.tempo ? (
+        <p style={{ margin: '0 0 8px 0' }}><strong>Tempo:</strong> {guide.tempo}</p>
+      ) : null}
       <p style={{ margin: '0 0 8px 0' }}><strong>Na co si dát pozor:</strong> {guide.caution}</p>
       <p style={{ margin: 0 }}><strong>Lehčí varianta:</strong> {guide.easier}</p>
     </div>
@@ -680,7 +686,7 @@ export default function PlanViewer({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Chyba');
       if (data.pins) setMealPins(data.pins);
-      const msg = pinned ? 'Odebráno z preferencí.' : 'Zařadíme častěji do dalšího plánu.';
+      const msg = pinned ? 'Odebráno z preferencí.' : 'Uloženo. Tohle jídlo budeme preferovat v dalších plánech.';
       if (onToast) onToast({ message: msg, type: 'success' });
       setPinToastMsg({ message: msg, type: 'success', key: toastKey });
       setTimeout(() => setPinToastMsg(null), 2500);
@@ -1047,7 +1053,9 @@ export default function PlanViewer({
                     type="button"
                     className={`plan-week-day-pill${day.isToday ? ' plan-week-day-pill--today' : ''}`}
                     onClick={() => {
-                      document.getElementById(`plan-day-card-${di}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      setExpandedDayCards(new Set([di]));
+                      setWeeklyPlanOpen(true);
+                      setTimeout(() => document.getElementById(`plan-day-card-${di}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
                     }}
                   >
                     {shortDayNavLabel(day.dayName)}
@@ -1070,7 +1078,9 @@ export default function PlanViewer({
                     const k = Number(m?.kcal ?? m?.recipe?.calories);
                     return Number.isFinite(k) && k > 0 ? sum + k : sum;
                   }, 0);
-                  const isDayExpanded = !todayFirstLayout || expandedDayCards.has(di) || day.isToday;
+                  const isDayExpanded = todayFirstLayout
+                    ? expandedDayCards.has(di)
+                    : true;
                   return (
                   <div
                     id={`plan-day-card-${di}`}
@@ -1079,24 +1089,20 @@ export default function PlanViewer({
                   >
                     <div
                       className="plan-day-header-static"
-                      role={todayFirstLayout && !day.isToday ? 'button' : undefined}
-                      tabIndex={todayFirstLayout && !day.isToday ? 0 : undefined}
-                      onClick={todayFirstLayout && !day.isToday ? () => {
+                      role={todayFirstLayout ? 'button' : undefined}
+                      tabIndex={todayFirstLayout ? 0 : undefined}
+                      onClick={todayFirstLayout ? () => {
                         setExpandedDayCards((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(di)) next.delete(di);
-                          else next.add(di);
-                          return next;
+                          if (prev.has(di) && prev.size === 1) return new Set();
+                          return new Set([di]);
                         });
                       } : undefined}
-                      onKeyDown={todayFirstLayout && !day.isToday ? (e) => {
+                      onKeyDown={todayFirstLayout ? (e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
                           setExpandedDayCards((prev) => {
-                            const next = new Set(prev);
-                            if (next.has(di)) next.delete(di);
-                            else next.add(di);
-                            return next;
+                            if (prev.has(di) && prev.size === 1) return new Set();
+                            return new Set([di]);
                           });
                         }
                       } : undefined}
@@ -1270,13 +1276,20 @@ export default function PlanViewer({
                               },
                               body: JSON.stringify({
                                 plan_id: plan?.id,
+                                day_slot_index: di,
                                 day_index: day.originalIndex ?? di,
                                 meal_index: mi,
                                 current_title: currentTitle,
                               }),
                             });
                             const data = await res.json();
-                            if (!res.ok || !data?.ok) throw new Error(data?.error || 'Nepodařilo nahradit jídlo');
+                            if (!res.ok || !data?.ok) {
+                              const errMsg = String(data?.error || '');
+                              if (/překročen limit|rate limit|429/i.test(errMsg)) {
+                                throw new Error('Náhrada jídla probíhá lokálně — zkus to znovu za chvíli nebo obnov stránku.');
+                              }
+                              throw new Error(errMsg || 'Nepodařilo nahradit jídlo');
+                            }
                             setPlanPatch({
                               plan_html: data.plan_html,
                               structured_plan_json: data.structured_plan_json,

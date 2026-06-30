@@ -33,6 +33,7 @@ import {
 } from '../lib/progressModel';
 import ProgramContinuationPanel from '../components/ProgramContinuationPanel';
 import ProgramVariantsSection from '../components/ProgramVariantsSection';
+import { approximateBirthDateFromAge } from '../lib/bodyMetricsBirthDate';
 
 const PlanViewer = dynamic(() => import('../components/PlanViewer'), { ssr: false, loading: () => null });
 
@@ -389,6 +390,20 @@ export default function Profil() {
   const [avatarCrop, setAvatarCrop] = useState({ open: false, src: null, file: null, offset: { x: 0, y: 0 }, size: { w: 0, h: 0 }, dragStart: null });
   const avatarCropImageRef = useRef(null);
   const avatarCropContainerRef = useRef(null);
+  const preferencesSnapshotRef = useRef(null);
+
+  const preferencesFieldsSnapshot = (formState) => JSON.stringify({
+    activity: formState.activity || '',
+    stress_level: formState.stress_level || '',
+    occupation: formState.occupation || '',
+    goal: formState.goal || '',
+    freq_choice: formState.freq_choice || formState.frequency || '',
+    workout_days: Array.isArray(formState.workout_days) ? [...formState.workout_days].sort((a, b) => a - b) : [],
+    diet_type: formState.diet_type || '',
+    dietary_restrictions: formState.dietary_restrictions || '',
+    foods_to_avoid: formState.foods_to_avoid || '',
+    selected_habits: Array.isArray(formState.selected_habits) ? [...formState.selected_habits].sort() : [],
+  });
   const [calendarWeekStart, setCalendarWeekStart] = useState(() => {
     const monday = getMondayOfWeek(new Date());
     return getLocalDateStr(monday);
@@ -446,6 +461,9 @@ export default function Profil() {
     dietary_restrictions: '',
     foods_to_avoid: '',
     selected_habits: [],
+    weight_kg: '',
+    height_cm: '',
+    birth_date: '',
   });
   const WORKOUT_DAY_LABELS = [{ v: 1, label: 'Po' }, { v: 2, label: 'Út' }, { v: 3, label: 'St' }, { v: 4, label: 'Čt' }, { v: 5, label: 'Pá' }, { v: 6, label: 'So' }, { v: 0, label: 'Ne' }];
 
@@ -551,6 +569,10 @@ export default function Profil() {
           : []
     ).filter((n) => Number.isFinite(n) && n >= 0 && n <= 6);
 
+    const userMeta = profile?.user || {};
+    const birthFromMeta = typeof userMeta.birth_date === 'string' ? userMeta.birth_date : '';
+    const birthFromAge = !birthFromMeta && lm?.age ? approximateBirthDateFromAge(lm.age) : '';
+
     setPreferencesError('');
     setPreferencesForm({
       activity: activityToFormLabel(lm?.activity) || '',
@@ -559,6 +581,23 @@ export default function Profil() {
       goal: goalToFormLabel(lm?.goal) || '',
       freq_choice: freq,
       frequency: freq,
+      workout_days: workoutDays,
+      diet_type: lm?.diet_type ?? '',
+      dietary_restrictions: lm?.dietary_restrictions ?? '',
+      foods_to_avoid: lm?.foods_to_avoid ?? '',
+      selected_habits: (profile?.user_habits || []).map((h) => h.habit_id).filter(Boolean),
+      weight_kg: lm?.weight_kg != null ? String(lm.weight_kg) : '',
+      height_cm: lm?.height_cm != null
+        ? String(lm.height_cm)
+        : (userMeta.height_cm != null ? String(userMeta.height_cm) : ''),
+      birth_date: birthFromMeta || birthFromAge || '',
+    });
+    preferencesSnapshotRef.current = preferencesFieldsSnapshot({
+      activity: activityToFormLabel(lm?.activity) || '',
+      stress_level: lm?.stress_level ?? '',
+      occupation: normalizeOccupationForForm(lm?.occupation) || '',
+      goal: goalToFormLabel(lm?.goal) || '',
+      freq_choice: freq,
       workout_days: workoutDays,
       diet_type: lm?.diet_type ?? '',
       dietary_restrictions: lm?.dietary_restrictions ?? '',
@@ -1082,6 +1121,52 @@ export default function Profil() {
         setPreferencesError('Vyber alespoň jeden návyk.');
         return;
       }
+
+      const bodyPayload = {};
+      if (preferencesForm.weight_kg !== '' && preferencesForm.weight_kg != null) {
+        bodyPayload.weight_kg = Number(preferencesForm.weight_kg);
+      }
+      if (preferencesForm.height_cm !== '' && preferencesForm.height_cm != null) {
+        bodyPayload.height_cm = Number(preferencesForm.height_cm);
+      }
+      if (preferencesForm.birth_date) {
+        bodyPayload.birth_date = preferencesForm.birth_date;
+      }
+
+      let bodySaved = false;
+      if (Object.keys(bodyPayload).length > 0) {
+        const bodyRes = await fetch('/api/profile-body-data', {
+          ...fetchOptions,
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(bodyPayload),
+        });
+        const bodyJson = await bodyRes.json();
+        if (!bodyRes.ok || !bodyJson.ok) {
+          setPreferencesError(bodyJson.error || 'Nepodařilo uložit tělesné údaje.');
+          return;
+        }
+        bodySaved = true;
+      }
+
+      const prefsChanged = preferencesSnapshotRef.current !== preferencesFieldsSnapshot(preferencesForm);
+      if (!prefsChanged && !bodySaved) {
+        setPreferencesError('Žádné změny k uložení.');
+        return;
+      }
+      if (!prefsChanged && bodySaved) {
+        setShowPreferencesModal(false);
+        setToast({
+          message: 'Změny uloženy. Pro nový výpočet plánu bude potřeba vytvořit nový plán.',
+          type: 'success',
+        });
+        await refetch(token);
+        return;
+      }
+
       const res = await fetch('/api/profile-preferences', {
         ...fetchOptions,
         method: 'PATCH',
@@ -1106,9 +1191,9 @@ export default function Profil() {
       if (res.ok && json.ok) {
         setShowPreferencesModal(false);
         setToast({
-          message: json.planRegenerated
-            ? 'Preference byly uloženy a plán byl aktualizován.'
-            : 'Preference byly uloženy. Aktualizace plánu se dokončí následně nebo ji bude potřeba zopakovat.',
+          message: bodySaved
+            ? 'Změny uloženy. Pro nový výpočet plánu bude potřeba vytvořit nový plán.'
+            : 'Změny uloženy.',
           type: 'success',
         });
         await refetch(token);
@@ -1770,14 +1855,21 @@ export default function Profil() {
                     {program === 'VIP' ? '👑' : program === 'ON_CLUB' ? '⚡' : '🚀'}
                   </span>
                   <div className="membership-card-nav-wrap">
-                    <nav className="profile-quick-nav" aria-label="Rychlá navigace">
-                      <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('muj-plan'); document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); }}>Můj plán</button>
-                      <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('denni-navyky'); document.getElementById('denni-navyky')?.scrollIntoView({ behavior: 'smooth' }); }}>Denní návyky</button>
-                      <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('muj-plan'); document.getElementById('muj-plan')?.scrollIntoView({ behavior: 'smooth' }); }} title="Zobrazit jídelní plán a výživové hodnoty">
-                        Tréninkový plán
-                      </button>
-                      <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('statistiky'); document.getElementById('statistiky')?.scrollIntoView({ behavior: 'smooth' }); }}>Statistiky a progres</button>
-                    </nav>
+                    {currentPlan && (currentPlan.plan_html || currentPlan.structured_plan_json) ? (
+                      <nav className="profile-quick-nav profile-quick-nav--plan-sections" aria-label="Rychlé sekce plánu">
+                        <button type="button" className="profile-quick-nav-btn" onClick={() => document.getElementById('profile-today-heading')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Dnes</button>
+                        <button type="button" className="profile-quick-nav-btn" onClick={() => document.getElementById('profile-today-meals')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Jídelníček</button>
+                        <button type="button" className="profile-quick-nav-btn" onClick={() => document.getElementById('profile-today-workout')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Trénink</button>
+                        <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('muj-plan'); document.getElementById('plan-nakupni-seznam')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>Nákup</button>
+                        <button type="button" className="profile-quick-nav-btn" onClick={openPreferencesWorkspace}>Nastavení</button>
+                      </nav>
+                    ) : (
+                      <nav className="profile-quick-nav" aria-label="Rychlá navigace">
+                        <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('denni-navyky'); document.getElementById('denni-navyky')?.scrollIntoView({ behavior: 'smooth' }); }}>Denní návyky</button>
+                        <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('statistiky'); document.getElementById('statistiky')?.scrollIntoView({ behavior: 'smooth' }); }}>Statistiky</button>
+                        <button type="button" className="profile-quick-nav-btn" onClick={openPreferencesWorkspace}>Nastavení</button>
+                      </nav>
+                    )}
                   </div>
                 </div>
                 <div className="membership-card-right">
@@ -2119,7 +2211,7 @@ export default function Profil() {
             )}
 
             {/* Krátký tip – pro uživatele bez tréninku (jen klienti) */}
-            {!profile?.can_create_calendar_events && workouts.length === 0 && showReadyBanner && (
+            {!profile?.can_create_calendar_events && workouts.length === 0 && showReadyBanner && !currentPlan && (
               <div className="first-action-banner">
                 <p className="first-action-banner-lead">Tvůj plán je připraven.</p>
                 <p className="first-action-banner-text">Rozklikni sekce níže – <strong>Jídelníček a tréninkový plán</strong> nebo <strong>Denní návyky</strong>. Trénink zapíšeš tlačítkem nahoře v hlavní kartě.</p>
@@ -3383,6 +3475,18 @@ export default function Profil() {
           width: 100%;
           overflow-x: auto;
           overflow-y: hidden;
+        }
+        .profile-quick-nav--plan-sections {
+          flex-wrap: wrap;
+          overflow-x: visible;
+        }
+        .profile-quick-nav--plan-sections .profile-quick-nav-btn {
+          flex: 1 1 calc(33.33% - 8px);
+          min-width: 0;
+          padding: 8px 10px;
+          font-size: 12px;
+          white-space: normal;
+          text-align: center;
         }
         .membership-card-right {
           display: flex;

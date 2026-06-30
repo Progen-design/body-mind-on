@@ -3,6 +3,7 @@ import FullscreenOverlay from './FullscreenOverlay';
 import WorkoutDaySelector from './WorkoutDaySelector';
 import HabitChipGrid from './HabitChipGrid';
 import { getFrequencyDayRange } from '../../lib/preferenceConstants';
+import { calculateAgeFromBirthDate } from '../../lib/bodyMetricsBirthDate';
 
 export default function PreferencesOverlay({
   open,
@@ -26,6 +27,7 @@ export default function PreferencesOverlay({
   const saveDisabled = saving || form.selected_habits.length === 0;
   const dayRange = getFrequencyDayRange(form.freq_choice || form.frequency);
   const dayCount = Array.isArray(form.workout_days) ? form.workout_days.length : 0;
+  const computedAge = form.birth_date ? calculateAgeFromBirthDate(form.birth_date) : null;
 
   return (
     <FullscreenOverlay
@@ -36,16 +38,6 @@ export default function PreferencesOverlay({
       subtitle="Tahle nastavení ovlivní tvůj další plán a doporučení."
       size="large"
       brandedBg
-      headerActions={(
-        <button
-          type="button"
-          className="prefs-primary-btn"
-          onClick={() => formRef.current?.requestSubmit()}
-          disabled={saveDisabled}
-        >
-          {saving ? 'Ukládám…' : 'Uložit'}
-        </button>
-      )}
       footer={(
         <div className="prefs-footer-actions">
           <button type="button" className="prefs-secondary-btn" onClick={onClose} disabled={saving}>
@@ -72,6 +64,55 @@ export default function PreferencesOverlay({
               a mohou rovnou spustit další rozhodování a úpravu plánu.
             </p>
           </div>
+        </section>
+
+        <section className="prefs-section-card">
+          <div className="prefs-section-head">
+            <span className="prefs-kicker">Tělesné údaje</span>
+            <h3>Váha, výška a datum narození</h3>
+            <p>Věk dopočítáme automaticky podle data narození.</p>
+          </div>
+
+          <div className="prefs-grid prefs-grid--three">
+            <label className="prefs-field">
+              <span className="prefs-label">Aktuální váha (kg)</span>
+              <input
+                type="number"
+                min={30}
+                max={250}
+                step={0.1}
+                placeholder="např. 75"
+                value={form.weight_kg ?? ''}
+                onChange={(event) => setForm((current) => ({ ...current, weight_kg: event.target.value }))}
+              />
+            </label>
+
+            <label className="prefs-field">
+              <span className="prefs-label">Výška (cm)</span>
+              <input
+                type="number"
+                min={120}
+                max={230}
+                step={1}
+                placeholder="např. 175"
+                value={form.height_cm ?? ''}
+                onChange={(event) => setForm((current) => ({ ...current, height_cm: event.target.value }))}
+              />
+            </label>
+
+            <label className="prefs-field">
+              <span className="prefs-label">Datum narození</span>
+              <input
+                type="date"
+                value={form.birth_date ?? ''}
+                onChange={(event) => setForm((current) => ({ ...current, birth_date: event.target.value }))}
+              />
+            </label>
+          </div>
+
+          {computedAge != null ? (
+            <p className="prefs-age-hint" role="status">Věk: <strong>{computedAge} let</strong> (dopočítáno z data narození)</p>
+          ) : null}
         </section>
 
         <section className="prefs-section-card">
@@ -334,7 +375,15 @@ export default function PreferencesOverlay({
           line-height: 1.45;
           margin-top: -4px;
         }
-        .prefs-field :is(select, textarea) {
+        .prefs-age-hint {
+          margin: 4px 0 0;
+          color: #94a3b8;
+          font-size: 0.92rem;
+        }
+        .prefs-age-hint strong {
+          color: #e2e8f0;
+        }
+        .prefs-field :is(select, textarea, input[type="number"], input[type="date"]) {
           width: 100%;
           border-radius: 16px;
           border: 1px solid rgba(148, 163, 184, 0.2);
@@ -345,7 +394,7 @@ export default function PreferencesOverlay({
           outline: none;
           transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
         }
-        .prefs-field :is(select, textarea):focus {
+        .prefs-field :is(select, textarea, input[type="number"], input[type="date"]):focus {
           border-color: rgba(96, 165, 250, 0.5);
           box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.14);
           background: rgba(2, 6, 23, 0.74);

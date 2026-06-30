@@ -614,8 +614,9 @@ export default function PlanViewer({
     return () => { cancelled = true; };
   }, [plan?.plan_html]);
 
-  // Po načtení plánu posunout na „dnešek“, aby byl aktuální den hned vidět
+  // Po načtení plánu posunout na „dnešek“ – jen v klasickém layoutu (ne today-first profil)
   useEffect(() => {
+    if (todayFirstLayout) return;
     if (typeof document === 'undefined' || !parsed?.days?.length || !plan?.valid_from) return;
     const planFromStr = (plan.valid_from || '').split('T')[0];
     const todayIsoStr = calendarDateIsoInPrague(new Date());
@@ -632,7 +633,7 @@ export default function PlanViewer({
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 300);
     return () => clearTimeout(t);
-  }, [parsed?.days?.length, plan?.valid_from, plan?.plan_html]);
+  }, [todayFirstLayout, parsed?.days?.length, plan?.valid_from, plan?.plan_html]);
 
   useEffect(() => {
     if (!plan?.plan_html || typeof document === 'undefined') {
@@ -1205,7 +1206,7 @@ export default function PlanViewer({
                 setWeeklyPlanOpen(true);
                 setTimeout(() => document.getElementById('plan-jidelnicek')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
               }}
-              onScrollToPrograms={() => document.getElementById('program-variants')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              onScrollToPrograms={() => document.getElementById('profile-continuation-upsell')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
             />
           ) : null}
 

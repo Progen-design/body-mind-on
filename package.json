@@ -41,6 +41,7 @@
     "verify:meal-replacement-actions": "node scripts/verify-meal-replacement-actions.mjs",
     "verify:macro-kcal-consistency": "node scripts/verify-macro-kcal-consistency.mjs",
     "verify:profile-today-ux": "node scripts/verify-profile-today-ux.mjs",
+    "verify:profile-layout-focus": "node scripts/verify-profile-layout-focus.mjs",
     "verify:profile-macro-chart": "node scripts/verify-profile-macro-chart.mjs",
     "verify:profile-real-user-bugfixes": "node scripts/verify-profile-real-user-bugfixes.mjs",
     "regenerate:legacy-start-plans": "node scripts/regenerate-legacy-start-plans.mjs",

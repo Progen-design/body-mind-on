@@ -18,7 +18,7 @@ function check(label, ok, detail = '') {
 
 const component = readFileSync(new URL('../components/ProgramVariantsSection.js', import.meta.url), 'utf8');
 const profil = readFileSync(new URL('../pages/profil.js', import.meta.url), 'utf8');
-const continuation = readFileSync(new URL('../components/ProgramContinuationPanel.js', import.meta.url), 'utf8');
+const upsell = readFileSync(new URL('../components/ProfileContinuationUpsell.js', import.meta.url), 'utf8');
 
 const requiredStrings = [
   'START',
@@ -44,11 +44,12 @@ for (const token of requiredStrings) {
   check(`komponenta obsahuje „${token}“`, inComponent, token);
 }
 
-check('profil importuje ProgramVariantsSection', profil.includes("import ProgramVariantsSection from '../components/ProgramVariantsSection'"));
-check('profil renderuje ProgramVariantsSection', profil.includes('<ProgramVariantsSection'));
-check('profil má anchor program-variants', component.includes('id="program-variants"'));
+check('profil neimportuje ProgramVariantsSection', !profil.includes("import ProgramVariantsSection from '../components/ProgramVariantsSection'"));
+check('profil nerenderuje ProgramVariantsSection', !profil.includes('<ProgramVariantsSection'));
+check('komponenta má anchor program-variants', component.includes('id="program-variants"'));
 check('ON CLUB je featured', component.includes('featured: true') && component.includes("id: 'ON_CLUB'"));
-check('continuation odkazuje na #program-variants', continuation.includes('href="#program-variants"'));
+check('profil má kompaktní upsell', profil.includes('ProfileContinuationUpsell') && profil.includes('Chceš pokračovat dál?'));
+check('upsell odkazuje na /on-club', upsell.includes('href="/on-club"'));
 check('12T má badge Připravujeme', component.includes('Připravujeme'));
 check('VIP CTA vede na /chci-vip', component.includes("href: '/chci-vip'"));
 check('START CTA vede na /start', component.includes("href: '/start'"));

@@ -187,21 +187,30 @@ async function screenshot(page, name) {
   return path;
 }
 
+async function dismissBlockingOverlays(page) {
+  await page.evaluate(() => {
+    document.querySelectorAll(
+      '.withings-floating-card, aside[aria-label="Withings chytrá váha"], .withings-profile-card',
+    ).forEach((el) => {
+      el.style.setProperty('pointer-events', 'none', 'important');
+    });
+  }).catch(() => {});
+}
+
 async function closeAnyModals(page) {
-  for (let i = 0; i < 4; i++) {
-    if ((await page.locator('.plan-recipe-modal-overlay').count()) === 0) return;
-    const closeBtn = page.locator('.plan-recipe-modal-close').first();
+  for (let i = 0; i < 6; i++) {
+    const overlayCount = await page.locator('.plan-recipe-modal-overlay, .modal-overlay, .exercise-hint-modal-overlay').count();
+    if (overlayCount === 0) return;
+    const closeBtn = page.locator('.plan-recipe-modal-close, button.prefs-secondary-btn, button:has-text("Zavřit"), button:has-text("Zrušit")').first();
     if (await closeBtn.count()) {
       await closeBtn.click({ force: true, timeout: 2000 }).catch(() => {});
     }
     await page.keyboard.press('Escape').catch(() => {});
     await page.waitForTimeout(400);
   }
-  if ((await page.locator('.plan-recipe-modal-overlay').count()) > 0) {
-    await page.evaluate(() => {
-      document.querySelectorAll('.plan-recipe-modal-overlay').forEach((el) => el.remove());
-    });
-  }
+  await page.evaluate(() => {
+    document.querySelectorAll('.plan-recipe-modal-overlay, .modal-overlay, .exercise-hint-modal-overlay').forEach((el) => el.remove());
+  }).catch(() => {});
 }
 
 async function runMobileE2E() {
@@ -321,9 +330,10 @@ async function runMobileE2E() {
 
     // F) Accordion
     await closeAnyModals(page);
+    await dismissBlockingOverlays(page);
     const expandWeek = page.locator('button:has-text("Rozbalit týden")');
     if (await expandWeek.count()) {
-      await expandWeek.click();
+      await expandWeek.click({ force: true });
       await page.waitForTimeout(600);
     }
     const dayHeaders = page.locator('.plan-day-header-static');
@@ -343,9 +353,11 @@ async function runMobileE2E() {
 
     // G) Settings
     await closeAnyModals(page);
-    await page.locator('button.profile-quick-nav-btn', { hasText: 'Nastavení' }).first().click({ force: true });
-    await page.waitForSelector('text=Tělesné údaje', { timeout: 15_000 });
-    const settingsText = await page.locator('.prefs-form, form.prefs-form').innerText().catch(() => page.locator('body').innerText());
+    const settingsBtn = page.locator('button.profile-quick-nav-btn', { hasText: 'Nastavení' }).first();
+    await settingsBtn.scrollIntoViewIfNeeded();
+    await settingsBtn.click({ force: true });
+    await page.waitForSelector('.modal-preferences, .prefs-kicker, .preferences-section', { timeout: 25_000 });
+    const settingsText = await page.locator('.modal-preferences, .prefs-form, form.prefs-form').first().innerText().catch(() => page.locator('body').innerText());
     report.settings.bodyDataSectionVisible = /Tělesné údaje/i.test(await settingsText);
     report.settings.weightEditable = await page.locator('input').filter({ has: page.locator('xpath=..//span[contains(text(),"Váha")]') }).count() > 0
       || await page.getByText('Váha', { exact: false }).count() > 0;

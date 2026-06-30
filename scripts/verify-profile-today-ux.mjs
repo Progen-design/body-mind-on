@@ -52,11 +52,13 @@ check('týdenní plán lze sbalit', planViewer.includes('weeklyPlanOpen'));
 const mujPlanIdx = profil.indexOf('id="muj-plan"');
 const programVariantsIdx = profil.indexOf('<ProgramVariantsSection');
 const programContinuationIdx = profil.indexOf('<ProgramContinuationPanel');
-check('ProgramVariantsSection je v profilu', programVariantsIdx >= 0);
-check('ProgramVariantsSection je pod Můj plán', mujPlanIdx >= 0 && programVariantsIdx > mujPlanIdx);
-if (programContinuationIdx >= 0) {
-  check('ProgramContinuationPanel je pod Můj plán', programContinuationIdx > mujPlanIdx);
-}
+const continuationUpsellIdx = profil.indexOf('<ProfileContinuationUpsell');
+const bubblesEndIdx = profil.indexOf('{/* konec profile-bubbles */}');
+check('profil neobsahuje ProgramVariantsSection', programVariantsIdx < 0);
+check('profil neobsahuje ProgramContinuationPanel', programContinuationIdx < 0);
+check('profil má kompaktní ProfileContinuationUpsell', continuationUpsellIdx >= 0);
+check('ProfileContinuationUpsell je pod profile-bubbles', bubblesEndIdx >= 0 && continuationUpsellIdx > bubblesEndIdx);
+check('ProfileContinuationUpsell je pod Můj plán', mujPlanIdx >= 0 && continuationUpsellIdx > mujPlanIdx);
 
 const todayHeadingIdx = planViewer.indexOf('ProfileTodayPanels');
 const jidelnicekIdx = planViewer.indexOf('id="plan-jidelnicek"');

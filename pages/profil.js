@@ -31,8 +31,7 @@ import {
   habitWeightCorrectionKg,
   roundLoadTotal,
 } from '../lib/progressModel';
-import ProgramContinuationPanel from '../components/ProgramContinuationPanel';
-import ProgramVariantsSection from '../components/ProgramVariantsSection';
+import ProfileContinuationUpsell from '../components/ProfileContinuationUpsell';
 import { approximateBirthDateFromAge } from '../lib/bodyMetricsBirthDate';
 
 const PlanViewer = dynamic(() => import('../components/PlanViewer'), { ssr: false, loading: () => null });
@@ -1788,9 +1787,9 @@ export default function Profil() {
           <span className="page-bg-orb page-bg-orb--center" />
         </div>
         {!loading && !error && (
-          <header className={`profile-hero ${(!profile?.can_create_calendar_events && (currentPlan || program === 'ON_CLUB' || program === 'VIP')) ? 'profile-hero--with-program' : 'profile-hero--centered'}`}>
+          <header className={`profile-hero ${(!profile?.can_create_calendar_events && (program === 'ON_CLUB' || program === 'VIP')) ? 'profile-hero--with-program' : 'profile-hero--centered'} ${currentPlan ? 'profile-hero--compact' : ''}`}>
             <div className="profile-hero-inner">
-              {!profile?.can_create_calendar_events && (currentPlan || program === 'ON_CLUB' || program === 'VIP') && (
+              {!profile?.can_create_calendar_events && (program === 'ON_CLUB' || program === 'VIP') && (
                 <div className="profile-hero-brand">
                   <span className="profile-hero-brand-label">Body & Mind ON</span>
                   <span className="profile-hero-brand-welcome">
@@ -1928,7 +1927,8 @@ export default function Profil() {
           </>
         )}
 
-        <section className={`hero ${profile?.can_create_calendar_events ? '' : 'hero--empty'}`}>
+        {profile?.can_create_calendar_events && (
+        <section className="hero">
           <div className="hero-avatar-wrap">
             {profile?.can_create_calendar_events && (
               <>
@@ -2009,6 +2009,7 @@ export default function Profil() {
             </div>
           )}
         </section>
+        )}
 
         {loading && <p className="loading">Načítám tvůj profil…</p>}
 
@@ -2499,22 +2500,6 @@ export default function Profil() {
               )}
               </div>
             </div>
-            )}
-
-            {!profile?.can_create_calendar_events && (
-              <>
-                {program === 'START' && (isTrialExpired || (daysUntilTrialEnd != null && daysUntilTrialEnd >= 0 && daysUntilTrialEnd <= 5)) ? (
-                  <ProgramContinuationPanel
-                    isExpired={Boolean(isTrialExpired)}
-                    daysUntilTrialEnd={daysUntilTrialEnd}
-                  />
-                ) : null}
-                <ProgramVariantsSection
-                  currentProgram={program}
-                  isTrialExpired={Boolean(isTrialExpired)}
-                  daysUntilTrialEnd={daysUntilTrialEnd}
-                />
-              </>
             )}
 
             {!profile?.can_create_calendar_events && (
@@ -3126,6 +3111,13 @@ export default function Profil() {
             </div>
             {/* konec profile-bubbles */}
 
+            {!profile?.can_create_calendar_events && program === 'START' && (
+              <ProfileContinuationUpsell
+                isTrialExpired={Boolean(isTrialExpired)}
+                daysUntilTrialEnd={daysUntilTrialEnd}
+              />
+            )}
+
             {/* Modaly */}
             {showSettingsModal && renderPortal(
               <div className="modal-overlay" onClick={() => { setShowSettingsModal(false); setSettingsError(''); }}>
@@ -3188,8 +3180,8 @@ export default function Profil() {
       <style jsx>{`
         .page {
           min-height: 100vh;
-          padding-block: 0 100px;
-          padding-inline: clamp(0.75rem, 4vw, 1.25rem);
+          padding: max(8px, env(safe-area-inset-top)) clamp(0.75rem, 4vw, 1.25rem) 100px;
+          margin: 0;
           background: transparent;
           color: #e2e8f0;
           font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -3259,7 +3251,7 @@ export default function Profil() {
 
         /* ── TOP profil: jeden hero panel, profil úplně napravo ── */
         .profile-hero {
-          margin-bottom: 24px;
+          margin-bottom: 14px;
           padding: 0;
           width: min(1180px, 100%);
           max-width: 1180px;
@@ -3267,13 +3259,20 @@ export default function Profil() {
           margin-right: auto;
           box-sizing: border-box;
         }
+        .profile-hero--compact {
+          margin-bottom: 10px;
+        }
+        .profile-hero--compact .profile-hero-inner {
+          padding: 14px 20px 16px;
+          gap: 16px;
+        }
         .profile-hero-inner {
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 28px;
           flex-wrap: wrap;
-          padding: 26px 34px 30px;
+          padding: 18px 24px 20px;
           border-radius: 24px;
           background: linear-gradient(135deg, rgba(14, 165, 233, 0.22) 0%, rgba(167, 139, 250, 0.18) 100%);
           border: 1px solid rgba(14, 165, 233, 0.35);
@@ -3422,8 +3421,8 @@ export default function Profil() {
         }
 
         .profile-membership-plan-card {
-          margin-bottom: 28px;
-          padding: 22px 24px 28px;
+          margin-bottom: 16px;
+          padding: 16px 20px 20px;
           border-radius: 20px;
           border: 1px solid;
           display: flex;
@@ -5275,8 +5274,7 @@ export default function Profil() {
 
         @media (max-width: 640px) {
           .page {
-            padding-block: 0 80px;
-            padding-inline: clamp(0.75rem, 4vw, 1rem);
+            padding: max(8px, env(safe-area-inset-top)) clamp(0.75rem, 4vw, 1rem) 80px;
             width: 100%;
             box-sizing: border-box;
           }

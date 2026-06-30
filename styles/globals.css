@@ -138,7 +138,10 @@ a:hover { opacity: .9; }
 @media (max-width: 480px){ .container { padding: 0 14px; } }
 
 main { padding: 40px 0; }
-@media (max-width: 640px) { main { padding: 24px 0; } }
+main.page {
+  padding: max(8px, env(safe-area-inset-top)) clamp(0.75rem, 4vw, 1.25rem) 100px;
+}
+@media (max-width: 640px) { main { padding: 24px 0; } main.page { padding: max(8px, env(safe-area-inset-top)) clamp(0.75rem, 4vw, 1rem) 80px; } }
 @media (max-width: 380px) { main { padding: 20px 0; } }
 
 /* ---- Focus & Utilities ---- */

@@ -15,8 +15,8 @@ function formatNumber(value, digits = 1) {
   return Number.isFinite(n) ? n.toFixed(digits).replace('.', ',') : null;
 }
 
-export default function WithingsProfileCard() {
-  const router = useRouter();
+
+export default function WithingsProfileCard() {  const router = useRouter();
   const enabled = router.pathname === '/profil';
   const [session, setSession] = useState(null);
   const [latest, setLatest] = useState(null);

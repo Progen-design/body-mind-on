@@ -28,6 +28,7 @@ import { collectExerciseMediaSources, hasDisplayableExerciseMedia, isVideoMediaU
 import { getExerciseInstructionGuide } from '../lib/exerciseInstructions.js';
 import { resolveToCanonicalKey } from '../lib/exerciseCanonicalMap.js';
 import { addCalendarDaysIsoPrague, calendarDateIsoInPrague, weekdayIndexJsFromPragueIso } from '../lib/czechCalendar';
+import ProfileTodayPanels from './profile/ProfileTodayPanels';
 
 function exerciseMediaMatchesName(name, canonicalKey) {
   const nameKey = resolveToCanonicalKey(name);
@@ -462,6 +463,8 @@ export default function PlanViewer({
   regeneratingPlan = false,
   canRegeneratePlan = false,
   regenerateBlockedMessage = null,
+  todayFirstLayout = false,
+  program = 'START',
 }) {
   const [parsed, setParsed] = useState(null);
   const [recipeModal, setRecipeModal] = useState(null); // { title, content, anchorRect, hasRecipe, openId? }
@@ -479,6 +482,10 @@ export default function PlanViewer({
   const [exerciseMediaMap, setExerciseMediaMap] = useState({});
   const [showRawPlanFallback, setShowRawPlanFallback] = useState(false);
   const [exerciseHintModal, setExerciseHintModal] = useState(null); // { name, part, wgerId }
+  const [weeklyPlanOpen, setWeeklyPlanOpen] = useState(!todayFirstLayout);
+  const [expandedDayCards, setExpandedDayCards] = useState(() => new Set());
+  const recipeOpenHandlersRef = useRef({});
+  const exerciseOpenHandlersRef = useRef({});
   const recipeOpenIdRef = useRef(0);
 
   const outputMode = getPlanOutputMode(plan, null, { outputMode: outputModeProp });
@@ -751,6 +758,16 @@ export default function PlanViewer({
     }
     return result;
   })();
+  const todayWeekIdx = planWeekDays.findIndex((d) => d.isToday);
+  const todayWeekDay = todayWeekIdx >= 0 ? planWeekDays[todayWeekIdx] : planWeekDays[0] || null;
+
+  useEffect(() => {
+    if (!todayFirstLayout || !planWeekDays?.length) return;
+    const ti = planWeekDays.findIndex((d) => d.isToday);
+    setExpandedDayCards(new Set(ti >= 0 ? [ti] : [0]));
+    setWeeklyPlanOpen(false);
+  }, [todayFirstLayout, plan?.id, planWeekDays.length]);
+
   const weekShoppingSections = buildShoppingSectionsForWeek({
     planWeekDays,
     recipes: parsed?.recipes || [],
@@ -769,7 +786,7 @@ export default function PlanViewer({
       )}
 
       {/* Navigace: Můj plán | Jídelníček */}
-      {showGraphical && (
+      {showGraphical && !todayFirstLayout && (
         <nav className="plan-nav" aria-label="Sekce plánu">
           <a href="#plan-overview" className="plan-nav-item" onClick={(e) => { e.preventDefault(); document.getElementById('plan-overview')?.scrollIntoView({ behavior: 'smooth' }); }}>Můj plán</a>
           <span className="plan-nav-sep" aria-hidden>|</span>
@@ -832,8 +849,36 @@ export default function PlanViewer({
 
       {showGraphical ? (
         <>
+          {todayFirstLayout && planWeekDays?.length > 0 && todayWeekDay ? (
+            <ProfileTodayPanels
+              todayLabel={todayStr}
+              todayDay={todayWeekDay}
+              todayDayIndex={todayWeekIdx >= 0 ? todayWeekIdx : 0}
+              structuredPlan={structuredPlan}
+              program={program}
+              planHtml={plan?.plan_html || ''}
+              onRecipeClick={(mi) => {
+                const di = todayWeekIdx >= 0 ? todayWeekIdx : 0;
+                const fn = recipeOpenHandlersRef.current[`${di}_${mi}`];
+                if (fn) fn({ preventDefault: () => {}, stopPropagation: () => {}, currentTarget: null });
+              }}
+              onExerciseClick={(xi) => {
+                const di = todayWeekIdx >= 0 ? todayWeekIdx : 0;
+                const fn = exerciseOpenHandlersRef.current[`${di}_${xi}`];
+                if (fn) fn();
+              }}
+              onScrollToMeals={() => document.getElementById('profile-today-meals')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              onScrollToWorkout={() => document.getElementById('profile-today-workout')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              onScrollToWeek={() => {
+                setWeeklyPlanOpen(true);
+                setTimeout(() => document.getElementById('plan-jidelnicek')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+              }}
+              onScrollToPrograms={() => document.getElementById('program-variants')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            />
+          ) : null}
+
           {/* Osobní údaje & cíle – karty s ikonami */}
-          {parsed.personal?.length > 0 && (
+          {!todayFirstLayout && parsed.personal?.length > 0 && (
             <div className="plan-block">
               <h3 className="plan-block-title">Osobní údaje & cíle</h3>
               <div className="plan-cards-grid">
@@ -849,7 +894,7 @@ export default function PlanViewer({
           )}
 
           {/* Denní cíle – makra */}
-          {parsed.macros?.length > 0 && (
+          {!todayFirstLayout && parsed.macros?.length > 0 && (
             <div className="plan-block">
               <h3 className="plan-block-title">Denní cíle · makra</h3>
               <div className="plan-macros-row">
@@ -863,7 +908,7 @@ export default function PlanViewer({
             </div>
           )}
 
-          {hasParsedDays && (
+          {hasParsedDays && !todayFirstLayout && (
             <div className="plan-week-parts plan-week-parts-compact" role="note">
               <p className="plan-week-parts-single">
                 Dny níže sledují tvůj uložený týden: jídla, automaticky dopočítaná makra z receptů a kde je dostupný i trénink.
@@ -935,8 +980,28 @@ export default function PlanViewer({
 
           {/* Jídelníček – od dneška dál (dynamicky podle aktuálního dne) */}
           {planWeekDays?.length > 0 && (
-            <div id="plan-jidelnicek" className="plan-block">
-              <h3 className="plan-block-title">Týden po dnech</h3>
+            <>
+            {todayFirstLayout ? (
+              <div className="plan-block plan-week-accordion" id="plan-tyden-accordion">
+                <div className="plan-week-accordion-header">
+                  <h3 className="plan-block-title" style={{ margin: 0 }}>Celý týdenní plán</h3>
+                  <button
+                    type="button"
+                    className="plan-week-accordion-toggle"
+                    onClick={() => setWeeklyPlanOpen((v) => !v)}
+                    aria-expanded={weeklyPlanOpen}
+                  >
+                    {weeklyPlanOpen ? 'Sbalit týden' : 'Rozbalit týden'}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+            <div
+              id="plan-jidelnicek"
+              className="plan-block"
+              style={todayFirstLayout && !weeklyPlanOpen ? { display: 'none' } : undefined}
+            >
+              <h3 className="plan-block-title">{todayFirstLayout ? 'Týden po dnech' : 'Týden po dnech'}</h3>
               <p className="plan-block-subtitle">
                 Každý den je plně rozepsaný — jídla s makry, součet kalorií a trénink.
               </p>
@@ -978,17 +1043,42 @@ export default function PlanViewer({
                     const k = Number(m?.kcal ?? m?.recipe?.calories);
                     return Number.isFinite(k) && k > 0 ? sum + k : sum;
                   }, 0);
+                  const isDayExpanded = !todayFirstLayout || expandedDayCards.has(di) || day.isToday;
                   return (
                   <div
                     id={`plan-day-card-${di}`}
                     key={di}
-                    className={`plan-day-card plan-day-expanded ${day._placeholder ? 'plan-day-placeholder' : ''} ${day.isToday ? 'plan-day-today' : ''}`}
+                    className={`plan-day-card ${isDayExpanded ? 'plan-day-expanded' : 'plan-day-collapsed'} ${day._placeholder ? 'plan-day-placeholder' : ''} ${day.isToday ? 'plan-day-today' : ''}`}
                   >
-                    <div className="plan-day-header-static">
+                    <div
+                      className="plan-day-header-static"
+                      role={todayFirstLayout && !day.isToday ? 'button' : undefined}
+                      tabIndex={todayFirstLayout && !day.isToday ? 0 : undefined}
+                      onClick={todayFirstLayout && !day.isToday ? () => {
+                        setExpandedDayCards((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(di)) next.delete(di);
+                          else next.add(di);
+                          return next;
+                        });
+                      } : undefined}
+                      onKeyDown={todayFirstLayout && !day.isToday ? (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setExpandedDayCards((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(di)) next.delete(di);
+                            else next.add(di);
+                            return next;
+                          });
+                        }
+                      } : undefined}
+                    >
                       <h4 className="plan-day-name">
                         {day.dayName}{day.dateStr ? ` (${day.dateStr})` : ''}{day.isToday ? ' – dnes' : ''}
                       </h4>
                     </div>
+                    {isDayExpanded ? (
                     <>
                     <nav className="plan-day-nav" aria-label="Jídla dne">
                       <span className="plan-day-nav-static">Co dnes jíst</span>
@@ -1126,6 +1216,7 @@ export default function PlanViewer({
                             setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: fallback, loading: false } : prev));
                           });
                         };
+                        recipeOpenHandlersRef.current[`${di}_${mi}`] = openRecipe;
                         const handleSwap = () => {
                           const dishQuery = `${meal.type || 'Jídlo'} alternativa, do 500 kcal`.slice(0, 150);
                           setSwapModal({ dayIndex: day.originalIndex ?? di, mealIndex: mi, dishQuery, mealType: meal.type || 'Jídlo', loading: true, html: null });
@@ -1291,6 +1382,7 @@ export default function PlanViewer({
                                     loading: false,
                                   });
                                 };
+                                exerciseOpenHandlersRef.current[`${di}_${xi}`] = openWgerExercise;
                                 return (
                                   <li key={xi} style={{ marginBottom: 10 }}>
                                     <strong>{name}</strong>
@@ -1309,9 +1401,10 @@ export default function PlanViewer({
                                           color: '#a78bfa',
                                           textDecoration: 'underline',
                                           font: 'inherit',
+                                          minHeight: 44,
                                         }}
                                       >
-                                        Jak cvik provést (ukázka)
+                                        Jak cvik dělat
                                       </button>
                                     </span>
                                   </li>
@@ -1447,11 +1540,13 @@ export default function PlanViewer({
                       );
                     })()}
                     </>
+                    ) : null}
                   </div>
                   );
                 })}
               </div>
             </div>
+            </>
           )}
 
           {/* Modal receptu – vykreslen v portálu do body, aby byl u kliknutého jídla (fixed vůči viewportu) */}
@@ -1536,10 +1631,9 @@ export default function PlanViewer({
                   <button type="button" className="plan-recipe-modal-close" onClick={() => setExerciseHintModal(null)} aria-label="Zavřít">×</button>
                 </div>
                 <div className="plan-recipe-modal-body">
-                  <p style={{ marginTop: 0 }}><strong>Plán:</strong> {exerciseHintModal.part}</p>
-                  {renderExerciseInstructionBlock(exerciseHintModal.canonicalKey || resolveToCanonicalKey(exerciseHintModal.name))}
+                  <p style={{ marginTop: 0, marginBottom: 12 }}><strong>Série / opakování:</strong> {exerciseHintModal.part}</p>
                   {exerciseHintModal.loading ? (
-                    <p className="plan-no-recipe-hint" style={{ marginBottom: 0 }}>Načítám ukázku cviku…</p>
+                    <p className="plan-no-recipe-hint" style={{ marginBottom: 12 }}>Načítám ukázku cviku…</p>
                   ) : (() => {
                     const media = collectExerciseMediaSources(exerciseHintModal);
                     const safeMedia = exerciseMediaMatchesName(
@@ -1560,13 +1654,9 @@ export default function PlanViewer({
                         /* keep fallback text */
                       }
                     });
-                    if (preview) return preview;
-                    return (
-                      <p className="plan-no-recipe-hint" style={{ marginBottom: 0 }}>
-                        Ilustraci cviku zobrazíme po načtení z databáze. Pokud se obrázek neobjeví, otevři detail cviku níže.
-                      </p>
-                    );
+                    return preview || null;
                   })()}
+                  {renderExerciseInstructionBlock(exerciseHintModal.canonicalKey || resolveToCanonicalKey(exerciseHintModal.name))}
                   {exerciseHintModal.wgerId != null ? (
                     <button
                       type="button"
@@ -2530,6 +2620,29 @@ const planSectionStyles = `
     color: #94a3b8;
   }
   .plan-day-expanded .plan-day-chevron { color: #c4b5fd; }
+  .plan-day-collapsed .plan-day-header-static {
+    cursor: pointer;
+  }
+  .plan-week-accordion-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .plan-week-accordion-toggle {
+    min-height: 44px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(167, 139, 250, 0.45);
+    background: rgba(124, 58, 237, 0.2);
+    color: #e9d5ff;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+  }
   .plan-day-peek-btn {
     display: block;
     width: 100%;

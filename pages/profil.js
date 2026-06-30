@@ -1827,17 +1827,6 @@ export default function Profil() {
                 </div>
               )}
             </div>
-            {program === 'START' && (isTrialExpired || (daysUntilTrialEnd != null && daysUntilTrialEnd >= 0 && daysUntilTrialEnd <= 5)) ? (
-              <ProgramContinuationPanel
-                isExpired={Boolean(isTrialExpired)}
-                daysUntilTrialEnd={daysUntilTrialEnd}
-              />
-            ) : null}
-            <ProgramVariantsSection
-              currentProgram={program}
-              isTrialExpired={Boolean(isTrialExpired)}
-              daysUntilTrialEnd={daysUntilTrialEnd}
-            />
           </>
         )}
 
@@ -2283,6 +2272,8 @@ export default function Profil() {
                       regeneratingPlan={retryingPlan}
                       canRegeneratePlan={canRegeneratePlan}
                       regenerateBlockedMessage={regenerateBlockedMessage}
+                      todayFirstLayout
+                      program={program}
                     />
                     ) : (
                     <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
@@ -2347,6 +2338,8 @@ export default function Profil() {
                   regeneratingPlan={retryingPlan}
                   canRegeneratePlan={canRegeneratePlan}
                   regenerateBlockedMessage={regenerateBlockedMessage}
+                  todayFirstLayout
+                  program={program}
                 />
                 </>
                 ) : (
@@ -2404,6 +2397,22 @@ export default function Profil() {
               )}
               </div>
             </div>
+            )}
+
+            {!profile?.can_create_calendar_events && (
+              <>
+                {program === 'START' && (isTrialExpired || (daysUntilTrialEnd != null && daysUntilTrialEnd >= 0 && daysUntilTrialEnd <= 5)) ? (
+                  <ProgramContinuationPanel
+                    isExpired={Boolean(isTrialExpired)}
+                    daysUntilTrialEnd={daysUntilTrialEnd}
+                  />
+                ) : null}
+                <ProgramVariantsSection
+                  currentProgram={program}
+                  isTrialExpired={Boolean(isTrialExpired)}
+                  daysUntilTrialEnd={daysUntilTrialEnd}
+                />
+              </>
             )}
 
             {!profile?.can_create_calendar_events && (

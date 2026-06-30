@@ -34,6 +34,7 @@
     "verify:profile-weight-consistency": "node scripts/verify-profile-weight-consistency.mjs",
     "verify:exercise-assets": "node scripts/verify-exercise-assets.mjs",
     "verify:email-cta-profile-access": "node scripts/verify-email-cta-profile-access.mjs",
+    "verify:profile-today-ux": "node scripts/verify-profile-today-ux.mjs",
     "regenerate:legacy-start-plans": "node scripts/regenerate-legacy-start-plans.mjs",
     "verify:run-coach-scheduler": "node scripts/verify-run-coach-scheduler.mjs",
     "preview:plan-email": "node scripts/preview-plan-email.mjs",

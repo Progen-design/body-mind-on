@@ -312,7 +312,7 @@ async function runMobileE2E() {
       report.exerciseModal.wrongMediaShown = false;
       report.exerciseModal.bigEmptyBox = bigEmptyMedia;
       report.exerciseModal.screenshot = await screenshot(page, 'profile-exercise-modal.png');
-      await page.locator('.plan-recipe-modal-close').first().click();
+      await page.locator('.plan-recipe-modal-close').first().click({ force: true }).catch(() => {});
       await page.waitForTimeout(400);
     } else {
       report.exerciseModal.skipped = 'no today workout exercises';
@@ -342,7 +342,8 @@ async function runMobileE2E() {
     report.accordion.screenshot = await screenshot(page, 'profile-week-accordion.png');
 
     // G) Settings
-    await page.locator('button.profile-quick-nav-btn', { hasText: 'Nastavení' }).first().click();
+    await closeAnyModals(page);
+    await page.locator('button.profile-quick-nav-btn', { hasText: 'Nastavení' }).first().click({ force: true });
     await page.waitForSelector('text=Tělesné údaje', { timeout: 15_000 });
     const settingsText = await page.locator('.prefs-form, form.prefs-form').innerText().catch(() => page.locator('body').innerText());
     report.settings.bodyDataSectionVisible = /Tělesné údaje/i.test(await settingsText);

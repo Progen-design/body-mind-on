@@ -8,7 +8,7 @@ import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
-import { chromium } from 'playwright';
+import { chromium, devices } from 'playwright';
 import { fetchWithTimeout, FETCH_TIMEOUT } from './lib/fetchWithTimeout.mjs';
 import {
   parseTrainingEnvironment,
@@ -37,6 +37,18 @@ const EQUIPMENT_LIFT_KEYS = new Set([
   'bicep_curl', 'tricep_extension', 'lateral_raise', 'goblet_squat',
 ]);
 
+/** Canonical keys that must not appear as user-facing UI text. */
+const INTERNAL_CANONICAL_UI = [
+  'bench_press',
+  'bent_over_row',
+  'romanian_deadlift',
+  'overhead_press',
+  'bicep_curl',
+  'tricep_extension',
+  'lateral_raise',
+];
+const INTERNAL_CANONICAL_RE = new RegExp(`\\b(${INTERNAL_CANONICAL_UI.join('|')})\\b`, 'i');
+
 const report = {
   testEmail: TEST_EMAIL,
   environmentStored: null,
@@ -49,6 +61,20 @@ const report = {
   profileEquipmentLabel: null,
   structuredTrainingLabel: null,
   exerciseCanonicalKeys: [],
+  displayFromMetrics: null,
+  screenshots: {},
+  visual: {
+    mobileViewport: { width: 390, height: 844 },
+    environmentBadgeVisible: false,
+    equipmentVisible: false,
+    workoutNamesUserFriendly: false,
+    internalCanonicalKeysVisible: [],
+    horizontalScroll: false,
+    badgeOverflow: false,
+    workoutSectionText: '',
+    exerciseListText: '',
+    exerciseModalText: '',
+  },
   verdict: 'FAIL',
   verdictReason: '',
 };
@@ -71,6 +97,10 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function shotPath(suffix) {
+  return join(ARTIFACTS, `e2e-training-${suffix}-${TIMESTAMP}.png`);
+}
+
 function collectExerciseKeys(structured) {
   const keys = [];
   for (const day of structured?.days || []) {
@@ -82,7 +112,22 @@ function collectExerciseKeys(structured) {
   return keys;
 }
 
+function findInternalCanonicalInText(text) {
+  if (!text || typeof text !== 'string') return [];
+  const found = new Set();
+  for (const key of INTERNAL_CANONICAL_UI) {
+    if (new RegExp(`\\b${key}\\b`, 'i').test(text)) found.add(key);
+  }
+  return [...found];
+}
+
+function deriveWorkoutDaysForE2E() {
+  const todayDow = new Date().getDay();
+  return [...new Set([2, 4, 6, todayDow])].sort((a, b) => a - b);
+}
+
 async function registerAccount() {
+  const workoutDays = deriveWorkoutDaysForE2E();
   const payload = {
     email: TEST_EMAIL,
     name: 'Training E2E',
@@ -97,7 +142,7 @@ async function registerAccount() {
     goal: 'nabirani_svaly',
     frequency: '2-3x týdně',
     program: 'START',
-    workout_days: [2, 4, 6],
+    workout_days: workoutDays,
     training_environment: 'home_equipment',
     available_equipment: ['dumbbells', 'bench'],
     diet_type: 'standard',
@@ -149,9 +194,26 @@ async function pollPlan(supabase) {
   throw new Error('structured plan not ready within 120s');
 }
 
-async function checkProfileBadge() {
+async function elementShot(locator, path) {
+  await locator.scrollIntoViewIfNeeded().catch(() => {});
+  await sleep(250);
+  await locator.screenshot({ path });
+  return path;
+}
+
+async function captureProfileVisuals() {
+  mkdirSync(ARTIFACTS, { recursive: true });
+
+  const iPhone = devices['iPhone 14'];
   const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage();
+  const context = await browser.newContext({
+    ...iPhone,
+    viewport: { width: 390, height: 844 },
+    locale: 'cs-CZ',
+    timezoneId: 'Europe/Prague',
+  });
+  const page = await context.newPage();
+
   try {
     await page.goto(`${BASE_URL}/login?redirect=/profil`, { waitUntil: 'networkidle', timeout: 60_000 });
     await page.locator('input[type="email"]').fill(TEST_EMAIL);
@@ -159,16 +221,111 @@ async function checkProfileBadge() {
     await page.locator('button.login-submit').click();
     await page.waitForURL(/\/profil/, { timeout: 60_000 });
     await page.waitForSelector('#profile-today-heading, #plan-overview', { timeout: 120_000 });
+
+    // 1) Profile top
+    const topPath = shotPath('profile-top');
+    await page.screenshot({ path: topPath, fullPage: false });
+    report.screenshots.profileTop = topPath;
+
+    // 2) Today overview
+    const todayHero = page.locator('#profile-today-heading').locator('xpath=ancestor::section[contains(@class,"profile-today-hero")]').first();
+    const todayOverviewPath = shotPath('today-overview');
+    if (await todayHero.count()) {
+      await elementShot(todayHero, todayOverviewPath);
+    } else {
+      const fallback = page.locator('.profile-today-root').first();
+      await elementShot(fallback, todayOverviewPath);
+    }
+    report.screenshots.todayOverview = todayOverviewPath;
+
+    // 3) Environment badge
     const badgeLocator = page.locator('.profile-today-env-badge, .plan-badge-env').first();
-    await badgeLocator.waitFor({ state: 'visible', timeout: 30_000 }).catch(() => {});
-    const badgeText = (await badgeLocator.textContent().catch(() => ''))?.trim() || '';
+    await badgeLocator.waitFor({ state: 'visible', timeout: 30_000 });
+    const badgeText = (await badgeLocator.textContent())?.trim() || '';
     report.profileEnvironmentLabel = badgeText || report.displayFromMetrics || null;
     const equipFromBadge = badgeText.match(/Pomůcky:\s*([^·]+)/)?.[1]?.trim()
       || (badgeText.includes('Jednoručky') && badgeText.includes('Lavice') ? 'Jednoručky, Lavice' : null);
     const equipFromHelper = (report.displayFromMetrics || '').match(/Pomůcky:\s*(.+)$/)?.[1]?.trim() || null;
     report.profileEquipmentLabel = equipFromBadge || equipFromHelper || null;
-    mkdirSync(ARTIFACTS, { recursive: true });
-    await page.screenshot({ path: join(ARTIFACTS, `e2e-training-profile-${TIMESTAMP}.png`), fullPage: false });
+
+    report.visual.environmentBadgeVisible = /Doma s vybavením/i.test(badgeText);
+    report.visual.equipmentVisible = /Jednoručky/i.test(badgeText) && /Lavice/i.test(badgeText);
+
+    const badgeOverflow = await badgeLocator.evaluate((el) => {
+      const card = el.closest('.profile-today-card') || el.parentElement;
+      const badgeRect = el.getBoundingClientRect();
+      const cardRect = card ? card.getBoundingClientRect() : badgeRect;
+      return {
+        badgeWiderThanCard: badgeRect.right > cardRect.right + 2 || badgeRect.left < cardRect.left - 2,
+        scrollOverflow: el.scrollWidth > el.clientWidth + 1,
+      };
+    }).catch(() => ({ badgeWiderThanCard: false, scrollOverflow: false }));
+    report.visual.badgeOverflow = badgeOverflow.badgeWiderThanCard || badgeOverflow.scrollOverflow;
+
+    const envBadgePath = shotPath('environment-badge');
+    await elementShot(badgeLocator, envBadgePath);
+    report.screenshots.environmentBadge = envBadgePath;
+
+    // 4) Today workout section
+    const workoutSection = page.locator('#profile-today-workout').first();
+    await workoutSection.waitFor({ state: 'visible', timeout: 30_000 });
+    const workoutPath = shotPath('today-workout');
+    await elementShot(workoutSection, workoutPath);
+    report.screenshots.todayWorkout = workoutPath;
+
+    const workoutText = await workoutSection.innerText().catch(() => '');
+    report.visual.workoutSectionText = workoutText;
+
+    // 5) Exercise list with "Jak cvik provést"
+    const exerciseList = workoutSection.locator('.profile-today-workout-list, ul, .profile-today-workout-items').first();
+    const exerciseListTarget = (await exerciseList.count()) > 0
+      ? exerciseList
+      : workoutSection;
+    const exerciseListPath = shotPath('exercise-list');
+    await elementShot(exerciseListTarget, exerciseListPath);
+    report.screenshots.exerciseList = exerciseListPath;
+
+    const exerciseListText = await exerciseListTarget.innerText().catch(() => workoutText);
+    report.visual.exerciseListText = exerciseListText;
+
+    const uiTextForNames = `${workoutText}\n${exerciseListText}`;
+    report.visual.internalCanonicalKeysVisible = findInternalCanonicalInText(uiTextForNames);
+    report.visual.workoutNamesUserFriendly = report.visual.internalCanonicalKeysVisible.length === 0
+      && /Jak cvik provést/i.test(exerciseListText);
+
+    // 6) Exercise modal
+    const firstExerciseBtn = workoutSection.locator('.profile-today-exercise-btn').first();
+    if (await firstExerciseBtn.count()) {
+      await firstExerciseBtn.click();
+      await page.waitForSelector('.plan-recipe-modal-body', { timeout: 30_000 });
+      const modalBody = page.locator('.plan-recipe-modal-body').first();
+      const modalText = await modalBody.innerText().catch(() => '');
+      report.visual.exerciseModalText = modalText;
+      const modalCanonical = findInternalCanonicalInText(modalText);
+      report.visual.internalCanonicalKeysVisible = [
+        ...new Set([...report.visual.internalCanonicalKeysVisible, ...modalCanonical]),
+      ];
+      report.visual.workoutNamesUserFriendly = report.visual.internalCanonicalKeysVisible.length === 0;
+
+      const modalPath = shotPath('exercise-modal');
+      const modalOverlay = page.locator('.plan-recipe-modal-overlay').first();
+      await elementShot(modalOverlay, modalPath);
+      report.screenshots.exerciseModal = modalPath;
+
+      await page.locator('.plan-recipe-modal-close').first().click({ force: true }).catch(() => {});
+    } else {
+      report.screenshots.exerciseModal = null;
+      report.visual.workoutNamesUserFriendly = false;
+    }
+
+    // Overflow check (page-wide)
+    const overflow = await page.evaluate(() => ({
+      horizontalScroll: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+    report.visual.horizontalScroll = overflow.horizontalScroll;
+    report.visual.overflowMetrics = overflow;
   } finally {
     await browser.close();
   }
@@ -183,8 +340,16 @@ function computeVerdict() {
   if (!equip.includes('dumbbells') || !equip.includes('bench')) {
     fails.push(`equipment=${equip.join(',')}`);
   }
-  if (report.workoutDaysStored !== '2,4,6') {
-    fails.push(`workout_days=${report.workoutDaysStored}`);
+  if (!report.workoutDaysStored) {
+    fails.push('workout_days missing');
+  } else {
+    const days = report.workoutDaysStored.split(',').map((d) => d.trim());
+    for (const required of ['2', '4', '6']) {
+      if (!days.includes(required)) fails.push(`workout_days missing ${required}`);
+    }
+    if (!days.includes(String(new Date().getDay()))) {
+      fails.push(`workout_days missing today (${new Date().getDay()})`);
+    }
   }
   if (report.forbiddenGymMachinesFound.length) {
     fails.push(`gym machines: ${report.forbiddenGymMachinesFound.join(',')}`);
@@ -195,13 +360,26 @@ function computeVerdict() {
   if (report.pureBodyweightOnlyDespiteEquipment) {
     fails.push('plan is bodyweight-only despite equipment');
   }
-  const label = report.profileEnvironmentLabel || '';
-  if (!/Doma s vybavením/i.test(label)) {
-    fails.push('profile missing home_equipment label');
+  if (!report.visual.environmentBadgeVisible) {
+    fails.push('profile missing home_equipment badge');
   }
-  const equipLabel = report.profileEquipmentLabel || '';
-  if (!/Jednoručky/i.test(equipLabel) || !/Lavice/i.test(equipLabel)) {
+  if (!report.visual.equipmentVisible) {
     fails.push('profile missing equipment labels');
+  }
+  if (report.visual.internalCanonicalKeysVisible.length) {
+    fails.push(`UI shows canonical keys: ${report.visual.internalCanonicalKeysVisible.join(',')}`);
+  }
+  if (!report.visual.workoutNamesUserFriendly) {
+    fails.push('workout names not user-friendly or missing Jak cvik provést');
+  }
+  if (report.visual.horizontalScroll) {
+    fails.push('horizontal scroll on mobile');
+  }
+  if (report.visual.badgeOverflow) {
+    fails.push('environment badge overflows card');
+  }
+  if (!report.screenshots.profileTop || !report.screenshots.environmentBadge || !report.screenshots.todayWorkout) {
+    fails.push('missing required screenshots');
   }
 
   report.verdict = fails.length === 0 ? 'READY' : 'FAIL';
@@ -218,17 +396,17 @@ async function main() {
   }
   const supabase = createClient(url, key, { auth: { persistSession: false } });
 
-  console.log('1/4 Register…', TEST_EMAIL);
+  console.log('1/5 Register…', TEST_EMAIL);
   await registerAccount();
 
-  console.log('2/4 Poll body_metrics…');
+  console.log('2/5 Poll body_metrics…');
   const bm = await pollBodyMetrics(supabase);
   report.environmentStored = parseTrainingEnvironment(bm);
   report.equipmentStored = parseAvailableEquipment(bm);
   report.workoutDaysStored = bm.workout_days;
   report.displayFromMetrics = trainingEnvironmentDisplayFromMetrics(bm);
 
-  console.log('3/4 Poll plan + analyze exercises…');
+  console.log('3/5 Poll plan + analyze exercises…');
   const plan = await pollPlan(supabase);
   const structured = plan.structured_plan_json || {};
   report.structuredTrainingLabel = structured.training_environment_label || null;
@@ -242,9 +420,10 @@ async function main() {
     && report.exerciseCanonicalKeys.every((k) => BODYWEIGHT_ONLY_KEYS.has(k));
   report.pureBodyweightOnlyDespiteEquipment = !hasEquipmentLift && allBodyweight;
 
-  console.log('4/4 Profile badge…');
-  await checkProfileBadge();
+  console.log('4/5 Mobile profile visuals + screenshots…');
+  await captureProfileVisuals();
 
+  console.log('5/5 Verdict…');
   computeVerdict();
   mkdirSync(ARTIFACTS, { recursive: true });
   writeFileSync(REPORT_PATH, JSON.stringify(report, null, 2));

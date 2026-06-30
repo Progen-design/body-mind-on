@@ -62,7 +62,7 @@ export default async function handler(req, res) {
     const trainingEnvironment = ['gym', 'home_bodyweight', 'home_equipment'].includes(String(b.training_environment || '').trim())
       ? String(b.training_environment).trim()
       : null;
-    const availableEquipment = Array.isArray(b.available_equipment)
+    const availableEquipment = trainingEnvironment === 'home_equipment' && Array.isArray(b.available_equipment)
       ? b.available_equipment.map((item) => String(item || '').trim()).filter(Boolean)
       : [];
     if (trainingEnvironment) {

@@ -23,7 +23,7 @@ import { useProfileData } from '../hooks/useProfileData';
 import { usePlanStatus } from '../hooks/usePlanStatus';
 import { PLAN_GENERATION_DURATION_HINT } from '../lib/planGenerationUiCopy';
 import { getRegistrationAnchoredWeek } from '../lib/profileWeekRange';
-import { parseTrainingEnvironment, TRAINING_ENVIRONMENT_LABELS } from '../lib/trainingEnvironment.js';
+import { trainingEnvironmentDisplayFromMetrics } from '../lib/trainingEnvironment.js';
 import {
   KCAL_PER_KG_BODY_FAT,
   HABIT_ADJ_KG_PER_NEGATIVE,
@@ -39,8 +39,7 @@ const PlanViewer = dynamic(() => import('../components/PlanViewer'), { ssr: fals
 
 function trainingEnvironmentLabelFromMetrics(bm) {
   if (!bm) return '';
-  const env = parseTrainingEnvironment(bm);
-  return `Typ: ${TRAINING_ENVIRONMENT_LABELS[env] || TRAINING_ENVIRONMENT_LABELS.gym}`;
+  return trainingEnvironmentDisplayFromMetrics(bm);
 }
 
 const PROGRAM_LABELS = {

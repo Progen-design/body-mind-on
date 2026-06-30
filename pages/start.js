@@ -76,6 +76,11 @@ export default function Start() {
     cleaned.activity = cleaned.activity?.toLowerCase().trim();
     cleaned.stress = cleaned.stress?.toLowerCase().trim();
     cleaned.goal = cleaned.goal?.toLowerCase().trim();
+    if (cleaned.training_environment !== 'home_equipment') {
+      cleaned.available_equipment = [];
+    } else if (!Array.isArray(cleaned.available_equipment)) {
+      cleaned.available_equipment = [];
+    }
     return cleaned;
   };
 
@@ -87,6 +92,10 @@ export default function Start() {
         delete next[name];
         return next;
       });
+    }
+    if (name === 'training_environment' && value !== 'home_equipment') {
+      setFormData({ ...formData, [name]: value, available_equipment: [] });
+      return;
     }
     setFormData({ ...formData, [name]: value });
   };

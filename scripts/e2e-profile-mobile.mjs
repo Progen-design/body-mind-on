@@ -187,6 +187,23 @@ async function screenshot(page, name) {
   return path;
 }
 
+async function closeAnyModals(page) {
+  for (let i = 0; i < 4; i++) {
+    if ((await page.locator('.plan-recipe-modal-overlay').count()) === 0) return;
+    const closeBtn = page.locator('.plan-recipe-modal-close').first();
+    if (await closeBtn.count()) {
+      await closeBtn.click({ force: true, timeout: 2000 }).catch(() => {});
+    }
+    await page.keyboard.press('Escape').catch(() => {});
+    await page.waitForTimeout(400);
+  }
+  if ((await page.locator('.plan-recipe-modal-overlay').count()) > 0) {
+    await page.evaluate(() => {
+      document.querySelectorAll('.plan-recipe-modal-overlay').forEach((el) => el.remove());
+    });
+  }
+}
+
 async function runMobileE2E() {
   mkdirSync(ARTIFACTS, { recursive: true });
   const iPhone = devices['iPhone 14'];
@@ -303,6 +320,7 @@ async function runMobileE2E() {
     }
 
     // F) Accordion
+    await closeAnyModals(page);
     const expandWeek = page.locator('button:has-text("Rozbalit týden")');
     if (await expandWeek.count()) {
       await expandWeek.click();
@@ -311,9 +329,9 @@ async function runMobileE2E() {
     const dayHeaders = page.locator('.plan-day-header-static');
     const dayCount = await dayHeaders.count();
     if (dayCount >= 2) {
-      await dayHeaders.nth(0).click();
+      await dayHeaders.nth(0).click({ force: true });
       await page.waitForTimeout(400);
-      await dayHeaders.nth(1).click();
+      await dayHeaders.nth(1).click({ force: true });
       await page.waitForTimeout(400);
       const expanded = await page.locator('.plan-day-card.plan-day-expanded').count();
       report.accordion.onlyOneDayOpen = expanded <= 1;

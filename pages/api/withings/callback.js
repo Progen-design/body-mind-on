@@ -6,6 +6,7 @@ import {
   syncWithingsForUser,
   toPublicAppUrl,
 } from '../../../lib/withingsServer.js';
+import { importLatestWithingsToProfile } from '../../../lib/withingsProfileImport.js';
 
 function appendWithingsStatus(returnTo, status, extra = {}) {
   const url = new URL(toPublicAppUrl(returnTo));
@@ -45,6 +46,7 @@ export default async function handler(req, res) {
     let syncStatus = 'connected';
     try {
       await syncWithingsForUser(oauthState.user_id, { full: false });
+      await importLatestWithingsToProfile(oauthState.user_id);
     } catch (syncErr) {
       console.error('[withings/callback] initial sync failed', syncErr);
       syncStatus = 'connected_sync_pending';

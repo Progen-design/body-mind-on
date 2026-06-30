@@ -1,6 +1,5 @@
 // /components/profile/WithingsProfileCard.js
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 
@@ -16,49 +15,14 @@ function formatNumber(value, digits = 1) {
   return Number.isFinite(n) ? n.toFixed(digits).replace('.', ',') : null;
 }
 
-function useProfilePortalTarget(enabled) {
-  const [target, setTarget] = useState(null);
-
-  useEffect(() => {
-    if (!enabled || typeof document === 'undefined') return undefined;
-    let holder = null;
-    const mount = () => {
-      const anchor = document.querySelector('.profile-membership-plan-card');
-      const fallback = document.querySelector('main.page');
-      const parent = anchor?.parentElement || fallback;
-      if (!parent) return false;
-      holder = document.getElementById('withings-profile-card-portal');
-      if (!holder) {
-        holder = document.createElement('div');
-        holder.id = 'withings-profile-card-portal';
-        if (anchor?.parentElement) anchor.insertAdjacentElement('afterend', holder);
-        else parent.prepend(holder);
-      }
-      setTarget(holder);
-      return true;
-    };
-    if (mount()) return undefined;
-    const interval = window.setInterval(() => {
-      if (mount()) window.clearInterval(interval);
-    }, 250);
-    const timeout = window.setTimeout(() => window.clearInterval(interval), 6000);
-    return () => {
-      window.clearInterval(interval);
-      window.clearTimeout(timeout);
-    };
-  }, [enabled]);
-
-  return target;
-}
-
 export default function WithingsProfileCard() {
   const router = useRouter();
   const enabled = router.pathname === '/profil';
-  const target = useProfilePortalTarget(enabled);
   const [session, setSession] = useState(null);
   const [latest, setLatest] = useState(null);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     if (!enabled) return undefined;
@@ -140,58 +104,92 @@ export default function WithingsProfileCard() {
     }
   }
 
-  if (!enabled || !target) return null;
+  if (!enabled) return null;
   const connected = latest?.connected === true;
 
-  return createPortal(
-    <section className="withings-profile-card" aria-label="Withings chytrá váha">
-      <div className="withings-profile-card__head">
-        <div>
-          <p className="withings-profile-card__eyebrow">Chytrá váha</p>
-          <h2>Withings v profilu</h2>
-          <p>Automaticky načítej váhu, tuk a svalovou hmotu do svého progresu.</p>
-        </div>
-        <span className={`withings-profile-card__badge ${connected ? 'is-connected' : ''}`}>{connected ? 'Propojeno' : 'Nepřipojeno'}</span>
-      </div>
+  return (
+    <aside className={`withings-floating-card ${collapsed ? 'is-collapsed' : ''}`} aria-label="Withings chytrá váha">
+      <button type="button" className="withings-toggle" onClick={() => setCollapsed((v) => !v)}>
+        {collapsed ? '⚖️ Withings' : 'Skrýt'}
+      </button>
+      {!collapsed && (
+        <>
+          <div className="withings-head">
+            <div>
+              <p className="withings-eyebrow">Chytrá váha</p>
+              <h2>Withings</h2>
+              <p>Napoj váhu na profil a načti poslední měření.</p>
+            </div>
+            <span className={`withings-badge ${connected ? 'is-connected' : ''}`}>{connected ? 'Propojeno' : 'Nepřipojeno'}</span>
+          </div>
 
-      {message ? <div className="withings-profile-card__notice">{message}</div> : null}
+          {message ? <div className="withings-notice">{message}</div> : null}
 
-      <div className="withings-profile-card__grid">
-        <div><span>Váha</span><strong>{metrics.weight ? `${metrics.weight} kg` : '—'}</strong></div>
-        <div><span>Tuk</span><strong>{metrics.fat ? `${metrics.fat} %` : '—'}</strong></div>
-        <div><span>Svaly</span><strong>{metrics.muscle ? `${metrics.muscle} kg` : '—'}</strong></div>
-        <div><span>Poslední měření</span><strong>{formatDateTime(metrics.measuredAt || latest?.connection?.last_sync_at)}</strong></div>
-      </div>
+          <div className="withings-grid">
+            <div><span>Váha</span><strong>{metrics.weight ? `${metrics.weight} kg` : '—'}</strong></div>
+            <div><span>Tuk</span><strong>{metrics.fat ? `${metrics.fat} %` : '—'}</strong></div>
+            <div><span>Svaly</span><strong>{metrics.muscle ? `${metrics.muscle} kg` : '—'}</strong></div>
+            <div><span>Měření</span><strong>{formatDateTime(metrics.measuredAt || latest?.connection?.last_sync_at)}</strong></div>
+          </div>
 
-      {latest?.connection?.last_sync_error ? <div className="withings-profile-card__notice">Poslední chyba syncu: {latest.connection.last_sync_error}</div> : null}
+          {latest?.connection?.last_sync_error ? <div className="withings-notice">Poslední chyba syncu: {latest.connection.last_sync_error}</div> : null}
 
-      <div className="withings-profile-card__actions">
-        <button type="button" onClick={startConnect} disabled={busy}>{connected ? 'Znovu propojit Withings' : 'Propojit Withings'}</button>
-        <button type="button" onClick={() => syncNow(false)} disabled={busy || !connected} className="secondary">Synchronizovat teď</button>
-        <button type="button" onClick={() => syncNow(true)} disabled={busy || !connected} className="secondary">Načíst historii</button>
-      </div>
-
+          <div className="withings-actions">
+            <button type="button" onClick={startConnect} disabled={busy}>{connected ? 'Znovu propojit' : 'Propojit Withings'}</button>
+            <button type="button" onClick={() => syncNow(false)} disabled={busy || !connected} className="secondary">Sync teď</button>
+            <button type="button" onClick={() => syncNow(true)} disabled={busy || !connected} className="secondary">Historie</button>
+          </div>
+        </>
+      )}
       <style jsx>{`
-        .withings-profile-card { max-width: 1180px; margin: 18px auto 26px; padding: 22px; border-radius: 28px; color: #fff; background: linear-gradient(135deg, rgba(14,165,233,.18), rgba(15,23,42,.94)); border: 1px solid rgba(148,163,184,.22); box-shadow: 0 20px 70px rgba(2,6,23,.24); }
-        .withings-profile-card__head { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; }
-        .withings-profile-card__eyebrow { margin: 0 0 6px; color: #38bdf8; font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
-        h2 { margin: 0 0 8px; font-size: clamp(24px, 3vw, 34px); }
-        p { margin: 0; color: rgba(255,255,255,.72); line-height: 1.5; }
-        .withings-profile-card__badge { flex: 0 0 auto; padding: 8px 12px; border-radius: 999px; background: rgba(148,163,184,.16); color: rgba(255,255,255,.78); font-weight: 800; font-size: 13px; }
-        .withings-profile-card__badge.is-connected { background: rgba(34,197,94,.18); color: #86efac; }
-        .withings-profile-card__notice { margin-top: 16px; padding: 12px 14px; border-radius: 16px; background: rgba(56,189,248,.12); border: 1px solid rgba(56,189,248,.24); color: rgba(255,255,255,.86); }
-        .withings-profile-card__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
-        .withings-profile-card__grid div { padding: 16px; border-radius: 20px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); }
-        .withings-profile-card__grid span { display: block; color: rgba(255,255,255,.58); font-size: 13px; margin-bottom: 8px; }
-        .withings-profile-card__grid strong { font-size: 20px; }
-        .withings-profile-card__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-        button { border: 0; border-radius: 999px; padding: 11px 16px; background: linear-gradient(135deg, #0ea5e9, #22c55e); color: #fff; font-weight: 800; cursor: pointer; }
-        button.secondary { background: rgba(255,255,255,.11); }
-        button:disabled { opacity: .46; cursor: not-allowed; }
-        @media (max-width: 760px) { .withings-profile-card { margin: 14px 12px 22px; padding: 18px; } .withings-profile-card__head { flex-direction: column; } .withings-profile-card__grid { grid-template-columns: 1fr 1fr; } }
-        @media (max-width: 460px) { .withings-profile-card__grid { grid-template-columns: 1fr; } }
+        .withings-floating-card {
+          position: fixed;
+          right: 22px;
+          bottom: 22px;
+          z-index: 2147483000;
+          width: min(430px, calc(100vw - 28px));
+          padding: 18px;
+          border-radius: 24px;
+          color: #fff;
+          background: linear-gradient(135deg, rgba(14,165,233,.22), rgba(15,23,42,.98));
+          border: 1px solid rgba(56,189,248,.38);
+          box-shadow: 0 24px 90px rgba(2,6,23,.58);
+          backdrop-filter: blur(16px);
+        }
+        .withings-floating-card.is-collapsed { width: auto; padding: 0; border-radius: 999px; overflow: hidden; }
+        .withings-toggle {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          border: 1px solid rgba(255,255,255,.18);
+          border-radius: 999px;
+          padding: 7px 10px;
+          background: rgba(255,255,255,.1);
+          color: #fff;
+          font-weight: 800;
+          cursor: pointer;
+        }
+        .withings-floating-card.is-collapsed .withings-toggle { position: static; background: linear-gradient(135deg, #0ea5e9, #22c55e); padding: 12px 16px; }
+        .withings-head { display: flex; justify-content: space-between; gap: 16px; padding-right: 68px; }
+        .withings-eyebrow { margin: 0 0 4px; color: #7dd3fc; font-size: 11px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
+        h2 { margin: 0 0 4px; font-size: 28px; }
+        p { margin: 0; color: rgba(255,255,255,.74); line-height: 1.4; }
+        .withings-badge { height: fit-content; padding: 7px 10px; border-radius: 999px; background: rgba(148,163,184,.17); color: rgba(255,255,255,.8); font-size: 12px; font-weight: 900; }
+        .withings-badge.is-connected { background: rgba(34,197,94,.18); color: #86efac; }
+        .withings-notice { margin-top: 12px; padding: 10px 12px; border-radius: 14px; background: rgba(56,189,248,.12); border: 1px solid rgba(56,189,248,.24); font-size: 13px; }
+        .withings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+        .withings-grid div { padding: 12px; border-radius: 16px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.1); }
+        .withings-grid span { display: block; color: rgba(255,255,255,.58); font-size: 12px; margin-bottom: 5px; }
+        .withings-grid strong { font-size: 18px; }
+        .withings-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+        .withings-actions button { border: 0; border-radius: 999px; padding: 10px 13px; background: linear-gradient(135deg, #0ea5e9, #22c55e); color: #fff; font-weight: 900; cursor: pointer; }
+        .withings-actions button.secondary { background: rgba(255,255,255,.12); }
+        .withings-actions button:disabled { opacity: .48; cursor: not-allowed; }
+        @media (max-width: 640px) {
+          .withings-floating-card { right: 12px; left: 12px; bottom: 12px; width: auto; }
+          .withings-head { padding-right: 62px; }
+        }
       `}</style>
-    </section>,
-    target
+    </aside>
   );
 }

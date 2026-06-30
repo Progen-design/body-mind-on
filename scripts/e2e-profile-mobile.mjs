@@ -188,13 +188,55 @@ async function screenshot(page, name) {
 }
 
 async function dismissBlockingOverlays(page) {
+  const collapsed = await page.locator('.withings-floating-card.is-collapsed').count();
+  if (collapsed > 0) return;
+  await page.locator('.withings-close').click({ timeout: 2000 }).catch(async () => {
+    await page.evaluate(() => {
+      document.querySelectorAll('.withings-floating-card').forEach((el) => {
+        el.style.setProperty('pointer-events', 'none', 'important');
+      });
+    }).catch(() => {});
+  });
+}
+
+async function runWithingsWidgetChecks(page, viewportLabel) {
   await page.evaluate(() => {
-    document.querySelectorAll(
-      '.withings-floating-card, aside[aria-label="Withings chytrá váha"], .withings-profile-card',
-    ).forEach((el) => {
-      el.style.setProperty('pointer-events', 'none', 'important');
-    });
-  }).catch(() => {});
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    window.scrollTo(0, 0);
+  });
+  await page.waitForSelector('.withings-floating-card', { timeout: 30_000 });
+  const collapsed = await page.locator('.withings-floating-card.is-collapsed').count();
+  const launcherVisible = await page.locator('.withings-launcher').isVisible().catch(() => false);
+  const panelVisible = await page.locator('.withings-panel').isVisible().catch(() => false);
+  const todayVisible = await page.locator('#profile-today-heading').isVisible().catch(() => false);
+  const overlap = await page.evaluate(() => {
+    const card = document.querySelector('.withings-floating-card');
+    const today = document.getElementById('profile-today-heading');
+    if (!card || !today) return false;
+    const a = card.getBoundingClientRect();
+    const b = today.getBoundingClientRect();
+    return a.top < b.bottom && a.bottom > b.top && a.left < b.right && a.right > b.left;
+  });
+  const horizontalScroll = await hasHorizontalScroll(page);
+
+  const prefix = viewportLabel === 'desktop' ? 'withingsDesktop' : 'withingsMobile';
+  report[prefix] = report[prefix] || {};
+  report[prefix].defaultCollapsed = collapsed > 0 && launcherVisible && !panelVisible;
+  report[prefix].launcherVisible = launcherVisible;
+  report[prefix].overlapsTodayCta = overlap;
+  report[prefix].horizontalScroll = horizontalScroll;
+  report[prefix].collapsedScreenshot = await screenshot(page, `withings-collapsed-${viewportLabel}.png`);
+
+  await page.locator('.withings-launcher').click();
+  await page.waitForSelector('.withings-panel', { timeout: 10_000 });
+  report[prefix].expandedOnLauncherClick = await page.locator('.withings-panel').isVisible().catch(() => false);
+  report[prefix].technicalOAuthText = await page.locator('text=/OAuth|klientské údaje|dashboard|env/i').count() > 0;
+  report[prefix].expandedScreenshot = await screenshot(page, `withings-expanded-${viewportLabel}.png`);
+
+  await page.locator('.withings-close').click();
+  await page.waitForSelector('.withings-launcher', { timeout: 10_000 });
+  report[prefix].hideReturnsCollapsed = await page.locator('.withings-floating-card.is-collapsed').count() > 0;
+  report[prefix].todayCtaStillVisible = todayVisible;
 }
 
 async function closeAnyModals(page) {
@@ -241,6 +283,8 @@ async function runMobileE2E() {
     report.mobileE2E.todayMealsVisible = await page.locator('#profile-today-meals .profile-today-meal-card').first().isVisible().catch(() => false);
     report.mobileE2E.todayWorkoutVisible = await page.locator('#profile-today-workout').isVisible().catch(() => false);
     report.mobileE2E.screenshot = await screenshot(page, 'profile-mobile-top.png');
+
+    await runWithingsWidgetChecks(page, 'mobile');
 
     // B) Recipe
     const firstMealCard = page.locator('#profile-today-meals .profile-today-meal-card').first();
@@ -399,6 +443,13 @@ function computeVerdict() {
     report.testAccount.plan_id,
     report.mobileE2E.profileOpened,
     !report.mobileE2E.horizontalScroll,
+    report.withingsMobile?.defaultCollapsed !== false,
+    report.withingsMobile?.launcherVisible !== false,
+    report.withingsMobile?.expandedOnLauncherClick !== false,
+    report.withingsMobile?.hideReturnsCollapsed !== false,
+    report.withingsMobile?.technicalOAuthText !== true,
+    !report.withingsMobile?.horizontalScroll,
+    !report.withingsMobile?.overlapsTodayCta,
     !report.mobileE2E.duplicateNav,
     report.recipe.recipeOpened,
     !report.recipe.macroPercentagesAllZero,
@@ -460,6 +511,8 @@ async function main() {
 
   console.log('4/4 Verify scripts…');
   const scripts = [
+    'verify:withings-widget-ux',
+    'verify:profile-layout-focus',
     'verify:profile-real-user-bugfixes',
     'verify:profile-today-ux',
     'verify:profile-macro-chart',

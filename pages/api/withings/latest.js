@@ -2,6 +2,7 @@
 import {
   getAuthUserFromRequest,
   getLatestWithingsMeasurements,
+  isWithingsOAuthConfigured,
 } from '../../../lib/withingsServer.js';
 import { supabaseServer } from '../../../lib/supabaseServer.js';
 
@@ -14,6 +15,7 @@ export default async function handler(req, res) {
   if (auth.error) return res.status(auth.status || 401).json({ error: auth.error });
 
   try {
+    const configured = isWithingsOAuthConfigured();
     const { data: connection, error: connError } = await supabaseServer
       .from('withings_connections')
       .select('withings_userid, connected_at, last_sync_at, last_sync_error, expires_at')
@@ -24,6 +26,7 @@ export default async function handler(req, res) {
     if (!connection) {
       return res.status(200).json({
         ok: true,
+        configured,
         connected: false,
         connection: null,
         latest_by_type: {},
@@ -35,6 +38,7 @@ export default async function handler(req, res) {
     const measurements = await getLatestWithingsMeasurements(auth.user.id, req.query.limit || 50);
     return res.status(200).json({
       ok: true,
+      configured,
       connected: true,
       connection,
       ...measurements,

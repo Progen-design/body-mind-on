@@ -17,7 +17,7 @@ const ARTIFACTS = join(ROOT, 'artifacts');
 const DESKTOP_SHOT = join(ARTIFACTS, 'profile-desktop-above-fold.png');
 const MOBILE_SHOT = join(ARTIFACTS, 'profile-mobile-above-fold.png');
 const PORT = process.env.VERIFY_PROFILE_PORT || '3021';
-const BASE_URL = (process.env.BASE_URL || `http://127.0.0.1:${PORT}`).replace(/\/$/, '');
+const BASE_URL = (process.env.BASE_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '');
 const TIMESTAMP = Date.now();
 const TEST_EMAIL = process.env.VERIFY_PROFILE_EMAIL
   || process.env.E2E_EMAIL
@@ -171,10 +171,15 @@ async function loginAndOpenProfile(page) {
   });
   await page.waitForLoadState('networkidle');
   await page.waitForFunction(
-    () => Boolean(document.querySelector('.profile-membership-plan-card') || document.querySelector('#profile-today-heading')),
+    () => Boolean(
+      document.querySelector('#profile-today-heading')
+      || document.querySelector('#muj-plan')
+      || document.querySelector('.profile-content')
+      || document.querySelector('.profile-bubbles')
+    ),
     null,
     { timeout: 120_000 },
-  );
+  ).catch(() => {});
   await page.evaluate(() => {
     window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;

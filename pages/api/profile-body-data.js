@@ -53,12 +53,21 @@ export default async function handler(req, res) {
     if (weight_kg != null) metricsUpdate.weight_kg = weight_kg;
     if (height_cm != null) metricsUpdate.height_cm = height_cm;
     if (computedAge != null) metricsUpdate.age = computedAge;
+    if (birth_date) metricsUpdate.birth_date = birth_date;
 
     if (Object.keys(metricsUpdate).length > 0) {
-      const { error: updErr } = await supabaseServer
+      let { error: updErr } = await supabaseServer
         .from('body_metrics')
         .update(metricsUpdate)
         .eq('id', latest.id);
+      if (updErr && /birth_date|does not exist|column/i.test(updErr.message || '')) {
+        const fallbackUpdate = { ...metricsUpdate };
+        delete fallbackUpdate.birth_date;
+        ({ error: updErr } = await supabaseServer
+          .from('body_metrics')
+          .update(fallbackUpdate)
+          .eq('id', latest.id));
+      }
       if (updErr) {
         console.error('[profile-body-data] body_metrics update', updErr);
         return res.status(500).json({ ok: false, error: 'Nepodařilo uložit tělesné údaje.' });

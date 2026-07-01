@@ -15,6 +15,7 @@ import { parsePlanHtml } from '../lib/parsePlanHtml';
 import { getPlanOutputMode, shouldRenderTraining } from '../lib/planOutputMode.js';
 import { buildPlanPdfHtml } from '../lib/planPdf';
 import { formatExerciseSetsRepsDisplay } from '../lib/planDataIntegrity.js';
+import { renderPlanHtmlFromStructured } from '../lib/planRenderer.js';
 import { catalogLookupIdFromMeal } from '../lib/recipeDetailUrl.js';
 import {
   buildMealRecipeModalHtml,
@@ -428,6 +429,43 @@ function mealMacroItemsFromTrust(mealTrust) {
   return items;
 }
 
+function parseNumberFromMacroText(value) {
+  const txt = String(value || '');
+  const m = txt.match(/-?\d+(?:[.,]\d+)?/);
+  if (!m) return null;
+  const n = Number(m[0].replace(',', '.'));
+  return Number.isFinite(n) ? n : null;
+}
+
+function extractTargetsFromParsedMacros(parsedMacros) {
+  const out = { calories_per_day: null, protein_g: null, carbs_g: null, fat_g: null };
+  if (!Array.isArray(parsedMacros)) return out;
+  parsedMacros.forEach((item) => {
+    const label = String(item?.label || '').toLowerCase();
+    const valueNum = parseNumberFromMacroText(item?.value);
+    if (valueNum == null) return;
+    if (label.includes('kcal') || label.includes('kalori')) out.calories_per_day = valueNum;
+    if (label.includes('bílkov') || label.includes('protein')) out.protein_g = valueNum;
+    if (label.includes('sachar')) out.carbs_g = valueNum;
+    if (label.includes('tuk')) out.fat_g = valueNum;
+  });
+  return out;
+}
+
+function resolvePlanHtml(planObj, patchObj) {
+  const directHtml = patchObj?.plan_html || planObj?.plan_html || '';
+  if (directHtml) return directHtml;
+  const structured = patchObj?.structured_plan_json || planObj?.structured_plan_json;
+  if (structured && typeof structured === 'object') {
+    try {
+      return renderPlanHtmlFromStructured(structured);
+    } catch (_) {
+      return '';
+    }
+  }
+  return '';
+}
+
 function recipeContentOnly(html) {
   if (!html || typeof html !== 'string') return html;
   const lower = html.toLowerCase();
@@ -584,7 +622,7 @@ export default function PlanViewer({
   };
 
   useEffect(() => {
-    const html = planPatch?.plan_html || plan?.plan_html;
+    const html = resolvePlanHtml(plan, planPatch);
     if (html && typeof document !== 'undefined') {
       const result = parsePlanHtml(html);
       setParsed(result);
@@ -593,7 +631,7 @@ export default function PlanViewer({
     } else {
       setParsed(null);
     }
-  }, [plan?.plan_html, planPatch?.plan_html]);
+  }, [plan?.plan_html, planPatch?.plan_html, plan?.structured_plan_json, planPatch?.structured_plan_json]);
 
   useEffect(() => {
     if (!plan?.plan_html || typeof document === 'undefined') return;
@@ -715,17 +753,9 @@ export default function PlanViewer({
     }
   }, [recipeModal, swapModal, exerciseHintModal]);
 
-  if (!plan || !(planPatch?.plan_html || plan.plan_html)) {
-    return (
-      <section className="card plan-section">
-        <h2>Můj plán</h2>
-        <p className="empty-plan">
-          Zatím nemáš žádný plán. Vyplň dotazník na <Link href="/start">stránce START</Link> a dostaneš osobní plán na míru.
-        </p>
-        <style jsx>{planSectionStyles}</style>
-      </section>
-    );
-  }
+  const hasRenderablePlan = !!(
+    plan && (planPatch?.plan_html || plan.plan_html || planPatch?.structured_plan_json || plan.structured_plan_json)
+  );
 
   const todayIsoStr = calendarDateIsoInPrague(new Date());
   const planFromStr = (plan.valid_from || '').split('T')[0];
@@ -743,6 +773,26 @@ export default function PlanViewer({
   const structuredPlan = effectivePlan?.structured_plan_json && typeof effectivePlan.structured_plan_json === 'object'
     ? effectivePlan.structured_plan_json
     : null;
+  const effectiveTargets = structuredPlan?.targets && typeof structuredPlan.targets === 'object'
+    ? structuredPlan.targets
+    : {
+      calories_per_day: Number(effectivePlan?.daily_calories) || null,
+      protein_g: Number(effectivePlan?.macros?.protein_g) || null,
+      carbs_g: Number(effectivePlan?.macros?.carbs_g) || null,
+      fat_g: Number(effectivePlan?.macros?.fat_g) || null,
+    };
+  const parsedTargets = extractTargetsFromParsedMacros(parsed?.macros);
+  const targetMismatch =
+    parsedTargets.calories_per_day != null
+    && effectiveTargets.calories_per_day != null
+    && Math.abs(Number(parsedTargets.calories_per_day) - Number(effectiveTargets.calories_per_day)) > 20;
+  if (process.env.NODE_ENV !== 'production' && targetMismatch) {
+    console.warn('Plan target mismatch between today and weekly view', {
+      plan_id: plan?.id ?? null,
+      parsed_calories_target: parsedTargets.calories_per_day,
+      effective_calories_target: effectiveTargets.calories_per_day,
+    });
+  }
   const resolvedTrainingLabel = trainingEnvironmentLabel
     || (structuredPlan?.training_environment_label
       ? `Typ: ${structuredPlan.training_environment_label}`
@@ -766,7 +816,7 @@ export default function PlanViewer({
       const structDay = useStruct
         ? structDays[origIdx] ?? structDays.find((d) => (d.date || '').split('T')[0] === dateIso)
         : null;
-      const structMeals = structDay ? buildMealsFromStructuredDay(structDay, plan.plan_html || '') : null;
+      const structMeals = structDay ? buildMealsFromStructuredDay(structDay, plan?.plan_html || '') : null;
       const meals = structMeals && structMeals.length > 0 ? structMeals : htmlDay?.meals || [];
       const afterPlanEnd = !!(validUntilStr && dateIso > validUntilStr);
       result.push({
@@ -791,6 +841,18 @@ export default function PlanViewer({
     setExpandedDayCards(new Set(ti >= 0 ? [ti] : [0]));
     setWeeklyPlanOpen(false);
   }, [todayFirstLayout, plan?.id, planWeekDays.length]);
+
+  if (!hasRenderablePlan) {
+    return (
+      <section className="card plan-section">
+        <h2>Můj plán</h2>
+        <p className="empty-plan">
+          Zatím nemáš žádný plán. Vyplň dotazník na <Link href="/start">stránce START</Link> a dostaneš osobní plán na míru.
+        </p>
+        <style jsx>{planSectionStyles}</style>
+      </section>
+    );
+  }
 
   const weekShoppingSections = buildShoppingSectionsForWeek({
     planWeekDays,
@@ -1179,6 +1241,7 @@ export default function PlanViewer({
               todayDay={todayWeekDay}
               todayDayIndex={todayWeekIdx >= 0 ? todayWeekIdx : 0}
               structuredPlan={structuredPlan}
+              planTargets={effectiveTargets}
               program={program}
               planHtml={plan?.plan_html || ''}
               trainingEnvironmentLabel={resolvedTrainingLabel}
@@ -1226,17 +1289,27 @@ export default function PlanViewer({
             </div>
           )}
 
-          {/* Denní cíle – makra */}
-          {!todayFirstLayout && parsed.macros?.length > 0 && (
+          {/* Denní cíle – makra (source of truth = structured_plan_json.targets) */}
+          {!todayFirstLayout && effectiveTargets?.calories_per_day && (
             <div className="plan-block">
-              <h3 className="plan-block-title">Denní cíle · makra</h3>
+              <h3 className="plan-block-title">Dnešní plán · cíle</h3>
               <div className="plan-macros-row">
-                {parsed.macros.map((m, i) => (
-                  <div key={i} className="plan-macro-card">
-                    <span className="plan-macro-value">{m.value}</span>
-                    <span className="plan-macro-label">{m.label}</span>
-                  </div>
-                ))}
+                <div className="plan-macro-card">
+                  <span className="plan-macro-value">{Math.round(Number(effectiveTargets.calories_per_day) || 0)} kcal</span>
+                  <span className="plan-macro-label">Denní kalorie</span>
+                </div>
+                <div className="plan-macro-card">
+                  <span className="plan-macro-value">{Math.round(Number(effectiveTargets.protein_g) || 0)} g</span>
+                  <span className="plan-macro-label">Bílkoviny</span>
+                </div>
+                <div className="plan-macro-card">
+                  <span className="plan-macro-value">{Math.round(Number(effectiveTargets.carbs_g) || 0)} g</span>
+                  <span className="plan-macro-label">Sacharidy</span>
+                </div>
+                <div className="plan-macro-card">
+                  <span className="plan-macro-value">{Math.round(Number(effectiveTargets.fat_g) || 0)} g</span>
+                  <span className="plan-macro-label">Tuky</span>
+                </div>
               </div>
             </div>
           )}
@@ -1283,7 +1356,12 @@ export default function PlanViewer({
                       mealOverrides,
                       planValidFrom: plan?.valid_from || null,
                       planValidUntil: plan?.valid_until || null,
-                      dailyMacros: parsed?.macros || [],
+                      dailyMacros: [
+                        { label: 'Denní kalorie', value: `${Math.round(Number(effectiveTargets?.calories_per_day) || 0)} kcal` },
+                        { label: 'Bílkoviny', value: `${Math.round(Number(effectiveTargets?.protein_g) || 0)} g` },
+                        { label: 'Sacharidy', value: `${Math.round(Number(effectiveTargets?.carbs_g) || 0)} g` },
+                        { label: 'Tuky', value: `${Math.round(Number(effectiveTargets?.fat_g) || 0)} g` },
+                      ],
                       planId: plan?.id || null,
                       appBaseUrl: typeof window !== 'undefined' ? window.location.origin : undefined,
                       planHtml: plan?.plan_html || '',
@@ -1337,7 +1415,7 @@ export default function PlanViewer({
               className="plan-block"
               style={todayFirstLayout && !weeklyPlanOpen ? { display: 'none' } : undefined}
             >
-              <h3 className="plan-block-title">{todayFirstLayout ? 'Týden po dnech' : 'Týden po dnech'}</h3>
+              <h3 className="plan-block-title">Týdenní plán</h3>
               <p className="plan-block-subtitle">
                 Každý den je plně rozepsaný — jídla s makry, součet kalorií a trénink.
               </p>

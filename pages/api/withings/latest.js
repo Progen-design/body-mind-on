@@ -2,6 +2,7 @@
 import {
   getAuthUserFromRequest,
   getLatestWithingsMeasurements,
+  getWithingsProgressForUser,
   isWithingsOAuthConfigured,
 } from '../../../lib/withingsServer.js';
 import { supabaseServer } from '../../../lib/supabaseServer.js';
@@ -31,17 +32,25 @@ export default async function handler(req, res) {
         connection: null,
         latest_by_type: {},
         latest_weight_kg: null,
+        latest: null,
+        trends: null,
+        recommendations: null,
         rows: [],
       });
     }
 
     const measurements = await getLatestWithingsMeasurements(auth.user.id, req.query.limit || 50);
+    const progress = await getWithingsProgressForUser(auth.user.id, auth.user);
+
     return res.status(200).json({
       ok: true,
       configured,
       connected: true,
       connection,
       ...measurements,
+      latest: progress.latest,
+      trends: progress.trends,
+      recommendations: progress.recommendations,
     });
   } catch (err) {
     console.error('[withings/latest]', err);

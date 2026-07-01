@@ -234,11 +234,91 @@ async function registerAndLogin(supabase) {
   return { browser, page, accessToken };
 }
 
+async function runStaticUnitChecks() {
+  console.log('--- Static unit checks ---');
+  const { normalizeWithingsMeasures } = await import('../lib/withings/normalizeWithingsMeasures.js');
+  const { calculateWithingsTrends } = await import('../lib/withings/withingsTrends.js');
+  const { generateWithingsRecommendations, recommendationsAreSafe } = await import('../lib/withings/withingsRecommendations.js');
+  const { buildWithingsCoachContext } = await import('../lib/withings/buildWithingsCoachContext.js');
+
+  const sampleGroup = {
+    grpid: 12345,
+    date: Math.floor(Date.now() / 1000),
+    measures: [
+      { type: 1, value: 10420, unit: -2 },
+      { type: 6, value: 221, unit: -1 },
+      { type: 8, value: 23000, unit: -3 },
+      { type: 76, value: 72000, unit: -3 },
+      { type: 88, value: 3800, unit: -3 },
+      { type: 77, value: 55000, unit: -3 },
+      { type: 11, value: 7200, unit: -2 },
+      { type: 226, value: 1850000, unit: -3 },
+    ],
+  };
+
+  const normalized = normalizeWithingsMeasures(sampleGroup, { height_cm: 185 });
+  check('normalizeWithingsMeasures supports weight_kg', normalized.weight_kg === 104.2);
+  check('normalizeWithingsMeasures supports fat_percent', normalized.fat_percent === 22.1);
+  check('normalizeWithingsMeasures supports muscle_mass_kg', normalized.muscle_mass_kg === 72);
+  check('normalizeWithingsMeasures supports bone_mass_kg', normalized.bone_mass_kg === 3.8);
+  check('normalizeWithingsMeasures supports hydration_kg', normalized.hydration_kg === 55);
+  check('normalizeWithingsMeasures supports pulse', normalized.pulse === 72);
+  check('normalizeWithingsMeasures supports basal_metabolic_rate', normalized.basal_metabolic_rate === 1850);
+  check('normalizeWithingsMeasures computes bmi', Number.isFinite(normalized.bmi));
+  check('missing values are null not 0', normalized.hydration_percent === null && normalized.visceral_fat === null);
+
+  const invalid = normalizeWithingsMeasures({
+    date: Math.floor(Date.now() / 1000),
+    measures: [{ type: 1, value: 500, unit: -2 }],
+  });
+  check('invalid weight rejected', invalid.weight_kg === null);
+
+  const sparseTrends = calculateWithingsTrends([
+    { measured_at: new Date().toISOString(), weight_kg: 80, fat_percent: 20, muscle_mass_kg: 35 },
+  ]);
+  check('trend helper returns low-data message', sparseTrends.hasEnoughData === false && /dalších měřeních/i.test(sparseTrends.message || ''));
+
+  const trends = calculateWithingsTrends([
+    { measured_at: new Date().toISOString(), weight_kg: 80, fat_percent: 20, muscle_mass_kg: 35 },
+    { measured_at: new Date(Date.now() - 86400000).toISOString(), weight_kg: 80.8, fat_percent: 20.4, muscle_mass_kg: 34.8 },
+  ]);
+  check('trend helper computes delta', Number.isFinite(trends.delta?.weight_kg));
+
+  const reco = generateWithingsRecommendations({
+    latest: normalized,
+    trends,
+    userGoal: 'redukce',
+    trainingFrequency: '3× týdně',
+    nutritionTarget: '2200 kcal/den',
+  });
+  check('recommendation helper exists', reco?.status === 'ok' && typeof reco.summary === 'string');
+  check('recommendation helper has disclaimer', /lékařsk/i.test(reco.disclaimer || ''));
+  check('recommendation helper no diagnoses', recommendationsAreSafe(reco));
+
+  const coach = buildWithingsCoachContext({ id: 'u1', user_metadata: { goal: 'redukce' } }, normalized, trends, { userGoal: 'redukce' });
+  const coachJson = JSON.stringify(coach);
+  check('coach context has no tokens', !/access_token|refresh_token|client_secret|ciphertext/i.test(coachJson));
+  check('coach context has no raw payload', !coachJson.includes('raw_payload'));
+
+  check('normalize helper file exists', existsSync(join(ROOT, 'lib/withings/normalizeWithingsMeasures.js')));
+  check('trends helper file exists', existsSync(join(ROOT, 'lib/withings/withingsTrends.js')));
+  check('recommendations helper file exists', existsSync(join(ROOT, 'lib/withings/withingsRecommendations.js')));
+  check('coach context helper file exists', existsSync(join(ROOT, 'lib/withings/buildWithingsCoachContext.js')));
+  check('body snapshots migration exists', existsSync(join(ROOT, 'supabase/migrations/20260701090000_withings_body_snapshots.sql')));
+
+  const widget = readFileSync(join(ROOT, 'components/profile/WithingsProfileCard.js'), 'utf8');
+  check('UI shows trend section', widget.includes('withings-trends'));
+  check('UI shows recommendations section', widget.includes('Doporučení podle měření'));
+  check('UI no zero kg placeholder', !widget.includes('0,0 kg') && !widget.includes('0.0 kg'));
+}
+
 async function runProductionChecks() {
   loadEnv();
   mkdirSync(ARTIFACTS, { recursive: true });
 
-  console.log('--- ÚKOL 1: Production deploy ---');
+  await runStaticUnitChecks();
+
+  console.log('\n--- ÚKOL 1: Production deploy ---');
   await fetchDeploymentInfo();
   check('production URL responds', report.productionDeploy.state === 'Ready', report.productionDeploy.productionUrl);
   check('deployment ID present', Boolean(report.productionDeploy.deploymentId), report.productionDeploy.deploymentId);
@@ -348,7 +428,7 @@ async function runProductionChecks() {
     headers: { Authorization: `Bearer ${accessToken}` },
   }).then((r) => r.json().catch(() => ({})).then((json) => ({ status: r.status, json })));
   check('latest configured=true on production runtime', latestAuth.json?.configured === true, `configured=${latestAuth.json?.configured}`);
-  check('latest does not expose tokens', !JSON.stringify(latestAuth.json || {}).match(/access_token|refresh_token|client_secret|ciphertext/i));
+  check('latest does not expose tokens', !JSON.stringify(latestAuth.json || {}).match(/access_token|refresh_token|client_secret|ciphertext|raw_payload/i));
 
   const connectRes = await fetch(`${BASE_URL}/api/withings/connect?format=json&return_to=/profil`, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -392,11 +472,13 @@ async function runProductionChecks() {
   report.historyTest = {
     statusWithAuth: historyAuth.status,
     hasMeasurementsArray: Array.isArray(historyJson?.measurements),
-    secretsExposed: /client_secret|refresh_token|access_token|ciphertext|raw/i.test(JSON.stringify(historyJson)),
+    secretsExposed: /client_secret|refresh_token|access_token|ciphertext|raw_payload/i.test(JSON.stringify(historyJson)),
   };
   check('history with auth returns 200', historyAuth.status === 200, `status=${historyAuth.status}`);
   check('history returns measurements array', report.historyTest.hasMeasurementsArray);
   check('history does not expose tokens', !report.historyTest.secretsExposed);
+  check('latest returns trends object when connected', latestAuth.json?.connected !== true || typeof latestAuth.json?.trends === 'object');
+  check('latest returns recommendations when connected', latestAuth.json?.connected !== true || typeof latestAuth.json?.recommendations === 'object');
 
   const disconnectNoConn = await fetch(`${BASE_URL}/api/withings/disconnect`, {
     method: 'POST',

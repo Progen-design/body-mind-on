@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
+import { formatTrendDelta } from '../../lib/withings/withingsTrends.js';
 
 const COLLAPSED_STORAGE_KEY = 'bm-withings-widget-collapsed';
 
@@ -15,6 +16,11 @@ function formatDateTime(value) {
 function formatNumber(value, digits = 1) {
   const n = Number(value);
   return Number.isFinite(n) ? n.toFixed(digits).replace('.', ',') : null;
+}
+
+function displayMetric(value, unit = '') {
+  const formatted = formatNumber(value);
+  return formatted ? `${formatted}${unit}` : '—';
 }
 
 function readCollapsedPreference() {
@@ -40,7 +46,7 @@ function persistCollapsedPreference(collapsed) {
 function sanitizeUserMessage(message) {
   const text = String(message || '').trim();
   if (!text) return '';
-  const technical = /oauth|klientsk|dashboard|env|config|token|redirect uri|šifrovac/i.test(text);
+  const technical = /oauth|klientsk|dashboard|env|config|token|redirect uri|šifrovac|raw payload|status \d+/i.test(text);
   if (technical) {
     console.warn('[WithingsProfileCard] suppressed technical message:', text);
     return 'Propojení chytré váhy teď není k dispozici. Zkus to prosím později.';
@@ -108,15 +114,25 @@ export default function WithingsProfileCard() {
   const connected = widgetState === 'connected';
   const oauthReady = widgetState !== 'not_configured';
 
+  const snapshot = useMemo(() => latest?.latest || null, [latest]);
+  const trends = useMemo(() => latest?.trends || null, [latest]);
+  const recommendations = useMemo(() => latest?.recommendations || null, [latest]);
+
   const metrics = useMemo(() => {
     const byType = latest?.latest_by_type || {};
+    const src = snapshot || {};
     return {
-      weight: formatNumber(byType.weight_kg?.value ?? latest?.latest_weight_kg),
-      fat: formatNumber(byType.fat_ratio_percent?.value),
-      muscle: formatNumber(byType.muscle_mass_kg?.value),
-      measuredAt: byType.weight_kg?.measured_at || byType.fat_ratio_percent?.measured_at || byType.muscle_mass_kg?.measured_at || null,
+      weight: displayMetric(src.weight_kg ?? byType.weight_kg?.value, ' kg'),
+      fat: displayMetric(src.fat_percent ?? byType.fat_ratio_percent?.value, ' %'),
+      fatMass: displayMetric(src.fat_mass_kg ?? byType.fat_mass_kg?.value, ' kg'),
+      muscle: displayMetric(src.muscle_mass_kg ?? byType.muscle_mass_kg?.value, ' kg'),
+      bone: displayMetric(src.bone_mass_kg ?? byType.bone_mass_kg?.value, ' kg'),
+      hydration: displayMetric(src.hydration_kg ?? byType.hydration_kg?.value, ' kg'),
+      bmi: displayMetric(src.bmi),
+      pulse: displayMetric(src.pulse, ' bpm'),
+      measuredAt: src.measured_at || byType.weight_kg?.measured_at || byType.fat_ratio_percent?.measured_at || null,
     };
-  }, [latest]);
+  }, [latest, snapshot]);
 
   const launcherLabel = connected ? 'Váha · Připojeno' : 'Váha';
 
@@ -247,7 +263,7 @@ export default function WithingsProfileCard() {
           ) : widgetState === 'not_connected' ? (
             <>
               <p className="withings-lead">Propoj chytrou váhu s profilem.</p>
-              <p className="withings-sub">Po propojení uvidíš poslední měření váhy, tuku a svalů.</p>
+              <p className="withings-sub">Po propojení uvidíš poslední měření, trendy a jednoduchá doporučení.</p>
             </>
           ) : (
             <>
@@ -259,12 +275,53 @@ export default function WithingsProfileCard() {
           {message ? <div className="withings-notice">{message}</div> : null}
 
           {connected ? (
-            <div className="withings-grid">
-              <div><span>Váha</span><strong>{metrics.weight ? `${metrics.weight} kg` : '—'}</strong></div>
-              <div><span>Tuk</span><strong>{metrics.fat ? `${metrics.fat} %` : '—'}</strong></div>
-              <div><span>Svaly</span><strong>{metrics.muscle ? `${metrics.muscle} kg` : '—'}</strong></div>
-              <div><span>Měření</span><strong>{formatDateTime(metrics.measuredAt || latest?.connection?.last_sync_at)}</strong></div>
-            </div>
+            <>
+              <div className="withings-grid">
+                <div><span>Váha</span><strong>{metrics.weight}</strong></div>
+                <div><span>Tuk</span><strong>{metrics.fat}</strong></div>
+                <div><span>Tuková hmota</span><strong>{metrics.fatMass}</strong></div>
+                <div><span>Svalová hmota</span><strong>{metrics.muscle}</strong></div>
+                <div><span>Kostní hmota</span><strong>{metrics.bone}</strong></div>
+                <div><span>Hydratace</span><strong>{metrics.hydration}</strong></div>
+                <div><span>BMI</span><strong>{metrics.bmi}</strong></div>
+                <div><span>Tep</span><strong>{metrics.pulse}</strong></div>
+                <div className="withings-grid-wide"><span>Měření</span><strong>{formatDateTime(metrics.measuredAt || latest?.connection?.last_sync_at)}</strong></div>
+              </div>
+
+              <div className="withings-trends">
+                <p className="withings-section-title">Trend</p>
+                {!trends?.hasEnoughData ? (
+                  <p className="withings-sub">{trends?.message || 'Trend spočítáme po dalších měřeních.'}</p>
+                ) : (
+                  <div className="withings-trend-grid">
+                    <div><span>Od minula</span><strong>{formatTrendDelta(trends?.delta?.weight_kg, ' kg')}</strong></div>
+                    <div><span>7 dní</span><strong>{formatTrendDelta(trends?.trend7d?.weight_kg, ' kg')}</strong></div>
+                    <div><span>30 dní</span><strong>{formatTrendDelta(trends?.trend30d?.weight_kg, ' kg')}</strong></div>
+                    <div><span>Tuk 7 dní</span><strong>{formatTrendDelta(trends?.trend7d?.fat_percent, ' %')}</strong></div>
+                  </div>
+                )}
+              </div>
+
+              {recommendations?.summary ? (
+                <div className="withings-reco">
+                  <p className="withings-section-title">Doporučení podle měření</p>
+                  <p className="withings-reco-summary">{recommendations.summary}</p>
+                  {Array.isArray(recommendations.recommendations) && recommendations.recommendations.length ? (
+                    <ul className="withings-reco-list">
+                      {recommendations.recommendations.map((item) => (
+                        <li key={`${item.type}-${item.title}`}>
+                          <strong>{item.title}</strong>
+                          <span>{item.text}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {recommendations.disclaimer ? (
+                    <p className="withings-disclaimer">{recommendations.disclaimer}</p>
+                  ) : null}
+                </div>
+              ) : null}
+            </>
           ) : null}
 
           <div className="withings-actions">
@@ -403,6 +460,14 @@ export default function WithingsProfileCard() {
           border: 1px solid rgba(56, 189, 248, 0.24);
           font-size: 13px;
         }
+        .withings-section-title {
+          margin: 0 0 8px;
+          font-size: 12px;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.72);
+        }
         .withings-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -416,6 +481,9 @@ export default function WithingsProfileCard() {
           background: rgba(255, 255, 255, 0.08);
           border: 1px solid rgba(255, 255, 255, 0.1);
         }
+        .withings-grid-wide {
+          grid-column: 1 / -1;
+        }
         .withings-grid span {
           display: block;
           color: rgba(255, 255, 255, 0.58);
@@ -424,6 +492,62 @@ export default function WithingsProfileCard() {
         }
         .withings-grid strong {
           font-size: 18px;
+        }
+        .withings-trends,
+        .withings-reco {
+          margin-top: 14px;
+          padding-top: 12px;
+          border-top: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .withings-trend-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+        }
+        .withings-trend-grid div {
+          padding: 10px 12px;
+          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.06);
+        }
+        .withings-trend-grid span {
+          display: block;
+          font-size: 11px;
+          color: rgba(255, 255, 255, 0.58);
+          margin-bottom: 4px;
+        }
+        .withings-reco-summary {
+          margin: 0 0 10px;
+          font-size: 14px;
+          line-height: 1.45;
+        }
+        .withings-reco-list {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          display: grid;
+          gap: 8px;
+        }
+        .withings-reco-list li {
+          padding: 10px 12px;
+          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.08);
+        }
+        .withings-reco-list strong {
+          display: block;
+          margin-bottom: 4px;
+          font-size: 13px;
+        }
+        .withings-reco-list span {
+          display: block;
+          font-size: 13px;
+          line-height: 1.4;
+          color: rgba(255, 255, 255, 0.82);
+        }
+        .withings-disclaimer {
+          margin: 10px 0 0;
+          font-size: 11px;
+          line-height: 1.4;
+          color: rgba(255, 255, 255, 0.58);
         }
         .withings-actions {
           display: flex;

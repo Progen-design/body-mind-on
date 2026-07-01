@@ -64,6 +64,10 @@ export default function WithingsProfileCard() {
   const [busy, setBusy] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
   const [hydrated, setHydrated] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyItems, setHistoryItems] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyMessage, setHistoryMessage] = useState('');
 
   useEffect(() => {
     setCollapsed(readCollapsedPreference());
@@ -127,6 +131,9 @@ export default function WithingsProfileCard() {
 
   function hideCard() {
     setMessage('');
+    setHistoryOpen(false);
+    setHistoryItems([]);
+    setHistoryMessage('');
     setCollapsedState(true);
   }
 
@@ -140,7 +147,7 @@ export default function WithingsProfileCard() {
     setBusy(true);
     setMessage('');
     try {
-      const res = await fetch('/api/withings/auth?format=json&return_to=/profil', { headers: { Authorization: `Bearer ${authToken}` } });
+      const res = await fetch('/api/withings/connect?format=json&return_to=/profil', { headers: { Authorization: `Bearer ${authToken}` } });
       const json = await res.json();
       if (!res.ok || !json?.url) throw new Error(json?.error || 'Nelze spustit propojení Withings.');
       window.location.href = json.url;
@@ -151,21 +158,54 @@ export default function WithingsProfileCard() {
     }
   }
 
-  async function syncNow(full = false) {
+  async function loadHistory() {
+    const authToken = session?.access_token;
+    if (!authToken || busy || !connected) return;
+    setHistoryLoading(true);
+    setHistoryMessage('');
+    setHistoryOpen(true);
+    try {
+      const res = await fetch('/api/withings/history?limit=30', {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || 'Nelze načíst historii měření.');
+      const items = Array.isArray(json?.measurements) ? json.measurements : [];
+      setHistoryItems(items);
+      if (!items.length) setHistoryMessage('Zatím nemáme žádná měření.');
+    } catch (err) {
+      console.error('[WithingsProfileCard] loadHistory failed:', err);
+      setHistoryItems([]);
+      setHistoryMessage(sanitizeUserMessage(err?.message || 'Nelze načíst historii měření.'));
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
+
+  function formatHistoryLine(item) {
+    const parts = [];
+    if (Number.isFinite(item?.weight_kg)) parts.push(`${String(item.weight_kg).replace('.', ',')} kg`);
+    if (Number.isFinite(item?.fat_percent)) parts.push(`tuk ${String(item.fat_percent).replace('.', ',')} %`);
+    if (Number.isFinite(item?.muscle_mass_kg)) parts.push(`svaly ${String(item.muscle_mass_kg).replace('.', ',')} kg`);
+    return parts.length ? parts.join(' · ') : 'Měření bez detailů';
+  }
+
+  async function syncNow() {
     const authToken = session?.access_token;
     if (!authToken || busy || !connected) return;
     setBusy(true);
     setMessage('Synchronizuji data…');
     try {
-      const res = await fetch(`/api/withings/sync${full ? '?full=1' : ''}`, {
+      const res = await fetch('/api/withings/sync', {
         method: 'POST',
         headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ full }),
+        body: JSON.stringify({ full: false }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || 'Synchronizace selhala.');
       setMessage(`Hotovo. Uloženo ${json.measurements_stored || 0} měření.`);
       await loadLatest(authToken);
+      if (historyOpen) await loadHistory();
     } catch (err) {
       console.error('[WithingsProfileCard] syncNow failed:', err);
       setMessage(sanitizeUserMessage(err?.message || 'Synchronizace selhala.'));
@@ -237,11 +277,29 @@ export default function WithingsProfileCard() {
             )}
             {oauthReady ? (
               <>
-                <button type="button" onClick={() => syncNow(false)} disabled={busy || !connected} className="secondary">Sync teď</button>
-                <button type="button" onClick={() => syncNow(true)} disabled={busy || !connected} className="secondary">Historie</button>
+                <button type="button" onClick={() => syncNow()} disabled={busy || !connected} className="secondary">Sync teď</button>
+                <button type="button" onClick={loadHistory} disabled={busy || !connected || historyLoading} className="secondary">Historie</button>
               </>
             ) : null}
           </div>
+
+          {historyOpen ? (
+            <div className="withings-history">
+              <p className="withings-history-title">Historie měření</p>
+              {historyLoading ? <p className="withings-history-empty">Načítám historii…</p> : null}
+              {!historyLoading && historyMessage ? <p className="withings-history-empty">{historyMessage}</p> : null}
+              {!historyLoading && historyItems.length ? (
+                <ul className="withings-history-list">
+                  {historyItems.map((item) => (
+                    <li key={`${item.measured_at}-${item.weight_kg || 'x'}`}>
+                      <strong>{formatDateTime(item.measured_at)}</strong>
+                      <span>{formatHistoryLine(item)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       )}
       <style jsx>{`
@@ -389,6 +447,50 @@ export default function WithingsProfileCard() {
         .withings-actions button:disabled {
           opacity: 0.48;
           cursor: not-allowed;
+        }
+        .withings-history {
+          margin-top: 14px;
+          padding-top: 12px;
+          border-top: 1px solid rgba(255, 255, 255, 0.12);
+          overflow: auto;
+          max-height: 220px;
+        }
+        .withings-history-title {
+          margin: 0 0 10px;
+          font-size: 12px;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.72);
+        }
+        .withings-history-empty {
+          margin: 0;
+          color: rgba(255, 255, 255, 0.72);
+          font-size: 13px;
+        }
+        .withings-history-list {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          display: grid;
+          gap: 8px;
+        }
+        .withings-history-list li {
+          padding: 10px 12px;
+          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .withings-history-list strong {
+          display: block;
+          font-size: 12px;
+          color: rgba(255, 255, 255, 0.62);
+          margin-bottom: 4px;
+        }
+        .withings-history-list span {
+          display: block;
+          font-size: 14px;
+          line-height: 1.4;
         }
         @media (max-width: 640px) {
           .withings-floating-card.is-expanded {

@@ -285,6 +285,7 @@ async function runProductionChecks() {
     sync: 'pages/api/withings/sync.js',
     latest: 'pages/api/withings/latest.js',
     history: 'pages/api/withings/history.js',
+    disconnect: 'pages/api/withings/disconnect.js',
     auth: 'pages/api/withings/auth.js',
   };
   const missingEndpoints = [];
@@ -299,6 +300,7 @@ async function runProductionChecks() {
   const latestProbe = await probeEndpoint('GET', '/api/withings/latest');
   const syncProbe = await probeEndpoint('POST', '/api/withings/sync');
   const historyProbe = await probeEndpoint('GET', '/api/withings/history');
+  const disconnectProbe = await probeEndpoint('POST', '/api/withings/disconnect');
   const connectProbe = await probeEndpoint('GET', '/api/withings/connect');
   const authProbe = await probeEndpoint('GET', '/api/withings/auth');
 
@@ -306,6 +308,7 @@ async function runProductionChecks() {
   check('latest requires auth', latestProbe.status === 401, `status=${latestProbe.status}`);
   check('sync requires auth', syncProbe.status === 401, `status=${syncProbe.status}`);
   check('history requires auth', historyProbe.status === 401, `status=${historyProbe.status}`);
+  check('disconnect requires auth', disconnectProbe.status === 401, `status=${disconnectProbe.status}`);
   check('connect route live', connectProbe.status === 302 || connectProbe.status === 401, `connect status=${connectProbe.status}`);
   check('auth route live', authProbe.status === 302 || authProbe.status === 401, `auth status=${authProbe.status}`);
 
@@ -394,6 +397,14 @@ async function runProductionChecks() {
   check('history with auth returns 200', historyAuth.status === 200, `status=${historyAuth.status}`);
   check('history returns measurements array', report.historyTest.hasMeasurementsArray);
   check('history does not expose tokens', !report.historyTest.secretsExposed);
+
+  const disconnectNoConn = await fetch(`${BASE_URL}/api/withings/disconnect`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+  });
+  const disconnectJson = await disconnectNoConn.json().catch(() => ({}));
+  check('disconnect without connection returns 404', disconnectNoConn.status === 404, `status=${disconnectNoConn.status}`);
+  check('disconnect does not expose tokens', !/client_secret|refresh_token|access_token|ciphertext/i.test(JSON.stringify(disconnectJson)));
 
   const syncNoConn = await fetch(`${BASE_URL}/api/withings/sync`, {
     method: 'POST',

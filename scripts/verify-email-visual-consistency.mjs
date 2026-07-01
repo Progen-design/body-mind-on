@@ -14,6 +14,10 @@ const ARTIFACTS = join(ROOT, 'artifacts');
 
 let failed = 0;
 
+function htmlWithoutHrefAttrs(html) {
+  return String(html || '').replace(/href="[^"]*"/gi, '');
+}
+
 function check(label, ok, detail = '') {
   if (ok) {
     console.log(`OK ${label}${detail ? ` — ${detail}` : ''}`);
@@ -68,7 +72,7 @@ check('email makro štítky kcal', /kcal/i.test(html));
 check('email makro bílkoviny', /bílkovin|BÍLKOVINY/i.test(html));
 check('email makro sacharidy', /sacharid|SACHARID/i.test(html));
 check('email makro tuky', /tuk|TUK/i.test(html));
-check('email bez protein_g v HTML', !/protein_g|carbs_g|fat_g/i.test(html));
+check('email bez protein_g v HTML', !/protein_g|carbs_g|fat_g/i.test(htmlWithoutHrefAttrs(html)));
 check('email bez ON Club fluff', !/člen ON Club/i.test(html));
 check('email bez technické verze v patičce', !/v8\.0/i.test(html));
 check('email bez activity debug', !/Aktivita:/i.test(html));

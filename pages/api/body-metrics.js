@@ -27,6 +27,8 @@ import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
 import { writeOnboardingEvent } from '../../lib/onboardingMetrics';
 import { getDefaultLoginUrl } from '../../lib/siteUrls.js';
 import { trainingEnvironmentNotesSuffix } from '../../lib/trainingEnvironment.js';
+import { validateBirthDate } from '../../lib/bodyMetricsBirthDate.js';
+import { calculateNutritionTargets } from '../../lib/nutritionTargets.js';
 
 /** Vercel Hobby = 60s. Krátký poll; last-resort hned po execute, ne až na konci handleru. */
 const PLAN_WAIT_TIMEOUT_MS = 8000;
@@ -74,11 +76,30 @@ export default async function handler(req, res) {
     const workoutDaysStr = Array.isArray(wd) && wd.length > 0
       ? wd.filter((n) => Number.isFinite(Number(n)) && n >= 0 && n <= 6).join(',')
       : null;
+    const birthDateRaw = typeof b.birth_date === 'string' ? b.birth_date.trim() : '';
+    let calculatedAge = null;
+    if (birthDateRaw) {
+      const birthValidation = validateBirthDate(birthDateRaw);
+      if (!birthValidation.valid) {
+        return res.status(400).json({ error: birthValidation.error || 'Neplatné datum narození.' });
+      }
+      if (birthValidation.age < 13 || birthValidation.age > 90) {
+        return res.status(400).json({ error: 'Věk musí být mezi 13 a 90 lety.' });
+      }
+      calculatedAge = birthValidation.age;
+    } else if (b.age != null && b.age !== '') {
+      const ageFallback = toNum(b.age);
+      const ageCheck = validateAge(ageFallback);
+      if (!ageCheck.valid) return res.status(400).json({ error: ageCheck.error });
+      calculatedAge = ageFallback;
+    }
+
     const payload = {
       email: b.email?.trim()?.toLowerCase() || null,
       name: b.name?.trim() || null,
       gender: normalizeGender(b.gender),
-      age: toNum(b.age),
+      age: calculatedAge,
+      birth_date: birthDateRaw || null,
       height_cm: toNum(b.height || b.height_cm),
       weight_kg: toNum(b.weight || b.weight_kg),
       activity: normalizeActivity(b.activity),
@@ -96,6 +117,15 @@ export default async function handler(req, res) {
       created_at: new Date().toISOString(),
       user_id: null,
     };
+
+    const nutritionTargets = calculateNutritionTargets({
+      bodyMetrics: payload,
+      goal: payload.goal,
+      activity: payload.activity,
+      workoutDays: payload.workout_days ? String(payload.workout_days).split(',') : null,
+      planAdjustmentSignal: null,
+    });
+    payload.calories_target = nutritionTargets.calories_target;
 
     if (!payload.email) {
       return res.status(400).json({ error: 'E-mail je povinný.' });
@@ -117,8 +147,9 @@ export default async function handler(req, res) {
     if (!heightCheck.valid) return res.status(400).json({ error: heightCheck.error });
     const weightCheck = validateWeightKg(payload.weight_kg);
     if (!weightCheck.valid) return res.status(400).json({ error: weightCheck.error });
-    const ageCheck = validateAge(payload.age);
-    if (!ageCheck.valid) return res.status(400).json({ error: ageCheck.error });
+    if (payload.age == null) {
+      return res.status(400).json({ error: 'Datum narození je povinné.' });
+    }
 
     const authResult = await createAuthUserIfNew(payload.email, payload.name, password || undefined);
     let loginPassword = null;
@@ -154,10 +185,22 @@ export default async function handler(req, res) {
       });
     }
 
-    const { data: insertedRows, error: dbErr } = await supabaseServer
+    let insertPayload = { ...payload };
+    let insertedRows = null;
+    let dbErr = null;
+    ({ data: insertedRows, error: dbErr } = await supabaseServer
       .from('body_metrics')
-      .insert([payload])
-      .select('id');
+      .insert([insertPayload])
+      .select('id'));
+
+    if (dbErr && /birth_date|does not exist|column/i.test(dbErr.message || '')) {
+      const fallbackPayload = { ...insertPayload };
+      delete fallbackPayload.birth_date;
+      ({ data: insertedRows, error: dbErr } = await supabaseServer
+        .from('body_metrics')
+        .insert([fallbackPayload])
+        .select('id'));
+    }
 
     if (dbErr) {
       console.error('[body-metrics] DB insert failed:', dbErr.message);

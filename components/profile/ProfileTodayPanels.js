@@ -55,6 +55,7 @@ export default function ProfileTodayPanels({
   todayDay,
   todayDayIndex = 0,
   structuredPlan,
+  planTargets = null,
   program = 'START',
   planHtml = '',
   trainingEnvironmentLabel = '',
@@ -79,7 +80,7 @@ export default function ProfileTodayPanels({
     return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
   });
   const dayNutrition = sumDayNutrition(meals, structDay);
-  const targets = structuredPlan?.targets || {};
+  const targets = planTargets || structuredPlan?.targets || {};
   const targetKcal = Number(targets.calories_per_day) || null;
   const envPlain = envLabelPlain(trainingEnvironmentLabel, structuredPlan);
 
@@ -95,7 +96,7 @@ export default function ProfileTodayPanels({
     <div className="profile-today-root">
       <section className="profile-today-hero" aria-labelledby="profile-today-heading">
         <p className="profile-today-date">{todayLabel}</p>
-        <h2 id="profile-today-heading" className="profile-today-heading">Dnes máš jasno</h2>
+        <h2 id="profile-today-heading" className="profile-today-heading">Dnešní plán</h2>
         <p className="profile-today-lead">Tvůj dnešní plán je připravený.</p>
         <div className="profile-today-quick-cards">
           <article className="profile-today-card">

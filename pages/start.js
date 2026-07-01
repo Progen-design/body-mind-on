@@ -9,6 +9,7 @@ import { getSuggestedHabits } from "../lib/habits";
 import { getFrequencyDayRange } from "../lib/preferenceConstants";
 import { REGISTRATION_STEPS } from "../lib/registrationRules";
 import { PLAN_GENERATION_DURATION_HINT, PLAN_GENERATION_OVERLAY_TITLE } from "../lib/planGenerationUiCopy";
+import { validateBirthDate } from "../lib/bodyMetricsBirthDate";
 
 // Registrace dle pravidel ON Club (stejný flow pro START, ON Club, VIP): https://app.bodyandmindon.cz/on-club
 const MAX_STEP = REGISTRATION_STEPS;
@@ -22,7 +23,7 @@ export default function Start() {
     password: "",
     passwordConfirm: "",
     gender: "",
-    age: "",
+    birth_date: "",
     height: "",
     weight: "",
     activity: "",
@@ -102,6 +103,10 @@ export default function Start() {
 
   const getStep2Errors = () => {
     const errors = {};
+    const birthCheck = validateBirthDate(formData.birth_date);
+    if (!birthCheck.valid) {
+      errors.birth_date = birthCheck.error;
+    }
     const height = Number(formData.height);
     if (formData.height !== "" && (!Number.isFinite(height) || height < 100 || height > 250)) {
       errors.height = "Výška musí být mezi 100 a 250 cm.";
@@ -113,7 +118,7 @@ export default function Start() {
     return formData.name?.trim() && formData.email?.trim() && formData.password?.length >= 6 && formData.password === formData.passwordConfirm;
   };
   const canProceedStep2 = () => {
-    return formData.gender && formData.age && formData.height && formData.weight;
+    return formData.gender && formData.birth_date && formData.height && formData.weight;
   };
   const canProceedStep3 = () => {
     return formData.activity && formData.stress && formData.worktype && formData.goal && formData.frequency
@@ -319,7 +324,7 @@ export default function Start() {
             </>
           )}
 
-          {/* KROK 2: Pohlaví, věk, výška, váha */}
+          {/* KROK 2: Pohlaví, datum narození, výška, váha */}
           {step === 2 && (
             <div className="row grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -331,8 +336,18 @@ export default function Start() {
                 </select>
               </div>
               <div>
-                <label className="reg-label">Věk</label>
-                <input name="age" type="number" className="reg-input" value={formData.age} onChange={handleChange} placeholder="30" required disabled={isSubmitting} />
+                <label className="reg-label">Datum narození</label>
+                <input
+                  name="birth_date"
+                  type="date"
+                  className="reg-input"
+                  value={formData.birth_date}
+                  onChange={handleChange}
+                  required
+                  max={new Date().toISOString().split('T')[0]}
+                  disabled={isSubmitting}
+                />
+                {fieldErrors.birth_date && <p className="reg-field-error" role="alert">{fieldErrors.birth_date}</p>}
               </div>
               <div>
                 <label className="reg-label">Výška (cm)</label>

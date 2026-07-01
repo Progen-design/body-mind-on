@@ -1,11 +1,12 @@
 import { useState } from "react";
+import Link from "next/link";
 
 export default function ProgramForm({ planType }) {
   const [form, setForm] = useState({
     name: "",
     email: "",
     gender: "Muž",
-    age: "",
+    birth_date: "",
     height: "",
     weight: "",
     diet_type: "",
@@ -31,7 +32,7 @@ export default function ProgramForm({ planType }) {
         name: form.name?.trim() || null,
         email: form.email?.trim() || null,
         gender: genderNorm,
-        age: form.age ? Number(form.age) : null,
+        birth_date: form.birth_date || null,
         height: form.height ? Number(form.height) : null,
         weight: form.weight ? Number(form.weight) : null,
         activity: 'stredne',
@@ -77,7 +78,7 @@ export default function ProgramForm({ planType }) {
       <div className="text-center text-green-400 mt-10">
         <h3 className="text-2xl font-bold mb-2">✅ Registrace dokončena!</h3>
         <p>Údaje byly uloženy a plán byl odeslán na e-mail. V e-mailu najdeš přihlašovací údaje – s nimi se můžeš přihlásit a vidět svůj profil.</p>
-        <a href="/login" className="inline-block mt-6 text-green-400 underline hover:no-underline">Přihlásit se do profilu →</a>
+        <Link href="/login" className="inline-block mt-6 text-green-400 underline hover:no-underline">Přihlásit se do profilu →</Link>
       </div>
     );
   }
@@ -117,14 +118,18 @@ export default function ProgramForm({ planType }) {
           <option>👨 Muž</option>
           <option>👩 Žena</option>
         </select>
-        <input
-          name="age"
-          placeholder="Věk"
-          value={form.age}
-          onChange={handleChange}
-          required
-          className="p-4 rounded-xl bg-neutral-800 border border-neutral-700 focus:ring-2 focus:ring-green-400 w-full"
-        />
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">Datum narození</label>
+          <input
+            name="birth_date"
+            type="date"
+            value={form.birth_date}
+            onChange={handleChange}
+            required
+            max={new Date().toISOString().split('T')[0]}
+            className="p-4 rounded-xl bg-neutral-800 border border-neutral-700 focus:ring-2 focus:ring-green-400 w-full"
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">

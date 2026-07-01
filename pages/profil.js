@@ -14,6 +14,7 @@ import HabitEntryWizard from '../components/HabitEntryWizard';
 import Toast from '../components/Toast';
 import WorkoutOverlay from '../components/profile/WorkoutOverlay';
 import PreferencesOverlay from '../components/profile/PreferencesOverlay';
+import WithingsBodyDevelopmentSection from '../components/profile/WithingsBodyDevelopmentSection';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
 import { validatePublishedPlanHtml } from '../lib/validatePlanHtml';
@@ -1734,7 +1735,44 @@ export default function Profil() {
     });
     const generation_source = currentPlan?.generation_source ?? profile?._diagnostics?.generation_source;
     const fallback_used = currentPlan?.fallback_used ?? profile?._diagnostics?.fallback_used;
-    console.debug('[profil] plan_state', planState, 'current_plan_html_length', current_plan_html_length, 'current_plan_structure', current_plan_structure, 'generation_source', generation_source, 'fallback_used', fallback_used, 'parsePlanHtml_result', parsed ? { daysCount: parsed.days?.length ?? 0, rawSectionsKeys: Object.keys(parsed.rawSections || {}), hasPersonal: (parsed.personal?.length ?? 0) > 0 } : null);
+    if (process.env.NODE_ENV !== 'production') {
+      const extractMacro = (macros, includes) => {
+        const row = (macros || []).find((m) => includes.some((x) => String(m?.label || '').toLowerCase().includes(x)));
+        if (!row) return null;
+        const hit = String(row.value || '').match(/-?\d+(?:[.,]\d+)?/);
+        return hit ? Number(hit[0].replace(',', '.')) : null;
+      };
+      const htmlTargets = parsed ? {
+        calories_per_day: extractMacro(parsed.macros, ['kcal', 'kalori']),
+        protein_g: extractMacro(parsed.macros, ['bílkov', 'protein']),
+        carbs_g: extractMacro(parsed.macros, ['sachar']),
+        fat_g: extractMacro(parsed.macros, ['tuk']),
+      } : null;
+      const structuredTargets = currentPlan?.structured_plan_json?.targets || null;
+      const fallbackDaily = currentPlan?.daily_calories ?? null;
+      const htmlCalories = htmlTargets?.calories_per_day;
+      const structuredCalories = structuredTargets?.calories_per_day ?? fallbackDaily;
+      console.debug('[profil] plan_state', planState, 'current_plan_html_length', current_plan_html_length, 'current_plan_structure', current_plan_structure, 'generation_source', generation_source, 'fallback_used', fallback_used, 'parsePlanHtml_result', parsed ? { daysCount: parsed.days?.length ?? 0, rawSectionsKeys: Object.keys(parsed.rawSections || {}), hasPersonal: (parsed.personal?.length ?? 0) > 0 } : null);
+      console.debug('[profil] plan_debug', {
+        id: currentPlan?.id ?? null,
+        created_at: currentPlan?.created_at ?? null,
+        week_start: currentPlan?.week_start ?? currentPlan?.valid_from ?? null,
+        calories_target: structuredCalories,
+        structured_plan_json_target: structuredTargets,
+        plan_html_target: htmlTargets,
+      });
+      if (
+        htmlCalories != null
+        && structuredCalories != null
+        && Math.abs(Number(htmlCalories) - Number(structuredCalories)) > 20
+      ) {
+        console.warn('Plan target mismatch between today and weekly view', {
+          currentPlanId: currentPlan?.id ?? null,
+          dailyTarget: structuredCalories,
+          weeklyTargetFromHtml: htmlCalories,
+        });
+      }
+    }
   }, [currentPlan, profile?._diagnostics, planState]);
 
   if (!session && !loading) return null;
@@ -1924,6 +1962,9 @@ export default function Profil() {
               )}
             </div>
           </>
+        )}
+        {!loading && !error && !profile?.can_create_calendar_events && (
+          <WithingsBodyDevelopmentSection profile={profile} />
         )}
 
         {profile?.can_create_calendar_events && (
@@ -2330,7 +2371,7 @@ export default function Profil() {
               )}
               {planState !== 'loading' && planState !== 'processing' && planState !== 'invalid' && planState !== 'failed' && planState !== 'missing' && (currentPlan || nextPlan) && (
               <>
-              {!(currentPlan?.plan_html) && !(nextPlan?.plan_html) ? (
+              {!(currentPlan?.plan_html || currentPlan?.structured_plan_json) && !(nextPlan?.plan_html || nextPlan?.structured_plan_json) ? (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
                   <p className="plan-preparing-text">Plán není kompletní. Obnov stránku za chvíli nebo kontaktuj podporu.</p>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>
@@ -2349,7 +2390,7 @@ export default function Profil() {
                     </button>
                   </div>
                   {planTab === 'current' ? (
-                    (currentPlan && currentPlan.plan_html) ? (
+                    (currentPlan && (currentPlan.plan_html || currentPlan.structured_plan_json)) ? (
                     <PlanViewer
                       plan={currentPlan}
                       outputMode="nutrition_training"
@@ -2380,7 +2421,7 @@ export default function Profil() {
                       <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
                     </div>
                     )
-                  ) : (nextPlan && nextPlan.plan_html) ? (
+                  ) : (nextPlan && (nextPlan.plan_html || nextPlan.structured_plan_json)) ? (
                     <PlanViewer
                       plan={nextPlan}
                       outputMode="nutrition_training"
@@ -2411,7 +2452,7 @@ export default function Profil() {
                   )}
                 </>
               ) : currentPlan ? (
-                (currentPlan && currentPlan.plan_html) ? (
+                (currentPlan && (currentPlan.plan_html || currentPlan.structured_plan_json)) ? (
                 <>
                 <div style={{ marginBottom: '12px' }}>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleSendPlanAgain} disabled={sendingPlan}>
@@ -2450,7 +2491,7 @@ export default function Profil() {
                 </div>
                 )
               ) : nextPlan ? (
-                (nextPlan && nextPlan.plan_html) ? (
+                (nextPlan && (nextPlan.plan_html || nextPlan.structured_plan_json)) ? (
                 <>
                 <div style={{ marginBottom: '12px' }}>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleSendPlanAgain} disabled={sendingPlan}>
@@ -3718,6 +3759,7 @@ export default function Profil() {
           flex-direction: column;
           align-items: center;
           gap: 16px;
+          margin-top: 0;
           margin-bottom: 32px;
           padding-inline: clamp(0.75rem, 4vw, 1rem);
           width: min(1180px, 100%);

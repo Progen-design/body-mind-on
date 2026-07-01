@@ -53,6 +53,7 @@ export default async function handler(req, res) {
       validUntilOverride: until,
       targetStartDate: startDate,
       skipEmail: true,
+      applyWithingsPlanAdjustment: true,
     });
 
     if (!result.ok) {

@@ -237,6 +237,7 @@ async function registerAndLogin(supabase) {
 async function runStaticUnitChecks() {
   console.log('--- Static unit checks ---');
   const { normalizeWithingsMeasures } = await import('../lib/withings/normalizeWithingsMeasures.js');
+  const { aggregateWithingsMeasurements, aggregateWithingsMeasurementsHistory } = await import('../lib/withings/aggregateWithingsMeasurements.js');
   const { calculateWithingsTrends } = await import('../lib/withings/withingsTrends.js');
   const { generateWithingsRecommendations, recommendationsAreSafe } = await import('../lib/withings/withingsRecommendations.js');
   const { buildWithingsCoachContext } = await import('../lib/withings/buildWithingsCoachContext.js');
@@ -273,6 +274,29 @@ async function runStaticUnitChecks() {
   });
   check('invalid weight rejected', invalid.weight_kg === null);
 
+  const aggregatedLatest = aggregateWithingsMeasurements([
+    { withings_measure_group_id: 'g2', measured_at: '2026-07-01T12:00:00.000Z', measure_type: 1, measure_type_label: 'measure_1', value: 104.2 },
+    { withings_measure_group_id: 'g2', measured_at: '2026-07-01T12:00:00.000Z', measure_type: 6, measure_type_label: 'fat_ratio_percent', value: 22.1 },
+    { withings_measure_group_id: 'g2', measured_at: '2026-07-01T12:00:00.000Z', measure_type: 8, measure_type_label: 'fat_mass_kg', value: 23.0 },
+    { withings_measure_group_id: 'g2', measured_at: '2026-07-01T12:00:00.000Z', measure_type: 76, measure_type_label: 'muscle_mass_kg', value: 72.0 },
+    { withings_measure_group_id: 'g2', measured_at: '2026-07-01T12:00:00.000Z', measure_type: 88, measure_type_label: 'bone_mass_kg', value: 3.8 },
+    { withings_measure_group_id: 'g2', measured_at: '2026-07-01T12:00:00.000Z', measure_type: 77, measure_type_label: 'hydration_kg', value: 55.0 },
+    { withings_measure_group_id: 'g1', measured_at: '2026-06-30T12:00:00.000Z', measure_type: 1, measure_type_label: 'weight_kg', value: 105.0 },
+  ], { height_cm: 185 });
+  check('aggregateWithingsMeasurements returns latest grouped snapshot', aggregatedLatest?.measured_at === '2026-07-01T12:00:00.000Z');
+  check('aggregateWithingsMeasurements maps generic labels', aggregatedLatest?.weight_kg === 104.2 && aggregatedLatest?.fat_percent === 22.1);
+  check('aggregateWithingsMeasurements keeps missing values null', aggregatedLatest?.pulse === null && aggregatedLatest?.hydration_percent === null);
+  check('aggregateWithingsMeasurements strips raw payload', !Object.prototype.hasOwnProperty.call(aggregatedLatest || {}, 'raw_payload'));
+
+  const aggregatedHistory = aggregateWithingsMeasurementsHistory([
+    { withings_measure_group_id: 'g1', measured_at: '2026-06-30T12:00:00.000Z', measure_type: 1, measure_type_label: 'weight_kg', value: 105.0 },
+    { withings_measure_group_id: 'g1', measured_at: '2026-06-30T12:00:00.000Z', measure_type: 6, measure_type_label: 'fat_ratio_percent', value: 22.9 },
+    { withings_measure_group_id: null, measured_at: '2026-06-29T12:00:00.000Z', measure_type: 1, measure_type_label: 'weight_kg', value: 105.4 },
+    { withings_measure_group_id: null, measured_at: '2026-06-29T12:00:00.000Z', measure_type: 76, measure_type_label: 'muscle_mass_kg', value: 71.5 },
+  ], { height_cm: 185 }, { limit: 10 });
+  check('aggregate history groups by group id with timestamp fallback', aggregatedHistory.length === 2);
+  check('aggregate history returns body snapshots, not event rows', aggregatedHistory.every((item) => item && !('measure_type' in item) && !('value' in item)));
+
   const sparseTrends = calculateWithingsTrends([
     { measured_at: new Date().toISOString(), weight_kg: 80, fat_percent: 20, muscle_mass_kg: 35 },
   ]);
@@ -285,7 +309,7 @@ async function runStaticUnitChecks() {
   check('trend helper computes delta', Number.isFinite(trends.delta?.weight_kg));
 
   const reco = generateWithingsRecommendations({
-    latest: normalized,
+    latest: aggregatedLatest || normalized,
     trends,
     userGoal: 'redukce',
     trainingFrequency: '3× týdně',
@@ -309,6 +333,7 @@ async function runStaticUnitChecks() {
   const widget = readFileSync(join(ROOT, 'components/profile/WithingsProfileCard.js'), 'utf8');
   check('UI shows trend section', widget.includes('withings-trends'));
   check('UI shows recommendations section', widget.includes('Doporučení podle měření'));
+  check('UI renders null values as dash', widget.includes("return formatted ? `${formatted}${unit}` : '—';"));
   check('UI no zero kg placeholder', !widget.includes('0,0 kg') && !widget.includes('0.0 kg'));
 }
 
@@ -429,6 +454,8 @@ async function runProductionChecks() {
   }).then((r) => r.json().catch(() => ({})).then((json) => ({ status: r.status, json })));
   check('latest configured=true on production runtime', latestAuth.json?.configured === true, `configured=${latestAuth.json?.configured}`);
   check('latest does not expose tokens', !JSON.stringify(latestAuth.json || {}).match(/access_token|refresh_token|client_secret|ciphertext|raw_payload/i));
+  check('latest returns aggregated object', latestAuth.json?.latest == null || (typeof latestAuth.json?.latest === 'object' && !('measure_type' in latestAuth.json.latest) && !('value' in latestAuth.json.latest)));
+  check('latest aggregated object no sensitive identifiers', !/user_id|withings_userid/i.test(JSON.stringify(latestAuth.json?.latest || {})));
 
   const connectRes = await fetch(`${BASE_URL}/api/withings/connect?format=json&return_to=/profil`, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -472,10 +499,14 @@ async function runProductionChecks() {
   report.historyTest = {
     statusWithAuth: historyAuth.status,
     hasMeasurementsArray: Array.isArray(historyJson?.measurements),
+    aggregatedShape: Array.isArray(historyJson?.measurements)
+      ? historyJson.measurements.every((item) => item && typeof item === 'object' && !('measure_type' in item) && !('value' in item))
+      : false,
     secretsExposed: /client_secret|refresh_token|access_token|ciphertext|raw_payload/i.test(JSON.stringify(historyJson)),
   };
   check('history with auth returns 200', historyAuth.status === 200, `status=${historyAuth.status}`);
   check('history returns measurements array', report.historyTest.hasMeasurementsArray);
+  check('history returns aggregated measurements', report.historyTest.aggregatedShape);
   check('history does not expose tokens', !report.historyTest.secretsExposed);
   check('latest returns trends object when connected', latestAuth.json?.connected !== true || typeof latestAuth.json?.trends === 'object');
   check('latest returns recommendations when connected', latestAuth.json?.connected !== true || typeof latestAuth.json?.recommendations === 'object');

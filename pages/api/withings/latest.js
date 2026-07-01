@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     const configured = isWithingsOAuthConfigured();
     const { data: connection, error: connError } = await supabaseServer
       .from('withings_connections')
-      .select('withings_userid, connected_at, last_sync_at, last_sync_error, expires_at')
+      .select('connected_at, last_sync_at, last_sync_error, expires_at')
       .eq('user_id', auth.user.id)
       .maybeSingle();
 
@@ -35,7 +35,6 @@ export default async function handler(req, res) {
         latest: null,
         trends: null,
         recommendations: null,
-        rows: [],
       });
     }
 
@@ -48,7 +47,7 @@ export default async function handler(req, res) {
       connected: true,
       connection,
       ...measurements,
-      latest: progress.latest,
+      latest: progress.latest || measurements.latest || null,
       trends: progress.trends,
       recommendations: progress.recommendations,
     });

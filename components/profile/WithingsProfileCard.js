@@ -1,10 +1,11 @@
 // /components/profile/WithingsProfileCard.js
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { formatTrendDelta } from '../../lib/withings/withingsTrends.js';
 
 const COLLAPSED_STORAGE_KEY = 'bm-withings-widget-collapsed';
+const AUTO_SYNC_MIN_INTERVAL_MS = 30 * 60 * 1000;
 
 function formatDateTime(value) {
   if (!value) return '—';
@@ -61,13 +62,23 @@ function resolveWidgetState(latest) {
   return 'not_connected';
 }
 
+function shouldAutoSync(connection) {
+  if (!connection) return false;
+  if (!connection.last_sync_at) return true;
+  const last = new Date(connection.last_sync_at).getTime();
+  if (!Number.isFinite(last)) return true;
+  return Date.now() - last > AUTO_SYNC_MIN_INTERVAL_MS;
+}
+
 export default function WithingsProfileCard() {
   const router = useRouter();
   const enabled = router.pathname === '/profil';
+  const autoSyncAttemptedRef = useRef(false);
   const [session, setSession] = useState(null);
   const [latest, setLatest] = useState(null);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [autoSyncing, setAutoSyncing] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
   const [hydrated, setHydrated] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -94,21 +105,61 @@ export default function WithingsProfileCard() {
   }, [enabled]);
 
   const loadLatest = useCallback(async (authToken) => {
-    if (!authToken) return;
+    if (!authToken) return null;
     try {
       const res = await fetch('/api/withings/latest', { headers: { Authorization: `Bearer ${authToken}` } });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || 'Nelze načíst stav chytré váhy.');
       setLatest(json);
+      return json;
     } catch (err) {
       console.error('[WithingsProfileCard] loadLatest failed:', err);
       setMessage(sanitizeUserMessage(err?.message || 'Nelze načíst stav chytré váhy.'));
+      return null;
     }
   }, []);
+
+  const syncNow = useCallback(async ({ silent = false } = {}) => {
+    const authToken = session?.access_token;
+    if (!authToken || busy) return null;
+    setBusy(true);
+    if (silent) setAutoSyncing(true);
+    else setMessage('Synchronizuji data…');
+    try {
+      const res = await fetch('/api/withings/sync', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full: false }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || 'Synchronizace selhala.');
+      if (!silent) {
+        const importedWeight = json?.profile_import?.weight_kg;
+        setMessage(importedWeight ? `Hotovo. Váha ${String(importedWeight).replace('.', ',')} kg je propsaná do profilu.` : `Hotovo. Uloženo ${json.measurements_stored || 0} měření.`);
+      }
+      const refreshed = await loadLatest(authToken);
+      if (historyOpen) await loadHistory(authToken);
+      return refreshed || json;
+    } catch (err) {
+      console.error('[WithingsProfileCard] syncNow failed:', err);
+      if (!silent) setMessage(sanitizeUserMessage(err?.message || 'Synchronizace selhala.'));
+      return null;
+    } finally {
+      setBusy(false);
+      setAutoSyncing(false);
+    }
+  }, [session?.access_token, busy, historyOpen, loadLatest]);
 
   useEffect(() => {
     if (session?.access_token) loadLatest(session.access_token);
   }, [session?.access_token, loadLatest]);
+
+  useEffect(() => {
+    if (!session?.access_token || !latest?.connected || autoSyncAttemptedRef.current) return;
+    if (!shouldAutoSync(latest.connection)) return;
+    autoSyncAttemptedRef.current = true;
+    syncNow({ silent: true });
+  }, [session?.access_token, latest?.connected, latest?.connection?.last_sync_at, syncNow]);
 
   const widgetState = useMemo(() => resolveWidgetState(latest), [latest]);
   const connected = widgetState === 'connected';
@@ -174,9 +225,9 @@ export default function WithingsProfileCard() {
     }
   }
 
-  async function loadHistory() {
-    const authToken = session?.access_token;
-    if (!authToken || busy || !connected) return;
+  async function loadHistory(authTokenArg = null) {
+    const authToken = authTokenArg || session?.access_token;
+    if (!authToken || !connected) return;
     setHistoryLoading(true);
     setHistoryMessage('');
     setHistoryOpen(true);
@@ -206,30 +257,6 @@ export default function WithingsProfileCard() {
     return parts.length ? parts.join(' · ') : 'Měření bez detailů';
   }
 
-  async function syncNow() {
-    const authToken = session?.access_token;
-    if (!authToken || busy || !connected) return;
-    setBusy(true);
-    setMessage('Synchronizuji data…');
-    try {
-      const res = await fetch('/api/withings/sync', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ full: false }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || 'Synchronizace selhala.');
-      setMessage(`Hotovo. Uloženo ${json.measurements_stored || 0} měření.`);
-      await loadLatest(authToken);
-      if (historyOpen) await loadHistory();
-    } catch (err) {
-      console.error('[WithingsProfileCard] syncNow failed:', err);
-      setMessage(sanitizeUserMessage(err?.message || 'Synchronizace selhala.'));
-    } finally {
-      setBusy(false);
-    }
-  }
-
   if (!enabled || !hydrated) return null;
 
   return (
@@ -244,7 +271,7 @@ export default function WithingsProfileCard() {
           {launcherLabel}
         </button>
       ) : (
-        <div className="withings-panel" role="dialog" aria-modal="true" aria-label="Chytrá váha">
+        <div className="withings-panel" role="dialog" aria-modal="false" aria-label="Chytrá váha">
           <div className="withings-panel-head">
             <div>
               <p className="withings-eyebrow">Chytrá váha</p>
@@ -255,74 +282,95 @@ export default function WithingsProfileCard() {
             </button>
           </div>
 
-          {widgetState === 'not_configured' ? (
-            <>
-              <p className="withings-lead">Chytrá váha zatím není aktivní.</p>
-              <p className="withings-sub">Propojení s Withings připravujeme. Jakmile bude dostupné, půjde váhu propojit přímo z profilu.</p>
-            </>
-          ) : widgetState === 'not_connected' ? (
-            <>
-              <p className="withings-lead">Propoj chytrou váhu s profilem.</p>
-              <p className="withings-sub">Po propojení uvidíš poslední měření, trendy a jednoduchá doporučení.</p>
-            </>
-          ) : (
-            <>
-              <p className="withings-lead">Poslední měření z chytré váhy.</p>
-              <span className="withings-badge is-connected">Propojeno</span>
-            </>
-          )}
-
-          {message ? <div className="withings-notice">{message}</div> : null}
-
-          {connected ? (
-            <>
-              <div className="withings-grid">
-                <div><span>Váha</span><strong>{metrics.weight}</strong></div>
-                <div><span>Tuk</span><strong>{metrics.fat}</strong></div>
-                <div><span>Tuková hmota</span><strong>{metrics.fatMass}</strong></div>
-                <div><span>Svalová hmota</span><strong>{metrics.muscle}</strong></div>
-                <div><span>Kostní hmota</span><strong>{metrics.bone}</strong></div>
-                <div><span>Hydratace</span><strong>{metrics.hydration}</strong></div>
-                <div><span>BMI</span><strong>{metrics.bmi}</strong></div>
-                <div><span>Tep</span><strong>{metrics.pulse}</strong></div>
-                <div className="withings-grid-wide"><span>Měření</span><strong>{formatDateTime(metrics.measuredAt || latest?.connection?.last_sync_at)}</strong></div>
-              </div>
-
-              <div className="withings-trends">
-                <p className="withings-section-title">Trend</p>
-                {!trends?.hasEnoughData ? (
-                  <p className="withings-sub">{trends?.message || 'Trend spočítáme po dalších měřeních.'}</p>
-                ) : (
-                  <div className="withings-trend-grid">
-                    <div><span>Od minula</span><strong>{formatTrendDelta(trends?.delta?.weight_kg, ' kg')}</strong></div>
-                    <div><span>7 dní</span><strong>{formatTrendDelta(trends?.trend7d?.weight_kg, ' kg')}</strong></div>
-                    <div><span>30 dní</span><strong>{formatTrendDelta(trends?.trend30d?.weight_kg, ' kg')}</strong></div>
-                    <div><span>Tuk 7 dní</span><strong>{formatTrendDelta(trends?.trend7d?.fat_percent, ' %')}</strong></div>
-                  </div>
-                )}
-              </div>
-
-              {recommendations?.summary ? (
-                <div className="withings-reco">
-                  <p className="withings-section-title">Doporučení podle měření</p>
-                  <p className="withings-reco-summary">{recommendations.summary}</p>
-                  {Array.isArray(recommendations.recommendations) && recommendations.recommendations.length ? (
-                    <ul className="withings-reco-list">
-                      {recommendations.recommendations.map((item) => (
-                        <li key={`${item.type}-${item.title}`}>
-                          <strong>{item.title}</strong>
-                          <span>{item.text}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  {recommendations.disclaimer ? (
-                    <p className="withings-disclaimer">{recommendations.disclaimer}</p>
-                  ) : null}
+          <div className="withings-scroll-area">
+            {widgetState === 'not_configured' ? (
+              <>
+                <p className="withings-lead">Chytrá váha zatím není aktivní.</p>
+                <p className="withings-sub">Propojení s Withings připravujeme. Jakmile bude dostupné, půjde váhu propojit přímo z profilu.</p>
+              </>
+            ) : widgetState === 'not_connected' ? (
+              <>
+                <p className="withings-lead">Propoj chytrou váhu s profilem.</p>
+                <p className="withings-sub">Po propojení uvidíš poslední měření, trendy a jednoduchá doporučení.</p>
+              </>
+            ) : (
+              <>
+                <p className="withings-lead">Poslední měření z chytré váhy.</p>
+                <div className="withings-status-row">
+                  <span className="withings-badge is-connected">Propojeno</span>
+                  {autoSyncing ? <span className="withings-sync-pill">Automaticky synchronizuji…</span> : null}
                 </div>
-              ) : null}
-            </>
-          ) : null}
+              </>
+            )}
+
+            {message ? <div className="withings-notice">{message}</div> : null}
+
+            {connected ? (
+              <>
+                <div className="withings-grid">
+                  <div><span>Váha</span><strong>{metrics.weight}</strong></div>
+                  <div><span>Tuk</span><strong>{metrics.fat}</strong></div>
+                  <div><span>Tuková hmota</span><strong>{metrics.fatMass}</strong></div>
+                  <div><span>Svalová hmota</span><strong>{metrics.muscle}</strong></div>
+                  <div><span>Kostní hmota</span><strong>{metrics.bone}</strong></div>
+                  <div><span>Hydratace</span><strong>{metrics.hydration}</strong></div>
+                  <div><span>BMI</span><strong>{metrics.bmi}</strong></div>
+                  <div><span>Tep</span><strong>{metrics.pulse}</strong></div>
+                  <div className="withings-grid-wide"><span>Měření</span><strong>{formatDateTime(metrics.measuredAt || latest?.connection?.last_sync_at)}</strong></div>
+                </div>
+
+                <div className="withings-trends">
+                  <p className="withings-section-title">Trend</p>
+                  {!trends?.hasEnoughData ? (
+                    <p className="withings-sub">{trends?.message || 'Trend spočítáme po dalších měřeních.'}</p>
+                  ) : (
+                    <div className="withings-trend-grid">
+                      <div><span>Od minula</span><strong>{formatTrendDelta(trends?.delta?.weight_kg, ' kg')}</strong></div>
+                      <div><span>7 dní</span><strong>{formatTrendDelta(trends?.trend7d?.weight_kg, ' kg')}</strong></div>
+                      <div><span>30 dní</span><strong>{formatTrendDelta(trends?.trend30d?.weight_kg, ' kg')}</strong></div>
+                      <div><span>Tuk 7 dní</span><strong>{formatTrendDelta(trends?.trend7d?.fat_percent, ' %')}</strong></div>
+                    </div>
+                  )}
+                </div>
+
+                {recommendations?.summary ? (
+                  <div className="withings-reco">
+                    <p className="withings-section-title">Doporučení podle měření</p>
+                    <p className="withings-reco-summary">{recommendations.summary}</p>
+                    {Array.isArray(recommendations.recommendations) && recommendations.recommendations.length ? (
+                      <ul className="withings-reco-list">
+                        {recommendations.recommendations.map((item) => (
+                          <li key={`${item.type}-${item.title}`}>
+                            <strong>{item.title}</strong>
+                            <span>{item.text}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    {recommendations.disclaimer ? <p className="withings-disclaimer">{recommendations.disclaimer}</p> : null}
+                  </div>
+                ) : null}
+              </>
+            ) : null}
+
+            {historyOpen ? (
+              <div className="withings-history">
+                <p className="withings-history-title">Historie měření</p>
+                {historyLoading ? <p className="withings-history-empty">Načítám historii…</p> : null}
+                {!historyLoading && historyMessage ? <p className="withings-history-empty">{historyMessage}</p> : null}
+                {!historyLoading && historyItems.length ? (
+                  <ul className="withings-history-list">
+                    {historyItems.map((item) => (
+                      <li key={`${item.measured_at}-${item.weight_kg || 'x'}`}>
+                        <strong>{formatDateTime(item.measured_at)}</strong>
+                        <span>{formatHistoryLine(item)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
 
           <div className="withings-actions">
             {widgetState === 'not_configured' ? (
@@ -334,29 +382,11 @@ export default function WithingsProfileCard() {
             )}
             {oauthReady ? (
               <>
-                <button type="button" onClick={() => syncNow()} disabled={busy || !connected} className="secondary">Sync teď</button>
-                <button type="button" onClick={loadHistory} disabled={busy || !connected || historyLoading} className="secondary">Historie</button>
+                <button type="button" onClick={() => syncNow({ silent: false })} disabled={busy || !connected} className="secondary">Sync teď</button>
+                <button type="button" onClick={() => loadHistory()} disabled={busy || !connected || historyLoading} className="secondary">Historie</button>
               </>
             ) : null}
           </div>
-
-          {historyOpen ? (
-            <div className="withings-history">
-              <p className="withings-history-title">Historie měření</p>
-              {historyLoading ? <p className="withings-history-empty">Načítám historii…</p> : null}
-              {!historyLoading && historyMessage ? <p className="withings-history-empty">{historyMessage}</p> : null}
-              {!historyLoading && historyItems.length ? (
-                <ul className="withings-history-list">
-                  {historyItems.map((item) => (
-                    <li key={`${item.measured_at}-${item.weight_kg || 'x'}`}>
-                      <strong>{formatDateTime(item.measured_at)}</strong>
-                      <span>{formatHistoryLine(item)}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-          ) : null}
         </div>
       )}
       <style jsx>{`
@@ -367,12 +397,10 @@ export default function WithingsProfileCard() {
           z-index: 1200;
           pointer-events: none;
         }
-        .withings-floating-card.is-collapsed {
-          width: auto;
-        }
+        .withings-floating-card.is-collapsed { width: auto; }
         .withings-floating-card.is-expanded {
           width: min(400px, calc(100vw - 24px));
-          max-height: min(80vh, calc(100dvh - 24px));
+          max-height: min(70vh, calc(100dvh - 96px));
           pointer-events: auto;
         }
         .withings-launcher {
@@ -393,7 +421,6 @@ export default function WithingsProfileCard() {
           display: flex;
           flex-direction: column;
           max-height: inherit;
-          padding: 16px;
           border-radius: 20px;
           color: #fff;
           background: linear-gradient(135deg, rgba(14, 165, 233, 0.22), rgba(15, 23, 42, 0.98));
@@ -407,7 +434,14 @@ export default function WithingsProfileCard() {
           justify-content: space-between;
           gap: 12px;
           align-items: flex-start;
-          margin-bottom: 8px;
+          padding: 16px 16px 8px;
+          flex: 0 0 auto;
+        }
+        .withings-scroll-area {
+          min-height: 0;
+          overflow: auto;
+          padding: 0 16px 12px;
+          scrollbar-width: thin;
         }
         .withings-eyebrow {
           margin: 0 0 4px;
@@ -417,10 +451,7 @@ export default function WithingsProfileCard() {
           letter-spacing: 0.14em;
           text-transform: uppercase;
         }
-        h2 {
-          margin: 0;
-          font-size: 22px;
-        }
+        h2 { margin: 0; font-size: 22px; }
         .withings-lead {
           margin: 0 0 6px;
           color: rgba(255, 255, 255, 0.92);
@@ -443,16 +474,23 @@ export default function WithingsProfileCard() {
           cursor: pointer;
           flex-shrink: 0;
         }
-        .withings-badge {
-          display: inline-block;
+        .withings-status-row {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          align-items: center;
           margin-top: 8px;
+        }
+        .withings-badge,
+        .withings-sync-pill {
+          display: inline-block;
           padding: 6px 10px;
           border-radius: 999px;
-          background: rgba(34, 197, 94, 0.18);
-          color: #86efac;
           font-size: 12px;
           font-weight: 900;
         }
+        .withings-badge { background: rgba(34, 197, 94, 0.18); color: #86efac; }
+        .withings-sync-pill { background: rgba(56, 189, 248, 0.14); color: #bae6fd; }
         .withings-notice {
           margin-top: 12px;
           padding: 10px 12px;
@@ -474,28 +512,28 @@ export default function WithingsProfileCard() {
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 10px;
           margin-top: 14px;
-          overflow: auto;
         }
-        .withings-grid div {
-          padding: 12px;
-          border-radius: 16px;
+        .withings-grid div,
+        .withings-trend-grid div,
+        .withings-reco-list li,
+        .withings-history-list li {
+          border-radius: 14px;
           background: rgba(255, 255, 255, 0.08);
           border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .withings-grid-wide {
-          grid-column: 1 / -1;
-        }
-        .withings-grid span {
+        .withings-grid div { padding: 12px; }
+        .withings-grid-wide { grid-column: 1 / -1; }
+        .withings-grid span,
+        .withings-trend-grid span {
           display: block;
           color: rgba(255, 255, 255, 0.58);
           font-size: 12px;
           margin-bottom: 5px;
         }
-        .withings-grid strong {
-          font-size: 18px;
-        }
+        .withings-grid strong { font-size: 18px; }
         .withings-trends,
-        .withings-reco {
+        .withings-reco,
+        .withings-history {
           margin-top: 14px;
           padding-top: 12px;
           border-top: 1px solid rgba(255, 255, 255, 0.12);
@@ -505,81 +543,41 @@ export default function WithingsProfileCard() {
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 8px;
         }
-        .withings-trend-grid div {
-          padding: 10px 12px;
-          border-radius: 14px;
-          background: rgba(255, 255, 255, 0.06);
-        }
-        .withings-trend-grid span {
-          display: block;
-          font-size: 11px;
-          color: rgba(255, 255, 255, 0.58);
-          margin-bottom: 4px;
-        }
+        .withings-trend-grid div { padding: 10px 12px; }
         .withings-reco-summary {
           margin: 0 0 10px;
           font-size: 14px;
           line-height: 1.45;
         }
-        .withings-reco-list {
+        .withings-reco-list,
+        .withings-history-list {
           list-style: none;
           margin: 0;
           padding: 0;
           display: grid;
           gap: 8px;
         }
-        .withings-reco-list li {
-          padding: 10px 12px;
-          border-radius: 14px;
-          background: rgba(255, 255, 255, 0.08);
-        }
-        .withings-reco-list strong {
+        .withings-reco-list li,
+        .withings-history-list li { padding: 10px 12px; }
+        .withings-reco-list strong,
+        .withings-history-list strong {
           display: block;
           margin-bottom: 4px;
           font-size: 13px;
         }
-        .withings-reco-list span {
+        .withings-reco-list span,
+        .withings-history-list span {
           display: block;
           font-size: 13px;
           line-height: 1.4;
           color: rgba(255, 255, 255, 0.82);
         }
-        .withings-disclaimer {
+        .withings-disclaimer,
+        .withings-history-empty {
           margin: 10px 0 0;
           font-size: 11px;
           line-height: 1.4;
           color: rgba(255, 255, 255, 0.58);
-        }
-        .withings-actions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-top: 14px;
-          overflow: auto;
-        }
-        .withings-actions button {
-          border: 0;
-          border-radius: 12px;
-          min-height: 44px;
-          padding: 10px 13px;
-          background: linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%);
-          color: #fff;
-          font-weight: 900;
-          cursor: pointer;
-        }
-        .withings-actions button.secondary {
-          background: rgba(255, 255, 255, 0.12);
-        }
-        .withings-actions button:disabled {
-          opacity: 0.48;
-          cursor: not-allowed;
-        }
-        .withings-history {
-          margin-top: 14px;
-          padding-top: 12px;
-          border-top: 1px solid rgba(255, 255, 255, 0.12);
-          overflow: auto;
-          max-height: 220px;
         }
         .withings-history-title {
           margin: 0 0 10px;
@@ -589,35 +587,27 @@ export default function WithingsProfileCard() {
           text-transform: uppercase;
           color: rgba(255, 255, 255, 0.72);
         }
-        .withings-history-empty {
-          margin: 0;
-          color: rgba(255, 255, 255, 0.72);
-          font-size: 13px;
-        }
-        .withings-history-list {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-          display: grid;
+        .withings-actions {
+          display: flex;
+          flex-wrap: wrap;
           gap: 8px;
+          padding: 12px 16px 16px;
+          background: linear-gradient(180deg, rgba(15,23,42,0.72), rgba(15,23,42,0.98));
+          border-top: 1px solid rgba(255, 255, 255, 0.12);
+          flex: 0 0 auto;
         }
-        .withings-history-list li {
-          padding: 10px 12px;
-          border-radius: 14px;
-          background: rgba(255, 255, 255, 0.08);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+        .withings-actions button {
+          border: 0;
+          border-radius: 12px;
+          min-height: 42px;
+          padding: 9px 12px;
+          background: linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%);
+          color: #fff;
+          font-weight: 900;
+          cursor: pointer;
         }
-        .withings-history-list strong {
-          display: block;
-          font-size: 12px;
-          color: rgba(255, 255, 255, 0.62);
-          margin-bottom: 4px;
-        }
-        .withings-history-list span {
-          display: block;
-          font-size: 14px;
-          line-height: 1.4;
-        }
+        .withings-actions button.secondary { background: rgba(255, 255, 255, 0.12); }
+        .withings-actions button:disabled { opacity: 0.48; cursor: not-allowed; }
         @media (max-width: 640px) {
           .withings-floating-card.is-expanded {
             left: 12px;
@@ -625,10 +615,7 @@ export default function WithingsProfileCard() {
             bottom: max(12px, env(safe-area-inset-bottom));
             width: auto;
             max-width: calc(100vw - 24px);
-          }
-          .withings-panel {
-            max-height: min(80vh, calc(100dvh - 24px));
-            overflow: auto;
+            max-height: min(72vh, calc(100dvh - 86px));
           }
         }
       `}</style>

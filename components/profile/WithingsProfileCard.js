@@ -377,10 +377,11 @@ export default function WithingsProfileCard() {
         }
         .withings-launcher {
           pointer-events: auto;
-          border: 1px solid rgba(56, 189, 248, 0.45);
+          border: 1px solid rgba(14, 165, 233, 0.45);
           border-radius: 999px;
           padding: 10px 14px;
-          background: linear-gradient(135deg, rgba(14, 165, 233, 0.95), rgba(34, 197, 94, 0.92));
+          min-height: 44px;
+          background: linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%);
           color: #fff;
           font-size: 13px;
           font-weight: 800;
@@ -558,9 +559,10 @@ export default function WithingsProfileCard() {
         }
         .withings-actions button {
           border: 0;
-          border-radius: 999px;
+          border-radius: 12px;
+          min-height: 44px;
           padding: 10px 13px;
-          background: linear-gradient(135deg, #0ea5e9, #22c55e);
+          background: linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%);
           color: #fff;
           font-weight: 900;
           cursor: pointer;

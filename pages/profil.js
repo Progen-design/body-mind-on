@@ -3498,21 +3498,22 @@ export default function Profil() {
           align-items: center;
           gap: 8px;
           padding: 10px 16px;
-          border-radius: 10px;
-          border: 1px solid rgba(139, 92, 255, 0.55);
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.92), rgba(139, 92, 246, 0.86));
+          min-height: 44px;
+          border-radius: 12px;
+          border: 1px solid rgba(14, 165, 233, 0.45);
+          background: linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%);
           color: #fff;
           font-size: 13px;
           font-weight: 700;
           cursor: pointer;
           transition: transform 0.2s, filter 0.2s, box-shadow 0.2s;
           white-space: nowrap;
-          box-shadow: 0 8px 20px rgba(109, 40, 217, 0.28);
+          box-shadow: 0 8px 20px rgba(14, 165, 233, 0.25);
         }
         .profile-main-workout-btn:hover {
           transform: translateY(-1px);
           filter: brightness(1.05);
-          box-shadow: 0 12px 22px rgba(109, 40, 217, 0.35);
+          box-shadow: 0 12px 22px rgba(14, 165, 233, 0.32);
         }
         .profile-main-workout-btn-emoji {
           font-size: 14px;

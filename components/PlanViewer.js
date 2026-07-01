@@ -28,6 +28,7 @@ import { collectExerciseMediaSources, hasDisplayableExerciseMedia, isVideoMediaU
 import { getExerciseInstructionGuide } from '../lib/exerciseInstructions.js';
 import { resolveToCanonicalKey } from '../lib/exerciseCanonicalMap.js';
 import { addCalendarDaysIsoPrague, calendarDateIsoInPrague, weekdayIndexJsFromPragueIso } from '../lib/czechCalendar';
+import { buildMacroPillCss, BM_ON_DESIGN, BM_ON_GRADIENTS } from '../lib/designTokens.js';
 import ProfileTodayPanels from './profile/ProfileTodayPanels';
 import MacroRatioChart from './MacroRatioChart';
 
@@ -2269,7 +2270,7 @@ const planSectionStyles = `
   .plan-expired a:hover { text-decoration: underline; }
   .plan-expired-btn,
   .plan-expires-soon-btn {
-    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    background: linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%);
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -2587,7 +2588,7 @@ const planSectionStyles = `
     align-items: center;
     gap: 8px;
     padding: 12px 20px;
-    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    background: linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%);
     color: #fff;
     border: none;
     border-radius: 12px;
@@ -3042,7 +3043,7 @@ const planSectionStyles = `
     width: 48px;
     height: 48px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    background: linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3119,9 +3120,9 @@ const planSectionStyles = `
     box-sizing: border-box;
   }
   .plan-recipe-modal {
-    background: linear-gradient(180deg, #1e1b4b 0%, #0f0f1a 100%);
-    border: 1px solid rgba(139, 92, 255, 0.4);
-    border-radius: 20px;
+    background: linear-gradient(180deg, #111827 0%, #070B18 100%);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 22px;
     max-width: 520px;
     width: 100%;
     max-height: 85vh;
@@ -3400,26 +3401,7 @@ const planSectionStyles = `
     font-weight: 800;
     color: #f8fafc;
   }
-  .plan-meal-macro-pill--kcal {
-    border-color: rgba(167, 139, 250, 0.55);
-    background: rgba(76, 29, 149, 0.22);
-  }
-  .plan-meal-macro-pill--protein {
-    border-color: rgba(59, 130, 246, 0.65);
-    background: rgba(30, 58, 138, 0.22);
-  }
-  .plan-meal-macro-pill--carbs {
-    border-color: rgba(234, 179, 8, 0.65);
-    background: rgba(120, 53, 15, 0.22);
-  }
-  .plan-meal-macro-pill--fat {
-    border-color: rgba(239, 68, 68, 0.65);
-    background: rgba(127, 29, 29, 0.22);
-  }
-  .plan-meal-macro-pill--fiber {
-    border-color: rgba(34, 197, 94, 0.65);
-    background: rgba(20, 83, 45, 0.22);
-  }
+  ${buildMacroPillCss()}
   .plan-exercise-media {
     display: block;
     width: 100%;
@@ -3601,7 +3583,7 @@ const planSectionStyles = `
   .plan-recipe-modal-replace-btn {
     width: 100%;
     padding: 12px 16px;
-    background: linear-gradient(135deg, #7c3aed, #9b5cff);
+    background: linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%);
     border: none;
     border-radius: 10px;
     color: #fff;

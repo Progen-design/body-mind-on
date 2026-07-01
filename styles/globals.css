@@ -1,13 +1,28 @@
 :root {
-  --bg: #0a0a0a;
-  --panel: #121212;
-  --border: #222;
-  --text: #eaeaea;
-  --muted: #a1a1aa;
+  --bg: #070B18;
+  --panel: #111827;
+  --border: rgba(148, 163, 184, 0.22);
+  --text: #F8FAFC;
+  --muted: #94A3B8;
   --accent: #0EA5E9;
   --accent-600: #0284C7;
   --success: #22c55e;
   --error: #ef4444;
+  /* BMON unified design tokens */
+  --bmon-bg: #070B18;
+  --bmon-panel: #111827;
+  --bmon-panel-soft: #172033;
+  --bmon-card-bg: #121826;
+  --bmon-card-border: #1E293B;
+  --bmon-text: #F8FAFC;
+  --bmon-text-muted: #94A3B8;
+  --bmon-sky: #0EA5E9;
+  --bmon-lavender: #A78BFA;
+  --bmon-cyan: #22D3EE;
+  --bmon-radius-card: 18px;
+  --bmon-radius-button: 12px;
+  --bmon-radius-modal: 22px;
+  --bmon-shadow-card: 0 18px 60px rgba(0,0,0,0.35);
   /* Další barvy pro sekce (gradient stránky) */
   --color-primary: #8bc7ff;
   --color-secondary: #c2a6ff;

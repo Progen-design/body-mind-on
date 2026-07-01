@@ -73,14 +73,14 @@ export default function ProfileContinuationUpsell({
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          min-height: 42px;
+          min-height: 44px;
           padding: 0 16px;
-          border-radius: 10px;
-          border: 1px solid rgba(167, 139, 250, 0.55);
-          background: rgba(124, 58, 237, 0.22);
-          color: #e9d5ff;
+          border-radius: 12px;
+          border: 1px solid rgba(14, 165, 233, 0.35);
+          background: linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%);
+          color: #fff;
           font-size: 14px;
-          font-weight: 600;
+          font-weight: 700;
           text-decoration: none;
           transition: background 0.15s ease, border-color 0.15s ease;
         }

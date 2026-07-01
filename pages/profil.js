@@ -31,7 +31,6 @@ import {
   habitWeightCorrectionKg,
   roundLoadTotal,
 } from '../lib/progressModel';
-import ProfileContinuationUpsell from '../components/ProfileContinuationUpsell';
 import { approximateBirthDateFromAge } from '../lib/bodyMetricsBirthDate';
 
 const PlanViewer = dynamic(() => import('../components/PlanViewer'), { ssr: false, loading: () => null });
@@ -3110,13 +3109,6 @@ export default function Profil() {
 
             </div>
             {/* konec profile-bubbles */}
-
-            {!profile?.can_create_calendar_events && program === 'START' && (
-              <ProfileContinuationUpsell
-                isTrialExpired={Boolean(isTrialExpired)}
-                daysUntilTrialEnd={daysUntilTrialEnd}
-              />
-            )}
 
             {/* Modaly */}
             {showSettingsModal && renderPortal(

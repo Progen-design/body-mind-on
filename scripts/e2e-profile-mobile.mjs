@@ -32,6 +32,7 @@ const report = {
   exerciseModal: {},
   accordion: {},
   settings: {},
+  workoutCopy: {},
   runtimeLogs: { errors: [], apiCalls: [] },
   tests: {},
   verdict: 'FAIL',
@@ -54,6 +55,11 @@ function loadEnv() {
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+function deriveWorkoutDaysForE2E() {
+  const today = new Date().getDay();
+  return [...new Set([2, 4, 6, today])].sort((a, b) => a - b);
 }
 
 async function checkProduction() {
@@ -93,6 +99,7 @@ async function checkProduction() {
 }
 
 async function registerTestAccount(supabase) {
+  const workoutDays = deriveWorkoutDaysForE2E();
   const payload = {
     email: TEST_EMAIL,
     name: 'Mobile E2E',
@@ -105,11 +112,11 @@ async function registerTestAccount(supabase) {
     stress: 'medium',
     worktype: 'sedentary',
     goal: 'udrzovani',
-    frequency: '4-5x týdně',
+    frequency: '2-3x týdně',
     program: 'START',
-    workout_days: [1, 2, 4, 5],
-    training_environment: 'gym',
-    available_equipment: [],
+    workout_days: workoutDays,
+    training_environment: 'home_equipment',
+    available_equipment: ['dumbbells', 'bench'],
     diet_type: 'standard',
   };
   const res = await fetchWithTimeout(
@@ -339,6 +346,23 @@ async function runMobileE2E() {
     }
     report.includeNextWeek.screenshot = await screenshot(page, 'profile-meal-pin-feedback.png');
 
+    const workoutSection = page.locator('#profile-today-workout').first();
+    const workoutText = await workoutSection.innerText().catch(() => '');
+    report.workoutCopy.todayWorkoutText = workoutText;
+    report.workoutCopy.hasPerLegEnglish = /\bper leg\b/i.test(workoutText);
+    report.workoutCopy.hasLunges = /Výpady/i.test(workoutText);
+    report.workoutCopy.lungesUseCzech = /Výpady[\s\S]{0,120}na každou nohu/i.test(workoutText);
+    report.workoutCopy.squatsNoPerLeg = /Dřepy[\s\S]{0,80}(?!na každou nohu)/i.test(workoutText);
+    report.workoutCopy.noSalesBlockAfterWorkout = await page.evaluate(() => {
+      const section = document.getElementById('profile-today-workout');
+      if (!section) return false;
+      const root = section.closest('.profile-content') || document.body;
+      const text = (root.innerText || '').slice(0, 6000);
+      return !/Vyber si další krok|Pokračovat ve STARTU|START 499 Kč|ON CLUB 1 499 Kč/i.test(text);
+    });
+    report.workoutCopy.noSalesScreenshot = await screenshot(page, 'profile-mobile-no-sales-upsell.png');
+    report.workoutCopy.workoutCopyScreenshot = await screenshot(page, 'profile-mobile-workout-copy.png');
+
     // E) Exercise modal
     const exerciseBtn = page.locator('#profile-today-workout .profile-today-exercise-btn').first();
     const hasExerciseBtn = await exerciseBtn.count() > 0;
@@ -371,6 +395,27 @@ async function runMobileE2E() {
       report.exerciseModal.skipped = 'no today workout exercises';
       report.exerciseModal.clicked = false;
     }
+
+    const workoutItems = page.locator('#profile-today-workout .profile-today-workout-item');
+    const workoutCount = await workoutItems.count();
+    let squatModalText = '';
+    let lungeModalText = '';
+    for (let i = 0; i < workoutCount; i++) {
+      const item = workoutItems.nth(i);
+      const nameText = await item.locator('strong').first().textContent().catch(() => '');
+      const normalized = String(nameText || '').toLowerCase();
+      if (!/dřep|výpad/.test(normalized)) continue;
+      await item.locator('button.profile-today-exercise-btn').click({ force: true });
+      await page.waitForSelector('.plan-recipe-modal-body', { timeout: 20_000 });
+      const modalText = await page.locator('.plan-recipe-modal-body').first().innerText().catch(() => '');
+      if (/dřep/.test(normalized) && !squatModalText) squatModalText = modalText;
+      if (/výpad/.test(normalized) && !lungeModalText) lungeModalText = modalText;
+      await page.locator('.plan-recipe-modal-close').first().click({ force: true }).catch(() => {});
+      await page.waitForTimeout(300);
+    }
+    report.workoutCopy.squatModalFound = Boolean(squatModalText);
+    report.workoutCopy.lungeModalFound = Boolean(lungeModalText);
+    report.workoutCopy.squatVsLungeModalDifferent = Boolean(squatModalText && lungeModalText && squatModalText !== lungeModalText);
 
     // F) Accordion
     await closeAnyModals(page);
@@ -454,6 +499,11 @@ function computeVerdict() {
     report.recipe.recipeOpened,
     !report.recipe.macroPercentagesAllZero,
     report.recipe.macroBarVisible,
+    !report.workoutCopy.hasPerLegEnglish,
+    report.workoutCopy.noSalesBlockAfterWorkout,
+    (report.workoutCopy.squatModalFound && report.workoutCopy.lungeModalFound)
+      ? report.workoutCopy.squatVsLungeModalDifferent
+      : true,
     report.mealReplacement.mealChanged,
     !report.mealReplacement.rateLimitShown,
     report.includeNextWeek.feedbackVisible !== false || report.includeNextWeek.skipped,
@@ -473,6 +523,11 @@ function computeVerdict() {
     if (!report.mealReplacement.mealChanged) fails.push('meal replacement did not change title');
     if (report.recipe.macroPercentagesAllZero) fails.push('macro percentages all zero');
     if (!report.recipe.macroBarVisible) fails.push('macro bar not visible');
+    if (report.workoutCopy.hasPerLegEnglish) fails.push('english per leg visible in workout');
+    if (!report.workoutCopy.noSalesBlockAfterWorkout) fails.push('sales block detected in profile flow');
+    if (report.workoutCopy.squatModalFound && report.workoutCopy.lungeModalFound && !report.workoutCopy.squatVsLungeModalDifferent) {
+      fails.push('squat/lunge modals look identical');
+    }
     if (report.mealReplacement.rateLimitShown) fails.push('rate limit on meal replace');
     if (!report.exerciseModal.clicked && !report.exerciseModal.skipped) fails.push('exercise modal failed');
     if (report.exerciseModal.clicked && !report.exerciseModal.jakNaToVisible) fails.push('exercise guide missing');

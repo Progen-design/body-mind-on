@@ -68,7 +68,6 @@ export default function ProfileTodayPanels({
   onScrollToMeals,
   onScrollToWorkout,
   onScrollToWeek,
-  onScrollToPrograms,
 }) {
   if (!todayDay) return null;
 
@@ -91,10 +90,6 @@ export default function ProfileTodayPanels({
   }) : [];
   const hasWorkout = exercises.length > 0;
   const workoutMinutes = Number(workout?.duration_minutes) || (exercises.length ? exercises.length * 8 : 0);
-
-  const continuationText = program === 'START'
-    ? 'Drž se dnešního plánu. Po týdnu se rozhodneš, jestli pokračuješ samostatně nebo v ON CLUBU.'
-    : 'Drž se dnešního plánu — v aplikaci máš vše na jednom místě.';
 
   return (
     <div className="profile-today-root">
@@ -145,13 +140,6 @@ export default function ProfileTodayPanels({
                 </button>
               </>
             )}
-          </article>
-          <article className="profile-today-card">
-            <h3>Další krok</h3>
-            <p className="profile-today-next-text">{continuationText}</p>
-            <button type="button" className="profile-today-cta profile-today-cta--secondary" onClick={onScrollToPrograms}>
-              {program === 'START' ? 'Jak pokračovat po STARTU' : 'Možnosti programu'}
-            </button>
           </article>
         </div>
       </section>
@@ -309,7 +297,7 @@ export default function ProfileTodayPanels({
         }
         @media (min-width: 720px) {
           .profile-today-quick-cards {
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
           }
         }
         .profile-today-card {
@@ -354,12 +342,6 @@ export default function ProfileTodayPanels({
           font-size: 13px;
           color: #94a3b8;
         }
-        .profile-today-next-text {
-          margin: 0 0 12px;
-          font-size: 14px;
-          line-height: 1.5;
-          color: #cbd5e1;
-        }
         .profile-today-cta {
           width: 100%;
           min-height: 48px;
@@ -371,10 +353,6 @@ export default function ProfileTodayPanels({
           font-size: 14px;
           cursor: pointer;
           padding: 10px 14px;
-        }
-        .profile-today-cta--secondary {
-          background: rgba(124, 58, 237, 0.2);
-          border: 1px solid rgba(167, 139, 250, 0.45);
         }
         .profile-today-section {
           margin-bottom: 24px;

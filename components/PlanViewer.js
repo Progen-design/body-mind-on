@@ -1207,7 +1207,6 @@ export default function PlanViewer({
                 setWeeklyPlanOpen(true);
                 setTimeout(() => document.getElementById('plan-jidelnicek')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
               }}
-              onScrollToPrograms={() => document.getElementById('profile-continuation-upsell')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
             />
           ) : null}
 

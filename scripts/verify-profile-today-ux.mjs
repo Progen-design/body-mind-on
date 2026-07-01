@@ -56,9 +56,9 @@ const continuationUpsellIdx = profil.indexOf('<ProfileContinuationUpsell');
 const bubblesEndIdx = profil.indexOf('{/* konec profile-bubbles */}');
 check('profil neobsahuje ProgramVariantsSection', programVariantsIdx < 0);
 check('profil neobsahuje ProgramContinuationPanel', programContinuationIdx < 0);
-check('profil má kompaktní ProfileContinuationUpsell', continuationUpsellIdx >= 0);
-check('ProfileContinuationUpsell je pod profile-bubbles', bubblesEndIdx >= 0 && continuationUpsellIdx > bubblesEndIdx);
-check('ProfileContinuationUpsell je pod Můj plán', mujPlanIdx >= 0 && continuationUpsellIdx > mujPlanIdx);
+check('profil neobsahuje ProfileContinuationUpsell', continuationUpsellIdx < 0);
+check('profil bez sales textu "Vyber si další krok"', !todayPanels.includes('Vyber si další krok'));
+check('profil bez sales CTA "Pokračovat ve STARTU"', !todayPanels.includes('Pokračovat ve STARTU'));
 
 const todayHeadingIdx = planViewer.indexOf('ProfileTodayPanels');
 const jidelnicekIdx = planViewer.indexOf('id="plan-jidelnicek"');

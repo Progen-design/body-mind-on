@@ -93,28 +93,22 @@ async function ensureLocalServer() {
 
 console.log('--- Static layout checks ---');
 const profil = read('pages/profil.js');
-const upsell = read('components/ProfileContinuationUpsell.js');
 const planViewer = read('components/PlanViewer.js');
 const packageJson = read('package.json');
 
-const mujPlanIdx = profil.indexOf('id="muj-plan"');
 const programVariantsIdx = profil.indexOf('<ProgramVariantsSection');
 const upsellIdx = profil.indexOf('<ProfileContinuationUpsell');
-const bubblesEndIdx = profil.indexOf('{/* konec profile-bubbles */}');
 const todayHeadingInPlanViewer = planViewer.indexOf('ProfileTodayPanels');
 
 check('profil neobsahuje ProgramVariantsSection', programVariantsIdx < 0);
 check('profil neobsahuje text Vyber si další krok', !profil.includes('Vyber si další krok'));
-check('upsell má nadpis Chceš pokračovat dál?', upsell.includes('Chceš pokračovat dál?'));
-check('upsell CTA Zobrazit možnosti pokračování', upsell.includes('Zobrazit možnosti pokračování'));
-check('upsell je pod profile-bubbles', bubblesEndIdx >= 0 && upsellIdx > bubblesEndIdx);
-check('upsell je pod Můj plán', mujPlanIdx >= 0 && upsellIdx > mujPlanIdx);
-check('PlanViewer scrolluje na profile-continuation-upsell', planViewer.includes("getElementById('profile-continuation-upsell')"));
+check('profil neobsahuje ProfileContinuationUpsell', upsellIdx < 0);
+check('PlanViewer nescrolluje na profile-continuation-upsell', !planViewer.includes("getElementById('profile-continuation-upsell')"));
 check('profil má profile-hero--compact', profil.includes('profile-hero--compact'));
 check('page padding-top není extrémní', /\.page\s*\{[\s\S]*?padding:\s*max\(8px,\s*env\(safe-area-inset-top\)\)/.test(profil));
 check('hero inner padding zmenšené', profil.includes('padding: 18px 24px 20px'));
 check('hero nemá min-height 40vh+', !/profile-hero[\s\S]{0,200}min-height:\s*(4\d|[5-9]\d|\d{3,})vh/.test(profil));
-check('Dnes máš jasno v PlanViewer před upsell v profilu', todayHeadingInPlanViewer >= 0 && upsellIdx > mujPlanIdx);
+check('Dnes máš jasno je napojené přes ProfileTodayPanels', todayHeadingInPlanViewer >= 0);
 check('npm script verify:profile-layout-focus', packageJson.includes('"verify:profile-layout-focus"'));
 
 async function registerIfNeeded(supabase) {
@@ -197,7 +191,7 @@ async function measureAboveFold(page) {
     const today = document.getElementById('profile-today-heading')
       || [...document.querySelectorAll('h2,h3')].find((el) => el.textContent?.includes('Dnes máš jasno'));
     const variants = document.getElementById('program-variants');
-    const upsellEl = document.getElementById('profile-continuation-upsell');
+    const hasSalesCopy = /Vyber si další krok|Pokračovat ve STARTU|START 499 Kč|ON CLUB 1 499 Kč/i.test(document.body?.innerText || '');
     const headerBottom = header?.getBoundingClientRect().bottom ?? 0;
     const heroTop = hero ? hero.getBoundingClientRect().top : null;
     const headerGap = heroTop != null ? heroTop - headerBottom : null;
@@ -205,7 +199,6 @@ async function measureAboveFold(page) {
     const variantsInFold = variants
       ? variants.getBoundingClientRect().top < viewportH && variants.getBoundingClientRect().bottom > 0
       : false;
-    const upsellTop = upsellEl ? upsellEl.getBoundingClientRect().top : null;
     const bigVariantCards = [...document.querySelectorAll('.program-variants__card')].filter((el) => {
       const r = el.getBoundingClientRect();
       return r.top < viewportH && r.bottom > 0;
@@ -224,7 +217,7 @@ async function measureAboveFold(page) {
       todayTop,
       variantsInFold,
       bigVariantCards,
-      upsellTop,
+      hasSalesCopy,
       horizontalScroll: document.documentElement.scrollWidth > document.documentElement.clientWidth + 2,
     };
   });
@@ -297,9 +290,7 @@ async function runVisualChecks() {
     check('mobile hero hned pod headerem', mobileMetrics.headerGap != null && mobileMetrics.headerGap <= 16, `gap=${mobileMetrics.headerGap}, children=${JSON.stringify(mobileMetrics.mainChildren)}`);
     check('mobile bez horizontálního scrollu', !mobileMetrics.horizontalScroll);
     check('mobile bez program-variants ve foldu', !mobileMetrics.variantsInFold);
-    if (mobileMetrics.upsellTop != null && mobileMetrics.todayTop != null) {
-      check('upsell je pod dnešním přehledem', mobileMetrics.upsellTop > mobileMetrics.todayTop, `upsell=${mobileMetrics.upsellTop}, today=${mobileMetrics.todayTop}`);
-    }
+    check('mobile bez sales copy v profilu', !mobileMetrics.hasSalesCopy);
     await mobileContext.close();
   } catch (err) {
     check('visual checks', false, err.message);

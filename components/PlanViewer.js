@@ -1489,6 +1489,23 @@ export default function PlanViewer({
                       </h4>
                     </div>
                     {isDayExpanded ? (
+                    todayFirstLayout && day.isToday ? (
+                      // Dnešní den má plný interaktivní detail nahoře v sekci „Dnešní plán“ — tady jen kompaktní odkaz, žádná duplicitní jídla.
+                      <div className="plan-day-today-compact">
+                        <p className="plan-day-today-compact-msg">
+                          Dnešní detail máš nahoře v sekci <strong>Dnešní plán</strong> — recepty, náhrady jídel i trénink.
+                        </p>
+                        <button
+                          type="button"
+                          className="plan-day-today-compact-btn"
+                          onClick={() => {
+                            document.getElementById('profile-today-heading')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }}
+                        >
+                          ↑ Přejít na Dnešní plán
+                        </button>
+                      </div>
+                    ) : (
                     <>
                     <nav className="plan-day-nav" aria-label="Jídla dne">
                       <span className="plan-day-nav-static">Co dnes jíst</span>
@@ -1782,6 +1799,7 @@ export default function PlanViewer({
                       );
                     })()}
                     </>
+                    )
                     ) : null}
                   </div>
                   );
@@ -2813,6 +2831,37 @@ const planSectionStyles = `
     text-align: center;
     margin: 0;
   }
+  .plan-day-today-compact {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px;
+  }
+  .plan-day-today-compact-msg {
+    margin: 0;
+    flex: 1 1 240px;
+    min-width: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #94a3b8;
+  }
+  .plan-day-today-compact-msg strong { color: #c4b5fd; }
+  .plan-day-today-compact-btn {
+    min-height: 44px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(167, 139, 250, 0.45);
+    background: rgba(124, 58, 237, 0.2);
+    color: #e9d5ff;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .plan-day-today-compact-btn:hover { background: rgba(124, 58, 237, 0.32); }
   .plan-day-header-btn {
     display: flex;
     align-items: center;

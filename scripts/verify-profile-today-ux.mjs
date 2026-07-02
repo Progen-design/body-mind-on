@@ -50,6 +50,14 @@ check('odkaz Celý týdenní jídelníček', todayPanels.includes('Celý týdenn
 check('tlačítko Rozbalit týden', planViewer.includes('Rozbalit týden'));
 check('týdenní plán lze sbalit', planViewer.includes('weeklyPlanOpen'));
 
+// Dnešní den se v týdenním přehledu nesmí duplikovat jako plné jídelní karty
+check(
+  'dnešní den v týdnu jen kompaktní stav',
+  /todayFirstLayout && day\.isToday \? \(/.test(planViewer) && planViewer.includes('plan-day-today-compact')
+);
+check('kompaktní stav odkazuje na Dnešní plán', planViewer.includes('Dnešní detail máš nahoře v sekci'));
+check('kompaktní stav má CTA zpět nahoru', planViewer.includes('Přejít na Dnešní plán') && planViewer.includes("getElementById('profile-today-heading')"));
+
 const mujPlanIdx = profil.indexOf('id="muj-plan"');
 const programVariantsIdx = profil.indexOf('<ProgramVariantsSection');
 const programContinuationIdx = profil.indexOf('<ProgramContinuationPanel');

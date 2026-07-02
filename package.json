@@ -45,6 +45,7 @@
     "verify:profile-layout-focus": "node scripts/verify-profile-layout-focus.mjs",
     "verify:profile-no-sales-upsell": "node scripts/verify-profile-no-sales-upsell.mjs",
     "verify:workout-exercise-copy": "node scripts/verify-workout-exercise-copy.mjs",
+    "verify:weekly-structured-source": "node scripts/verify-weekly-structured-source.mjs",
     "verify:ui-visual-system": "node scripts/verify-ui-visual-system.mjs",
     "verify:email-visual-consistency": "node scripts/verify-email-visual-consistency.mjs",
     "verify:withings-widget-ux": "node scripts/verify-withings-widget-ux.mjs",

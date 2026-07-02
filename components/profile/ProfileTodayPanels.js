@@ -4,8 +4,6 @@ import { mealDisplayTitleForStructuredMeal } from '../../lib/mealDisplayNameHelp
 import { createMealDisplayModelFromStructuredMeal } from '../../lib/mealRecipeDisplay.js';
 import { formatExerciseSetsRepsDisplay } from '../../lib/planDataIntegrity.js';
 
-const MEAL_TYPE_ORDER = ['breakfast', 'snack', 'lunch', 'dinner'];
-
 function mealTypeLabel(type) {
   const t = String(type || '').toLowerCase();
   if (t === 'breakfast') return 'Snídaně';
@@ -74,11 +72,6 @@ export default function ProfileTodayPanels({
 
   const structDay = todayDay.structDay || structuredPlan?.days?.[todayDay.originalIndex ?? todayDayIndex];
   const meals = Array.isArray(todayDay.meals) ? todayDay.meals : [];
-  const sortedMeals = [...meals].sort((a, b) => {
-    const ai = MEAL_TYPE_ORDER.indexOf(String(a?.type || '').toLowerCase());
-    const bi = MEAL_TYPE_ORDER.indexOf(String(b?.type || '').toLowerCase());
-    return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
-  });
   const dayNutrition = sumDayNutrition(meals, structDay);
   const targets = planTargets || structuredPlan?.targets || {};
   const targetKcal = Number(targets.calories_per_day) || null;
@@ -148,7 +141,7 @@ export default function ProfileTodayPanels({
       <section id="profile-today-meals" className="profile-today-section" aria-labelledby="profile-today-meals-heading">
         <h3 id="profile-today-meals-heading" className="profile-today-section-title">Dnešní jídla</h3>
         <div className="profile-today-meals-list">
-          {sortedMeals.map((meal, mi) => {
+          {meals.map((meal, mi) => {
             const structMeal = structDay?.meals?.[mi]
               || structDay?.meals?.find((m) => (m?.type || '') === (meal?.type || ''));
             const title = structMeal
@@ -156,8 +149,7 @@ export default function ProfileTodayPanels({
               : (meal.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
             const nutrition = getMealNutritionDisplay(structMeal || meal);
             const ings = topIngredients(structMeal);
-            const origIdx = meals.indexOf(meal);
-            const mealKey = `${todayDay.originalIndex ?? todayDayIndex}_${origIdx >= 0 ? origIdx : mi}`;
+            const mealKey = `${todayDay.originalIndex ?? todayDayIndex}_${mi}`;
             const pinned = isMealPinned?.(meal.type || '', title) || false;
             const pinToast = pinToastByKey[mealKey];
             return (
@@ -186,14 +178,14 @@ export default function ProfileTodayPanels({
                   <button
                     type="button"
                     className="profile-today-recipe-btn"
-                    onClick={() => onRecipeClick?.(origIdx >= 0 ? origIdx : mi)}
+                    onClick={() => onRecipeClick?.(mi)}
                   >
                     Recept
                   </button>
                   <button
                     type="button"
                     className="profile-today-secondary-btn"
-                    onClick={() => onSwapClick?.(origIdx >= 0 ? origIdx : mi)}
+                    onClick={() => onSwapClick?.(mi)}
                   >
                     Nahradit jiným
                   </button>
@@ -201,7 +193,7 @@ export default function ProfileTodayPanels({
                     <button
                       type="button"
                       className={`profile-today-secondary-btn ${pinned ? 'profile-today-secondary-btn--active' : ''}`}
-                      onClick={() => onPinClick?.(origIdx >= 0 ? origIdx : mi)}
+                      onClick={() => onPinClick?.(mi)}
                     >
                       {pinned ? '✓ Zahrnuto od dalšího týdne' : 'Zahrnout od dalšího týdne'}
                     </button>

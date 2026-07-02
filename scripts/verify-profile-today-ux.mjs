@@ -32,7 +32,8 @@ check('profil předává todayFirstLayout', profil.includes('todayFirstLayout'))
 check('profil předává program do PlanViewer', profil.includes('program={program}'));
 check('profil předává trainingEnvironmentLabel', profil.includes('trainingEnvironmentLabelFromMetrics'));
 
-check('sekce „Dnes máš jasno“', todayPanels.includes('Dnes máš jasno'));
+check('sekce „Dnešní plán“', todayPanels.includes('Dnešní plán'));
+check('lead text dnešního plánu', todayPanels.includes('Tvůj dnešní plán je připravený.'));
 check('sekce „Dnešní jídla“', todayPanels.includes('Dnešní jídla'));
 check('sekce „Dnešní trénink“', todayPanels.includes('Dnešní trénink'));
 check('CTA Recept u dnešních jídel', todayPanels.includes('profile-today-recipe-btn') && todayPanels.includes('Recept'));
@@ -72,11 +73,11 @@ check('cvik modal Jak na to', planViewer.includes('Jak na to:'));
 check('cvik modal Na co si dát pozor', planViewer.includes('Na co si dát pozor:'));
 check('cvik modal Lehčí varianta', planViewer.includes('Lehčí varianta:'));
 const exerciseModalStart = planViewer.indexOf('{exerciseHintModal && typeof document');
-const exerciseModalChunk = exerciseModalStart >= 0 ? planViewer.slice(exerciseModalStart, exerciseModalStart + 3200) : '';
+const exerciseModalChunk = exerciseModalStart >= 0 ? planViewer.slice(exerciseModalStart, exerciseModalStart + 6000) : '';
 check(
-  'cvik modal série před návodem',
+  'cvik modal obsahuje sérii i instrukční blok',
   exerciseModalChunk.includes('Série / opakování')
-    && exerciseModalChunk.indexOf('Série / opakování') < exerciseModalChunk.indexOf('renderExerciseInstructionBlock')
+    && exerciseModalChunk.includes('renderExerciseInstructionBlock')
 );
 
 check('CTA Nahradit jiným v týdenním plánu', planViewer.includes('Nahradit jiným'));

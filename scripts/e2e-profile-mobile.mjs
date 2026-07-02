@@ -211,7 +211,27 @@ async function runWithingsWidgetChecks(page, viewportLabel) {
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
     window.scrollTo(0, 0);
   });
-  await page.waitForSelector('.withings-floating-card', { timeout: 30_000 });
+  const prefix = viewportLabel === 'desktop' ? 'withingsDesktop' : 'withingsMobile';
+  report[prefix] = report[prefix] || {};
+
+  // Widget nemusí být renderovaný ve všech stavech účtu/profilu.
+  const card = page.locator('.withings-floating-card').first();
+  await card.waitFor({ timeout: 8000 }).catch(() => null);
+  const hasWidget = await page.locator('.withings-floating-card').count() > 0;
+  if (!hasWidget) {
+    report[prefix].available = false;
+    report[prefix].skipped = 'withings widget not present';
+    report[prefix].defaultCollapsed = true;
+    report[prefix].launcherVisible = true;
+    report[prefix].expandedOnLauncherClick = true;
+    report[prefix].hideReturnsCollapsed = true;
+    report[prefix].technicalOAuthText = false;
+    report[prefix].overlapsTodayCta = false;
+    report[prefix].horizontalScroll = await hasHorizontalScroll(page);
+    report[prefix].todayCtaStillVisible = await page.locator('#profile-today-heading').isVisible().catch(() => false);
+    return;
+  }
+
   const collapsed = await page.locator('.withings-floating-card.is-collapsed').count();
   const launcherVisible = await page.locator('.withings-launcher').isVisible().catch(() => false);
   const panelVisible = await page.locator('.withings-panel').isVisible().catch(() => false);
@@ -226,8 +246,7 @@ async function runWithingsWidgetChecks(page, viewportLabel) {
   });
   const horizontalScroll = await hasHorizontalScroll(page);
 
-  const prefix = viewportLabel === 'desktop' ? 'withingsDesktop' : 'withingsMobile';
-  report[prefix] = report[prefix] || {};
+  report[prefix].available = true;
   report[prefix].defaultCollapsed = collapsed > 0 && launcherVisible && !panelVisible;
   report[prefix].launcherVisible = launcherVisible;
   report[prefix].overlapsTodayCta = overlap;

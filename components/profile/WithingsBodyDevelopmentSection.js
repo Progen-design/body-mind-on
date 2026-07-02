@@ -278,9 +278,9 @@ export default function WithingsBodyDevelopmentSection({ profile }) {
 
       <style jsx>{`
         .withings-body-dev {
-          width: min(1180px, 100%);
-          max-width: 1180px;
-          margin: 16px auto 20px;
+          width: 100%;
+          max-width: 100%;
+          margin: 0;
           padding: 22px;
           border-radius: 24px;
           border: 1px solid rgba(56, 189, 248, 0.25);
@@ -403,8 +403,7 @@ export default function WithingsBodyDevelopmentSection({ profile }) {
         }
         @media (max-width: 640px) {
           .withings-body-dev {
-            margin-top: 16px;
-            margin-bottom: 20px;
+            margin: 0;
             padding: 18px 16px;
             border-radius: 18px;
           }

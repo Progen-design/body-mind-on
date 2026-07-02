@@ -1327,7 +1327,7 @@ export default function Profil() {
 
   // Všechny parametry se přepočítají při každé změně profile (trénink, váha)
   // Použít _updated timestamp jako závislost, aby se vždy přepočítalo při změně
-  const { program, membershipStatus, membershipSince, trialEndsAt, isTrialExpired, daysUntilTrialEnd, metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, workoutLoadThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, weeklyTypeLoadBars, weeklyDayLoadBars, userName, firstName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, periodStartFormatted, periodEndFormatted, thisWeekDates, startWeightDate, lastWeightDate, habitAdjustedWeight, hasHabitData, positiveDone, negativeDone, habitCorrectionKg, profileDisplayWeight, showEstimatedWeightFromWorkouts, hasManualWeightUpdate } = useMemo(() => {
+  const { program, membershipStatus, membershipSince, trialEndsAt, isTrialExpired, daysUntilTrialEnd, metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, workoutLoadThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, weeklyTypeLoadBars, weeklyDayLoadBars, userName, firstName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, periodStartFormatted, periodEndFormatted, thisWeekDates, startWeightDate, lastWeightDate, habitAdjustedWeight, hasHabitData, positiveDone, negativeDone, habitCorrectionKg, profileDisplayWeight, profileWeightLabel, showEstimatedWeightFromWorkouts, hasManualWeightUpdate } = useMemo(() => {
     // Zajistit, že máme vždy nové reference na pole pro správnou detekci změn
     // A SORT podle data - nejnovější první
     const m = profile?.body_metrics 
@@ -1424,9 +1424,27 @@ export default function Profil() {
       && latest?.weight_kg != null
       && first?.weight_kg != null
       && Number(latest.weight_kg) !== Number(first.weight_kg);
-    const profileDisplayWeight = hasManualWeightUpdate
-      ? Number(latest.weight_kg)
-      : (startWeight ?? cw);
+    const latestMeasuredWeight = latest?.weight_kg != null ? Number(latest.weight_kg) : null;
+    const estimatedWeightFromHabits = habitAdjustedWeight != null ? Number(habitAdjustedWeight) : null;
+    const estimatedWeightFromWorkouts = estimatedCurrentWeightRounded != null ? Number(estimatedCurrentWeightRounded) : null;
+    const hasLatestMeasuredWeight = Number.isFinite(latestMeasuredWeight);
+    const hasHabitEstimate = Number.isFinite(estimatedWeightFromHabits);
+    const hasWorkoutEstimate = Number.isFinite(estimatedWeightFromWorkouts);
+    let profileDisplayWeight = null;
+    let profileWeightLabel = 'Odhad';
+    if (hasLatestMeasuredWeight) {
+      profileDisplayWeight = latestMeasuredWeight;
+      profileWeightLabel = 'Aktuální váha';
+    } else if (hasHabitEstimate) {
+      profileDisplayWeight = estimatedWeightFromHabits;
+      profileWeightLabel = 'Odhad vývoje';
+    } else if (hasWorkoutEstimate) {
+      profileDisplayWeight = estimatedWeightFromWorkouts;
+      profileWeightLabel = 'Odhad';
+    } else if (startWeight != null) {
+      profileDisplayWeight = Number(startWeight);
+      profileWeightLabel = 'Aktuální váha';
+    }
     const showEstimatedWeightFromWorkouts = w.length > 0 && estimatedCurrentWeightRounded != null;
 
     const typeLoadMap = {};
@@ -1523,6 +1541,7 @@ export default function Profil() {
       negativeDone,
       habitCorrectionKg,
       profileDisplayWeight,
+      profileWeightLabel,
       showEstimatedWeightFromWorkouts,
       hasManualWeightUpdate,
     };
@@ -1942,7 +1961,7 @@ export default function Profil() {
                         </div>
                         <div className="plan-goal-stat">
                           <span className="plan-goal-stat-value">{heroWeightKg != null ? `${heroWeightKg} kg` : '—'}</span>
-                          <span className="plan-goal-stat-label">{hasHabitData ? 'Odhad (tréninky + návyky)' : 'Odhad z tréninků'}</span>
+                          <span className="plan-goal-stat-label">{profileWeightLabel}</span>
                         </div>
                       </div>
                     )}
@@ -1963,10 +1982,6 @@ export default function Profil() {
             </div>
           </>
         )}
-        {!loading && !error && !profile?.can_create_calendar_events && (
-          <WithingsBodyDevelopmentSection profile={profile} />
-        )}
-
         {profile?.can_create_calendar_events && (
         <section className="hero">
           <div className="hero-avatar-wrap">
@@ -2038,7 +2053,7 @@ export default function Profil() {
               </div>
               <div className="hero-stat">
                 <span className="hero-stat-value">{heroWeightKg != null ? `${heroWeightKg} kg` : '—'}</span>
-                <span className="hero-stat-label">{hasHabitData ? 'Odhad (tréninky + návyky)' : 'Odhad z tréninků'}</span>
+                <span className="hero-stat-label">{profileWeightLabel}</span>
               </div>
             </div>
           )}
@@ -2259,7 +2274,10 @@ export default function Profil() {
             )}
 
             {/* Sjednocený kontejner bublin – pro trenéra i klienta */}
-            <div className="profile-bubbles">
+            <div className={profile?.can_create_calendar_events ? 'profile-bubbles profile-bubbles--trainer' : 'profile-main-stack'}>
+            {!profile?.can_create_calendar_events && (
+              <WithingsBodyDevelopmentSection profile={profile} />
+            )}
             {/* Mindset na tento týden (jen klienti) – nahoře před plánem */}
             {!profile?.can_create_calendar_events && mindsetTipFromPlan && (
             <div className="profile-bubble" id="mindset">
@@ -2923,7 +2941,7 @@ export default function Profil() {
                 <div className="kpi-item">
                   <span className="kpi-icon">⚖️</span>
                   <span className="kpi-num">{heroWeightKg != null ? `${heroWeightKg} kg` : '—'}</span>
-                  <span className="kpi-label">{hasHabitData ? 'odhad (tréninky + návyky)' : 'odhad z tréninků'}</span>
+                  <span className="kpi-label">{profileWeightLabel}</span>
                 </div>
               </div>
               <div className="workload-panels">
@@ -3714,7 +3732,8 @@ export default function Profil() {
           .plan-goal-stat-label { font-size: 10px; }
           .plan-goal-actions { min-width: 0; width: 100%; }
           .hero-prefs-btn, .plan-goal-prefs-btn { min-height: 48px; padding: 12px 18px; width: 100%; touch-action: manipulation; }
-          .profile-bubbles {
+          .profile-main-stack,
+          .profile-bubbles--trainer {
             padding-inline: 0;
             width: 100%;
             box-sizing: border-box;
@@ -3741,7 +3760,8 @@ export default function Profil() {
           .page {
             padding-inline: clamp(0.75rem, 3vw, 1rem);
           }
-          .profile-bubbles {
+          .profile-main-stack,
+          .profile-bubbles--trainer {
             padding-inline: 0;
           }
           .profile-bubble-body[data-open="true"]:not(#profile-bubble-body-muj-plan) {
@@ -3753,8 +3773,24 @@ export default function Profil() {
           }
         }
 
-        /* ── Rozbalovací bubliny profilu (oválné, centrované) ── */
-        .profile-bubbles {
+        /* ── Hlavní klientský stack ── */
+        .profile-main-stack {
+          width: min(1180px, 100%);
+          max-width: 1180px;
+          margin: 0 auto 32px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        .profile-main-stack :global(.withings-body-dev) {
+          width: 100%;
+          max-width: 100%;
+          margin: 0;
+        }
+        /* ── Trenérské bubliny ── */
+        .profile-bubbles--trainer {
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -3769,9 +3805,9 @@ export default function Profil() {
           box-sizing: border-box;
         }
         .profile-bubble {
-          width: min(380px, 100%);
-          max-width: min(380px, 100%);
-          border-radius: 50px;
+          width: 100%;
+          max-width: 100%;
+          border-radius: 20px;
           border: 1px solid #1e293b;
           background: #121826;
           backdrop-filter: blur(6px);
@@ -3781,10 +3817,23 @@ export default function Profil() {
           transition: border-color 0.2s, box-shadow 0.2s, max-width 0.35s ease, border-radius 0.3s ease;
         }
         .profile-bubble:has(.profile-bubble-body[data-open="true"]) {
+          width: 100%;
+          max-width: 100%;
+          border-radius: 20px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+        }
+        .profile-bubbles--trainer .profile-bubble {
+          width: min(380px, 100%);
+          max-width: min(380px, 100%);
+          border-radius: 50px;
+        }
+        .profile-bubbles--trainer .profile-bubble:has(.profile-bubble-body[data-open="true"]) {
           width: min(720px, 100%);
           max-width: min(720px, 100%);
           border-radius: 20px;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+        }
+        #muj-plan {
+          margin-top: 0;
         }
         .profile-bubble:hover {
           border-color: rgba(255, 255, 255, 0.22);
@@ -5315,7 +5364,8 @@ export default function Profil() {
           }
           .profile-hero { padding: 0; max-width: 100%; }
           .profile-membership-plan-card { margin-left: 0; margin-right: 0; max-width: 100%; }
-          .profile-bubbles { max-width: 100%; padding-inline: 0; }
+          .profile-main-stack,
+          .profile-bubbles--trainer { max-width: 100%; padding-inline: 0; }
           .profile-bubble-body:not(#profile-bubble-body-muj-plan) {
             padding-inline: clamp(0.75rem, 3vw, 1rem);
           }

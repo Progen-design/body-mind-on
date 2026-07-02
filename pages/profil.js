@@ -1337,7 +1337,7 @@ export default function Profil() {
 
   // Všechny parametry se přepočítají při každé změně profile (trénink, váha)
   // Použít _updated timestamp jako závislost, aby se vždy přepočítalo při změně
-  const { program, membershipStatus, membershipSince, trialEndsAt, isTrialExpired, daysUntilTrialEnd, metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, workoutLoadThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, weeklyTypeLoadBars, weeklyDayLoadBars, userName, firstName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, periodStartFormatted, periodEndFormatted, thisWeekDates, startWeightDate, lastWeightDate, habitAdjustedWeight, hasHabitData, positiveDone, negativeDone, habitCorrectionKg, profileDisplayWeight, profileWeightLabel, showEstimatedWeightFromWorkouts, hasManualWeightUpdate } = useMemo(() => {
+  const { program, membershipStatus, membershipSince, trialEndsAt, isTrialExpired, daysUntilTrialEnd, metrics, workouts, latestMetric, firstMetric, latestWorkout, currentWeight, weightDiff, workoutsThisWeek, totalMinutesThisWeek, estimatedCaloriesThisWeek, workoutLoadThisWeek, totalMinutes, estimatedCaloriesAll, chartWeightData, chartWeightSource, hasMeasuredWeightData, weeklyTypeLoadBars, weeklyDayLoadBars, userName, firstName, lastWeekCount, lastWeekMinutes, workoutTrend, startWeight, goalWeight, heightCm, estimatedKgLostTotal, estimatedCurrentWeight, estimatedCurrentWeightRounded, kgPerWeekFromWeek, weeksToGoal, weekStartFormatted, weekEndFormatted, periodStartFormatted, periodEndFormatted, thisWeekDates, startWeightDate, lastWeightDate, habitAdjustedWeight, hasHabitData, positiveDone, negativeDone, habitCorrectionKg, profileDisplayWeight, profileWeightLabel, showEstimatedWeightFromWorkouts, hasManualWeightUpdate } = useMemo(() => {
     // Zajistit, že máme vždy nové reference na pole pro správnou detekci změn
     // A SORT podle data - nejnovější první
     const m = profile?.body_metrics 
@@ -1392,15 +1392,36 @@ export default function Profil() {
     const estimatedCurrentWeight = startWeight != null ? Math.max(goalWeight != null ? goalWeight : 0, startWeight - estimatedKgLostTotal) : null;
     const estimatedCurrentWeightRounded = estimatedCurrentWeight != null ? Math.round(estimatedCurrentWeight * 10) / 10 : null;
 
-    // Graf váhy: výhradně z tréninků (odhad po každém dni s tréninkem). Vlevo nejstarší, vpravo nejnovější.
-    let chartData = [];
+    function metricDateKey(metric) {
+      return String(metric?.measured_at || metric?.date || metric?.created_at || '').slice(0, 10);
+    }
+
+    const measuredWeightData = m
+      .filter((metric) => Number.isFinite(Number(metric?.weight_kg)))
+      .map((metric) => ({
+        date: metricDateKey(metric),
+        weight: Math.round(Number(metric.weight_kg) * 10) / 10,
+        source: metric?.source || (String(metric?.notes || '').includes('[withings_import]') ? 'withings' : 'body_metrics'),
+        measured_at: metric?.measured_at || metric?.created_at || metric?.date || null,
+      }))
+      .filter((point) => point.date)
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    const measuredByDate = new Map();
+    for (const point of measuredWeightData) {
+      measuredByDate.set(point.date, point);
+    }
+    const measuredChartData = [...measuredByDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+
+    // Fallback graf váhy: odhad z tréninků.
+    let workoutEstimatedChartData = [];
     if (startWeight != null && w.length > 0) {
       const startDateStr = registrationMetric?.created_at ? String(registrationMetric.created_at).split('T')[0] : null;
       const sortedByDate = [...w].sort((a, b) => (getDate(a) || '').localeCompare(getDate(b) || ''));
       const firstWorkoutDate = getDate(sortedByDate[0]);
       const chartStartDate = startDateStr || firstWorkoutDate;
       if (chartStartDate !== firstWorkoutDate) {
-        chartData.push({ date: chartStartDate, weight: Math.round(startWeight * 10) / 10 });
+        workoutEstimatedChartData.push({ date: chartStartDate, weight: Math.round(startWeight * 10) / 10, source: 'estimated' });
       }
       let cumulativeKcal = 0;
       const seenDates = new Set();
@@ -1412,9 +1433,12 @@ export default function Profil() {
         seenDates.add(d);
         const est = startWeight - cumulativeKcal / KCAL_PER_KG_BODY_FAT;
         const capped = goalWeight != null && est < goalWeight ? goalWeight : est;
-        chartData.push({ date: d, weight: Math.round(capped * 10) / 10 });
+        workoutEstimatedChartData.push({ date: d, weight: Math.round(capped * 10) / 10, source: 'estimated' });
       });
     }
+    const hasMeasuredWeightData = measuredChartData.length > 0;
+    const chartData = hasMeasuredWeightData ? measuredChartData : workoutEstimatedChartData;
+    const chartWeightSource = hasMeasuredWeightData ? 'measured' : 'estimated';
     const kgPerWeekFromWeek = minWeek > 0 ? kcalWeek / KCAL_PER_KG_BODY_FAT : 0;
     let weeksToGoal = null;
     if (goalWeight != null && estimatedCurrentWeight != null && goalWeight < estimatedCurrentWeight && kgPerWeekFromWeek > 0) {
@@ -1523,6 +1547,8 @@ export default function Profil() {
       totalMinutes: minTotal,
       estimatedCaloriesAll: kcalTotal,
       chartWeightData: chartData,
+      chartWeightSource,
+      hasMeasuredWeightData,
       weeklyTypeLoadBars,
       weeklyDayLoadBars,
       userName: name,
@@ -3010,7 +3036,11 @@ export default function Profil() {
               <h2 className="section-head">Vývoj váhy</h2>
               {(chartWeightData || []).length >= 1 ? (
                 <>
-                <p className="chart-hint">Bod = den s tréninkem; váha = výchozí mínus kumulativní odhad výdeje (7700 kcal/kg). Návyky tento graf nemění.</p>
+                <p className="chart-hint">
+                  {chartWeightSource === 'measured'
+                    ? 'Graf vychází ze skutečných měření váhy. Withings měření má prioritu před odhadem.'
+                    : 'Zatím chybí pravidelná měření. Dočasně zobrazujeme odhad podle tréninků.'}
+                </p>
                 {(chartWeightData || []).length >= 2 ? (
                   <>
                     <div className="chart-wrapper">
@@ -3037,7 +3067,7 @@ export default function Profil() {
                           const pts = data.map((p, i) => {
                             const x = pad.l + (data.length > 1 ? (i / (data.length - 1)) * W : 0);
                             const y = pad.t + H - ((p.weight - minWPlot) / range) * H;
-                            return [x, y, p.weight, p.date];
+                            return [x, y, p.weight, p.date, p.source];
                           });
                           const pathD = pts.length ? `M ${pts.map(([x, y]) => `${x} ${y}`).join(' L ')}` : '';
                           const areaD = pathD ? `${pathD} L ${pad.l + W} ${pad.t + H} L ${pad.l} ${pad.t + H} Z` : '';
@@ -3045,10 +3075,10 @@ export default function Profil() {
                             <>
                               {areaD && <path fill="url(#weightGrad)" d={areaD} />}
                               <path fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" d={pathD} />
-                              {pts.map(([x, y, weight, date], i) => (
+                              {pts.map(([x, y, weight, date, source], i) => (
                                 <g key={`${date}-${i}`}>
                                   <circle cx={x} cy={y} r="4" fill="#a78bfa" />
-                                  <title>{`${formatShortDate(date)}: ${weight} kg`}</title>
+                                  <title>{`${formatShortDate(date)}: ${weight} kg${source === 'withings' ? ' · Withings' : ''}`}</title>
                                 </g>
                               ))}
                             </>
@@ -3079,12 +3109,18 @@ export default function Profil() {
                   <div className="chart-single">
                     <span className="chart-value">{(chartWeightData || [])[0]?.weight ?? '—'} kg</span>
                     <span className="chart-date">{formatShortDate((chartWeightData || [])[0]?.date)}</span>
-                    <p className="chart-hint">Přidej další tréninky a uvidíš trend.</p>
+                    <p className="chart-hint">
+                      {chartWeightSource === 'measured'
+                        ? 'Přidej další měření a uvidíš trend.'
+                        : 'Přidej další měření nebo tréninky a uvidíš trend.'}
+                    </p>
                   </div>
                 )}
                 </>
               ) : (
-                <p className="chart-empty">Graf se naplní automaticky podle zapsaných tréninků (výchozí váha z registrace). Zapiš tréninky a uvidíš odhad vývoje váhy.</p>
+                <p className="chart-empty">
+                  Zatím nemáme dost měření váhy. Připoj Withings nebo zapiš váhu ručně.
+                </p>
               )}
             </section>
               )}
@@ -3163,12 +3199,18 @@ export default function Profil() {
                       <span className="body-figure-arrow" aria-hidden>→</span>
                       <div className="body-figure-box body-figure-now">
                         <BodyFigure
-                          weight={profileDisplayWeight ?? startWeight}
+                          weight={heroWeightValue ?? profileDisplayWeight ?? startWeight}
                           height={heightCm}
                           size={130}
                           variant="now"
-                          label={hasManualWeightUpdate ? 'Aktuální' : 'Aktuální (z registrace)'}
-                          weightDiff={profileDisplayWeight != null && startWeight != null ? (profileDisplayWeight - startWeight).toFixed(1) : null}
+                          label={Number.isFinite(Number(withingsHeaderWeight?.weight_kg)) || hasManualWeightUpdate ? 'Aktuální' : 'Aktuální (z registrace)'}
+                          weightDiff={
+                            heroWeightValue != null && startWeight != null
+                              ? (heroWeightValue - startWeight).toFixed(1)
+                              : profileDisplayWeight != null && startWeight != null
+                                ? (profileDisplayWeight - startWeight).toFixed(1)
+                                : null
+                          }
                         />
                         <span className="figure-weight">{heroWeightKg != null ? `${heroWeightKg} kg` : '—'}</span>
                         {lastWeightDate && <span className="figure-date">k {formatShortDate(lastWeightDate)}</span>}

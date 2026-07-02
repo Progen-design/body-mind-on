@@ -813,7 +813,7 @@ export default function PlanViewer({
       ? `Typ: ${structuredPlan.training_environment_label}`
       : '');
 
-  /** Vždy 7 dní od valid_from — jídla primárně ze structured_plan_json (index = den platnosti). */
+  /** Vždy 7 dní od valid_from — jídla i trénink konzistentně ze structured_plan_json, pokud existuje. */
   const planWeekDays = (() => {
     const daysArr = parsed?.days || [];
     const planFrom = (plan?.valid_from || '').split('T')[0];
@@ -821,21 +821,25 @@ export default function PlanViewer({
       return daysArr.map((d, i) => ({ ...d, dateStr: '', isToday: false, originalIndex: i, afterPlanEnd: false }));
     }
     const structDays = Array.isArray(structuredPlan?.days) ? structuredPlan.days : null;
-    const useStruct = structDays && structDays.length >= 7;
+    const useStruct = !!(structDays && structDays.length > 0);
     const validUntilStr = (plan.valid_until || '').split('T')[0];
     const result = [];
     for (let origIdx = 0; origIdx < 7; origIdx++) {
       const dateIso = addDaysToDateStr(planFrom, origIdx);
       const dayNameFromDate = getDayNameForPlanSlot(planFrom, origIdx);
-      const htmlDay = daysArr.length > 0 ? findDayForDate(daysArr, dateIso, origIdx, planFrom) : null;
+      const htmlDay = !useStruct && daysArr.length > 0 ? findDayForDate(daysArr, dateIso, origIdx, planFrom) : null;
       const structDay = useStruct
         ? structDays[origIdx] ?? structDays.find((d) => (d.date || '').split('T')[0] === dateIso)
         : null;
       const structMeals = structDay ? buildMealsFromStructuredDay(structDay, plan?.plan_html || '') : null;
-      const meals = structMeals && structMeals.length > 0 ? structMeals : htmlDay?.meals || [];
+      const meals = structMeals && structMeals.length > 0
+        ? structMeals
+        : useStruct
+          ? []
+          : htmlDay?.meals || [];
       const afterPlanEnd = !!(validUntilStr && dateIso > validUntilStr);
       result.push({
-        ...(htmlDay || {}),
+        ...(!useStruct && htmlDay ? htmlDay : {}),
         structDay: structDay || null,
         dayName: dayNameFromDate || structDay?.day_name || htmlDay?.dayName || `Den ${origIdx + 1}`,
         meals,
@@ -843,6 +847,7 @@ export default function PlanViewer({
         isToday: dateIso === todayIsoStr && !isFuturePlan,
         originalIndex: origIdx,
         afterPlanEnd,
+        _placeholder: useStruct ? !structDay : !!(htmlDay?._placeholder),
       });
     }
     return result;

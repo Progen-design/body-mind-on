@@ -30,6 +30,7 @@ import { getExerciseInstructionGuide } from '../lib/exerciseInstructions.js';
 import { resolveToCanonicalKey } from '../lib/exerciseCanonicalMap.js';
 import { addCalendarDaysIsoPrague, calendarDateIsoInPrague, weekdayIndexJsFromPragueIso } from '../lib/czechCalendar';
 import { buildMacroPillCss, BM_ON_DESIGN, BM_ON_GRADIENTS } from '../lib/designTokens.js';
+import { buildMacroEnergyNutritionHtml } from '../lib/recipeDetailHtml.js';
 import ProfileTodayPanels from './profile/ProfileTodayPanels';
 import MacroRatioChart from './MacroRatioChart';
 
@@ -105,6 +106,20 @@ function renderExerciseMediaPreview(media, name, onMediaError) {
     );
   }
   return null;
+}
+
+function stripRecipeSourceMetaHtml(html) {
+  if (!html || typeof html !== 'string') return html || '';
+  return html.replace(/<p[^>]*class=["'][^"']*plan-recipe-source-meta[^"']*["'][^>]*>[\s\S]*?<\/p>/gi, '');
+}
+
+function ensureMealModalMacroBar(html, displayModel) {
+  const cleaned = stripRecipeSourceMetaHtml(html || '');
+  if (!displayModel) return cleaned;
+  if (/recipe-macro-energy-bar/i.test(cleaned)) return cleaned;
+  const macroBlock = buildMacroEnergyNutritionHtml(displayModel);
+  if (!macroBlock) return cleaned;
+  return `${cleaned}${macroBlock}`;
 }
 
 async function fetchExerciseMediaFromApi({ canonicalKey, wgerId, name }) {
@@ -948,7 +963,7 @@ export default function PlanViewer({
       setRecipeModal({
         openId: thisOpenId,
         title: override.title || modalTitle,
-        content: recipeContentOnly(override.content),
+        content: stripRecipeSourceMetaHtml(recipeContentOnly(override.content)),
         anchorRect,
         hasRecipe: true,
         loading: false,
@@ -960,7 +975,7 @@ export default function PlanViewer({
       setRecipeModal({
         openId: thisOpenId,
         title: modalTitle,
-        content: buildMealRecipeModalHtml(displayModel, { includeSourceMeta: true }),
+        content: buildMealRecipeModalHtml(displayModel),
         anchorRect,
         hasRecipe: true,
         loading: false,
@@ -986,7 +1001,7 @@ export default function PlanViewer({
     });
     const loadRecipe = async () => {
       if (displayModel && !shouldFetchMealRecipeFromApi(displayModel)) {
-        return buildMealRecipeModalHtml(displayModel, { includeSourceMeta: true });
+        return buildMealRecipeModalHtml(displayModel);
       }
       if (recipeId != null) {
         const catalogRecipe = await getCatalogRecipeDetail(recipeId, displayModel);
@@ -1010,12 +1025,14 @@ export default function PlanViewer({
       const fallback = displayModel?.title
         ? buildMealRecipeRateLimitFallbackHtml(displayModel)
         : '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení nebo znovu.</p>';
-      setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: html || fallback, loading: false } : prev));
+      const merged = ensureMealModalMacroBar(html || fallback, displayModel);
+      setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: merged, loading: false } : prev));
     }).catch(() => {
       const fallback = displayModel?.title
         ? buildMealRecipeRateLimitFallbackHtml(displayModel)
         : '<p class="plan-no-recipe-msg">Recept se nepodařilo načíst. Zkontroluj připojení nebo znovu.</p>';
-      setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: fallback, loading: false } : prev));
+      const merged = ensureMealModalMacroBar(fallback, displayModel);
+      setRecipeModal((prev) => (prev && prev.openId === thisOpenId ? { ...prev, content: merged, loading: false } : prev));
     });
   };
 
@@ -1895,39 +1912,28 @@ export default function PlanViewer({
                         });
                         if (fetched && hasDisplayableExerciseMedia(fetched)) {
                           setExerciseHintModal((prev) => (prev ? { ...prev, ...fetched, loading: false } : prev));
+                        } else {
+                          setExerciseHintModal((prev) => (prev ? {
+                            ...prev,
+                            imageUrl: null,
+                            gifUrl: null,
+                            videoUrl: null,
+                            loading: false,
+                          } : prev));
                         }
                       } catch {
-                        /* keep fallback text */
+                        setExerciseHintModal((prev) => (prev ? {
+                          ...prev,
+                          imageUrl: null,
+                          gifUrl: null,
+                          videoUrl: null,
+                          loading: false,
+                        } : prev));
                       }
                     });
                     return preview || null;
                   })()}
                   {renderExerciseInstructionBlock(exerciseHintModal.canonicalKey || resolveToCanonicalKey(exerciseHintModal.name))}
-                  {exerciseHintModal.wgerId != null ? (
-                    <button
-                      type="button"
-                      className="plan-meal-recipe-btn"
-                      style={{ marginTop: 14 }}
-                      onClick={() => {
-                        const id = exerciseHintModal.wgerId;
-                        window.open(`https://wger.de/en/exercise/${Number(id)}/view/`, '_blank', 'noopener,noreferrer');
-                      }}
-                    >
-                      Otevřít detail cviku na wger.de →
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="plan-meal-recipe-btn"
-                      style={{ marginTop: 14 }}
-                      onClick={() => {
-                        const term = encodeURIComponent(exerciseHintModal.name || 'exercise');
-                        window.open(`https://wger.de/en/exercise/search/?term=${term}`, '_blank', 'noopener,noreferrer');
-                      }}
-                    >
-                      Vyhledat cvik na wger.de →
-                    </button>
-                  )}
                 </div>
               </div>
             </div>,

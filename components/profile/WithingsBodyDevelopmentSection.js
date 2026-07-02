@@ -49,7 +49,7 @@ function weightsDiffer(a, b) {
   return Math.abs(x - y) >= 0.05;
 }
 
-export default function WithingsBodyDevelopmentSection({ profile, onLatestWeightChange }) {
+export default function WithingsBodyDevelopmentSection({ profile, onLatestWeightChange, onWeightHistoryChange }) {
   const [session, setSession] = useState(null);
   const [latestData, setLatestData] = useState(null);
   const [historyItems, setHistoryItems] = useState([]);
@@ -113,13 +113,16 @@ export default function WithingsBodyDevelopmentSection({ profile, onLatestWeight
       if (!res.ok) throw new Error(json?.error || 'Nelze načíst historii Withings.');
       const items = Array.isArray(json?.measurements) ? json.measurements : [];
       setHistoryItems(items);
+      if (typeof onWeightHistoryChange === 'function') {
+        onWeightHistoryChange(items);
+      }
       if (!items.length) setMessage('Zatím nejsou k dispozici žádná měření z chytré váhy.');
     } catch (err) {
       setMessage(err?.message || 'Nelze načíst historii Withings.');
     } finally {
       setHistoryLoading(false);
     }
-  }, []);
+  }, [onWeightHistoryChange]);
 
   const runSync = useCallback(async (token, { silent = false } = {}) => {
     if (!token) return false;
@@ -162,6 +165,12 @@ export default function WithingsBodyDevelopmentSection({ profile, onLatestWeight
     autoSyncDoneRef.current = true;
     runSync(token, { silent: true }).catch(() => {});
   }, [latestData, runSync, session?.access_token]);
+
+  useEffect(() => {
+    const token = session?.access_token;
+    if (!token || latestData?.connected !== true) return;
+    loadHistory(token).catch(() => {});
+  }, [session?.access_token, latestData?.connected, latestData?.latest?.measured_at, loadHistory]);
 
   useEffect(() => {
     const token = session?.access_token;

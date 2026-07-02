@@ -414,6 +414,8 @@ export default function Profil() {
   const [planTab, setPlanTab] = useState('current'); // 'current' | 'next' – Varianta C: Můj plán
   const [statsTab, setStatsTab] = useState('overview'); // 'overview' | 'weight' | 'progress' – Varianta C: Statistiky a progres
   const [withingsHeaderWeight, setWithingsHeaderWeight] = useState(null);
+  const [withingsWeightHistory, setWithingsWeightHistory] = useState([]);
+  const [withingsHistoryLoaded, setWithingsHistoryLoaded] = useState(false);
 
   const toggleProfileSection = (id) => {
     setProfileOpenSections((prev) => {
@@ -440,6 +442,30 @@ export default function Profil() {
       measured_at: payload?.measured_at || null,
       source: 'withings',
     });
+  }, []);
+  const handleWithingsWeightHistory = useCallback((items) => {
+    const normalized = (Array.isArray(items) ? items : [])
+      .filter((item) => Number.isFinite(Number(item?.weight_kg)))
+      .map((item) => ({
+        date: String(item?.measured_at || item?.date || item?.created_at || '').slice(0, 10),
+        measured_at: item?.measured_at || item?.date || item?.created_at || null,
+        weight: Math.round(Number(item.weight_kg) * 10) / 10,
+        source: 'withings',
+        fat_percent: item?.fat_percent ?? null,
+        muscle_mass_kg: item?.muscle_mass_kg ?? null,
+      }))
+      .filter((item) => item.date);
+
+    const byKey = new Map();
+    for (const item of normalized) {
+      const key = item.measured_at || item.date;
+      byKey.set(key, item);
+    }
+
+    setWithingsWeightHistory([...byKey.values()].sort((a, b) => {
+      return String(a.measured_at || a.date).localeCompare(String(b.measured_at || b.date));
+    }));
+    setWithingsHistoryLoaded(true);
   }, []);
 
   const [workoutForm, setWorkoutForm] = useState({
@@ -1396,7 +1422,17 @@ export default function Profil() {
       return String(metric?.measured_at || metric?.date || metric?.created_at || '').slice(0, 10);
     }
 
-    const measuredWeightData = m
+    const withingsChartData = (withingsWeightHistory || [])
+      .filter((item) => Number.isFinite(Number(item.weight)))
+      .map((item) => ({
+        date: item.date,
+        measured_at: item.measured_at,
+        weight: Math.round(Number(item.weight) * 10) / 10,
+        source: 'withings',
+      }))
+      .sort((a, b) => String(a.measured_at || a.date).localeCompare(String(b.measured_at || b.date)));
+
+    const bodyMetricsMeasuredData = m
       .filter((metric) => Number.isFinite(Number(metric?.weight_kg)))
       .map((metric) => ({
         date: metricDateKey(metric),
@@ -1408,14 +1444,17 @@ export default function Profil() {
       .sort((a, b) => a.date.localeCompare(b.date));
 
     const measuredByDate = new Map();
-    for (const point of measuredWeightData) {
+    for (const point of bodyMetricsMeasuredData) {
       measuredByDate.set(point.date, point);
     }
-    const measuredChartData = [...measuredByDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+    const bodyMetricsChartData = [...measuredByDate.values()].sort((a, b) => a.date.localeCompare(b.date));
 
-    // Fallback graf váhy: odhad z tréninků.
+    // Fallback graf váhy: odhad z tréninků (jen když chybí měření).
     let workoutEstimatedChartData = [];
-    if (startWeight != null && w.length > 0) {
+    const canUseRegistrationWeightFallback =
+      withingsChartData.length === 0 &&
+      bodyMetricsChartData.length === 0;
+    if (canUseRegistrationWeightFallback && startWeight != null && w.length > 0) {
       const startDateStr = registrationMetric?.created_at ? String(registrationMetric.created_at).split('T')[0] : null;
       const sortedByDate = [...w].sort((a, b) => (getDate(a) || '').localeCompare(getDate(b) || ''));
       const firstWorkoutDate = getDate(sortedByDate[0]);
@@ -1436,9 +1475,19 @@ export default function Profil() {
         workoutEstimatedChartData.push({ date: d, weight: Math.round(capped * 10) / 10, source: 'estimated' });
       });
     }
-    const hasMeasuredWeightData = measuredChartData.length > 0;
-    const chartData = hasMeasuredWeightData ? measuredChartData : workoutEstimatedChartData;
-    const chartWeightSource = hasMeasuredWeightData ? 'measured' : 'estimated';
+    let chartData = [];
+    let chartWeightSource = 'empty';
+    if (withingsChartData.length > 0) {
+      chartData = withingsChartData;
+      chartWeightSource = 'withings';
+    } else if (bodyMetricsChartData.length > 0) {
+      chartData = bodyMetricsChartData;
+      chartWeightSource = 'measured';
+    } else if (workoutEstimatedChartData.length > 0) {
+      chartData = workoutEstimatedChartData;
+      chartWeightSource = 'estimated';
+    }
+    const hasMeasuredWeightData = chartWeightSource === 'withings' || chartWeightSource === 'measured';
     const kgPerWeekFromWeek = minWeek > 0 ? kcalWeek / KCAL_PER_KG_BODY_FAT : 0;
     let weeksToGoal = null;
     if (goalWeight != null && estimatedCurrentWeight != null && goalWeight < estimatedCurrentWeight && kgPerWeekFromWeek > 0) {
@@ -1604,6 +1653,8 @@ export default function Profil() {
     profile?.program,
     profile?.habit_summary_7d?.positiveDone,
     profile?.habit_summary_7d?.negativeDone,
+    withingsWeightHistory,
+    withingsHistoryLoaded,
   ]);
 
   const heroWeightValue =
@@ -2323,6 +2374,7 @@ export default function Profil() {
               <WithingsBodyDevelopmentSection
                 profile={profile}
                 onLatestWeightChange={handleWithingsHeaderWeight}
+                onWeightHistoryChange={handleWithingsWeightHistory}
               />
             )}
             {/* Mindset na tento týden (jen klienti) – nahoře před plánem */}
@@ -3037,9 +3089,11 @@ export default function Profil() {
               {(chartWeightData || []).length >= 1 ? (
                 <>
                 <p className="chart-hint">
-                  {chartWeightSource === 'measured'
-                    ? 'Graf vychází ze skutečných měření váhy. Withings měření má prioritu před odhadem.'
-                    : 'Zatím chybí pravidelná měření. Dočasně zobrazujeme odhad podle tréninků.'}
+                  {chartWeightSource === 'withings'
+                    ? 'Graf vychází ze skutečných měření z chytré váhy Withings.'
+                    : chartWeightSource === 'measured'
+                      ? 'Graf vychází ze skutečných měření váhy.'
+                      : 'Zatím chybí pravidelná měření. Dočasně zobrazujeme odhad podle tréninků.'}
                 </p>
                 {(chartWeightData || []).length >= 2 ? (
                   <>
@@ -3110,7 +3164,7 @@ export default function Profil() {
                     <span className="chart-value">{(chartWeightData || [])[0]?.weight ?? '—'} kg</span>
                     <span className="chart-date">{formatShortDate((chartWeightData || [])[0]?.date)}</span>
                     <p className="chart-hint">
-                      {chartWeightSource === 'measured'
+                      {chartWeightSource === 'withings' || chartWeightSource === 'measured'
                         ? 'Přidej další měření a uvidíš trend.'
                         : 'Přidej další měření nebo tréninky a uvidíš trend.'}
                     </p>
@@ -3119,7 +3173,7 @@ export default function Profil() {
                 </>
               ) : (
                 <p className="chart-empty">
-                  Zatím nemáme dost měření váhy. Připoj Withings nebo zapiš váhu ručně.
+                  Zatím nemáme žádné měření váhy. Připoj Withings nebo zapiš váhu ručně.
                 </p>
               )}
             </section>

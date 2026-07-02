@@ -6,10 +6,10 @@ Provozní dokument pro emailové šablony týdenního plánu Body & Mind ON.
 
 | Component | Status |
 |---|---|
-| **Default šablona** | `v7` (Dark Rounded Modern · pure HTML, no PNG) |
+| **Default šablona** | `v8` (structured dashboard e-mail, pure HTML) |
 | **Brand paleta** | Sky `#0EA5E9` + Lavender `#A78BFA` + Cyan `#22D3EE` na slate-900/800 backgrounds (sladěno s logem `public/favicon.svg`) |
-| **Env var** | `EMAIL_TEMPLATE_VERSION=v7` v production / development |
-| **Fallback chain** | v7 → v6 → v5 → v4 → v2 → legacy (HTML doc) |
+| **Env var** | `EMAIL_TEMPLATE_VERSION=v8` (nebo prázdné = default `v8`) |
+| **Fallback chain** | v8 → v7 → v6 → v5 → v4 → v2 → legacy (HTML doc) |
 | **Code path** | `lib/mail.js → sendPlanEmail()` |
 | **Asset host** | žádný (pure HTML, container 540 px) |
 | **Web view** | `pages/plan/[id].js` + `components/PlanWebView.js` (multi-column responzivní) |

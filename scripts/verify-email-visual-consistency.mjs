@@ -65,7 +65,7 @@ check('email header Body & Mind ON', /BODY\s*&amp;\s*MIND\s*ON|BODY & MIND ON/i.
 check('email hero připravený', /Tvůj plán je připravený/i.test(html));
 check('email dark page bg', html.includes(BM_ON_DESIGN.colors.bg) || html.includes('#0A1018'));
 check('email dark card bg', html.includes(BM_ON_DESIGN.colors.cardBg) || html.includes('#121826'));
-check('email CTA Otevřít plán', /Otevřít plán/i.test(html));
+check('email CTA Otevřít můj profil', /Otevřít můj profil/i.test(html));
 check('email CTA login redirect profil', /\/login\?redirect=.*profil/i.test(html));
 check('email bez hlavního CTA /start', !/href="[^"]*\/start"/i.test(html));
 check('email makro štítky kcal', /kcal/i.test(html));

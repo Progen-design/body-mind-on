@@ -1,6 +1,6 @@
 // /pages/profil.js – Modern Premium Profil (obnovení jen ručně tlačítkem, timeout 15s)
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
@@ -413,6 +413,7 @@ export default function Profil() {
   const [profileOpenSections, setProfileOpenSections] = useState(new Set(['muj-plan', 'denni-navyky']));
   const [planTab, setPlanTab] = useState('current'); // 'current' | 'next' – Varianta C: Můj plán
   const [statsTab, setStatsTab] = useState('overview'); // 'overview' | 'weight' | 'progress' – Varianta C: Statistiky a progres
+  const [withingsHeaderWeight, setWithingsHeaderWeight] = useState(null);
 
   const toggleProfileSection = (id) => {
     setProfileOpenSections((prev) => {
@@ -431,6 +432,15 @@ export default function Profil() {
       return next;
     });
   };
+  const handleWithingsHeaderWeight = useCallback((payload) => {
+    const weight = Number(payload?.weight_kg);
+    if (!Number.isFinite(weight)) return;
+    setWithingsHeaderWeight({
+      weight_kg: weight,
+      measured_at: payload?.measured_at || null,
+      source: 'withings',
+    });
+  }, []);
 
   const [workoutForm, setWorkoutForm] = useState({
     workout_date: '',
@@ -1570,7 +1580,15 @@ export default function Profil() {
     profile?.habit_summary_7d?.negativeDone,
   ]);
 
-  const heroWeightKg = profileDisplayWeight != null ? Number(profileDisplayWeight).toFixed(1) : null;
+  const heroWeightValue =
+    Number.isFinite(Number(withingsHeaderWeight?.weight_kg))
+      ? Number(withingsHeaderWeight.weight_kg)
+      : (profileDisplayWeight != null ? Number(profileDisplayWeight) : null);
+  const heroWeightKg = heroWeightValue != null ? heroWeightValue.toFixed(1).replace('.', ',') : null;
+  const heroWeightLabel =
+    Number.isFinite(Number(withingsHeaderWeight?.weight_kg))
+      ? 'Aktuální váha'
+      : profileWeightLabel;
 
   const canRegeneratePlan = membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired);
   const regenerateBlockedMessage = isTrialExpired
@@ -1961,7 +1979,7 @@ export default function Profil() {
                         </div>
                         <div className="plan-goal-stat">
                           <span className="plan-goal-stat-value">{heroWeightKg != null ? `${heroWeightKg} kg` : '—'}</span>
-                          <span className="plan-goal-stat-label">{profileWeightLabel}</span>
+                          <span className="plan-goal-stat-label">{heroWeightLabel}</span>
                         </div>
                       </div>
                     )}
@@ -2053,7 +2071,7 @@ export default function Profil() {
               </div>
               <div className="hero-stat">
                 <span className="hero-stat-value">{heroWeightKg != null ? `${heroWeightKg} kg` : '—'}</span>
-                <span className="hero-stat-label">{profileWeightLabel}</span>
+                <span className="hero-stat-label">{heroWeightLabel}</span>
               </div>
             </div>
           )}
@@ -2276,7 +2294,10 @@ export default function Profil() {
             {/* Sjednocený kontejner bublin – pro trenéra i klienta */}
             <div className={profile?.can_create_calendar_events ? 'profile-bubbles profile-bubbles--trainer' : 'profile-main-stack'}>
             {!profile?.can_create_calendar_events && (
-              <WithingsBodyDevelopmentSection profile={profile} />
+              <WithingsBodyDevelopmentSection
+                profile={profile}
+                onLatestWeightChange={handleWithingsHeaderWeight}
+              />
             )}
             {/* Mindset na tento týden (jen klienti) – nahoře před plánem */}
             {!profile?.can_create_calendar_events && mindsetTipFromPlan && (
@@ -2941,7 +2962,7 @@ export default function Profil() {
                 <div className="kpi-item">
                   <span className="kpi-icon">⚖️</span>
                   <span className="kpi-num">{heroWeightKg != null ? `${heroWeightKg} kg` : '—'}</span>
-                  <span className="kpi-label">{profileWeightLabel}</span>
+                  <span className="kpi-label">{heroWeightLabel}</span>
                 </div>
               </div>
               <div className="workload-panels">

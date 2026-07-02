@@ -34,7 +34,22 @@ function summarizeTrendQuality({ latest, trends, history }) {
   return 'low';
 }
 
-export default function WithingsBodyDevelopmentSection({ profile }) {
+function getLatestProfileWeightKg(profile) {
+  const metrics = Array.isArray(profile?.body_metrics)
+    ? [...profile.body_metrics].sort((a, b) => String(b?.created_at || '').localeCompare(String(a?.created_at || '')))
+    : [];
+  const latest = metrics.find((m) => Number.isFinite(Number(m?.weight_kg)));
+  return latest ? Number(latest.weight_kg) : null;
+}
+
+function weightsDiffer(a, b) {
+  const x = Number(a);
+  const y = Number(b);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+  return Math.abs(x - y) >= 0.05;
+}
+
+export default function WithingsBodyDevelopmentSection({ profile, onLatestWeightChange }) {
   const [session, setSession] = useState(null);
   const [latestData, setLatestData] = useState(null);
   const [historyItems, setHistoryItems] = useState([]);
@@ -44,6 +59,7 @@ export default function WithingsBodyDevelopmentSection({ profile }) {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [message, setMessage] = useState('');
   const autoSyncDoneRef = useRef(false);
+  const profileImportSyncDoneRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -69,6 +85,14 @@ export default function WithingsBodyDevelopmentSection({ profile }) {
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.error || 'Nelze načíst Withings data.');
       setLatestData(json);
+      const weight = Number(json?.latest?.weight_kg);
+      if (Number.isFinite(weight) && typeof onLatestWeightChange === 'function') {
+        onLatestWeightChange({
+          weight_kg: weight,
+          measured_at: json?.latest?.measured_at || null,
+          source: 'withings',
+        });
+      }
       return json;
     } catch (err) {
       setMessage(err?.message || 'Nelze načíst Withings data.');
@@ -76,7 +100,7 @@ export default function WithingsBodyDevelopmentSection({ profile }) {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, []);
+  }, [onLatestWeightChange]);
 
   const loadHistory = useCallback(async (token) => {
     if (!token) return;
@@ -138,6 +162,22 @@ export default function WithingsBodyDevelopmentSection({ profile }) {
     autoSyncDoneRef.current = true;
     runSync(token, { silent: true }).catch(() => {});
   }, [latestData, runSync, session?.access_token]);
+
+  useEffect(() => {
+    const token = session?.access_token;
+    if (!token || !latestData) return;
+    const latestWithingsWeight = Number(latestData?.latest?.weight_kg);
+    const latestProfileWeight = getLatestProfileWeightKg(profile);
+    if (
+      latestData?.connected === true &&
+      Number.isFinite(latestWithingsWeight) &&
+      weightsDiffer(latestWithingsWeight, latestProfileWeight) &&
+      !profileImportSyncDoneRef.current
+    ) {
+      profileImportSyncDoneRef.current = true;
+      runSync(token, { silent: true }).catch(() => {});
+    }
+  }, [latestData, profile, runSync, session?.access_token]);
 
   const connected = latestData?.connected === true;
   const profileProgram = profile?.program || 'START';

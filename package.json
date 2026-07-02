@@ -53,6 +53,7 @@
     "verify:withings-integration": "node scripts/verify-withings-integration.mjs",
     "verify:profile-macro-chart": "node scripts/verify-profile-macro-chart.mjs",
     "verify:profile-real-user-bugfixes": "node scripts/verify-profile-real-user-bugfixes.mjs",
+    "verify:footer-legal-links": "node scripts/verify-footer-legal-links.mjs",
     "regenerate:legacy-start-plans": "node scripts/regenerate-legacy-start-plans.mjs",
     "verify:run-coach-scheduler": "node scripts/verify-run-coach-scheduler.mjs",
     "preview:plan-email": "node scripts/preview-plan-email.mjs",

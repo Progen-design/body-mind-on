@@ -176,6 +176,19 @@ export default async function handler(req, res) {
       userChosePassword = authResult.userChosePassword === true;
     }
 
+    // Datum narození z registrace uložit i do auth user_metadata (stejný source čte profil/nastavení).
+    if (payload.user_id && birthDateRaw && authResult.existing !== true) {
+      try {
+        const { data: freshUser } = await supabaseServer.auth.admin.getUserById(payload.user_id);
+        const currentMeta = freshUser?.user?.user_metadata || {};
+        await supabaseServer.auth.admin.updateUserById(payload.user_id, {
+          user_metadata: { ...currentMeta, birth_date: birthDateRaw, ...(payload.name ? { name: currentMeta.name || payload.name } : {}) },
+        });
+      } catch (metaErr) {
+        console.warn('[body-metrics] birth_date user_metadata update failed:', metaErr?.message);
+      }
+    }
+
     // Existující účet: veřejný START formulář nesmí znovu vložit metriky ani spustit initial_plan (ten by přeskočil generování
     // a uživatel by viděl starý plán s blízkým valid_until). Přihlášení / obnova hesla je jediná bezpečná cesta.
     if (!authResult.error && authResult.existing === true) {

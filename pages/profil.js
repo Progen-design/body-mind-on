@@ -32,8 +32,6 @@ import {
   habitWeightCorrectionKg,
   roundLoadTotal,
 } from '../lib/progressModel';
-import { approximateBirthDateFromAge } from '../lib/bodyMetricsBirthDate';
-
 const PlanViewer = dynamic(() => import('../components/PlanViewer'), { ssr: false, loading: () => null });
 
 function trainingEnvironmentLabelFromMetrics(bm) {
@@ -604,8 +602,11 @@ export default function Profil() {
     ).filter((n) => Number.isFinite(n) && n >= 0 && n <= 6);
 
     const userMeta = profile?.user || {};
-    const birthFromMeta = typeof userMeta.birth_date === 'string' ? userMeta.birth_date : '';
-    const birthFromAge = !birthFromMeta && lm?.age ? approximateBirthDateFromAge(lm.age) : '';
+    // Jen skutečně uložené datum narození (/api/profile: user_metadata → body_metrics).
+    // Žádný dopočet z věku – chybějící datum zůstane prázdné, nikdy vymyšlený default.
+    const birthFromProfile = typeof userMeta.birth_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(userMeta.birth_date)
+      ? userMeta.birth_date
+      : '';
 
     setPreferencesError('');
     setPreferencesForm({
@@ -624,7 +625,7 @@ export default function Profil() {
       height_cm: lm?.height_cm != null
         ? String(lm.height_cm)
         : (userMeta.height_cm != null ? String(userMeta.height_cm) : ''),
-      birth_date: birthFromMeta || birthFromAge || '',
+      birth_date: birthFromProfile || '',
     });
     preferencesSnapshotRef.current = preferencesFieldsSnapshot({
       activity: activityToFormLabel(lm?.activity) || '',

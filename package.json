@@ -42,6 +42,8 @@
     "verify:meal-replacement-actions": "node scripts/verify-meal-replacement-actions.mjs",
     "verify:macro-kcal-consistency": "node scripts/verify-macro-kcal-consistency.mjs",
     "verify:profile-today-ux": "node scripts/verify-profile-today-ux.mjs",
+    "verify:profile-weekly-days-modern-ui": "node scripts/verify-profile-weekly-days-modern-ui.mjs",
+    "verify:birthdate-persistence": "node scripts/verify-birthdate-persistence.mjs",
     "verify:profile-layout-focus": "node scripts/verify-profile-layout-focus.mjs",
     "verify:profile-no-sales-upsell": "node scripts/verify-profile-no-sales-upsell.mjs",
     "verify:workout-exercise-copy": "node scripts/verify-workout-exercise-copy.mjs",

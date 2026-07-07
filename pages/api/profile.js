@@ -322,6 +322,18 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     const meta = user.user_metadata || {};
+    // Datum narození: primárně user_metadata, fallback nejnovější body_metrics řádek, který ho má.
+    // Žádný dopočet z věku – když datum chybí, vracíme null a UI zobrazí prázdnou hodnotu.
+    const birthDateFromMeta = typeof meta.birth_date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(meta.birth_date)
+      ? meta.birth_date.slice(0, 10)
+      : null;
+    const birthDateFromMetrics = (() => {
+      for (const row of bodyMetrics) {
+        const v = row?.birth_date;
+        if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0, 10);
+      }
+      return null;
+    })();
     return res.status(200).json({
       program,
       membershipStatus,
@@ -339,6 +351,7 @@ export default async function handler(req, res) {
         start_weight_kg: meta.start_weight_kg != null ? Number(meta.start_weight_kg) : null,
         goal_weight_kg: meta.goal_weight_kg != null ? Number(meta.goal_weight_kg) : null,
         height_cm: meta.height_cm != null ? Number(meta.height_cm) : null,
+        birth_date: birthDateFromMeta || birthDateFromMetrics || null,
         created_at: user.created_at || null,
       },
       body_metrics: bodyMetrics,

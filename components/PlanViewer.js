@@ -33,6 +33,7 @@ import { buildMacroPillCss, BM_ON_DESIGN, BM_ON_GRADIENTS } from '../lib/designT
 import { buildMacroEnergyNutritionHtml } from '../lib/recipeDetailHtml.js';
 import { buildStructuredWeekSource } from '../lib/plan/structuredWeekSource.js';
 import ProfileTodayPanels from './profile/ProfileTodayPanels';
+import ProfileDayMealsPanel from './profile/ProfileDayMealsPanel';
 import MacroRatioChart from './MacroRatioChart';
 
 function exerciseMediaMatchesName(name, canonicalKey) {
@@ -1458,6 +1459,112 @@ export default function PlanViewer({
                   const isDayExpanded = todayFirstLayout
                     ? expandedDayCards.has(di)
                     : true;
+                  const renderDayShoppingActions = () => {
+                      const dayKey = day.originalIndex ?? di;
+                      const daySection = buildShoppingSectionForDay({
+                        dayName: day.dayName || 'Den',
+                        dateStr: day.dateStr || '',
+                        meals: day.meals || [],
+                        recipes: parsed?.recipes || [],
+                        structuredPlan,
+                        dayIndex: dayKey,
+                        mealOverrides,
+                      });
+                      const dayList = daySection.items || [];
+                      const raw = dayShoppingState[dayKey];
+                      const dayState = {
+                        copyDone: raw?.copyDone ?? false,
+                        copyError: raw?.copyError ?? null,
+                        email: raw?.email && typeof raw.email === 'object'
+                          ? { loading: !!raw.email.loading, done: !!raw.email.done, error: raw.email.error ?? null }
+                          : { loading: false, done: false, error: null },
+                      };
+                      if (dayList.length === 0) return null;
+                      const copyAndOpenDay = () => {
+                        try {
+                          const text = Array.isArray(dayList) ? dayList.join('\n') : '';
+                          window.open('https://www.rohlik.cz/', '_blank', 'noopener,noreferrer');
+                          const key = dayKey;
+                          const safeSetCopyDone = (done, errorMsg = null) => {
+                            try {
+                              setDayShoppingState((s) => ({ ...s, [key]: { ...(s[key] || {}), copyDone: !!done, copyError: errorMsg || undefined } }));
+                            } catch (_) {}
+                          };
+                          // Odložit na další tick – po přihlášení první klik nesmí běžet během auth/load updatu
+                          setTimeout(() => {
+                            (async () => {
+                              try {
+                                if (navigator.clipboard?.writeText && text) {
+                                  await navigator.clipboard.writeText(text);
+                                  safeSetCopyDone(true);
+                                  setTimeout(() => safeSetCopyDone(false), 3000);
+                                }
+                              } catch (_) {
+                                safeSetCopyDone(false, 'Seznam se nepodařilo zkopírovat – vlož položky ručně ze seznamu níže (Ctrl+V na Rohlíku).');
+                                setTimeout(() => safeSetCopyDone(false, null), 6000);
+                              }
+                            })().catch(() => {});
+                          }, 0);
+                        } catch (_) {}
+                      };
+                      const handleSendEmailDay = async () => {
+                        setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: true, done: false, error: null } } }));
+                        try {
+                          const { data: { session } } = await supabase.auth.getSession();
+                          const token = session?.access_token;
+                          if (!token) {
+                            setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: false, error: 'Pro odeslání e-mailem se přihlas.' } } }));
+                            return;
+                          }
+                          const dayLabel = (day.dayName || 'Den') + (day.dateStr ? ` (${day.dateStr})` : '');
+                          const res = await fetch('/api/send-shopping-list', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                            body: JSON.stringify({ items: dayList, title: dayLabel }),
+                          });
+                          const data = await res.json();
+                          if (!res.ok) {
+                            setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: false, error: data.error || 'Nepodařilo odeslat.' } } }));
+                            return;
+                          }
+                          setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: true, error: null } } }));
+                          setTimeout(() => setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { ...(s[dayKey]?.email || {}), done: false } } })), 4000);
+                        } catch (e) {
+                          setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: false, error: 'Chyba připojení.' } } }));
+                        }
+                      };
+                      const handleShareWhatsAppDay = () => {
+                        const text = dayList.join('\n');
+                        const dayLabel = (day.dayName || 'Den') + (day.dateStr ? ` (${day.dateStr})` : '');
+                        const url = `https://wa.me/?text=${encodeURIComponent('🛒 Suroviny na tento den – ' + dayLabel + ':\n\n' + text)}`;
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      };
+                      return (
+                        <div className="plan-day-shopping-actions plan-order-ingredients">
+                          <div className="plan-shopping-actions">
+                            <button type="button" className="plan-btn-order" onClick={copyAndOpenDay}>
+                              🛒 Nákupní seznam
+                            </button>
+                            <button type="button" className="plan-btn-share" onClick={handleSendEmailDay} disabled={dayState.email.loading}>
+                              {dayState.email.loading ? 'Odesílám…' : '✉️ Poslat e-mailem'}
+                            </button>
+                            <button type="button" className="plan-btn-share" onClick={handleShareWhatsAppDay}>
+                              📱 Sdílet WhatsApp
+                            </button>
+                          </div>
+                          {dayState.copyDone && <span className="plan-copy-hint">Seznam zkopírován do schránky</span>}
+                          {dayState.copyError && <span className="plan-copy-hint plan-copy-error">{dayState.copyError}</span>}
+                          {dayState.email.done && <span className="plan-copy-hint plan-copy-success">Odesláno na e-mail</span>}
+                          {dayState.email.error && <span className="plan-copy-hint plan-copy-error">{dayState.email.error}</span>}
+                          <p className="plan-order-links">
+                            Seznam se zkopíruje a otevře se <a href="https://www.rohlik.cz/" target="_blank" rel="noopener noreferrer">Rohlík.cz</a>.
+                            Můžeš ho vložit v nákupním seznamu (Ctrl+V). Případně nákup vyřídíš na{' '}
+                            <a href="https://www.kosik.cz/" target="_blank" rel="noopener noreferrer">Košík.cz</a> nebo{' '}
+                            <a href="https://shop.billa.cz/" target="_blank" rel="noopener noreferrer">Billa e-shop</a>.
+                          </p>
+                        </div>
+                      );
+                  };
                   return (
                   <div
                     id={`plan-day-card-${di}`}
@@ -1504,6 +1611,40 @@ export default function PlanViewer({
                         >
                           ↑ Přejít na Dnešní plán
                         </button>
+                      </div>
+                    ) : todayFirstLayout ? (
+                      // Ostatní dny v týdenním přehledu: stejný moderní design jako horní „Dnešní plán“ (sdílený renderer).
+                      <div className="plan-day-modern">
+                        {day._placeholder && (day.meals || []).length === 0 ? (
+                          <p className="plan-day-placeholder-msg">Pro tento den se nepodařilo načíst jídla. Zkus znovu načíst plán nebo kontaktuj podporu.</p>
+                        ) : null}
+                        <ProfileDayMealsPanel
+                          meals={day.meals || []}
+                          structDay={structDayForTotal}
+                          planHtml={plan?.plan_html || ''}
+                          dayName={day.dayName || ''}
+                          dayIndexForKeys={day.originalIndex ?? di}
+                          canPinMeals={canPinMeals}
+                          onRecipeClick={(mi, e) => performOpenRecipe(di, mi, e)}
+                          onSwapClick={(mi) => performMealSwap(di, mi)}
+                          onPinClick={(mi) => performPinMealForNextWeek(di, mi)}
+                          isMealPinned={(mealType, mealText) => isPinned(mealType, mealText)}
+                          pinToastByKey={pinToastMsg?.key ? { [pinToastMsg.key]: pinToastMsg } : {}}
+                          workout={showTrainingInProfile
+                            ? (day.structDay?.workout ?? structuredPlan?.days?.[day.originalIndex ?? di]?.workout ?? null)
+                            : null}
+                          showWorkout={showTrainingInProfile}
+                          onExerciseClick={(xi) => performOpenExercise(di, xi, { excludeRest: true })}
+                        />
+                        {dayKcalTotal > 0 ? (
+                          <p className="plan-day-kcal-total">
+                            <strong>Celkem za den:</strong> {Math.round(dayKcalTotal).toLocaleString('cs-CZ')} kcal
+                          </p>
+                        ) : null}
+                        {day.afterPlanEnd ? (
+                          <p className="plan-day-after-validity">Tento den už spadá mimo datum platnosti uloženého plánu — zobrazení je orientační.</p>
+                        ) : null}
+                        {renderDayShoppingActions()}
                       </div>
                     ) : (
                     <>
@@ -1692,112 +1833,7 @@ export default function PlanViewer({
                     {day.afterPlanEnd ? (
                       <p className="plan-day-after-validity">Tento den už spadá mimo datum platnosti uloženého plánu — zobrazení je orientační.</p>
                     ) : null}
-                    {(() => {
-                      const dayKey = day.originalIndex ?? di;
-                      const daySection = buildShoppingSectionForDay({
-                        dayName: day.dayName || 'Den',
-                        dateStr: day.dateStr || '',
-                        meals: day.meals || [],
-                        recipes: parsed?.recipes || [],
-                        structuredPlan,
-                        dayIndex: dayKey,
-                        mealOverrides,
-                      });
-                      const dayList = daySection.items || [];
-                      const raw = dayShoppingState[dayKey];
-                      const dayState = {
-                        copyDone: raw?.copyDone ?? false,
-                        copyError: raw?.copyError ?? null,
-                        email: raw?.email && typeof raw.email === 'object'
-                          ? { loading: !!raw.email.loading, done: !!raw.email.done, error: raw.email.error ?? null }
-                          : { loading: false, done: false, error: null },
-                      };
-                      if (dayList.length === 0) return null;
-                      const copyAndOpenDay = () => {
-                        try {
-                          const text = Array.isArray(dayList) ? dayList.join('\n') : '';
-                          window.open('https://www.rohlik.cz/', '_blank', 'noopener,noreferrer');
-                          const key = dayKey;
-                          const safeSetCopyDone = (done, errorMsg = null) => {
-                            try {
-                              setDayShoppingState((s) => ({ ...s, [key]: { ...(s[key] || {}), copyDone: !!done, copyError: errorMsg || undefined } }));
-                            } catch (_) {}
-                          };
-                          // Odložit na další tick – po přihlášení první klik nesmí běžet během auth/load updatu
-                          setTimeout(() => {
-                            (async () => {
-                              try {
-                                if (navigator.clipboard?.writeText && text) {
-                                  await navigator.clipboard.writeText(text);
-                                  safeSetCopyDone(true);
-                                  setTimeout(() => safeSetCopyDone(false), 3000);
-                                }
-                              } catch (_) {
-                                safeSetCopyDone(false, 'Seznam se nepodařilo zkopírovat – vlož položky ručně ze seznamu níže (Ctrl+V na Rohlíku).');
-                                setTimeout(() => safeSetCopyDone(false, null), 6000);
-                              }
-                            })().catch(() => {});
-                          }, 0);
-                        } catch (_) {}
-                      };
-                      const handleSendEmailDay = async () => {
-                        setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: true, done: false, error: null } } }));
-                        try {
-                          const { data: { session } } = await supabase.auth.getSession();
-                          const token = session?.access_token;
-                          if (!token) {
-                            setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: false, error: 'Pro odeslání e-mailem se přihlas.' } } }));
-                            return;
-                          }
-                          const dayLabel = (day.dayName || 'Den') + (day.dateStr ? ` (${day.dateStr})` : '');
-                          const res = await fetch('/api/send-shopping-list', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                            body: JSON.stringify({ items: dayList, title: dayLabel }),
-                          });
-                          const data = await res.json();
-                          if (!res.ok) {
-                            setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: false, error: data.error || 'Nepodařilo odeslat.' } } }));
-                            return;
-                          }
-                          setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: true, error: null } } }));
-                          setTimeout(() => setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { ...(s[dayKey]?.email || {}), done: false } } })), 4000);
-                        } catch (e) {
-                          setDayShoppingState((s) => ({ ...s, [dayKey]: { ...(s[dayKey] || {}), email: { loading: false, done: false, error: 'Chyba připojení.' } } }));
-                        }
-                      };
-                      const handleShareWhatsAppDay = () => {
-                        const text = dayList.join('\n');
-                        const dayLabel = (day.dayName || 'Den') + (day.dateStr ? ` (${day.dateStr})` : '');
-                        const url = `https://wa.me/?text=${encodeURIComponent('🛒 Suroviny na tento den – ' + dayLabel + ':\n\n' + text)}`;
-                        window.open(url, '_blank', 'noopener,noreferrer');
-                      };
-                      return (
-                        <div className="plan-day-shopping-actions plan-order-ingredients">
-                          <div className="plan-shopping-actions">
-                            <button type="button" className="plan-btn-order" onClick={copyAndOpenDay}>
-                              🛒 Nákupní seznam
-                            </button>
-                            <button type="button" className="plan-btn-share" onClick={handleSendEmailDay} disabled={dayState.email.loading}>
-                              {dayState.email.loading ? 'Odesílám…' : '✉️ Poslat e-mailem'}
-                            </button>
-                            <button type="button" className="plan-btn-share" onClick={handleShareWhatsAppDay}>
-                              📱 Sdílet WhatsApp
-                            </button>
-                          </div>
-                          {dayState.copyDone && <span className="plan-copy-hint">Seznam zkopírován do schránky</span>}
-                          {dayState.copyError && <span className="plan-copy-hint plan-copy-error">{dayState.copyError}</span>}
-                          {dayState.email.done && <span className="plan-copy-hint plan-copy-success">Odesláno na e-mail</span>}
-                          {dayState.email.error && <span className="plan-copy-hint plan-copy-error">{dayState.email.error}</span>}
-                          <p className="plan-order-links">
-                            Seznam se zkopíruje a otevře se <a href="https://www.rohlik.cz/" target="_blank" rel="noopener noreferrer">Rohlík.cz</a>.
-                            Můžeš ho vložit v nákupním seznamu (Ctrl+V). Případně nákup vyřídíš na{' '}
-                            <a href="https://www.kosik.cz/" target="_blank" rel="noopener noreferrer">Košík.cz</a> nebo{' '}
-                            <a href="https://shop.billa.cz/" target="_blank" rel="noopener noreferrer">Billa e-shop</a>.
-                          </p>
-                        </div>
-                      );
-                    })()}
+                    {renderDayShoppingActions()}
                     </>
                     )
                     ) : null}
@@ -2838,6 +2874,14 @@ const planSectionStyles = `
     justify-content: space-between;
     gap: 12px;
     padding: 16px 18px;
+  }
+  .plan-day-modern {
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+    max-width: 100%;
   }
   .plan-day-today-compact-msg {
     margin: 0;

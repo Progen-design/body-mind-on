@@ -1,28 +1,7 @@
 import { getMealNutritionDisplay } from '../../lib/mealNutritionDisplay.js';
 import MacroRatioChart from '../MacroRatioChart.js';
-import { mealDisplayTitleForStructuredMeal } from '../../lib/mealDisplayNameHelpers.js';
-import { createMealDisplayModelFromStructuredMeal } from '../../lib/mealRecipeDisplay.js';
 import { formatExerciseSetsRepsDisplay } from '../../lib/planDataIntegrity.js';
-
-function mealTypeLabel(type) {
-  const t = String(type || '').toLowerCase();
-  if (t === 'breakfast') return 'Snídaně';
-  if (t === 'snack') return 'Svačina';
-  if (t === 'lunch') return 'Oběd';
-  if (t === 'dinner') return 'Večeře';
-  return type || 'Jídlo';
-}
-
-function topIngredients(structMeal, limit = 3) {
-  const model = structMeal ? createMealDisplayModelFromStructuredMeal(structMeal) : null;
-  const fromModel = Array.isArray(model?.ingredients) ? model.ingredients : [];
-  if (fromModel.length) return fromModel.slice(0, limit);
-  const raw = structMeal?.ingredients || structMeal?.recipe?.ingredients;
-  if (Array.isArray(raw)) {
-    return raw.map((x) => (typeof x === 'string' ? x : x?.name || x?.original || '')).filter(Boolean).slice(0, limit);
-  }
-  return [];
-}
+import ProfileDayMealsPanel from './ProfileDayMealsPanel.js';
 
 function sumDayNutrition(meals, structDay) {
   let kcal = 0;
@@ -140,74 +119,19 @@ export default function ProfileTodayPanels({
 
       <section id="profile-today-meals" className="profile-today-section" aria-labelledby="profile-today-meals-heading">
         <h3 id="profile-today-meals-heading" className="profile-today-section-title">Dnešní jídla</h3>
-        <div className="profile-today-meals-list">
-          {meals.map((meal, mi) => {
-            const structMeal = structDay?.meals?.[mi]
-              || structDay?.meals?.find((m) => (m?.type || '') === (meal?.type || ''));
-            const title = structMeal
-              ? mealDisplayTitleForStructuredMeal(structMeal, planHtml, todayDay.dayName || '')
-              : (meal.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-            const nutrition = getMealNutritionDisplay(structMeal || meal);
-            const ings = topIngredients(structMeal);
-            const mealKey = `${todayDay.originalIndex ?? todayDayIndex}_${mi}`;
-            const pinned = isMealPinned?.(meal.type || '', title) || false;
-            const pinToast = pinToastByKey[mealKey];
-            return (
-              <article key={`${meal.type}-${mi}`} className="profile-today-meal-card">
-                <span className="profile-today-meal-type">{mealTypeLabel(meal.type)}</span>
-                <h4 className="profile-today-meal-title">{title || mealTypeLabel(meal.type)}</h4>
-                {nutrition.calories != null ? (
-                  <p className="profile-today-meal-kcal-main">{nutrition.calories} kcal</p>
-                ) : null}
-                <p className="profile-today-meal-macros">
-                  {nutrition.protein_g != null ? `Bílkoviny ${nutrition.protein_g} g` : ''}
-                  {nutrition.carbs_g != null ? ` · Sacharidy ${nutrition.carbs_g} g` : ''}
-                  {nutrition.fat_g != null ? ` · Tuky ${nutrition.fat_g} g` : ''}
-                </p>
-                <MacroRatioChart
-                  protein_g={nutrition.protein_g}
-                  carbs_g={nutrition.carbs_g}
-                  fat_g={nutrition.fat_g}
-                  calories={nutrition.calories}
-                  compact
-                />
-                {ings.length > 0 ? (
-                  <p className="profile-today-meal-ingredients">{ings.join(' · ')}</p>
-                ) : null}
-                <div className="profile-today-meal-actions">
-                  <button
-                    type="button"
-                    className="profile-today-recipe-btn"
-                    onClick={() => onRecipeClick?.(mi)}
-                  >
-                    Recept
-                  </button>
-                  <button
-                    type="button"
-                    className="profile-today-secondary-btn"
-                    onClick={() => onSwapClick?.(mi)}
-                  >
-                    Nahradit jiným
-                  </button>
-                  {canPinMeals ? (
-                    <button
-                      type="button"
-                      className={`profile-today-secondary-btn ${pinned ? 'profile-today-secondary-btn--active' : ''}`}
-                      onClick={() => onPinClick?.(mi)}
-                    >
-                      {pinned ? '✓ Zahrnuto od dalšího týdne' : 'Zahrnout od dalšího týdne'}
-                    </button>
-                  ) : null}
-                </div>
-                {pinToast ? (
-                  <p className={`profile-today-pin-toast profile-today-pin-toast--${pinToast.type || 'success'}`}>
-                    {pinToast.message}
-                  </p>
-                ) : null}
-              </article>
-            );
-          })}
-        </div>
+        <ProfileDayMealsPanel
+          meals={meals}
+          structDay={structDay}
+          planHtml={planHtml}
+          dayName={todayDay.dayName || ''}
+          dayIndexForKeys={todayDay.originalIndex ?? todayDayIndex}
+          canPinMeals={canPinMeals}
+          onRecipeClick={(mi) => onRecipeClick?.(mi)}
+          onSwapClick={(mi) => onSwapClick?.(mi)}
+          onPinClick={(mi) => onPinClick?.(mi)}
+          isMealPinned={isMealPinned}
+          pinToastByKey={pinToastByKey}
+        />
         <button type="button" className="profile-today-link-btn" onClick={onScrollToWeek}>
           Celý týdenní jídelníček
         </button>
@@ -355,87 +279,6 @@ export default function ProfileTodayPanels({
           font-size: 18px;
           font-weight: 700;
           color: #e9d5ff;
-        }
-        .profile-today-meals-list {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        .profile-today-meal-card {
-          background: rgba(30, 41, 59, 0.7);
-          border: 1px solid rgba(148, 163, 184, 0.2);
-          border-radius: 12px;
-          padding: 14px;
-          min-width: 0;
-          max-width: 100%;
-        }
-        .profile-today-meal-type {
-          display: block;
-          font-size: 12px;
-          font-weight: 700;
-          color: #38bdf8;
-          text-transform: uppercase;
-          margin-bottom: 6px;
-        }
-        .profile-today-meal-title {
-          margin: 0 0 6px;
-          font-size: 16px;
-          color: #f1f5f9;
-        }
-        .profile-today-meal-kcal-main {
-          margin: 0 0 8px;
-          font-size: 18px;
-          font-weight: 800;
-          color: #f8fafc;
-        }
-        .profile-today-meal-macros,
-        .profile-today-meal-ingredients {
-          margin: 0 0 10px;
-          font-size: 13px;
-          color: #94a3b8;
-          line-height: 1.45;
-        }
-        .profile-today-meal-actions {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          margin-top: 12px;
-        }
-        .profile-today-recipe-btn {
-          width: 100%;
-          min-height: 48px;
-          border: none;
-          border-radius: 10px;
-          background: rgba(124, 58, 237, 0.35);
-          border: 1px solid rgba(167, 139, 250, 0.5);
-          color: #f5f3ff;
-          font-weight: 700;
-          font-size: 15px;
-          cursor: pointer;
-        }
-        .profile-today-secondary-btn {
-          width: 100%;
-          min-height: 48px;
-          border-radius: 10px;
-          background: rgba(30, 41, 59, 0.6);
-          border: 1px solid rgba(148, 163, 184, 0.35);
-          color: #e2e8f0;
-          font-weight: 600;
-          font-size: 14px;
-          cursor: pointer;
-          padding: 10px 14px;
-        }
-        .profile-today-secondary-btn--active {
-          border-color: rgba(74, 222, 128, 0.5);
-          color: #bbf7d0;
-        }
-        .profile-today-pin-toast {
-          margin: 8px 0 0;
-          font-size: 13px;
-          color: #86efac;
-        }
-        .profile-today-pin-toast--error {
-          color: #fca5a5;
         }
         .profile-today-link-btn {
           margin-top: 12px;

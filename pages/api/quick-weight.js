@@ -49,6 +49,7 @@ export default async function handler(req, res) {
       name: latest?.name ?? user.user_metadata?.name ?? null,
       gender: latest?.gender ?? null,
       age: latest?.age ?? null,
+      birth_date: latest?.birth_date ?? null,
       activity: latest?.activity ?? null,
       stress_level: latest?.stress_level ?? null,
       occupation: latest?.occupation ?? null,

@@ -24,6 +24,7 @@ function read(relPath) {
 const profil = read('pages/profil.js');
 const planViewer = read('components/PlanViewer.js');
 const todayPanels = read('components/profile/ProfileTodayPanels.js');
+const dayMealsPanel = read('components/profile/ProfileDayMealsPanel.js');
 const packageJson = read('package.json');
 
 check('profil importuje ProfileTodayPanels přes PlanViewer', planViewer.includes("import ProfileTodayPanels from './profile/ProfileTodayPanels'"));
@@ -36,12 +37,13 @@ check('sekce „Dnešní plán“', todayPanels.includes('Dnešní plán'));
 check('lead text dnešního plánu', todayPanels.includes('Tvůj dnešní plán je připravený.'));
 check('sekce „Dnešní jídla“', todayPanels.includes('Dnešní jídla'));
 check('sekce „Dnešní trénink“', todayPanels.includes('Dnešní trénink'));
-check('CTA Recept u dnešních jídel', todayPanels.includes('profile-today-recipe-btn') && todayPanels.includes('Recept'));
-check('CTA Nahradit jiným u dnešních jídel', todayPanels.includes('Nahradit jiným'));
-check('CTA Zahrnout od dalšího týdne u dnešních jídel', todayPanels.includes('Zahrnout od dalšího týdne'));
+check('dnešní jídla renderuje sdílený ProfileDayMealsPanel', todayPanels.includes('ProfileDayMealsPanel'));
+check('CTA Recept u dnešních jídel', dayMealsPanel.includes('profile-today-recipe-btn') && dayMealsPanel.includes('Recept'));
+check('CTA Nahradit jiným u dnešních jídel', dayMealsPanel.includes('Nahradit jiným'));
+check('CTA Zahrnout od dalšího týdne u dnešních jídel', dayMealsPanel.includes('Zahrnout od dalšího týdne'));
 check('CTA Jak cvik provést', todayPanels.includes('Jak cvik provést'));
 check('typ prostředí v tréninku', todayPanels.includes('profile-today-env-badge') || todayPanels.includes('profile-today-workout-env'));
-check('MacroRatioChart v dnešních jídlech', todayPanels.includes('MacroRatioChart'));
+check('MacroRatioChart v dnešních jídlech', dayMealsPanel.includes('MacroRatioChart'));
 check('MacroRatioChart v PlanViewer u jídel', planViewer.includes('MacroRatioChart'));
 check('denní makro graf v today hero', todayPanels.includes('Jídlo dnes') && todayPanels.includes('MacroRatioChart'));
 

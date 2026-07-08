@@ -5,6 +5,10 @@
       },
       "crons": [
             {
+                  "path": "/api/ai/run-coach-scheduler",
+                  "schedule": "*/5 * * * *"
+            },
+            {
                   "path": "/api/cron/withings-sync",
                   "schedule": "0 5 * * *"
             }

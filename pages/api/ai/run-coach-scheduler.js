@@ -1,5 +1,6 @@
 // /pages/api/ai/run-coach-scheduler.js — coach-only task queue (bez plan tasků)
 import { runAICoachScheduler } from '../../../lib/aiScheduler';
+import { sanitizeErrorMessage } from '../../../lib/safeLog';
 
 export const config = { maxDuration: 120 };
 
@@ -25,7 +26,8 @@ export default async function handler(req, res) {
     console.info('[run-coach-scheduler] completed', run);
     return res.status(200).json({ ok: true, scheduler: run });
   } catch (err) {
-    console.error('[run-coach-scheduler] error', err);
-    return res.status(500).json({ error: String(err?.message || err) });
+    const safeMessage = sanitizeErrorMessage(err?.message || String(err));
+    console.error('[run-coach-scheduler] error', safeMessage);
+    return res.status(500).json({ error: safeMessage || 'Scheduler failed' });
   }
 }

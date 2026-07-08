@@ -54,7 +54,7 @@ if (!existsSync(vercelJsonPath)) {
   const crons = Array.isArray(vercelJson.crons) ? vercelJson.crons : [];
   const coachCron = crons.find((c) => c.path === '/api/ai/run-coach-scheduler');
   check('vercel.json má coach scheduler cron', Boolean(coachCron));
-  check('coach cron schedule */5 * * * *', coachCron?.schedule === '*/5 * * * *');
+  check('coach cron schedule 0 6 * * * (Hobby: max 1x/day)', coachCron?.schedule === '0 6 * * *');
   const maxDuration = vercelJson.functions?.['pages/api/ai/run-coach-scheduler.js']?.maxDuration;
   check('coach scheduler maxDuration 120s', maxDuration === 120);
 }

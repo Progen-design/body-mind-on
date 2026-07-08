@@ -60,6 +60,7 @@
     "regenerate:legacy-start-plans": "node scripts/regenerate-legacy-start-plans.mjs",
     "verify:run-coach-scheduler": "node scripts/verify-run-coach-scheduler.mjs",
     "verify:coach-fallback": "node scripts/verify-coach-fallback.mjs",
+    "verify:coach-cron": "node scripts/verify-coach-cron.mjs",
     "preview:plan-email": "node scripts/preview-plan-email.mjs",
     "check:cursor-access": "node scripts/check-cursor-access.mjs",
     "env:pull": "vercel env pull .env.local --environment production --yes",

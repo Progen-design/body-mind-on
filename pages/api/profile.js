@@ -7,6 +7,7 @@ import { sortMealsChronologically } from '../../lib/mealOrder';
 import { ensureInitialPlanTask } from '../../lib/ensureInitialPlanTask';
 import { getRegistrationAnchoredWeek } from '../../lib/profileWeekRange';
 import { reconcileUserDataByEmail } from '../../lib/reconcileUserDataByEmail';
+import { shouldShowWithingsSection } from '../../lib/withingsProfileVisibility';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -36,7 +37,7 @@ export default async function handler(req, res) {
     const now = new Date();
     const { weekStartStr, weekEndStr } = getRegistrationAnchoredWeek(now, user.created_at);
 
-    const [metricsRes, plansRes, workoutsRes, userHabitsRes, membershipRes, habitLogsRes, profileRes, coachMessagesRes, initialPlanTaskRes] = await Promise.allSettled([
+    const [metricsRes, plansRes, workoutsRes, userHabitsRes, membershipRes, habitLogsRes, profileRes, coachMessagesRes, initialPlanTaskRes, withingsConnRes] = await Promise.allSettled([
       supabaseServer
         .from('body_metrics')
         .select('*')
@@ -88,6 +89,12 @@ export default async function handler(req, res) {
         .eq('agent_slug', 'trainer')
         .eq('task_type', 'initial_plan')
         .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabaseServer
+        .from('withings_connections')
+        .select('id')
+        .eq('user_id', userId)
         .limit(1)
         .maybeSingle(),
     ]);
@@ -318,10 +325,19 @@ export default async function handler(req, res) {
 
     const trainerEmail = (process.env.TRAINER_EMAIL || process.env.TRAINER_GMAIL || '').toLowerCase().trim();
     const canCreateCalendarEvents = !!trainerEmail && email === trainerEmail;
+    const withingsConnRow = (withingsConnRes.status === 'fulfilled' && withingsConnRes.value?.data)
+      ? withingsConnRes.value.data
+      : null;
+    const hasWithingsConnection = Boolean(withingsConnRow?.id);
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     const meta = user.user_metadata || {};
+    const wantsBodyTracking = meta.wants_body_tracking === true;
+    const smartScaleProvider =
+      meta.smart_scale_provider === 'withings' || meta.smart_scale_provider === 'other'
+        ? meta.smart_scale_provider
+        : null;
     // Datum narození: primárně user_metadata, fallback nejnovější body_metrics řádek, který ho má.
     // Žádný dopočet z věku – když datum chybí, vracíme null a UI zobrazí prázdnou hodnotu.
     const birthDateFromMeta = typeof meta.birth_date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(meta.birth_date)
@@ -334,7 +350,7 @@ export default async function handler(req, res) {
       }
       return null;
     })();
-    return res.status(200).json({
+    const profilePayload = {
       program,
       membershipStatus,
       membershipSince,
@@ -342,6 +358,7 @@ export default async function handler(req, res) {
       isTrialExpired: isTrialExpired || undefined,
       daysUntilTrialEnd: daysUntilTrialEnd != null ? daysUntilTrialEnd : undefined,
       can_create_calendar_events: canCreateCalendarEvents,
+      has_withings_connection: hasWithingsConnection,
       user: {
         id: user.id,
         email: user.email,
@@ -353,10 +370,20 @@ export default async function handler(req, res) {
         height_cm: meta.height_cm != null ? Number(meta.height_cm) : null,
         birth_date: birthDateFromMeta || birthDateFromMetrics || null,
         created_at: user.created_at || null,
+        wants_body_tracking: wantsBodyTracking,
+        smart_scale_provider: smartScaleProvider,
       },
       body_metrics: bodyMetrics,
       user_habits: userHabits,
       plans: plansData,
+      show_withings_section: shouldShowWithingsSection({
+        has_withings_connection: hasWithingsConnection,
+        user: {
+          wants_body_tracking: wantsBodyTracking,
+          smart_scale_provider: smartScaleProvider,
+        },
+        body_metrics: bodyMetrics,
+      }),
       coach_messages: coachMessages,
       workouts,
       _diagnostics: {
@@ -452,7 +479,9 @@ export default async function handler(req, res) {
         negativeDone,
         byHabit,
       },
-    });
+    };
+
+    return res.status(200).json(profilePayload);
   } catch (err) {
     console.error('[profile] ERROR:', err);
     return res.status(500).json({ error: 'Chyba serveru' });

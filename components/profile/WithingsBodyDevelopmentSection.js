@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { formatTrendDelta } from '../../lib/withings/withingsTrends.js';
+import { shouldShowWithingsSection } from '../../lib/withingsProfileVisibility';
 
 const AUTO_SYNC_WINDOW_MS = 30 * 60 * 1000;
 
@@ -50,6 +51,10 @@ function weightsDiffer(a, b) {
 }
 
 export default function WithingsBodyDevelopmentSection({ profile, onLatestWeightChange, onWeightHistoryChange }) {
+  const sectionVisible = useMemo(
+    () => profile?.show_withings_section === true || shouldShowWithingsSection(profile),
+    [profile]
+  );
   const [session, setSession] = useState(null);
   const [latestData, setLatestData] = useState(null);
   const [historyItems, setHistoryItems] = useState([]);
@@ -152,9 +157,9 @@ export default function WithingsBodyDevelopmentSection({ profile, onLatestWeight
 
   useEffect(() => {
     const token = session?.access_token;
-    if (!token) return;
+    if (!token || !sectionVisible) return;
     loadLatest(token);
-  }, [session?.access_token, loadLatest]);
+  }, [sectionVisible, session?.access_token, loadLatest]);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -244,6 +249,8 @@ export default function WithingsBodyDevelopmentSection({ profile, onLatestWeight
 
   const infoText = 'Hodnoty z chytré váhy se používají pro vyhodnocení trendu. Další týdenní plán se může automaticky upravit podle vývoje, ne podle jednoho měření.';
   const measuredAt = latest?.measured_at || latestData?.connection?.last_sync_at;
+
+  if (!sectionVisible) return null;
 
   return (
     <section className="withings-body-dev" aria-label="Tělesný vývoj" data-profile-program={profileProgram}>

@@ -15,6 +15,7 @@ import Toast from '../components/Toast';
 import WorkoutOverlay from '../components/profile/WorkoutOverlay';
 import PreferencesOverlay from '../components/profile/PreferencesOverlay';
 import WithingsBodyDevelopmentSection from '../components/profile/WithingsBodyDevelopmentSection';
+import { shouldShowWithingsSection } from '../lib/withingsProfileVisibility';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
 import { validatePublishedPlanHtml } from '../lib/validatePlanHtml';
@@ -381,6 +382,7 @@ export default function Profil() {
   const [calendarEventSubmit, setCalendarEventSubmit] = useState({ loading: false, message: '', checklist: [] });
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState('');
+  const [avatarImageBroken, setAvatarImageBroken] = useState(false);
   const avatarInputRef = useRef(null);
   const anyProfileModalOpen = showSettingsModal || showDeleteAccountModal;
   const [avatarCrop, setAvatarCrop] = useState({ open: false, src: null, file: null, offset: { x: 0, y: 0 }, size: { w: 0, h: 0 }, dragStart: null });
@@ -414,6 +416,13 @@ export default function Profil() {
   const [withingsHeaderWeight, setWithingsHeaderWeight] = useState(null);
   const [withingsWeightHistory, setWithingsWeightHistory] = useState([]);
   const [withingsHistoryLoaded, setWithingsHistoryLoaded] = useState(false);
+
+  useEffect(() => {
+    setAvatarImageBroken(false);
+  }, [profile?.user?.avatar_url]);
+
+  const showWithingsProfileSection =
+    profile?.show_withings_section === true || shouldShowWithingsSection(profile);
 
   const toggleProfileSection = (id) => {
     setProfileOpenSections((prev) => {
@@ -1933,6 +1942,36 @@ export default function Profil() {
         saving={savingPreferences}
         workoutDayLabels={WORKOUT_DAY_LABELS}
       />
+      {avatarCrop.open && avatarCrop.src && renderPortal(
+        <div className="avatar-crop-overlay" onClick={closeAvatarCropModal}>
+          <div className="avatar-crop-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="avatar-crop-title">Uprav obrázek</h3>
+            <p className="avatar-crop-hint">Posuň obrázek pro výběr oblasti. Ořízne se na čtverec a zmenší pro nahrání.</p>
+            <div
+              className="avatar-crop-box"
+              ref={avatarCropContainerRef}
+              onMouseDown={avatarCropDragStart}
+              onMouseLeave={avatarCropDragEnd}
+            >
+              <img
+                ref={avatarCropImageRef}
+                src={avatarCrop.src}
+                alt=""
+                className="avatar-crop-img"
+                style={{
+                  objectPosition: `${50 + (avatarCrop.offset.x / 300) * 50}% ${50 + (avatarCrop.offset.y / 300) * 50}%`,
+                }}
+                onLoad={onAvatarCropImageLoad}
+                draggable={false}
+              />
+            </div>
+            <div className="avatar-crop-actions">
+              <button type="button" className="avatar-crop-btn-cancel" onClick={closeAvatarCropModal}>Zrušit</button>
+              <button type="button" className="avatar-crop-btn-confirm" onClick={confirmAvatarCropAndUpload} disabled={!avatarCrop.size.w}>Oříznout a nahrát</button>
+            </div>
+          </div>
+        </div>
+      )}
       <Header />
       <main className="page">
         <div className="page-bg-decor" aria-hidden>
@@ -1963,8 +2002,13 @@ export default function Profil() {
                     </div>
                     <div className="profile-hero-avatar-wrap">
                       <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="profile-hero-avatar-btn" aria-label="Změnit profilový obrázek">
-                        {profile?.user?.avatar_url ? (
-                          <img src={profile.user.avatar_url} alt="" className="profile-hero-avatar" />
+                        {profile?.user?.avatar_url && !avatarImageBroken ? (
+                          <img
+                            src={profile.user.avatar_url}
+                            alt=""
+                            className="profile-hero-avatar"
+                            onError={() => setAvatarImageBroken(true)}
+                          />
                         ) : (
                           <span className="profile-hero-avatar-placeholder" aria-hidden>{firstName?.charAt(0)?.toUpperCase() || '?'}</span>
                         )}
@@ -2083,8 +2127,13 @@ export default function Profil() {
           <div className="hero-avatar-wrap">
             {profile?.can_create_calendar_events && (
               <>
-                {profile?.user?.avatar_url ? (
-                  <img src={profile.user.avatar_url} alt="" className="hero-avatar" />
+                {profile?.user?.avatar_url && !avatarImageBroken ? (
+                  <img
+                    src={profile.user.avatar_url}
+                    alt=""
+                    className="hero-avatar"
+                    onError={() => setAvatarImageBroken(true)}
+                  />
                 ) : (
                   <span className="hero-avatar-placeholder" aria-hidden>{firstName?.charAt(0)?.toUpperCase() || '?'}</span>
                 )}
@@ -2102,37 +2151,6 @@ export default function Profil() {
               </>
             )}
           </div>
-
-          {avatarCrop.open && avatarCrop.src && renderPortal(
-            <div className="avatar-crop-overlay" onClick={closeAvatarCropModal}>
-              <div className="avatar-crop-modal" onClick={(e) => e.stopPropagation()}>
-                <h3 className="avatar-crop-title">Uprav obrázek</h3>
-                <p className="avatar-crop-hint">Posuň obrázek pro výběr oblasti. Ořízne se na čtverec a zmenší pro nahrání.</p>
-                <div
-                  className="avatar-crop-box"
-                  ref={avatarCropContainerRef}
-                  onMouseDown={avatarCropDragStart}
-                  onMouseLeave={avatarCropDragEnd}
-                >
-                  <img
-                    ref={avatarCropImageRef}
-                    src={avatarCrop.src}
-                    alt=""
-                    className="avatar-crop-img"
-                    style={{
-                      objectPosition: `${50 + (avatarCrop.offset.x / 300) * 50}% ${50 + (avatarCrop.offset.y / 300) * 50}%`,
-                    }}
-                    onLoad={onAvatarCropImageLoad}
-                    draggable={false}
-                  />
-                </div>
-                <div className="avatar-crop-actions">
-                  <button type="button" className="avatar-crop-btn-cancel" onClick={closeAvatarCropModal}>Zrušit</button>
-                  <button type="button" className="avatar-crop-btn-confirm" onClick={confirmAvatarCropAndUpload} disabled={!avatarCrop.size.w}>Oříznout a nahrát</button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {profile?.can_create_calendar_events && (
             <p className="hero-intro">Trenér</p>
@@ -2371,7 +2389,7 @@ export default function Profil() {
 
             {/* Sjednocený kontejner bublin – pro trenéra i klienta */}
             <div className={profile?.can_create_calendar_events ? 'profile-bubbles profile-bubbles--trainer' : 'profile-main-stack'}>
-            {!profile?.can_create_calendar_events && (
+            {!profile?.can_create_calendar_events && showWithingsProfileSection && (
               <WithingsBodyDevelopmentSection
                 profile={profile}
                 onLatestWeightChange={handleWithingsHeaderWeight}

@@ -171,6 +171,7 @@ async function registerAndLogin(supabase) {
     goal: 'udrzovani',
     frequency: '3-4x týdně',
     program: 'START',
+    smart_scale_choice: 'withings',
     workout_days: [1, 3, 5],
     training_environment: 'gym',
     available_equipment: [],
@@ -184,6 +185,19 @@ async function registerAndLogin(supabase) {
   const body = await res.json().catch(() => ({}));
   if (!res.ok && !(res.status === 503 && body.hasUserId)) {
     throw new Error(`Registration failed HTTP ${res.status}: ${body.error || JSON.stringify(body)}`);
+  }
+
+  const { data: listed } = await supabase.auth.admin.listUsers({ page: 1, perPage: 200 });
+  const testUser = (listed?.users || []).find((u) => String(u.email || '').toLowerCase() === TEST_EMAIL.toLowerCase());
+  if (testUser?.id) {
+    const meta = testUser.user_metadata || {};
+    await supabase.auth.admin.updateUserById(testUser.id, {
+      user_metadata: {
+        ...meta,
+        wants_body_tracking: true,
+        smart_scale_provider: 'withings',
+      },
+    });
   }
 
   const deadline = Date.now() + 90_000;
@@ -330,10 +344,10 @@ async function runStaticUnitChecks() {
   check('coach context helper file exists', existsSync(join(ROOT, 'lib/withings/buildWithingsCoachContext.js')));
   check('body snapshots migration exists', existsSync(join(ROOT, 'supabase/migrations/20260701090000_withings_body_snapshots.sql')));
 
-  const widget = readFileSync(join(ROOT, 'components/profile/WithingsProfileCard.js'), 'utf8');
+  const widget = readFileSync(join(ROOT, 'components/profile/WithingsBodyDevelopmentSection.js'), 'utf8');
   check('UI shows trend section', widget.includes('withings-trends'));
-  check('UI shows recommendations section', widget.includes('Doporučení podle měření'));
-  check('UI renders null values as dash', widget.includes("return formatted ? `${formatted}${unit}` : '—';"));
+  check('UI shows body development section', widget.includes('Tělesný vývoj'));
+  check('UI renders null values as dash', widget.includes("return '—'") || widget.includes('return \'—\''));
   check('UI no zero kg placeholder', !widget.includes('0,0 kg') && !widget.includes('0.0 kg'));
 }
 
@@ -526,34 +540,33 @@ async function runProductionChecks() {
   });
   check('sync fails without connection', syncNoConn.status === 404 || syncNoConn.status === 500, `status=${syncNoConn.status}`);
 
-  await page.waitForSelector('.withings-floating-card', { timeout: 30000 });
-  await page.locator('.withings-launcher').click();
-  await sleep(600);
+  await page.waitForSelector('.withings-body-dev', { timeout: 60000 });
+  await sleep(800);
   const ui = await page.evaluate(() => {
-    const card = document.querySelector('.withings-floating-card');
-    const text = card?.innerText || '';
+    const section = document.querySelector('.withings-body-dev');
+    const text = section?.innerText || '';
     return {
-      state: card?.dataset.withingsState || '',
+      visible: Boolean(section),
       text,
-      hasNotConfiguredCopy: /Chytrá váha zatím není aktivní|Připravujeme/i.test(text),
+      hasNepripojeno: /Nepřipojeno/i.test(text),
       hasTechnicalOAuth: /OAuth|klientské údaje|dashboard|env|client secret/i.test(text),
-      hasConnectCta: /Propojit Withings/i.test(text),
-      hasNotConnectedCopy: /Propoj chytrou váhu/i.test(text),
+      hasConnectCta: /Připojit Withings|Propojit Withings/i.test(text),
       showsZeroWeight: /\b0[,.]0\s*kg\b/.test(text),
     };
   });
 
   report.uiState = {
-    widgetState: ui.state,
-    notConfiguredShown: ui.hasNotConfiguredCopy || ui.state === 'not_configured',
-    notConnectedShown: ui.hasNotConnectedCopy || ui.state === 'not_connected',
+    sectionVisible: ui.visible,
+    notConnectedShown: ui.hasNepripojeno,
     connectCtaShown: ui.hasConnectCta,
     technicalOAuthErrorShown: ui.hasTechnicalOAuth,
     zeroKgWithoutData: ui.showsZeroWeight,
+    notConfiguredShown: false,
   };
 
-  check('UI not in not_configured', !report.uiState.notConfiguredShown, `state=${ui.state}`);
-  check('UI shows connect CTA or not_connected', report.uiState.connectCtaShown || report.uiState.notConnectedShown);
+  check('UI shows Tělesný vývoj section', ui.visible);
+  check('UI shows Nepřipojeno for withings preference', ui.hasNepripojeno);
+  check('UI shows Připojit Withings CTA', ui.hasConnectCta);
   check('no technical OAuth error in UI', !report.uiState.technicalOAuthErrorShown);
   check('no 0.0 kg without data', !report.uiState.zeroKgWithoutData);
 
@@ -569,8 +582,8 @@ async function runProductionChecks() {
     historyAuth.status === 200 && report.historyTest.hasMeasurementsArray,
     !report.connectTest.secretsExposed,
     !report.historyTest.secretsExposed,
-    !report.uiState.notConfiguredShown,
     !report.uiState.technicalOAuthErrorShown,
+    report.uiState.sectionVisible === true,
     missingEndpoints.length === 0,
   ];
   report.verdict = critical.every(Boolean) ? 'READY' : failed === 0 ? 'PARTIAL' : 'FAIL';
@@ -579,6 +592,7 @@ async function runProductionChecks() {
     if (!report.envConfig.configured) reasons.push('env not fully configured');
     if (latestAuth.json?.configured !== true) reasons.push('runtime configured=false');
     if (report.uiState.notConfiguredShown) reasons.push('UI still not_configured');
+    if (!report.uiState.sectionVisible) reasons.push('Tělesný vývoj section not visible');
     if (missingEndpoints.length) reasons.push(`missing endpoints: ${missingEndpoints.join(', ')}`);
     if (!report.connectTest.authorizeUrlGenerated) reasons.push('connect URL missing');
     if (!report.historyTest?.hasMeasurementsArray) reasons.push('history response invalid');

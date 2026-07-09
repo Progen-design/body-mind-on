@@ -5,6 +5,7 @@ import { supabase } from "../lib/supabaseClient";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import HabitSelection from "../components/HabitSelection";
+import SmartScaleChoiceField from "../components/SmartScaleChoiceField";
 import { getSuggestedHabits } from "../lib/habits";
 import { getFrequencyDayRange } from "../lib/preferenceConstants";
 import { REGISTRATION_STEPS } from "../lib/registrationRules";
@@ -26,6 +27,7 @@ export default function Start() {
     birth_date: "",
     height: "",
     weight: "",
+    smart_scale_choice: "none",
     activity: "",
     stress: "",
     worktype: "",
@@ -358,6 +360,11 @@ export default function Start() {
                 <label className="reg-label">Váha (kg)</label>
                 <input name="weight" type="number" className="reg-input" value={formData.weight} onChange={handleChange} placeholder="80" required disabled={isSubmitting} />
               </div>
+              <SmartScaleChoiceField
+                value={formData.smart_scale_choice}
+                onChange={handleChange}
+                disabled={isSubmitting}
+              />
             </div>
           )}
 

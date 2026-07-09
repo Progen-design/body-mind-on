@@ -29,6 +29,7 @@ import { getDefaultLoginUrl } from '../../lib/siteUrls.js';
 import { trainingEnvironmentNotesSuffix } from '../../lib/trainingEnvironment.js';
 import { validateBirthDate } from '../../lib/bodyMetricsBirthDate.js';
 import { calculateNutritionTargets } from '../../lib/nutritionTargets.js';
+import { parseSmartScalePreference } from '../../lib/smartScalePreference.js';
 
 /** Vercel Hobby = 60s. Krátký poll; last-resort hned po execute, ne až na konci handleru. */
 const PLAN_WAIT_TIMEOUT_MS = 8000;
@@ -176,16 +177,22 @@ export default async function handler(req, res) {
       userChosePassword = authResult.userChosePassword === true;
     }
 
-    // Datum narození z registrace uložit i do auth user_metadata (stejný source čte profil/nastavení).
-    if (payload.user_id && birthDateRaw && authResult.existing !== true) {
+    // Metadata z registrace: datum narození + preference chytré váhy (Withings volitelný modul).
+    if (payload.user_id && authResult.existing !== true) {
       try {
         const { data: freshUser } = await supabaseServer.auth.admin.getUserById(payload.user_id);
         const currentMeta = freshUser?.user?.user_metadata || {};
+        const smartScaleMeta = parseSmartScalePreference(b);
         await supabaseServer.auth.admin.updateUserById(payload.user_id, {
-          user_metadata: { ...currentMeta, birth_date: birthDateRaw, ...(payload.name ? { name: currentMeta.name || payload.name } : {}) },
+          user_metadata: {
+            ...currentMeta,
+            ...smartScaleMeta,
+            ...(birthDateRaw ? { birth_date: birthDateRaw } : {}),
+            ...(payload.name ? { name: currentMeta.name || payload.name } : {}),
+          },
         });
       } catch (metaErr) {
-        console.warn('[body-metrics] birth_date user_metadata update failed:', metaErr?.message);
+        console.warn('[body-metrics] registration user_metadata update failed:', metaErr?.message);
       }
     }
 

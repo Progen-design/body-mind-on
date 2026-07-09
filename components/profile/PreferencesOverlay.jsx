@@ -4,6 +4,7 @@ import WorkoutDaySelector from './WorkoutDaySelector';
 import HabitChipGrid from './HabitChipGrid';
 import { getFrequencyDayRange } from '../../lib/preferenceConstants';
 import { calculateAgeFromBirthDate } from '../../lib/bodyMetricsBirthDate';
+import { SMART_SCALE_SETTINGS_CHOICES } from '../../lib/smartScalePreference';
 
 export default function PreferencesOverlay({
   open,
@@ -112,6 +113,32 @@ export default function PreferencesOverlay({
 
           {computedAge != null ? (
             <p className="prefs-age-hint" role="status">Věk: <strong>{computedAge} let</strong> (dopočítáno z data narození)</p>
+          ) : null}
+        </section>
+
+        <section className="prefs-section-card">
+          <div className="prefs-section-head">
+            <span className="prefs-kicker">Chytrá váha</span>
+            <h3>Sledování tělesného vývoje</h3>
+            <p>Withings je volitelný modul. Pokud ho nepoužíváš, sekce Tělesný vývoj zůstane skrytá.</p>
+          </div>
+          <div className="prefs-smart-scale-options" role="radiogroup" aria-label="Chytrá váha">
+            {SMART_SCALE_SETTINGS_CHOICES.map(({ value, label }) => (
+              <label key={value} className="prefs-smart-scale-option">
+                <input
+                  type="radio"
+                  name="smart_scale_choice"
+                  value={value}
+                  checked={(form.smart_scale_choice || 'none') === value}
+                  disabled={saving}
+                  onChange={(event) => setForm((current) => ({ ...current, smart_scale_choice: event.target.value }))}
+                />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+          {form.smart_scale_choice === 'withings' ? (
+            <p className="prefs-smart-scale-hint">Po uložení uvidíš v profilu sekci Tělesný vývoj s tlačítkem Připojit Withings.</p>
           ) : null}
         </section>
 
@@ -382,6 +409,31 @@ export default function PreferencesOverlay({
         }
         .prefs-age-hint strong {
           color: #e2e8f0;
+        }
+        .prefs-smart-scale-options {
+          display: grid;
+          gap: 10px;
+        }
+        .prefs-smart-scale-option {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 16px;
+          border-radius: 16px;
+          border: 1px solid rgba(148, 163, 184, 0.18);
+          background: rgba(15, 23, 42, 0.55);
+          cursor: pointer;
+        }
+        .prefs-smart-scale-option input {
+          width: 18px;
+          height: 18px;
+          accent-color: #7c3aed;
+        }
+        .prefs-smart-scale-hint {
+          margin: 12px 0 0;
+          font-size: 0.88rem;
+          color: #93c5fd;
+          line-height: 1.45;
         }
         .prefs-field :is(select, textarea, input[type="number"], input[type="date"]) {
           width: 100%;

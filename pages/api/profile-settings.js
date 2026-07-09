@@ -1,6 +1,7 @@
-// PATCH /api/profile-settings – uloží údaje pro výpočet (výchozí váha, cíl, výška) do user_metadata
+// PATCH /api/profile-settings – uloží údaje pro výpočet (výchozí váha, cíl, výška) a preference chytré váhy do user_metadata
 // Tyto hodnoty slouží jen pro odhad zhubnutí z tréninků, ne jako záznam ruční váhy.
 import { supabaseServer } from '../../lib/supabaseServer';
+import { parseSmartScalePreference } from '../../lib/smartScalePreference.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'PATCH' && req.method !== 'POST') {
@@ -21,6 +22,11 @@ export default async function handler(req, res) {
     const height_cm = body.height_cm != null ? Number(body.height_cm) : null;
     const avatar_url = typeof body.avatar_url === 'string' ? body.avatar_url.trim() || null : null;
     const daily_email = body.daily_email === false ? false : body.daily_email === true ? true : undefined;
+    const hasSmartScaleInput =
+      body.smart_scale_choice !== undefined
+      || body.smart_scale !== undefined
+      || body.wants_body_tracking !== undefined
+      || body.smart_scale_provider !== undefined;
 
     if (start_weight_kg != null && (start_weight_kg < 30 || start_weight_kg > 300)) {
       return res.status(400).json({ error: 'Výchozí váha musí být mezi 30 a 300 kg.' });
@@ -39,8 +45,14 @@ export default async function handler(req, res) {
       ...(goal_weight_kg != null && { goal_weight_kg }),
       ...(height_cm != null && { height_cm }),
     };
+    if (hasSmartScaleInput) {
+      const smartScaleMeta = parseSmartScalePreference(body);
+      nextMeta.wants_body_tracking = smartScaleMeta.wants_body_tracking;
+      nextMeta.smart_scale_provider = smartScaleMeta.smart_scale_provider;
+    }
 
-    if (Object.keys(nextMeta).some((k) => nextMeta[k] !== currentMeta[k])) {
+    const metaChanged = Object.keys(nextMeta).some((k) => nextMeta[k] !== currentMeta[k]);
+    if (metaChanged) {
       const { data: updated, error: authErr } = await supabaseServer.auth.admin.updateUserById(user.id, {
         user_metadata: nextMeta,
       });
@@ -82,6 +94,8 @@ export default async function handler(req, res) {
     return res.status(200).json({
       ok: true,
       user_metadata: nextMeta,
+      wants_body_tracking: nextMeta.wants_body_tracking === true,
+      smart_scale_provider: nextMeta.smart_scale_provider ?? null,
       ...(avatar_url !== undefined && { avatar_url }),
       ...(daily_email !== undefined && { daily_email }),
     });

@@ -16,6 +16,7 @@ import WorkoutOverlay from '../components/profile/WorkoutOverlay';
 import PreferencesOverlay from '../components/profile/PreferencesOverlay';
 import WithingsBodyDevelopmentSection from '../components/profile/WithingsBodyDevelopmentSection';
 import { shouldShowWithingsSection } from '../lib/withingsProfileVisibility';
+import { metadataToSmartScaleChoice } from '../lib/smartScalePreference';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
 import { validatePublishedPlanHtml } from '../lib/validatePlanHtml';
@@ -505,6 +506,7 @@ export default function Profil() {
     weight_kg: '',
     height_cm: '',
     birth_date: '',
+    smart_scale_choice: 'none',
   });
   const WORKOUT_DAY_LABELS = [{ v: 1, label: 'Po' }, { v: 2, label: 'Út' }, { v: 3, label: 'St' }, { v: 4, label: 'Čt' }, { v: 5, label: 'Pá' }, { v: 6, label: 'So' }, { v: 0, label: 'Ne' }];
 
@@ -635,6 +637,7 @@ export default function Profil() {
         ? String(lm.height_cm)
         : (userMeta.height_cm != null ? String(userMeta.height_cm) : ''),
       birth_date: birthFromProfile || '',
+      smart_scale_choice: metadataToSmartScaleChoice(userMeta),
     });
     preferencesSnapshotRef.current = preferencesFieldsSnapshot({
       activity: activityToFormLabel(lm?.activity) || '',
@@ -1177,6 +1180,28 @@ export default function Profil() {
         bodyPayload.birth_date = preferencesForm.birth_date;
       }
 
+      const initialSmartScale = metadataToSmartScaleChoice(profile?.user || {});
+      const smartScaleChanged = (preferencesForm.smart_scale_choice || 'none') !== initialSmartScale;
+
+      let smartScaleSaved = false;
+      if (smartScaleChanged) {
+        const scaleRes = await fetch('/api/profile-settings', {
+          ...fetchOptions,
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ smart_scale_choice: preferencesForm.smart_scale_choice || 'none' }),
+        });
+        const scaleJson = await scaleRes.json();
+        if (!scaleRes.ok || !scaleJson.ok) {
+          setPreferencesError(scaleJson.error || 'Nepodařilo uložit nastavení chytré váhy.');
+          return;
+        }
+        smartScaleSaved = true;
+      }
+
       let bodySaved = false;
       if (Object.keys(bodyPayload).length > 0) {
         const bodyRes = await fetch('/api/profile-body-data', {
@@ -1197,11 +1222,11 @@ export default function Profil() {
       }
 
       const prefsChanged = preferencesSnapshotRef.current !== preferencesFieldsSnapshot(preferencesForm);
-      if (!prefsChanged && !bodySaved) {
+      if (!prefsChanged && !bodySaved && !smartScaleSaved) {
         setPreferencesError('Žádné změny k uložení.');
         return;
       }
-      if (!prefsChanged && bodySaved) {
+      if (!prefsChanged && (bodySaved || smartScaleSaved)) {
         setShowPreferencesModal(false);
         setToast({
           message: 'Změny uloženy. Pro nový výpočet plánu bude potřeba vytvořit nový plán.',

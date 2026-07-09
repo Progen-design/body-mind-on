@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { formatTrendDelta } from '../../lib/withings/withingsTrends.js';
-import { shouldShowWithingsSection } from '../../lib/withingsProfileVisibility';
+import { shouldShowWithingsSection, shouldShowWithingsConnectUi } from '../../lib/withingsProfileVisibility';
 
 const AUTO_SYNC_WINDOW_MS = 30 * 60 * 1000;
 
@@ -194,6 +194,10 @@ export default function WithingsBodyDevelopmentSection({ profile, onLatestWeight
   }, [latestData, profile, runSync, session?.access_token]);
 
   const connected = latestData?.connected === true;
+  const withingsConnectUi = useMemo(
+    () => shouldShowWithingsConnectUi(profile),
+    [profile]
+  );
   const profileProgram = profile?.program || 'START';
   const latest = latestData?.latest || null;
   const trends = useMemo(() => latestData?.trends ?? null, [latestData?.trends]);
@@ -222,7 +226,7 @@ export default function WithingsBodyDevelopmentSection({ profile, onLatestWeight
     };
   }, [historyItems, latest, measurementCount30d, trends]);
 
-  const reconnectLabel = connected ? 'Znovu propojit Withings' : 'Propojit Withings';
+  const reconnectLabel = connected ? 'Znovu propojit Withings' : 'Připojit Withings';
   const connectDisabled = latestData?.configured === false;
 
   async function openHistory() {
@@ -257,15 +261,21 @@ export default function WithingsBodyDevelopmentSection({ profile, onLatestWeight
       <div className="withings-head">
         <div>
           <h2>Tělesný vývoj</h2>
-          <p>Data z chytré váhy Withings se automaticky propisují do profilu a slouží jako vstup pro další týdenní plán.</p>
+          {withingsConnectUi ? (
+            <p>Data z chytré váhy Withings se automaticky propisují do profilu a slouží jako vstup pro další týdenní plán.</p>
+          ) : (
+            <p>Sleduješ vývoj přes jinou chytrou váhu. Ruční váhu můžeš zadávat v profilu.</p>
+          )}
         </div>
-        {connected ? <span className="withings-state withings-state--ok">Propojeno</span> : <span className="withings-state">Nepřipojeno</span>}
+        {withingsConnectUi ? (
+          connected ? <span className="withings-state withings-state--ok">Propojeno</span> : <span className="withings-state">Nepřipojeno</span>
+        ) : null}
       </div>
 
-      {(loading || syncing) ? <p className="withings-status">Načítám Withings data…</p> : null}
-      {message ? <p className="withings-status">{message}</p> : null}
+      {(loading || syncing) && withingsConnectUi ? <p className="withings-status">Načítám Withings data…</p> : null}
+      {message && withingsConnectUi ? <p className="withings-status">{message}</p> : null}
 
-      {connected ? (
+      {withingsConnectUi && connected ? (
         <>
           <div className="withings-metrics">
             <div><span>Váha</span><strong>{formatMetric(latest?.weight_kg, ' kg')}</strong></div>
@@ -294,26 +304,28 @@ export default function WithingsBodyDevelopmentSection({ profile, onLatestWeight
             <p>{infoText}</p>
           </div>
         </>
-      ) : (
+      ) : withingsConnectUi ? (
         <div className="withings-impact">
           <h3>Vliv na další plán</h3>
           <p>{infoText}</p>
         </div>
-      )}
+      ) : null}
 
+      {withingsConnectUi ? (
       <div className="withings-actions">
         {connected ? (
           <>
             <button type="button" onClick={() => runSync(session?.access_token)} disabled={syncing || !session?.access_token}>Synchronizovat teď</button>
             <button type="button" className="secondary" onClick={openHistory} disabled={historyLoading || !session?.access_token}>Historie</button>
-            <button type="button" className="secondary" onClick={startConnect} disabled={!session?.access_token}>Znovu propojit Withings</button>
+            <button type="button" className="secondary" onClick={startConnect} disabled={!session?.access_token}>{reconnectLabel}</button>
           </>
         ) : (
-          <button type="button" onClick={startConnect} disabled={!session?.access_token || connectDisabled}>Propojit Withings</button>
+          <button type="button" onClick={startConnect} disabled={!session?.access_token || connectDisabled}>Připojit Withings</button>
         )}
       </div>
+      ) : null}
 
-      {historyOpen ? (
+      {withingsConnectUi && historyOpen ? (
         <div className="withings-history">
           {historyLoading ? <p>Načítám historii…</p> : null}
           {!historyLoading && !historyItems.length ? <p>Zatím nejsou k dispozici žádná měření.</p> : null}

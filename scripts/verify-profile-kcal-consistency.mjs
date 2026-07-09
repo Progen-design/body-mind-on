@@ -11,6 +11,7 @@ import {
   resolveDayCalorieTarget,
   sumDayNutrition,
 } from '../lib/mealNutritionDisplay.js';
+import { DAY_CALORIE_TOLERANCE } from '../lib/nutrition/portionScaling.js';
 import { buildMealRecipeModalHtml } from '../lib/mealRecipeDisplay.js';
 import { buildMacroEnergyNutritionHtml } from '../lib/recipeDetailHtml.js';
 
@@ -86,9 +87,9 @@ check(
 );
 
 const withinTolerance = daySum.kcal != null && dayTarget != null
-  && Math.abs(daySum.kcal - dayTarget) / dayTarget <= 0.15;
+  && Math.abs(daySum.kcal - dayTarget) / dayTarget <= DAY_CALORIE_TOLERANCE;
 check(
-  'day sum within ±15 % of day target',
+  `day sum within ±${Math.round(DAY_CALORIE_TOLERANCE * 100)} % of day target`,
   withinTolerance,
   `sum=${daySum.kcal}, target=${dayTarget}`,
 );

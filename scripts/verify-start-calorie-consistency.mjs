@@ -2,10 +2,13 @@
 import { buildSimpleStartMealSkeleton } from '../lib/services/simpleMealPlannerAgent.js';
 import { resolveSimpleStartLocalSlot } from '../lib/startSimpleMealFilter.js';
 import {
+  balanceDayMealsToCalorieTarget,
+  boostDayMealsToCalorieTarget,
   sumScaledDayKcal,
   planMealTypeToWeightKey,
   slotTargetKcal,
-  balanceDayMealsToCalorieTarget,
+  DAY_CALORIE_TOLERANCE,
+  DAY_CALORIE_MIN_RATIO,
 } from '../lib/nutrition/portionScaling.js';
 
 let failed = 0;
@@ -17,7 +20,7 @@ function ok(msg) {
   console.log(`OK ${msg}`);
 }
 
-const TOLERANCE = 0.15;
+const TOLERANCE = DAY_CALORIE_TOLERANCE;
 
 function resolveSkeletonDays(skeleton, bodyMetrics) {
   const baseTarget = Number(skeleton.targets.calories_per_day);
@@ -36,6 +39,7 @@ function resolveSkeletonDays(skeleton, bodyMetrics) {
       const { meal } = resolveSimpleStartLocalSlot(slotMeal, slotTarget, mi, bodyMetrics);
       dayMeals.push(meal);
     }
+    boostDayMealsToCalorieTarget(dayMeals, dayTarget, DAY_CALORIE_MIN_RATIO);
     balanceDayMealsToCalorieTarget(dayMeals, dayTarget, TOLERANCE);
     days.push({ day_index: day.day_index, daily_target_kcal: dayTarget, meals: dayMeals });
   }
@@ -58,7 +62,7 @@ function checkPlan(label, bodyMetrics) {
   }
 }
 
-console.log('--- START calorie consistency ±15% ---');
+console.log(`--- START calorie consistency ±${Math.round(TOLERANCE * 100)}% ---`);
 checkPlan('3300 kcal', {
   goal: 'nabirani_svaly',
   weight_kg: 95,
@@ -82,7 +86,7 @@ checkPlan('cheese excluded 3300', {
   foods_to_avoid: 'sýr',
 });
 
-if (!failed) ok('all sample days within ±15% of target');
+if (!failed) ok(`all sample days within ±${Math.round(TOLERANCE * 100)}% of target`);
 
 console.log(failed ? `\nRESULT: FAIL (${failed})` : '\nRESULT: PASS');
 process.exit(failed ? 1 : 0);

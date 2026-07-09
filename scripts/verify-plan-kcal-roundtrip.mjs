@@ -7,9 +7,12 @@ import { buildSimpleStartMealSkeleton } from '../lib/services/simpleMealPlannerA
 import { resolveSimpleStartLocalSlot } from '../lib/startSimpleMealFilter.js';
 import {
   balanceDayMealsToCalorieTarget,
+  boostDayMealsToCalorieTarget,
   planMealTypeToWeightKey,
   slotTargetKcal,
   sumScaledDayKcal,
+  DAY_CALORIE_TOLERANCE,
+  DAY_CALORIE_MIN_RATIO,
 } from '../lib/nutrition/portionScaling.js';
 import { createMealDisplayModel } from '../lib/mealDisplayModel.js';
 import { buildMealRecipeModalHtml } from '../lib/mealRecipeDisplay.js';
@@ -20,7 +23,7 @@ import {
 import { getMacroCalorieDelta } from '../lib/macroKcalConsistency.js';
 
 let failed = 0;
-const TOLERANCE = 0.15;
+const TOLERANCE = DAY_CALORIE_TOLERANCE;
 
 function check(label, ok, detail = '') {
   if (ok) {
@@ -48,6 +51,7 @@ function resolveSkeletonDays(skeleton, bodyMetrics) {
       const { meal } = resolveSimpleStartLocalSlot(slotMeal, slotTarget, mi, bodyMetrics);
       dayMeals.push(meal);
     }
+    boostDayMealsToCalorieTarget(dayMeals, dayTarget, DAY_CALORIE_MIN_RATIO);
     balanceDayMealsToCalorieTarget(dayMeals, dayTarget, TOLERANCE);
     days.push({
       day_index: day.day_index,
@@ -84,7 +88,7 @@ for (const day of days) {
   const minOk = Math.round(dayTarget * (1 - TOLERANCE));
   const maxOk = Math.round(dayTarget * (1 + TOLERANCE));
   check(
-    `day ${day.day_index} struct sum within ±15%`,
+    `day ${day.day_index} struct sum within ±${Math.round(TOLERANCE * 100)}%`,
     structSum >= minOk && structSum <= maxOk,
     `sum=${structSum}, target=${dayTarget}, range=${minOk}-${maxOk}`,
   );

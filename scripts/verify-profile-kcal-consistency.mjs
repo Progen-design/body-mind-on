@@ -11,6 +11,8 @@ import {
   resolveDayCalorieTarget,
   sumDayNutrition,
 } from '../lib/mealNutritionDisplay.js';
+import { buildMealRecipeModalHtml } from '../lib/mealRecipeDisplay.js';
+import { buildMacroEnergyNutritionHtml } from '../lib/recipeDetailHtml.js';
 
 let failed = 0;
 
@@ -104,8 +106,29 @@ check('ProfileTodayPanels uses resolveDayCalorieTarget', todayPanels.includes('r
 check('ProfileTodayPanels uses shared sumDayNutrition', todayPanels.includes('sumDayNutrition'));
 check('mealDisplayModel preserves planned nutrition for library', mealDisplayModel.includes('plannedNutrition'));
 
+const modalHtml = buildMealRecipeModalHtml(scaledModel);
+check(
+  'recipe modal HTML contains visible stacked bar (inline background)',
+  modalHtml.includes('recipe-macro-energy-bar') && modalHtml.includes('background:#f472b6'),
+);
+check(
+  'recipe modal HTML contains per-macro progress bars',
+  modalHtml.includes('recipe-nutrient-bar-wrap') && modalHtml.includes('background:#fbbf24'),
+);
+check(
+  'recipe modal shows scaled 752 kcal not template 450',
+  modalHtml.includes('752 kcal') && !modalHtml.includes('450 kcal'),
+);
+
+const macroBlock = buildMacroEnergyNutritionHtml({ kcal: 752, protein_g: 40, carbs_g: 63, fat_g: 37 });
+check(
+  'macro HTML block has inline bar colors',
+  macroBlock.includes('background:#f472b6') && macroBlock.includes('background:#60a5fa'),
+);
+
 const packageJson = readFileSync(resolve(process.cwd(), 'package.json'), 'utf8');
 check('npm script verify:profile-kcal-consistency', packageJson.includes('"verify:profile-kcal-consistency"'));
+check('npm script verify:plan-kcal-roundtrip', packageJson.includes('"verify:plan-kcal-roundtrip"'));
 
 console.log(failed ? `\n${failed} CHECK(S) FAILED` : '\nALL CHECKS PASS');
 process.exit(failed ? 1 : 0);

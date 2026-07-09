@@ -64,6 +64,7 @@ check('260/16/8/18 status OK', eggDelta.status === 'OK', `status=${eggDelta.stat
 
 const eggHtml = buildMacroEnergyNutritionHtml({ kcal: 260, protein_g: 16, carbs_g: 8, fat_g: 18 });
 check('macro HTML obsahuje stacked bar', eggHtml.includes('recipe-macro-energy-bar'));
+check('macro HTML má inline barvy (nezávislé na CSS modalu)', eggHtml.includes('background:#f472b6'));
 check('macro HTML neobsahuje 0 % u bílkovin', !eggHtml.includes('16 g · 0 %'));
 check('macro HTML obsahuje procenta maker', eggHtml.includes(`${eggBreakdown.proteinPercent} %`));
 
@@ -78,6 +79,7 @@ const eggMeal = createMealDisplayModel({
 }, '');
 const eggModalHtml = buildMealRecipeModalHtml(eggMeal);
 check('recipe modal HTML obsahuje makro bar', eggModalHtml.includes('recipe-macro-energy-bar'));
+check('recipe modal HTML má inline barvy', eggModalHtml.includes('background:#f472b6'));
 check('recipe modal HTML nemá všechna 0 %', !/Bílkoviny.*0 %.*Sacharidy.*0 %.*Tuky.*0 %/s.test(eggModalHtml));
 
 const warnKcal = getMacroCalorieDelta(1000, 30, 30, 70);

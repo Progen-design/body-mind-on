@@ -606,7 +606,15 @@ export default function PlanViewer({
 
   const getCatalogRecipeDetail = (recipeId, displayModel = null) => {
     if (!recipeId || !Number.isInteger(Number(recipeId))) return Promise.resolve(null);
-    return fetch('/api/recipe-from-catalog?id=' + encodeURIComponent(String(recipeId)), {
+    const params = new URLSearchParams({ id: String(recipeId) });
+    if (displayModel?.title) params.set('display_name', String(displayModel.title).slice(0, 150));
+    const meal = displayModel?.normalizedMeal;
+    if (meal?.type) params.set('meal_type', String(meal.type));
+    if (displayModel?.calories != null) params.set('kcal', String(Math.round(displayModel.calories)));
+    if (displayModel?.protein_g != null) params.set('protein_g', String(Math.round(displayModel.protein_g)));
+    if (displayModel?.carbs_g != null) params.set('carbs_g', String(Math.round(displayModel.carbs_g)));
+    if (displayModel?.fat_g != null) params.set('fat_g', String(Math.round(displayModel.fat_g)));
+    return fetch(`/api/recipe-from-catalog?${params.toString()}`, {
       headers: { Accept: 'application/json' },
     })
       .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
@@ -955,7 +963,7 @@ export default function PlanViewer({
       setRecipeModal({
         openId: thisOpenId,
         title: modalTitle,
-        content: buildMealRecipeModalHtml(displayModel),
+        content: ensureMealModalMacroBar(buildMealRecipeModalHtml(displayModel), displayModel),
         anchorRect,
         hasRecipe: true,
         loading: false,

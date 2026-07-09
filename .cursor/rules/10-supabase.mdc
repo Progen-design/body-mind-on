@@ -1,0 +1,35 @@
+---
+description: Supabase workflow, migrace, RLS, service role a lokalizovaná pole
+globs: supabase/**,lib/**supabase**,**/api/**
+alwaysApply: false
+---
+
+# Supabase
+
+## Lokální vývoj
+- CLI v projektu: `npx supabase` (ne globální instalace).
+- Lokální stack: `npx supabase start` (Docker); připojení z `npx supabase status` → `.env.local`.
+
+## Migrace
+- Vše do `supabase/migrations/` s timestampem a popisem, např. `20260709_add_profile_settings.sql`.
+- Před produkcí vždy otestovat lokálně; používat `supabase db push` / `db reset`.
+- Nikdy ad-hoc změny schématu v dashboardu ani direct `ALTER` v produkci.
+
+## RLS (povinné)
+- RLS zapnuté u každé nové tabulky.
+- Explicitní `SELECT`/`INSERT`/`UPDATE`/`DELETE` policies; default-deny + scoped policies je OK.
+- Při změně sloupců nebo joinů znovu ověř, že policies stále správně omezují řádky.
+- Preferuj omezení v RLS před složitou logikou v aplikaci.
+
+## Klíče a klienti
+- `service_role`: pouze server (`pages/api/`, skripty) — nikdy v client komponentách ani browser bundle.
+- Browser: `createClient` s anon/publishable key a spoléhání na RLS.
+
+## Typy a naming
+- Po změně schématu: `supabase gen types` a použití v API / lib.
+- DB: snake_case; v JS/React camelCase tam, kde to zlepší čitelnost.
+
+## Lokalizovaná pole
+- Česky s EN fallbackem: `field_cs ?? field`.
+- Příklady: `instructions_cs ?? instructions`, `display_name_cs ?? display_name`.
+- Stejný pattern pro nové bilingual sloupce.

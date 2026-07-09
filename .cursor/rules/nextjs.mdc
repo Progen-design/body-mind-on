@@ -1,0 +1,25 @@
+---
+description: Next.js conventions for pages router, components, and lib
+globs: app/**,pages/**,components/**,lib/**
+alwaysApply: false
+---
+
+# Next.js conventions
+
+## Read before writing
+- Before adding or editing a file, read 2–3 existing files of the same kind (page, API route, component, lib module).
+- Match naming, import style, error response shape, and data-fetching patterns already used in this repo.
+
+## Router and structure
+- This project uses the **Pages Router** (`pages/`), not App Router.
+- Business logic belongs in `lib/`; components are UI-focused.
+- API routes live in `pages/api/` and must validate inputs and return structured errors.
+
+## Components
+- Default to server-compatible components (no unnecessary `"use client"`).
+- Add `"use client"` only when the component needs browser APIs, hooks, or event handlers — document why in a brief comment if non-obvious.
+- Do not introduce new libraries without explicit approval.
+
+## Data fetching
+- Follow existing patterns: direct Supabase client in API routes, `fetch` from pages/components where already established.
+- Never expose `SUPABASE_SERVICE_ROLE_KEY` or other server secrets to client bundles.

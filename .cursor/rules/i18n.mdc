@@ -1,0 +1,19 @@
+---
+description: Czech UI copy — no hardcoded English user-facing strings
+globs: **/*.ts,**/*.tsx,**/*.js,**/*.jsx
+alwaysApply: false
+---
+
+# Internationalization (Czech UI)
+
+## User-facing text
+- All strings visible to users must be in **Czech** (labels, buttons, errors, emails, toasts, empty states).
+- Do not add hardcoded English UI strings; use Czech equivalents consistent with existing copy in the repo.
+
+## Exceptions (English allowed)
+- Code identifiers, env var names, API field names, log prefixes, and third-party SDK constants.
+- Proper nouns and brand names (e.g. Withings, Stripe, Spoonacular) where already established.
+
+## Review checklist
+- New UI component: scan for quoted English phrases before finishing.
+- API error messages returned to the client: Czech, actionable, no stack traces.

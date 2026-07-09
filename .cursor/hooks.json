@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [
+      {
+        "command": "node .cursor/hooks/run-typecheck-lint.mjs",
+        "timeout": 120
+      }
+    ],
+    "stop": [
+      {
+        "command": "node .cursor/hooks/stop-check.mjs",
+        "timeout": 30,
+        "loop_limit": 3
+      }
+    ]
+  }
+}

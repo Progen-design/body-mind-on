@@ -1,0 +1,26 @@
+﻿# Secrets and environment
+.env
+.env.*
+.env.vercel-*
+*.pem
+*.key
+.env.keys
+
+# Hosting / platform
+.vercel/
+
+# Supabase local temp
+supabase/.temp/
+
+# Dependencies and build output
+node_modules/
+.next/
+coverage/
+
+# Local artifacts and smoke payloads
+artifacts/
+tmp/
+scripts/e2e-output/
+
+# SpecStory / local tooling cache
+.specstory/

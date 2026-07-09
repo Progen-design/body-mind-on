@@ -1,6 +1,11 @@
+import React from 'react';
 import { PRICING, ADDON } from '@/lib/pricing';
 
-export default function Pricing({ minimal = false }) {
+type PricingProps = {
+  minimal?: boolean;
+};
+
+export default function Pricing({ minimal = false }: PricingProps) {
   return (
     <section className="pricing">
       <div className="grid">

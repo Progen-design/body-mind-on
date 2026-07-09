@@ -1,0 +1,42 @@
+---
+description: Core project rules — Body & Mind ON stack, quality bar, secrets, verification
+alwaysApply: true
+---
+
+# Body & Mind ON — core rules
+
+Projekt: fitness / AI / automatizace. **Hlavní cíl:** AI + API musí spolehlivě doručit jídelníček a tréninkový plán (OpenAI → Spoonacular/wger → plán s fallbacky). Vše ostatní je druhotné.
+
+## Stack
+- Next.js Pages Router, Vercel, Supabase; JS default, TypeScript jen kde už je.
+
+## Language
+- UI a e-maily: **čeština**. Kód, komentáře, identifikátory: **angličtina**.
+
+## Code
+- Při editaci vracet **celé soubory**; minimální diff; žádné nové knihovny bez schválení.
+- Neměnit existující text/obsah bez výslovného požadavku.
+- Logika v `lib/`, UI v `components/`, API v `pages/api/`.
+- Production-first: žádné TODO placeholdery; error handling a validace vstupů v API routes.
+- Node-only API jen v API routes; kompatibilní se serverless.
+
+## Secrets
+- Nikdy nečíst, needitovat ani nevypisovat `.env*` a credentials.
+- Nikdy nehardcodovat klíče ani `service_role` ve zdrojáku.
+
+## Supabase
+- Schéma výhradně přes `supabase/migrations/` — nikdy direct ALTER v produkci.
+- Každá nová tabulka: RLS + explicitní policies; před migrací zkontroluj RLS dopad.
+
+## E-maily
+- Platné HTML, jednoduchá struktura pro Gmail, obsah česky.
+
+## Plán (Spoonacular)
+- Žádná cache ve flow plánu (`skipDailyDedup: true`).
+- Plný resolve přes Spoonacular + wger (žádný `fastMode`).
+
+## Verification
+- Před dokončením: `npm run lint` (nebo `lint:ci` u dotčených souborů) + `npm run typecheck` pro `.ts`/`.tsx`.
+
+## AI chování
+- Nejjednodušší řešení; minimální změny; při nejasnosti nejdřív záměr, pak konkrétní úprava.

@@ -4,9 +4,13 @@ node_modules
 .env.local
 .env.production.local
 .env*.local
+.env.*
+!.env.example
+!.env.local.example
 .vercel
 .specstory
 supabase/.temp/
 
 tmp/
 artifacts/
+.cursor/hooks/.pending-errors.log

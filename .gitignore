@@ -13,4 +13,7 @@ supabase/.temp/
 
 tmp/
 artifacts/
+scripts/e2e-output/
+scripts/*.log
+scripts/tmp-*.mjs
 .cursor/hooks/.pending-errors.log

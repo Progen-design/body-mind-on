@@ -7,9 +7,11 @@
  *   node scripts/db-cleanup-prelaunch.mjs
  *   node scripts/db-cleanup-prelaunch.mjs --dry-run
  *   CONFIRM_CLEAN_DATABASE=yes APPLY=true node scripts/db-cleanup-prelaunch.mjs --apply
+ *   CONFIRM_CLEAN_DATABASE=yes WIPE_ALL_AUTH_USERS=yes APPLY=true node scripts/db-cleanup-prelaunch.mjs --apply
  *
  * Requires: SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL), SUPABASE_SERVICE_ROLE_KEY
  * Optional keep list: KEEP_AUTH_EMAILS=prikopa@pro-security.cz,tom@example.com
+ * Full wipe (no kept accounts): WIPE_ALL_AUTH_USERS=yes (requires CONFIRM_CLEAN_DATABASE=yes)
  *
  * Does NOT touch: schema, RLS, migrations, recipes_catalog, exercise_asset_registry,
  * ai_agents*, ai_trigger_rules, ai_task_types, ai_executor_bindings, ai_context_profiles,
@@ -44,10 +46,13 @@ function loadDotEnvFile(relPath) {
 
 const APPLY = process.argv.includes('--apply') || process.env.APPLY === 'true';
 const DRY_RUN = !APPLY || process.argv.includes('--dry-run');
-const KEEP_EMAILS = (process.env.KEEP_AUTH_EMAILS || 'prikopa@pro-security.cz')
-  .split(',')
-  .map((e) => e.trim().toLowerCase())
-  .filter(Boolean);
+const WIPE_ALL_AUTH = process.env.WIPE_ALL_AUTH_USERS === 'yes';
+const KEEP_EMAILS = WIPE_ALL_AUTH
+  ? []
+  : (process.env.KEEP_AUTH_EMAILS || 'prikopa@pro-security.cz')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
 
 /** Delete order: children before parents; workouts before plans. */
 const RUNTIME_TABLES_DELETE_ALL = [
@@ -68,6 +73,7 @@ const RUNTIME_TABLES_DELETE_ALL = [
   'withings_connections',
   'ai_generated_plans',
   'body_metrics',
+  'profiles',
   'memberships',
   'community_replies',
   'community_posts',
@@ -235,12 +241,17 @@ async function main() {
     console.error('APPLY vyžaduje CONFIRM_CLEAN_DATABASE=yes');
     process.exit(1);
   }
+  if (APPLY && WIPE_ALL_AUTH && process.env.CONFIRM_CLEAN_DATABASE !== 'yes') {
+    console.error('WIPE_ALL_AUTH_USERS=yes vyžaduje CONFIRM_CLEAN_DATABASE=yes');
+    process.exit(1);
+  }
 
   console.log(`Mode: ${DRY_RUN ? 'DRY_RUN' : 'APPLY'}`);
+  console.log('WIPE_ALL_AUTH_USERS:', WIPE_ALL_AUTH ? 'yes' : 'no');
   console.log('KEEP_AUTH_EMAILS:', KEEP_EMAILS.map(maskEmail).join(', ') || '(none)');
 
   const beforeCounts = [];
-  for (const table of [...RUNTIME_TABLES_DELETE_ALL, ...KEEP_TABLES, 'profiles']) {
+  for (const table of [...RUNTIME_TABLES_DELETE_ALL, ...KEEP_TABLES]) {
     beforeCounts.push(await countTable(table));
   }
 
@@ -248,13 +259,17 @@ async function main() {
   const toDeleteAuth = authUsers.filter((u) => !KEEP_EMAILS.includes((u.email || '').toLowerCase()));
   const toKeepAuth = authUsers.filter((u) => KEEP_EMAILS.includes((u.email || '').toLowerCase()));
 
-  if (APPLY && toKeepAuth.length === 0) {
+  if (APPLY && toKeepAuth.length === 0 && !WIPE_ALL_AUTH) {
     const proSecurity = authUsers
       .filter((u) => String(u.email || '').toLowerCase().includes('pro-security'))
       .map((u) => maskEmail(u.email));
     console.error('KEEP_AUTH_EMAILS nenalezen — APPLY zastaven.');
     console.error('Pro-security účty v Auth:', proSecurity.join(', ') || '(žádné)');
+    console.error('Pro smazání všech účtů použijte WIPE_ALL_AUTH_USERS=yes');
     process.exit(1);
+  }
+  if (APPLY && WIPE_ALL_AUTH && toDeleteAuth.length === 0) {
+    console.log('WIPE_ALL_AUTH_USERS: žádní auth uživatelé ke smazání — pokračuji na runtime tabulky.');
   }
 
   const recipeImagesBefore = await countStorageBucket('recipe-images');

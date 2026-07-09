@@ -1,24 +1,7 @@
-import { getMealNutritionDisplay } from '../../lib/mealNutritionDisplay.js';
+import { resolveDayCalorieTarget, sumDayNutrition } from '../../lib/mealNutritionDisplay.js';
 import MacroRatioChart from '../MacroRatioChart.js';
 import { formatExerciseSetsRepsDisplay } from '../../lib/planDataIntegrity.js';
 import ProfileDayMealsPanel from './ProfileDayMealsPanel.js';
-
-function sumDayNutrition(meals, structDay) {
-  let kcal = 0;
-  let protein = 0;
-  let carbs = 0;
-  let fat = 0;
-  const structMeals = Array.isArray(structDay?.meals) ? structDay.meals : [];
-  (meals || []).forEach((meal, mi) => {
-    const sm = structMeals[mi] || structMeals.find((m) => (m?.type || '') === (meal?.type || ''));
-    const n = getMealNutritionDisplay(sm || meal);
-    if (n.calories != null) kcal += Number(n.calories) || 0;
-    if (n.protein_g != null) protein += Number(n.protein_g) || 0;
-    if (n.carbs_g != null) carbs += Number(n.carbs_g) || 0;
-    if (n.fat_g != null) fat += Number(n.fat_g) || 0;
-  });
-  return { kcal: kcal || null, protein, carbs, fat };
-}
 
 function envLabelPlain(trainingEnvironmentLabel, structuredPlan) {
   if (trainingEnvironmentLabel) {
@@ -53,7 +36,7 @@ export default function ProfileTodayPanels({
   const meals = Array.isArray(todayDay.meals) ? todayDay.meals : [];
   const dayNutrition = sumDayNutrition(meals, structDay);
   const targets = planTargets || structuredPlan?.targets || {};
-  const targetKcal = Number(targets.calories_per_day) || null;
+  const targetKcal = resolveDayCalorieTarget(structDay, targets);
   const envPlain = envLabelPlain(trainingEnvironmentLabel, structuredPlan);
 
   const workout = structDay?.workout;

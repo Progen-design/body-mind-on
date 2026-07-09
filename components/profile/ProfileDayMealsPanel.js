@@ -1,7 +1,7 @@
 // Sdílený moderní renderer denních jídel (a volitelně tréninku).
 // Používá ho horní „Dnešní plán“ (ProfileTodayPanels) i ostatní dny v týdenním přehledu (PlanViewer),
 // aby měl celý profil jeden vizuální systém a jeden zdroj dat (structured_plan_json).
-import { getMealNutritionDisplay } from '../../lib/mealNutritionDisplay.js';
+import { getMealNutritionDisplay, pairStructMeal } from '../../lib/mealNutritionDisplay.js';
 import MacroRatioChart from '../MacroRatioChart.js';
 import { mealDisplayTitleForStructuredMeal } from '../../lib/mealDisplayNameHelpers.js';
 import { createMealDisplayModelFromStructuredMeal } from '../../lib/mealRecipeDisplay.js';
@@ -55,8 +55,7 @@ export default function ProfileDayMealsPanel({
     <div className="profile-day-panel">
       <div className="profile-today-meals-list">
         {(meals || []).map((meal, mi) => {
-          const structMeal = structMeals[mi]
-            || structMeals.find((m) => (m?.type || '') === (meal?.type || ''));
+          const structMeal = pairStructMeal(structMeals, meal, mi);
           const title = structMeal
             ? mealDisplayTitleForStructuredMeal(structMeal, planHtml, dayName || '')
             : (meal.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();

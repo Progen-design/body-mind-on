@@ -30,11 +30,11 @@ for (const f of gymForbidden) {
 if (!gymKeys.some((k) => gymPreferred.includes(k))) fail('gym plan missing gym-first exercises');
 else ok('gym replaces bodyweight with gym-first exercises');
 
-const detSrc = fs.readFileSync(path.join(root, 'lib/services/deterministicFallback.js'), 'utf8');
-const gymFallbackBlock = detSrc.split('const GYM_WORKOUT_BLOCKS = [')[1]?.split('];')[0] || '';
-if (!gymFallbackBlock) fail('GYM_WORKOUT_BLOCKS missing');
-if (gymForbiddenPattern.test(gymFallbackBlock)) fail('GYM_WORKOUT_BLOCKS contains forbidden bodyweight exercise');
-if (!/canonical_key:\s*'leg_press'/.test(gymFallbackBlock)) fail('GYM_WORKOUT_BLOCKS should include leg_press');
+const templatesSrc = fs.readFileSync(path.join(root, 'lib/workoutTemplates.js'), 'utf8');
+const gymFallbackBlock = templatesSrc.split('export const GYM_FALLBACK_BLOCKS = Object.freeze([')[1]?.split(']);')[0] || '';
+if (!gymFallbackBlock) fail('GYM_FALLBACK_BLOCKS missing');
+if (gymForbiddenPattern.test(gymFallbackBlock)) fail('GYM_FALLBACK_BLOCKS contains forbidden bodyweight exercise');
+if (!/canonical_key:\s*'leg_press'/.test(gymFallbackBlock)) fail('GYM_FALLBACK_BLOCKS should include leg_press');
 else ok('deterministic gym fallback blocks are gym-first');
 
 console.log('\n--- home_bodyweight ---');
@@ -103,7 +103,7 @@ if (scenarioKeys.every((k) => ['squat', 'pushup', 'plank', 'lunges', 'glute_brid
 }
 else ok('home_equipment dumbbells+bench removes machines and unselected gear');
 
-const detEquip = detSrc.split('const HOME_EQUIPMENT_DUMBBELL_BENCH_BLOCKS = [')[1]?.split('];')[0] || '';
+const detEquip = templatesSrc.split('export const HOME_EQUIPMENT_DUMBBELL_BENCH_TEMPLATES = Object.freeze([')[1]?.split(']);')[0] || '';
 if (!detEquip || !/dumbbell bench press/.test(detEquip)) fail('HOME_EQUIPMENT_DUMBBELL_BENCH_BLOCKS missing dumbbell exercises');
 else ok('deterministic home equipment blocks use dumbbells/bench');
 

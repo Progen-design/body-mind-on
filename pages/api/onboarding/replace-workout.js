@@ -4,7 +4,7 @@
  * @see docs/ONBOARDING_PRODUCTION_SPEC.md § Replace Workout Flow
  */
 import { resolveExercise } from '../../../lib/services/exerciseProviderRegistry';
-import { rotatedTemplatesForBodyMetrics } from '../../../lib/workoutPlanScaler';
+import { rotatedTemplatesForBodyMetrics } from '../../../lib/workoutTemplates.js';
 import { filterWorkoutPlanForTrainingEnvironment } from '../../../lib/trainingEnvironment.js';
 
 function errorResponse(res, status, error, code, requestId) {

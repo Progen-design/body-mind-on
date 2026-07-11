@@ -85,17 +85,30 @@ if (!gymKeys.some((k) => gymPreferred.includes(k) || ['bench_press', 'bent_over_
 ok('gym environment replaces bodyweight exercises');
 
 const gymForbiddenPattern = /canonical_key:\s*'(squat|lunges|glute_bridge|mountain_climber|plank_side|russian_twist|pushup)'/;
+const templatesSrc = fs.readFileSync(path.join(root, 'lib/workoutTemplates.js'), 'utf8');
 const scalerSrc = fs.readFileSync(path.join(root, 'lib/workoutPlanScaler.js'), 'utf8');
-const gymBlock = scalerSrc.split('const GYM_SESSION_TEMPLATES = [')[1]?.split('];')[0] || '';
-if (!gymBlock) fail('GYM_SESSION_TEMPLATES missing in workoutPlanScaler');
-if (gymForbiddenPattern.test(gymBlock)) fail('GYM_SESSION_TEMPLATES contains forbidden bodyweight exercise');
-if (!/canonical_key:\s*'leg_press'/.test(gymBlock)) fail('GYM_SESSION_TEMPLATES should include leg_press');
-ok('gym session templates in workoutPlanScaler are gym-only');
-
 const fallbackSrc = fs.readFileSync(path.join(root, 'lib/services/deterministicFallback.js'), 'utf8');
-const gymFallbackBlock = fallbackSrc.split('const GYM_WORKOUT_BLOCKS = [')[1]?.split('];')[0] || '';
-if (!gymFallbackBlock) fail('GYM_WORKOUT_BLOCKS missing in deterministicFallback');
-if (gymForbiddenPattern.test(gymFallbackBlock)) fail('GYM_WORKOUT_BLOCKS contains forbidden bodyweight exercise');
+const replaceWorkoutSrc = fs.readFileSync(path.join(root, 'pages/api/onboarding/replace-workout.js'), 'utf8');
+
+if (!templatesSrc.includes('export const GYM_TEMPLATES')) fail('workoutTemplates missing GYM_TEMPLATES');
+if (!templatesSrc.includes('export const HOME_BODYWEIGHT_TEMPLATES')) fail('workoutTemplates missing HOME_BODYWEIGHT_TEMPLATES');
+if (!templatesSrc.includes('export function workoutBlocksForBodyMetrics')) fail('workoutTemplates missing workoutBlocksForBodyMetrics');
+if (scalerSrc.includes('const GYM_SESSION_TEMPLATES')) fail('workoutPlanScaler must not define local GYM_SESSION_TEMPLATES');
+if (fallbackSrc.includes('const GYM_WORKOUT_BLOCKS')) fail('deterministicFallback must not define local GYM_WORKOUT_BLOCKS');
+if (!scalerSrc.includes("from './workoutTemplates.js'")) fail('workoutPlanScaler must import workoutTemplates');
+if (!fallbackSrc.includes("from '../workoutTemplates.js'")) fail('deterministicFallback must import workoutTemplates');
+if (!replaceWorkoutSrc.includes("from '../../../lib/workoutTemplates.js'")) fail('replace-workout must import workoutTemplates');
+ok('workout templates single source of truth wired');
+
+const gymBlock = templatesSrc.split('export const GYM_TEMPLATES = Object.freeze([')[1]?.split(']);')[0] || '';
+if (!gymBlock) fail('GYM_TEMPLATES missing in workoutTemplates');
+if (gymForbiddenPattern.test(gymBlock)) fail('GYM_TEMPLATES contains forbidden bodyweight exercise');
+if (!/canonical_key:\s*'leg_press'/.test(gymBlock)) fail('GYM_TEMPLATES should include leg_press');
+ok('gym session templates in workoutTemplates are gym-only');
+
+const gymFallbackBlock = templatesSrc.split('export const GYM_FALLBACK_BLOCKS = Object.freeze([')[1]?.split(']);')[0] || '';
+if (!gymFallbackBlock) fail('GYM_FALLBACK_BLOCKS missing in workoutTemplates');
+if (gymForbiddenPattern.test(gymFallbackBlock)) fail('GYM_FALLBACK_BLOCKS contains forbidden bodyweight exercise');
 ok('gym deterministic fallback blocks are gym-only');
 
 const orchestratorSrc = fs.readFileSync(path.join(root, 'lib/services/planOrchestrator.js'), 'utf8');

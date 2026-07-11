@@ -28,6 +28,13 @@ if (lungeKey !== 'lunges') fail(`Výpady -> ${lungeKey}, expected lunges`);
 else ok('Výpady maps to lunges');
 if (squatKey === lungeKey) fail('squat and lunges must not share canonical key');
 
+const hipKey = resolveToCanonicalKey('Hip thrust');
+if (hipKey !== 'hip_thrust') fail(`Hip thrust -> ${hipKey}, expected hip_thrust`);
+else ok('Hip thrust maps to hip_thrust');
+const gluteKey = resolveToCanonicalKey('Glute bridge');
+if (gluteKey !== 'glute_bridge') fail(`Glute bridge -> ${gluteKey}, expected glute_bridge`);
+else ok('Glute bridge maps to glute_bridge');
+
 console.log('\n--- exercise instructions ---');
 const required = ['squat', 'lunges', 'pushup', 'plank', 'superman', 'bent_over_row', 'romanian_deadlift'];
 for (const key of required) {
@@ -99,6 +106,16 @@ if (scaleIdx < 0 || filterIdx < 0 || filterIdx < scaleIdx) {
 } else {
   ok('planOrchestrator applies gym filter after workout scaler');
 }
+
+const newFormatSrc = fs.readFileSync(path.join(root, 'lib/services/planOrchestrator_newFormat.js'), 'utf8');
+if (!newFormatSrc.includes('filterWorkoutPlanForTrainingEnvironment')) {
+  fail('planOrchestrator_newFormat must filter training environment');
+} else ok('planOrchestrator_newFormat applies gym/home filter');
+
+const scalerFull = fs.readFileSync(path.join(root, 'lib/workoutPlanScaler.js'), 'utf8');
+if (!scalerFull.includes('deduplicateExercisesAcrossWeek')) {
+  fail('workoutPlanScaler should deduplicate exercises across week');
+} else ok('workoutPlanScaler deduplicates exercises across sessions');
 
 console.log('\n--- macro ratio chart math ---');
 const ratio = computeMacroRatio({ protein_g: 42, carbs_g: 112, fat_g: 35, calories: 945 });

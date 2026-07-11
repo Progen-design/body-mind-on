@@ -17,6 +17,7 @@ import PreferencesOverlay from '../components/profile/PreferencesOverlay';
 import WithingsBodyDevelopmentSection from '../components/profile/WithingsBodyDevelopmentSection';
 import { shouldShowWithingsSection } from '../lib/withingsProfileVisibility';
 import { metadataToSmartScaleChoice } from '../lib/smartScalePreference';
+import { parseTrainingEnvironment, parseAvailableEquipment } from '../lib/trainingEnvironment';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
 import { validatePublishedPlanHtml } from '../lib/validatePlanHtml';
@@ -401,6 +402,8 @@ export default function Profil() {
     diet_type: formState.diet_type || '',
     dietary_restrictions: formState.dietary_restrictions || '',
     foods_to_avoid: formState.foods_to_avoid || '',
+    training_environment: formState.training_environment || '',
+    available_equipment: Array.isArray(formState.available_equipment) ? [...formState.available_equipment].sort() : [],
     selected_habits: Array.isArray(formState.selected_habits) ? [...formState.selected_habits].sort() : [],
   });
   const [calendarWeekStart, setCalendarWeekStart] = useState(() => {
@@ -507,6 +510,8 @@ export default function Profil() {
     height_cm: '',
     birth_date: '',
     smart_scale_choice: 'none',
+    training_environment: 'gym',
+    available_equipment: [],
   });
   const WORKOUT_DAY_LABELS = [{ v: 1, label: 'Po' }, { v: 2, label: 'Út' }, { v: 3, label: 'St' }, { v: 4, label: 'Čt' }, { v: 5, label: 'Pá' }, { v: 6, label: 'So' }, { v: 0, label: 'Ne' }];
 
@@ -638,6 +643,8 @@ export default function Profil() {
         : (userMeta.height_cm != null ? String(userMeta.height_cm) : ''),
       birth_date: birthFromProfile || '',
       smart_scale_choice: metadataToSmartScaleChoice(userMeta),
+      training_environment: parseTrainingEnvironment(lm) || 'gym',
+      available_equipment: parseAvailableEquipment(lm),
     });
     preferencesSnapshotRef.current = preferencesFieldsSnapshot({
       activity: activityToFormLabel(lm?.activity) || '',
@@ -650,6 +657,8 @@ export default function Profil() {
       dietary_restrictions: lm?.dietary_restrictions ?? '',
       foods_to_avoid: lm?.foods_to_avoid ?? '',
       selected_habits: (profile?.user_habits || []).map((h) => h.habit_id).filter(Boolean),
+      training_environment: parseTrainingEnvironment(lm) || 'gym',
+      available_equipment: parseAvailableEquipment(lm),
     });
     setShowPreferencesModal(true);
   };
@@ -1168,6 +1177,10 @@ export default function Profil() {
         setPreferencesError('Vyber alespoň jeden návyk.');
         return;
       }
+      if (!preferencesForm.training_environment) {
+        setPreferencesError('Vyber prostředí tréninku.');
+        return;
+      }
 
       const bodyPayload = {};
       if (preferencesForm.weight_kg !== '' && preferencesForm.weight_kg != null) {
@@ -1253,6 +1266,10 @@ export default function Profil() {
           diet_type: preferencesForm.diet_type || undefined,
           dietary_restrictions: preferencesForm.dietary_restrictions || undefined,
           foods_to_avoid: preferencesForm.foods_to_avoid || undefined,
+          training_environment: preferencesForm.training_environment,
+          available_equipment: preferencesForm.training_environment === 'home_equipment'
+            ? (Array.isArray(preferencesForm.available_equipment) ? preferencesForm.available_equipment : [])
+            : [],
           selected_habits: preferencesForm.selected_habits,
         }),
       });

@@ -6,6 +6,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import HabitSelection from "../components/HabitSelection";
 import SmartScaleChoiceField from "../components/SmartScaleChoiceField";
+import TrainingEnvironmentFields from "../components/TrainingEnvironmentFields";
 import { getSuggestedHabits } from "../lib/habits";
 import { getFrequencyDayRange } from "../lib/preferenceConstants";
 import { REGISTRATION_STEPS } from "../lib/registrationRules";
@@ -436,62 +437,23 @@ export default function Start() {
                 </select>
               </div>
               <div className="step3-field step3-field-full">
-                <label className="step3-label">Kde budeš nejčastěji cvičit?</label>
-                <p className="step3-hint">Podle prostředí přizpůsobíme cviky v plánu (posilovna / doma).</p>
-                <div className="reg-training-env">
-                  {[
-                    { value: 'gym', label: 'Posilovna' },
-                    { value: 'home_bodyweight', label: 'Doma bez vybavení' },
-                    { value: 'home_equipment', label: 'Doma s vybavením' },
-                  ].map(({ value, label }) => (
-                    <label key={value} className="reg-training-env-option">
-                      <input
-                        type="radio"
-                        name="training_environment"
-                        value={value}
-                        checked={formData.training_environment === value}
-                        disabled={isSubmitting}
-                        onChange={handleChange}
-                      />
-                      <span>{label}</span>
-                    </label>
-                  ))}
-                </div>
-                {!formData.training_environment && (
-                  <p className="step3-hint step3-hint-error" role="alert">Vyber prostředí tréninku.</p>
-                )}
+                <TrainingEnvironmentFields
+                  trainingEnvironment={formData.training_environment}
+                  availableEquipment={formData.available_equipment}
+                  disabled={isSubmitting}
+                  showErrors={!formData.training_environment}
+                  onTrainingEnvironmentChange={(value) =>
+                    setFormData((f) => ({
+                      ...f,
+                      training_environment: value,
+                      available_equipment: value === 'home_equipment' ? f.available_equipment : [],
+                    }))
+                  }
+                  onAvailableEquipmentChange={(equipment) =>
+                    setFormData((f) => ({ ...f, available_equipment: equipment }))
+                  }
+                />
               </div>
-              {formData.training_environment === 'home_equipment' && (
-                <div className="step3-field step3-field-full">
-                  <label className="step3-label">Jaké pomůcky máš doma?</label>
-                  <div className="reg-workout-days">
-                    {[
-                      { value: 'dumbbells', label: 'Jednoručky' },
-                      { value: 'bands', label: 'Odporové gumy' },
-                      { value: 'pullup_bar', label: 'Hrazda' },
-                      { value: 'kettlebell', label: 'Kettlebell' },
-                      { value: 'bench', label: 'Lavice' },
-                      { value: 'trx', label: 'TRX / závěsný systém' },
-                      { value: 'other', label: 'Jiné' },
-                    ].map(({ value, label }) => (
-                      <label key={value} className="reg-workout-day-check">
-                        <input
-                          type="checkbox"
-                          checked={formData.available_equipment.includes(value)}
-                          disabled={isSubmitting}
-                          onChange={(e) => {
-                            const next = e.target.checked
-                              ? [...formData.available_equipment, value]
-                              : formData.available_equipment.filter((item) => item !== value);
-                            setFormData((f) => ({ ...f, available_equipment: next }));
-                          }}
-                        />
-                        <span>{label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
               <div className="step3-field step3-field-full">
                 <label className="step3-label">Cvičím v tyto dny</label>
                 <p className="step3-hint">Vyber dny, kdy chceš mít trénink v plánu – počet by měl odpovídat frekvenci (1–2× = 1–2 dny, 2–3× = 2–3 dny, 4–5× = 4–5 dní). Ostatní dny budou odpočinek nebo lehká procházka.</p>

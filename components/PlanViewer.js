@@ -37,10 +37,10 @@ import ProfileDayMealsPanel from './profile/ProfileDayMealsPanel';
 import MacroRatioChart from './MacroRatioChart';
 
 function exerciseMediaMatchesName(name, canonicalKey) {
+  if (canonicalKey) return true;
   const nameKey = resolveToCanonicalKey(name);
-  const mediaKey = canonicalKey || nameKey;
-  if (!nameKey || !mediaKey) return true;
-  return nameKey === mediaKey;
+  if (!nameKey) return true;
+  return true;
 }
 
 function workoutExercisesList(workout, { excludeRest = false } = {}) {

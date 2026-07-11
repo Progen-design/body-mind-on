@@ -7,6 +7,7 @@ import { generatePlanForEmail } from '../../lib/generatePlan';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getFrequencyDayRange } from '../../lib/preferenceConstants';
 import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
+import { mergeTrainingEnvironmentIntoNotes } from '../../lib/trainingEnvironment.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'PATCH' && req.method !== 'POST') {
@@ -64,6 +65,18 @@ export default async function handler(req, res) {
         ? wd.filter((n) => Number.isFinite(Number(n)) && n >= 0 && n <= 6)
         : [];
       updates.workout_days = normalizedDays.length > 0 ? normalizedDays.join(',') : null;
+    }
+    if (b.training_environment !== undefined) {
+      const trainingEnvironment = ['gym', 'home_bodyweight', 'home_equipment'].includes(String(b.training_environment || '').trim())
+        ? String(b.training_environment).trim()
+        : null;
+      if (!trainingEnvironment) {
+        return res.status(400).json({ error: 'Vyber prostředí tréninku.' });
+      }
+      const availableEquipment = trainingEnvironment === 'home_equipment' && Array.isArray(b.available_equipment)
+        ? b.available_equipment.map((item) => String(item || '').trim()).filter(Boolean)
+        : [];
+      updates.notes = mergeTrainingEnvironmentIntoNotes(latest.notes, trainingEnvironment, availableEquipment);
     }
 
     const effectiveFrequency = normalizeFrequency(
@@ -167,6 +180,9 @@ export default async function handler(req, res) {
     const dietOnlyKeys = ['diet_type', 'dietary_restrictions', 'foods_to_avoid'];
     const onlyDietChanged = Object.keys(updates).length > 0 && Object.keys(updates).every((k) => dietOnlyKeys.includes(k));
     const bmOverride = { ...latest, ...updates, email };
+    if (updates.notes !== undefined) {
+      bmOverride.notes = updates.notes;
+    }
     let planRegenerated = false;
     try {
       const result = await generatePlanForEmail(email, {

@@ -4,6 +4,8 @@
  * @see docs/ONBOARDING_PRODUCTION_SPEC.md § Replace Workout Flow
  */
 import { resolveExercise } from '../../../lib/services/exerciseProviderRegistry';
+import { rotatedTemplatesForBodyMetrics } from '../../../lib/workoutPlanScaler';
+import { filterWorkoutPlanForTrainingEnvironment } from '../../../lib/trainingEnvironment.js';
 
 function errorResponse(res, status, error, code, requestId) {
   return res.status(status).json({
@@ -13,30 +15,6 @@ function errorResponse(res, status, error, code, requestId) {
     _request_id: requestId,
   });
 }
-
-const WORKOUT_BLOCKS = [
-  [
-    { search_term: 'squat', sets: 3, reps: '10-12' },
-    { search_term: 'push up', sets: 3, reps: '8-10' },
-    { search_term: 'bent over row', sets: 3, reps: '10' },
-    { search_term: 'plank', sets: 3, duration_sec: 45 },
-    { search_term: 'lunge', sets: 3, reps: '10 per leg' },
-  ],
-  [
-    { search_term: 'squat', sets: 4, reps: '10' },
-    { search_term: 'lunge', sets: 3, reps: '10 per leg' },
-    { search_term: 'hip bridge', sets: 3, reps: '12' },
-    { search_term: 'plank', sets: 3, duration_sec: 30 },
-    { search_term: 'crunch', sets: 3, reps: '15' },
-  ],
-  [
-    { search_term: 'push up', sets: 4, reps: '8-10' },
-    { search_term: 'bent over row', sets: 3, reps: '10' },
-    { search_term: 'shoulder press', sets: 3, reps: '10' },
-    { search_term: 'plank', sets: 3, duration_sec: 30 },
-    { search_term: 'bicycle crunch', sets: 3, reps: '12 per side' },
-  ],
-];
 
 export default async function handler(req, res) {
   const requestId = `req_${Date.now()}`;
@@ -54,17 +32,40 @@ export default async function handler(req, res) {
     }
 
     const focusIndex = hint_focus === 'upper' ? 2 : hint_focus === 'lower' ? 1 : 0;
-    const block = WORKOUT_BLOCKS[focusIndex % WORKOUT_BLOCKS.length];
+    const bodyMetrics = {
+      training_environment: body.training_environment,
+      available_equipment: body.available_equipment,
+      notes: body.notes,
+      user_id: body.user_id,
+    };
+    const templates = rotatedTemplatesForBodyMetrics(bodyMetrics);
+    const block = templates[focusIndex % templates.length] || templates[0];
+
+    const planStub = {
+      days: [{
+        day_index: 1,
+        exercises: block.map((ex) => ({
+          canonical_key: ex.canonical_key,
+          search_term: ex.search_term ?? ex.canonical_key,
+          name_cs: ex.name_cs,
+          sets: ex.sets ?? 3,
+          reps: ex.reps ?? null,
+          duration_sec: ex.duration_sec ?? null,
+        })),
+      }],
+    };
+    filterWorkoutPlanForTrainingEnvironment(planStub, bodyMetrics);
+    const filteredBlock = planStub.days[0].exercises;
 
     const exercises = [];
-    for (const ex of block) {
-      const resolved = await resolveExercise(ex.search_term);
+    for (const ex of filteredBlock) {
+      const resolved = await resolveExercise(ex.search_term || ex.canonical_key);
       const verified = resolved?.source === 'wger' && (resolved?.name ?? false);
       const display_name_cs = verified ? (resolved?.display_name_cs ?? 'Cvik') : 'Cvik (neověřeno)';
       exercises.push({
         name: display_name_cs,
         display_name_cs,
-        canonical_key: resolved?.canonical_key ?? null,
+        canonical_key: (ex.canonical_key || resolved?.canonical_key) ?? null,
         exercise_verified: verified,
         sets: ex.sets ?? 3,
         reps: ex.reps ?? null,

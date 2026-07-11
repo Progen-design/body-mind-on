@@ -5,6 +5,7 @@ import HabitChipGrid from './HabitChipGrid';
 import { getFrequencyDayRange } from '../../lib/preferenceConstants';
 import { calculateAgeFromBirthDate } from '../../lib/bodyMetricsBirthDate';
 import { SMART_SCALE_SETTINGS_CHOICES } from '../../lib/smartScalePreference';
+import TrainingEnvironmentFields from '../TrainingEnvironmentFields';
 
 export default function PreferencesOverlay({
   open,
@@ -233,6 +234,24 @@ export default function PreferencesOverlay({
               </select>
             </label>
           </div>
+
+          <TrainingEnvironmentFields
+            variant="preferences"
+            trainingEnvironment={form.training_environment || ''}
+            availableEquipment={Array.isArray(form.available_equipment) ? form.available_equipment : []}
+            disabled={saving}
+            showErrors={!form.training_environment}
+            onTrainingEnvironmentChange={(value) =>
+              setForm((current) => ({
+                ...current,
+                training_environment: value,
+                available_equipment: value === 'home_equipment' ? (current.available_equipment || []) : [],
+              }))
+            }
+            onAvailableEquipmentChange={(equipment) =>
+              setForm((current) => ({ ...current, available_equipment: equipment }))
+            }
+          />
 
           <div className="prefs-block">
             <div className="prefs-block-head">

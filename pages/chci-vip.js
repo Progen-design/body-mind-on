@@ -6,6 +6,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import HabitSelection from "../components/HabitSelection";
 import SmartScaleChoiceField from "../components/SmartScaleChoiceField";
+import TrainingEnvironmentFields from "../components/TrainingEnvironmentFields";
 import { getSuggestedHabits } from "../lib/habits";
 import { getFrequencyDayRange } from "../lib/preferenceConstants";
 import { REGISTRATION_STEPS } from "../lib/registrationRules";
@@ -32,6 +33,8 @@ export default function ChciVipPage() {
     worktype: "",
     goal: "",
     frequency: "",
+    training_environment: "",
+    available_equipment: [],
     workout_days: [],
     diet_type: "",
     dietary_restrictions: "",
@@ -53,6 +56,11 @@ export default function ChciVipPage() {
     cleaned.activity = cleaned.activity?.toLowerCase().trim();
     cleaned.stress = cleaned.stress?.toLowerCase().trim();
     cleaned.goal = cleaned.goal?.toLowerCase().trim();
+    if (cleaned.training_environment !== 'home_equipment') {
+      cleaned.available_equipment = [];
+    } else if (!Array.isArray(cleaned.available_equipment)) {
+      cleaned.available_equipment = [];
+    }
     return cleaned;
   };
 
@@ -64,6 +72,10 @@ export default function ChciVipPage() {
         delete next[name];
         return next;
       });
+    }
+    if (name === 'training_environment' && value !== 'home_equipment') {
+      setFormData({ ...formData, [name]: value, available_equipment: [] });
+      return;
     }
     setFormData({ ...formData, [name]: value });
   };
@@ -80,6 +92,7 @@ export default function ChciVipPage() {
   const canProceedStep1 = () => formData.name?.trim() && formData.email?.trim() && formData.password?.length >= 6 && formData.password === formData.passwordConfirm;
   const canProceedStep2 = () => formData.gender && formData.age && formData.height && formData.weight;
   const canProceedStep3 = () => formData.activity && formData.stress && formData.worktype && formData.goal && formData.frequency
+    && formData.training_environment
     && Array.isArray(formData.workout_days) && formData.workout_days.length >= 1;
   const canProceedStep5 = () => selectedHabits.length > 0;
 
@@ -358,6 +371,24 @@ export default function ChciVipPage() {
                   <option value="2-3x týdně">2–3x týdně</option>
                   <option value="4-5x týdně">4–5x týdně</option>
                 </select>
+              </div>
+              <div className="step3-field step3-field-full">
+                <TrainingEnvironmentFields
+                  trainingEnvironment={formData.training_environment}
+                  availableEquipment={formData.available_equipment}
+                  disabled={isSubmitting}
+                  showErrors={!formData.training_environment}
+                  onTrainingEnvironmentChange={(value) =>
+                    setFormData((f) => ({
+                      ...f,
+                      training_environment: value,
+                      available_equipment: value === 'home_equipment' ? f.available_equipment : [],
+                    }))
+                  }
+                  onAvailableEquipmentChange={(equipment) =>
+                    setFormData((f) => ({ ...f, available_equipment: equipment }))
+                  }
+                />
               </div>
               <div className="step3-field step3-field-full">
                 <label className="step3-label">Cvičím v tyto dny</label>

@@ -11,6 +11,7 @@ import { getSuggestedHabits } from "../lib/habits";
 import { getFrequencyDayRange } from "../lib/preferenceConstants";
 import { REGISTRATION_STEPS } from "../lib/registrationRules";
 import { PLAN_GENERATION_DURATION_HINT, PLAN_GENERATION_OVERLAY_TITLE } from "../lib/planGenerationUiCopy";
+import { validateBirthDate } from "../lib/bodyMetricsBirthDate";
 
 // Referenční stránka pravidel registrace – START a VIP se chovají dle těchto pravidel (5 kroků, POST /api/body-metrics).
 const MAX_STEP = REGISTRATION_STEPS;
@@ -25,7 +26,7 @@ export default function OnClubPage() {
     password: "",
     passwordConfirm: "",
     gender: "",
-    age: "",
+    birth_date: "",
     height: "",
     weight: "",
     smart_scale_choice: "none",
@@ -82,6 +83,10 @@ export default function OnClubPage() {
 
   const getStep2Errors = () => {
     const errors = {};
+    const birthCheck = validateBirthDate(formData.birth_date);
+    if (!birthCheck.valid) {
+      errors.birth_date = birthCheck.error;
+    }
     const height = Number(formData.height);
     if (formData.height !== "" && (!Number.isFinite(height) || height < 100 || height > 250)) {
       errors.height = "Výška musí být mezi 100 a 250 cm.";
@@ -90,7 +95,7 @@ export default function OnClubPage() {
   };
 
   const canProceedStep1 = () => formData.name?.trim() && formData.email?.trim() && formData.password?.length >= 6 && formData.password === formData.passwordConfirm;
-  const canProceedStep2 = () => formData.gender && formData.age && formData.height && formData.weight;
+  const canProceedStep2 = () => formData.gender && formData.birth_date && formData.height && formData.weight;
   const canProceedStep3 = () => formData.activity && formData.stress && formData.worktype && formData.goal && formData.frequency
     && formData.training_environment
     && Array.isArray(formData.workout_days) && formData.workout_days.length >= 1;
@@ -292,8 +297,18 @@ export default function OnClubPage() {
                 </select>
               </div>
               <div>
-                <label className="reg-label">Věk</label>
-                <input name="age" type="number" className="reg-input" value={formData.age} onChange={handleChange} placeholder="30" required disabled={isSubmitting} />
+                <label className="reg-label">Datum narození</label>
+                <input
+                  name="birth_date"
+                  type="date"
+                  className="reg-input"
+                  value={formData.birth_date}
+                  onChange={handleChange}
+                  required
+                  max={new Date().toISOString().split('T')[0]}
+                  disabled={isSubmitting}
+                />
+                {fieldErrors.birth_date && <p className="reg-field-error" role="alert">{fieldErrors.birth_date}</p>}
               </div>
               <div>
                 <label className="reg-label">Výška (cm)</label>

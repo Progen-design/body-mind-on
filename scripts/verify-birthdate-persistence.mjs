@@ -23,6 +23,8 @@ function read(relPath) {
 }
 
 const startPage = read('pages/start.js');
+const onClubPage = read('pages/on-club.js');
+const chciVipPage = read('pages/chci-vip.js');
 const bodyMetricsApi = read('pages/api/body-metrics.js');
 const profileApi = read('pages/api/profile.js');
 const profileBodyDataApi = read('pages/api/profile-body-data.js');
@@ -37,6 +39,12 @@ check('registrace má pole birth_date', startPage.includes('name="birth_date"') 
 check('registrace validuje birth_date', startPage.includes('validateBirthDate(formData.birth_date)'));
 check('registrace vyžaduje birth_date pro pokračování', startPage.includes('formData.birth_date &&') || /canProceedStep2[\s\S]{0,200}birth_date/.test(startPage));
 check('registrace posílá payload na /api/body-metrics', startPage.includes('"/api/body-metrics"') || startPage.includes("'/api/body-metrics'"));
+
+for (const [label, pageSrc] of [['on-club', onClubPage], ['chci-vip', chciVipPage]]) {
+  check(`${label} má pole birth_date`, pageSrc.includes('name="birth_date"') && pageSrc.includes('type="date"'));
+  check(`${label} nemá pole age`, !pageSrc.includes('name="age"'));
+  check(`${label} validuje birth_date`, pageSrc.includes('validateBirthDate(formData.birth_date)'));
+}
 
 // --- API přijímá a ukládá ---
 check('/api/body-metrics čte b.birth_date', bodyMetricsApi.includes('b.birth_date'));
@@ -58,6 +66,7 @@ check('žádný hardcoded rok 2005 fallback v profilu', !/2005/.test(profilPage)
 check('žádný hardcoded 1. 1. default v overlay', !/2005|-01-01/.test(prefsOverlay));
 check('chybějící datum = prázdná hodnota (ne default)', prefsOverlay.includes("form.birth_date ?? ''"));
 check('věk se počítá jen ze skutečného data', prefsOverlay.includes('form.birth_date ? calculateAgeFromBirthDate(form.birth_date) : null'));
+check('overlay upozorní na chybějící datum', prefsOverlay.includes('Datum narození z registrace chybí'));
 
 // --- Update v profilu se uloží a drží ---
 check('profil posílá birth_date do /api/profile-body-data', profilPage.includes('bodyPayload.birth_date = preferencesForm.birth_date'));

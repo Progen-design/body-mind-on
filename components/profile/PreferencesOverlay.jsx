@@ -114,7 +114,11 @@ export default function PreferencesOverlay({
 
           {computedAge != null ? (
             <p className="prefs-age-hint" role="status">Věk: <strong>{computedAge} let</strong> (dopočítáno z data narození)</p>
-          ) : null}
+          ) : (
+            <p className="prefs-age-hint prefs-age-hint--warn" role="status">
+              Datum narození z registrace chybí — doplň ho a ulož změny, ať věk sedí s plánem.
+            </p>
+          )}
         </section>
 
         <section className="prefs-section-card">
@@ -428,6 +432,9 @@ export default function PreferencesOverlay({
         }
         .prefs-age-hint strong {
           color: #e2e8f0;
+        }
+        .prefs-age-hint--warn {
+          color: #fbbf24;
         }
         .prefs-smart-scale-options {
           display: grid;

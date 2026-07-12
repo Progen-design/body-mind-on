@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 /**
- * Ověří jídla v aktivním plánu uživatele proti recipes_catalog (název, kcal, makra).
+ * Ověří jídla v aktivním plánu uživatele proti recipes_catalog nebo simple_start knihovně.
  *   node scripts/verify-plan-meals-against-catalog.mjs janprikopa@gmail.com
  */
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { createClient } from '@supabase/supabase-js';
+import {
+  ALLOWED_SIMPLE_START_CATALOG_SOURCES,
+  isAllowedSimpleStartCatalogSource,
+} from '../lib/startSimpleMealFilter.js';
 
 const email = (process.argv[2] || 'janprikopa@gmail.com').trim().toLowerCase();
 
@@ -27,12 +31,64 @@ const supabase = createClient(
 );
 
 const MEAL_TYPE_MAP = { breakfast: 'snidane', lunch: 'obed', dinner: 'vecere', snack: 'svacina' };
+const LIBRARY_SOURCES = new Set([
+  ...ALLOWED_SIMPLE_START_CATALOG_SOURCES,
+  'start_safe_fallback',
+]);
 
 function numClose(a, b, tol = 2) {
   const x = Number(a);
   const y = Number(b);
   if (!Number.isFinite(x) || !Number.isFinite(y)) return true;
   return Math.abs(x - y) <= tol;
+}
+
+function mealName(meal) {
+  return meal.display_name_cs || meal.name_cs || meal.recipe?.title_cs || '';
+}
+
+function hasRecipeDetail(meal) {
+  const steps = Array.isArray(meal.simple_instructions_cs) ? meal.simple_instructions_cs.length : 0;
+  const recipeSteps = Array.isArray(meal.recipe?.instructions_cs) ? meal.recipe.instructions_cs.length : 0;
+  const recipeText = typeof meal.recipe?.instructions === 'string' ? meal.recipe.instructions.trim().length : 0;
+  return steps >= 3 || recipeSteps >= 3 || recipeText >= 20;
+}
+
+function isLibraryMeal(meal) {
+  const source = meal.catalog_source || meal.recipe?.source || meal.verification_source || '';
+  if (LIBRARY_SOURCES.has(String(source).trim())) return true;
+  if (isAllowedSimpleStartCatalogSource(source)) return true;
+  const catalogId = Number(meal.catalog_id);
+  return !Number.isFinite(catalogId) || catalogId <= 0;
+}
+
+function validateLibraryMeal(meal) {
+  const issues = [];
+  const warnings = [];
+  const name = mealName(meal);
+  const source = meal.catalog_source || meal.recipe?.source || meal.verification_source || 'unknown';
+
+  if (!meal.recipe_verified) {
+    if (source === 'simple_start_fallback' || source === 'start_safe_fallback') {
+      warnings.push('recipe_verified=false (fallback)');
+    } else {
+      issues.push('neověřeno');
+    }
+  }
+  if (!name || /jídlo\s*\(neověřeno\)/i.test(name)) issues.push('placeholder název');
+  if (!Number.isFinite(Number(meal.kcal)) || Number(meal.kcal) <= 0) issues.push('chybí kcal');
+  const protein = meal.protein_g ?? meal.recipe?.protein_g;
+  const carbs = meal.carbs_g ?? meal.recipe?.carbs_g;
+  const fat = meal.fat_g ?? meal.recipe?.fat_g;
+  if (!Number.isFinite(Number(protein))) issues.push('chybí protein');
+  if (!Number.isFinite(Number(carbs))) issues.push('chybí carbs');
+  if (!Number.isFinite(Number(fat))) issues.push('chybí fat');
+  if (!hasRecipeDetail(meal)) issues.push('chybí recipe detail');
+  if (!isAllowedSimpleStartCatalogSource(source) && !LIBRARY_SOURCES.has(String(source).trim())) {
+    issues.push(`nepodporovaný catalog_source ${source}`);
+  }
+
+  return { issues, warnings, source };
 }
 
 async function findUserId(targetEmail) {
@@ -72,31 +128,53 @@ async function main() {
   const catalogIds = new Set();
   for (const day of plan.structured_plan_json.days) {
     for (const meal of day.meals || []) {
-      if (meal?.catalog_id) catalogIds.add(Number(meal.catalog_id));
+      const catalogId = Number(meal.catalog_id);
+      if (Number.isFinite(catalogId) && catalogId > 0) catalogIds.add(catalogId);
     }
   }
 
-  const { data: catalogRows } = await supabase
-    .from('recipes_catalog')
-    .select('id, name_cs, meal_type, kcal, protein_g, carbs_g, fat_g')
-    .in('id', [...catalogIds]);
-
-  const catalogById = Object.fromEntries((catalogRows || []).map((r) => [r.id, r]));
+  const catalogById = {};
+  if (catalogIds.size > 0) {
+    const { data: catalogRows } = await supabase
+      .from('recipes_catalog')
+      .select('id, name_cs, meal_type, kcal, protein_g, carbs_g, fat_g')
+      .in('id', [...catalogIds]);
+    for (const row of catalogRows || []) catalogById[row.id] = row;
+  }
 
   let ok = 0;
   let warn = 0;
   let fail = 0;
+  let library = 0;
+  let catalog = 0;
 
   console.log('Plán:', plan.id, plan.valid_from, '→', plan.valid_until, '\n');
 
   for (const day of plan.structured_plan_json.days) {
     console.log(`=== ${day.day_name} (${day.date}) ===`);
     for (const meal of day.meals || []) {
-      const name = meal.display_name_cs || meal.name_cs || meal.recipe?.title_cs || '?';
+      const name = mealName(meal) || '?';
       const catalogId = Number(meal.catalog_id);
-      const cat = catalogById[catalogId];
       const issues = [];
 
+      if (isLibraryMeal(meal)) {
+        library += 1;
+        const lib = validateLibraryMeal(meal);
+        issues.push(...lib.issues);
+        const status = issues.length === 0
+          ? (lib.warnings.length ? 'WARN' : 'OK')
+          : issues.some((i) => i.includes('placeholder') || i.includes('chybí') || i === 'neověřeno') ? 'FAIL' : 'WARN';
+        if (status === 'OK') ok += 1;
+        else if (status === 'WARN') warn += 1;
+        else fail += 1;
+        console.log(`  [${status}] ${meal.type}: ${name} (${meal.kcal} kcal, source ${lib.source})`);
+        const notes = [...issues, ...lib.warnings];
+        if (notes.length) console.log(`         → ${notes.join('; ')}`);
+        continue;
+      }
+
+      catalog += 1;
+      const cat = catalogById[catalogId];
       if (!meal.recipe_verified) issues.push('neověřeno');
       if (!cat) issues.push(`catalog_id ${catalogId} nenalezen`);
       else {
@@ -123,7 +201,7 @@ async function main() {
     console.log('');
   }
 
-  console.log(`Souhrn: OK=${ok}, WARN=${warn}, FAIL=${fail}`);
+  console.log(`Souhrn: OK=${ok}, WARN=${warn}, FAIL=${fail} (library=${library}, catalog=${catalog})`);
   process.exit(fail > 0 ? 1 : 0);
 }
 

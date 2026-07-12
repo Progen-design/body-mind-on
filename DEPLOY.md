@@ -77,3 +77,27 @@ V projektu v Vercelu otevři **Settings → Environment Variables** a přidej **
 
 - **Lokálně**: `npm run dev` → běží jen u tebe na `http://localhost:3000`.
 - **Na webu**: po nasazení na Vercel běží na **https://tvoje-url.vercel.app** nebo **https://app.bodyandmindon.cz** – tam to máš „na webu“.
+
+## Vercel API audit (read-only)
+
+Bezpečný read-only přehled projektu `body-mind-on` přes Vercel REST API (deployment, domény, **jen názvy** env proměnných).
+
+1. Vytvoř token na [vercel.com/account/tokens](https://vercel.com/account/tokens) (stačí read přístup).
+2. Do `.env.local` doplň (viz `.env.example`):
+
+   ```env
+   VERCEL_API_TOKEN=
+   VERCEL_TEAM_ID=
+   VERCEL_PROJECT_ID=
+   VERCEL_PROJECT_NAME=body-mind-on
+   ```
+
+   U team projektu je `VERCEL_TEAM_ID` obvykle nutné (najdeš v URL dashboardu nebo v Team Settings).
+
+3. Spusť:
+
+   ```bash
+   npm run vercel:audit
+   ```
+
+**Bezpečnost:** token necommituj; skript nevypisuje hodnoty env proměnných. Podrobnosti: [README.md](./README.md).

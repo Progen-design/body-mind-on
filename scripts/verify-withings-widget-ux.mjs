@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Ověření UX Withings widgetu v profilu.
+ * Ověření UX Withings sekce v profilu (inline Tělesný vývoj).
  *   npm run verify:withings-widget-ux
  */
 import { mkdirSync, readFileSync, existsSync } from 'fs';
@@ -57,60 +57,86 @@ function sleep(ms) {
 
 async function ensureLocalServer() {
   if (!/localhost|127\.0\.0\.1/.test(BASE_URL)) return;
-  try {
-    const res = await fetch(`${BASE_URL}/login`, { signal: AbortSignal.timeout(5000) });
-    const html = await res.text();
-    if (res.ok && html.includes('login-submit') && html.includes('type="email"')) return;
-  } catch {
-    // start below
-  }
-  console.log(`Starting local server at ${BASE_URL}…`);
-  const port = new URL(BASE_URL).port || PORT;
-  const child = spawn(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'start', '--', '-p', port], {
-    cwd: ROOT,
-    detached: true,
-    stdio: 'ignore',
-    shell: process.platform === 'win32',
-  });
-  child.unref();
-  for (let i = 0; i < 45; i++) {
+
+  async function loginPageReady(url) {
     try {
-      const res = await fetch(`${BASE_URL}/login`, { signal: AbortSignal.timeout(2000) });
-      if (res.ok) {
+      const res = await fetch(`${url}/login`, { signal: AbortSignal.timeout(5000) });
+      const html = await res.text();
+      return res.ok && html.includes('__NEXT_DATA__') && /Přihl/i.test(html);
+    } catch {
+      return false;
+    }
+  }
+
+  if (await loginPageReady(BASE_URL)) return;
+
+  const startPort = Number(new URL(BASE_URL).port || PORT);
+  for (let offset = 0; offset < 8; offset++) {
+    const port = String(startPort + offset);
+    const url = `http://127.0.0.1:${port}`;
+    if (await loginPageReady(url)) {
+      process.env.BASE_URL = url;
+      return;
+    }
+    console.log(`Starting local server at ${url}…`);
+    const child = spawn(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'start', '--', '-p', port], {
+      cwd: ROOT,
+      detached: true,
+      stdio: 'ignore',
+      shell: process.platform === 'win32',
+    });
+    child.unref();
+    for (let i = 0; i < 45; i++) {
+      if (await loginPageReady(url)) {
+        process.env.BASE_URL = url;
         console.log('Local server ready');
         await sleep(2500);
         return;
       }
-    } catch {
-      // retry
+      await sleep(1000);
     }
-    await sleep(1000);
   }
-  throw new Error(`Local next start did not become ready on port ${new URL(BASE_URL).port || PORT}`);
+  throw new Error(`Local next start did not become ready near port ${startPort}`);
 }
 
-console.log('--- Static Withings widget checks ---');
+console.log('--- Static Withings section checks ---');
+const withingsSection = read('components/profile/WithingsBodyDevelopmentSection.js');
 const withingsCard = read('components/profile/WithingsProfileCard.js');
 const latestApi = read('pages/api/withings/latest.js');
 const packageJson = read('package.json');
 
-check('default collapsed state', /useState\(true\)/.test(withingsCard) && withingsCard.includes('bm-withings-widget-collapsed'));
-check('launcher button exists', withingsCard.includes('withings-launcher') && withingsCard.includes('Váha'));
-check('Skrýt collapses widget', withingsCard.includes('hideCard') && withingsCard.includes('persistCollapsedPreference'));
-check('not_configured friendly copy', withingsCard.includes('Chytrá váha zatím není aktivní.'));
-check('Připravujeme disabled button', withingsCard.includes('Připravujeme'));
-check('sanitize technical OAuth messages', withingsCard.includes('sanitizeUserMessage'));
-check('no technical OAuth text in JSX', !withingsCard.includes('klientské údaje') && !withingsCard.includes('OAuth není nakonfigurován'));
-check('mobile max height 80vh', /80vh/.test(withingsCard));
-check('desktop max width ~400px', /min\(400px/.test(withingsCard));
+check('WithingsProfileCard re-export', withingsCard.includes('WithingsBodyDevelopmentSection'));
+check('section hidden without visibility', withingsSection.includes('if (!sectionVisible) return null'));
+check('shouldShowWithingsSection gating', withingsSection.includes('shouldShowWithingsSection'));
+check('shouldShowWithingsConnectUi gating', withingsSection.includes('shouldShowWithingsConnectUi'));
+check('inline section class', withingsSection.includes('withings-body-dev'));
+check('Tělesný vývoj heading', withingsSection.includes('Tělesný vývoj'));
+check('Připojit Withings CTA', withingsSection.includes('Připojit Withings'));
+check('unified gradient on CTA', withingsSection.includes('#0EA5E9 0%, #A78BFA 100%'));
+check('CTA min-height 44px', withingsSection.includes('min-height: 44px'));
+check('no technical OAuth text in JSX', !withingsSection.includes('klientské údaje') && !withingsSection.includes('OAuth není nakonfigurován'));
 check('latest API exposes configured', latestApi.includes('isWithingsOAuthConfigured') && latestApi.includes('configured'));
 check('npm script verify:withings-widget-ux', packageJson.includes('"verify:withings-widget-ux"'));
 
-const badMobileWidth = withingsCard.match(/width:\s*(\d{3,})px/g) || [];
-const mobileBlock = withingsCard.split('@media (max-width: 640px)')[1] || '';
+const mobileBlock = withingsSection.split('@media (max-width: 640px)')[1] || '';
 check('mobile CSS bez fixed width >100vw', !mobileBlock.match(/width:\s*(4[3-9]\d|[5-9]\d{2}|\d{4,})px/));
 
-async function registerIfNeeded(supabase) {
+async function ensureWithingsOptIn(supabase) {
+  const { data: listed } = await supabase.auth.admin.listUsers({ page: 1, perPage: 200 });
+  const testUser = (listed?.users || []).find((u) => String(u.email || '').toLowerCase() === TEST_EMAIL.toLowerCase());
+  if (testUser?.id) {
+    const meta = testUser.user_metadata || {};
+    await supabase.auth.admin.updateUserById(testUser.id, {
+      user_metadata: {
+        ...meta,
+        wants_body_tracking: true,
+        smart_scale_provider: 'withings',
+      },
+    });
+  }
+}
+
+async function registerIfNeeded(supabase, baseUrl) {
   const payload = {
     email: TEST_EMAIL,
     name: 'Withings UX',
@@ -125,13 +151,14 @@ async function registerIfNeeded(supabase) {
     goal: 'udrzovani',
     frequency: '3-4x týdně',
     program: 'START',
+    smart_scale_choice: 'withings',
     workout_days: [1, 3, 5],
     training_environment: 'gym',
     available_equipment: [],
     diet_type: 'standard',
   };
   const res = await fetchWithTimeout(
-    `${BASE_URL}/api/body-metrics`,
+    `${baseUrl}/api/body-metrics`,
     { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) },
     FETCH_TIMEOUT.BODY_METRICS,
   );
@@ -139,6 +166,7 @@ async function registerIfNeeded(supabase) {
   if (!res.ok && !(res.status === 503 && body.hasUserId)) {
     throw new Error(`Registration failed HTTP ${res.status}: ${body.error || JSON.stringify(body)}`);
   }
+  await ensureWithingsOptIn(supabase);
   const deadline = Date.now() + 90_000;
   while (Date.now() < deadline) {
     const { data: plan } = await supabase
@@ -157,50 +185,45 @@ async function registerIfNeeded(supabase) {
   throw new Error('Plan not ready within 90s');
 }
 
-async function loginAndOpenProfile(page) {
-  await page.goto(`${BASE_URL}/login?redirect=/profil`, { waitUntil: 'networkidle', timeout: 90_000 });
-  await page.locator('input.login-input[type="email"], input[type="email"]').first().waitFor({ state: 'visible', timeout: 45_000 });
-  await page.locator('input.login-input[type="email"], input[type="email"]').first().fill(TEST_EMAIL);
+async function loginAndOpenProfile(page, baseUrl) {
+  await page.goto(`${baseUrl}/login?redirect=/profil`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+  const emailInput = page.locator('input.login-input[type="email"], input[type="email"]').first();
+  await emailInput.waitFor({ state: 'visible', timeout: 45_000 });
+  await emailInput.fill(TEST_EMAIL);
   await page.locator('input.login-input[type="password"], input[type="password"]').first().fill(TEST_PASSWORD);
   await page.locator('button.login-submit').click();
   await page.waitForURL(/\/profil/, { timeout: 60_000 });
   await page.waitForFunction(
-    () => Boolean(document.querySelector('.withings-floating-card') || document.querySelector('#profile-today-heading')),
+    () => Boolean(document.querySelector('.withings-body-dev') || document.querySelector('#profile-today-heading')),
     null,
     { timeout: 120_000 },
   );
   await sleep(800);
 }
 
-async function inspectWithings(page) {
+async function inspectWithingsSection(page) {
   return page.evaluate(() => {
-    const card = document.querySelector('.withings-floating-card');
-    const launcher = document.querySelector('.withings-launcher');
-    const panel = document.querySelector('.withings-panel');
-    const bodyText = card?.innerText || '';
-    const connectBtn = [...document.querySelectorAll('.withings-actions button')].find((b) => /Propojit Withings|Připravujeme/i.test(b.textContent || ''));
-    const syncBtn = [...document.querySelectorAll('.withings-actions button')].find((b) => /Sync teď/i.test(b.textContent || ''));
-    const historyBtn = [...document.querySelectorAll('.withings-actions button')].find((b) => /Historie/i.test(b.textContent || ''));
+    const section = document.querySelector('.withings-body-dev');
+    const connectBtn = [...document.querySelectorAll('.withings-actions button')].find((b) => /Připojit Withings|Synchronizovat teď/i.test(b.textContent || ''));
     const today = document.getElementById('profile-today-heading');
-    const cardRect = card?.getBoundingClientRect();
+    const sectionRect = section?.getBoundingClientRect();
     const todayRect = today?.getBoundingClientRect();
-    const style = card ? window.getComputedStyle(card) : null;
+    const btnStyle = connectBtn ? window.getComputedStyle(connectBtn) : null;
+    const bodyText = section?.innerText || '';
     return {
-      collapsed: card?.classList.contains('is-collapsed') || card?.dataset.withingsCollapsed === '1',
-      expanded: card?.classList.contains('is-expanded'),
-      hasLauncher: Boolean(launcher),
-      hasPanel: Boolean(panel),
-      bodyText,
+      hasSection: Boolean(section),
+      hasConnectBtn: Boolean(connectBtn),
       connectDisabled: connectBtn ? connectBtn.disabled : null,
-      syncDisabled: syncBtn ? syncBtn.disabled : null,
-      historyDisabled: historyBtn ? historyBtn.disabled : null,
+      connectMinHeight: btnStyle ? parseFloat(btnStyle.minHeight) : null,
       horizontalScroll: document.documentElement.scrollWidth > document.documentElement.clientWidth + 2,
-      cardWidth: cardRect ? cardRect.width : null,
+      sectionWidth: sectionRect ? sectionRect.width : null,
       viewportWidth: window.innerWidth,
-      overlapsToday: cardRect && todayRect
-        ? cardRect.top < todayRect.bottom && cardRect.bottom > todayRect.top && cardRect.left < todayRect.right && cardRect.right > todayRect.left
+      overlapsToday: sectionRect && todayRect
+        ? sectionRect.top < todayRect.bottom && sectionRect.bottom > todayRect.top
+          && sectionRect.left < todayRect.right && sectionRect.right > todayRect.left
         : false,
-      cardWidthCss: style?.width || null,
+      bodyText,
+      heading: section?.querySelector('h2')?.textContent || '',
     };
   });
 }
@@ -226,12 +249,14 @@ async function runVisualChecks() {
     return;
   }
 
+  const runtimeBaseUrl = (process.env.BASE_URL || BASE_URL).replace(/\/$/, '');
+
   const supabase = createClient(supabaseUrl, serviceKey);
-  console.log('\n--- Visual Withings widget checks ---');
+  console.log('\n--- Visual Withings section checks ---');
   mkdirSync(ARTIFACTS, { recursive: true });
 
   try {
-    await registerIfNeeded(supabase);
+    await registerIfNeeded(supabase, runtimeBaseUrl);
   } catch (err) {
     check('registrace test účtu', false, err.message);
     return;
@@ -247,33 +272,16 @@ async function runVisualChecks() {
       timezoneId: 'Europe/Prague',
     });
     const mobilePage = await mobileContext.newPage();
-    await loginAndOpenProfile(mobilePage);
-    const collapsedMobile = await inspectWithings(mobilePage);
-    check('mobile default collapsed', collapsedMobile.collapsed && collapsedMobile.hasLauncher && !collapsedMobile.hasPanel);
-    check('mobile launcher visible', collapsedMobile.hasLauncher);
-    check('mobile bez technického OAuth textu', !/oauth|klientské údaje|dashboard|env/i.test(collapsedMobile.bodyText));
-    check('mobile card width <= viewport', collapsedMobile.cardWidth == null || collapsedMobile.cardWidth <= collapsedMobile.viewportWidth + 2, String(collapsedMobile.cardWidth));
-    check('mobile bez horizontálního scrollu', !collapsedMobile.horizontalScroll);
-    await mobilePage.screenshot({ path: join(ARTIFACTS, 'withings-collapsed-mobile.png'), fullPage: false });
-
-    await mobilePage.locator('.withings-launcher').click();
-    await sleep(500);
-    const expandedMobile = await inspectWithings(mobilePage);
-    check('mobile expand on launcher click', expandedMobile.expanded && expandedMobile.hasPanel);
-    check('mobile expanded bez OAuth technického textu', !/oauth|klientské údaje|dashboard|env/i.test(expandedMobile.bodyText));
-    check('mobile expanded card width <= viewport', expandedMobile.cardWidth <= expandedMobile.viewportWidth + 2, String(expandedMobile.cardWidth));
-    if (/Připravujeme/i.test(expandedMobile.bodyText)) {
-      check('mobile Připravujeme je disabled', expandedMobile.connectDisabled === true);
-      check('mobile not_configured copy', /Chytrá váha zatím není aktivní/i.test(expandedMobile.bodyText));
-    } else {
-      check('mobile Sync/Historie disabled when not connected', expandedMobile.syncDisabled === true && expandedMobile.historyDisabled === true);
-    }
-    await mobilePage.screenshot({ path: join(ARTIFACTS, 'withings-expanded-mobile.png'), fullPage: false });
-
-    await mobilePage.locator('.withings-close').click();
-    await sleep(400);
-    const hiddenMobile = await inspectWithings(mobilePage);
-    check('mobile Skrýt vrátí collapsed', hiddenMobile.collapsed && hiddenMobile.hasLauncher);
+    await loginAndOpenProfile(mobilePage, runtimeBaseUrl);
+    const mobileState = await inspectWithingsSection(mobilePage);
+    check('mobile Withings sekce viditelná (opt-in)', mobileState.hasSection);
+    check('mobile Tělesný vývoj heading', /Tělesný vývoj/i.test(mobileState.heading));
+    check('mobile Připojit/Sync CTA', mobileState.hasConnectBtn);
+    check('mobile CTA min-height >= 44px', mobileState.connectMinHeight == null || mobileState.connectMinHeight >= 44, String(mobileState.connectMinHeight));
+    check('mobile bez technického OAuth textu', !/oauth|klientské údaje|dashboard|env/i.test(mobileState.bodyText));
+    check('mobile card width <= viewport', mobileState.sectionWidth == null || mobileState.sectionWidth <= mobileState.viewportWidth + 2, String(mobileState.sectionWidth));
+    check('mobile bez horizontálního scrollu', !mobileState.horizontalScroll);
+    await mobilePage.screenshot({ path: join(ARTIFACTS, 'withings-section-mobile.png'), fullPage: false });
     await mobileContext.close();
 
     const desktopContext = await browser.newContext({
@@ -282,26 +290,12 @@ async function runVisualChecks() {
       timezoneId: 'Europe/Prague',
     });
     const desktopPage = await desktopContext.newPage();
-    await loginAndOpenProfile(desktopPage);
-    const collapsedDesktop = await inspectWithings(desktopPage);
-    check('desktop default collapsed', collapsedDesktop.collapsed && collapsedDesktop.hasLauncher);
-    check('desktop collapsed nepřekrývá dnešní CTA', !collapsedDesktop.overlapsToday);
-    await desktopPage.screenshot({ path: join(ARTIFACTS, 'withings-collapsed-desktop.png'), fullPage: false });
-
-    await desktopPage.locator('.withings-launcher').click();
-    await sleep(500);
-    const expandedDesktop = await inspectWithings(desktopPage);
-    check('desktop expand on launcher click', expandedDesktop.expanded && expandedDesktop.hasPanel);
-    check('desktop card max width reasonable', expandedDesktop.cardWidth <= 420, String(expandedDesktop.cardWidth));
-    await desktopPage.screenshot({ path: join(ARTIFACTS, 'withings-expanded-desktop.png'), fullPage: false });
-
-    await desktopPage.evaluate(() => {
-      window.localStorage.setItem('bm-withings-widget-collapsed', '1');
-    });
-    await desktopPage.reload({ waitUntil: 'networkidle' });
-    await sleep(800);
-    const persisted = await inspectWithings(desktopPage);
-    check('collapsed state persists after refresh', persisted.collapsed && persisted.hasLauncher);
+    await loginAndOpenProfile(desktopPage, runtimeBaseUrl);
+    const desktopState = await inspectWithingsSection(desktopPage);
+    check('desktop Withings sekce viditelná (opt-in)', desktopState.hasSection);
+    check('desktop nepřekrývá dnešní CTA', !desktopState.overlapsToday);
+    check('desktop CTA min-height >= 44px', desktopState.connectMinHeight == null || desktopState.connectMinHeight >= 44, String(desktopState.connectMinHeight));
+    await desktopPage.screenshot({ path: join(ARTIFACTS, 'withings-section-desktop.png'), fullPage: false });
     await desktopContext.close();
   } catch (err) {
     check('visual checks', false, err.message);

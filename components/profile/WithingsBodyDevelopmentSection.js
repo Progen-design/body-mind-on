@@ -427,7 +427,7 @@ export default function WithingsBodyDevelopmentSection({ profile, onLatestWeight
         .withings-actions button {
           border: 0;
           border-radius: 12px;
-          min-height: 42px;
+          min-height: 44px;
           padding: 10px 14px;
           background: linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%);
           color: #fff;

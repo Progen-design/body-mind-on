@@ -65,34 +65,60 @@ function sleep(ms) {
 
 async function ensureLocalServer() {
   if (!/localhost|127\.0\.0\.1/.test(BASE_URL)) return;
-  try {
-    const res = await fetch(`${BASE_URL}/login`, { signal: AbortSignal.timeout(5000) });
-    if (res.ok) return;
-  } catch { /* start */ }
-  console.log(`Starting local server at ${BASE_URL}…`);
-  const port = new URL(BASE_URL).port || PORT;
-  const child = spawn(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'start', '--', '-p', port], {
-    cwd: ROOT, detached: true, stdio: 'ignore', shell: process.platform === 'win32',
-  });
-  child.unref();
-  for (let i = 0; i < 45; i++) {
+
+  async function loginPageReady(url) {
     try {
-      const res = await fetch(`${BASE_URL}/login`, { signal: AbortSignal.timeout(2000) });
-      if (res.ok) { await sleep(2500); return; }
-    } catch { /* retry */ }
-    await sleep(1000);
+      const res = await fetch(`${url}/login`, { signal: AbortSignal.timeout(5000) });
+      const html = await res.text();
+      return res.ok && html.includes('__NEXT_DATA__') && /Přihl/i.test(html);
+    } catch {
+      return false;
+    }
+  }
+
+  if (await loginPageReady(BASE_URL)) return;
+
+  const startPort = Number(new URL(BASE_URL).port || PORT);
+  for (let offset = 0; offset < 8; offset++) {
+    const port = String(startPort + offset);
+    const url = `http://127.0.0.1:${port}`;
+    if (await loginPageReady(url)) {
+      process.env.BASE_URL = url;
+      return;
+    }
+    console.log(`Starting local server at ${url}…`);
+    const child = spawn(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'start', '--', '-p', port], {
+      cwd: ROOT, detached: true, stdio: 'ignore', shell: process.platform === 'win32',
+    });
+    child.unref();
+    for (let i = 0; i < 45; i++) {
+      if (await loginPageReady(url)) {
+        process.env.BASE_URL = url;
+        await sleep(2500);
+        return;
+      }
+      await sleep(1000);
+    }
   }
   throw new Error('Local server not ready');
 }
 
-async function registerIfNeeded(supabase) {
+async function fillLoginForm(page) {
+  const emailInput = page.locator('input.login-input[type="email"], input[type="email"]').first();
+  await emailInput.waitFor({ state: 'visible', timeout: 45_000 });
+  await emailInput.fill(TEST_EMAIL);
+  await page.locator('input.login-input[type="password"], input[type="password"]').first().fill(TEST_PASSWORD);
+  await page.locator('button.login-submit').click();
+}
+
+async function registerIfNeeded(supabase, baseUrl) {
   const payload = {
     email: TEST_EMAIL, name: 'UI Visual', password: TEST_PASSWORD, gender: 'male', age: 34,
     height: 180, weight: 82, activity: 'moderate', stress: 'medium', worktype: 'sedentary',
     goal: 'udrzovani', frequency: '3-4x týdně', program: 'START', workout_days: [1, 3, 5],
     training_environment: 'gym', available_equipment: [], diet_type: 'standard',
   };
-  const res = await fetchWithTimeout(`${BASE_URL}/api/body-metrics`, {
+  const res = await fetchWithTimeout(`${baseUrl}/api/body-metrics`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
   }, FETCH_TIMEOUT.BODY_METRICS);
   const body = await res.json().catch(() => ({}));
@@ -113,7 +139,7 @@ console.log('--- Static UI visual checks ---');
 const designTokens = read('lib/designTokens.js');
 const planViewer = read('components/PlanViewer.js');
 const profil = read('pages/profil.js');
-const withings = read('components/profile/WithingsProfileCard.js');
+const withings = read('components/profile/WithingsBodyDevelopmentSection.js');
 const globals = read('styles/globals.css');
 const pkg = read('package.json');
 
@@ -123,8 +149,9 @@ check('globals bmon vars', globals.includes('--bmon-sky'));
 check('PlanViewer uses design tokens', planViewer.includes('buildMacroPillCss'));
 check('PlanViewer primary gradient sky/lavender', planViewer.includes('#0EA5E9 0%, #A78BFA 100%'));
 check('profil workout CTA unified gradient', profil.includes('#0EA5E9 0%, #A78BFA 100%'));
-check('Withings launcher unified gradient', withings.includes('#0EA5E9 0%, #A78BFA 100%'));
+check('Withings section unified gradient', withings.includes('#0EA5E9 0%, #A78BFA 100%'));
 check('Withings CTA min-height 44px', withings.includes('min-height: 44px'));
+check('Withings visibility gating', withings.includes('if (!sectionVisible) return null'));
 check('recipe modal max-height 85vh', planViewer.includes('max-height: 85vh'));
 check('mobile CSS bez width >100vw', !/width:\s*1[0-9]{2}vw/.test(profil));
 check('npm verify:ui-visual-system', pkg.includes('verify:ui-visual-system'));
@@ -146,16 +173,19 @@ writeFileSync(join(ARTIFACTS, 'weekly-plan-email-preview.html'), emailHtml, 'utf
 async function runVisual() {
   loadEnv();
   await ensureLocalServer();
+  const runtimeBaseUrl = (process.env.BASE_URL || BASE_URL).replace(/\/$/, '');
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceKey) throw new Error('Missing Supabase env');
   const supabase = createClient(supabaseUrl, serviceKey);
-  await registerIfNeeded(supabase);
+  await registerIfNeeded(supabase, runtimeBaseUrl);
 
+  async function gotoLogin(page) {
+    await page.goto(`${runtimeBaseUrl}/login?redirect=/profil`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+  }
   const browser = await chromium.launch({ headless: true });
 
-  // Email screenshots via data URL page
   const emailPage = await browser.newPage();
   await emailPage.setContent(emailHtml, { waitUntil: 'networkidle' });
   await emailPage.setViewportSize({ width: 900, height: 1200 });
@@ -165,20 +195,16 @@ async function runVisual() {
   await emailPage.close();
 
   const desktop = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-  await desktop.goto(`${BASE_URL}/login?redirect=/profil`, { waitUntil: 'networkidle', timeout: 90_000 });
-  await desktop.locator('input[type="email"]').first().fill(TEST_EMAIL);
-  await desktop.locator('input[type="password"]').first().fill(TEST_PASSWORD);
-  await desktop.locator('button.login-submit').click();
+  await gotoLogin(desktop);
+  await fillLoginForm(desktop);
   await desktop.waitForURL(/\/profil/, { timeout: 60_000 });
   await desktop.waitForFunction(() => Boolean(document.querySelector('#profile-today-heading') || document.querySelector('.profile-membership-plan-card')), null, { timeout: 120_000 });
   await desktop.screenshot({ path: SHOTS.desktopProfile, fullPage: false });
   await desktop.close();
 
   const mobile = await browser.newPage({ ...devices['iPhone 13'] });
-  await mobile.goto(`${BASE_URL}/login?redirect=/profil`, { waitUntil: 'networkidle', timeout: 90_000 });
-  await mobile.locator('input[type="email"]').first().fill(TEST_EMAIL);
-  await mobile.locator('input[type="password"]').first().fill(TEST_PASSWORD);
-  await mobile.locator('button.login-submit').click();
+  await gotoLogin(mobile);
+  await fillLoginForm(mobile);
   await mobile.waitForURL(/\/profil/, { timeout: 60_000 });
   await mobile.waitForFunction(
     () => /Dnes máš jasno/i.test(document.body.innerText || '') || Boolean(document.querySelector('#profile-today-heading')),
@@ -236,19 +262,21 @@ async function runVisual() {
     check('exercise screenshot fallback (no button)', existsSync(SHOTS.mobileExercise));
   }
 
-  // Withings overlap
-  const withingsOverlap = await mobile.evaluate(() => {
-    const launcher = document.querySelector('.withings-launcher');
-    const today = document.querySelector('#profile-today-heading')?.closest('section, div, article')
-      || document.querySelector('#profile-today-heading');
-    if (!launcher || !today) return { overlaps: false, launcherVisible: Boolean(launcher) };
-    const a = launcher.getBoundingClientRect();
+  // Withings — bez opt-in sekce není renderovaná (viz verify:withings-profile-visibility)
+  const withingsState = await mobile.evaluate(() => {
+    const section = document.querySelector('.withings-body-dev');
+    const today = document.querySelector('#profile-today-heading');
+    if (!section || !today) return { present: Boolean(section), overlaps: false };
+    const a = section.getBoundingClientRect();
     const b = today.getBoundingClientRect();
-    const overlaps = !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
-    return { overlaps, launcherVisible: true };
+    const overlaps = a.top < b.bottom && a.bottom > b.top && a.left < b.right && a.right > b.left;
+    return { present: true, overlaps };
   });
-  check('Withings widget default collapsed', withingsOverlap.launcherVisible);
-  check('Withings widget nepřekrývá dnešní CTA', !withingsOverlap.overlaps);
+  if (withingsState.present) {
+    check('Withings sekce nepřekrývá dnešní CTA', !withingsState.overlaps);
+  } else {
+    check('Withings sekce skrytá bez opt-in', true);
+  }
 
   await mobile.close();
   await browser.close();

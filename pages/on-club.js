@@ -12,11 +12,13 @@ import { getFrequencyDayRange } from "../lib/preferenceConstants";
 import { REGISTRATION_STEPS } from "../lib/registrationRules";
 import { PLAN_GENERATION_DURATION_HINT, PLAN_GENERATION_OVERLAY_TITLE } from "../lib/planGenerationUiCopy";
 import { validateBirthDate } from "../lib/bodyMetricsBirthDate";
+import { isOnClubSalesEnabled } from "../lib/salesFeatureFlags";
 
 // Referenční stránka pravidel registrace – START a VIP se chovají dle těchto pravidel (5 kroků, POST /api/body-metrics).
 const MAX_STEP = REGISTRATION_STEPS;
 
 export default function OnClubPage() {
+  const salesEnabled = isOnClubSalesEnabled();
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -220,6 +222,27 @@ export default function OnClubPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (!salesEnabled) {
+    return (
+      <>
+        <Header />
+        <main className="app-page app-page--onclub container py-12 text-white">
+          <section className="onclub-hero text-center mb-10">
+            <h1 className="onclub-hero-title">ON Club</h1>
+            <p className="onclub-hero-desc">Připravujeme — přidej se na waitlist. Registrace ON Clubu bude brzy k dispozici.</p>
+            <p className="mt-6">
+              <a href="mailto:info@bodyandmindon.cz?subject=ON%20Club%20waitlist" className="trial-upgrade-cta">Napiš nám zájem o ON Club →</a>
+            </p>
+            <p className="mt-4">
+              <a href="/start" className="text-slate-300 underline">Nebo začni se START programem</a>
+            </p>
+          </section>
+        </main>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>

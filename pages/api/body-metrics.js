@@ -25,6 +25,8 @@ import {
   persistBodyMetricsRow,
   buildRegistrationApiResponse,
 } from '../../lib/registration/bodyMetricsRegistration';
+import { membershipFromRegistration } from '../../lib/membershipRegistration';
+import { isTierCheckoutEnabled } from '../../lib/salesFeatureFlags';
 
 /** Vercel Hobby = 60s. Krátký poll; last-resort hned po execute, ne až na konci handleru. */
 const PLAN_WAIT_TIMEOUT_MS = 8000;
@@ -56,6 +58,13 @@ export default async function handler(req, res) {
     }
 
     const { payload, password, birthDateRaw, smartScaleBody } = parsed;
+
+    const normalizedProgram = String(payload.program || 'START').toUpperCase();
+    if ((normalizedProgram === 'ON_CLUB' || normalizedProgram === 'VIP') && !isTierCheckoutEnabled(normalizedProgram)) {
+      return res.status(403).json({
+        error: 'Tento produkt zatím není k dispozici. Připravujeme — přidej se na waitlist.',
+      });
+    }
 
     const auth = await createRegistrationAuthUser(payload, password);
     if (auth.authError === 'existing_account') {
@@ -332,18 +341,15 @@ export default async function handler(req, res) {
     if (payload.user_id) {
       const program = payload.program || 'START';
       const startedAt = payload.created_at || new Date().toISOString();
-      const isStart = program === 'START';
-      const trialEndsAt = isStart
-        ? new Date(new Date(startedAt).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
-        : null;
+      const membership = membershipFromRegistration(program, startedAt);
       const { error: memErr } = await supabaseServer
         .from('memberships')
         .upsert([{
           user_id: payload.user_id,
-          tier: program,
-          status: isStart ? 'trial' : 'active',
-          started_at: startedAt,
-          trial_ends_at: trialEndsAt,
+          tier: membership.tier,
+          status: membership.status,
+          started_at: membership.started_at,
+          trial_ends_at: membership.trial_ends_at,
           notes: `Registrace přes ${program} formulář`,
           updated_at: new Date().toISOString(),
         }], { onConflict: 'user_id' });

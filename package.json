@@ -78,13 +78,19 @@
     "verify:email-config": "node scripts/verify-email-config.mjs",
     "verify:google-calendar-config": "node scripts/verify-google-calendar-config.mjs",
     "verify:supabase-readonly": "node scripts/verify-supabase-readonly.mjs",
+    "audit:users": "node scripts/audit-real-vs-test-users.mjs",
+    "audit:unit-economics": "node scripts/audit-unit-economics.mjs",
+    "audit:plan-quality-samples": "node scripts/generate-plan-quality-samples.mjs",
+    "verify:stripe-tier-mapping": "node scripts/verify-stripe-tier-mapping.mjs",
+    "verify:paid-membership-gate": "node scripts/verify-paid-membership-gate.mjs",
+    "launch:sanity": "node scripts/launch-sanity.mjs",
     "env:pull": "vercel env pull .env.local --environment production --yes",
     "env:pull:preview": "vercel env pull .env.local --environment preview --yes",
     "env:pull:dev": "vercel env pull .env.local --environment development --yes",
     "admin:delete-user": "node scripts/delete-user-by-email.mjs",
     "admin:delete-smoketest-users": "node scripts/delete-smoketest-users.mjs",
     "migrate:plan-html-from-structured": "node scripts/rebuild-plan-html-from-structured.mjs",
-    "deploy": "git add -A && git commit -m \"Deploy: automatické úpravy\" && git push origin main"
+    "deploy:note": "echo Use PR -> Vercel Preview -> merge to main. Do not auto git add/push."
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

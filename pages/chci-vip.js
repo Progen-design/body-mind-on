@@ -12,11 +12,13 @@ import { getFrequencyDayRange } from "../lib/preferenceConstants";
 import { REGISTRATION_STEPS } from "../lib/registrationRules";
 import { PLAN_GENERATION_DURATION_HINT, PLAN_GENERATION_OVERLAY_TITLE } from "../lib/planGenerationUiCopy";
 import { validateBirthDate } from "../lib/bodyMetricsBirthDate";
+import { isVipSalesEnabled } from "../lib/salesFeatureFlags";
 
 // Registrace dle pravidel ON Club (stejný flow pro všechny programy): https://app.bodyandmindon.cz/on-club
 const MAX_STEP = REGISTRATION_STEPS;
 
 export default function ChciVipPage() {
+  const salesEnabled = isVipSalesEnabled();
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -216,6 +218,27 @@ export default function ChciVipPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (!salesEnabled) {
+    return (
+      <>
+        <Header />
+        <main className="app-page container py-12 text-white">
+          <section className="text-center mb-10">
+            <h1 className="text-3xl font-bold mb-4">VIP Coaching</h1>
+            <p className="text-slate-300">Připravujeme — přidej se na waitlist. Registrace VIP bude brzy k dispozici.</p>
+            <p className="mt-6">
+              <a href="mailto:info@bodyandmindon.cz?subject=VIP%20waitlist" className="trial-upgrade-cta">Napiš nám zájem o VIP →</a>
+            </p>
+            <p className="mt-4">
+              <a href="/start" className="text-slate-300 underline">Nebo začni se START programem</a>
+            </p>
+          </section>
+        </main>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>

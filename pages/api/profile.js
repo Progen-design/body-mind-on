@@ -251,7 +251,8 @@ export default async function handler(req, res) {
       const reg = bodyMetrics.find(m => m.program) || bodyMetrics[bodyMetrics.length - 1];
       return reg?.program || 'START';
     })();
-    const membershipStatus = membershipData?.status || 'active';
+    const membershipStatus = membershipData?.status
+      || (program === 'START' ? 'trial' : (program === 'ON_CLUB' || program === 'VIP' ? 'pending_payment' : 'trial'));
     const membershipSince = membershipData?.started_at || null;
     const trialEndsAt = membershipData?.trial_ends_at || null;
     const isTrialExpired = program === 'START' && trialEndsAt && new Date(trialEndsAt) < now;

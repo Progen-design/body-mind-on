@@ -1,15 +1,39 @@
 import { useState } from 'react';
-import dynamic from 'next/dynamic';
 import { START_FEATURES, START_POST_TRIAL_OFFER, VIP_PRICE_LABEL } from '../lib/pricing';
+import { isOnClubSalesEnabled, isVipSalesEnabled } from '../lib/salesFeatureFlags';
+import { supabase } from '../lib/supabaseClient';
+import { createStripeCheckoutUrl } from '../lib/stripeCheckoutClient';
 
-const PricingTable = dynamic(() => import('./PricingTable'), { ssr: false });
+const WAITLIST_COPY = 'Připravujeme — přidej se na waitlist';
 
 /**
- * Paywall po vypršení START programu – vlastní START karta (bez trial copy),
- * ON Club + VIP beze změny. Stripe Pricing Table jen pro dokončení platby START.
+ * Paywall po vypršení START programu – vlastní START karta,
+ * ON Club + VIP dle feature flags. Checkout přes autentizovaný API endpoint.
  */
 export default function TrialExpiredPaywall() {
-  const [showStartCheckout, setShowStartCheckout] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
+  const onClubEnabled = isOnClubSalesEnabled();
+  const vipEnabled = isVipSalesEnabled();
+
+  async function handleStartCheckout() {
+    setCheckoutError('');
+    setCheckoutLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        setCheckoutError('Pro aktivaci předplatného se nejdřív přihlas.');
+        return;
+      }
+      const url = await createStripeCheckoutUrl('START', token);
+      window.location.href = url;
+    } catch (err) {
+      setCheckoutError(err?.message || 'Checkout se nepodařilo spustit.');
+    } finally {
+      setCheckoutLoading(false);
+    }
+  }
 
   return (
     <>
@@ -30,36 +54,49 @@ export default function TrialExpiredPaywall() {
           <button
             type="button"
             className="trial-upgrade-cta trial-upgrade-cta--button"
-            onClick={() => {
-              setShowStartCheckout(true);
-              requestAnimationFrame(() => {
-                document.getElementById('start-subscribe-checkout')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-              });
-            }}
+            disabled={checkoutLoading}
+            onClick={handleStartCheckout}
           >
-            {START_POST_TRIAL_OFFER.cta.label} →
+            {checkoutLoading ? 'Načítám…' : `${START_POST_TRIAL_OFFER.cta.label} →`}
           </button>
+          {checkoutError ? (
+            <p className="trial-banner-text trial-banner-text--small" role="alert">{checkoutError}</p>
+          ) : null}
         </article>
-        <a href="/on-club" className="trial-upgrade-card trial-upgrade-card--club">
-          <span className="trial-upgrade-badge">Doporučeno</span>
-          <h3 className="trial-upgrade-title">ON Club</h3>
-          <p className="trial-upgrade-subtitle">AI trenér 24/7, habit tracker, komunita a video konzultace</p>
-          <span className="trial-upgrade-price">1 499 Kč/měsíc</span>
-          <span className="trial-upgrade-cta">Připojit se k ON Clubu →</span>
-        </a>
-        <a href="/chci-vip" className="trial-upgrade-card trial-upgrade-card--vip">
-          <h3 className="trial-upgrade-title">VIP Coaching</h3>
-          <p className="trial-upgrade-subtitle">Elitní lidský kouč, týdenní 1:1 konzultace, strategie na míru</p>
-          <span className="trial-upgrade-price">{VIP_PRICE_LABEL}</span>
-          <span className="trial-upgrade-cta">Chci VIP přístup →</span>
-        </a>
+        {onClubEnabled ? (
+          <a href="/on-club" className="trial-upgrade-card trial-upgrade-card--club">
+            <span className="trial-upgrade-badge">Doporučeno</span>
+            <h3 className="trial-upgrade-title">ON Club</h3>
+            <p className="trial-upgrade-subtitle">AI trenér 24/7, habit tracker, komunita a video konzultace</p>
+            <span className="trial-upgrade-price">1 499 Kč/měsíc</span>
+            <span className="trial-upgrade-cta">Připojit se k ON Clubu →</span>
+          </a>
+        ) : (
+          <article className="trial-upgrade-card trial-upgrade-card--club trial-upgrade-card--disabled">
+            <span className="trial-upgrade-badge">Připravujeme</span>
+            <h3 className="trial-upgrade-title">ON Club</h3>
+            <p className="trial-upgrade-subtitle">AI trenér 24/7, habit tracker, komunita a video konzultace</p>
+            <span className="trial-upgrade-price">1 499 Kč/měsíc</span>
+            <span className="trial-upgrade-cta trial-upgrade-cta--disabled">{WAITLIST_COPY}</span>
+          </article>
+        )}
+        {vipEnabled ? (
+          <a href="/chci-vip" className="trial-upgrade-card trial-upgrade-card--vip">
+            <h3 className="trial-upgrade-title">VIP Coaching</h3>
+            <p className="trial-upgrade-subtitle">Elitní lidský kouč, týdenní 1:1 konzultace, strategie na míru</p>
+            <span className="trial-upgrade-price">{VIP_PRICE_LABEL}</span>
+            <span className="trial-upgrade-cta">Chci VIP přístup →</span>
+          </a>
+        ) : (
+          <article className="trial-upgrade-card trial-upgrade-card--vip trial-upgrade-card--disabled">
+            <span className="trial-upgrade-badge">Připravujeme</span>
+            <h3 className="trial-upgrade-title">VIP Coaching</h3>
+            <p className="trial-upgrade-subtitle">Elitní lidský kouč, týdenní 1:1 konzultace, strategie na míru</p>
+            <span className="trial-upgrade-price">{VIP_PRICE_LABEL}</span>
+            <span className="trial-upgrade-cta trial-upgrade-cta--disabled">{WAITLIST_COPY}</span>
+          </article>
+        )}
       </div>
-      {showStartCheckout && (
-        <div id="start-subscribe-checkout" className="trial-banner-stripe">
-          <p className="trial-banner-text trial-banner-text--small">Dokonči aktivaci START předplatného:</p>
-          <PricingTable />
-        </div>
-      )}
     </>
   );
 }

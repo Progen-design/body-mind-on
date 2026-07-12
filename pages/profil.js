@@ -1720,7 +1720,9 @@ export default function Profil() {
       : profileWeightLabel;
 
   const canRegeneratePlan = membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired);
-  const regenerateBlockedMessage = isTrialExpired
+  const regenerateBlockedMessage = membershipStatus === 'pending_payment'
+    ? 'Čekáme na dokončení platby. Aktivuj předplatné v profilu.'
+    : isTrialExpired
     ? 'Tvůj 7denní START program vypršel. Pro nový plán aktivuj předplatné výše.'
     : (membershipStatus === 'cancelled' || membershipStatus === 'inactive')
       ? 'Pro nový plán potřebuješ aktivní předplatné.'
@@ -2119,7 +2121,7 @@ export default function Profil() {
                   </button>
                   <div className="membership-status-block">
                     <span className={`membership-status-badge membership-status--${isTrialExpired && membershipStatus === 'trial' ? 'expired' : membershipStatus}`}>
-                      {membershipStatus === 'active' ? 'Aktivní' : (membershipStatus === 'trial' && isTrialExpired) ? 'Vypršelo' : membershipStatus === 'trial' ? 'Zkušební' : membershipStatus === 'cancelled' ? 'Zrušeno' : 'Neaktivní'}
+                      {membershipStatus === 'active' ? 'Aktivní' : membershipStatus === 'pending_payment' ? 'Čeká na platbu' : (membershipStatus === 'trial' && isTrialExpired) ? 'Vypršelo' : membershipStatus === 'trial' ? 'Zkušební' : membershipStatus === 'cancelled' ? 'Zrušeno' : 'Neaktivní'}
                     </span>
                   </div>
                   <div className="profile-quick-nav-account">

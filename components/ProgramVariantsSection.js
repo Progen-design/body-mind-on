@@ -1,3 +1,7 @@
+import { isOnClubSalesEnabled, isVipSalesEnabled } from '../lib/salesFeatureFlags';
+
+const WAITLIST_COPY = 'Připravujeme — přidej se na waitlist';
+
 const PROGRAM_VARIANTS = [
   {
     id: 'START',
@@ -79,6 +83,14 @@ export default function ProgramVariantsSection({
   const days = Number(daysUntilTrialEnd);
   const nearExpiry = Number.isFinite(days) && days >= 0 && days <= 5;
   const urgent = Boolean(isTrialExpired) || nearExpiry;
+  const onClubEnabled = isOnClubSalesEnabled();
+  const vipEnabled = isVipSalesEnabled();
+
+  function variantSalesEnabled(variantId) {
+    if (variantId === 'ON_CLUB') return onClubEnabled;
+    if (variantId === 'VIP') return vipEnabled;
+    return true;
+  }
 
   return (
     <section
@@ -105,6 +117,8 @@ export default function ProgramVariantsSection({
 
       <div className="program-variants__grid">
         {PROGRAM_VARIANTS.map((variant) => {
+          const salesEnabled = variantSalesEnabled(variant.id);
+          const isPreparing = variant.preparing || !salesEnabled;
           const isCurrent = activeProgram === variant.id
             || (variant.id === 'ON_CLUB' && activeProgram === 'ON_CLUB')
             || (variant.id === 'VIP' && activeProgram === 'VIP');
@@ -113,6 +127,7 @@ export default function ProgramVariantsSection({
             variant.featured ? 'program-variants__card--featured' : '',
             isCurrent ? 'program-variants__card--current' : '',
             variant.preparing ? 'program-variants__card--preparing' : '',
+            isPreparing ? 'program-variants__card--preparing' : '',
           ].filter(Boolean).join(' ');
 
           return (
@@ -123,6 +138,9 @@ export default function ProgramVariantsSection({
               {isCurrent ? (
                 <span className="program-variants__card-current">Tvůj aktuální plán</span>
               ) : null}
+              {isPreparing && !variant.preparing ? (
+                <span className="program-variants__card-badge">Připravujeme</span>
+              ) : null}
               <h3 className="program-variants__card-name">{variant.name}</h3>
               <p className="program-variants__card-price">{variant.price}</p>
               <p className="program-variants__card-desc">{variant.description}</p>
@@ -131,13 +149,19 @@ export default function ProgramVariantsSection({
                   <li key={item}>{item}</li>
                 ))}
               </ul>
-              <a
-                href={variant.href}
-                className={`program-variants__cta ${variant.featured ? 'program-variants__cta--featured' : ''}`}
-                {...(variant.preparing ? { rel: 'noopener noreferrer' } : {})}
-              >
-                {isCurrent && variant.id === 'START' ? 'Pokračovat ve STARTU' : variant.cta}
-              </a>
+              {salesEnabled ? (
+                <a
+                  href={variant.href}
+                  className={`program-variants__cta ${variant.featured ? 'program-variants__cta--featured' : ''}`}
+                  {...(variant.preparing ? { rel: 'noopener noreferrer' } : {})}
+                >
+                  {isCurrent && variant.id === 'START' ? 'Pokračovat ve STARTU' : variant.cta}
+                </a>
+              ) : (
+                <span className="program-variants__cta program-variants__cta--disabled" aria-disabled="true">
+                  {WAITLIST_COPY}
+                </span>
+              )}
             </article>
           );
         })}
@@ -309,6 +333,11 @@ export default function ProgramVariantsSection({
           border-color: rgba(167, 139, 250, 0.8);
           background: linear-gradient(135deg, #7c3aed, #6366f1);
           box-shadow: 0 8px 22px rgba(91, 33, 182, 0.35);
+        }
+        .program-variants__cta--disabled {
+          opacity: 0.72;
+          cursor: not-allowed;
+          pointer-events: none;
         }
         @media (min-width: 768px) {
           .program-variants__grid {

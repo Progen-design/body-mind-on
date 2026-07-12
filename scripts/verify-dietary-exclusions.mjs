@@ -7,6 +7,12 @@ import {
   mealContainsExcludedFood,
   textContainsExcludedFood,
 } from '../lib/dietaryExclusions.js';
+import {
+  buildDietaryPublishRules,
+  mealDietaryViolation,
+  findDietaryViolations,
+  enforceDietaryPublishGate,
+} from '../lib/dietaryPublishGate.js';
 
 let failed = 0;
 function fail(msg) {
@@ -85,6 +91,43 @@ for (const sample of ['Jogurt s ovocem', 'Cottage s pečivem', 'Tvaroh s vločka
   if (!mealContainsExcludedFood({ name_cs: sample }, dairyEx)) fail(`${sample} should be blocked for dairy`);
 }
 ok('dairy samples blocked');
+
+console.log('\n--- vegetarian hard gate ---');
+const vegRules = buildDietaryPublishRules({ diet_type: 'vegetarian' });
+if (mealDietaryViolation({ display_name_cs: 'Kuřecí prsa s rýží' }, vegRules) !== 'vegetarian_meat_fish') {
+  fail('vegetarian should block chicken');
+} else ok('vegetarian blocks chicken');
+
+console.log('\n--- vegan hard gate ---');
+const veganRules = buildDietaryPublishRules({ diet_type: 'vegan' });
+if (mealDietaryViolation({ display_name_cs: 'Vejce na oko' }, veganRules) !== 'vegan_animal_product') {
+  fail('vegan should block eggs');
+} else ok('vegan blocks eggs');
+
+console.log('\n--- gluten_free hard gate ---');
+const gfRules = buildDietaryPublishRules({ diet_type: 'gluten_free' });
+if (mealDietaryViolation({ display_name_cs: 'Špagety carbonara' }, gfRules) !== 'gluten_free') {
+  fail('gluten_free should block pasta');
+} else ok('gluten_free blocks pasta');
+if (mealDietaryViolation({ display_name_cs: 'Bezlepkové těstoviny s omáčkou' }, gfRules) !== null) {
+  fail('explicit gluten-free variant should pass');
+} else ok('gluten_free allows labeled variant');
+
+console.log('\n--- lactose_free hard gate ---');
+const lfRules = buildDietaryPublishRules({ diet_type: 'lactose_free' });
+if (mealDietaryViolation({ display_name_cs: 'Jogurt s ovocem' }, lfRules) !== 'lactose_free') {
+  fail('lactose_free should block jogurt');
+} else ok('lactose_free blocks jogurt');
+
+console.log('\n--- enforceDietaryPublishGate on vegetarian plan ---');
+const vegBm = { diet_type: 'vegetarian', goal: 'udrzovani', calories_target: 2200, meals_per_day: 3 };
+const skeletonVeg = buildSimpleStartMealSkeleton({ bodyMetrics: vegBm });
+const vegDays = resolveSkeletonDays(skeletonVeg, vegBm);
+const vegPlan = { days: vegDays, targets: skeletonVeg.targets };
+const vegGate = enforceDietaryPublishGate(vegPlan, vegBm);
+const vegViolations = findDietaryViolations(vegGate.planJson, buildDietaryPublishRules(vegBm));
+if (!vegGate.ok || vegViolations.length) fail(`vegetarian plan still has violations: ${vegViolations.length}`);
+else ok('vegetarian plan passes publish gate');
 
 console.log(failed ? `\nRESULT: FAIL (${failed})` : '\nRESULT: PASS');
 process.exit(failed ? 1 : 0);

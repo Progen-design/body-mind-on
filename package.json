@@ -49,6 +49,8 @@
     "verify:profile-no-sales-upsell": "node scripts/verify-profile-no-sales-upsell.mjs",
     "verify:workout-exercise-copy": "node scripts/verify-workout-exercise-copy.mjs",
     "verify:workout-publishable-gate": "node scripts/verify-workout-publishable-gate.mjs",
+    "verify:plan-quality-invariants": "node scripts/verify-plan-quality-invariants.mjs",
+    "verify:db-schema-contract": "node scripts/verify-db-schema-contract.mjs",
     "verify:weekly-structured-source": "node scripts/verify-weekly-structured-source.mjs",
     "verify:ui-visual-system": "node scripts/verify-ui-visual-system.mjs",
     "verify:email-visual-consistency": "node scripts/verify-email-visual-consistency.mjs",

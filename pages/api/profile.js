@@ -1,9 +1,8 @@
 // /pages/api/profile.js - Vrací data přihlášeného uživatele
 import { supabaseServer } from '../../lib/supabaseServer';
 import { POSITIVE_HABITS, NEGATIVE_HABITS } from '../../lib/habits';
-import { validatePublishedPlanHtml, isWrappedEmailDocument } from '../../lib/validatePlanHtml';
-import { renderPlanHtmlFromStructured } from '../../lib/planRenderer';
-import { sortMealsChronologically } from '../../lib/mealOrder';
+import { validatePublishedPlanHtml } from '../../lib/validatePlanHtml';
+import { repairWrappedPlanHtmlIfNeeded } from '../../lib/profile/repairWrappedPlanHtmlIfNeeded';
 import { ensureInitialPlanTask } from '../../lib/ensureInitialPlanTask';
 import { getRegistrationAnchoredWeek } from '../../lib/profileWeekRange';
 import { reconcileUserDataByEmail } from '../../lib/reconcileUserDataByEmail';
@@ -110,32 +109,7 @@ export default async function handler(req, res) {
     // žádné dny a PlanViewer spadl do textového fallbacku. Re-render čistého
     // fragmentu ze structured_plan_json + self-heal zápis zpět do DB.
     const latestBodyMetricsForRender = bodyMetrics[0] ?? null;
-    for (const p of plansData) {
-      const hasStructuredDays =
-        p?.structured_plan_json && typeof p.structured_plan_json === 'object' &&
-        Array.isArray(p.structured_plan_json.days) && p.structured_plan_json.days.length > 0;
-      if (!hasStructuredDays || !isWrappedEmailDocument(p?.plan_html)) continue;
-      const structuredSorted = {
-        ...p.structured_plan_json,
-        days: p.structured_plan_json.days.map((d) => ({
-          ...d,
-          meals: sortMealsChronologically(d?.meals ?? []),
-        })),
-      };
-      const cleanHtml = renderPlanHtmlFromStructured(structuredSorted, latestBodyMetricsForRender ?? undefined);
-      if (!cleanHtml || typeof cleanHtml !== 'string') continue;
-      p.plan_html = cleanHtml;
-      p.structured_plan_json = structuredSorted;
-      const { error: healPlanHtmlErr } = await supabaseServer
-        .from('ai_generated_plans')
-        .update({ plan_html: cleanHtml, structured_plan_json: structuredSorted })
-        .eq('id', p.id);
-      if (healPlanHtmlErr) {
-        console.warn('[profile] plan_html self-heal update failed', { plan_id: p.id, error: healPlanHtmlErr.message });
-      } else {
-        console.info('[profile] plan_html self-healed from structured_plan_json (wrapped email document)', { plan_id: p.id });
-      }
-    }
+    await repairWrappedPlanHtmlIfNeeded(plansData, latestBodyMetricsForRender, supabaseServer);
     const initialPlanTaskQueryFailed = initialPlanTaskRes?.status === 'rejected';
     let initialPlanTask = (initialPlanTaskRes?.status === 'fulfilled' && initialPlanTaskRes?.value?.data) ? initialPlanTaskRes.value.data : null;
     let initialPlanTaskExists = !!initialPlanTask;

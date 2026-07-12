@@ -3,7 +3,7 @@
 // POST → vrátí personalizovaný plán jako HTML blok (unified pipeline)
 
 import { runUnifiedPlanPipeline } from '../../lib/unifiedPlanPipeline'
-import { getClientIp, isRateLimited } from '../../lib/rateLimit'
+import { enforcePublicEndpointRateLimit } from '../../lib/rateLimit'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -11,11 +11,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    const ip = getClientIp(req)
-    if (isRateLimited(`generate-plan:${ip}`, 5, 10 * 60 * 1000)) {
-      res.setHeader('Retry-After', '600')
-      return res.status(429).json({ ok: false, error: 'Příliš mnoho požadavků. Zkus to prosím za chvíli znovu.' })
+    const rateLimit = await enforcePublicEndpointRateLimit(req, {
+      scope: 'generate-plan',
+      email: req.body?.email,
+      limit: 5,
+      windowMs: 10 * 60 * 1000,
+    })
+    if (rateLimit.limited) {
+      if (rateLimit.retryAfterSec) res.setHeader('Retry-After', String(rateLimit.retryAfterSec))
+      return res.status(429).json({ ok: false, error: rateLimit.message })
     }
+
     const {
       name,
       gender,

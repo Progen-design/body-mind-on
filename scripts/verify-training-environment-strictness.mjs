@@ -181,7 +181,9 @@ if (!profilePrefsApi.includes('mergeTrainingEnvironmentIntoNotes')) {
 } else ok('profile-preferences API saves training environment');
 
 const bodyMetricsApi = fs.readFileSync(path.join(root, 'pages/api/body-metrics.js'), 'utf8');
-if (!bodyMetricsApi.includes("trainingEnvironment === 'home_equipment'")) {
+const bodyMetricsRegistration = fs.readFileSync(path.join(root, 'lib/registration/bodyMetricsRegistration.js'), 'utf8');
+const bodyMetricsRegistrationChain = `${bodyMetricsApi}\n${bodyMetricsRegistration}`;
+if (!bodyMetricsRegistrationChain.includes("trainingEnvironment === 'home_equipment'")) {
   fail('body-metrics API should only persist equipment for home_equipment');
 } else ok('body-metrics API ignores equipment outside home_equipment');
 

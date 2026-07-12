@@ -60,7 +60,8 @@ check('CTA Připojit Withings', withingsSection.includes('Připojit Withings'));
 check('shouldShowWithingsConnectUi v sekci', withingsSection.includes('shouldShowWithingsConnectUi'));
 
 check('registrace START má smart scale otázku', startPage.includes('SmartScaleChoiceField'));
-check('body-metrics ukládá smart scale metadata', bodyMetricsApi.includes('parseSmartScalePreference'));
+const bodyMetricsRegistration = read('lib/registration/bodyMetricsRegistration.js');
+check('body-metrics ukládá smart scale metadata', `${bodyMetricsApi}\n${bodyMetricsRegistration}`.includes('parseSmartScalePreference'));
 check('profile-settings ukládá smart scale', profileSettingsApi.includes('parseSmartScalePreference'));
 check('Nastavení má blok Chytrá váha', prefsOverlay.includes('Chytrá váha'));
 

@@ -3,14 +3,6 @@
 // SYNC: Registrace musí doručit plán (katalog nebo last-resort) v rámci Vercel 60s limitu.
 // Viz docs/CORE_FLOW_REGISTRACE_AI_PLAN.md
 import { supabaseServer } from '../../lib/supabaseServer';
-import {
-  PROGRAMS,
-  validateHeightCm,
-  validateWeightKg,
-  validateAge,
-  validatePassword,
-} from '../../lib/registrationRules';
-import { createAuthUserIfNew } from '../../lib/authHelpers';
 import { createInitialAITasks } from '../../lib/createInitialAITasks';
 import { runAIScheduler, runRegistrationCoachInline } from '../../lib/aiScheduler';
 import {
@@ -22,14 +14,17 @@ import {
 } from '../../lib/taskExecutors';
 import { sendPlanEmail } from '../../lib/mail';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
-import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getWeeklySessions } from '../../lib/preferenceConstants';
 import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
 import { writeOnboardingEvent } from '../../lib/onboardingMetrics';
 import { getDefaultLoginUrl } from '../../lib/siteUrls.js';
-import { trainingEnvironmentNotesSuffix } from '../../lib/trainingEnvironment.js';
-import { validateBirthDate } from '../../lib/bodyMetricsBirthDate.js';
-import { calculateNutritionTargets } from '../../lib/nutritionTargets.js';
-import { parseSmartScalePreference } from '../../lib/smartScalePreference.js';
+import { enforcePublicEndpointRateLimit } from '../../lib/rateLimit';
+import {
+  parseAndValidateRegistrationBody,
+  createRegistrationAuthUser,
+  applyRegistrationUserMetadata,
+  persistBodyMetricsRow,
+  buildRegistrationApiResponse,
+} from '../../lib/registration/bodyMetricsRegistration';
 
 /** Vercel Hobby = 60s. Krátký poll; last-resort hned po execute, ne až na konci handleru. */
 const PLAN_WAIT_TIMEOUT_MS = 8000;
@@ -44,190 +39,60 @@ export default async function handler(req, res) {
   try {
     const b = req.body || {};
 
-    // Strava a omezení – volitelná pole (null při prázdných)
-    const dietType = b.diet_type?.trim() || null;
-    const dietaryRestrictions = b.dietary_restrictions?.trim() || null;
-    const foodsToAvoid = b.foods_to_avoid?.trim() || null;
-    const dietLabels = {
-      vegetarian: 'Vegetarián',
-      vegan: 'Vegan',
-      gluten_free: 'Bez lepku',
-      lactose_free: 'Bez laktózy',
-      paleo: 'Paleo',
-      low_carb: 'Nízkosacharidová',
-      other: 'Jiné',
-    };
-    const dietLabel = dietType && dietLabels[dietType] ? dietLabels[dietType] : '';
-    const notesParts = [];
-    if (dietLabel) notesParts.push('Typ stravy: ' + dietLabel);
-    if (dietaryRestrictions) notesParts.push('Co nejí: ' + dietaryRestrictions);
-    if (foodsToAvoid) notesParts.push('Potraviny k vynechání: ' + foodsToAvoid);
-    const trainingEnvironment = ['gym', 'home_bodyweight', 'home_equipment'].includes(String(b.training_environment || '').trim())
-      ? String(b.training_environment).trim()
-      : null;
-    const availableEquipment = trainingEnvironment === 'home_equipment' && Array.isArray(b.available_equipment)
-      ? b.available_equipment.map((item) => String(item || '').trim()).filter(Boolean)
-      : [];
-    if (trainingEnvironment) {
-      notesParts.push(trainingEnvironmentNotesSuffix(trainingEnvironment, availableEquipment));
-    }
-    const notesFinal = notesParts.length ? notesParts.join('. ') : (b.notes?.trim() || null);
-
-    const wd = b.workout_days;
-    const workoutDaysStr = Array.isArray(wd) && wd.length > 0
-      ? wd.filter((n) => Number.isFinite(Number(n)) && n >= 0 && n <= 6).join(',')
-      : null;
-    const birthDateRaw = typeof b.birth_date === 'string' ? b.birth_date.trim() : '';
-    let calculatedAge = null;
-    if (birthDateRaw) {
-      const birthValidation = validateBirthDate(birthDateRaw);
-      if (!birthValidation.valid) {
-        return res.status(400).json({ error: birthValidation.error || 'Neplatné datum narození.' });
-      }
-      if (birthValidation.age < 13 || birthValidation.age > 90) {
-        return res.status(400).json({ error: 'Věk musí být mezi 13 a 90 lety.' });
-      }
-      calculatedAge = birthValidation.age;
-    } else if (b.age != null && b.age !== '') {
-      const ageFallback = toNum(b.age);
-      const ageCheck = validateAge(ageFallback);
-      if (!ageCheck.valid) return res.status(400).json({ error: ageCheck.error });
-      calculatedAge = ageFallback;
-    }
-
-    const payload = {
-      email: b.email?.trim()?.toLowerCase() || null,
-      name: b.name?.trim() || null,
-      gender: normalizeGender(b.gender),
-      age: calculatedAge,
-      birth_date: birthDateRaw || null,
-      height_cm: toNum(b.height || b.height_cm),
-      weight_kg: toNum(b.weight || b.weight_kg),
-      activity: normalizeActivity(b.activity),
-      stress_level: normalizeStress(b.stress || b.stress_level),
-      occupation: normalizeOccupation(b.worktype || b.occupation),
-      goal: normalizeGoal(b.goal),
-      freq_choice: normalizeFrequency(b.frequency || b.freq_choice),
-      weekly_sessions_user: getWeeklySessions(b.frequency || b.freq_choice),
-      workout_days: workoutDaysStr,
-      diet_type: dietType || null,
-      dietary_restrictions: dietaryRestrictions || null,
-      foods_to_avoid: foodsToAvoid || null,
-      notes: notesFinal,
-      program: PROGRAMS.includes(b.program) ? b.program : 'START',
-      created_at: new Date().toISOString(),
-      user_id: null,
-    };
-
-    const nutritionTargets = calculateNutritionTargets({
-      bodyMetrics: payload,
-      goal: payload.goal,
-      activity: payload.activity,
-      workoutDays: payload.workout_days ? String(payload.workout_days).split(',') : null,
-      planAdjustmentSignal: null,
+    const rateLimit = await enforcePublicEndpointRateLimit(req, {
+      scope: 'body-metrics',
+      email: b.email,
+      limit: 8,
+      windowMs: 15 * 60 * 1000,
     });
-    payload.calories_target = nutritionTargets.calories_target;
-
-    if (!payload.email) {
-      return res.status(400).json({ error: 'E-mail je povinný.' });
-    }
-    const password = typeof b.password === 'string' ? b.password.trim() : '';
-    const passwordValidation = validatePassword(password);
-    if (password && !passwordValidation.valid) {
-      return res.status(400).json({ error: passwordValidation.error || 'Heslo musí mít alespoň 6 znaků.' });
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(payload.email)) {
-      return res.status(400).json({ error: 'Zadej platnou e-mailovou adresu.' });
+    if (rateLimit.limited) {
+      if (rateLimit.retryAfterSec) res.setHeader('Retry-After', String(rateLimit.retryAfterSec));
+      return res.status(429).json({ error: rateLimit.message });
     }
 
-    if (!payload.height_cm || !payload.weight_kg) {
-      return res.status(400).json({ error: 'Chybí výška nebo váha.' });
-    }
-    const heightCheck = validateHeightCm(payload.height_cm);
-    if (!heightCheck.valid) return res.status(400).json({ error: heightCheck.error });
-    const weightCheck = validateWeightKg(payload.weight_kg);
-    if (!weightCheck.valid) return res.status(400).json({ error: weightCheck.error });
-    if (payload.age == null) {
-      return res.status(400).json({ error: 'Datum narození je povinné.' });
+    const parsed = parseAndValidateRegistrationBody(b);
+    if (!parsed.ok) {
+      return res.status(parsed.status).json({ error: parsed.error });
     }
 
-    const authResult = await createAuthUserIfNew(payload.email, payload.name, password || undefined);
-    let loginPassword = null;
-    let existingAccount = false;
-    let userChosePassword = authResult.userChosePassword === true;
+    const { payload, password, birthDateRaw, smartScaleBody } = parsed;
 
-    if (authResult.error) {
-      const isAlready = authResult.error.toLowerCase().includes('already') || authResult.error.toLowerCase().includes('registered');
-      if (isAlready) {
-        return res.status(400).json({
-          error: 'S tímto e-mailem už máš účet. Přihlas se nebo obnov heslo na app.bodyandmindon.cz.',
-        });
-      }
-      // Auth selhalo, ale registraci nefailujeme – uložíme data bez user_id a vrátíme loginUnavailable
-      console.info('[body-metrics] Auth failed (no user_id), saving body_metrics without user_id');
-      payload.user_id = null;
-      loginPassword = null;
-      existingAccount = false;
-      userChosePassword = false;
-    } else {
-      payload.user_id = authResult.userId;
-      loginPassword = authResult.password ?? null;
-      existingAccount = authResult.existing === true;
-      userChosePassword = authResult.userChosePassword === true;
-    }
-
-    // Metadata z registrace: datum narození + preference chytré váhy (Withings volitelný modul).
-    if (payload.user_id && authResult.existing !== true) {
-      try {
-        const { data: freshUser } = await supabaseServer.auth.admin.getUserById(payload.user_id);
-        const currentMeta = freshUser?.user?.user_metadata || {};
-        const smartScaleMeta = parseSmartScalePreference(b);
-        await supabaseServer.auth.admin.updateUserById(payload.user_id, {
-          user_metadata: {
-            ...currentMeta,
-            ...smartScaleMeta,
-            ...(birthDateRaw ? { birth_date: birthDateRaw } : {}),
-            ...(payload.name ? { name: currentMeta.name || payload.name } : {}),
-          },
-        });
-      } catch (metaErr) {
-        console.warn('[body-metrics] registration user_metadata update failed:', metaErr?.message);
-      }
-    }
-
-    // Existující účet: veřejný START formulář nesmí znovu vložit metriky ani spustit initial_plan (ten by přeskočil generování
-    // a uživatel by viděl starý plán s blízkým valid_until). Přihlášení / obnova hesla je jediná bezpečná cesta.
-    if (!authResult.error && authResult.existing === true) {
+    const auth = await createRegistrationAuthUser(payload, password);
+    if (auth.authError === 'existing_account') {
       return res.status(400).json({
         error:
           'Účet s tímto e-mailem už existuje. Přihlas se nebo si nech poslat odkaz k obnově hesla — registraci START se stejným e-mailem nelze opakovat.',
       });
     }
 
-    let insertPayload = { ...payload };
-    let insertedRows = null;
-    let dbErr = null;
-    ({ data: insertedRows, error: dbErr } = await supabaseServer
-      .from('body_metrics')
-      .insert([insertPayload])
-      .select('id'));
+    let loginPassword = null;
+    let existingAccount = false;
+    let userChosePassword = false;
 
-    if (dbErr && /birth_date|does not exist|column/i.test(dbErr.message || '')) {
-      const fallbackPayload = { ...insertPayload };
-      delete fallbackPayload.birth_date;
-      ({ data: insertedRows, error: dbErr } = await supabaseServer
-        .from('body_metrics')
-        .insert([fallbackPayload])
-        .select('id'));
+    if (auth.authError) {
+      console.info('[body-metrics] Auth failed (no user_id), saving body_metrics without user_id');
+      payload.user_id = null;
+    } else {
+      payload.user_id = auth.userId;
+      loginPassword = auth.loginPassword;
+      existingAccount = auth.existingAccount;
+      userChosePassword = auth.userChosePassword;
+      await applyRegistrationUserMetadata(payload, { birthDateRaw, smartScaleBody, existingAccount });
     }
 
-    if (dbErr) {
-      console.error('[body-metrics] DB insert failed:', dbErr.message);
-      throw new Error(dbErr.message);
+    if (payload.user_id && existingAccount) {
+      return res.status(400).json({
+        error:
+          'Účet s tímto e-mailem už existuje. Přihlas se nebo si nech poslat odkaz k obnově hesla — registraci START se stejným e-mailem nelze opakovat.',
+      });
     }
 
-    const bodyMetricsId = insertedRows?.[0]?.id ?? null;
+    const persist = await persistBodyMetricsRow(payload);
+    if (persist.error) {
+      console.error('[body-metrics] DB insert failed:', persist.error);
+      throw new Error(persist.error);
+    }
+    const bodyMetricsId = persist.bodyMetricsId;
     console.info('[body-metrics] body_metrics inserted', payload.user_id ? `user_id=${payload.user_id} body_metrics_id=${bodyMetricsId}` : `body_metrics_id=${bodyMetricsId} (no user_id)`);
 
     const loginUrl = getDefaultLoginUrl();
@@ -584,53 +449,28 @@ export default async function handler(req, res) {
       }).catch((err) => console.warn('[body-metrics] writeOnboardingEvent failed:', err?.message));
     }
 
-    const response = {
-      ok: accountCreated && (plan_state === 'ready' || plan_state === 'processing'),
+    const response = buildRegistrationApiResponse({
+      accountCreated,
+      plan_state,
       planSent,
       planPending,
-      plan_state,
-      loginUnavailable: !accountCreated,
       message,
-    };
-    if (accountCreated) {
-      response.hasUserId = true;
-      response.initialPlanTaskStatus = initialPlanTaskStatus;
-      response.initialPlanSummary = initialPlanSummary ?? undefined;
-      response.initialPlanValidationWarning = initialPlanValidationWarning ?? undefined;
-      response._diagnostics = {
-        task_created: accountCreated,
-        initial_plan_task_status: initialPlanTaskStatus ?? undefined,
-        initial_plan_task_id: initialPlanTaskId ?? undefined,
-        initial_plan_task_created_at: initialPlanTaskCreatedAt ?? undefined,
-        initial_plan_task_completed_at: initialPlanTaskCompletedAt ?? undefined,
-        plan_state,
-        plan_sent: planSent,
-        plan_pending: planPending,
-        final_response_reason: finalResponseReason,
-        onboarding_result: onboardingResult,
-        saved_plan_id: savedPlanId ?? undefined,
-        saved_plan_exists: savedPlanExists ?? undefined,
-        generation_source: generationSource ?? undefined,
-        trainer_task_created: !!initialPlanTaskId,
-        trainer_task_completed: initialPlanTaskStatus === 'completed',
-        trainer_task_failed: initialPlanTaskStatus === 'failed',
-        trainer_generation_source: trainerResult?.generation_source ?? trainerResult?.final_publish_source ?? undefined,
-        trainer_output_exists: !!(trainerResult?.plan_id),
-        email_error: trainerResult?.email_error ?? undefined,
-        email_sent: planSent,
-        plan_saved: savedPlanExists,
-        plan_saved_id: savedPlanId ?? undefined,
-        last_resort_ran: lastResortRan,
-        last_resort_failed: lastResortFailed,
-        last_resort_error: lastResortError ?? undefined,
-        required_modules: trainerResult?.required_modules ?? ['nutrition', 'training', 'habits'],
-        completed_modules: trainerResult?.completed_modules ?? undefined,
-        plan_scope: trainerResult?.plan_scope ?? 'initial_7_day_trial',
-        missing_modules: trainerResult?.missing_modules ?? undefined,
-      };
-    } else {
-      response.hasUserId = false;
-    }
+      initialPlanTaskStatus,
+      initialPlanSummary,
+      initialPlanValidationWarning,
+      initialPlanTaskId,
+      initialPlanTaskCreatedAt,
+      initialPlanTaskCompletedAt,
+      finalResponseReason,
+      onboardingResult,
+      savedPlanId,
+      savedPlanExists,
+      generationSource,
+      trainerResult,
+      lastResortRan,
+      lastResortFailed,
+      lastResortError,
+    });
 
     return res.status(200).json(response);
 
@@ -640,53 +480,4 @@ export default async function handler(req, res) {
       error: e.message || 'Neočekávaná chyba při zpracování požadavku.'
     });
   }
-}
-
-/* ==============================
-   Pomocné funkce
-============================== */
-
-/** Převádí chyby z auth (Supabase) na srozumitelné české hlášky pro uživatele. */
-function toUserFriendlyAuthError(message) {
-  if (!message || typeof message !== 'string') return 'Nepodařilo se vytvořit účet. Zkontroluj údaje a zkus to znovu.';
-  const m = message.toLowerCase();
-  if (m.includes('password') && (m.includes('least') || m.includes('6') || m.includes('length')))
-    return 'Heslo je příliš slabé. Zadej alespoň 6 znaků, lépe kombinaci písmen a číslic.';
-  if (m.includes('weak') || m.includes('strength') || m.includes('secure'))
-    return 'Heslo je příliš slabé. Zkus kombinaci písmen a číslic, alespoň 6 znaků.';
-  if (m.includes('email') && (m.includes('invalid') || m.includes('valid')))
-    return 'Zadej platnou e-mailovou adresu.';
-  if (m.includes('already') || m.includes('registered')) return 'S tímto e-mailem už máš účet. Přihlas se nebo obnov heslo na app.bodyandmindon.cz.';
-  if (isServerAuthConfigError(message))
-    return 'Registrace je teď dočasně nedostupná kvůli nastavení serveru. Zkus to prosím za chvíli znovu.';
-  return 'Nepodařilo se vytvořit účet. Zkontroluj údaje a zkus to znovu.';
-}
-
-function isServerAuthConfigError(message) {
-  if (!message || typeof message !== 'string') return false;
-  const m = message.toLowerCase();
-  return (
-    m.includes('invalid api key') ||
-    m.includes('unauthorized') ||
-    m.includes('not authorized') ||
-    m.includes('service_role') ||
-    m.includes('service role') ||
-    m.includes('jwt') ||
-    m.includes('permission denied') ||
-    m.includes('user not allowed')
-  );
-}
-
-function toNum(v) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
-
-function normalizeGender(v) {
-  if (!v) return null;
-  const t = v.toString().toLowerCase().trim();
-  if (t === 'male' || t === 'female') return t;
-  if (t.includes('muž') || t === 'm') return 'male';
-  if (t.includes('žena') || t === 'f') return 'female';
-  return null;
 }

@@ -1,7 +1,6 @@
 /**
  * GET /api/integrations-status
- * Jedna odpověď: env + lehký DB ping (bez Spoonacular bodů).
- * Živé testy jídel/cviků: GET /api/verify-media-apis (Spoonacular: výchozí lehký; ?deep=1 = i complexSearch).
+ * Veřejně: minimální health. Detailní diagnostika jen s INTERNAL_STATUS_SECRET.
  */
 import { getAIRuntimeCapabilities } from '../../lib/aiRuntimeCapabilities';
 import { getPublicAppUrl } from '../../lib/siteUrls.js';
@@ -9,6 +8,16 @@ import { supabaseServer } from '../../lib/supabaseServer';
 
 function bool(v) {
   return typeof v === 'boolean' ? v : false;
+}
+
+function hasInternalStatusAccess(req) {
+  const secret = String(process.env.INTERNAL_STATUS_SECRET || '').trim();
+  if (!secret) return false;
+  const headerSecret = req.headers['x-internal-secret'];
+  if (typeof headerSecret === 'string' && headerSecret === secret) return true;
+  const auth = req.headers.authorization || '';
+  if (auth.startsWith('Bearer ') && auth.slice(7).trim() === secret) return true;
+  return false;
 }
 
 export default async function handler(req, res) {
@@ -47,10 +56,21 @@ export default async function handler(req, res) {
   const core_plan_flow_ok = db && ai && spoon && wger && supabase_db.ok;
   const registration_email_ok = db && email && supabase_db.ok;
 
-  return res.status(200).json({
+  const publicBody = {
     ok: true,
+    ready: {
+      core_plan_flow: core_plan_flow_ok,
+      registration_and_plan_email: registration_email_ok,
+    },
+  };
+
+  if (!hasInternalStatusAccess(req)) {
+    return res.status(200).json(publicBody);
+  }
+
+  return res.status(200).json({
+    ...publicBody,
     app_url,
-    supabase_url: supabase_url || null,
     supabase_project_ref,
     vercel_env: process.env.VERCEL_ENV || null,
     checks: {
@@ -61,12 +81,8 @@ export default async function handler(req, res) {
       spoonacular_configured: spoon,
       wger_public_api: wger,
       email_smtp: email,
-      stripe: stripe,
+      stripe,
       cron_secret: cron,
-    },
-    ready: {
-      core_plan_flow: core_plan_flow_ok,
-      registration_and_plan_email: registration_email_ok,
     },
     links: {
       verify_media_apis: `${app_url}/api/verify-media-apis`,
@@ -76,9 +92,9 @@ export default async function handler(req, res) {
     },
     hints: {
       github_actions:
-        'Pro AI frontu každých 5 min nastav v GitHubu secrets APP_URL (stejná jako app_url výše) a CRON_SECRET (shodně s Vercelem). Viz .github/workflows/ai-scheduler.yml.',
+        'Pro AI frontu každých 5 min nastav v GitHubu secrets APP_URL a CRON_SECRET. Viz .github/workflows/ai-scheduler.yml.',
       vercel_cron:
-        'Denní digest: vercel.json crons volá /api/cron/daily-digest s CRON_SECRET z env (nativní Vercel Cron).',
+        'Denní digest: vercel.json crons volá /api/cron/daily-digest s CRON_SECRET z env.',
     },
     capabilities,
   });

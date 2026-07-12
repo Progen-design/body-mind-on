@@ -26,6 +26,8 @@ const startPage = read('pages/start.js');
 const onClubPage = read('pages/on-club.js');
 const chciVipPage = read('pages/chci-vip.js');
 const bodyMetricsApi = read('pages/api/body-metrics.js');
+const bodyMetricsRegistration = read('lib/registration/bodyMetricsRegistration.js');
+const bodyMetricsRegistrationChain = `${bodyMetricsApi}\n${bodyMetricsRegistration}`;
 const profileApi = read('pages/api/profile.js');
 const profileBodyDataApi = read('pages/api/profile-body-data.js');
 const quickWeightApi = read('pages/api/quick-weight.js');
@@ -47,11 +49,11 @@ for (const [label, pageSrc] of [['on-club', onClubPage], ['chci-vip', chciVipPag
 }
 
 // --- API přijímá a ukládá ---
-check('/api/body-metrics čte b.birth_date', bodyMetricsApi.includes('b.birth_date'));
-check('/api/body-metrics validuje birth_date', bodyMetricsApi.includes('validateBirthDate(birthDateRaw)'));
-check('/api/body-metrics ukládá birth_date do body_metrics', /birth_date:\s*birthDateRaw/.test(bodyMetricsApi));
-check('/api/body-metrics ukládá birth_date i do user_metadata', bodyMetricsApi.includes('user_metadata') && /user_metadata:\s*\{[^}]*birth_date/.test(bodyMetricsApi));
-check('věk se počítá z birth_date při registraci', bodyMetricsApi.includes('birthValidation.age'));
+check('/api/body-metrics čte b.birth_date', bodyMetricsRegistrationChain.includes('b.birth_date'));
+check('/api/body-metrics validuje birth_date', bodyMetricsRegistrationChain.includes('validateBirthDate(birthDateRaw)'));
+check('/api/body-metrics ukládá birth_date do body_metrics', /birth_date:\s*birthDateRaw/.test(bodyMetricsRegistrationChain));
+check('/api/body-metrics ukládá birth_date i do user_metadata', bodyMetricsRegistrationChain.includes('user_metadata') && /user_metadata:\s*\{[^}]*birth_date/.test(bodyMetricsRegistrationChain));
+check('věk se počítá z birth_date při registraci', bodyMetricsRegistrationChain.includes('birthValidation.age'));
 
 // --- Profil čte stejný source ---
 check('/api/profile vrací user.birth_date', /birth_date:\s*birthDateFromMeta \|\| birthDateFromMetrics \|\| null/.test(profileApi));

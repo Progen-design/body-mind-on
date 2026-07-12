@@ -82,3 +82,22 @@ npm run vercel:audit
 - Audit je **read-only** — nezapisuje do DB ani externích služeb (kromě read probe a produkčního smoke testu).
 - Secrety patří pouze do `.env.local` nebo Vercel env — **nikdy** do repozitáře.
 - Volitelný test e-mailu: `npm run verify:email-config -- --send-test` (default je jen config check).
+
+## P0 launch sanity
+
+Krátký read-only sprint před beta launch (bez PII ve výstupu):
+
+```bash
+npm run launch:sanity
+```
+
+Jednotlivé kroky:
+
+```bash
+npm run audit:users
+npm run audit:unit-economics
+npm run audit:plan-quality-samples   # lokální QA vzorky → audits/plan-quality-samples/
+npm run verify:stripe-tier-mapping
+```
+
+**Deploy:** v `package.json` není auto-push script. Používej PR → Vercel Preview → merge do `main`.

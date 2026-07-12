@@ -116,3 +116,13 @@ npm run system:audit
 - Exit code `0` = PASS nebo jen WARN; `1` = kritický FAIL.
 
 Podrobnosti a jednotlivé verify skripty: [README.md](./README.md#system-audit-read-only).
+
+## P0 launch sanity
+
+```bash
+npm run launch:sanity
+```
+
+Spustí agregovaný audit uživatelů, unit economics, Stripe tier mapping a `system:audit`. Výstup je bez PII a secretů.
+
+**Deploy:** nepoužívej automatický `git add && git push` z package.json. Flow: PR → Vercel Preview → merge do `main` → produkční deploy na `app.bodyandmindon.cz`.

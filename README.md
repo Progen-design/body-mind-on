@@ -47,3 +47,38 @@ The script prints:
 - The audit script is designed **not** to print env values or decrypted secrets. Use `vercel env pull` only on trusted machines when you need local values.
 
 More deployment context: [DEPLOY.md](./DEPLOY.md).
+
+## System audit (read-only)
+
+Jedním příkazem ověříš stav produkce a hlavních integrací. Výstup je **sanitizovaný** — bez hodnot secretů, bez osobních dat klientů, bezpečný pro vložení do chatu.
+
+```bash
+npm run system:audit
+```
+
+Sekce auditu:
+
+- **ENV REQUIRED** — přítomnost povinných env proměnných (jen názvy)
+- **VERCEL** — produkční deploy, domény, env názvy na Vercelu
+- **SUPABASE** — připojení a read-only probe
+- **OPENAI** — API key + lightweight auth check
+- **EMAIL** / **GOOGLE CALENDAR** — config check (bez odeslání mailu / OAuth call)
+- **PRODUCTION SMOKE** — kritická cesta na produkci
+- **SECURITY HEADERS** / **LEGAL FOOTER** — runtime HTTP kontroly
+
+Jednotlivé kroky lze spustit samostatně:
+
+```bash
+npm run verify:env-required
+npm run verify:openai-config
+npm run verify:email-config
+npm run verify:google-calendar-config
+npm run verify:supabase-readonly
+npm run vercel:audit
+```
+
+**Bezpečnost:**
+
+- Audit je **read-only** — nezapisuje do DB ani externích služeb (kromě read probe a produkčního smoke testu).
+- Secrety patří pouze do `.env.local` nebo Vercel env — **nikdy** do repozitáře.
+- Volitelný test e-mailu: `npm run verify:email-config -- --send-test` (default je jen config check).

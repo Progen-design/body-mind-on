@@ -101,3 +101,18 @@ Bezpečný read-only přehled projektu `body-mind-on` přes Vercel REST API (dep
    ```
 
 **Bezpečnost:** token necommituj; skript nevypisuje hodnoty env proměnných. Podrobnosti: [README.md](./README.md).
+
+## System audit
+
+Centrální read-only kontrola před nasazením nebo při incidentu:
+
+```bash
+npm run system:audit
+```
+
+- Výstup je **bezpečný pro sdílení** (maskované tokeny, žádné hodnoty env, žádná PII).
+- Secrety musí být jen v `.env.local` / Vercel project env.
+- Audit je read-only; pokračuje i po selhání jednoho kroku a na konci vypíše souhrn PASS / WARN / FAIL.
+- Exit code `0` = PASS nebo jen WARN; `1` = kritický FAIL.
+
+Podrobnosti a jednotlivé verify skripty: [README.md](./README.md#system-audit-read-only).

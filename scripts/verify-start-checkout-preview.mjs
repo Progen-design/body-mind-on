@@ -6,7 +6,8 @@
  * Vercel Deployment Protection: používá `vercel curl` (automatický bypass).
  * Nevypisuje checkout URL, session ID, tokeny ani hesla.
  */
-import { readFileSync, existsSync, randomBytes } from 'fs';
+import { readFileSync, existsSync } from 'fs';
+import { randomBytes } from 'crypto';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';

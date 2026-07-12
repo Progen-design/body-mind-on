@@ -136,3 +136,31 @@ BASE_URL=https://<preview-branch-alias>.vercel.app npm run verify:start-checkout
 ```
 
 Vyžaduje `SUPABASE_SERVICE_ROLE_KEY` v `.env.local`. Pro Deployment Protection používá `vercel curl` (bez tokenu v repu).
+
+Po každém běhu automaticky smaže syntetického test uživatele vytvořeného v daném běhu (`Cleanup: PASS`).
+
+## Stripe test účty a E2E
+
+### API verifier vs. plný subscription E2E
+
+| Nástroj | Co ověřuje |
+|---------|------------|
+| `verify:start-checkout-preview` | Autentizovaný POST checkout → Stripe test session (bez dokončení platby) |
+| `e2e:stripe-subscription-test` | Celý lifecycle: checkout → webhook → active → idempotence → cancel |
+
+### Cleanup starých stripe-preview účtů
+
+```bash
+npm run admin:cleanup-stripe-preview-users
+npm run admin:cleanup-stripe-preview-users -- --confirm=DELETE_STRIPE_PREVIEW_TEST_USERS
+```
+
+Výchozí režim je dry-run. Maže pouze `info+stripe-preview-…@bodyandmindon.cz` bez Stripe vazeb a bez produktové aktivity. **Nedotýká se `bm-smoke` účtů.**
+
+### Plný Stripe subscription E2E (pouze test mode)
+
+```bash
+ALLOW_PRODUCTION_STRIPE_TEST_E2E=yes npm run e2e:stripe-subscription-test
+```
+
+Vyžaduje `sk_test_` klíč a `ALLOW_PRODUCTION_STRIPE_TEST_E2E=yes`. Nikdy nespouštět s live Stripe klíčem. Preview i Production používají stejný Supabase projekt — syntetické účty musí být vždy uklizeny.

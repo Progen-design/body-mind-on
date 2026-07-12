@@ -1,46 +1,45 @@
 #!/usr/bin/env node
 /**
  * Ověří START checkout na preview/production BASE_URL (Stripe test mode).
- *   BASE_URL=https://...vercel.app node scripts/verify-start-checkout-preview.mjs
+ * Vždy uklidí syntetického test uživatele vytvořeného v tomto běhu.
  *
- * Vercel Deployment Protection: používá `vercel curl` (automatický bypass).
- * Nevypisuje checkout URL, session ID, tokeny ani hesla.
+ *   BASE_URL=https://app.bodyandmindon.cz npm run verify:start-checkout-preview
+ *
+ * Volitelně ponechat uživatele (jen s ALLOW_KEEP_STRIPE_TEST_USER=yes):
+ *   --keep-test-user
  */
-import { readFileSync, existsSync } from 'fs';
-import { randomBytes } from 'crypto';
+import { spawnSync } from 'child_process';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { spawnSync } from 'child_process';
 import { createClient } from '@supabase/supabase-js';
+import {
+  TEST_ORIGIN,
+  loadStripeTestEnv,
+  createSyntheticStripeTestUser,
+  upsertStartTrialMembership,
+  cleanupRunResources,
+  aggregateStripePreviewCounts,
+  assertCheckoutTestUrl,
+  checkoutModeFromUrl,
+} from './lib/syntheticStripeTestUser.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
+loadStripeTestEnv(root);
 
-for (const f of ['.env.local', '.env']) {
-  const p = join(root, f);
-  if (!existsSync(p)) continue;
-  for (const line of readFileSync(p, 'utf8').split(/\r?\n/)) {
-    const t = line.trim();
-    if (!t || t.startsWith('#')) continue;
-    const i = t.indexOf('=');
-    if (i <= 0) continue;
-    const k = t.slice(0, i).trim();
-    let v = t.slice(i + 1).trim();
-    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
-    if (!process.env[k]) process.env[k] = v;
-  }
-}
-
-const BASE = String(process.env.BASE_URL || '').replace(/\/$/, '').replace(/\?.*$/, '');
+const BASE = String(process.env.BASE_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '').replace(/\?.*$/, '');
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const keepFlag = process.argv.includes('--keep-test-user');
+const allowKeep = String(process.env.ALLOW_KEEP_STRIPE_TEST_USER || '').toLowerCase() === 'yes';
 
-if (!BASE) {
-  console.error('FAIL missing BASE_URL');
-  process.exit(1);
-}
 if (!supabaseUrl || !serviceKey) {
   console.error('FAIL missing Supabase env');
+  process.exit(1);
+}
+
+if (keepFlag && !allowKeep) {
+  console.error('FAIL --keep-test-user requires ALLOW_KEEP_STRIPE_TEST_USER=yes');
   process.exit(1);
 }
 
@@ -55,15 +54,6 @@ function sanitizeErrorBody(body) {
   if (body.error) return String(body.error);
   if (body.message) return String(body.message);
   return '(error response)';
-}
-
-function checkoutMetaFromUrl(url) {
-  const host = 'checkout.stripe.com';
-  if (!url || !/^https:\/\/checkout\.stripe\.com\//.test(url)) {
-    return { host, mode: 'unknown', sessionCreated: false };
-  }
-  const mode = /\/c\/pay\/cs_test_/i.test(url) ? 'test' : (/\/c\/pay\/cs_live_/i.test(url) ? 'live' : 'unknown');
-  return { host, mode, sessionCreated: true };
 }
 
 function vercelCurlPost(path, { headers = {}, body } = {}) {
@@ -103,69 +93,115 @@ function vercelCurlPost(path, { headers = {}, body } = {}) {
   const statusMatch = [...out.matchAll(/HTTP\/[\d.]+\s+(\d{3})/g)].pop();
   const httpStatus = statusMatch ? Number(statusMatch[1]) : null;
   const effectiveStatus = parsed?.url ? 200 : (httpStatus || (r.status || 500));
-  return {
-    status: effectiveStatus,
-    body: parsed,
-  };
+  return { status: effectiveStatus, body: parsed };
 }
 
-const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
-const email = `info+stripe-preview-${Date.now()}@bodyandmindon.cz`;
-const password = randomBytes(18).toString('base64url');
+/** @type {{ userId: string|null, stripeCustomerId: null, stripeSubscriptionId: null, membershipCreated: boolean }} */
+const run = {
+  userId: null,
+  stripeCustomerId: null,
+  stripeSubscriptionId: null,
+  membershipCreated: false,
+};
 
-const { data: created, error: createErr } = await admin.auth.admin.createUser({
-  email,
-  password,
-  email_confirm: true,
-});
-if (createErr) {
-  console.error('FAIL createUser', createErr.message);
-  process.exit(1);
+let cleanupDone = false;
+let cleanupResult = 'SKIPPED';
+let testPassed = false;
+let exitCode = 1;
+
+async function doCleanup() {
+  if (cleanupDone) return;
+  cleanupDone = true;
+  cleanupResult = await cleanupRunResources({
+    admin,
+    run,
+    keepUser: keepFlag && allowKeep,
+  });
 }
 
-const uid = created.user.id;
-const now = new Date().toISOString();
-const trialEnd = new Date(Date.now() + 7 * 86400000).toISOString();
-const { error: memErr } = await admin.from('memberships').upsert({
-  user_id: uid,
-  tier: 'START',
-  status: 'trial',
-  started_at: now,
-  trial_ends_at: trialEnd,
-  updated_at: now,
-});
-if (memErr) {
-  console.error('FAIL membership upsert', memErr.message);
-  process.exit(1);
+async function handleShutdown() {
+  await doCleanup();
+  if (!testPassed && cleanupResult === 'FAIL') {
+    console.error('WARN cleanup incomplete');
+    process.exit(2);
+  }
+  process.exit(exitCode);
 }
 
-const { data: signIn, error: signErr } = await admin.auth.signInWithPassword({ email, password });
-const accessToken = signIn?.session?.access_token || null;
-if (!accessToken) {
-  console.error('FAIL sign-in', signErr?.message || 'no token');
-  process.exit(1);
-}
-
-const { status, body } = vercelCurlPost('/api/stripe/create-checkout-session', {
-  headers: { Authorization: `Bearer ${accessToken}` },
-  body: { tier: 'START' },
+process.once('SIGINT', () => { handleShutdown(); });
+process.once('SIGTERM', () => { handleShutdown(); });
+process.once('uncaughtException', async () => {
+  await doCleanup();
+  console.error('FAIL uncaught exception');
+  process.exit(2);
 });
 
-if (status !== 200) {
-  console.error('FAIL checkout HTTP', status, sanitizeErrorBody(body));
-  process.exit(1);
+let countsBefore = { authCount: 0, membershipCount: 0 };
+
+try {
+  countsBefore = await aggregateStripePreviewCounts(admin);
+
+  const created = await createSyntheticStripeTestUser(admin, { testOrigin: TEST_ORIGIN });
+  run.userId = created.userId;
+
+  await upsertStartTrialMembership(admin, run.userId);
+  run.membershipCreated = true;
+
+  const { data: signIn, error: signErr } = await admin.auth.signInWithPassword({
+    email: created.email,
+    password: created.password,
+  });
+  const accessToken = signIn?.session?.access_token || null;
+  if (!accessToken) {
+    throw new Error(signErr?.message || 'sign-in failed');
+  }
+
+  const { status, body } = vercelCurlPost('/api/stripe/create-checkout-session', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: { tier: 'START' },
+  });
+
+  if (status !== 200) {
+    throw new Error(`checkout HTTP ${status}: ${sanitizeErrorBody(body)}`);
+  }
+
+  const mode = assertCheckoutTestUrl(body.url);
+  if (mode === 'live') {
+    throw new Error('Live Checkout Session — STOP');
+  }
+
+  testPassed = true;
+  exitCode = 0;
+
+  console.log('PASS START checkout verifier');
+  console.log(`HTTP status: ${status}`);
+  console.log('Checkout host: checkout.stripe.com');
+  console.log(`Mode: ${mode}`);
+  console.log('Session created: yes');
+} catch (err) {
+  console.error('FAIL', err?.message || err);
+  testPassed = false;
+  exitCode = 1;
+} finally {
+  await doCleanup();
+  console.log(`Cleanup: ${cleanupResult}`);
+
+  if (testPassed && cleanupResult === 'FAIL') {
+    console.error('WARN cleanup incomplete');
+    exitCode = 2;
+  }
+
+  try {
+    const countsAfter = await aggregateStripePreviewCounts(admin);
+    if (countsAfter.authCount > countsBefore.authCount && !(keepFlag && allowKeep)) {
+      console.error('WARN stripe-preview auth count increased');
+      exitCode = Math.max(exitCode, 2);
+    }
+  } catch {
+    /* ignore aggregate errors on exit */
+  }
 }
 
-const meta = checkoutMetaFromUrl(body.url);
-if (!meta.sessionCreated) {
-  console.error('FAIL invalid checkout host');
-  process.exit(1);
-}
-
-console.log('PASS START checkout preview');
-console.log(`HTTP status: ${status}`);
-console.log(`Checkout host: ${meta.host}`);
-console.log(`Mode: ${meta.mode}`);
-console.log(`Session created: ${meta.sessionCreated ? 'yes' : 'no'}`);
-process.exit(0);
+process.exit(exitCode);

@@ -108,4 +108,22 @@ npm run verify:stripe-tier-mapping
 BASE_URL=https://<preview-branch-alias>.vercel.app npm run verify:start-checkout-preview
 ```
 
-Bezpečný výstup: HTTP status, checkout host, Stripe mode (test/live), PASS/FAIL — bez URL a secretů.
+Bezpečný výstup: HTTP status, checkout host, Stripe mode (test/live), cleanup — bez URL a secretů.
+
+Verifier po každém běhu smaže vlastní syntetický účet (`Cleanup: PASS`).
+
+### Cleanup stripe-preview test účtů
+
+```bash
+npm run admin:cleanup-stripe-preview-users
+```
+
+Potvrzené smazání: `-- --confirm=DELETE_STRIPE_PREVIEW_TEST_USERS` (nejdřív dry-run).
+
+### Plný Stripe subscription E2E
+
+```bash
+ALLOW_PRODUCTION_STRIPE_TEST_E2E=yes npm run e2e:stripe-subscription-test
+```
+
+Pouze Stripe **test mode** (`sk_test_`, `cs_test_`). S live klíčem nespouštět.

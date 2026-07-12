@@ -13,7 +13,11 @@ supabase/.temp/
 
 tmp/
 artifacts/
+audits/plan-quality-samples/
 scripts/e2e-output/
 scripts/*.log
 scripts/tmp-*.mjs
+.env.stripe-e2e.tmp
+.env.vercel-production.tmp
+.env.vercel-preview.tmp
 .cursor/hooks/.pending-errors.log

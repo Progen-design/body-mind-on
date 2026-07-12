@@ -93,6 +93,12 @@ const replaceWorkoutSrc = fs.readFileSync(path.join(root, 'pages/api/onboarding/
 if (!templatesSrc.includes('export const GYM_TEMPLATES')) fail('workoutTemplates missing GYM_TEMPLATES');
 if (!templatesSrc.includes('export const HOME_BODYWEIGHT_TEMPLATES')) fail('workoutTemplates missing HOME_BODYWEIGHT_TEMPLATES');
 if (!templatesSrc.includes('export function workoutBlocksForBodyMetrics')) fail('workoutTemplates missing workoutBlocksForBodyMetrics');
+if (!templatesSrc.includes('export function sessionTemplatesForBodyMetrics')) fail('workoutTemplates missing sessionTemplatesForBodyMetrics');
+if (!templatesSrc.includes('HOME_EQUIPMENT_DUMBBELL_BENCH_TEMPLATES')) fail('workoutTemplates missing HOME_EQUIPMENT_DUMBBELL_BENCH_TEMPLATES');
+const sessionFnBlock = templatesSrc.split('function homeTemplatesForBodyMetrics')[1]?.split('export function rotatedTemplatesForBodyMetrics')[0] || '';
+if (!sessionFnBlock.includes('HOME_EQUIPMENT_DUMBBELL_BENCH_TEMPLATES')) {
+  fail('sessionTemplatesForBodyMetrics must use HOME_EQUIPMENT_DUMBBELL_BENCH_TEMPLATES for home_equipment');
+}
 if (scalerSrc.includes('const GYM_SESSION_TEMPLATES')) fail('workoutPlanScaler must not define local GYM_SESSION_TEMPLATES');
 if (fallbackSrc.includes('const GYM_WORKOUT_BLOCKS')) fail('deterministicFallback must not define local GYM_WORKOUT_BLOCKS');
 if (!scalerSrc.includes("from './workoutTemplates.js'")) fail('workoutPlanScaler must import workoutTemplates');

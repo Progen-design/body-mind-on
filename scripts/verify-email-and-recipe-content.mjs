@@ -73,7 +73,7 @@ for (const phrase of forbiddenEmailPhrases) {
 }
 
 check('e-mail obsahuje praktický plán (jídla)', /Cottage s pečivem/i.test(emailHtml));
-check('e-mail obsahuje CTA do aplikace', /Otevřít plán v aplikaci/i.test(emailHtml));
+check('e-mail obsahuje CTA do aplikace (V8)', /Otevřít můj profil/i.test(emailHtml));
 
 for (const recipe of SIMPLE_START_RECIPES) {
   const steps = countSteps(recipe.instructions);

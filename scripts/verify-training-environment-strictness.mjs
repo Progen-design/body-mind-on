@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { filterWorkoutPlanForTrainingEnvironment, parseTrainingEnvironment, TRAINING_ENVIRONMENT_LABELS } from '../lib/trainingEnvironment.js';
+import { sessionTemplatesForBodyMetrics, workoutBlocksForBodyMetrics } from '../lib/workoutTemplates.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
@@ -56,6 +57,19 @@ for (const g of ['bench_press', 'leg_press', 'lat_pulldown']) {
 if (!homeKeys.includes('squat') && !homeKeys.includes('pushup')) fail('home_bodyweight should keep bodyweight exercise');
 else ok('home_bodyweight removes gym-only exercises');
 
+const pullUpHomePlan = {
+  days: [{ exercises: [{ canonical_key: 'pull_up', name_cs: 'Shyby' }] }],
+};
+filterWorkoutPlanForTrainingEnvironment(pullUpHomePlan, {
+  training_environment: 'home_bodyweight',
+  notes: 'Kde cvičí: Doma bez vybavení',
+});
+if (pullUpHomePlan.days[0].exercises[0].canonical_key === 'pull_up') {
+  fail('home_bodyweight must not keep pull_up without pullup_bar');
+} else {
+  ok('home_bodyweight replaces pull_up without hrazda');
+}
+
 console.log('\n--- home_equipment without gear ---');
 const equipPlan = {
   days: [{ exercises: [{ canonical_key: 'bench_press', name_cs: 'Bench' }, { canonical_key: 'pull_up', name_cs: 'Shyby' }] }],
@@ -68,6 +82,44 @@ filterWorkoutPlanForTrainingEnvironment(equipPlan, {
 const eqKeys = equipPlan.days[0].exercises.map((e) => e.canonical_key);
 if (eqKeys.includes('pull_up')) fail('pull_up without pullup_bar should be replaced');
 else ok('home_equipment respects selected equipment');
+
+const pullUpWithBarPlan = {
+  days: [{ exercises: [{ canonical_key: 'pull_up', name_cs: 'Shyby' }] }],
+};
+filterWorkoutPlanForTrainingEnvironment(pullUpWithBarPlan, {
+  training_environment: 'home_equipment',
+  available_equipment: ['pullup_bar'],
+  notes: 'Kde cvičí: Doma s vybavením. Pomůcky: Hrazda',
+});
+if (pullUpWithBarPlan.days[0].exercises[0].canonical_key !== 'pull_up') {
+  fail('home_equipment with pullup_bar should keep pull_up');
+} else {
+  ok('home_equipment allows pull_up with hrazda');
+}
+
+console.log('\n--- home_equipment scaler templates ---');
+const equipScalerMetrics = {
+  training_environment: 'home_equipment',
+  available_equipment: ['dumbbells', 'bench'],
+};
+const sessionTpl = sessionTemplatesForBodyMetrics(equipScalerMetrics);
+const fallbackTpl = workoutBlocksForBodyMetrics(equipScalerMetrics);
+const sessionKeys = new Set(sessionTpl.flat().map((e) => e.canonical_key));
+const fallbackKeys = new Set(fallbackTpl.flat().map((e) => e.canonical_key));
+if (!sessionKeys.has('bench_press') || !sessionKeys.has('bent_over_row')) {
+  fail('sessionTemplatesForBodyMetrics should use equipment templates for dumbbells+bench');
+} else ok('scaler session templates use home equipment blocks');
+if (!fallbackKeys.has('bench_press')) fail('workoutBlocksForBodyMetrics should match equipment selection');
+else ok('fallback blocks align with home equipment selection');
+
+const bodyweightOnlyEquip = sessionTemplatesForBodyMetrics({
+  training_environment: 'home_equipment',
+  available_equipment: ['bands'],
+});
+const bwKeys = new Set(bodyweightOnlyEquip.flat().map((e) => e.canonical_key));
+if (!bwKeys.has('squat') || bwKeys.has('leg_press')) {
+  fail('home_equipment without dumbbells/bench should fall back to bodyweight session templates');
+} else ok('home_equipment without dumbbells/bench uses bodyweight session fallback');
 
 console.log('\n--- home_equipment dumbbells + bench (Út/Čt/So scenario) ---');
 const homeDbBenchMetrics = {

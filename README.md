@@ -101,3 +101,11 @@ npm run verify:stripe-tier-mapping
 ```
 
 **Deploy:** v `package.json` není auto-push script. Používej PR → Vercel Preview → merge do `main`.
+
+### Preview START checkout
+
+```bash
+BASE_URL=https://<preview-branch-alias>.vercel.app npm run verify:start-checkout-preview
+```
+
+Bezpečný výstup: HTTP status, checkout host, Stripe mode (test/live), PASS/FAIL — bez URL a secretů.

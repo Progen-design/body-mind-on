@@ -126,3 +126,13 @@ npm run launch:sanity
 Spustí agregovaný audit uživatelů, unit economics, Stripe tier mapping a `system:audit`. Výstup je bez PII a secretů.
 
 **Deploy:** nepoužívej automatický `git add && git push` z package.json. Flow: PR → Vercel Preview → merge do `main` → produkční deploy na `app.bodyandmindon.cz`.
+
+## Preview START checkout verifier
+
+Ověří autentizovaný Stripe Checkout (test mode) na Preview nebo produkci. Výstup neobsahuje checkout URL ani session ID.
+
+```bash
+BASE_URL=https://<preview-branch-alias>.vercel.app npm run verify:start-checkout-preview
+```
+
+Vyžaduje `SUPABASE_SERVICE_ROLE_KEY` v `.env.local`. Pro Deployment Protection používá `vercel curl` (bez tokenu v repu).

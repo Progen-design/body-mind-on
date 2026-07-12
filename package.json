@@ -83,6 +83,7 @@
     "audit:plan-quality-samples": "node scripts/generate-plan-quality-samples.mjs",
     "verify:stripe-tier-mapping": "node scripts/verify-stripe-tier-mapping.mjs",
     "verify:paid-membership-gate": "node scripts/verify-paid-membership-gate.mjs",
+    "verify:start-checkout-preview": "node scripts/verify-start-checkout-preview.mjs",
     "launch:sanity": "node scripts/launch-sanity.mjs",
     "env:pull": "vercel env pull .env.local --environment production --yes",
     "env:pull:preview": "vercel env pull .env.local --environment preview --yes",

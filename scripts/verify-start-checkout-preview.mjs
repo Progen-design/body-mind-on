@@ -4,8 +4,9 @@
  *   BASE_URL=https://...vercel.app node scripts/verify-start-checkout-preview.mjs
  *
  * Vercel Deployment Protection: používá `vercel curl` (automatický bypass).
+ * Nevypisuje checkout URL, session ID, tokeny ani hesla.
  */
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, randomBytes } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
@@ -48,6 +49,22 @@ function quoteShellArg(s) {
   return `'${str.replace(/'/g, `'\\''`)}'`;
 }
 
+function sanitizeErrorBody(body) {
+  if (!body || typeof body !== 'object') return '(no details)';
+  if (body.error) return String(body.error);
+  if (body.message) return String(body.message);
+  return '(error response)';
+}
+
+function checkoutMetaFromUrl(url) {
+  const host = 'checkout.stripe.com';
+  if (!url || !/^https:\/\/checkout\.stripe\.com\//.test(url)) {
+    return { host, mode: 'unknown', sessionCreated: false };
+  }
+  const mode = /\/c\/pay\/cs_test_/i.test(url) ? 'test' : (/\/c\/pay\/cs_live_/i.test(url) ? 'live' : 'unknown');
+  return { host, mode, sessionCreated: true };
+}
+
 function vercelCurlPost(path, { headers = {}, body } = {}) {
   const curlArgs = ['-X', 'POST', '--max-time', '60', '-H', 'Content-Type: application/json'];
   for (const [k, v] of Object.entries(headers)) curlArgs.push('-H', `${k}: ${String(v)}`);
@@ -88,14 +105,13 @@ function vercelCurlPost(path, { headers = {}, body } = {}) {
   return {
     status: effectiveStatus,
     body: parsed,
-    raw: out.slice(-800),
   };
 }
 
 const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-const email = `p0-checkout-${Date.now()}@example.com`;
-const password = 'P0Checkout1!';
+const email = `info+stripe-preview-${Date.now()}@bodyandmindon.cz`;
+const password = randomBytes(18).toString('base64url');
 
 const { data: created, error: createErr } = await admin.auth.admin.createUser({
   email,
@@ -130,20 +146,25 @@ if (!accessToken) {
   process.exit(1);
 }
 
-const { status, body, raw } = vercelCurlPost('/api/stripe/create-checkout-session', {
+const { status, body } = vercelCurlPost('/api/stripe/create-checkout-session', {
   headers: { Authorization: `Bearer ${accessToken}` },
   body: { tier: 'START' },
 });
 
 if (status !== 200) {
-  console.error('FAIL checkout HTTP', status, body.error || body.message || JSON.stringify(body));
-  if (raw) console.error(raw);
-  process.exit(1);
-}
-if (!body.url || !/^https:\/\/checkout\.stripe\.com\//.test(body.url)) {
-  console.error('FAIL invalid checkout url', body.url || '(missing)');
+  console.error('FAIL checkout HTTP', status, sanitizeErrorBody(body));
   process.exit(1);
 }
 
-console.log('PASS START checkout', { base: BASE, status });
+const meta = checkoutMetaFromUrl(body.url);
+if (!meta.sessionCreated) {
+  console.error('FAIL invalid checkout host');
+  process.exit(1);
+}
+
+console.log('PASS START checkout preview');
+console.log(`HTTP status: ${status}`);
+console.log(`Checkout host: ${meta.host}`);
+console.log(`Mode: ${meta.mode}`);
+console.log(`Session created: ${meta.sessionCreated ? 'yes' : 'no'}`);
 process.exit(0);

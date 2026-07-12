@@ -14,6 +14,8 @@ import {
   failStripeEvent,
   skipStripeEvent,
 } from '../../../lib/stripeEventStore';
+import { isStripeLegacyCheckoutAllowed } from '../../../lib/stripeLegacyCheckout';
+import { mapStripeSubscriptionStatusToMembership } from '../../../lib/stripeSubscriptionStatus';
 
 export const config = { api: { bodyParser: false } };
 
@@ -27,7 +29,7 @@ function getRawBody(req) {
 }
 
 /**
- * Legacy fallback: user_id z e-mailu v body_metrics (pouze staré checkouty bez client_reference_id).
+ * Legacy fallback: user_id z e-mailu v body_metrics (jen při STRIPE_ALLOW_LEGACY_CHECKOUT=true).
  * @param {string} email
  */
 async function getUserIdByEmailLegacy(email) {
@@ -45,7 +47,6 @@ async function getUserIdByEmailLegacy(email) {
 }
 
 /**
- * Primární zdroj user_id z checkout session.
  * @param {import('stripe').Stripe.Checkout.Session} session
  */
 function resolveUserIdFromSession(session) {
@@ -56,19 +57,27 @@ function resolveUserIdFromSession(session) {
 
 /**
  * @param {string} userId
- * @param {{ tier: string, stripeCustomerId?: string|null, stripeSubscriptionId?: string|null }} opts
+ * @param {{ tier: string, status: string, stripeCustomerId?: string|null, stripeSubscriptionId?: string|null, note?: string }} opts
  */
-async function activateMembership(userId, { tier, stripeCustomerId = null, stripeSubscriptionId = null }) {
+async function upsertMembership(userId, {
+  tier,
+  status,
+  stripeCustomerId = null,
+  stripeSubscriptionId = null,
+  note = null,
+}) {
   const now = new Date().toISOString();
   const row = {
     user_id: userId,
     tier,
-    status: 'active',
-    started_at: now,
-    trial_ends_at: null,
-    notes: `Aktivováno po platbě přes Stripe (${tier})`,
+    status,
     updated_at: now,
+    notes: note || `Stripe sync (${status}, ${tier})`,
   };
+  if (status === 'active') {
+    row.started_at = now;
+    row.trial_ends_at = null;
+  }
   if (stripeCustomerId) row.stripe_customer_id = stripeCustomerId;
   if (stripeSubscriptionId) row.stripe_subscription_id = stripeSubscriptionId;
 
@@ -119,6 +128,27 @@ async function resolveTierFromCheckoutSession(stripe, session) {
  */
 async function finishSkipped(event, result) {
   await skipStripeEvent(event.id, result);
+}
+
+/**
+ * @param {string} subscriptionId
+ * @param {string} customerId
+ * @returns {Promise<string|null>}
+ */
+async function resolveMembershipUserId(subscriptionId, customerId) {
+  const { data: bySub } = await supabaseServer
+    .from('memberships')
+    .select('user_id')
+    .eq('stripe_subscription_id', subscriptionId)
+    .maybeSingle();
+  if (bySub?.user_id) return bySub.user_id;
+
+  const { data: byCust } = await supabaseServer
+    .from('memberships')
+    .select('user_id')
+    .eq('stripe_customer_id', customerId)
+    .maybeSingle();
+  return byCust?.user_id || null;
 }
 
 export default async function handler(req, res) {
@@ -176,6 +206,14 @@ export default async function handler(req, res) {
         }
 
         const expectedTier = session.metadata?.expected_tier || null;
+        if (!expectedTier) {
+          console.error('[webhooks/stripe] checkout.session.completed: missing expected_tier', {
+            event_id: event.id,
+            session_id: session.id,
+          });
+          await finishSkipped(event, 'skipped_no_expected_tier');
+          return res.status(200).json({ received: true, skipped: 'no_expected_tier' });
+        }
         if (!tiersMatch(expectedTier, tier)) {
           console.error('[webhooks/stripe] checkout.session.completed: tier mismatch', {
             event_id: event.id,
@@ -188,24 +226,29 @@ export default async function handler(req, res) {
 
         let userId = resolveUserIdFromSession(session);
         let usedLegacyEmail = false;
-        if (!userId) {
+        if (!userId && isStripeLegacyCheckoutAllowed()) {
           const customerEmail = session.customer_email || session.customer_details?.email;
           userId = await getUserIdByEmailLegacy(customerEmail);
           usedLegacyEmail = Boolean(userId);
         }
         if (!userId) {
-          console.warn('[webhooks/stripe] checkout.session.completed: no user_id', { event_id: event.id });
-          await finishSkipped(event, 'skipped_no_user');
-          return res.status(200).json({ received: true, skipped: 'no_user' });
+          console.warn('[webhooks/stripe] checkout.session.completed: no user_id', {
+            event_id: event.id,
+            legacy_allowed: isStripeLegacyCheckoutAllowed(),
+          });
+          await finishSkipped(event, 'skipped_no_user_id');
+          return res.status(200).json({ received: true, skipped: 'no_user_id' });
         }
 
-        const err = await activateMembership(userId, {
+        const err = await upsertMembership(userId, {
           tier,
+          status: 'active',
           stripeCustomerId: customerId,
           stripeSubscriptionId: subscriptionId,
+          note: `Aktivováno po platbě přes Stripe (${tier})`,
         });
         if (err) {
-          console.error('[webhooks/stripe] activateMembership failed:', err.message);
+          console.error('[webhooks/stripe] upsertMembership failed:', err.message);
           await failStripeEvent(event.id, 'activation_db_error', err.message);
           return res.status(500).json({ error: 'Database error' });
         }
@@ -223,77 +266,55 @@ export default async function handler(req, res) {
       case 'customer.subscription.deleted': {
         const sub = event.data.object;
         const subscriptionId = sub.id;
-        const status = sub.status;
-        const customerId = sub.customer;
+        const stripeStatus = event.type === 'customer.subscription.deleted' ? 'canceled' : sub.status;
+        const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id || null;
+        const membershipStatus = mapStripeSubscriptionStatusToMembership(stripeStatus);
 
-        if (status === 'active' || status === 'trialing') {
-          const tier = resolveTierFromStripeSubscription(sub);
-          if (!tier) {
-            console.error('[webhooks/stripe] subscription event: unknown price_id', {
-              event_id: event.id,
-              subscription_id: subscriptionId,
-            });
-            await finishSkipped(event, 'skipped_unknown_price');
-            break;
-          }
-
-          const expectedTier = sub.metadata?.expected_tier || null;
-          if (!tiersMatch(expectedTier, tier)) {
-            console.error('[webhooks/stripe] subscription event: tier mismatch', {
-              event_id: event.id,
-              expected_tier: expectedTier,
-              resolved_tier: tier,
-            });
-            await finishSkipped(event, 'skipped_tier_mismatch');
-            break;
-          }
-
-          const { data: bySub } = await supabaseServer
-            .from('memberships')
-            .select('user_id')
-            .eq('stripe_subscription_id', subscriptionId)
-            .maybeSingle();
-          if (bySub?.user_id) {
-            await activateMembership(bySub.user_id, {
-              tier,
-              stripeCustomerId: customerId,
-              stripeSubscriptionId: subscriptionId,
-            });
-            await completeStripeEvent(event.id, `subscription_active_${tier}`);
-            break;
-          }
-          const { data: byCust } = await supabaseServer
-            .from('memberships')
-            .select('user_id')
-            .eq('stripe_customer_id', customerId)
-            .maybeSingle();
-          if (byCust?.user_id) {
-            await activateMembership(byCust.user_id, {
-              tier,
-              stripeCustomerId: customerId,
-              stripeSubscriptionId: subscriptionId,
-            });
-            await completeStripeEvent(event.id, `subscription_active_${tier}`);
-            break;
-          }
-          await finishSkipped(event, 'skipped_no_membership_match');
-        } else if (event.type === 'customer.subscription.deleted' || status === 'canceled' || status === 'unpaid') {
-          const { data: row } = await supabaseServer
-            .from('memberships')
-            .select('user_id')
-            .eq('stripe_subscription_id', subscriptionId)
-            .maybeSingle();
-          if (row?.user_id) {
-            const now = new Date().toISOString();
-            await supabaseServer.from('memberships').update({
-              status: 'canceled',
-              updated_at: now,
-            }).eq('user_id', row.user_id);
-          }
-          await completeStripeEvent(event.id, 'subscription_canceled');
-        } else {
-          await finishSkipped(event, `subscription_status_${status}`);
+        if (!membershipStatus) {
+          await finishSkipped(event, `skipped_subscription_status_${stripeStatus}`);
+          break;
         }
+
+        const tier = resolveTierFromStripeSubscription(sub);
+        if (!tier) {
+          console.error('[webhooks/stripe] subscription event: unknown price_id', {
+            event_id: event.id,
+            subscription_id: subscriptionId,
+          });
+          await finishSkipped(event, 'skipped_unknown_price');
+          break;
+        }
+
+        const expectedTier = sub.metadata?.expected_tier || null;
+        if (expectedTier && !tiersMatch(expectedTier, tier)) {
+          console.error('[webhooks/stripe] subscription event: tier mismatch', {
+            event_id: event.id,
+            expected_tier: expectedTier,
+            resolved_tier: tier,
+          });
+          await finishSkipped(event, 'skipped_tier_mismatch');
+          break;
+        }
+
+        const userId = await resolveMembershipUserId(subscriptionId, customerId);
+        if (!userId) {
+          await finishSkipped(event, 'skipped_no_membership_match');
+          break;
+        }
+
+        const err = await upsertMembership(userId, {
+          tier,
+          status: membershipStatus,
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: subscriptionId,
+        });
+        if (err) {
+          console.error('[webhooks/stripe] subscription sync failed:', err.message);
+          await failStripeEvent(event.id, 'subscription_sync_db_error', err.message);
+          return res.status(500).json({ error: 'Database error' });
+        }
+
+        await completeStripeEvent(event.id, `subscription_${membershipStatus}_${tier}`);
         break;
       }
 

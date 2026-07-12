@@ -1724,7 +1724,7 @@ export default function Profil() {
     ? 'Čekáme na dokončení platby. Aktivuj předplatné v profilu.'
     : isTrialExpired
     ? 'Tvůj 7denní START program vypršel. Pro nový plán aktivuj předplatné výše.'
-    : (membershipStatus === 'cancelled' || membershipStatus === 'inactive')
+    : (membershipStatus === 'canceled' || membershipStatus === 'inactive' || membershipStatus === 'past_due')
       ? 'Pro nový plán potřebuješ aktivní předplatné.'
       : null;
 
@@ -2121,7 +2121,7 @@ export default function Profil() {
                   </button>
                   <div className="membership-status-block">
                     <span className={`membership-status-badge membership-status--${isTrialExpired && membershipStatus === 'trial' ? 'expired' : membershipStatus}`}>
-                      {membershipStatus === 'active' ? 'Aktivní' : membershipStatus === 'pending_payment' ? 'Čeká na platbu' : (membershipStatus === 'trial' && isTrialExpired) ? 'Vypršelo' : membershipStatus === 'trial' ? 'Zkušební' : membershipStatus === 'cancelled' ? 'Zrušeno' : 'Neaktivní'}
+                      {membershipStatus === 'active' ? 'Aktivní' : membershipStatus === 'pending_payment' ? 'Čeká na platbu' : membershipStatus === 'past_due' ? 'Po splatnosti' : (membershipStatus === 'trial' && isTrialExpired) ? 'Vypršelo' : membershipStatus === 'trial' ? 'Zkušební' : membershipStatus === 'canceled' ? 'Zrušeno' : 'Neaktivní'}
                     </span>
                   </div>
                   <div className="profile-quick-nav-account">
@@ -4324,7 +4324,7 @@ export default function Profil() {
           color: #fbbf24;
           border: 1px solid rgba(234,179,8,0.3);
         }
-        .membership-status--cancelled, .membership-status--expired {
+        .membership-status--canceled, .membership-status--expired {
           background: rgba(239,68,68,0.12);
           color: #f87171;
           border: 1px solid rgba(239,68,68,0.25);

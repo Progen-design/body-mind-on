@@ -130,6 +130,7 @@ async function testModalViewportPosition(page, { mobile = false } = {}) {
   }
 
   const scrollBefore = await page.evaluate(() => window.scrollY);
+  await changeBtn.dispatchEvent('pointerdown');
   await changeBtn.click();
   await page.locator('.wcm-overlay').waitFor({ state: 'visible', timeout: 15_000 });
 

@@ -82,6 +82,7 @@ check('modal portal to body', modal.includes('createPortal') && modal.includes('
 check('fixed overlay viewport', modal.includes('position: fixed') && modal.includes('inset: 0'));
 check('modal not absolute in profile', !todayPanels.includes('wcm-overlay'));
 check('scroll lock preserves scrollY', modal.includes('scrollY') && modal.includes('window.scrollTo'));
+check('scroll lock captured on pointerdown', todayPanels.includes('onPointerDown') && todayPanels.includes('scrollLockYRef'));
 check('body scroll lock fixed', modal.includes("body.style.position = 'fixed'"));
 check('focus trap Tab', modal.includes("event.key !== 'Tab'"));
 check('Escape closes modal', modal.includes("event.key === 'Escape'"));

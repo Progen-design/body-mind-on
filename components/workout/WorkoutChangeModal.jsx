@@ -86,6 +86,7 @@ export default function WorkoutChangeModal({
   onPlanUpdated,
   onEvent,
   returnFocusRef = null,
+  scrollLockYRef = null,
 }) {
   const [view, setView] = useState('front');
   const [selected, setSelected] = useState(['full_body']);
@@ -137,7 +138,7 @@ export default function WorkoutChangeModal({
     if (!open || typeof document === 'undefined') return undefined;
 
     lastFocusedRef.current = returnFocusRef?.current || document.activeElement;
-    const scrollY = window.scrollY;
+    const scrollY = typeof scrollLockYRef?.current === 'number' ? scrollLockYRef.current : window.scrollY;
     const body = document.body;
     const html = document.documentElement;
     const prev = {
@@ -222,7 +223,7 @@ export default function WorkoutChangeModal({
         });
       }
     };
-  }, [open, returnFocusRef]);
+  }, [open, returnFocusRef, scrollLockYRef]);
 
   const generate = async (isRegen = false) => {
     if (!selectionValid || loading) return;

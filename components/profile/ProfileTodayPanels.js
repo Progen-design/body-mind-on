@@ -45,6 +45,7 @@ export default function ProfileTodayPanels({
   const [restoreSlow, setRestoreSlow] = useState(false);
   const [workoutError, setWorkoutError] = useState(null);
   const changeWorkoutBtnRef = useRef(null);
+  const scrollLockYRef = useRef(0);
 
   const handleCompletionsChange = useCallback((info) => {
     setWorkoutCompleted(!!info?.workoutCompleted);
@@ -225,6 +226,9 @@ export default function ProfileTodayPanels({
                   type="button"
                   className="profile-today-change-workout-btn"
                   ref={changeWorkoutBtnRef}
+                  onPointerDown={() => {
+                    scrollLockYRef.current = window.scrollY;
+                  }}
                   onClick={() => {
                     setWorkoutModalOpen(true);
                     trackWorkoutEvent('workout_change_opened');
@@ -295,6 +299,7 @@ export default function ProfileTodayPanels({
           onPlanUpdated={(data) => onWorkoutPlanUpdated?.(data)}
           onEvent={trackWorkoutEvent}
           returnFocusRef={changeWorkoutBtnRef}
+          scrollLockYRef={scrollLockYRef}
         />
       ) : null}
 

@@ -136,8 +136,12 @@ async function testModalViewportPosition(page, { mobile = false } = {}) {
   const portalParent = await page.evaluate(() => document.querySelector('.wcm-overlay')?.parentElement?.tagName || '');
   check(`${prefix}_modal_portal_body`, portalParent === 'BODY', portalParent);
 
-  const scrollAfterOpen = await page.evaluate(() => window.scrollY);
-  check(`${prefix}_modal_scrollY_unchanged`, Math.abs(scrollAfterOpen - scrollBefore) < 8, `${scrollBefore} -> ${scrollAfterOpen}`);
+  const lockedScroll = await page.evaluate(() => {
+    const top = document.body.style.top;
+    if (top) return Math.abs(parseInt(top, 10)) || 0;
+    return window.scrollY;
+  });
+  check(`${prefix}_modal_scrollY_unchanged`, Math.abs(lockedScroll - scrollBefore) < 8, `${scrollBefore} -> locked ${lockedScroll}`);
 
   const viewport = page.viewportSize();
   const sheetBox = await page.locator('.wcm-sheet').boundingBox();
@@ -295,7 +299,7 @@ async function runMobile(browser) {
       const chip = page.locator('.wcm-chip').first();
       const chipBox = await chip.boundingBox();
       check('mobile_tap_targets', !!chipBox && chipBox.height >= 40);
-      await page.locator('button.wcm-close, button:has-text("Zrušit")').first().click();
+      await page.locator('.wcm-close').click();
     } else {
       check('mobile_bottom_sheet_visible', false);
       check('mobile_tap_targets', false);

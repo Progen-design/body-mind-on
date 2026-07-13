@@ -213,7 +213,13 @@ export default function WorkoutChangeModal({
       window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
       const focusTarget = returnFocusRef?.current || lastFocusedRef.current;
       if (focusTarget && typeof focusTarget.focus === 'function') {
-        focusTarget.focus();
+        window.requestAnimationFrame(() => {
+          try {
+            focusTarget.focus({ preventScroll: true });
+          } catch {
+            focusTarget.focus();
+          }
+        });
       }
     };
   }, [open, returnFocusRef]);

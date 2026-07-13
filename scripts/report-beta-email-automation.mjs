@@ -5,6 +5,7 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { loadLocalEnv } from './audit-utils.mjs';
+import { parseBetaEmailAutomationEnabled } from '../lib/betaEmailAutomationRules.js';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -19,7 +20,7 @@ if (!url || !key) {
 }
 
 const admin = createClient(url, key, { auth: { persistSession: false } });
-const automationEnabled = String(process.env.BETA_EMAIL_AUTOMATION_ENABLED || '').trim().toLowerCase() === 'true';
+const automationEnabled = parseBetaEmailAutomationEnabled(process.env.BETA_EMAIL_AUTOMATION_ENABLED);
 const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 

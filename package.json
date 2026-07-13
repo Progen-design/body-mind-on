@@ -112,6 +112,7 @@
     "verify:beta-cohort-ops": "node scripts/verify-beta-cohort-ops.mjs",
     "verify:beta-email": "node scripts/verify-beta-email-automation.mjs",
     "report:beta-email": "node scripts/report-beta-email-automation.mjs",
+    "report:beta-email:prod": "npx vercel env pull .env.vercel-production.tmp --environment=production --yes && node scripts/report-beta-email-production.mjs",
     "launch:sanity": "node scripts/launch-sanity.mjs",
     "env:pull": "vercel env pull .env.local --environment production --yes",
     "env:pull:preview": "vercel env pull .env.local --environment preview --yes",

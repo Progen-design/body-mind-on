@@ -1,0 +1,55 @@
+# Beta lifecycle email automation — supplemental cron for Vercel Hobby plan
+#
+# Vercel Hobby limits native cron to once per day. This workflow calls
+# /api/cron/beta-email hourly (evaluate + dispatch) at zero extra cost.
+#
+# Required GitHub repository secrets:
+#   APP_URL        – e.g. https://app.bodyandmindon.cz
+#   CRON_SECRET    – same as CRON_SECRET on Vercel (Bearer auth)
+#
+# Kill-switch: BETA_EMAIL_AUTOMATION_ENABLED on Vercel (default false).
+
+name: Beta email automation (hourly)
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  beta-email:
+    name: Trigger beta email cron
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Call /api/cron/beta-email
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "${APP_URL}" ] || [ -z "${CRON_SECRET}" ]; then
+            echo "::error::Missing secrets: set APP_URL and CRON_SECRET in repository Secrets."
+            exit 1
+          fi
+          APP_URL="${APP_URL%/}"
+          set +e
+          STATUS=$(curl -s -o /tmp/response.json -w "%{http_code}" \
+            -X GET \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            --max-time 120 \
+            "${APP_URL}/api/cron/beta-email")
+          CURL_EXIT=$?
+          set -e
+          if [ $CURL_EXIT -ne 0 ]; then
+            echo "::error::curl failed (exit $CURL_EXIT)."
+            cat /tmp/response.json 2>/dev/null || true
+            exit 1
+          fi
+          echo "HTTP status: $STATUS"
+          cat /tmp/response.json | python3 -m json.tool 2>/dev/null || cat /tmp/response.json
+          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
+            echo "::error::Beta email cron returned HTTP $STATUS"
+            exit 1
+          fi

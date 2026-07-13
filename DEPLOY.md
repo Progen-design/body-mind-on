@@ -202,7 +202,8 @@ Tabulky `beta_cohorts`, `beta_participants`, `beta_research_sessions`, `beta_iss
 
 Migrace: `supabase/migrations/20260713190000_beta_email_automation.sql` (`npm run migrate:beta-email`).
 
-- Cron: `GET /api/cron/beta-email` (hourly, UTC) — evaluator + dispatcher
+- Endpoint: `GET /api/cron/beta-email` — evaluator + dispatcher
+- Schedule: GitHub Actions `.github/workflows/beta-email-automation.yml` (hourly; Vercel Hobby neumožňuje hodinový native cron)
 - Sender: existující Gmail / Google Workspace (`GMAIL_USER`, `GMAIL_APP_PASSWORD`)
 - Kill-switch: `BETA_EMAIL_AUTOMATION_ENABLED=false` (default) — nastavit na `true` až po interním send testu
 - Žádný nový placený provider; queue tabulky bez e-mailové adresy

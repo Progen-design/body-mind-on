@@ -11,10 +11,6 @@
             {
                   "path": "/api/cron/withings-sync",
                   "schedule": "0 5 * * *"
-            },
-            {
-                  "path": "/api/cron/beta-email",
-                  "schedule": "0 * * * *"
             }
       ],
       "functions": {

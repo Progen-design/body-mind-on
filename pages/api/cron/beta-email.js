@@ -1,4 +1,4 @@
-// GET /api/cron/beta-email — hourly beta lifecycle email automation
+// GET /api/cron/beta-email — beta lifecycle email automation (GitHub Actions hourly on Hobby)
 import { verifyCronSecret } from '../../../lib/betaEmailCronAuth';
 import {
   isBetaEmailAutomationEnabled,

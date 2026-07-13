@@ -27,7 +27,7 @@ import {
   persistBodyMetricsRow,
   buildRegistrationApiResponse,
 } from '../../lib/registration/bodyMetricsRegistration';
-import { membershipFromRegistration } from '../../lib/membershipRegistration';
+import { membershipFromRegistration, shouldPreserveMembership } from '../../lib/membershipRegistration';
 import { isTierCheckoutEnabled } from '../../lib/salesFeatureFlags';
 
 /** Vercel Hobby = 60s. Krátký poll; last-resort hned po execute, ne až na konci handleru. */
@@ -339,26 +339,44 @@ export default async function handler(req, res) {
       }
     }
 
-    // Uložit tier členství do tabulky memberships (upsert – aktualizovat pokud existuje)
+    // Uložit tier členství do tabulky memberships.
+    //
+    // POZOR: tohle NIKDY nesmí přepsat platné členství. Kdyby platící uživatel
+    // znovu prošel dotazníkem, spadl by na pending_payment a přišel o přístup.
+    // Proto se nejdřív ptáme, co tam už je.
     if (payload.user_id) {
       const program = payload.program || 'START';
       const startedAt = payload.created_at || new Date().toISOString();
-      const membership = membershipFromRegistration(program, startedAt);
-      const { error: memErr } = await supabaseServer
+
+      const { data: existing } = await supabaseServer
         .from('memberships')
-        .upsert([{
+        .select('status, tier, trial_ends_at, stripe_subscription_id')
+        .eq('user_id', payload.user_id)
+        .maybeSingle();
+
+      if (shouldPreserveMembership(existing)) {
+        console.info('[body-metrics] membership preserved', {
           user_id: payload.user_id,
-          tier: membership.tier,
-          status: membership.status,
-          started_at: membership.started_at,
-          trial_ends_at: membership.trial_ends_at,
-          notes: `Registrace přes ${program} formulář`,
-          updated_at: new Date().toISOString(),
-        }], { onConflict: 'user_id' });
-      if (memErr) {
-        console.warn('[body-metrics] memberships upsert:', memErr.message);
+          status: existing.status,
+        });
       } else {
-        console.info('[body-metrics] membership tier saved', `user_id=${payload.user_id}`);
+        const membership = membershipFromRegistration(program, startedAt);
+        const { error: memErr } = await supabaseServer
+          .from('memberships')
+          .upsert([{
+            user_id: payload.user_id,
+            tier: membership.tier,
+            status: membership.status,
+            started_at: membership.started_at,
+            trial_ends_at: membership.trial_ends_at,
+            notes: `Registrace přes ${program} formulář — čeká na aktivaci předplatného`,
+            updated_at: new Date().toISOString(),
+          }], { onConflict: 'user_id' });
+        if (memErr) {
+          console.warn('[body-metrics] memberships upsert:', memErr.message);
+        } else {
+          console.info('[body-metrics] membership created (pending_payment)', `user_id=${payload.user_id}`);
+        }
       }
     }
 

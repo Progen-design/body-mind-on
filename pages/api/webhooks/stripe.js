@@ -64,6 +64,7 @@ async function upsertMembership(userId, {
   status,
   stripeCustomerId = null,
   stripeSubscriptionId = null,
+  trialEndsAt = null,
   note = null,
 }) {
   const now = new Date().toISOString();
@@ -78,6 +79,10 @@ async function upsertMembership(userId, {
     row.started_at = now;
     row.trial_ends_at = null;
   }
+  if (status === 'trial') {
+    row.started_at = now;
+    row.trial_ends_at = trialEndsAt;
+  }
   if (stripeCustomerId) row.stripe_customer_id = stripeCustomerId;
   if (stripeSubscriptionId) row.stripe_subscription_id = stripeSubscriptionId;
 
@@ -85,6 +90,37 @@ async function upsertMembership(userId, {
     .from('memberships')
     .upsert([row], { onConflict: 'user_id' });
   return error;
+}
+
+/**
+ * Stav členství podle Stripe subscription.
+ *
+ * Trial řídí Stripe, ne my. Když je subscription `trialing`, uživatel má
+ * plný přístup, ale ještě nezaplatil — u nás je to `trial` + `trial_ends_at`
+ * převzaté ze Stripu. Až trial doběhne a strhne se platba, Stripe pošle
+ * `customer.subscription.updated` se stavem `active` a my přepneme.
+ *
+ * `trial` dáváme jen STARTu — membershipHelpers pouští trial jen u něj.
+ * U placených tierů by `trial` znamenal zamčený přístup.
+ *
+ * @param {import('stripe').Stripe.Subscription} sub
+ * @param {string} tier
+ * @returns {{ status: string|null, trialEndsAt: string|null }}
+ */
+function membershipStateFromSubscription(sub, tier) {
+  const stripeStatus = String(sub?.status || '').toLowerCase();
+
+  if (stripeStatus === 'trialing' && String(tier).toUpperCase() === 'START' && sub?.trial_end) {
+    return {
+      status: 'trial',
+      trialEndsAt: new Date(sub.trial_end * 1000).toISOString(),
+    };
+  }
+
+  return {
+    status: mapStripeSubscriptionStatusToMembership(stripeStatus),
+    trialEndsAt: null,
+  };
 }
 
 /**
@@ -102,7 +138,7 @@ async function resolveTierFromCheckoutSession(stripe, session) {
         const sub = await stripe.subscriptions.retrieve(subId, { expand: ['items.data.price'] });
         const priceId = sub?.items?.data?.[0]?.price?.id || null;
         const tier = resolveTierFromStripeSubscription(sub);
-        if (tier) return { tier, priceId };
+        if (tier) return { tier, priceId, subscription: sub };
       } catch (err) {
         console.error('[webhooks/stripe] subscription retrieve failed:', err.message);
       }
@@ -115,10 +151,10 @@ async function resolveTierFromCheckoutSession(stripe, session) {
     });
     const priceId = full?.line_items?.data?.[0]?.price?.id || null;
     const tier = resolveTierFromStripePriceId(priceId);
-    return { tier, priceId };
+    return { tier, priceId, subscription: null };
   } catch (err) {
     console.error('[webhooks/stripe] checkout session retrieve failed:', err.message);
-    return { tier: null, priceId: null };
+    return { tier: null, priceId: null, subscription: null };
   }
 }
 
@@ -194,7 +230,7 @@ export default async function handler(req, res) {
         const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null;
         const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id || null;
 
-        const { tier, priceId } = await resolveTierFromCheckoutSession(stripe, session);
+        const { tier, priceId, subscription } = await resolveTierFromCheckoutSession(stripe, session);
         if (!tier) {
           console.error('[webhooks/stripe] checkout.session.completed: unknown price_id', {
             event_id: event.id,
@@ -240,12 +276,24 @@ export default async function handler(req, res) {
           return res.status(200).json({ received: true, skipped: 'no_user_id' });
         }
 
+        // Když checkout obsahoval trial, subscription přijde jako `trialing`.
+        // Pak je členství `trial` a datum konce bereme ze Stripu — ne z vlastního
+        // počítání. Jinak by se nám ty dvě pravdy dřív nebo později rozešly.
+        const state = subscription
+          ? membershipStateFromSubscription(subscription, tier)
+          : { status: 'active', trialEndsAt: null };
+
+        const membershipStatus = state.status || 'active';
+
         const err = await upsertMembership(userId, {
           tier,
-          status: 'active',
+          status: membershipStatus,
           stripeCustomerId: customerId,
           stripeSubscriptionId: subscriptionId,
-          note: `Aktivováno po platbě přes Stripe (${tier})`,
+          trialEndsAt: state.trialEndsAt,
+          note: membershipStatus === 'trial'
+            ? `Zkušební období spuštěno přes Stripe (${tier})`
+            : `Aktivováno po platbě přes Stripe (${tier})`,
         });
         if (err) {
           console.error('[webhooks/stripe] upsertMembership failed:', err.message);
@@ -253,12 +301,14 @@ export default async function handler(req, res) {
           return res.status(500).json({ error: 'Database error' });
         }
 
-        console.log('[webhooks/stripe] Membership activated', {
+        console.log('[webhooks/stripe] Membership synced', {
           userId,
           tier,
+          status: membershipStatus,
+          trial_ends_at: state.trialEndsAt,
           legacy_email_fallback: usedLegacyEmail,
         });
-        await completeStripeEvent(event.id, `activated_${tier}`);
+        await completeStripeEvent(event.id, `${membershipStatus}_${tier}`);
         break;
       }
 
@@ -266,15 +316,10 @@ export default async function handler(req, res) {
       case 'customer.subscription.deleted': {
         const sub = event.data.object;
         const subscriptionId = sub.id;
-        const stripeStatus = event.type === 'customer.subscription.deleted' ? 'canceled' : sub.status;
         const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id || null;
-        const membershipStatus = mapStripeSubscriptionStatusToMembership(stripeStatus);
 
-        if (!membershipStatus) {
-          await finishSkipped(event, `skipped_subscription_status_${stripeStatus}`);
-          break;
-        }
-
+        // Tier musíme znát dřív než stav — `trialing` mapujeme na `trial`
+        // jen u STARTu, u ostatních tierů by to znamenalo zamčený přístup.
         const tier = resolveTierFromStripeSubscription(sub);
         if (!tier) {
           console.error('[webhooks/stripe] subscription event: unknown price_id', {
@@ -284,6 +329,17 @@ export default async function handler(req, res) {
           await finishSkipped(event, 'skipped_unknown_price');
           break;
         }
+
+        const isDeleted = event.type === 'customer.subscription.deleted';
+        const state = isDeleted
+          ? { status: 'canceled', trialEndsAt: null }
+          : membershipStateFromSubscription(sub, tier);
+
+        if (!state.status) {
+          await finishSkipped(event, `skipped_subscription_status_${sub.status}`);
+          break;
+        }
+        const membershipStatus = state.status;
 
         const expectedTier = sub.metadata?.expected_tier || null;
         if (expectedTier && !tiersMatch(expectedTier, tier)) {
@@ -307,6 +363,7 @@ export default async function handler(req, res) {
           status: membershipStatus,
           stripeCustomerId: customerId,
           stripeSubscriptionId: subscriptionId,
+          trialEndsAt: state.trialEndsAt,
         });
         if (err) {
           console.error('[webhooks/stripe] subscription sync failed:', err.message);

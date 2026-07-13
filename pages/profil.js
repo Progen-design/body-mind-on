@@ -18,6 +18,7 @@ import WorkoutOverlay from '../components/profile/WorkoutOverlay';
 import PreferencesOverlay from '../components/profile/PreferencesOverlay';
 import TrialExpiredPaywall from '../components/TrialExpiredPaywall';
 import TrialEndingSoonBanner, { shouldShowTrialEndingSoon } from '../components/TrialEndingSoonBanner';
+import PlanLockedPaywall from '../components/PlanLockedPaywall';
 import { shouldShowWithingsSection } from '../lib/withingsProfileVisibility';
 import { metadataToSmartScaleChoice } from '../lib/smartScalePreference';
 import { parseTrainingEnvironment, parseAvailableEquipment } from '../lib/trainingEnvironment';
@@ -1629,6 +1630,10 @@ export default function Profil() {
       : profileWeightLabel;
 
   const canRegeneratePlan = membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired);
+  // Plán je vygenerovaný, ale uživatel ještě neprošel checkoutem.
+  // Vidí rozmazaný náhled — ví, že je hotovo, ale nepřečte to.
+  const planAccessLocked = membershipStatus === 'pending_payment';
+
   const regenerateBlockedMessage = membershipStatus === 'pending_payment'
     ? 'Čekáme na dokončení platby. Aktivuj předplatné v profilu.'
     : isTrialExpired
@@ -2038,7 +2043,9 @@ export default function Profil() {
                   </div>
                 </div>
               </div>
-              {isTrialExpired && membershipStatus === 'trial' ? (
+              {membershipStatus === 'pending_payment' ? (
+                <PlanLockedPaywall />
+              ) : isTrialExpired && membershipStatus === 'trial' ? (
                 <div className="trial-banner trial-banner--expired">
                   <TrialExpiredPaywall />
                 </div>
@@ -2465,7 +2472,11 @@ export default function Profil() {
                 </div>
               )}
               {planState !== 'loading' && planState !== 'processing' && planState !== 'invalid' && planState !== 'failed' && planState !== 'missing' && (currentPlan || nextPlan) && (
-              <>
+              <div
+                className={planAccessLocked ? 'plan-locked-preview' : undefined}
+                aria-hidden={planAccessLocked || undefined}
+                inert={planAccessLocked ? '' : undefined}
+              >
               {!(currentPlan?.plan_html || currentPlan?.structured_plan_json) && !(nextPlan?.plan_html || nextPlan?.structured_plan_json) ? (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
                   <p className="plan-preparing-text">Plán není kompletní. Obnov stránku za chvíli nebo kontaktuj podporu.</p>
@@ -2625,7 +2636,7 @@ export default function Profil() {
                 </div>
                 )
               ) : null}
-              </>
+              </div>
               )}
               {(!currentPlan && !nextPlan) && planState !== 'loading' && planState !== 'processing' && planState !== 'invalid' && planState !== 'failed' && planState !== 'missing' && (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>

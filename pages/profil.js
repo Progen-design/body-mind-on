@@ -2594,6 +2594,7 @@ export default function Profil() {
                       todayFirstLayout
                       program={program}
                       trainingEnvironmentLabel={trainingEnvironmentLabelFromMetrics(profile?.body_metrics?.[0])}
+                      habitIds={(profile?.user_habits || []).map((h) => h.habit_id).filter(Boolean)}
                     />
                     ) : (
                     <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
@@ -2662,6 +2663,7 @@ export default function Profil() {
                   todayFirstLayout
                   program={program}
                   trainingEnvironmentLabel={trainingEnvironmentLabelFromMetrics(profile?.body_metrics?.[0])}
+                  habitIds={(profile?.user_habits || []).map((h) => h.habit_id).filter(Boolean)}
                 />
                 </>
                 ) : (

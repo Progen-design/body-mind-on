@@ -33,6 +33,7 @@ import { buildMacroPillCss, BM_ON_DESIGN, BM_ON_GRADIENTS } from '../lib/designT
 import { buildMacroEnergyNutritionHtml } from '../lib/recipeDetailHtml.js';
 import { buildStructuredWeekSource } from '../lib/plan/structuredWeekSource.js';
 import ProfileTodayPanels from './profile/ProfileTodayPanels';
+import { trackProductEvent } from '../lib/productAnalytics';
 import ProfileDayMealsPanel from './profile/ProfileDayMealsPanel';
 import MacroRatioChart from './MacroRatioChart';
 
@@ -535,6 +536,7 @@ export default function PlanViewer({
   todayFirstLayout = false,
   program = 'START',
   trainingEnvironmentLabel = '',
+  habitIds = [],
 }) {
   const [parsed, setParsed] = useState(null);
   const [planPatch, setPlanPatch] = useState(null);
@@ -844,6 +846,23 @@ export default function PlanViewer({
     setExpandedDayCards(new Set(ti >= 0 ? [ti] : [0]));
     setWeeklyPlanOpen(false);
   }, [todayFirstLayout, plan?.id, planWeekDays.length]);
+
+  const planViewedRef = useRef(false);
+  const dailyPlanViewedRef = useRef(false);
+
+  useEffect(() => {
+    if (!hasRenderablePlan || planViewedRef.current) return;
+    planViewedRef.current = true;
+    trackProductEvent('plan_viewed', { program: String(program || 'START').toUpperCase() }, { source: 'PlanViewer' });
+  }, [hasRenderablePlan, program, plan?.id]);
+
+  useEffect(() => {
+    if (!todayFirstLayout || !planWeekDays?.length || dailyPlanViewedRef.current) return;
+    const ti = planWeekDays.findIndex((d) => d.isToday);
+    if (ti < 0) return;
+    dailyPlanViewedRef.current = true;
+    trackProductEvent('daily_plan_viewed', { day_number: ti + 1, program: String(program || 'START').toUpperCase() }, { source: 'PlanViewer' });
+  }, [todayFirstLayout, planWeekDays, program]);
 
   if (!hasRenderablePlan) {
     return (
@@ -1275,6 +1294,8 @@ export default function PlanViewer({
                 setWeeklyPlanOpen(true);
                 setTimeout(() => document.getElementById('plan-jidelnicek')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
               }}
+              planId={plan?.id || null}
+              habitIds={habitIds}
             />
           ) : null}
 

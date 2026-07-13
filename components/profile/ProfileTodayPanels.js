@@ -2,6 +2,7 @@ import { resolveDayCalorieTarget, sumDayNutrition } from '../../lib/mealNutritio
 import MacroRatioChart from '../MacroRatioChart.js';
 import { formatExerciseSetsRepsDisplay } from '../../lib/planDataIntegrity.js';
 import ProfileDayMealsPanel from './ProfileDayMealsPanel.js';
+import BetaTodaySection from '../beta/BetaTodaySection.js';
 
 function envLabelPlain(trainingEnvironmentLabel, structuredPlan) {
   if (trainingEnvironmentLabel) {
@@ -29,6 +30,8 @@ export default function ProfileTodayPanels({
   onScrollToMeals,
   onScrollToWorkout,
   onScrollToWeek,
+  planId = null,
+  habitIds = [],
 }) {
   if (!todayDay) return null;
 
@@ -49,6 +52,15 @@ export default function ProfileTodayPanels({
 
   return (
     <div className="profile-today-root">
+      <BetaTodaySection
+        planId={planId}
+        planDay={todayDay.originalIndex ?? todayDayIndex}
+        meals={meals}
+        hasWorkout={hasWorkout}
+        habitIds={habitIds}
+        feedbackContext="first_plan"
+        showFeedbackAfterFirstAction
+      />
       <section className="profile-today-hero" aria-labelledby="profile-today-heading">
         <p className="profile-today-date">{todayLabel}</p>
         <h2 id="profile-today-heading" className="profile-today-heading">Dnešní plán</h2>

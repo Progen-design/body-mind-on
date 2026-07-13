@@ -16,6 +16,7 @@ import { sendPlanEmail } from '../../lib/mail';
 import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
 import { writeOnboardingEvent } from '../../lib/onboardingMetrics';
+import { recordProductEvent } from '../../lib/recordProductEvent';
 import { getDefaultLoginUrl } from '../../lib/siteUrls.js';
 import { enforcePublicEndpointRateLimit } from '../../lib/rateLimit';
 import {
@@ -433,6 +434,18 @@ export default async function handler(req, res) {
     }
 
     if (payload.user_id) {
+      recordProductEvent({
+        user_id: payload.user_id,
+        event_name: 'onboarding_completed',
+        properties: { program: 'START', success: true },
+        source: 'body_metrics',
+      }).catch(() => {});
+      recordProductEvent({
+        user_id: payload.user_id,
+        event_name: 'plan_generation_started',
+        properties: { program: 'START', plan_type: 'initial_7_day' },
+        source: 'body_metrics',
+      }).catch(() => {});
       writeOnboardingEvent({
         userId: payload.user_id,
         bodyMetricsId,

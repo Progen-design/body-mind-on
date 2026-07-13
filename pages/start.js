@@ -12,6 +12,7 @@ import { getFrequencyDayRange } from "../lib/preferenceConstants";
 import { REGISTRATION_STEPS } from "../lib/registrationRules";
 import { PLAN_GENERATION_DURATION_HINT, PLAN_GENERATION_OVERLAY_TITLE } from "../lib/planGenerationUiCopy";
 import { validateBirthDate } from "../lib/bodyMetricsBirthDate";
+import { trackProductEvent } from "../lib/productAnalytics";
 
 // Registrace dle pravidel ON Club (stejný flow pro START, ON Club, VIP): https://app.bodyandmindon.cz/on-club
 const MAX_STEP = REGISTRATION_STEPS;
@@ -50,6 +51,11 @@ export default function Start() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [selectedHabits, setSelectedHabits] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    trackProductEvent('onboarding_started', { program: 'START' }, { source: 'start_page', pagePath: '/start' });
+  }, [router.isReady]);
 
   useEffect(() => {
     if (!router.isReady) return;

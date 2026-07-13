@@ -127,3 +127,16 @@ ALLOW_PRODUCTION_STRIPE_TEST_E2E=yes npm run e2e:stripe-subscription-test
 ```
 
 Pouze Stripe **test mode** (`sk_test_`, `cs_test_`). S live klíčem nespouštět.
+
+### Beta activation (START closed beta)
+
+```bash
+npm run migrate:beta-activation
+npm run verify:product-events
+npm run verify:daily-activation
+npm run verify:beta-feedback
+npm run report:beta-activation
+npm run report:beta-feedback
+```
+
+Reporty jsou agregované bez PII. Volný text feedbacku jen s `ALLOW_FEEDBACK_MESSAGES=yes npm run report:beta-feedback -- --include-messages`.

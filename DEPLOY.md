@@ -164,3 +164,18 @@ ALLOW_PRODUCTION_STRIPE_TEST_E2E=yes npm run e2e:stripe-subscription-test
 ```
 
 Vyžaduje `sk_test_` klíč a `ALLOW_PRODUCTION_STRIPE_TEST_E2E=yes`. Nikdy nespouštět s live Stripe klíčem. Preview i Production používají stejný Supabase projekt — syntetické účty musí být vždy uklizeny.
+
+## Beta activation tracking
+
+Migrace: `supabase/migrations/20260713120000_beta_activation_tracking.sql` (`npm run migrate:beta-activation`).
+
+Po deployi ověř:
+
+```bash
+npm run verify:product-events
+npm run verify:daily-activation
+npm run verify:beta-feedback
+npm run report:beta-activation
+```
+
+Tabulky `product_events`, `beta_feedback`, `daily_activity_completions`, `daily_checkins` — RLS bez veřejného SELECT. Rollback: `DROP TABLE` v opačném pořadí (pouze pokud je potřeba odstranit feature).

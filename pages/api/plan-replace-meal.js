@@ -4,6 +4,7 @@
  */
 import { supabaseServer } from '../../lib/supabaseServer';
 import { replaceMealInStructuredPlan } from '../../lib/planMealReplace.js';
+import { recordProductEvent } from '../../lib/recordProductEvent';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -76,6 +77,17 @@ export default async function handler(req, res) {
       from: result.previous_title,
       to: result.new_title,
       day_kcal: result.day_kcal,
+    });
+
+    await recordProductEvent({
+      user_id: user.id,
+      event_name: 'meal_replaced',
+      properties: {
+        day_number: daySlotIndex + 1,
+        source_component: 'plan_replace_meal',
+        success: true,
+      },
+      source: 'plan_replace_meal',
     });
 
     return res.status(200).json({

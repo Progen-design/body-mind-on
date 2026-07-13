@@ -4,6 +4,7 @@ import { createSupabaseUserClient } from '../../lib/supabaseUserClient';
 import { requireActiveMembership } from '../../lib/membershipHelpers';
 import { calendarDateIsoInPrague } from '../../lib/czechCalendar';
 import { recordProductEvent } from '../../lib/recordProductEvent';
+import { markFirstAction, markActivityDay } from '../../lib/betaParticipantMilestones';
 
 const ALLOWED_TYPES = new Set(['meal', 'workout', 'habit']);
 
@@ -114,6 +115,8 @@ export default async function handler(req, res) {
         success: true,
       },
     });
+    markFirstAction(user.id).catch(() => {});
+    markActivityDay(user.id).catch(() => {});
 
     return res.status(200).json({ ok: true, completed: true });
   }

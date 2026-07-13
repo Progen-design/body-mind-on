@@ -13,6 +13,8 @@ import { REGISTRATION_STEPS } from "../lib/registrationRules";
 import { PLAN_GENERATION_DURATION_HINT, PLAN_GENERATION_OVERLAY_TITLE } from "../lib/planGenerationUiCopy";
 import { validateBirthDate } from "../lib/bodyMetricsBirthDate";
 import { trackProductEvent } from "../lib/productAnalytics";
+import { claimPendingBetaInvite } from "../lib/betaInviteClient";
+import { BETA_TERMS_VERSION } from "../lib/betaCohortConstants";
 
 // Registrace dle pravidel ON Club (stejný flow pro START, ON Club, VIP): https://app.bodyandmindon.cz/on-club
 const MAX_STEP = REGISTRATION_STEPS;
@@ -75,6 +77,11 @@ export default function Start() {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (cancelled || !session) return;
+      const pending = typeof window !== 'undefined' ? sessionStorage.getItem('beta_pending_invite') : null;
+      if (pending) {
+        await claimPendingBetaInvite(session.access_token, BETA_TERMS_VERSION);
+        return;
+      }
       router.replace('/profil');
     })();
     return () => { cancelled = true; };
@@ -214,11 +221,12 @@ export default function Start() {
           setPlanFailedWithAccount(false);
           const doRedirect = async () => {
             if (cleanedData.password && cleanedData.email) {
-              const { error } = await supabase.auth.signInWithPassword({
+              const { data: signInData, error } = await supabase.auth.signInWithPassword({
                 email: cleanedData.email,
                 password: cleanedData.password,
               });
-              if (!error) {
+              if (!error && signInData?.session) {
+                await claimPendingBetaInvite(signInData.session.access_token, BETA_TERMS_VERSION);
                 router.replace('/profil');
                 return;
               }

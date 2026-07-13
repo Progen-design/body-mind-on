@@ -17,6 +17,7 @@ import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
 import { writeOnboardingEvent } from '../../lib/onboardingMetrics';
 import { recordProductEvent } from '../../lib/recordProductEvent';
+import { markOnboardingCompleted } from '../../lib/betaParticipantMilestones';
 import { getDefaultLoginUrl } from '../../lib/siteUrls.js';
 import { enforcePublicEndpointRateLimit } from '../../lib/rateLimit';
 import {
@@ -440,6 +441,7 @@ export default async function handler(req, res) {
         properties: { program: 'START', success: true },
         source: 'body_metrics',
       }).catch(() => {});
+      markOnboardingCompleted(payload.user_id).catch(() => {});
       recordProductEvent({
         user_id: payload.user_id,
         event_name: 'plan_generation_started',

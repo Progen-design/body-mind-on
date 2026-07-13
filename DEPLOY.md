@@ -179,3 +179,18 @@ npm run report:beta-activation
 ```
 
 Tabulky `product_events`, `beta_feedback`, `daily_activity_completions`, `daily_checkins` — RLS bez veřejného SELECT. Rollback: `DROP TABLE` v opačném pořadí (pouze pokud je potřeba odstranit feature).
+
+## Closed beta cohort operations
+
+Migrace: `supabase/migrations/20260713160000_beta_cohort_operations.sql` (`npm run migrate:beta-cohort`).
+
+Po deployi:
+
+```bash
+npm run verify:beta-cohort-ops
+npm run beta:create-cohort -- --code=START-C1 --name="START Closed Beta Cohort 1" --max=5
+npm run beta:create-invites -- --cohort=START-C1 --count=5 --output=.local/beta-start-c1-invites.txt
+npm run report:beta-daily -- --cohort=START-C1
+```
+
+Tabulky `beta_cohorts`, `beta_participants`, `beta_research_sessions`, `beta_issues`, `beta_decisions` — RLS bez public/authenticated policies. Plain invite kódy se neukládají (jen SHA-256 hash).

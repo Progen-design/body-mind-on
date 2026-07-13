@@ -6,6 +6,8 @@ import {
 } from '../../lib/productEventAllowlist';
 import { validateEventProperties, jsonByteLength } from '../../lib/productEventPiiGuard';
 import { getClientIp, isAnyRateLimited } from '../../lib/rateLimit';
+import { enrichEventProperties } from '../../lib/betaEventEnrichment';
+import { markFirstPlanViewed } from '../../lib/betaParticipantMilestones';
 
 const MAX_BODY_BYTES = 10 * 1024;
 const ANON_RATE_LIMIT = 30;
@@ -56,9 +58,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error_code: 'unknown_event' });
   }
 
-  const properties = body.properties && typeof body.properties === 'object' && !Array.isArray(body.properties)
-    ? body.properties
+  let properties = body.properties && typeof body.properties === 'object' && !Array.isArray(body.properties)
+    ? { ...body.properties }
     : {};
+  if (properties.cohort_code) delete properties.cohort_code;
 
   const guard = validateEventProperties(properties);
   if (!guard.ok) {
@@ -117,12 +120,21 @@ export default async function handler(req, res) {
     return res.status(200).json({ received: true, stored: !error });
   }
 
+  const enriched = await enrichEventProperties(userId, properties);
+  const guardEnriched = validateEventProperties(enriched);
+  if (!guardEnriched.ok) {
+    return res.status(400).json({ error_code: guardEnriched.reason || 'event_properties_rejected' });
+  }
+
   const { data, error } = await supabaseServer.rpc('insert_product_event_server', {
     p_user_id: String(userId),
     p_event_name: eventName,
-    p_properties: properties,
+    p_properties: enriched,
   });
   if (error) console.error('[api/events] rpc insert failed');
+  if (!error && data && (eventName === 'plan_viewed' || eventName === 'daily_plan_viewed')) {
+    markFirstPlanViewed(userId).catch(() => {});
+  }
   return res.status(200).json({ received: true, stored: !error && !!data });
 }
 

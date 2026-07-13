@@ -11,7 +11,8 @@ node_modules
 .specstory
 supabase/.temp/
 
-tmp/
+.local/
+.local/**
 artifacts/
 audits/plan-quality-samples/
 scripts/e2e-output/

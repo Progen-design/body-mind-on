@@ -9,6 +9,7 @@ import {
   CHECKIN_RATING_SCORE,
 } from '../../lib/productEventAllowlist';
 import { recordProductEvent } from '../../lib/recordProductEvent';
+import { markActivityDay } from '../../lib/betaParticipantMilestones';
 
 async function getAuthUser(req) {
   const auth = req.headers.authorization || '';
@@ -81,6 +82,7 @@ export default async function handler(req, res) {
         success: true,
       },
     });
+    markActivityDay(user.id).catch(() => {});
 
     return res.status(200).json({ ok: true });
   }

@@ -140,3 +140,16 @@ npm run report:beta-feedback
 ```
 
 Reporty jsou agregované bez PII. Volný text feedbacku jen s `ALLOW_FEEDBACK_MESSAGES=yes npm run report:beta-feedback -- --include-messages`.
+
+### Closed beta cohort operations (START-C1)
+
+```bash
+npm run migrate:beta-cohort
+npm run verify:beta-cohort-ops
+npm run beta:create-cohort -- --code=START-C1 --name="START Closed Beta Cohort 1" --max=5
+npm run beta:create-invites -- --cohort=START-C1 --count=5 --output=.local/beta-start-c1-invites.txt
+npm run report:beta-daily -- --cohort=START-C1
+npm run report:beta-cohort -- --cohort=START-C1
+```
+
+Invite kódy pouze v gitignored `.local/`. Runbook: `docs/BETA_COHORT_1_RUNBOOK.md`.

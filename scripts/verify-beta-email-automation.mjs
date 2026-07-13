@@ -308,7 +308,17 @@ try {
 
   const { getBetaLifecycleEmailContent } = await import('../lib/betaLifecycleEmailCopy.js');
   const copy = getBetaLifecycleEmailContent('beta_welcome');
-  check('email copy has no health PII', !copy.text.includes('váha') && copy.text.includes('app.bodyandmindon.cz'));
+  check('email copy has no health PII', !copy.text.includes('váha') && !copy.text.includes('váhu') && copy.text.includes('app.bodyandmindon.cz'));
+  check('welcome subject', copy.subject === 'Vítej v testování Body & Mind ON');
+  check('welcome production start link', copy.text.includes('https://app.bodyandmindon.cz/start'));
+  check('welcome numbered instructions', copy.text.includes('1. Vyplň') && copy.text.includes('7. Pošli'));
+  check('welcome feedback prompts', copy.text.includes('co bylo dobré') && copy.text.includes('co ti v aplikaci chybělo'));
+  check('welcome health disclaimer', copy.text.includes('nenahrazuje lékaře'));
+  check('welcome plain text fallback', copy.text.length > 200 && !copy.html.includes('{{'));
+  check('welcome CTA button', copy.html.includes('Začít testování') && copy.html.includes('https://app.bodyandmindon.cz/start'));
+  check('welcome HTML instructions section', copy.html.includes('Co máš udělat') && copy.html.includes('<ol'));
+  check('welcome HTML feedback section', copy.html.includes('Co nám napiš') && copy.html.includes('<ul'));
+  check('welcome mobile viewport', copy.html.includes('width=device-width'));
 
   if (process.env.ALLOW_BETA_EMAIL_SEND_TEST === 'yes') {
     const { sendBetaLifecycleEmail } = await import('../lib/sendBetaLifecycleEmail.js');

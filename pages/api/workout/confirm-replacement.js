@@ -8,6 +8,8 @@ import {
 } from '../../../lib/workoutReplaceAuth';
 import { renderPlanHtmlFromStructured } from '../../../lib/planRenderer';
 import { stripPlanMediaAttrsFromHtml } from '../../../lib/emailTemplates.js';
+import { normalizePublishableWorkoutExercisesInPlan } from '../../../lib/planDataIntegrity';
+import { validateWorkoutExerciseIntegrity, normalizeExerciseDisplayFromCanonical } from '../../../lib/exerciseIntegrity';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -52,12 +54,21 @@ export default async function handler(req, res) {
     const replacement = repl.replacement_workout;
     if (!replacement?.exercises?.length) return res.status(400).json({ error: 'Neplatná náhrada.' });
 
+    const normalizedExercises = replacement.exercises.map((ex) => normalizeExerciseDisplayFromCanonical(ex));
+    const integrity = validateWorkoutExerciseIntegrity(normalizedExercises);
+    if (!integrity.valid) {
+      return res.status(400).json({ error: 'Neplatná kombinace cviků v náhradě.' });
+    }
+
     structured.days[planCtx.dayIdx].workout = {
       ...structured.days[planCtx.dayIdx].workout,
       ...replacement,
+      exercises: normalizedExercises,
       replaced_today_id: replacementId,
       original_workout_backup: repl.original_workout,
     };
+
+    normalizePublishableWorkoutExercisesInPlan(structured);
 
     const { data: bmRows } = await supabaseServer
       .from('body_metrics')

@@ -28,6 +28,10 @@ import {
 import { collectExerciseMediaSources, hasDisplayableExerciseMedia, isVideoMediaUrl } from '../lib/exerciseMediaHelpers.js';
 import { getExerciseInstructionGuide } from '../lib/exerciseInstructions.js';
 import { resolveToCanonicalKey } from '../lib/exerciseCanonicalMap.js';
+import {
+  EXERCISE_MEDIA_PLACEHOLDER_CS,
+  exerciseDisplayNameMatchesCanonical,
+} from '../lib/exerciseIntegrity.js';
 import { addCalendarDaysIsoPrague, calendarDateIsoInPrague, weekdayIndexJsFromPragueIso } from '../lib/czechCalendar';
 import { buildMacroPillCss, BM_ON_DESIGN, BM_ON_GRADIENTS } from '../lib/designTokens.js';
 import { buildMacroEnergyNutritionHtml } from '../lib/recipeDetailHtml.js';
@@ -38,10 +42,17 @@ import ProfileDayMealsPanel from './profile/ProfileDayMealsPanel';
 import MacroRatioChart from './MacroRatioChart';
 
 function exerciseMediaMatchesName(name, canonicalKey) {
-  if (canonicalKey) return true;
-  const nameKey = resolveToCanonicalKey(name);
-  if (!nameKey) return true;
-  return true;
+  if (!canonicalKey) {
+    const nameKey = resolveToCanonicalKey(name);
+    if (!nameKey) return true;
+    return true;
+  }
+  return exerciseDisplayNameMatchesCanonical({
+    canonical_key: canonicalKey,
+    display_name_cs: name,
+    name_cs: name,
+    name,
+  }).ok;
 }
 
 function workoutExercisesList(workout, { excludeRest = false } = {}) {
@@ -2003,7 +2014,11 @@ export default function PlanViewer({
                         } : prev));
                       }
                     });
-                    return preview || null;
+                    return preview || (
+                      <p className="plan-no-recipe-hint" style={{ marginBottom: 12 }}>
+                        {EXERCISE_MEDIA_PLACEHOLDER_CS}
+                      </p>
+                    );
                   })()}
                   {renderExerciseInstructionBlock(exerciseHintModal.canonicalKey || resolveToCanonicalKey(exerciseHintModal.name))}
                 </div>

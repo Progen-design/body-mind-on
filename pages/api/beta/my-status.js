@@ -1,6 +1,6 @@
 // GET /api/beta/my-status — beta participant banner info (authenticated)
-import { supabaseServer } from '../../lib/supabaseServer';
-import { getActiveParticipant } from '../../lib/betaParticipantMilestones';
+import { supabaseServer } from '../../../lib/supabaseServer';
+import { getActiveParticipant } from '../../../lib/betaParticipantMilestones';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {

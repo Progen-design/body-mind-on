@@ -1,7 +1,7 @@
 // POST /api/beta/claim-invite — authenticated beta invite claim
-import { supabaseServer } from '../../lib/supabaseServer';
-import { hashInviteCode, isValidInviteCodeFormat } from '../../lib/betaInviteCrypto';
-import { BETA_TERMS_VERSION } from '../../lib/betaCohortConstants';
+import { supabaseServer } from '../../../lib/supabaseServer';
+import { hashInviteCode, isValidInviteCodeFormat } from '../../../lib/betaInviteCrypto';
+import { BETA_TERMS_VERSION } from '../../../lib/betaCohortConstants';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

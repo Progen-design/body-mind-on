@@ -1,6 +1,6 @@
 // POST /api/beta/validate-invite — public invite validation (no PII)
-import { supabaseServer } from '../../lib/supabaseServer';
-import { hashInviteCode, isValidInviteCodeFormat } from '../../lib/betaInviteCrypto';
+import { supabaseServer } from '../../../lib/supabaseServer';
+import { hashInviteCode, isValidInviteCodeFormat } from '../../../lib/betaInviteCrypto';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

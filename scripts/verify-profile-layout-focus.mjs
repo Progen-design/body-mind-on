@@ -196,7 +196,7 @@ async function measureAboveFold(page) {
     const today = document.getElementById('profile-today-heading')
       || [...document.querySelectorAll('h2,h3')].find((el) => el.textContent?.includes('Dnes máš jasno'));
     const variants = document.getElementById('program-variants');
-    const hasSalesCopy = /Vyber si další krok|Pokračovat ve STARTU|START 499 Kč|ON CLUB 1 499 Kč/i.test(document.body?.innerText || '');
+    const hasSalesCopy = /Vyber si další krok|Pokračovat ve STARTU|START 599 Kč|ON CLUB 1 499 Kč/i.test(document.body?.innerText || '');
     const headerBottom = header?.getBoundingClientRect().bottom ?? 0;
     const heroTop = hero ? hero.getBoundingClientRect().top : null;
     const headerGap = heroTop != null ? heroTop - headerBottom : null;

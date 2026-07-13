@@ -26,7 +26,7 @@ const variants = read('components/ProgramVariantsSection.js');
 const bannedProfileTexts = [
   'Vyber si další krok',
   'Pokračovat ve STARTU',
-  'START 499 Kč',
+  'START 599 Kč',
   'ON CLUB 1 499 Kč',
 ];
 

@@ -1,4 +1,9 @@
 import { isOnClubSalesEnabled, isVipSalesEnabled } from '../lib/salesFeatureFlags';
+import {
+  ON_CLUB_VARIANT_PRICE_LABEL,
+  START_VARIANT_PRICE_LABEL,
+  VIP_PRICE_LABEL,
+} from '../lib/pricing';
 
 const WAITLIST_COPY = 'Připravujeme — přidej se na waitlist';
 
@@ -6,7 +11,7 @@ const PROGRAM_VARIANTS = [
   {
     id: 'START',
     name: 'START',
-    price: '499 Kč / měsíc',
+    price: START_VARIANT_PRICE_LABEL,
     description: 'Jednoduchý plán pro člověka, který chce vědět, co má dělat, bez komunity a osobního vedení.',
     benefits: [
       'Individuální tréninkový plán',
@@ -20,7 +25,7 @@ const PROGRAM_VARIANTS = [
   {
     id: 'ON_CLUB',
     name: 'ON CLUB',
-    price: '1 499 Kč / měsíc',
+    price: ON_CLUB_VARIANT_PRICE_LABEL,
     description: 'Komunita, AI trenér TED a dlouhodobé vedení. Místo, kde na své cestě nejsi sám.',
     benefits: [
       'Vše ze STARTU',
@@ -37,7 +42,7 @@ const PROGRAM_VARIANTS = [
   {
     id: 'VIP',
     name: 'VIP PERFORMANCE',
-    price: '5 990 – 6 990 Kč / měsíc',
+    price: VIP_PRICE_LABEL,
     description: 'Prémiové osobní vedení pro klienty, kteří chtějí maximální podporu, strategii a accountability.',
     benefits: [
       'Vše z ON CLUBU',

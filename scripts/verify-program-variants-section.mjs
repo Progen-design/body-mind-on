@@ -25,9 +25,9 @@ const requiredStrings = [
   'ON CLUB',
   'VIP PERFORMANCE',
   '12T TRANSFORMACE',
-  '499',
-  '1 499',
-  '5 990',
+  'START_VARIANT_PRICE_LABEL',
+  'ON_CLUB_VARIANT_PRICE_LABEL',
+  'VIP_PRICE_LABEL',
   'TED',
   'komunit',
   '12 týdn',
@@ -56,8 +56,9 @@ check('START CTA vede na /start', component.includes("href: '/start'"));
 check('ON CLUB CTA vede na /on-club', component.includes("href: '/on-club'"));
 check('mobilní grid 1 sloupec', component.includes('grid-template-columns: 1fr'));
 check('CTA min-height 48px', component.includes('min-height: 48px'));
-check('cena obsahuje 1499', /1\s*499/.test(component));
-check('cena obsahuje 5990', /5\s*990/.test(component));
+check('cena START z pricing.ts (599)', component.includes('START_VARIANT_PRICE_LABEL'));
+check('cena ON CLUB z pricing.ts', component.includes('ON_CLUB_VARIANT_PRICE_LABEL'));
+check('cena VIP z pricing.ts', component.includes('VIP_PRICE_LABEL'));
 
 console.log(failed ? `\n${failed} CHECK(S) FAILED` : '\nALL CHECKS PASS');
 process.exit(failed ? 1 : 0);

@@ -377,7 +377,7 @@ async function runMobileE2E() {
       if (!section) return false;
       const root = section.closest('.profile-content') || document.body;
       const text = (root.innerText || '').slice(0, 6000);
-      return !/Vyber si další krok|Pokračovat ve STARTU|START 499 Kč|ON CLUB 1 499 Kč/i.test(text);
+      return !/Vyber si další krok|Pokračovat ve STARTU|START 599 Kč|ON CLUB 1 499 Kč/i.test(text);
     });
     report.workoutCopy.noSalesScreenshot = await screenshot(page, 'profile-mobile-no-sales-upsell.png');
     report.workoutCopy.workoutCopyScreenshot = await screenshot(page, 'profile-mobile-workout-copy.png');

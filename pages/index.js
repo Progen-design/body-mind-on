@@ -1,7 +1,11 @@
-// /pages/index.js – Hlavní marketingová stránka (bodyandmindon.cz)
+// /pages/index.js – LEGACY marketing (nepoužívá se na produkci).
+// Živý web: repo bodyandmindon-web → https://bodyandmindon.cz
+// App host (/ na app.bodyandmindon.cz) přesměrovává middleware na /login.
+// Soubor ponechán kvůli kompatibilitě buildu; ceny drží lib/pricing.ts.
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { getPublicAppUrl } from '../lib/siteUrls.js';
+import { ON_CLUB_PRICE_LABEL, START_PRICE_LABEL, START_TRIAL_OFFER, VIP_PRICE_LABEL } from '../lib/pricing';
 
 const APP_URL = getPublicAppUrl();
 
@@ -122,14 +126,14 @@ export default function Home() {
           <h2>Vyber si cestu k úspěchu</h2>
           <p className="section-lead">Každý plán tě posune o krok blíž k tvému cíli. Přizpůsobené plány pro tvé cíle a potřeby. Tvá změna začíná teď!</p>
           <div className="value-block">
-            <p className="value-text">Osobní plán + jídelníček + trénink na míru – od 499 Kč/měsíc. Místo tisíců za osobního trenéra dostaneš AI kouče a jasný systém, který funguje.</p>
+            <p className="value-text">Osobní plán + jídelníček + trénink na míru – od {START_PRICE_LABEL}. Místo tisíců za osobního trenéra dostaneš AI kouče a jasný systém, který funguje.</p>
             <a href={`${APP_URL}/start`} className="btn btn-primary">Začni 7 dní zdarma</a>
           </div>
           <div className="pricing-cards">
             <div className="price-card">
               <h3>START</h3>
               <p className="price-desc">První krok k lepšímu já.</p>
-              <div className="price-value">7 dní zdarma, pak 499 Kč/měsíc</div>
+              <div className="price-value">{START_TRIAL_OFFER.priceLabel}</div>
               <ul>
                 <li>Osobní tréninkový plán</li>
                 <li>Týdenní jídelníček</li>
@@ -141,7 +145,7 @@ export default function Home() {
               <span className="badge">Doporučeno</span>
               <h3>ON Club</h3>
               <p className="price-desc">Program s denními návyky, AI plánem a statistikami.</p>
-              <div className="price-value">1 499 Kč/měsíc</div>
+              <div className="price-value">{ON_CLUB_PRICE_LABEL}</div>
               <ul>
                 <li>VŠE ze START +</li>
                 <li>Denní návyky (habit tracker)</li>
@@ -154,7 +158,7 @@ export default function Home() {
             <div className="price-card">
               <h3>VIP Coaching</h3>
               <p className="price-desc">Luxusní péče pro ty, co chtějí víc.</p>
-              <div className="price-value">5 990–6 990 Kč/měsíc</div>
+              <div className="price-value">{VIP_PRICE_LABEL}</div>
               <ul>
                 <li>VŠE z ON Club +</li>
                 <li>Elitní lidský kouč</li>

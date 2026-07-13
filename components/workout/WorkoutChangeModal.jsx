@@ -138,7 +138,8 @@ export default function WorkoutChangeModal({
     if (!open || typeof document === 'undefined') return undefined;
 
     lastFocusedRef.current = returnFocusRef?.current || document.activeElement;
-    const scrollY = typeof scrollLockYRef?.current === 'number' ? scrollLockYRef.current : window.scrollY;
+    const savedScrollY = scrollLockYRef?.current;
+    const scrollY = savedScrollY != null ? savedScrollY : window.scrollY;
     const body = document.body;
     const html = document.documentElement;
     const prev = {

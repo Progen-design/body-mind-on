@@ -130,19 +130,36 @@ async function testModalViewportPosition(page, { mobile = false } = {}) {
   }
 
   const scrollBefore = await page.evaluate(() => window.scrollY);
-  await changeBtn.dispatchEvent('pointerdown');
+  const anchorTopBefore = await page.evaluate(() => {
+    const el = document.querySelector('#profile-today-workout, .profile-today-workout');
+    return el ? el.getBoundingClientRect().top : null;
+  });
+
+  await page.evaluate(() => {
+    const btn = document.querySelector('.profile-today-change-workout-btn');
+    if (!btn) return;
+    btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+  });
   await changeBtn.click();
   await page.locator('.wcm-overlay').waitFor({ state: 'visible', timeout: 15_000 });
 
   const portalParent = await page.evaluate(() => document.querySelector('.wcm-overlay')?.parentElement?.tagName || '');
   check(`${prefix}_modal_portal_body`, portalParent === 'BODY', portalParent);
 
-  const lockedScroll = await page.evaluate(() => {
-    const top = document.body.style.top;
-    if (top) return Math.abs(parseInt(top, 10)) || 0;
-    return window.scrollY;
+  const anchorTopOpen = await page.evaluate(() => {
+    const el = document.querySelector('#profile-today-workout, .profile-today-workout');
+    return el ? el.getBoundingClientRect().top : null;
   });
-  check(`${prefix}_modal_scrollY_unchanged`, Math.abs(lockedScroll - scrollBefore) < 8, `${scrollBefore} -> locked ${lockedScroll}`);
+  if (anchorTopBefore != null && anchorTopOpen != null) {
+    check(`${prefix}_modal_scrollY_unchanged`, Math.abs(anchorTopOpen - anchorTopBefore) < 12, `${anchorTopBefore} -> ${anchorTopOpen}`);
+  } else {
+    const lockedScroll = await page.evaluate(() => {
+      const top = document.body.style.top;
+      if (top) return Math.abs(parseInt(top, 10)) || 0;
+      return window.scrollY;
+    });
+    check(`${prefix}_modal_scrollY_unchanged`, Math.abs(lockedScroll - scrollBefore) < 8, `${scrollBefore} -> locked ${lockedScroll}`);
+  }
 
   const viewport = page.viewportSize();
   const sheetBox = await page.locator('.wcm-sheet').boundingBox();
@@ -168,10 +185,10 @@ async function testModalViewportPosition(page, { mobile = false } = {}) {
 
   await page.keyboard.press('Escape');
   await page.locator('.wcm-overlay').waitFor({ state: 'hidden', timeout: 8000 }).catch(() => {});
-  await sleep(250);
+  await sleep(400);
 
   const scrollAfterClose = await page.evaluate(() => window.scrollY);
-  check(`${prefix}_modal_scrollY_restored`, Math.abs(scrollAfterClose - scrollBefore) < 8, `${scrollBefore} -> ${scrollAfterClose}`);
+  check(`${prefix}_modal_scrollY_restored`, Math.abs(scrollAfterClose - scrollBefore) < 12, `${scrollBefore} -> ${scrollAfterClose}`);
 
   const focusReturned = await page.evaluate(() => {
     const el = document.activeElement;

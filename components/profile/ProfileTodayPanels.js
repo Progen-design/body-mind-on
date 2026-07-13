@@ -45,7 +45,7 @@ export default function ProfileTodayPanels({
   const [restoreSlow, setRestoreSlow] = useState(false);
   const [workoutError, setWorkoutError] = useState(null);
   const changeWorkoutBtnRef = useRef(null);
-  const scrollLockYRef = useRef(0);
+  const scrollLockYRef = useRef(null);
 
   const handleCompletionsChange = useCallback((info) => {
     setWorkoutCompleted(!!info?.workoutCompleted);

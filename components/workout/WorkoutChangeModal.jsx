@@ -1,13 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { MUSCLE_GROUP_LABELS_CS } from '../../lib/muscleGroupLabels';
 import {
-  MUSCLE_GROUP_IDS,
-  MUSCLE_GROUP_LABELS_CS,
-  MAX_SPECIFIC_MUSCLE_GROUPS,
-  normalizeMuscleGroupSelection,
-} from '../../lib/muscleGroupLabels';
+  RECOMMENDED_PRESETS,
+  isMuscleHighlighted,
+  validateMuscleSelection,
+  toggleMuscleInSelection,
+  getMuscleDisabledReason,
+  getDisabledMuscles,
+  getSelectionSuggestion,
+} from '../../lib/workoutMuscleGroupRules';
 
-const CHIP_IDS = MUSCLE_GROUP_IDS.filter((id) => id !== 'full_body');
+const CHIP_IDS = [
+  'chest', 'back', 'shoulders', 'biceps', 'triceps', 'core',
+  'glutes', 'quads', 'hamstrings', 'calves',
+];
 
 function getFocusableElements(container) {
   if (!container) return [];
@@ -18,42 +25,84 @@ function getFocusableElements(container) {
   ).filter((element) => !element.hasAttribute('aria-hidden'));
 }
 
-/** Jednoduché SVG — klikatelné oblasti + chips se synchronním stavem. */
-function MuscleBodyMap({ selected, onToggle, view = 'front' }) {
-  const isSelected = (id) => selected.includes(id);
-  const fill = (id) => (isSelected(id) ? '#38bdf8' : '#334155');
-  const opacity = (id) => (isSelected(id) ? 0.85 : 0.35);
+function MuscleRegion({
+  id, label, cx, cy, rx, ry, selected, disabled, disabledReason, onToggle,
+}) {
+  const highlighted = isMuscleHighlighted(id, selected);
+  const fill = disabled && !highlighted ? '#1e293b' : highlighted ? '#0ea5e9' : '#334155';
+  const opacity = disabled && !highlighted ? 0.22 : highlighted ? 0.95 : 0.35;
+  const stroke = highlighted ? '#7dd3fc' : 'transparent';
+  const strokeWidth = highlighted ? 1.5 : 0;
+
+  const handleActivate = () => {
+    if (disabled && !highlighted) return;
+    onToggle(id);
+  };
+
+  return (
+    <ellipse
+      role="button"
+      tabIndex={disabled && !highlighted ? -1 : 0}
+      aria-label={label}
+      aria-pressed={highlighted}
+      aria-disabled={disabled && !highlighted ? 'true' : 'false'}
+      title={disabled && !highlighted ? disabledReason || '' : label}
+      cx={cx}
+      cy={cy}
+      rx={rx}
+      ry={ry}
+      fill={fill}
+      fillOpacity={opacity}
+      stroke={stroke}
+      strokeWidth={strokeWidth}
+      className={disabled && !highlighted ? 'wcm-svg-disabled' : ''}
+      onClick={handleActivate}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleActivate();
+        }
+      }}
+    />
+  );
+}
+
+function MuscleBodyMap({ selected, disabledMuscles, duration, onToggle, view = 'front' }) {
+  const isDisabled = (id) => disabledMuscles.includes(id) && !selected.includes(id) && !selected.includes('full_body');
+  const reason = (id) => getMuscleDisabledReason(id, selected, duration);
 
   const regions = view === 'front' ? (
     <>
-      <ellipse role="button" tabIndex={0} aria-label={MUSCLE_GROUP_LABELS_CS.chest} cx="100" cy="72" rx="28" ry="18" fill={fill('chest')} fillOpacity={opacity('chest')} onClick={() => onToggle('chest')} onKeyDown={(e) => e.key === 'Enter' && onToggle('chest')} />
-      <ellipse role="button" tabIndex={0} aria-label={MUSCLE_GROUP_LABELS_CS.shoulders} cx="62" cy="68" rx="14" ry="10" fill={fill('shoulders')} fillOpacity={opacity('shoulders')} onClick={() => onToggle('shoulders')} onKeyDown={(e) => e.key === 'Enter' && onToggle('shoulders')} />
-      <ellipse role="button" tabIndex={0} aria-label={MUSCLE_GROUP_LABELS_CS.shoulders} cx="138" cy="68" rx="14" ry="10" fill={fill('shoulders')} fillOpacity={opacity('shoulders')} onClick={() => onToggle('shoulders')} onKeyDown={(e) => e.key === 'Enter' && onToggle('shoulders')} />
-      <ellipse role="button" tabIndex={0} aria-label={MUSCLE_GROUP_LABELS_CS.biceps} cx="48" cy="95" rx="12" ry="22" fill={fill('biceps')} fillOpacity={opacity('biceps')} onClick={() => onToggle('biceps')} onKeyDown={(e) => e.key === 'Enter' && onToggle('biceps')} />
-      <ellipse role="button" tabIndex={0} aria-label={MUSCLE_GROUP_LABELS_CS.biceps} cx="152" cy="95" rx="12" ry="22" fill={fill('biceps')} fillOpacity={opacity('biceps')} onClick={() => onToggle('biceps')} onKeyDown={(e) => e.key === 'Enter' && onToggle('biceps')} />
-      <ellipse role="button" tabIndex={0} aria-label={MUSCLE_GROUP_LABELS_CS.core} cx="100" cy="118" rx="22" ry="16" fill={fill('core')} fillOpacity={opacity('core')} onClick={() => onToggle('core')} onKeyDown={(e) => e.key === 'Enter' && onToggle('core')} />
-      <ellipse role="button" tabIndex={0} aria-label={MUSCLE_GROUP_LABELS_CS.quads} cx="82" cy="165" rx="14" ry="32" fill={fill('quads')} fillOpacity={opacity('quads')} onClick={() => onToggle('quads')} onKeyDown={(e) => e.key === 'Enter' && onToggle('quads')} />
-      <ellipse role="button" tabIndex={0} aria-label={MUSCLE_GROUP_LABELS_CS.quads} cx="118" cy="165" rx="14" ry="32" fill={fill('quads')} fillOpacity={opacity('quads')} onClick={() => onToggle('quads')} onKeyDown={(e) => e.key === 'Enter' && onToggle('quads')} />
-      <ellipse role="button" tabIndex={0} aria-label={MUSCLE_GROUP_LABELS_CS.calves} cx="82" cy="218" rx="10" ry="22" fill={fill('calves')} fillOpacity={opacity('calves')} onClick={() => onToggle('calves')} onKeyDown={(e) => e.key === 'Enter' && onToggle('calves')} />
-      <ellipse role="button" tabIndex={0} aria-label={MUSCLE_GROUP_LABELS_CS.calves} cx="118" cy="218" rx="10" ry="22" fill={fill('calves')} fillOpacity={opacity('calves')} onClick={() => onToggle('calves')} onKeyDown={(e) => e.key === 'Enter' && onToggle('calves')} />
+      <MuscleRegion id="chest" label={MUSCLE_GROUP_LABELS_CS.chest} cx="100" cy="72" rx="28" ry="18" selected={selected} disabled={isDisabled('chest')} disabledReason={reason('chest')} onToggle={onToggle} />
+      <MuscleRegion id="shoulders" label={MUSCLE_GROUP_LABELS_CS.shoulders} cx="62" cy="68" rx="14" ry="10" selected={selected} disabled={isDisabled('shoulders')} disabledReason={reason('shoulders')} onToggle={onToggle} />
+      <MuscleRegion id="shoulders" label={MUSCLE_GROUP_LABELS_CS.shoulders} cx="138" cy="68" rx="14" ry="10" selected={selected} disabled={isDisabled('shoulders')} disabledReason={reason('shoulders')} onToggle={onToggle} />
+      <MuscleRegion id="biceps" label={MUSCLE_GROUP_LABELS_CS.biceps} cx="48" cy="95" rx="12" ry="22" selected={selected} disabled={isDisabled('biceps')} disabledReason={reason('biceps')} onToggle={onToggle} />
+      <MuscleRegion id="biceps" label={MUSCLE_GROUP_LABELS_CS.biceps} cx="152" cy="95" rx="12" ry="22" selected={selected} disabled={isDisabled('biceps')} disabledReason={reason('biceps')} onToggle={onToggle} />
+      <MuscleRegion id="core" label={MUSCLE_GROUP_LABELS_CS.core} cx="100" cy="118" rx="22" ry="16" selected={selected} disabled={isDisabled('core')} disabledReason={reason('core')} onToggle={onToggle} />
+      <MuscleRegion id="quads" label={MUSCLE_GROUP_LABELS_CS.quads} cx="82" cy="165" rx="14" ry="32" selected={selected} disabled={isDisabled('quads')} disabledReason={reason('quads')} onToggle={onToggle} />
+      <MuscleRegion id="quads" label={MUSCLE_GROUP_LABELS_CS.quads} cx="118" cy="165" rx="14" ry="32" selected={selected} disabled={isDisabled('quads')} disabledReason={reason('quads')} onToggle={onToggle} />
+      <MuscleRegion id="calves" label={MUSCLE_GROUP_LABELS_CS.calves} cx="82" cy="218" rx="10" ry="22" selected={selected} disabled={isDisabled('calves')} disabledReason={reason('calves')} onToggle={onToggle} />
+      <MuscleRegion id="calves" label={MUSCLE_GROUP_LABELS_CS.calves} cx="118" cy="218" rx="10" ry="22" selected={selected} disabled={isDisabled('calves')} disabledReason={reason('calves')} onToggle={onToggle} />
     </>
   ) : (
     <>
-      <ellipse role="button" tabIndex={0} aria-label={MUSCLE_GROUP_LABELS_CS.back} cx="100" cy="85" rx="30" ry="28" fill={fill('back')} fillOpacity={opacity('back')} onClick={() => onToggle('back')} onKeyDown={(e) => e.key === 'Enter' && onToggle('back')} />
-      <ellipse role="button" tabIndex={0} aria-label={MUSCLE_GROUP_LABELS_CS.triceps} cx="48" cy="95" rx="12" ry="22" fill={fill('triceps')} fillOpacity={opacity('triceps')} onClick={() => onToggle('triceps')} onKeyDown={(e) => e.key === 'Enter' && onToggle('triceps')} />
-      <ellipse role="button" tabIndex={0} aria-label={MUSCLE_GROUP_LABELS_CS.triceps} cx="152" cy="95" rx="12" ry="22" fill={fill('triceps')} fillOpacity={opacity('triceps')} onClick={() => onToggle('triceps')} onKeyDown={(e) => e.key === 'Enter' && onToggle('triceps')} />
-      <ellipse role="button" tabIndex={0} aria-label={MUSCLE_GROUP_LABELS_CS.glutes} cx="100" cy="138" rx="26" ry="16" fill={fill('glutes')} fillOpacity={opacity('glutes')} onClick={() => onToggle('glutes')} onKeyDown={(e) => e.key === 'Enter' && onToggle('glutes')} />
-      <ellipse role="button" tabIndex={0} aria-label={MUSCLE_GROUP_LABELS_CS.hamstrings} cx="82" cy="175" rx="14" ry="28" fill={fill('hamstrings')} fillOpacity={opacity('hamstrings')} onClick={() => onToggle('hamstrings')} onKeyDown={(e) => e.key === 'Enter' && onToggle('hamstrings')} />
-      <ellipse role="button" tabIndex={0} aria-label={MUSCLE_GROUP_LABELS_CS.hamstrings} cx="118" cy="175" rx="14" ry="28" fill={fill('hamstrings')} fillOpacity={opacity('hamstrings')} onClick={() => onToggle('hamstrings')} onKeyDown={(e) => e.key === 'Enter' && onToggle('hamstrings')} />
-      <ellipse role="button" tabIndex={0} aria-label={MUSCLE_GROUP_LABELS_CS.calves} cx="82" cy="218" rx="10" ry="22" fill={fill('calves')} fillOpacity={opacity('calves')} onClick={() => onToggle('calves')} onKeyDown={(e) => e.key === 'Enter' && onToggle('calves')} />
-      <ellipse role="button" tabIndex={0} aria-label={MUSCLE_GROUP_LABELS_CS.calves} cx="118" cy="218" rx="10" ry="22" fill={fill('calves')} fillOpacity={opacity('calves')} onClick={() => onToggle('calves')} onKeyDown={(e) => e.key === 'Enter' && onToggle('calves')} />
+      <MuscleRegion id="back" label={MUSCLE_GROUP_LABELS_CS.back} cx="100" cy="85" rx="30" ry="28" selected={selected} disabled={isDisabled('back')} disabledReason={reason('back')} onToggle={onToggle} />
+      <MuscleRegion id="shoulders" label={MUSCLE_GROUP_LABELS_CS.shoulders} cx="62" cy="68" rx="14" ry="10" selected={selected} disabled={isDisabled('shoulders')} disabledReason={reason('shoulders')} onToggle={onToggle} />
+      <MuscleRegion id="shoulders" label={MUSCLE_GROUP_LABELS_CS.shoulders} cx="138" cy="68" rx="14" ry="10" selected={selected} disabled={isDisabled('shoulders')} disabledReason={reason('shoulders')} onToggle={onToggle} />
+      <MuscleRegion id="triceps" label={MUSCLE_GROUP_LABELS_CS.triceps} cx="48" cy="95" rx="12" ry="22" selected={selected} disabled={isDisabled('triceps')} disabledReason={reason('triceps')} onToggle={onToggle} />
+      <MuscleRegion id="triceps" label={MUSCLE_GROUP_LABELS_CS.triceps} cx="152" cy="95" rx="12" ry="22" selected={selected} disabled={isDisabled('triceps')} disabledReason={reason('triceps')} onToggle={onToggle} />
+      <MuscleRegion id="glutes" label={MUSCLE_GROUP_LABELS_CS.glutes} cx="100" cy="138" rx="26" ry="16" selected={selected} disabled={isDisabled('glutes')} disabledReason={reason('glutes')} onToggle={onToggle} />
+      <MuscleRegion id="hamstrings" label={MUSCLE_GROUP_LABELS_CS.hamstrings} cx="82" cy="175" rx="14" ry="28" selected={selected} disabled={isDisabled('hamstrings')} disabledReason={reason('hamstrings')} onToggle={onToggle} />
+      <MuscleRegion id="hamstrings" label={MUSCLE_GROUP_LABELS_CS.hamstrings} cx="118" cy="175" rx="14" ry="28" selected={selected} disabled={isDisabled('hamstrings')} disabledReason={reason('hamstrings')} onToggle={onToggle} />
+      <MuscleRegion id="calves" label={MUSCLE_GROUP_LABELS_CS.calves} cx="82" cy="218" rx="10" ry="22" selected={selected} disabled={isDisabled('calves')} disabledReason={reason('calves')} onToggle={onToggle} />
+      <MuscleRegion id="calves" label={MUSCLE_GROUP_LABELS_CS.calves} cx="118" cy="218" rx="10" ry="22" selected={selected} disabled={isDisabled('calves')} disabledReason={reason('calves')} onToggle={onToggle} />
     </>
   );
 
   return (
     <svg viewBox="0 0 200 260" className="muscle-body-svg" aria-hidden="false" role="img">
       <title>Výběr partie — {view === 'front' ? 'zepředu' : 'zezadu'}</title>
-      <ellipse cx="100" cy="42" rx="18" ry="22" fill="#475569" fillOpacity="0.5" />
+      <ellipse cx="100" cy="42" rx="18" ry="22" fill={isMuscleHighlighted('shoulders', selected) ? '#38bdf8' : '#475569'} fillOpacity={isMuscleHighlighted('shoulders', selected) ? 0.7 : 0.5} />
       <rect x="78" y="58" width="44" height="12" rx="6" fill="#475569" fillOpacity="0.4" />
       {regions}
     </svg>
@@ -96,6 +145,7 @@ export default function WorkoutChangeModal({
   const [step, setStep] = useState('select');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [hint, setHint] = useState(null);
   const [preview, setPreview] = useState(null);
   const [regenLeft, setRegenLeft] = useState(2);
 
@@ -108,23 +158,53 @@ export default function WorkoutChangeModal({
     onCloseRef.current = onClose;
   }, [onClose]);
 
+  const validation = useMemo(
+    () => validateMuscleSelection({ selectedMuscleGroups: selected, durationMinutes: duration }),
+    [selected, duration],
+  );
+
+  const disabledMuscles = useMemo(
+    () => getDisabledMuscles(selected, duration),
+    [selected, duration],
+  );
+
+  const durationSuggestion = useMemo(
+    () => getSelectionSuggestion(selected, duration),
+    [selected, duration],
+  );
+
   const toggleMuscle = useCallback((id) => {
     setSelected((prev) => {
-      if (id === 'full_body') return ['full_body'];
-      const withoutFull = prev.filter((x) => x !== 'full_body');
-      if (withoutFull.includes(id)) return withoutFull.filter((x) => x !== id);
-      if (withoutFull.length >= MAX_SPECIFIC_MUSCLE_GROUPS) return withoutFull;
-      return [...withoutFull, id];
+      const result = toggleMuscleInSelection(prev, id, duration);
+      if (result.blocked) {
+        setHint(result.reason);
+        return prev;
+      }
+      setHint(null);
+      setError(null);
+      return result.next;
     });
+  }, [duration]);
+
+  const applyPreset = useCallback((muscles) => {
+    setSelected([...muscles]);
+    setHint(null);
+    setError(null);
   }, []);
 
-  const selectionValid = useMemo(() => normalizeMuscleGroupSelection(selected).ok, [selected]);
+  const clearSelection = useCallback(() => {
+    setSelected([]);
+    setHint(null);
+    setError(null);
+  }, []);
 
   const reset = () => {
     setStep('select');
     setPreview(null);
     setError(null);
+    setHint(null);
     setLoading(false);
+    setSelected(['full_body']);
   };
 
   const handleClose = () => {
@@ -227,7 +307,7 @@ export default function WorkoutChangeModal({
   }, [open, returnFocusRef, scrollLockYRef]);
 
   const generate = async (isRegen = false) => {
-    if (!selectionValid || loading) return;
+    if (!validation.valid || loading) return;
     setLoading(true);
     setError(null);
     onEvent?.(isRegen ? 'workout_alternative_regenerated' : 'workout_change_preferences_selected');
@@ -249,7 +329,7 @@ export default function WorkoutChangeModal({
         }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Alternativu se nepodařilo vytvořit.');
+      if (!res.ok) throw new Error(data.message || data.error || 'Alternativu se nepodařilo vytvořit.');
       setPreview(data);
       setStep('preview');
       if (typeof data.generation_attempt === 'number') {
@@ -297,6 +377,8 @@ export default function WorkoutChangeModal({
 
   if (!open || typeof document === 'undefined') return null;
 
+  const showValidationMessage = !validation.valid ? (validation.message || durationSuggestion) : null;
+
   const modal = (
     <div
       className="wcm-overlay"
@@ -319,20 +401,72 @@ export default function WorkoutChangeModal({
           {step === 'select' ? (
             <>
               <h2 id="wcm-title" className="wcm-title">Co chceš dnes cvičit?</h2>
-              <p className="wcm-sub">Vyber jednu nebo více partií. Připravíme alternativu pouze pro dnešní trénink.</p>
+              <p className="wcm-sub">Vyber jednu nebo více partií ve stejné tréninkové skupině. Připravíme alternativu pouze pro dnešní trénink.</p>
+
+              <p className="wcm-label">Rychlý výběr</p>
+              <div className="wcm-presets" role="group" aria-label="Rychlý výběr">
+                {RECOMMENDED_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    className={`wcm-preset ${selected.join(',') === preset.muscles.join(',') ? 'on' : ''}`}
+                    onClick={() => applyPreset(preset.muscles)}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="wcm-selection-toolbar">
+                <button type="button" className="wcm-link" onClick={clearSelection}>Zrušit výběr</button>
+              </div>
+
               <div className="wcm-view-toggle">
                 <button type="button" className={view === 'front' ? 'active' : ''} onClick={() => setView('front')}>Zepředu</button>
                 <button type="button" className={view === 'back' ? 'active' : ''} onClick={() => setView('back')}>Zezadu</button>
               </div>
               <div className="wcm-body-row">
-                <MuscleBodyMap selected={selected} onToggle={toggleMuscle} view={view} />
+                <MuscleBodyMap
+                  selected={selected}
+                  disabledMuscles={disabledMuscles}
+                  duration={duration}
+                  onToggle={toggleMuscle}
+                  view={view}
+                />
                 <div className="wcm-chips" role="group" aria-label="Partie">
-                  <button type="button" className={`wcm-chip ${selected.includes('full_body') ? 'on' : ''}`} onClick={() => toggleMuscle('full_body')}>Celé tělo</button>
-                  {CHIP_IDS.map((id) => (
-                    <button key={id} type="button" className={`wcm-chip ${selected.includes(id) ? 'on' : ''}`} onClick={() => toggleMuscle(id)}>{MUSCLE_GROUP_LABELS_CS[id]}</button>
-                  ))}
+                  <button
+                    type="button"
+                    className={`wcm-chip ${selected.includes('full_body') ? 'on' : ''}`}
+                    aria-pressed={selected.includes('full_body')}
+                    onClick={() => toggleMuscle('full_body')}
+                  >
+                    Celé tělo
+                  </button>
+                  {CHIP_IDS.map((id) => {
+                    const highlighted = isMuscleHighlighted(id, selected);
+                    const disabled = disabledMuscles.includes(id) && !highlighted && !selected.includes('full_body');
+                    const disabledReason = disabled ? getMuscleDisabledReason(id, selected, duration) : null;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        className={`wcm-chip ${highlighted ? 'on' : ''} ${disabled ? 'disabled' : ''}`}
+                        aria-pressed={highlighted}
+                        aria-disabled={disabled ? 'true' : 'false'}
+                        title={disabledReason || undefined}
+                        disabled={disabled}
+                        onClick={() => toggleMuscle(id)}
+                      >
+                        {MUSCLE_GROUP_LABELS_CS[id]}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
+
+              {hint ? <p className="wcm-hint" role="status">{hint}</p> : null}
+              {showValidationMessage ? <p className="wcm-hint wcm-hint-warn" role="status">{showValidationMessage}</p> : null}
+
               <p className="wcm-label">Kde budeš cvičit?</p>
               <div className="wcm-pills">
                 {LOCATION_OPTS.map((o) => (
@@ -373,7 +507,7 @@ export default function WorkoutChangeModal({
           {step === 'select' ? (
             <>
               <button type="button" className="wcm-secondary" onClick={handleClose}>Zrušit</button>
-              <button type="button" className="wcm-primary" disabled={!selectionValid || loading} onClick={() => generate(false)}>
+              <button type="button" className="wcm-primary" disabled={!validation.valid || loading} onClick={() => generate(false)}>
                 {loading ? 'Připravujeme alternativní trénink…' : 'Připravit alternativu'}
               </button>
             </>
@@ -452,6 +586,13 @@ export default function WorkoutChangeModal({
         }
         .wcm-title { margin: 0 0 0.35rem; font-size: 1.2rem; font-weight: 700; padding-right: 2rem; }
         .wcm-sub { margin: 0 0 1rem; font-size: 0.9rem; color: #94a3b8; line-height: 1.45; }
+        .wcm-presets { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
+        .wcm-preset {
+          min-height: 40px; padding: 0.35rem 0.7rem; border-radius: 999px;
+          border: 1px solid #475569; background: rgba(15, 23, 42, 0.5); color: inherit; font-size: 0.82rem; cursor: pointer;
+        }
+        .wcm-preset.on { background: rgba(14,165,233,0.25); border-color: #38bdf8; }
+        .wcm-selection-toolbar { margin-bottom: 0.75rem; }
         .wcm-view-toggle { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
         .wcm-view-toggle button {
           min-height: 44px; padding: 0.4rem 0.85rem; border-radius: 8px;
@@ -467,12 +608,20 @@ export default function WorkoutChangeModal({
         .wcm-body-row :global(.muscle-body-svg) {
           width: 160px; max-width: 100%; flex-shrink: 0; margin: 0 auto;
         }
+        .wcm-body-row :global(.wcm-svg-disabled) { cursor: not-allowed; }
         .wcm-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; flex: 1; }
         .wcm-chip {
           min-height: 44px; padding: 0.45rem 0.75rem; border-radius: 999px;
           border: 1px solid #475569; background: transparent; color: inherit; font-size: 0.85rem; cursor: pointer;
         }
-        .wcm-chip.on { background: rgba(14,165,233,0.25); border-color: #38bdf8; }
+        .wcm-chip.on { background: rgba(14,165,233,0.35); border-color: #38bdf8; color: #f0f9ff; }
+        .wcm-chip.disabled {
+          opacity: 0.38;
+          cursor: not-allowed;
+          border-color: #334155;
+        }
+        .wcm-hint { color: #94a3b8; font-size: 0.85rem; margin: 0.5rem 0 0; line-height: 1.4; }
+        .wcm-hint-warn { color: #fcd34d; }
         .wcm-label { margin: 0.65rem 0 0.35rem; font-size: 0.82rem; font-weight: 600; color: #cbd5e1; }
         .wcm-pills { display: flex; flex-wrap: wrap; gap: 0.4rem; }
         .wcm-pills button {

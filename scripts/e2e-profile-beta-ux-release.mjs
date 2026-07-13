@@ -201,6 +201,89 @@ async function testModalViewportPosition(page, { mobile = false } = {}) {
   return true;
 }
 
+async function openWorkoutModal(page) {
+  const changeBtn = page.locator('button.profile-today-change-workout-btn').first();
+  if (!(await changeBtn.count())) return false;
+  await changeBtn.evaluate((btn) => {
+    btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+    btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+    btn.click();
+  });
+  await page.locator('.wcm-overlay').waitFor({ state: 'visible', timeout: 15_000 });
+  return true;
+}
+
+async function testMuscleSelectionLogic(page, { mobile = false } = {}) {
+  const prefix = mobile ? 'mobile_muscle' : 'desktop_muscle';
+  const opened = await openWorkoutModal(page);
+  if (!opened) {
+    check(`${prefix}_selection`, false, 'no change button');
+    return;
+  }
+
+  await page.locator('.wcm-chip:has-text("Celé tělo")').click();
+  const highlightedCount = await page.evaluate(() => {
+    const svg = document.querySelector('.muscle-body-svg');
+    if (!svg) return 0;
+    return svg.querySelectorAll('ellipse[aria-pressed="true"]').length;
+  });
+  check(`${prefix}_full_body_svg_highlight`, highlightedCount >= 8, `count ${highlightedCount}`);
+
+  await page.locator('button.wcm-link:has-text("Zrušit výběr")').click();
+  await page.locator('.wcm-chip:has-text("Přední stehna")').click();
+
+  const chestDisabled = await page.locator('.wcm-chip:has-text("Prsa")').getAttribute('aria-disabled');
+  const glutesEnabled = await page.locator('.wcm-chip:has-text("Hýždě")').getAttribute('aria-disabled');
+  check(`${prefix}_quads_disables_upper`, chestDisabled === 'true');
+  check(`${prefix}_quads_allows_glutes`, glutesEnabled !== 'true');
+
+  await page.locator('.wcm-chip:has-text("Hýždě")').click();
+  await page.locator('button:has-text("30 minut")').click();
+  const ctaEnabled = await page.locator('button.wcm-primary:has-text("Připravit alternativu")').isEnabled();
+  check(`${prefix}_cta_enabled_valid_legs`, ctaEnabled);
+
+  const apiReject = await page.evaluate(async () => {
+    const storageKey = Object.keys(localStorage).find((k) => k.includes('auth-token'));
+    if (!storageKey) return { ok: false, reason: 'no storage' };
+    let token = null;
+    try {
+      const parsed = JSON.parse(localStorage.getItem(storageKey) || '{}');
+      token = parsed?.access_token || parsed?.currentSession?.access_token;
+    } catch {
+      return { ok: false, reason: 'bad storage' };
+    }
+    if (!token) return { ok: false, reason: 'no token' };
+    const res = await fetch('/api/workout/replace-today', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        plan_id: '00000000-0000-0000-0000-000000000000',
+        plan_day_index: 0,
+        selected_muscle_groups: ['quads', 'back'],
+        location: 'gym',
+        duration_minutes: 30,
+        intensity: 'medium',
+        category: 'push',
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    return { ok: res.status === 400 && body.error_code === 'incompatible_muscle_groups', status: res.status, code: body.error_code };
+  });
+  check(`${prefix}_api_rejects_quads_back`, apiReject.ok, JSON.stringify(apiReject));
+
+  if (mobile) {
+    const hintVisible = await page.locator('.wcm-hint').count() > 0
+      || (await page.locator('.wcm-chip.disabled').first().getAttribute('title') || '').length > 10;
+    check(`${prefix}_disabled_explanation`, hintVisible);
+    const ctaBox = await page.locator('.wcm-actions .wcm-primary').first().boundingBox();
+    const vp = page.viewportSize();
+    check(`${prefix}_cta_visible_mobile`, !!ctaBox && vp && ctaBox.y + ctaBox.height <= vp.height + 4);
+  }
+
+  await page.locator('.wcm-close').click();
+  await page.locator('.wcm-overlay').waitFor({ state: 'hidden', timeout: 8000 }).catch(() => {});
+}
+
 async function runDesktop(browser) {
   const page = await browser.newPage();
   await loginViaMagicLink(page);
@@ -245,6 +328,8 @@ async function runDesktop(browser) {
     await page.close();
     return;
   }
+
+  await testMuscleSelectionLogic(page, { mobile: false });
 
   await changeBtn.first().evaluate((btn) => {
     btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
@@ -316,17 +401,10 @@ async function runMobile(browser) {
   if (await sheetBtn.count()) {
     const modalOk = await testModalViewportPosition(page, { mobile: true });
     if (modalOk) {
-      await sheetBtn.first().evaluate((btn) => {
-        btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-        btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
-        btn.click();
-      });
-      const sheet = page.locator('.wcm-sheet');
-      await sheet.waitFor({ state: 'visible', timeout: 15_000 });
+      await testMuscleSelectionLogic(page, { mobile: true });
       const chip = page.locator('.wcm-chip').first();
       const chipBox = await chip.boundingBox();
       check('mobile_tap_targets', !!chipBox && chipBox.height >= 40);
-      await page.locator('.wcm-close').click();
     } else {
       check('mobile_bottom_sheet_visible', false);
       check('mobile_tap_targets', false);

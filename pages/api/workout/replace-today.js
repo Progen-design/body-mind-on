@@ -12,7 +12,7 @@ import {
   canRegenerateToday,
 } from '../../../lib/workoutTodayReplace';
 import { validateReplacementPreview } from '../../../lib/workoutReplacementSchema';
-import { normalizeMuscleGroupSelection } from '../../../lib/muscleGroupLabels';
+import { validateMuscleSelection } from '../../../lib/workoutMuscleGroupRules';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -29,8 +29,26 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Chybí plan_id nebo plan_day_index.' });
     }
 
-    const muscleNorm = normalizeMuscleGroupSelection(body.selected_muscle_groups);
-    if (!muscleNorm.ok) return res.status(400).json({ error: muscleNorm.error });
+    const muscleValidation = validateMuscleSelection({
+      selectedMuscleGroups: body.selected_muscle_groups,
+      durationMinutes: [15, 30, 45, 60].includes(Number(body.duration_minutes))
+        ? Number(body.duration_minutes)
+        : 30,
+    });
+    if (!muscleValidation.valid) {
+      return res.status(400).json({
+        error: 'invalid_muscle_selection',
+        error_code: muscleValidation.errorCode,
+        message: muscleValidation.message,
+      });
+    }
+    const normalizedMuscles = Array.isArray(body.selected_muscle_groups)
+      ? [...new Set(body.selected_muscle_groups.map((g) => String(g || '').trim()).filter(Boolean))]
+      : [];
+    if (normalizedMuscles.includes('full_body')) {
+      normalizedMuscles.splice(0, normalizedMuscles.length, 'full_body');
+    }
+    const workoutCategory = muscleValidation.category;
 
     const location = ['home', 'gym', 'no_equipment'].includes(body.location) ? body.location : 'gym';
     const durationMinutes = [15, 30, 45, 60].includes(Number(body.duration_minutes))
@@ -62,7 +80,8 @@ export default async function handler(req, res) {
     const generationAttempt = regenCount + 1;
 
     const generated = await generateTodayWorkoutAlternative({
-      muscleGroups: muscleNorm.normalized,
+      muscleGroups: normalizedMuscles,
+      category: workoutCategory,
       location,
       durationMinutes,
       intensity,
@@ -83,7 +102,7 @@ export default async function handler(req, res) {
         plan_day: String(planDayIndex),
         original_workout: originalWorkout,
         replacement_workout: generated.structuredWorkout,
-        selected_muscle_groups: muscleNorm.normalized,
+        selected_muscle_groups: normalizedMuscles,
         location,
         duration_minutes: durationMinutes,
         intensity,
@@ -110,7 +129,7 @@ export default async function handler(req, res) {
       user_id: user.id,
       event_name: 'workout_alternative_generated',
       properties: {
-        muscle_group_count: muscleNorm.normalized.length,
+        muscle_group_count: normalizedMuscles.length,
         location,
         duration_bucket: String(durationMinutes),
         intensity,

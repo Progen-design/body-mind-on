@@ -44,6 +44,7 @@
     "verify:macro-kcal-consistency": "node scripts/verify-macro-kcal-consistency.mjs",
     "verify:profile-today-ux": "node scripts/verify-profile-today-ux.mjs",
     "verify:profile-beta-ux": "node scripts/verify-profile-beta-ux.mjs",
+    "verify:workout-muscle-selection": "node scripts/verify-workout-muscle-selection.mjs",
     "verify:workout-restore": "node scripts/verify-workout-restore.mjs",
     "verify:profile-weekly-days-modern-ui": "node scripts/verify-profile-weekly-days-modern-ui.mjs",
     "verify:birthdate-persistence": "node scripts/verify-birthdate-persistence.mjs",

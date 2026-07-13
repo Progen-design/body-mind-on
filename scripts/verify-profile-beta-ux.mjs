@@ -72,6 +72,9 @@ check('hidden when workout completed', todayPanels.includes('!workoutCompleted')
 check('muscle body map SVG', modal.includes('muscle-body-svg'));
 check('muscle chips', modal.includes('wcm-chip'));
 check('full_body chip', modal.includes('Celé tělo'));
+check('muscle selection rules lib', modal.includes('workoutMuscleGroupRules'));
+check('quick presets', modal.includes('Rychlý výběr'));
+check('clear selection button', modal.includes('Zrušit výběr'));
 check('location options', modal.includes('Fitness centrum'));
 check('duration options', modal.includes('DURATION_OPTS') && modal.includes('{m} minut'));
 check('intensity options', modal.includes('Střední'));

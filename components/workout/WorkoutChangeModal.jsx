@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   MUSCLE_GROUP_IDS,
   MUSCLE_GROUP_LABELS_CS,
@@ -7,6 +8,15 @@ import {
 } from '../../lib/muscleGroupLabels';
 
 const CHIP_IDS = MUSCLE_GROUP_IDS.filter((id) => id !== 'full_body');
+
+function getFocusableElements(container) {
+  if (!container) return [];
+  return Array.from(
+    container.querySelectorAll(
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+  ).filter((element) => !element.hasAttribute('aria-hidden'));
+}
 
 /** Jednoduché SVG — klikatelné oblasti + chips se synchronním stavem. */
 function MuscleBodyMap({ selected, onToggle, view = 'front' }) {
@@ -63,7 +73,7 @@ const INTENSITY_OPTS = [
 ];
 
 /**
- * Modal / bottom sheet pro změnu dnešního tréninku.
+ * Modal / bottom sheet pro změnu dnešního tréninku (portal + viewport-fixed overlay).
  */
 export default function WorkoutChangeModal({
   open,
@@ -75,6 +85,7 @@ export default function WorkoutChangeModal({
   defaultIntensity = 'medium',
   onPlanUpdated,
   onEvent,
+  returnFocusRef = null,
 }) {
   const [view, setView] = useState('front');
   const [selected, setSelected] = useState(['full_body']);
@@ -86,6 +97,15 @@ export default function WorkoutChangeModal({
   const [error, setError] = useState(null);
   const [preview, setPreview] = useState(null);
   const [regenLeft, setRegenLeft] = useState(2);
+
+  const sheetRef = useRef(null);
+  const lastFocusedRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  const handleCloseRef = useRef(null);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   const toggleMuscle = useCallback((id) => {
     setSelected((prev) => {
@@ -110,6 +130,93 @@ export default function WorkoutChangeModal({
     reset();
     onClose?.();
   };
+
+  handleCloseRef.current = handleClose;
+
+  useEffect(() => {
+    if (!open || typeof document === 'undefined') return undefined;
+
+    lastFocusedRef.current = returnFocusRef?.current || document.activeElement;
+    const scrollY = window.scrollY;
+    const body = document.body;
+    const html = document.documentElement;
+    const prev = {
+      bodyOverflow: body.style.overflow,
+      htmlOverflow: html.style.overflow,
+      bodyPosition: body.style.position,
+      bodyTop: body.style.top,
+      bodyLeft: body.style.left,
+      bodyRight: body.style.right,
+      bodyWidth: body.style.width,
+    };
+
+    body.style.overflow = 'hidden';
+    html.style.overflow = 'hidden';
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+
+    const frame = window.requestAnimationFrame(() => {
+      const focusables = getFocusableElements(sheetRef.current);
+      if (focusables.length > 0) {
+        focusables[0].focus();
+      } else {
+        sheetRef.current?.focus();
+      }
+    });
+
+    const handleKeyDown = (event) => {
+      if (!sheetRef.current) return;
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        handleCloseRef.current?.();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      const focusables = getFocusableElements(sheetRef.current);
+      if (focusables.length === 0) {
+        event.preventDefault();
+        sheetRef.current.focus();
+        return;
+      }
+
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement;
+
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener('keydown', handleKeyDown);
+      body.style.overflow = prev.bodyOverflow;
+      html.style.overflow = prev.htmlOverflow;
+      body.style.position = prev.bodyPosition;
+      body.style.top = prev.bodyTop;
+      body.style.left = prev.bodyLeft;
+      body.style.right = prev.bodyRight;
+      body.style.width = prev.bodyWidth;
+      window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' });
+      const focusTarget = returnFocusRef?.current || lastFocusedRef.current;
+      if (focusTarget && typeof focusTarget.focus === 'function') {
+        focusTarget.focus();
+      }
+    };
+  }, [open, returnFocusRef]);
 
   const generate = async (isRegen = false) => {
     if (!selectionValid || loading) return;
@@ -180,101 +287,162 @@ export default function WorkoutChangeModal({
     }
   };
 
-  if (!open) return null;
+  if (!open || typeof document === 'undefined') return null;
 
-  return (
-    <div className="wcm-overlay" role="dialog" aria-modal="true" aria-labelledby="wcm-title">
-      <div className="wcm-sheet">
+  const modal = (
+    <div
+      className="wcm-overlay"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target !== event.currentTarget) return;
+        handleClose();
+      }}
+    >
+      <div
+        ref={sheetRef}
+        className="wcm-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="wcm-title"
+        tabIndex={-1}
+      >
         <button type="button" className="wcm-close" onClick={handleClose} aria-label="Zavřít">×</button>
-        {step === 'select' ? (
-          <>
-            <h2 id="wcm-title" className="wcm-title">Co chceš dnes cvičit?</h2>
-            <p className="wcm-sub">Vyber jednu nebo více partií. Připravíme alternativu pouze pro dnešní trénink.</p>
-            <div className="wcm-view-toggle">
-              <button type="button" className={view === 'front' ? 'active' : ''} onClick={() => setView('front')}>Zepředu</button>
-              <button type="button" className={view === 'back' ? 'active' : ''} onClick={() => setView('back')}>Zezadu</button>
-            </div>
-            <div className="wcm-body-row">
-              <MuscleBodyMap selected={selected} onToggle={toggleMuscle} view={view} />
-              <div className="wcm-chips" role="group" aria-label="Partie">
-                <button type="button" className={`wcm-chip ${selected.includes('full_body') ? 'on' : ''}`} onClick={() => toggleMuscle('full_body')}>Celé tělo</button>
-                {CHIP_IDS.map((id) => (
-                  <button key={id} type="button" className={`wcm-chip ${selected.includes(id) ? 'on' : ''}`} onClick={() => toggleMuscle(id)}>{MUSCLE_GROUP_LABELS_CS[id]}</button>
+        <div className="wcm-scroll">
+          {step === 'select' ? (
+            <>
+              <h2 id="wcm-title" className="wcm-title">Co chceš dnes cvičit?</h2>
+              <p className="wcm-sub">Vyber jednu nebo více partií. Připravíme alternativu pouze pro dnešní trénink.</p>
+              <div className="wcm-view-toggle">
+                <button type="button" className={view === 'front' ? 'active' : ''} onClick={() => setView('front')}>Zepředu</button>
+                <button type="button" className={view === 'back' ? 'active' : ''} onClick={() => setView('back')}>Zezadu</button>
+              </div>
+              <div className="wcm-body-row">
+                <MuscleBodyMap selected={selected} onToggle={toggleMuscle} view={view} />
+                <div className="wcm-chips" role="group" aria-label="Partie">
+                  <button type="button" className={`wcm-chip ${selected.includes('full_body') ? 'on' : ''}`} onClick={() => toggleMuscle('full_body')}>Celé tělo</button>
+                  {CHIP_IDS.map((id) => (
+                    <button key={id} type="button" className={`wcm-chip ${selected.includes(id) ? 'on' : ''}`} onClick={() => toggleMuscle(id)}>{MUSCLE_GROUP_LABELS_CS[id]}</button>
+                  ))}
+                </div>
+              </div>
+              <p className="wcm-label">Kde budeš cvičit?</p>
+              <div className="wcm-pills">
+                {LOCATION_OPTS.map((o) => (
+                  <button key={o.id} type="button" className={location === o.id ? 'on' : ''} onClick={() => setLocation(o.id)}>{o.label}</button>
                 ))}
               </div>
-            </div>
-            <p className="wcm-label">Kde budeš cvičit?</p>
-            <div className="wcm-pills">
-              {LOCATION_OPTS.map((o) => (
-                <button key={o.id} type="button" className={location === o.id ? 'on' : ''} onClick={() => setLocation(o.id)}>{o.label}</button>
-              ))}
-            </div>
-            <p className="wcm-label">Kolik máš času?</p>
-            <div className="wcm-pills">
-              {DURATION_OPTS.map((m) => (
-                <button key={m} type="button" className={duration === m ? 'on' : ''} onClick={() => setDuration(m)}>{m} minut</button>
-              ))}
-            </div>
-            <p className="wcm-label">Jak náročný trénink chceš?</p>
-            <div className="wcm-pills">
-              {INTENSITY_OPTS.map((o) => (
-                <button key={o.id} type="button" className={intensity === o.id ? 'on' : ''} onClick={() => setIntensity(o.id)}>{o.label}</button>
-              ))}
-            </div>
-            {error ? <p className="wcm-error" role="alert">{error}</p> : null}
-            <div className="wcm-actions">
+              <p className="wcm-label">Kolik máš času?</p>
+              <div className="wcm-pills">
+                {DURATION_OPTS.map((m) => (
+                  <button key={m} type="button" className={duration === m ? 'on' : ''} onClick={() => setDuration(m)}>{m} minut</button>
+                ))}
+              </div>
+              <p className="wcm-label">Jak náročný trénink chceš?</p>
+              <div className="wcm-pills">
+                {INTENSITY_OPTS.map((o) => (
+                  <button key={o.id} type="button" className={intensity === o.id ? 'on' : ''} onClick={() => setIntensity(o.id)}>{o.label}</button>
+                ))}
+              </div>
+              {error ? <p className="wcm-error" role="alert">{error}</p> : null}
+            </>
+          ) : (
+            <>
+              <h2 id="wcm-title" className="wcm-title">{preview?.title || 'Náhled tréninku'}</h2>
+              <p className="wcm-sub">~{preview?.duration_minutes} min · {(preview?.focus || []).map((f) => MUSCLE_GROUP_LABELS_CS[f] || f).join(', ')}</p>
+              <ul className="wcm-ex-list">
+                {(preview?.exercises || []).map((ex, i) => (
+                  <li key={i}>
+                    <strong>{ex.name}</strong>
+                    <span> · {ex.sets}× {ex.reps}{ex.equipment ? ` · ${ex.equipment}` : ''}</span>
+                  </li>
+                ))}
+              </ul>
+              {error ? <p className="wcm-error" role="alert">{error}</p> : null}
+            </>
+          )}
+        </div>
+        <div className="wcm-actions">
+          {step === 'select' ? (
+            <>
               <button type="button" className="wcm-secondary" onClick={handleClose}>Zrušit</button>
               <button type="button" className="wcm-primary" disabled={!selectionValid || loading} onClick={() => generate(false)}>
                 {loading ? 'Připravujeme alternativní trénink…' : 'Připravit alternativu'}
               </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <h2 className="wcm-title">{preview?.title || 'Náhled tréninku'}</h2>
-            <p className="wcm-sub">~{preview?.duration_minutes} min · {(preview?.focus || []).map((f) => MUSCLE_GROUP_LABELS_CS[f] || f).join(', ')}</p>
-            <ul className="wcm-ex-list">
-              {(preview?.exercises || []).map((ex, i) => (
-                <li key={i}>
-                  <strong>{ex.name}</strong>
-                  <span> · {ex.sets}× {ex.reps}{ex.equipment ? ` · ${ex.equipment}` : ''}</span>
-                </li>
-              ))}
-            </ul>
-            {error ? <p className="wcm-error" role="alert">{error}</p> : null}
-            <div className="wcm-actions wcm-actions--col">
+            </>
+          ) : (
+            <div className="wcm-actions-col">
               <button type="button" className="wcm-primary" disabled={loading} onClick={confirm}>Použít tento trénink</button>
               <button type="button" className="wcm-secondary" disabled={loading || regenLeft <= 0} onClick={() => generate(true)}>
                 Zkusit jinou variantu{regenLeft > 0 ? ` (zbývá ${regenLeft})` : ''}
               </button>
               <button type="button" className="wcm-link" onClick={() => setStep('select')}>Ponechat původní</button>
             </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
       <style jsx>{`
         .wcm-overlay {
-          position: fixed; inset: 0; z-index: 1200;
-          background: rgba(0,0,0,0.55);
-          display: flex; align-items: flex-end; justify-content: center;
+          position: fixed;
+          inset: 0;
+          z-index: 1300;
+          background: rgba(0, 0, 0, 0.55);
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
+          padding: 0;
+          box-sizing: border-box;
         }
         @media (min-width: 640px) {
-          .wcm-overlay { align-items: center; }
+          .wcm-overlay {
+            align-items: center;
+            padding: 24px;
+          }
         }
         .wcm-sheet {
-          background: #1e293b; color: #f8fafc;
-          width: 100%; max-width: 700px; max-height: 92vh; overflow-y: auto;
-          border-radius: 16px 16px 0 0; padding: 1.25rem 1.25rem 1.5rem;
+          background: #1e293b;
+          color: #f8fafc;
+          width: 100%;
+          max-width: 760px;
+          max-height: 90dvh;
+          display: flex;
+          flex-direction: column;
+          border-radius: 16px 16px 0 0;
           position: relative;
+          box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+          overflow: hidden;
         }
         @media (min-width: 640px) {
-          .wcm-sheet { border-radius: 16px; padding: 1.5rem; }
+          .wcm-sheet {
+            max-height: calc(100dvh - 48px);
+            border-radius: 16px;
+          }
+        }
+        .wcm-scroll {
+          flex: 1;
+          min-height: 0;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+          padding: 1.25rem 1.25rem 0.5rem;
+        }
+        @media (min-width: 640px) {
+          .wcm-scroll {
+            padding: 1.5rem 1.5rem 0.5rem;
+          }
         }
         .wcm-close {
-          position: absolute; top: 0.75rem; right: 0.75rem;
-          background: transparent; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;
+          position: absolute;
+          top: 0.75rem;
+          right: 0.75rem;
+          z-index: 2;
+          background: transparent;
+          border: none;
+          color: #94a3b8;
+          font-size: 1.5rem;
+          cursor: pointer;
+          min-width: 44px;
+          min-height: 44px;
         }
-        .wcm-title { margin: 0 0 0.35rem; font-size: 1.2rem; font-weight: 700; }
+        .wcm-title { margin: 0 0 0.35rem; font-size: 1.2rem; font-weight: 700; padding-right: 2rem; }
         .wcm-sub { margin: 0 0 1rem; font-size: 0.9rem; color: #94a3b8; line-height: 1.45; }
         .wcm-view-toggle { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
         .wcm-view-toggle button {
@@ -305,8 +473,27 @@ export default function WorkoutChangeModal({
         }
         .wcm-pills button.on { background: rgba(14,165,233,0.25); border-color: #38bdf8; }
         .wcm-error { color: #fca5a5; font-size: 0.88rem; margin: 0.75rem 0 0; }
-        .wcm-actions { display: flex; gap: 0.5rem; margin-top: 1.25rem; flex-wrap: wrap; }
-        .wcm-actions--col { flex-direction: column; }
+        .wcm-actions {
+          flex-shrink: 0;
+          display: flex;
+          gap: 0.5rem;
+          margin: 0;
+          flex-wrap: wrap;
+          padding: 0.75rem 1.25rem max(1rem, env(safe-area-inset-bottom));
+          border-top: 1px solid #334155;
+          background: linear-gradient(180deg, rgba(30, 41, 59, 0.96) 0%, #1e293b 100%);
+        }
+        @media (min-width: 640px) {
+          .wcm-actions {
+            padding: 1rem 1.5rem 1.25rem;
+          }
+        }
+        .wcm-actions-col {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          width: 100%;
+        }
         .wcm-primary {
           min-height: 48px; flex: 1; border: none; border-radius: 10px;
           background: #0ea5e9; color: #fff; font-weight: 600; cursor: pointer;
@@ -323,4 +510,6 @@ export default function WorkoutChangeModal({
       `}</style>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }

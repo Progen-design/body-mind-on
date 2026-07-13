@@ -78,6 +78,21 @@ check('intensity options', modal.includes('Střední'));
 check('preview step', modal.includes('Použít tento trénink'));
 check('regen limit UI', modal.includes('Zbývá') || modal.includes('zbývá'));
 
+check('modal portal to body', modal.includes('createPortal') && modal.includes('document.body'));
+check('fixed overlay viewport', modal.includes('position: fixed') && modal.includes('inset: 0'));
+check('modal not absolute in profile', !todayPanels.includes('wcm-overlay'));
+check('scroll lock preserves scrollY', modal.includes('scrollY') && modal.includes('window.scrollTo'));
+check('body scroll lock fixed', modal.includes("body.style.position = 'fixed'"));
+check('focus trap Tab', modal.includes("event.key !== 'Tab'"));
+check('Escape closes modal', modal.includes("event.key === 'Escape'"));
+check('focus return ref', modal.includes('returnFocusRef') && todayPanels.includes('returnFocusRef'));
+check('desktop center max width', modal.includes('max-width: 760px') && modal.includes('align-items: center'));
+check('mobile bottom sheet', modal.includes('align-items: flex-end') && modal.includes('90dvh'));
+check('sticky CTA footer', modal.includes('wcm-actions') && modal.includes('safe-area-inset-bottom'));
+check('loading stays in modal', modal.includes('Připravujeme alternativní trénink') && modal.includes("setStep('preview')"));
+check('confirm without reload', !modal.includes('location.reload') && todayPanels.includes('onWorkoutPlanUpdated'));
+check('restore without reload', !todayPanels.includes('location.reload') && todayPanels.includes('handleRestoreOriginal'));
+
 const fullOnly = normalizeMuscleGroupSelection(['full_body', 'chest']);
 check('full_body clears others', fullOnly.ok && fullOnly.normalized.join() === 'full_body');
 const tooMany = normalizeMuscleGroupSelection(['chest', 'back', 'biceps', 'triceps', 'core']);

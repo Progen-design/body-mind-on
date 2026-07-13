@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { resolveDayCalorieTarget, sumDayNutrition } from '../../lib/mealNutritionDisplay.js';
 import MacroRatioChart from '../MacroRatioChart.js';
 import { formatExerciseSetsRepsDisplay } from '../../lib/planDataIntegrity.js';
@@ -44,6 +44,7 @@ export default function ProfileTodayPanels({
   const [restoreBusy, setRestoreBusy] = useState(false);
   const [restoreSlow, setRestoreSlow] = useState(false);
   const [workoutError, setWorkoutError] = useState(null);
+  const changeWorkoutBtnRef = useRef(null);
 
   const handleCompletionsChange = useCallback((info) => {
     setWorkoutCompleted(!!info?.workoutCompleted);
@@ -223,6 +224,7 @@ export default function ProfileTodayPanels({
                 <button
                   type="button"
                   className="profile-today-change-workout-btn"
+                  ref={changeWorkoutBtnRef}
                   onClick={() => {
                     setWorkoutModalOpen(true);
                     trackWorkoutEvent('workout_change_opened');
@@ -292,6 +294,7 @@ export default function ProfileTodayPanels({
           defaultIntensity="medium"
           onPlanUpdated={(data) => onWorkoutPlanUpdated?.(data)}
           onEvent={trackWorkoutEvent}
+          returnFocusRef={changeWorkoutBtnRef}
         />
       ) : null}
 

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import BetaFeedbackButton from './BetaFeedbackButton';
 
 const RATING_OPTIONS = [
   { value: 'great', label: 'Skvěle' },
@@ -24,7 +23,6 @@ export default function DailyCheckinPanel() {
   const [blocker, setBlocker] = useState('');
   const [saved, setSaved] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -67,7 +65,6 @@ export default function DailyCheckinPanel() {
       });
       if (res.ok) {
         setSaved(true);
-        setShowFeedback(true);
       }
     } catch {
       /* silent */
@@ -117,11 +114,6 @@ export default function DailyCheckinPanel() {
       >
         {submitting ? 'Ukládám…' : saved ? 'Aktualizovat check-in' : 'Uložit check-in'}
       </button>
-      {showFeedback && (
-        <div className="daily-checkin-feedback">
-          <BetaFeedbackButton context="daily_use" />
-        </div>
-      )}
       <style jsx>{`
         .daily-checkin {
           margin-top: 1rem;
@@ -174,9 +166,6 @@ export default function DailyCheckinPanel() {
         .daily-checkin-save:disabled {
           opacity: 0.5;
           cursor: not-allowed;
-        }
-        .daily-checkin-feedback {
-          margin-top: 0.65rem;
         }
       `}</style>
     </div>

@@ -167,3 +167,16 @@ npm run report:beta-email
 ```
 
 Interní send test: `ALLOW_BETA_EMAIL_SEND_TEST=yes npm run verify:beta-email`
+
+### Profil — beta UX a změna dnešního tréninku
+
+```bash
+npm run migrate:workout-replacements
+npm run verify:profile-beta-ux
+```
+
+- České názvy návyků (`lib/habitLabels.js`)
+- Optimistic checkboxy v sekci Dnes
+- Jedno tlačítko zpětné vazby pod check-inem
+- Změna pouze dnešního tréninku: `POST /api/workout/replace-today`, `confirm-replacement`, `restore-today`
+- Tabulka `workout_replacements` (RLS — čtení vlastních záznamů, zápis jen server-side)

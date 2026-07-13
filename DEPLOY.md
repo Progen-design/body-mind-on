@@ -213,3 +213,12 @@ npm run verify:beta-email
 npm run report:beta-email
 ALLOW_BETA_EMAIL_SEND_TEST=yes npm run verify:beta-email
 ```
+
+## Profil beta UX — změna dnešního tréninku
+
+Migrace: `supabase/migrations/20260713200000_workout_replacements.sql` (`npm run migrate:workout-replacements`).
+
+- Endpointy: `POST /api/workout/replace-today` (náhled), `confirm-replacement` (uložení), `restore-today` (obnova)
+- Mění se pouze dnešní trénink v `structured_plan_json` — jídelníček a ostatní dny beze změny
+- Regenerace alternativy: max. 2× denně na uživatele
+- Verifier: `npm run verify:profile-beta-ux` (pro live API testy nastav `BASE_URL=https://app.bodyandmindon.cz` nebo běžící preview)

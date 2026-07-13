@@ -1,8 +1,11 @@
+import { useCallback, useState } from 'react';
 import { resolveDayCalorieTarget, sumDayNutrition } from '../../lib/mealNutritionDisplay.js';
 import MacroRatioChart from '../MacroRatioChart.js';
 import { formatExerciseSetsRepsDisplay } from '../../lib/planDataIntegrity.js';
 import ProfileDayMealsPanel from './ProfileDayMealsPanel.js';
 import BetaTodaySection from '../beta/BetaTodaySection.js';
+import WorkoutChangeModal from '../workout/WorkoutChangeModal.jsx';
+import { supabase } from '../../lib/supabaseClient';
 
 function envLabelPlain(trainingEnvironmentLabel, structuredPlan) {
   if (trainingEnvironmentLabel) {
@@ -32,7 +35,60 @@ export default function ProfileTodayPanels({
   onScrollToWeek,
   planId = null,
   habitIds = [],
+  onWorkoutPlanUpdated = null,
+  trainingEnvironment = 'gym',
 }) {
+  const [workoutCompleted, setWorkoutCompleted] = useState(false);
+  const [workoutModalOpen, setWorkoutModalOpen] = useState(false);
+  const [workoutBusy, setWorkoutBusy] = useState(false);
+  const [workoutError, setWorkoutError] = useState(null);
+
+  const handleCompletionsChange = useCallback((info) => {
+    setWorkoutCompleted(!!info?.workoutCompleted);
+  }, []);
+
+  const trackWorkoutEvent = useCallback(async (name) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+      fetch('/api/events', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event_name: name, properties: { source_component: 'WorkoutChangeModal' } }),
+      }).catch(() => {});
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const handleRestoreOriginal = async () => {
+    if (!planId || workoutBusy || workoutCompleted) return;
+    setWorkoutBusy(true);
+    setWorkoutError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error('Přihlas se prosím znovu.');
+      const res = await fetch('/api/workout/restore-today', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan_id: planId,
+          plan_day_index: todayDay?.originalIndex ?? todayDayIndex,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Nepodařilo obnovit trénink.');
+      onWorkoutPlanUpdated?.(data);
+      trackWorkoutEvent('workout_original_restored');
+    } catch (e) {
+      setWorkoutError(e.message || 'Nepodařilo obnovit trénink.');
+    } finally {
+      setWorkoutBusy(false);
+    }
+  };
+
   if (!todayDay) return null;
 
   const structDay = todayDay.structDay || structuredPlan?.days?.[todayDay.originalIndex ?? todayDayIndex];
@@ -49,17 +105,20 @@ export default function ProfileTodayPanels({
   }) : [];
   const hasWorkout = exercises.length > 0;
   const workoutMinutes = Number(workout?.duration_minutes) || (exercises.length ? exercises.length * 8 : 0);
+  const hasReplacementBackup = !!workout?.original_workout_backup;
+  const planDayIdx = todayDay.originalIndex ?? todayDayIndex;
+  const defaultLoc = trainingEnvironment === 'gym' ? 'gym' : trainingEnvironment === 'home' ? 'no_equipment' : 'home';
 
   return (
     <div className="profile-today-root">
       <BetaTodaySection
         planId={planId}
-        planDay={todayDay.originalIndex ?? todayDayIndex}
+        planDay={planDayIdx}
         meals={meals}
         hasWorkout={hasWorkout}
         habitIds={habitIds}
         feedbackContext="first_plan"
-        showFeedbackAfterFirstAction
+        onCompletionsChange={handleCompletionsChange}
       />
       <section className="profile-today-hero" aria-labelledby="profile-today-heading">
         <p className="profile-today-date">{todayLabel}</p>
@@ -140,8 +199,34 @@ export default function ProfileTodayPanels({
         {hasWorkout ? (
           <>
             <p className="profile-today-workout-meta">
+              {workout?.title ? `${workout.title} · ` : ''}
               {exercises.length} cviků · {workoutMinutes ? `~${workoutMinutes} min` : 'dle plánu'}
             </p>
+            {!workoutCompleted && planId ? (
+              <div className="profile-today-workout-actions">
+                <button
+                  type="button"
+                  className="profile-today-change-workout-btn"
+                  onClick={() => {
+                    setWorkoutModalOpen(true);
+                    trackWorkoutEvent('workout_change_opened');
+                  }}
+                >
+                  Změnit dnešní trénink
+                </button>
+                {hasReplacementBackup ? (
+                  <button
+                    type="button"
+                    className="profile-today-restore-btn"
+                    disabled={workoutBusy}
+                    onClick={handleRestoreOriginal}
+                  >
+                    Obnovit původní trénink
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+            {workoutError ? <p className="profile-today-workout-error" role="alert">{workoutError}</p> : null}
             <ul className="profile-today-workout-list">
               {exercises.map((ex, xi) => {
                 const name = ex.display_name_cs || ex.name_cs || ex.name || 'Cvik';
@@ -173,6 +258,20 @@ export default function ProfileTodayPanels({
           </div>
         )}
       </section>
+
+      {planId && hasWorkout ? (
+        <WorkoutChangeModal
+          open={workoutModalOpen}
+          onClose={() => setWorkoutModalOpen(false)}
+          planId={planId}
+          planDayIndex={planDayIdx}
+          defaultLocation={defaultLoc}
+          defaultDuration={workoutMinutes >= 45 ? 45 : workoutMinutes >= 30 ? 30 : 30}
+          defaultIntensity="medium"
+          onPlanUpdated={(data) => onWorkoutPlanUpdated?.(data)}
+          onEvent={trackWorkoutEvent}
+        />
+      ) : null}
 
       <style jsx>{`
         .profile-today-root {
@@ -297,6 +396,40 @@ export default function ProfileTodayPanels({
           margin: 0 0 12px;
           font-size: 14px;
           color: #94a3b8;
+        }
+        .profile-today-workout-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+        .profile-today-change-workout-btn,
+        .profile-today-restore-btn {
+          min-height: 44px;
+          padding: 10px 14px;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .profile-today-change-workout-btn {
+          border: 1px solid rgba(148, 163, 184, 0.45);
+          background: transparent;
+          color: #e2e8f0;
+        }
+        .profile-today-restore-btn {
+          border: 1px solid rgba(56, 189, 248, 0.35);
+          background: rgba(14, 165, 233, 0.1);
+          color: #7dd3fc;
+        }
+        .profile-today-restore-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .profile-today-workout-error {
+          margin: 0 0 10px;
+          font-size: 0.88rem;
+          color: #fca5a5;
         }
         .profile-today-workout-list {
           list-style: none;

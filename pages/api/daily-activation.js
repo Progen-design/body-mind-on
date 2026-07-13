@@ -114,7 +114,7 @@ export default async function handler(req, res) {
         source_component: sourceComponent,
         success: true,
       },
-    });
+    }).catch(() => {});
     markFirstAction(user.id).catch(() => {});
     markActivityDay(user.id).catch(() => {});
 

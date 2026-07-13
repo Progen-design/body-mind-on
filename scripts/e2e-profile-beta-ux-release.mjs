@@ -138,9 +138,10 @@ async function testModalViewportPosition(page, { mobile = false } = {}) {
   await page.evaluate(() => {
     const btn = document.querySelector('.profile-today-change-workout-btn');
     if (!btn) return;
+    btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
     btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+    btn.click();
   });
-  await changeBtn.click();
   await page.locator('.wcm-overlay').waitFor({ state: 'visible', timeout: 15_000 });
 
   const portalParent = await page.evaluate(() => document.querySelector('.wcm-overlay')?.parentElement?.tagName || '');
@@ -245,7 +246,11 @@ async function runDesktop(browser) {
     return;
   }
 
-  await changeBtn.first().click();
+  await changeBtn.first().evaluate((btn) => {
+    btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+    btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+    btn.click();
+  });
   await page.locator('.wcm-sheet, .wcm-overlay').first().waitFor({ state: 'visible', timeout: 15_000 });
 
   await page.locator('.wcm-chip:has-text("Prsa")').click();
@@ -311,7 +316,11 @@ async function runMobile(browser) {
   if (await sheetBtn.count()) {
     const modalOk = await testModalViewportPosition(page, { mobile: true });
     if (modalOk) {
-      await sheetBtn.first().click();
+      await sheetBtn.first().evaluate((btn) => {
+        btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+        btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+        btn.click();
+      });
       const sheet = page.locator('.wcm-sheet');
       await sheet.waitFor({ state: 'visible', timeout: 15_000 });
       const chip = page.locator('.wcm-chip').first();

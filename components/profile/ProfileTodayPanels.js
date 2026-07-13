@@ -47,6 +47,10 @@ export default function ProfileTodayPanels({
   const changeWorkoutBtnRef = useRef(null);
   const scrollLockYRef = useRef(null);
 
+  const captureScrollForModal = useCallback(() => {
+    scrollLockYRef.current = window.scrollY;
+  }, []);
+
   const handleCompletionsChange = useCallback((info) => {
     setWorkoutCompleted(!!info?.workoutCompleted);
   }, []);
@@ -226,9 +230,8 @@ export default function ProfileTodayPanels({
                   type="button"
                   className="profile-today-change-workout-btn"
                   ref={changeWorkoutBtnRef}
-                  onPointerDown={() => {
-                    scrollLockYRef.current = window.scrollY;
-                  }}
+                  onMouseDown={captureScrollForModal}
+                  onPointerDown={captureScrollForModal}
                   onClick={() => {
                     setWorkoutModalOpen(true);
                     trackWorkoutEvent('workout_change_opened');

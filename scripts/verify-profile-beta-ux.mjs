@@ -83,6 +83,7 @@ check('fixed overlay viewport', modal.includes('position: fixed') && modal.inclu
 check('modal not absolute in profile', !todayPanels.includes('wcm-overlay'));
 check('scroll lock preserves scrollY', modal.includes('scrollY') && modal.includes('window.scrollTo'));
 check('scroll lock captured on pointerdown', todayPanels.includes('onPointerDown') && todayPanels.includes('scrollLockYRef'));
+check('scroll lock captured on mousedown', todayPanels.includes('onMouseDown') && todayPanels.includes('captureScrollForModal'));
 check('body scroll lock fixed', modal.includes("body.style.position = 'fixed'"));
 check('focus trap Tab', modal.includes("event.key !== 'Tab'"));
 check('Escape closes modal', modal.includes("event.key === 'Escape'"));

@@ -182,15 +182,18 @@ Tabulky `product_events`, `beta_feedback`, `daily_activity_completions`, `daily_
 
 ## Closed beta cohort operations
 
-Migrace: `supabase/migrations/20260713160000_beta_cohort_operations.sql` (`npm run migrate:beta-cohort`).
+Migrace:
+- `supabase/migrations/20260713160000_beta_cohort_operations.sql` (`npm run migrate:beta-cohort`)
+- `supabase/migrations/20260713180000_beta_join_without_invite.sql` (`npm run migrate:beta-join`)
+
+Vstupní odkaz pro účastníky: **https://app.bodyandmindon.cz/beta** (bez invite kódu).
 
 Po deployi:
 
 ```bash
 npm run verify:beta-cohort-ops
 npm run beta:create-cohort -- --code=START-C1 --name="START Closed Beta Cohort 1" --max=5
-npm run beta:create-invites -- --cohort=START-C1 --count=5 --output=.local/beta-start-c1-invites.txt
 npm run report:beta-daily -- --cohort=START-C1
 ```
 
-Tabulky `beta_cohorts`, `beta_participants`, `beta_research_sessions`, `beta_issues`, `beta_decisions` — RLS bez public/authenticated policies. Plain invite kódy se neukládají (jen SHA-256 hash).
+Tabulky `beta_cohorts`, `beta_participants`, `beta_research_sessions`, `beta_issues`, `beta_decisions` — RLS bez public/authenticated policies. Historické invite kódy zůstávají jako hash; nový direct flow používá `invite_code_hash = null` a `source = direct_beta_link`.

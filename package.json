@@ -93,6 +93,7 @@
     "report:beta-feedback": "node scripts/report-beta-feedback.mjs",
     "migrate:beta-activation": "node scripts/run-beta-activation-migration.mjs",
     "migrate:beta-cohort": "node scripts/run-beta-cohort-migration.mjs",
+    "migrate:beta-join": "node scripts/run-beta-join-migration.mjs",
     "beta:create-cohort": "node scripts/create-beta-cohort.mjs",
     "beta:create-invites": "node scripts/create-beta-invites.mjs",
     "beta:add-issue": "node scripts/beta-add-issue.mjs",

@@ -6,8 +6,6 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { supabase } from '../lib/supabaseClient';
 import { getPublicMainSiteUrl } from '../lib/siteUrls.js';
-import { claimPendingBetaInvite } from '../lib/betaInviteClient';
-import { BETA_TERMS_VERSION } from '../lib/betaCohortConstants';
 
 const MAIN_SITE = getPublicMainSiteUrl();
 
@@ -80,7 +78,6 @@ export default function Login() {
       if (error) throw error;
       // Po přihlášení necháme Supabase uložit session, pak přesměrujeme
       if (data?.session) {
-        await claimPendingBetaInvite(data.session.access_token, BETA_TERMS_VERSION);
         await new Promise((r) => setTimeout(r, 100));
         if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
         router.replace(redirectTo, undefined, { scroll: true });

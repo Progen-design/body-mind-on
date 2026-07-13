@@ -36,7 +36,7 @@ if (!cohort?.id) {
 
 const { data: participants } = await admin
   .from('beta_participants')
-  .select('internal_alias, status, invited_at, registered_at, onboarding_completed_at, first_plan_viewed_at, first_action_at, first_return_at, session_completed_at, exited_at, user_id')
+  .select('internal_alias, status, invited_at, registered_at, onboarding_completed_at, first_plan_viewed_at, first_action_at, first_return_at, session_completed_at, exited_at, user_id, source, invite_code_hash')
   .eq('cohort_id', cohort.id)
   .order('internal_alias', { ascending: true });
 
@@ -44,7 +44,8 @@ const rows = participants || [];
 const alias = (p) => p.internal_alias || 'C1-P??';
 const countWhere = (fn) => rows.filter(fn).length;
 
-const invited = rows.length;
+const inviteSlots = countWhere((p) => p.invite_code_hash);
+const directJoins = countWhere((p) => p.source === 'direct_beta_link' && p.registered_at);
 const registered = countWhere((p) => p.registered_at);
 const onboardingCompleted = countWhere((p) => p.onboarding_completed_at);
 const planViewed = countWhere((p) => p.first_plan_viewed_at);
@@ -107,7 +108,8 @@ if (
 console.log(`# ${cohortCode} COHORT REPORT`);
 console.log('');
 console.log('Participants:');
-console.log(`  invited: ${invited}`);
+console.log(`  invite slots (historical): ${inviteSlots}`);
+console.log(`  direct beta joins: ${directJoins}`);
 console.log(`  registered: ${registered}`);
 console.log(`  onboarding completed: ${onboardingCompleted}`);
 console.log(`  plan viewed: ${planViewed}`);
@@ -117,7 +119,7 @@ console.log(`  session completed: ${sessionCompleted}`);
 console.log(`  dropped: ${dropped}`);
 console.log('');
 console.log('Funnel:');
-console.log(`  invite → registration: ${pct(registered, invited)}`);
+console.log(`  beta_page → registration: ${registered} users`);
 console.log(`  registration → onboarding: ${pct(onboardingCompleted, registered)}`);
 console.log(`  onboarding → plan: ${pct(planViewed, onboardingCompleted)}`);
 console.log(`  plan → first action: ${pct(firstAction, planViewed)}`);

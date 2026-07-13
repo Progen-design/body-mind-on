@@ -1,72 +1,62 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { supabase } from '../lib/supabaseClient';
 import {
-  storePendingBetaInvite,
-  claimPendingBetaInvite,
-  clearPendingBetaInvite,
-} from '../lib/betaInviteClient';
+  setBetaJoinPending,
+  hasBetaJoinPending,
+  joinBetaCohort,
+} from '../lib/betaJoinClient';
 import { BETA_TERMS_VERSION } from '../lib/betaCohortConstants';
 
 export default function BetaEntryPage() {
   const router = useRouter();
-  const [inviteCode, setInviteCode] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
-  const [validated, setValidated] = useState(null);
   const [sessionChecked, setSessionChecked] = useState(false);
-  const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setHasSession(!!session?.access_token);
-      setSessionChecked(true);
-    });
+    supabase.auth.getSession().then(() => setSessionChecked(true));
   }, []);
 
-  const validateCode = useCallback(async (code) => {
-    const trimmed = String(code || '').trim().toUpperCase();
-    if (!trimmed) {
-      setValidated(null);
-      return;
-    }
-    setLoading(true);
-    setStatus('');
-    try {
-      const res = await fetch('/api/beta/validate-invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ invite_code: trimmed }),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (json.valid) {
-        setValidated({
-          cohort_code: json.cohort_code,
-          cohort_name: json.cohort_name,
-          remaining_slots: json.remaining_slots,
-        });
-      } else {
-        setValidated(null);
-        setStatus('Invite kód není platný nebo už byl použit.');
+  useEffect(() => {
+    if (!sessionChecked) return;
+    let cancelled = false;
+
+    (async () => {
+      const pending = hasBetaJoinPending();
+      if (!pending) return;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled || !session?.access_token) return;
+
+      setLoading(true);
+      const result = await joinBetaCohort(session.access_token, BETA_TERMS_VERSION);
+      if (cancelled) return;
+
+      if (result.ok) {
+        router.replace('/start');
+        return;
       }
-    } catch {
-      setStatus('Nepodařilo se ověřit invite kód. Zkus to znovu.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
-  async function handleContinue(e) {
+      if (result.status === 409) {
+        setStatus('Beta testování je momentálně naplněné. Děkujeme za zájem.');
+      } else if (result.status === 403) {
+        setStatus('Beta testování momentálně nepřijímá nové účastníky.');
+      } else {
+        setStatus(result.error || 'Nepodařilo se přidat do beta testování.');
+      }
+      setLoading(false);
+    })();
+
+    return () => { cancelled = true; };
+  }, [sessionChecked, router]);
+
+  async function handleStart(e) {
     e.preventDefault();
-    const code = inviteCode.trim().toUpperCase();
-    if (!code || !validated) {
-      setStatus('Zadej platný invite kód.');
-      return;
-    }
     if (!termsAccepted) {
       setStatus('Pro pokračování je nutný souhlas s beta podmínkami.');
       return;
@@ -77,43 +67,25 @@ export default function BetaEntryPage() {
 
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.access_token) {
-      const res = await fetch('/api/beta/claim-invite', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          invite_code: code,
-          beta_terms_accepted: true,
-          beta_terms_version: BETA_TERMS_VERSION,
-        }),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (res.ok && json.ok) {
-        clearPendingBetaInvite();
+      const result = await joinBetaCohort(session.access_token, BETA_TERMS_VERSION);
+      if (result.ok) {
         router.replace('/start');
         return;
       }
-      setStatus(json.error || 'Invite se nepodařilo uplatnit.');
+      if (result.status === 409) {
+        setStatus('Beta testování je momentálně naplněné. Děkujeme za zájem.');
+      } else if (result.status === 403) {
+        setStatus('Beta testování momentálně nepřijímá nové účastníky.');
+      } else {
+        setStatus(result.error || 'Nepodařilo se přidat do beta testování.');
+      }
       setLoading(false);
       return;
     }
 
-    storePendingBetaInvite(code);
+    setBetaJoinPending();
     router.replace('/start');
   }
-
-  useEffect(() => {
-    if (!sessionChecked || !hasSession) return;
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session?.access_token) return;
-      const pending = typeof window !== 'undefined' ? sessionStorage.getItem('beta_pending_invite') : null;
-      if (!pending) return;
-      const result = await claimPendingBetaInvite(session.access_token, BETA_TERMS_VERSION);
-      if (result.ok) router.replace('/start');
-    });
-  }, [sessionChecked, hasSession, router]);
 
   return (
     <>
@@ -124,48 +96,21 @@ export default function BetaEntryPage() {
         </div>
         <section className="max-w-xl mx-auto">
           <h1 className="text-3xl font-extrabold mb-3 text-sky-400 text-center">
-            Uzavřená beta START
+            Vyzkoušej Body & Mind ON zdarma
           </h1>
-          <p className="text-gray-300 text-center mb-8">
-            Máš osobní pozvánku? Zadej invite kód a pokračuj do registrace.
+          <p className="text-gray-300 text-center mb-8 leading-relaxed">
+            Získej osobní 7denní jídelníček a tréninkový plán. Aplikace je v uzavřené beta verzi
+            a potřebujeme tvoji upřímnou zpětnou vazbu.
           </p>
 
-          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-4 mb-6 text-sm text-gray-200 leading-relaxed">
-            <p className="font-semibold text-amber-200 mb-2">Jsi součástí uzavřené beta verze START.</p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Funkce se mohou měnit během testování.</li>
-              <li>Plán je obecné fitness a výživové doporučení, ne zdravotní péče.</li>
-              <li>Při zdravotních omezeních konzultuj odborníka.</li>
-              <li>Tvoje zpětná vazba pomůže produkt zlepšit.</li>
-              <li>Citlivé zdravotní údaje nepiš do volného textu ve feedbacku.</li>
-            </ul>
-          </div>
+          <ul className="list-disc pl-5 space-y-2 text-gray-200 text-sm mb-6">
+            <li>osobní plán na 7 dní</li>
+            <li>jídelníček a trénink</li>
+            <li>denní přehled</li>
+            <li>beta verze zdarma</li>
+          </ul>
 
-          <form onSubmit={handleContinue} className="space-y-4">
-            <div>
-              <label className="block text-sm text-gray-300 mb-1" htmlFor="beta-invite">
-                Invite kód
-              </label>
-              <input
-                id="beta-invite"
-                type="text"
-                className="w-full px-4 py-3 rounded-lg bg-slate-900/60 border border-slate-600 text-white uppercase tracking-widest"
-                value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                onBlur={() => validateCode(inviteCode)}
-                placeholder="Např. ABCD1234EFGH5678"
-                autoComplete="off"
-                required
-              />
-            </div>
-
-            {validated && (
-              <p className="text-emerald-300 text-sm">
-                Pozvánka platná — {validated.cohort_name} ({validated.cohort_code}).
-                Volných míst: {validated.remaining_slots}.
-              </p>
-            )}
-
+          <form onSubmit={handleStart} className="space-y-4">
             <label className="flex items-start gap-3 text-sm text-gray-200 cursor-pointer">
               <input
                 type="checkbox"
@@ -175,16 +120,21 @@ export default function BetaEntryPage() {
                 required
               />
               <span>
-                Souhlasím s účastí v uzavřené beta verzi a rozumím tomu, že produkt je ve vývoji.
+                Souhlasím s účastí v beta testování a rozumím tomu, že aplikace je ve vývoji.
               </span>
             </label>
+
+            <p className="text-xs text-gray-400 leading-relaxed">
+              Body & Mind ON poskytuje obecná fitness a výživová doporučení. Nenahrazuje lékaře,
+              fyzioterapeuta ani jiného zdravotního odborníka.
+            </p>
 
             <button
               type="submit"
               className="w-full py-3 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-900 font-bold disabled:opacity-50"
-              disabled={loading || !validated}
+              disabled={loading}
             >
-              {loading ? 'Ověřuji…' : 'Pokračovat do START'}
+              {loading ? 'Připravuji…' : 'Začít zdarma'}
             </button>
 
             {status && (
@@ -194,7 +144,11 @@ export default function BetaEntryPage() {
 
           <p className="text-center text-gray-400 text-sm mt-6">
             Už máš účet?{' '}
-            <Link href="/login?redirect=/start" className="text-sky-400 hover:underline">
+            <Link
+              href="/login?redirect=/beta"
+              className="text-sky-400 hover:underline"
+              onClick={() => { if (termsAccepted) setBetaJoinPending(); }}
+            >
               Přihlásit se
             </Link>
           </p>

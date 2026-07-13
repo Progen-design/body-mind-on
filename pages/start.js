@@ -13,8 +13,7 @@ import { REGISTRATION_STEPS } from "../lib/registrationRules";
 import { PLAN_GENERATION_DURATION_HINT, PLAN_GENERATION_OVERLAY_TITLE } from "../lib/planGenerationUiCopy";
 import { validateBirthDate } from "../lib/bodyMetricsBirthDate";
 import { trackProductEvent } from "../lib/productAnalytics";
-import { claimPendingBetaInvite } from "../lib/betaInviteClient";
-import { BETA_TERMS_VERSION } from "../lib/betaCohortConstants";
+import { hasBetaJoinPending } from "../lib/betaJoinClient";
 
 // Registrace dle pravidel ON Club (stejný flow pro START, ON Club, VIP): https://app.bodyandmindon.cz/on-club
 const MAX_STEP = REGISTRATION_STEPS;
@@ -77,9 +76,9 @@ export default function Start() {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (cancelled || !session) return;
-      const pending = typeof window !== 'undefined' ? sessionStorage.getItem('beta_pending_invite') : null;
+      const pending = typeof window !== 'undefined' && hasBetaJoinPending();
       if (pending) {
-        await claimPendingBetaInvite(session.access_token, BETA_TERMS_VERSION);
+        router.replace('/beta');
         return;
       }
       router.replace('/profil');
@@ -226,8 +225,11 @@ export default function Start() {
                 password: cleanedData.password,
               });
               if (!error && signInData?.session) {
-                await claimPendingBetaInvite(signInData.session.access_token, BETA_TERMS_VERSION);
-                router.replace('/profil');
+                if (hasBetaJoinPending()) {
+                  router.replace('/beta');
+                } else {
+                  router.replace('/profil');
+                }
                 return;
               }
             }

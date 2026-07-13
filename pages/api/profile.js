@@ -8,6 +8,11 @@ import { getRegistrationAnchoredWeek } from '../../lib/profileWeekRange';
 import { reconcileUserDataByEmail } from '../../lib/reconcileUserDataByEmail';
 import { shouldShowWithingsSection } from '../../lib/withingsProfileVisibility';
 
+function toDateKey(value) {
+  if (!value) return '';
+  return String(value).slice(0, 10);
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -36,7 +41,7 @@ export default async function handler(req, res) {
     const now = new Date();
     const { weekStartStr, weekEndStr } = getRegistrationAnchoredWeek(now, user.created_at);
 
-    const [metricsRes, plansRes, workoutsRes, userHabitsRes, membershipRes, habitLogsRes, profileRes, coachMessagesRes, initialPlanTaskRes, withingsConnRes] = await Promise.allSettled([
+    const [metricsRes, plansRes, workoutsRes, userHabitsRes, membershipRes, habitLogsRes, profileRes, coachMessagesRes, initialPlanTaskRes, withingsConnRes, bodyMeasurementsRes, dailyCompletionsRes, dailyCheckinsRes, habitLogsProgressRes] = await Promise.allSettled([
       supabaseServer
         .from('body_metrics')
         .select('*')
@@ -96,6 +101,31 @@ export default async function handler(req, res) {
         .eq('user_id', userId)
         .limit(1)
         .maybeSingle(),
+      supabaseServer
+        .from('body_measurements')
+        .select('*')
+        .eq('user_id', userId)
+        .order('measured_at', { ascending: false })
+        .limit(200),
+      supabaseServer
+        .from('daily_activity_completions')
+        .select('id, activity_type, completed_at, activity_key')
+        .eq('user_id', userId)
+        .order('completed_at', { ascending: false })
+        .limit(500),
+      supabaseServer
+        .from('daily_checkins')
+        .select('id, checkin_date, created_at')
+        .eq('user_id', userId)
+        .order('checkin_date', { ascending: false })
+        .limit(200),
+      supabaseServer
+        .from('habit_logs')
+        .select('log_date, habit_id, completed')
+        .eq('user_id', userId)
+        .gte('log_date', toDateKey(user.created_at || now.toISOString()))
+        .order('log_date', { ascending: false })
+        .limit(1000),
     ]);
 
     const bodyMetrics = (metricsRes.status === 'fulfilled' && metricsRes.value?.data) ? metricsRes.value.data : [];
@@ -282,6 +312,10 @@ export default async function handler(req, res) {
     const positiveIds = new Set(POSITIVE_HABITS.map((h) => h.id));
     const negativeIds = new Set(NEGATIVE_HABITS.map((h) => h.id));
     const habitLogs = (habitLogsRes.status === 'fulfilled' && habitLogsRes.value?.data) ? habitLogsRes.value.data : [];
+    const bodyMeasurements = (bodyMeasurementsRes.status === 'fulfilled' && bodyMeasurementsRes.value?.data) ? bodyMeasurementsRes.value.data : [];
+    const dailyActivityCompletions = (dailyCompletionsRes.status === 'fulfilled' && dailyCompletionsRes.value?.data) ? dailyCompletionsRes.value.data : [];
+    const dailyCheckins = (dailyCheckinsRes.status === 'fulfilled' && dailyCheckinsRes.value?.data) ? dailyCheckinsRes.value.data : [];
+    const habitLogsProgress = (habitLogsProgressRes.status === 'fulfilled' && habitLogsProgressRes.value?.data) ? habitLogsProgressRes.value.data : [];
     const profileRow = (profileRes.status === 'fulfilled' && profileRes.value?.data) ? profileRes.value.data : null;
     const coachMessages = (coachMessagesRes.status === 'fulfilled' && coachMessagesRes.value?.data) ? coachMessagesRes.value.data : [];
     let positiveDone = 0;
@@ -454,6 +488,10 @@ export default async function handler(req, res) {
         negativeDone,
         byHabit,
       },
+      body_measurements: bodyMeasurements,
+      daily_activity_completions: dailyActivityCompletions,
+      daily_checkins: dailyCheckins,
+      habit_logs_progress: habitLogsProgress,
     };
 
     return res.status(200).json(profilePayload);

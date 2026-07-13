@@ -11,14 +11,22 @@ const WAITLIST_COPY = 'Připravujeme — přidej se na waitlist';
  * ON Club + VIP dle feature flags. Checkout přes autentizovaný API endpoint.
  */
 export default function TrialExpiredPaywall() {
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [loadingTier, setLoadingTier] = useState('');
   const [checkoutError, setCheckoutError] = useState('');
   const onClubEnabled = isOnClubSalesEnabled();
   const vipEnabled = isVipSalesEnabled();
 
-  async function handleStartCheckout() {
+  /**
+   * Přihlášený uživatel jde VŽDY rovnou do Stripe checkoutu.
+   *
+   * Dřív tu byl odkaz na /on-club — a to je registrační trychtýř.
+   * Člověk, který už účet má, se tím posílal, aby se zaregistroval znovu.
+   *
+   * @param {'START'|'ON_CLUB'|'VIP'} tier
+   */
+  async function handleCheckout(tier) {
     setCheckoutError('');
-    setCheckoutLoading(true);
+    setLoadingTier(tier);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
@@ -26,12 +34,12 @@ export default function TrialExpiredPaywall() {
         setCheckoutError('Pro aktivaci předplatného se nejdřív přihlas.');
         return;
       }
-      const url = await createStripeCheckoutUrl('START', token);
+      const url = await createStripeCheckoutUrl(tier, token);
       window.location.href = url;
     } catch (err) {
       setCheckoutError(err?.message || 'Checkout se nepodařilo spustit.');
     } finally {
-      setCheckoutLoading(false);
+      setLoadingTier('');
     }
   }
 
@@ -54,49 +62,55 @@ export default function TrialExpiredPaywall() {
           <button
             type="button"
             className="trial-upgrade-cta trial-upgrade-cta--button"
-            disabled={checkoutLoading}
-            onClick={handleStartCheckout}
+            disabled={loadingTier !== ''}
+            onClick={() => handleCheckout('START')}
           >
-            {checkoutLoading ? 'Načítám…' : `${START_POST_TRIAL_OFFER.cta.label} →`}
+            {loadingTier === 'START' ? 'Načítám…' : `${START_POST_TRIAL_OFFER.cta.label} →`}
           </button>
-          {checkoutError ? (
-            <p className="trial-banner-text trial-banner-text--small" role="alert">{checkoutError}</p>
-          ) : null}
         </article>
-        {onClubEnabled ? (
-          <a href="/on-club" className="trial-upgrade-card trial-upgrade-card--club">
-            <span className="trial-upgrade-badge">Doporučeno</span>
-            <h3 className="trial-upgrade-title">ON Club</h3>
-            <p className="trial-upgrade-subtitle">AI trenér 24/7, habit tracker, komunita a video konzultace</p>
-            <span className="trial-upgrade-price">1 499 Kč/měsíc</span>
-            <span className="trial-upgrade-cta">Připojit se k ON Clubu →</span>
-          </a>
-        ) : (
-          <article className="trial-upgrade-card trial-upgrade-card--club trial-upgrade-card--disabled">
-            <span className="trial-upgrade-badge">Připravujeme</span>
-            <h3 className="trial-upgrade-title">ON Club</h3>
-            <p className="trial-upgrade-subtitle">AI trenér 24/7, habit tracker, komunita a video konzultace</p>
-            <span className="trial-upgrade-price">1 499 Kč/měsíc</span>
+
+        <article className="trial-upgrade-card trial-upgrade-card--club">
+          <span className="trial-upgrade-badge">{onClubEnabled ? 'Doporučeno' : 'Připravujeme'}</span>
+          <h3 className="trial-upgrade-title">ON Club</h3>
+          <p className="trial-upgrade-subtitle">AI trenér 24/7, habit tracker, komunita a video konzultace</p>
+          <span className="trial-upgrade-price">1 499 Kč/měsíc</span>
+          {onClubEnabled ? (
+            <button
+              type="button"
+              className="trial-upgrade-cta trial-upgrade-cta--button"
+              disabled={loadingTier !== ''}
+              onClick={() => handleCheckout('ON_CLUB')}
+            >
+              {loadingTier === 'ON_CLUB' ? 'Načítám…' : 'Připojit se k ON Clubu →'}
+            </button>
+          ) : (
             <span className="trial-upgrade-cta trial-upgrade-cta--disabled">{WAITLIST_COPY}</span>
-          </article>
-        )}
-        {vipEnabled ? (
-          <a href="/chci-vip" className="trial-upgrade-card trial-upgrade-card--vip">
-            <h3 className="trial-upgrade-title">VIP Coaching</h3>
-            <p className="trial-upgrade-subtitle">Elitní lidský kouč, týdenní 1:1 konzultace, strategie na míru</p>
-            <span className="trial-upgrade-price">{VIP_PRICE_LABEL}</span>
-            <span className="trial-upgrade-cta">Chci VIP přístup →</span>
-          </a>
-        ) : (
-          <article className="trial-upgrade-card trial-upgrade-card--vip trial-upgrade-card--disabled">
-            <span className="trial-upgrade-badge">Připravujeme</span>
-            <h3 className="trial-upgrade-title">VIP Coaching</h3>
-            <p className="trial-upgrade-subtitle">Elitní lidský kouč, týdenní 1:1 konzultace, strategie na míru</p>
-            <span className="trial-upgrade-price">{VIP_PRICE_LABEL}</span>
+          )}
+        </article>
+
+        <article className="trial-upgrade-card trial-upgrade-card--vip">
+          <span className="trial-upgrade-badge">{vipEnabled ? 'Osobní kouč' : 'Připravujeme'}</span>
+          <h3 className="trial-upgrade-title">VIP Coaching</h3>
+          <p className="trial-upgrade-subtitle">Elitní lidský kouč, týdenní 1:1 konzultace, strategie na míru</p>
+          <span className="trial-upgrade-price">{VIP_PRICE_LABEL}</span>
+          {vipEnabled ? (
+            <button
+              type="button"
+              className="trial-upgrade-cta trial-upgrade-cta--button"
+              disabled={loadingTier !== ''}
+              onClick={() => handleCheckout('VIP')}
+            >
+              {loadingTier === 'VIP' ? 'Načítám…' : 'Chci VIP přístup →'}
+            </button>
+          ) : (
             <span className="trial-upgrade-cta trial-upgrade-cta--disabled">{WAITLIST_COPY}</span>
-          </article>
-        )}
+          )}
+        </article>
       </div>
+
+      {checkoutError ? (
+        <p className="trial-banner-text trial-banner-text--small" role="alert">{checkoutError}</p>
+      ) : null}
     </>
   );
 }

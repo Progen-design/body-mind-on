@@ -197,3 +197,18 @@ npm run report:beta-daily -- --cohort=START-C1
 ```
 
 Tabulky `beta_cohorts`, `beta_participants`, `beta_research_sessions`, `beta_issues`, `beta_decisions` — RLS bez public/authenticated policies. Historické invite kódy zůstávají jako hash; nový direct flow používá `invite_code_hash = null` a `source = direct_beta_link`.
+
+## Beta lifecycle email automation
+
+Migrace: `supabase/migrations/20260713190000_beta_email_automation.sql` (`npm run migrate:beta-email`).
+
+- Cron: `GET /api/cron/beta-email` (hourly, UTC) — evaluator + dispatcher
+- Sender: existující Gmail / Google Workspace (`GMAIL_USER`, `GMAIL_APP_PASSWORD`)
+- Kill-switch: `BETA_EMAIL_AUTOMATION_ENABLED=false` (default) — nastavit na `true` až po interním send testu
+- Žádný nový placený provider; queue tabulky bez e-mailové adresy
+
+```bash
+npm run verify:beta-email
+npm run report:beta-email
+ALLOW_BETA_EMAIL_SEND_TEST=yes npm run verify:beta-email
+```

@@ -92,6 +92,25 @@ console.log(`  new returns: ${newReturn}`);
 console.log(`  new feedback: ${newFeedback}`);
 console.log(`  new blocker/high issues: ${(newIssues || []).length}`);
 console.log(`  plan generation failures: ${planGenFailures}`);
+
+let emailQueued = 0;
+let emailFailed = 0;
+let emailAutomationEnabled = String(process.env.BETA_EMAIL_AUTOMATION_ENABLED || '').trim().toLowerCase() === 'true';
+const participantIds = rows.map((p) => p.id);
+if (participantIds.length) {
+  const { count: qc } = await admin.from('beta_email_messages').select('id', { count: 'exact', head: true }).in('participant_id', participantIds).eq('status', 'queued');
+  const { count: fc } = await admin.from('beta_email_messages').select('id', { count: 'exact', head: true }).in('participant_id', participantIds).eq('status', 'failed');
+  emailQueued = qc || 0;
+  emailFailed = fc || 0;
+}
+
+console.log('');
+console.log('Email automation:');
+console.log(`  enabled: ${emailAutomationEnabled}`);
+console.log(`  queued: ${emailQueued}`);
+console.log(`  failed: ${emailFailed}`);
+if (!emailAutomationEnabled) recommendations.push('AUTOMATION DISABLED');
+else if (emailFailed > 0) recommendations.push('REVIEW FAILED EMAIL');
 console.log('');
 console.log('Recommendation:');
 console.log(`  ${recommendations[0]}`);

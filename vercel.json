@@ -11,6 +11,10 @@
             {
                   "path": "/api/cron/withings-sync",
                   "schedule": "0 5 * * *"
+            },
+            {
+                  "path": "/api/cron/beta-email",
+                  "schedule": "0 * * * *"
             }
       ],
       "functions": {
@@ -25,6 +29,15 @@
             },
             "pages/api/cron/withings-sync.js": {
                   "maxDuration": 300
+            },
+            "pages/api/cron/beta-email.js": {
+                  "maxDuration": 120
+            },
+            "pages/api/internal/beta-email/evaluate.js": {
+                  "maxDuration": 60
+            },
+            "pages/api/internal/beta-email/dispatch.js": {
+                  "maxDuration": 120
             }
       }
 }

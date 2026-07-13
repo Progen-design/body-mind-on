@@ -155,3 +155,15 @@ npm run report:beta-cohort -- --cohort=START-C1
 ```
 
 Runbook a WhatsApp šablona: `docs/BETA_COHORT_1_RUNBOOK.md`, `docs/BETA_INVITE_COPY.md`.
+
+### Beta lifecycle e-mail automation (zero-cost)
+
+Hodinový cron (`/api/cron/beta-email`) + Gmail sender. Výchozí kill-switch: `BETA_EMAIL_AUTOMATION_ENABLED=false`.
+
+```bash
+npm run migrate:beta-email
+npm run verify:beta-email
+npm run report:beta-email
+```
+
+Interní send test: `ALLOW_BETA_EMAIL_SEND_TEST=yes npm run verify:beta-email`

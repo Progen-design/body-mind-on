@@ -11,6 +11,10 @@
             {
                   "path": "/api/cron/withings-sync",
                   "schedule": "0 5 * * *"
+            },
+            {
+                  "path": "/api/cron/lifecycle-email",
+                  "schedule": "0 * * * *"
             }
       ],
       "functions": {
@@ -27,6 +31,9 @@
                   "maxDuration": 300
             },
             "pages/api/cron/beta-email.js": {
+                  "maxDuration": 120
+            },
+            "pages/api/cron/lifecycle-email.js": {
                   "maxDuration": 120
             },
             "pages/api/internal/beta-email/evaluate.js": {

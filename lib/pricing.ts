@@ -1,11 +1,27 @@
 /**
- * JEDINÉ MÍSTO PRAVDY pro ceny START.
- * Když měníš cenu, měníš ji tady — a zároveň v Stripe (nová Price)
- * a v env STRIPE_PRICE_START_MONTHLY. Nikde jinde cenu nepiš natvrdo.
+ * Ceny žijí v `pricingConstants.js` — potřebují je i node skripty,
+ * které neumí TypeScript. Tady je jen re-exportujeme, aby zbytek appky
+ * mohl dál importovat z `lib/pricing`. Jedno místo pravdy zůstává jedno.
  */
-export const START_PRICE_CZK = 599;
-export const START_PRICE_LABEL = `${START_PRICE_CZK} Kč/měsíc`;
-export const TRIAL_DAYS = 7;
+import {
+  START_PRICE_CZK,
+  START_PRICE_LABEL,
+  ON_CLUB_PRICE_CZK,
+  ON_CLUB_PRICE_LABEL,
+  START_VARIANT_PRICE_LABEL,
+  ON_CLUB_VARIANT_PRICE_LABEL,
+  TRIAL_DAYS,
+} from './pricingConstants';
+
+export {
+  START_PRICE_CZK,
+  START_PRICE_LABEL,
+  ON_CLUB_PRICE_CZK,
+  ON_CLUB_PRICE_LABEL,
+  START_VARIANT_PRICE_LABEL,
+  ON_CLUB_VARIANT_PRICE_LABEL,
+  TRIAL_DAYS,
+};
 
 /** START – nabídka pro nového uživatele (trial ještě nevyčerpán). */
 export const START_TRIAL_OFFER = {
@@ -41,7 +57,7 @@ export const PRICING = [
   {
     id: 'on-club',
     name: 'ON Club',
-    priceCzk: 1499,
+    priceCzk: ON_CLUB_PRICE_CZK,
     badge: 'Doporučeno',
     subtitle: 'Tvůj osobní AI trenér vždy po ruce.',
     features: [

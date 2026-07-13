@@ -16,6 +16,8 @@ import HabitEntryWizard from '../components/HabitEntryWizard';
 import Toast from '../components/Toast';
 import WorkoutOverlay from '../components/profile/WorkoutOverlay';
 import PreferencesOverlay from '../components/profile/PreferencesOverlay';
+import TrialExpiredPaywall from '../components/TrialExpiredPaywall';
+import TrialEndingSoonBanner, { shouldShowTrialEndingSoon } from '../components/TrialEndingSoonBanner';
 import { shouldShowWithingsSection } from '../lib/withingsProfileVisibility';
 import { metadataToSmartScaleChoice } from '../lib/smartScalePreference';
 import { parseTrainingEnvironment, parseAvailableEquipment } from '../lib/trainingEnvironment';
@@ -2007,13 +2009,11 @@ export default function Profil() {
                         <button type="button" className="profile-quick-nav-btn" onClick={() => document.getElementById('profile-today-meals')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Jídelníček</button>
                         <button type="button" className="profile-quick-nav-btn" onClick={() => document.getElementById('profile-today-workout')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Trénink</button>
                         <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('muj-plan'); document.getElementById('plan-nakupni-seznam')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>Nákup</button>
-                        <button type="button" className="profile-quick-nav-btn" onClick={openPreferencesWorkspace}>Nastavení</button>
                       </nav>
                     ) : (
                       <nav className="profile-quick-nav" aria-label="Rychlá navigace">
                         <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('denni-navyky'); document.getElementById('denni-navyky')?.scrollIntoView({ behavior: 'smooth' }); }}>Denní návyky</button>
                         <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('statistiky'); document.getElementById('statistiky')?.scrollIntoView({ behavior: 'smooth' }); }}>Statistiky</button>
-                        <button type="button" className="profile-quick-nav-btn" onClick={openPreferencesWorkspace}>Nastavení</button>
                       </nav>
                     )}
                   </div>
@@ -2038,6 +2038,13 @@ export default function Profil() {
                   </div>
                 </div>
               </div>
+              {isTrialExpired && membershipStatus === 'trial' ? (
+                <div className="trial-banner trial-banner--expired">
+                  <TrialExpiredPaywall />
+                </div>
+              ) : shouldShowTrialEndingSoon({ membershipStatus, isTrialExpired, daysUntilTrialEnd }) ? (
+                <TrialEndingSoonBanner daysUntilTrialEnd={daysUntilTrialEnd} />
+              ) : null}
               {(currentPlan || program === 'ON_CLUB' || program === 'VIP') && (
                 <div className="plan-goal-in-card">
                   <div className="plan-goal-row">

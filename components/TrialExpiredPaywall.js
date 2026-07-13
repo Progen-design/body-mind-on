@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { START_FEATURES, START_POST_TRIAL_OFFER, VIP_PRICE_LABEL } from '../lib/pricing';
+import { START_FEATURES, START_POST_TRIAL_OFFER, START_PRICE_LABEL, TRIAL_DAYS, VIP_PRICE_LABEL } from '../lib/pricing';
 import { isOnClubSalesEnabled, isVipSalesEnabled } from '../lib/salesFeatureFlags';
 import { supabase } from '../lib/supabaseClient';
 import { createStripeCheckoutUrl } from '../lib/stripeCheckoutClient';
@@ -38,7 +38,7 @@ export default function TrialExpiredPaywall() {
   return (
     <>
       <p className="trial-banner-text">
-        Tvůj 7denní START program vypršel. Pro pokračování aktivuj předplatné 499 Kč/měsíc.
+        {`Tvůj ${TRIAL_DAYS}denní START program vypršel. Pro pokračování aktivuj předplatné ${START_PRICE_LABEL}.`}
       </p>
       <div className="trial-banner-upgrade-cards trial-paywall-grid">
         <article className="trial-upgrade-card trial-upgrade-card--start">

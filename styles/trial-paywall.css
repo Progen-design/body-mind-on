@@ -18,6 +18,55 @@
   border-color: rgba(234, 179, 8, 0.4);
 }
 
+/* Varovný banner 2 dny před koncem trialu */
+.trial-warning-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.trial-warning-copy {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.trial-warning-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fbbf24;
+  letter-spacing: 0.01em;
+}
+
+.trial-warning-row .trial-banner-text--small {
+  margin-top: 4px;
+}
+
+.trial-warning-row .trial-upgrade-cta--button {
+  width: auto;
+  flex: 0 0 auto;
+  background: #7c3aed;
+  white-space: nowrap;
+}
+
+.trial-warning-row .trial-upgrade-cta--button:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 0 16px rgba(124, 58, 237, 0.5);
+}
+
+.trial-warning-row .trial-upgrade-cta--button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+@media (max-width: 640px) {
+  .trial-warning-row .trial-upgrade-cta--button {
+    width: 100%;
+  }
+}
+
 .trial-banner-text {
   margin: 0 0 12px;
   font-size: 15px;

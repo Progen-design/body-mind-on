@@ -1,14 +1,23 @@
+/**
+ * JEDINÉ MÍSTO PRAVDY pro ceny START.
+ * Když měníš cenu, měníš ji tady — a zároveň v Stripe (nová Price)
+ * a v env STRIPE_PRICE_START_MONTHLY. Nikde jinde cenu nepiš natvrdo.
+ */
+export const START_PRICE_CZK = 599;
+export const START_PRICE_LABEL = `${START_PRICE_CZK} Kč/měsíc`;
+export const TRIAL_DAYS = 7;
+
 /** START – nabídka pro nového uživatele (trial ještě nevyčerpán). */
 export const START_TRIAL_OFFER = {
-  priceLabel: '7 dní zdarma, pak 499 Kč/měsíc',
+  priceLabel: `${TRIAL_DAYS} dní zdarma, pak ${START_PRICE_LABEL}`,
   subtitle: null as string | null,
   cta: { label: 'Začít zdarma', href: '/start' },
 };
 
 /** START – po vypršení 7denního programu (trial už vyčerpán). */
 export const START_POST_TRIAL_OFFER = {
-  priceLabel: '499 Kč/měsíc',
-  subtitle: 'Pokračuj v programu START za 499 Kč/měsíc.',
+  priceLabel: START_PRICE_LABEL,
+  subtitle: `Pokračuj v programu START za ${START_PRICE_LABEL}.`,
   cta: { label: 'Aktivovat předplatné' },
 };
 

@@ -27,6 +27,31 @@ export function loadStripeTestEnv(root) {
   }
 }
 
+/** Production Stripe E2E — přepíše Supabase/Stripe klíče z Vercel pull. */
+export function loadStripeE2eProductionEnv(root) {
+  const p = join(root, '.env.stripe-e2e.tmp');
+  if (!existsSync(p)) return;
+  const keys = new Set([
+    'SUPABASE_URL',
+    'NEXT_PUBLIC_SUPABASE_URL',
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'STRIPE_SECRET_KEY',
+    'STRIPE_WEBHOOK_SECRET',
+    'STRIPE_PRICE_START_MONTHLY',
+  ]);
+  for (const line of readFileSync(p, 'utf8').split(/\r?\n/)) {
+    const t = line.trim();
+    if (!t || t.startsWith('#')) continue;
+    const i = t.indexOf('=');
+    if (i <= 0) continue;
+    const k = t.slice(0, i).trim();
+    if (!keys.has(k)) continue;
+    let v = t.slice(i + 1).trim();
+    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+    process.env[k] = v;
+  }
+}
+
 export function makeStripePreviewEmail() {
   const shortRandom = randomBytes(4).toString('hex');
   return `info+stripe-preview-${Date.now()}-${shortRandom}@bodyandmindon.cz`;

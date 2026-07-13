@@ -77,9 +77,8 @@ export default async function handler(req, res) {
     if (!error && user?.id) userId = user.id;
   }
 
-  // Never trust client-supplied user_id
   if (body.user_id) {
-    /* ignored */
+    /* never trust client-supplied user_id */
   }
 
   if (!userId) {
@@ -100,29 +99,31 @@ export default async function handler(req, res) {
     if (limited) {
       return res.status(429).json({ error_code: 'rate_limited' });
     }
+
+    const row = {
+      anonymous_id: anonymousId,
+      session_id: sessionId,
+      event_name: eventName,
+      event_version: Number(body.event_version) || 1,
+      properties,
+      page_path: body.page_path ? String(body.page_path).slice(0, 200) : null,
+      source: body.source ? String(body.source).slice(0, 100) : null,
+      utm_source: body.utm_source ? String(body.utm_source).slice(0, 150) : null,
+      utm_medium: body.utm_medium ? String(body.utm_medium).slice(0, 150) : null,
+      utm_campaign: body.utm_campaign ? String(body.utm_campaign).slice(0, 150) : null,
+    };
+    const { error } = await supabaseServer.from('product_events').insert(row);
+    if (error) console.error('[api/events] anon insert failed');
+    return res.status(200).json({ received: true, stored: !error });
   }
 
-  const row = {
-    user_id: userId,
-    anonymous_id: userId ? null : String(body.anonymous_id || '').slice(0, 64) || null,
-    session_id: userId ? null : String(body.session_id || '').slice(0, 64) || null,
-    event_name: eventName,
-    event_version: Number(body.event_version) || 1,
-    properties,
-    page_path: body.page_path ? String(body.page_path).slice(0, 200) : null,
-    source: body.source ? String(body.source).slice(0, 100) : null,
-    utm_source: body.utm_source ? String(body.utm_source).slice(0, 150) : null,
-    utm_medium: body.utm_medium ? String(body.utm_medium).slice(0, 150) : null,
-    utm_campaign: body.utm_campaign ? String(body.utm_campaign).slice(0, 150) : null,
-  };
-
-  const { error: insErr } = await supabaseServer.from('product_events').insert(row);
-  if (insErr) {
-    console.error('[api/events] insert failed');
-    return res.status(200).json({ received: true, stored: false });
-  }
-
-  return res.status(200).json({ received: true, stored: true });
+  const { data, error } = await supabaseServer.rpc('insert_product_event_server', {
+    p_user_id: String(userId),
+    p_event_name: eventName,
+    p_properties: properties,
+  });
+  if (error) console.error('[api/events] rpc insert failed');
+  return res.status(200).json({ received: true, stored: !error && !!data });
 }
 
 export const config = {

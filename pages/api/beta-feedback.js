@@ -45,7 +45,11 @@ export default async function handler(req, res) {
   const category = req.body?.category ? String(req.body.category).trim() : null;
   const scoreRaw = req.body?.score;
   const score = scoreRaw == null ? null : Number(scoreRaw);
-  const message = req.body?.message ? sanitizeMessage(req.body.message) : null;
+  const rawMessage = req.body?.message == null ? null : String(req.body.message);
+  if (rawMessage != null && rawMessage.length > MAX_MESSAGE_LEN) {
+    return res.status(400).json({ error: 'Zpráva je příliš dlouhá.' });
+  }
+  const message = rawMessage != null ? sanitizeMessage(rawMessage) : null;
 
   if (!BETA_FEEDBACK_CONTEXTS.includes(context)) {
     return res.status(400).json({ error: 'Neplatný kontext.' });

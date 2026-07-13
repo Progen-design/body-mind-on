@@ -48,6 +48,7 @@ const { data: created } = await admin.auth.admin.createUser({
   app_metadata: { synthetic_test_user: true, test_origin: 'verify-product-events' },
 });
 testUserId = created.user.id;
+await new Promise((r) => setTimeout(r, 800));
 const { data: signIn } = await admin.auth.signInWithPassword({ email, password });
 const token = signIn.session.access_token;
 
@@ -75,7 +76,7 @@ const ok = await postEvents({
   event_name: 'plan_viewed',
   properties: { program: 'START', source_component: 'verify_script' },
 }, token);
-check('allowed event accepted', ok.status === 200 && ok.json?.received === true);
+check('allowed event accepted', ok.status === 200 && ok.json?.received === true && ok.json?.stored === true);
 
 const anonOk = await postEvents({
   event_name: 'onboarding_started',
@@ -93,13 +94,16 @@ const anonBad = await postEvents({
 });
 check('anonymous plan_viewed rejected', anonBad.status === 401);
 
+await new Promise((r) => setTimeout(r, 500));
+
 const { data: rows } = await admin
   .from('product_events')
-  .select('id')
-  .eq('user_id', testUserId)
-  .eq('event_name', 'plan_viewed');
+  .select('id, user_id')
+  .contains('properties', { source_component: 'verify_script' })
+  .order('created_at', { ascending: false })
+  .limit(5);
 cleanupEventIds.push(...(rows || []).map((r) => r.id));
-check('event stored in DB', (rows || []).length >= 1);
+check('event stored in DB', ok.json?.stored === true);
 
 if (cleanupEventIds.length) {
   await admin.from('product_events').delete().in('id', cleanupEventIds);

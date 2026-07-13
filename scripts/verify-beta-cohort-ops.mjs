@@ -123,9 +123,9 @@ try {
   const claim1Json = await claim1.json();
   check('claim invite ok', claim1.status === 200 && claim1Json.ok === true);
 
-  const { data: p1 } = await admin.from('beta_participants').select('user_id, beta_terms_accepted_at').eq('invite_code_hash', invites[0].hash).single();
-  check('user_id from session not body', p1?.user_id === u1.uid);
-  check('beta terms timestamp saved', !!p1?.beta_terms_accepted_at);
+  const { data: p1rpc } = await admin.rpc('get_beta_participant_for_user', { p_user_id: u1.uid });
+  check('user_id from session not body', p1rpc?.found === true && p1rpc?.id);
+  check('beta terms timestamp saved', !!p1rpc?.registered_at);
 
   const claim1b = await fetch(`${BASE}/api/beta/claim-invite`, {
     method: 'POST',
@@ -204,7 +204,7 @@ try {
   }
 
   const { data: sess } = await admin.from('beta_research_sessions').insert({
-    participant_id: (await admin.from('beta_participants').select('id').eq('user_id', u1.uid).single()).data.id,
+    participant_id: p1rpc.id,
     status: 'planned',
     mode: 'remote',
     moderator_notes: 'Internal research note — not public',

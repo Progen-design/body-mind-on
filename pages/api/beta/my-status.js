@@ -23,17 +23,11 @@ export default async function handler(req, res) {
     return res.status(200).json({ is_beta_participant: false });
   }
 
-  const { data: cohort } = await supabaseServer
-    .from('beta_cohorts')
-    .select('name, status')
-    .eq('id', participant.cohort_id)
-    .maybeSingle();
-
   return res.status(200).json({
     is_beta_participant: true,
     cohort_code: participant.cohort_code,
-    cohort_name: cohort?.name || 'START Beta',
-    cohort_status: cohort?.status || null,
+    cohort_name: participant.cohort_name || 'START Beta',
+    cohort_status: participant.cohort_status || null,
     participant_status: participant.status,
   });
 }

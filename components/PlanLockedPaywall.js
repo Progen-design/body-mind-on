@@ -1,21 +1,45 @@
 import { useState } from 'react';
-import { START_FEATURES, START_PRICE_LABEL, TRIAL_DAYS } from '../lib/pricing';
+import {
+  START_FEATURES,
+  START_PRICE_LABEL,
+  TRIAL_DAYS,
+  VIP_PRICE_LABEL,
+} from '../lib/pricing';
+import { isOnClubSalesEnabled, isVipSalesEnabled } from '../lib/salesFeatureFlags';
 import { supabase } from '../lib/supabaseClient';
 import { createStripeCheckoutUrl } from '../lib/stripeCheckoutClient';
 
+const ON_CLUB_FEATURES = [
+  'Vše ze STARTU',
+  'Napojení chytré váhy',
+  'AI trenér TED 24/7',
+  'Soukromá komunita',
+];
+
+const VIP_FEATURES = [
+  'Vše z ON CLUBU',
+  'Osobní kouč',
+  '1:1 videokonzultace',
+  'Prioritní podpora',
+];
+
 /**
- * Stav `pending_payment` — účet i plán existují, ale uživatel ještě neprošel
- * checkoutem. Vidí, že je hotovo, a odemkne to jedním klikem.
+ * Stav `pending_payment` — účet i plán existují, uživatel ještě neprošel
+ * checkoutem. Vybere si program a odemkne. START má 7 dní zdarma.
  *
  * Platí se přes Apple Pay / Google Pay, takže kartu obvykle nikdo neopisuje.
  */
 export default function PlanLockedPaywall() {
-  const [loading, setLoading] = useState(false);
+  const [loadingTier, setLoadingTier] = useState('');
   const [error, setError] = useState('');
 
-  async function handleUnlock() {
+  const onClubEnabled = isOnClubSalesEnabled();
+  const vipEnabled = isVipSalesEnabled();
+
+  /** @param {'START'|'ON_CLUB'|'VIP'} tier */
+  async function handleCheckout(tier) {
     setError('');
-    setLoading(true);
+    setLoadingTier(tier);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
@@ -23,12 +47,12 @@ export default function PlanLockedPaywall() {
         setError('Pro aktivaci se nejdřív přihlas.');
         return;
       }
-      const url = await createStripeCheckoutUrl('START', token);
+      const url = await createStripeCheckoutUrl(tier, token);
       window.location.href = url;
     } catch (err) {
       setError(err?.message || 'Checkout se nepodařilo spustit.');
     } finally {
-      setLoading(false);
+      setLoadingTier('');
     }
   }
 
@@ -39,27 +63,75 @@ export default function PlanLockedPaywall() {
         <div>
           <p className="plan-locked-title">Tvůj plán je připravený</p>
           <p className="trial-banner-text trial-banner-text--small">
-            {`Odemkni ho a máš ${TRIAL_DAYS} dní zdarma. Platíš až ${TRIAL_DAYS + 1}. den — ${START_PRICE_LABEL}. Zrušíš kdykoliv jedním klikem.`}
+            Vyber si program a odemkni ho. Platíš přes Apple Pay, Google Pay nebo kartou — zrušíš kdykoliv jedním klikem.
           </p>
         </div>
       </div>
 
-      <ul className="trial-paywall-features plan-locked-features">
-        {START_FEATURES.map((f) => (
-          <li key={f}>{f}</li>
-        ))}
-      </ul>
+      <div className="trial-banner-upgrade-cards trial-paywall-grid plan-locked-grid">
 
-      <button
-        type="button"
-        className="trial-upgrade-cta trial-upgrade-cta--button plan-locked-cta"
-        disabled={loading}
-        onClick={handleUnlock}
-      >
-        {loading ? 'Načítám…' : `Odemknout — ${TRIAL_DAYS} dní zdarma →`}
-      </button>
+        <article className="trial-upgrade-card trial-upgrade-card--start">
+          <span className="trial-upgrade-badge trial-upgrade-badge--free">{TRIAL_DAYS} dní zdarma</span>
+          <h3 className="trial-upgrade-title">START</h3>
+          <p className="trial-upgrade-subtitle">Plán, jídelníček a návyky. Základ, který zvládneš držet.</p>
+          <span className="trial-upgrade-price">{START_PRICE_LABEL}</span>
+          <ul className="trial-paywall-features">
+            {START_FEATURES.map((f) => <li key={f}>{f}</li>)}
+          </ul>
+          <button
+            type="button"
+            className="trial-upgrade-cta trial-upgrade-cta--button"
+            disabled={loadingTier !== ''}
+            onClick={() => handleCheckout('START')}
+          >
+            {loadingTier === 'START' ? 'Načítám…' : `Odemknout — ${TRIAL_DAYS} dní zdarma →`}
+          </button>
+        </article>
 
-      <p className="plan-locked-note">Apple Pay · Google Pay · karta</p>
+        <article className="trial-upgrade-card trial-upgrade-card--club">
+          <span className="trial-upgrade-badge">Doporučeno</span>
+          <h3 className="trial-upgrade-title">ON CLUB</h3>
+          <p className="trial-upgrade-subtitle">Chytrá váha, AI trenér TED a komunita. Plán se upravuje sám.</p>
+          <span className="trial-upgrade-price">1 499 Kč/měsíc</span>
+          <ul className="trial-paywall-features">
+            {ON_CLUB_FEATURES.map((f) => <li key={f}>{f}</li>)}
+          </ul>
+          {onClubEnabled ? (
+            <button
+              type="button"
+              className="trial-upgrade-cta trial-upgrade-cta--button"
+              disabled={loadingTier !== ''}
+              onClick={() => handleCheckout('ON_CLUB')}
+            >
+              {loadingTier === 'ON_CLUB' ? 'Načítám…' : 'Vstoupit do ON CLUBU →'}
+            </button>
+          ) : (
+            <span className="trial-upgrade-cta trial-upgrade-cta--disabled">Připravujeme</span>
+          )}
+        </article>
+
+        <article className="trial-upgrade-card trial-upgrade-card--vip">
+          <h3 className="trial-upgrade-title">VIP COACHING</h3>
+          <p className="trial-upgrade-subtitle">Osobní kouč, konzultace 1:1, strategie na míru.</p>
+          <span className="trial-upgrade-price">{VIP_PRICE_LABEL}</span>
+          <ul className="trial-paywall-features">
+            {VIP_FEATURES.map((f) => <li key={f}>{f}</li>)}
+          </ul>
+          {vipEnabled ? (
+            <button
+              type="button"
+              className="trial-upgrade-cta trial-upgrade-cta--button"
+              disabled={loadingTier !== ''}
+              onClick={() => handleCheckout('VIP')}
+            >
+              {loadingTier === 'VIP' ? 'Načítám…' : 'Chci VIP →'}
+            </button>
+          ) : (
+            <span className="trial-upgrade-cta trial-upgrade-cta--disabled">Připravujeme</span>
+          )}
+        </article>
+
+      </div>
 
       {error ? (
         <p className="trial-banner-text trial-banner-text--small" role="alert">{error}</p>

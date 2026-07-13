@@ -4164,10 +4164,15 @@ export default function Profil() {
           color: #fbbf24;
           border: 1px solid rgba(234,179,8,0.3);
         }
-        .membership-status--canceled, .membership-status--expired {
+        /* Vše, co znamená „nemáš přístup" — jedna barva. Uživatel se ji naučí jednou. */
+        .membership-status--canceled,
+        .membership-status--expired,
+        .membership-status--pending_payment,
+        .membership-status--past_due,
+        .membership-status--inactive {
           background: rgba(239,68,68,0.12);
           color: #f87171;
-          border: 1px solid rgba(239,68,68,0.25);
+          border: 1px solid rgba(239,68,68,0.35);
         }
         .membership-since {
           font-size: 12px;

@@ -64,42 +64,39 @@
   letter-spacing: 0.01em;
 }
 
-.plan-locked-features {
-  max-width: 320px;
-  margin: 20px auto 0;
+.plan-locked-grid {
+  margin-top: 26px;
+  text-align: left;
 }
 
-.plan-locked-cta {
-  width: auto;
-  min-width: 280px;
-  margin-top: 22px;
-  padding: 13px 26px;
-  font-size: 15px;
-  background: #7c3aed;
+.trial-upgrade-badge--free {
+  background: linear-gradient(90deg, #059669, #10b981);
+  color: #052e2b;
 }
 
-.plan-locked-cta:hover:not(:disabled) {
-  filter: brightness(1.1);
-  box-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
+/* Nedostupný program.
+   NESMÍ vypadat jako tlačítko — dřív to bylo plné barevné CTA, které nic nedělalo.
+   Uživatel klikl, nic se nestalo, a to je nejhorší možná zkušenost na platební obrazovce. */
+.trial-upgrade-cta--disabled {
+  display: block;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #64748b !important;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  cursor: not-allowed;
+  box-shadow: none !important;
+  filter: none !important;
+  font-weight: 500;
 }
 
-.plan-locked-cta:disabled {
-  opacity: 0.6;
+.trial-upgrade-card--disabled:hover .trial-upgrade-cta--disabled,
+.trial-upgrade-card:hover .trial-upgrade-cta--disabled {
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+.trial-upgrade-cta--button:disabled {
+  opacity: 0.55;
   cursor: default;
-}
-
-.plan-locked-note {
-  margin: 12px 0 0;
-  font-size: 12px;
-  color: #64748b;
-  letter-spacing: 0.04em;
-}
-
-@media (max-width: 640px) {
-  .plan-locked-cta {
-    width: 100%;
-    min-width: 0;
-  }
 }
 
 /* Varovný banner 2 dny před koncem trialu */

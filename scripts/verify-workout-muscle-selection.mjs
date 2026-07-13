@@ -11,12 +11,25 @@ import { loadLocalEnv } from './audit-utils.mjs';
 import {
   getHighlightedBodyParts,
   isMuscleHighlighted,
+  isBodyZoneHighlighted,
+  getRecommendedBodyView,
+  getSvgZonesForMuscle,
+  getMuscleVisibilityGuidance,
+  getFullBodyZonesForView,
   validateMuscleSelection,
   getDisabledMuscles,
   getSelectionCategory,
   FULL_BODY_HIGHLIGHT_PARTS,
   RECOMMENDED_PRESETS,
+  FRONT_SVG_ZONES,
+  BACK_SVG_ZONES,
 } from '../lib/workoutMuscleGroupRules.js';
+import {
+  normalizeTrainingSetupInput,
+  DEFAULT_EQUIPMENT_BY_LOCATION,
+  trainingSetupToBodyMetrics,
+} from '../lib/workoutTrainingSetup.js';
+import { filterWorkoutPlanForTrainingEnvironment } from '../lib/trainingEnvironment.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 loadLocalEnv(ROOT);
@@ -37,7 +50,55 @@ const modal = read('components/workout/WorkoutChangeModal.jsx');
 const api = read('pages/api/workout/replace-today.js');
 const generator = read('lib/workoutTodayReplace.js');
 
-// 1–3 full body
+const setupLib = read('lib/workoutTrainingSetup.js');
+
+// Body view automation
+check('1 core auto front view', getRecommendedBodyView(['core']) === 'front');
+check('2 chest triceps auto front', getRecommendedBodyView(['chest', 'triceps']) === 'front');
+check('3 back biceps auto back', getRecommendedBodyView(['back', 'biceps']) === 'back');
+check('4 glutes hamstrings auto back', getRecommendedBodyView(['glutes', 'hamstrings']) === 'back');
+
+// Bilateral SVG zones
+check('5 biceps both arms', getSvgZonesForMuscle('biceps').join() === 'biceps_left,biceps_right');
+check('6 triceps both arms', getSvgZonesForMuscle('triceps').join() === 'triceps_left,triceps_right');
+check('7 quads both legs', getSvgZonesForMuscle('quads').join() === 'quads_left,quads_right');
+check('8 hamstrings both legs', getSvgZonesForMuscle('hamstrings').join() === 'hamstrings_left,hamstrings_right');
+
+// Full body per view
+check('9 full body front all zones', FRONT_SVG_ZONES.every((z) => isBodyZoneHighlighted(z, ['full_body'], 'front')));
+check('10 full body back all zones', BACK_SVG_ZONES.every((z) => isBodyZoneHighlighted(z, ['full_body'], 'back')));
+
+// Visibility guidance
+check('11 core back view guidance', getMuscleVisibilityGuidance(['core'], 'back')?.suggestedView === 'front');
+check('12 back front view guidance', getMuscleVisibilityGuidance(['back'], 'front')?.suggestedView === 'back');
+
+// Location / equipment separation
+check('13 no equipment not in location', !modal.includes('no_equipment') && !modal.includes('LOCATION_OPTS'));
+check('14 separate location and equipment state', modal.includes('trainingLocation') && modal.includes('equipmentLevel'));
+check('15 gym defaults full_gym', DEFAULT_EQUIPMENT_BY_LOCATION.gym === 'full_gym');
+check('16 home defaults basic', DEFAULT_EQUIPMENT_BY_LOCATION.home === 'basic');
+check('17 outdoor defaults bodyweight', DEFAULT_EQUIPMENT_BY_LOCATION.outdoor === 'bodyweight');
+
+// Bodyweight generator filter
+const bwMetrics = trainingSetupToBodyMetrics({ training_location: 'outdoor', equipment_level: 'bodyweight' }, {});
+const stub = { days: [{ exercises: [{ canonical_key: 'bench_press' }, { canonical_key: 'pushup' }] }] };
+filterWorkoutPlanForTrainingEnvironment(stub, bwMetrics);
+check('18 bodyweight excludes machines', !stub.days[0].exercises.some((e) => e.canonical_key === 'bench_press'));
+
+// Server validation
+check('19 server rejects unknown location', !normalizeTrainingSetupInput({ training_location: 'moon', equipment_level: 'basic' }).ok
+  || normalizeTrainingSetupInput({ training_location: 'moon', equipment_level: 'basic' }).error);
+check('20 server rejects unknown equipment', !normalizeTrainingSetupInput({ training_location: 'gym', equipment_level: 'spaceship' }).ok);
+check('21 legacy location payload compatible', normalizeTrainingSetupInput({ location: 'no_equipment' }).equipment_level === 'bodyweight');
+check('22 modal no horizontal scroll risk', modal.includes('overflow-y: auto') && modal.includes('max-width: 100%'));
+
+check('modal uses getRecommendedBodyView', modal.includes('getRecommendedBodyView'));
+check('modal visibility guidance UI', modal.includes('getMuscleVisibilityGuidance') && modal.includes('wcm-view-guidance'));
+check('modal body zone highlight', modal.includes('isBodyZoneHighlighted'));
+check('api training_location payload', api.includes('training_location') && api.includes('equipment_level'));
+check('setup lib imported in api', api.includes('normalizeTrainingSetupInput'));
+
+// 1–3 full body (legacy numbering continues)
 const fbParts = getHighlightedBodyParts(['full_body']);
 check('full_body highlights all body parts', fbParts.length === FULL_BODY_HIGHLIGHT_PARTS.length
   && FULL_BODY_HIGHLIGHT_PARTS.every((p) => fbParts.includes(p)));

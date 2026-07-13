@@ -129,7 +129,16 @@ export default function ProfileTodayPanels({
   const workoutMinutes = Number(workout?.duration_minutes) || (exercises.length ? exercises.length * 8 : 0);
   const hasReplacementBackup = !!workout?.original_workout_backup;
   const planDayIdx = todayDay.originalIndex ?? todayDayIndex;
-  const defaultLoc = trainingEnvironment === 'gym' ? 'gym' : trainingEnvironment === 'home' ? 'no_equipment' : 'home';
+  const defaultLoc = trainingEnvironment === 'gym'
+    ? 'gym'
+    : trainingEnvironment === 'home_bodyweight'
+      ? 'outdoor'
+      : 'home';
+  const defaultEquip = trainingEnvironment === 'gym'
+    ? 'full_gym'
+    : trainingEnvironment === 'home_bodyweight'
+      ? 'bodyweight'
+      : 'basic';
 
   return (
     <div className="profile-today-root">
@@ -297,6 +306,7 @@ export default function ProfileTodayPanels({
           planId={planId}
           planDayIndex={planDayIdx}
           defaultLocation={defaultLoc}
+          defaultEquipment={defaultEquip}
           defaultDuration={workoutMinutes >= 45 ? 45 : workoutMinutes >= 30 ? 30 : 30}
           defaultIntensity="medium"
           onPlanUpdated={(data) => onWorkoutPlanUpdated?.(data)}

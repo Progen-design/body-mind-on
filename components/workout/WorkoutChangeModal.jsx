@@ -4,12 +4,20 @@ import { MUSCLE_GROUP_LABELS_CS } from '../../lib/muscleGroupLabels';
 import {
   RECOMMENDED_PRESETS,
   isMuscleHighlighted,
+  isBodyZoneHighlighted,
+  getRecommendedBodyView,
+  getMuscleVisibilityGuidance,
   validateMuscleSelection,
   toggleMuscleInSelection,
   getMuscleDisabledReason,
   getDisabledMuscles,
   getSelectionSuggestion,
 } from '../../lib/workoutMuscleGroupRules';
+import {
+  LOCATION_OPTIONS,
+  EQUIPMENT_OPTIONS,
+  DEFAULT_EQUIPMENT_BY_LOCATION,
+} from '../../lib/workoutTrainingSetup';
 
 const CHIP_IDS = [
   'chest', 'back', 'shoulders', 'biceps', 'triceps', 'core',
@@ -26,9 +34,9 @@ function getFocusableElements(container) {
 }
 
 function MuscleRegion({
-  id, label, cx, cy, rx, ry, selected, disabled, disabledReason, onToggle,
+  zone, muscleId, label, cx, cy, rx, ry, selected, view, disabled, disabledReason, onToggle,
 }) {
-  const highlighted = isMuscleHighlighted(id, selected);
+  const highlighted = isBodyZoneHighlighted(zone, selected, view);
   const fill = disabled && !highlighted ? '#1e293b' : highlighted ? '#0ea5e9' : '#334155';
   const opacity = disabled && !highlighted ? 0.22 : highlighted ? 0.95 : 0.35;
   const stroke = highlighted ? '#7dd3fc' : 'transparent';
@@ -36,7 +44,7 @@ function MuscleRegion({
 
   const handleActivate = () => {
     if (disabled && !highlighted) return;
-    onToggle(id);
+    onToggle(muscleId);
   };
 
   return (
@@ -67,53 +75,65 @@ function MuscleRegion({
   );
 }
 
+const FRONT_REGIONS = [
+  { zone: 'chest', muscleId: 'chest', cx: '100', cy: '72', rx: '28', ry: '18' },
+  { zone: 'shoulders_left', muscleId: 'shoulders', cx: '62', cy: '68', rx: '14', ry: '10' },
+  { zone: 'shoulders_right', muscleId: 'shoulders', cx: '138', cy: '68', rx: '14', ry: '10' },
+  { zone: 'biceps_left', muscleId: 'biceps', cx: '48', cy: '95', rx: '12', ry: '22' },
+  { zone: 'biceps_right', muscleId: 'biceps', cx: '152', cy: '95', rx: '12', ry: '22' },
+  { zone: 'core', muscleId: 'core', cx: '100', cy: '118', rx: '22', ry: '16' },
+  { zone: 'quads_left', muscleId: 'quads', cx: '82', cy: '165', rx: '14', ry: '32' },
+  { zone: 'quads_right', muscleId: 'quads', cx: '118', cy: '165', rx: '14', ry: '32' },
+  { zone: 'calves_left', muscleId: 'calves', cx: '82', cy: '218', rx: '10', ry: '22' },
+  { zone: 'calves_right', muscleId: 'calves', cx: '118', cy: '218', rx: '10', ry: '22' },
+];
+
+const BACK_REGIONS = [
+  { zone: 'back', muscleId: 'back', cx: '100', cy: '85', rx: '30', ry: '28' },
+  { zone: 'shoulders_left', muscleId: 'shoulders', cx: '62', cy: '68', rx: '14', ry: '10' },
+  { zone: 'shoulders_right', muscleId: 'shoulders', cx: '138', cy: '68', rx: '14', ry: '10' },
+  { zone: 'triceps_left', muscleId: 'triceps', cx: '48', cy: '95', rx: '12', ry: '22' },
+  { zone: 'triceps_right', muscleId: 'triceps', cx: '152', cy: '95', rx: '12', ry: '22' },
+  { zone: 'glutes', muscleId: 'glutes', cx: '100', cy: '138', rx: '26', ry: '16' },
+  { zone: 'hamstrings_left', muscleId: 'hamstrings', cx: '82', cy: '175', rx: '14', ry: '28' },
+  { zone: 'hamstrings_right', muscleId: 'hamstrings', cx: '118', cy: '175', rx: '14', ry: '28' },
+  { zone: 'calves_left', muscleId: 'calves', cx: '82', cy: '218', rx: '10', ry: '22' },
+  { zone: 'calves_right', muscleId: 'calves', cx: '118', cy: '218', rx: '10', ry: '22' },
+];
+
 function MuscleBodyMap({ selected, disabledMuscles, duration, onToggle, view = 'front' }) {
   const isDisabled = (id) => disabledMuscles.includes(id) && !selected.includes(id) && !selected.includes('full_body');
   const reason = (id) => getMuscleDisabledReason(id, selected, duration);
-
-  const regions = view === 'front' ? (
-    <>
-      <MuscleRegion id="chest" label={MUSCLE_GROUP_LABELS_CS.chest} cx="100" cy="72" rx="28" ry="18" selected={selected} disabled={isDisabled('chest')} disabledReason={reason('chest')} onToggle={onToggle} />
-      <MuscleRegion id="shoulders" label={MUSCLE_GROUP_LABELS_CS.shoulders} cx="62" cy="68" rx="14" ry="10" selected={selected} disabled={isDisabled('shoulders')} disabledReason={reason('shoulders')} onToggle={onToggle} />
-      <MuscleRegion id="shoulders" label={MUSCLE_GROUP_LABELS_CS.shoulders} cx="138" cy="68" rx="14" ry="10" selected={selected} disabled={isDisabled('shoulders')} disabledReason={reason('shoulders')} onToggle={onToggle} />
-      <MuscleRegion id="biceps" label={MUSCLE_GROUP_LABELS_CS.biceps} cx="48" cy="95" rx="12" ry="22" selected={selected} disabled={isDisabled('biceps')} disabledReason={reason('biceps')} onToggle={onToggle} />
-      <MuscleRegion id="biceps" label={MUSCLE_GROUP_LABELS_CS.biceps} cx="152" cy="95" rx="12" ry="22" selected={selected} disabled={isDisabled('biceps')} disabledReason={reason('biceps')} onToggle={onToggle} />
-      <MuscleRegion id="core" label={MUSCLE_GROUP_LABELS_CS.core} cx="100" cy="118" rx="22" ry="16" selected={selected} disabled={isDisabled('core')} disabledReason={reason('core')} onToggle={onToggle} />
-      <MuscleRegion id="quads" label={MUSCLE_GROUP_LABELS_CS.quads} cx="82" cy="165" rx="14" ry="32" selected={selected} disabled={isDisabled('quads')} disabledReason={reason('quads')} onToggle={onToggle} />
-      <MuscleRegion id="quads" label={MUSCLE_GROUP_LABELS_CS.quads} cx="118" cy="165" rx="14" ry="32" selected={selected} disabled={isDisabled('quads')} disabledReason={reason('quads')} onToggle={onToggle} />
-      <MuscleRegion id="calves" label={MUSCLE_GROUP_LABELS_CS.calves} cx="82" cy="218" rx="10" ry="22" selected={selected} disabled={isDisabled('calves')} disabledReason={reason('calves')} onToggle={onToggle} />
-      <MuscleRegion id="calves" label={MUSCLE_GROUP_LABELS_CS.calves} cx="118" cy="218" rx="10" ry="22" selected={selected} disabled={isDisabled('calves')} disabledReason={reason('calves')} onToggle={onToggle} />
-    </>
-  ) : (
-    <>
-      <MuscleRegion id="back" label={MUSCLE_GROUP_LABELS_CS.back} cx="100" cy="85" rx="30" ry="28" selected={selected} disabled={isDisabled('back')} disabledReason={reason('back')} onToggle={onToggle} />
-      <MuscleRegion id="shoulders" label={MUSCLE_GROUP_LABELS_CS.shoulders} cx="62" cy="68" rx="14" ry="10" selected={selected} disabled={isDisabled('shoulders')} disabledReason={reason('shoulders')} onToggle={onToggle} />
-      <MuscleRegion id="shoulders" label={MUSCLE_GROUP_LABELS_CS.shoulders} cx="138" cy="68" rx="14" ry="10" selected={selected} disabled={isDisabled('shoulders')} disabledReason={reason('shoulders')} onToggle={onToggle} />
-      <MuscleRegion id="triceps" label={MUSCLE_GROUP_LABELS_CS.triceps} cx="48" cy="95" rx="12" ry="22" selected={selected} disabled={isDisabled('triceps')} disabledReason={reason('triceps')} onToggle={onToggle} />
-      <MuscleRegion id="triceps" label={MUSCLE_GROUP_LABELS_CS.triceps} cx="152" cy="95" rx="12" ry="22" selected={selected} disabled={isDisabled('triceps')} disabledReason={reason('triceps')} onToggle={onToggle} />
-      <MuscleRegion id="glutes" label={MUSCLE_GROUP_LABELS_CS.glutes} cx="100" cy="138" rx="26" ry="16" selected={selected} disabled={isDisabled('glutes')} disabledReason={reason('glutes')} onToggle={onToggle} />
-      <MuscleRegion id="hamstrings" label={MUSCLE_GROUP_LABELS_CS.hamstrings} cx="82" cy="175" rx="14" ry="28" selected={selected} disabled={isDisabled('hamstrings')} disabledReason={reason('hamstrings')} onToggle={onToggle} />
-      <MuscleRegion id="hamstrings" label={MUSCLE_GROUP_LABELS_CS.hamstrings} cx="118" cy="175" rx="14" ry="28" selected={selected} disabled={isDisabled('hamstrings')} disabledReason={reason('hamstrings')} onToggle={onToggle} />
-      <MuscleRegion id="calves" label={MUSCLE_GROUP_LABELS_CS.calves} cx="82" cy="218" rx="10" ry="22" selected={selected} disabled={isDisabled('calves')} disabledReason={reason('calves')} onToggle={onToggle} />
-      <MuscleRegion id="calves" label={MUSCLE_GROUP_LABELS_CS.calves} cx="118" cy="218" rx="10" ry="22" selected={selected} disabled={isDisabled('calves')} disabledReason={reason('calves')} onToggle={onToggle} />
-    </>
-  );
+  const regions = view === 'front' ? FRONT_REGIONS : BACK_REGIONS;
+  const shouldersHighlighted = isBodyZoneHighlighted('shoulders_left', selected, view)
+    || isBodyZoneHighlighted('shoulders_right', selected, view);
 
   return (
     <svg viewBox="0 0 200 260" className="muscle-body-svg" aria-hidden="false" role="img">
       <title>Výběr partie — {view === 'front' ? 'zepředu' : 'zezadu'}</title>
-      <ellipse cx="100" cy="42" rx="18" ry="22" fill={isMuscleHighlighted('shoulders', selected) ? '#38bdf8' : '#475569'} fillOpacity={isMuscleHighlighted('shoulders', selected) ? 0.7 : 0.5} />
+      <ellipse cx="100" cy="42" rx="18" ry="22" fill={shouldersHighlighted ? '#38bdf8' : '#475569'} fillOpacity={shouldersHighlighted ? 0.7 : 0.5} />
       <rect x="78" y="58" width="44" height="12" rx="6" fill="#475569" fillOpacity="0.4" />
-      {regions}
+      {regions.map((r) => (
+        <MuscleRegion
+          key={`${view}-${r.zone}`}
+          zone={r.zone}
+          muscleId={r.muscleId}
+          label={MUSCLE_GROUP_LABELS_CS[r.muscleId]}
+          cx={r.cx}
+          cy={r.cy}
+          rx={r.rx}
+          ry={r.ry}
+          selected={selected}
+          view={view}
+          disabled={isDisabled(r.muscleId)}
+          disabledReason={reason(r.muscleId)}
+          onToggle={onToggle}
+        />
+      ))}
     </svg>
   );
 }
 
-const LOCATION_OPTS = [
-  { id: 'home', label: 'Doma' },
-  { id: 'gym', label: 'Fitness centrum' },
-  { id: 'no_equipment', label: 'Bez vybavení' },
-];
 const DURATION_OPTS = [15, 30, 45, 60];
 const INTENSITY_OPTS = [
   { id: 'light', label: 'Lehký' },
@@ -130,6 +150,7 @@ export default function WorkoutChangeModal({
   planId,
   planDayIndex,
   defaultLocation = 'gym',
+  defaultEquipment = 'full_gym',
   defaultDuration = 30,
   defaultIntensity = 'medium',
   onPlanUpdated,
@@ -138,8 +159,13 @@ export default function WorkoutChangeModal({
   scrollLockYRef = null,
 }) {
   const [view, setView] = useState('front');
+  const [viewManual, setViewManual] = useState(false);
   const [selected, setSelected] = useState(['full_body']);
-  const [location, setLocation] = useState(defaultLocation);
+  const [trainingLocation, setTrainingLocation] = useState(
+    ['home', 'gym', 'outdoor'].includes(defaultLocation) ? defaultLocation : 'gym',
+  );
+  const [equipmentLevel, setEquipmentLevel] = useState(defaultEquipment);
+  const [equipmentTouched, setEquipmentTouched] = useState(false);
   const [duration, setDuration] = useState(defaultDuration);
   const [intensity, setIntensity] = useState(defaultIntensity);
   const [step, setStep] = useState('select');
@@ -173,6 +199,12 @@ export default function WorkoutChangeModal({
     [selected, duration],
   );
 
+  const visibilityGuidance = useMemo(
+    () => getMuscleVisibilityGuidance(selected, view),
+    [selected, view],
+  );
+
+
   const toggleMuscle = useCallback((id) => {
     setSelected((prev) => {
       const result = toggleMuscleInSelection(prev, id, duration);
@@ -182,14 +214,31 @@ export default function WorkoutChangeModal({
       }
       setHint(null);
       setError(null);
+      if (!viewManual) {
+        setView(getRecommendedBodyView(result.next));
+      }
       return result.next;
     });
-  }, [duration]);
+  }, [duration, viewManual]);
 
   const applyPreset = useCallback((muscles) => {
     setSelected([...muscles]);
     setHint(null);
     setError(null);
+    setView(getRecommendedBodyView(muscles));
+    setViewManual(false);
+  }, []);
+
+  const handleLocationChange = useCallback((loc) => {
+    setTrainingLocation(loc);
+    if (!equipmentTouched) {
+      setEquipmentLevel(DEFAULT_EQUIPMENT_BY_LOCATION[loc] || 'basic');
+    }
+  }, [equipmentTouched]);
+
+  const handleEquipmentChange = useCallback((level) => {
+    setEquipmentLevel(level);
+    setEquipmentTouched(true);
   }, []);
 
   const clearSelection = useCallback(() => {
@@ -205,6 +254,9 @@ export default function WorkoutChangeModal({
     setHint(null);
     setLoading(false);
     setSelected(['full_body']);
+    setView('front');
+    setViewManual(false);
+    setEquipmentTouched(false);
   };
 
   const handleClose = () => {
@@ -323,7 +375,8 @@ export default function WorkoutChangeModal({
           plan_id: planId,
           plan_day_index: planDayIndex,
           selected_muscle_groups: selected,
-          location,
+          training_location: trainingLocation,
+          equipment_level: equipmentLevel,
           duration_minutes: duration,
           intensity,
         }),
@@ -421,10 +474,40 @@ export default function WorkoutChangeModal({
                 <button type="button" className="wcm-link" onClick={clearSelection}>Zrušit výběr</button>
               </div>
 
-              <div className="wcm-view-toggle">
-                <button type="button" className={view === 'front' ? 'active' : ''} onClick={() => setView('front')}>Zepředu</button>
-                <button type="button" className={view === 'back' ? 'active' : ''} onClick={() => setView('back')}>Zezadu</button>
+              <p className="wcm-view-label">Pohled na postavu</p>
+              <div className="wcm-view-toggle" role="group" aria-label="Pohled na postavu">
+                <button
+                  type="button"
+                  className={view === 'front' ? 'active' : ''}
+                  aria-pressed={view === 'front'}
+                  onClick={() => { setView('front'); setViewManual(true); }}
+                >
+                  Zepředu
+                </button>
+                <button
+                  type="button"
+                  className={view === 'back' ? 'active' : ''}
+                  aria-pressed={view === 'back'}
+                  onClick={() => { setView('back'); setViewManual(true); }}
+                >
+                  Zezadu
+                </button>
               </div>
+              {visibilityGuidance ? (
+                <div className="wcm-view-guidance" role="status">
+                  <span>{visibilityGuidance.message}</span>
+                  <button
+                    type="button"
+                    className="wcm-link"
+                    onClick={() => {
+                      setView(visibilityGuidance.suggestedView);
+                      setViewManual(true);
+                    }}
+                  >
+                    {visibilityGuidance.buttonLabel}
+                  </button>
+                </div>
+              ) : null}
               <div className="wcm-body-row">
                 <MuscleBodyMap
                   selected={selected}
@@ -468,11 +551,36 @@ export default function WorkoutChangeModal({
               {showValidationMessage ? <p className="wcm-hint wcm-hint-warn" role="status">{showValidationMessage}</p> : null}
 
               <p className="wcm-label">Kde budeš cvičit?</p>
-              <div className="wcm-pills">
-                {LOCATION_OPTS.map((o) => (
-                  <button key={o.id} type="button" className={location === o.id ? 'on' : ''} onClick={() => setLocation(o.id)}>{o.label}</button>
+              <div className="wcm-pills" role="group" aria-label="Místo tréninku">
+                {LOCATION_OPTIONS.map((o) => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    className={trainingLocation === o.id ? 'on' : ''}
+                    aria-pressed={trainingLocation === o.id}
+                    onClick={() => handleLocationChange(o.id)}
+                  >
+                    {o.label}
+                  </button>
                 ))}
               </div>
+              <p className="wcm-label">Jaké máš vybavení?</p>
+              <div className="wcm-pills" role="group" aria-label="Vybavení">
+                {EQUIPMENT_OPTIONS.map((o) => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    className={equipmentLevel === o.id ? 'on' : ''}
+                    aria-pressed={equipmentLevel === o.id}
+                    onClick={() => handleEquipmentChange(o.id)}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+              {EQUIPMENT_OPTIONS.find((o) => o.id === equipmentLevel)?.hint ? (
+                <p className="wcm-equipment-hint">{EQUIPMENT_OPTIONS.find((o) => o.id === equipmentLevel).hint}</p>
+              ) : null}
               <p className="wcm-label">Kolik máš času?</p>
               <div className="wcm-pills">
                 {DURATION_OPTS.map((m) => (
@@ -593,12 +701,18 @@ export default function WorkoutChangeModal({
         }
         .wcm-preset.on { background: rgba(14,165,233,0.25); border-color: #38bdf8; }
         .wcm-selection-toolbar { margin-bottom: 0.75rem; }
-        .wcm-view-toggle { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+        .wcm-view-label { margin: 0 0 0.35rem; font-size: 0.75rem; color: #94a3b8; font-weight: 500; }
+        .wcm-view-toggle { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
         .wcm-view-toggle button {
           min-height: 44px; padding: 0.4rem 0.85rem; border-radius: 8px;
           border: 1px solid #475569; background: transparent; color: inherit; cursor: pointer;
         }
-        .wcm-view-toggle button.active { background: #0ea5e9; border-color: #0ea5e9; }
+        .wcm-view-toggle button.active { background: #0ea5e9; border-color: #0ea5e9; color: #fff; }
+        .wcm-view-guidance {
+          display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+          margin-bottom: 0.75rem; font-size: 0.82rem; color: #cbd5e1;
+        }
+        .wcm-equipment-hint { margin: 0.25rem 0 0.5rem; font-size: 0.8rem; color: #94a3b8; }
         .wcm-body-row {
           display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem;
         }

@@ -42,6 +42,7 @@ const checkin = read('components/beta/DailyCheckinPanel.js');
 const todayPanels = read('components/profile/ProfileTodayPanels.js');
 const habitLabels = read('lib/habitLabels.js');
 const modal = read('components/workout/WorkoutChangeModal.jsx');
+const setupLib = read('lib/workoutTrainingSetup.js');
 const allowlist = read('lib/productEventAllowlist.js');
 const migration = read('supabase/migrations/20260713200000_workout_replacements.sql');
 
@@ -75,7 +76,8 @@ check('full_body chip', modal.includes('Celé tělo'));
 check('muscle selection rules lib', modal.includes('workoutMuscleGroupRules'));
 check('quick presets', modal.includes('Rychlý výběr'));
 check('clear selection button', modal.includes('Zrušit výběr'));
-check('location options', modal.includes('Fitness centrum'));
+check('location options', setupLib.includes('Venku') && modal.includes('LOCATION_OPTIONS'));
+check('equipment options separate', modal.includes('Jaké máš vybavení') && modal.includes('EQUIPMENT_OPTIONS'));
 check('duration options', modal.includes('DURATION_OPTS') && modal.includes('{m} minut'));
 check('intensity options', modal.includes('Střední'));
 check('preview step', modal.includes('Použít tento trénink'));

@@ -13,6 +13,10 @@ import {
 } from '../../../lib/workoutTodayReplace';
 import { validateReplacementPreview } from '../../../lib/workoutReplacementSchema';
 import { validateMuscleSelection } from '../../../lib/workoutMuscleGroupRules';
+import {
+  normalizeTrainingSetupInput,
+  legacyLocationField,
+} from '../../../lib/workoutTrainingSetup';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -50,7 +54,12 @@ export default async function handler(req, res) {
     }
     const workoutCategory = muscleValidation.category;
 
-    const location = ['home', 'gym', 'no_equipment'].includes(body.location) ? body.location : 'gym';
+    const setup = normalizeTrainingSetupInput(body);
+    if (!setup.ok) {
+      return res.status(400).json({ error: setup.error || 'Neplatné nastavení tréninku.' });
+    }
+    const { training_location, equipment_level } = setup;
+    const location = legacyLocationField(training_location);
     const durationMinutes = [15, 30, 45, 60].includes(Number(body.duration_minutes))
       ? Number(body.duration_minutes)
       : 30;
@@ -82,6 +91,8 @@ export default async function handler(req, res) {
     const generated = await generateTodayWorkoutAlternative({
       muscleGroups: normalizedMuscles,
       category: workoutCategory,
+      training_location,
+      equipment_level,
       location,
       durationMinutes,
       intensity,
@@ -104,6 +115,8 @@ export default async function handler(req, res) {
         replacement_workout: generated.structuredWorkout,
         selected_muscle_groups: normalizedMuscles,
         location,
+        training_location,
+        equipment_level,
         duration_minutes: durationMinutes,
         intensity,
         status: 'generated',
@@ -130,6 +143,8 @@ export default async function handler(req, res) {
       event_name: 'workout_alternative_generated',
       properties: {
         muscle_group_count: normalizedMuscles.length,
+        training_location,
+        equipment_level,
         location,
         duration_bucket: String(durationMinutes),
         intensity,

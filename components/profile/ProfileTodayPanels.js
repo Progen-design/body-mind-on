@@ -41,6 +41,8 @@ export default function ProfileTodayPanels({
   const [workoutCompleted, setWorkoutCompleted] = useState(false);
   const [workoutModalOpen, setWorkoutModalOpen] = useState(false);
   const [workoutBusy, setWorkoutBusy] = useState(false);
+  const [restoreBusy, setRestoreBusy] = useState(false);
+  const [restoreSlow, setRestoreSlow] = useState(false);
   const [workoutError, setWorkoutError] = useState(null);
 
   const handleCompletionsChange = useCallback((info) => {
@@ -63,9 +65,15 @@ export default function ProfileTodayPanels({
   }, []);
 
   const handleRestoreOriginal = async () => {
-    if (!planId || workoutBusy || workoutCompleted) return;
-    setWorkoutBusy(true);
+    if (!planId || restoreBusy || workoutCompleted) return;
+    setRestoreBusy(true);
+    setRestoreSlow(false);
     setWorkoutError(null);
+
+    const slowTimer = setTimeout(() => setRestoreSlow(true), 8000);
+    const controller = new AbortController();
+    const abortTimer = setTimeout(() => controller.abort(), 20000);
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
@@ -77,15 +85,23 @@ export default function ProfileTodayPanels({
           plan_id: planId,
           plan_day_index: todayDay?.originalIndex ?? todayDayIndex,
         }),
+        signal: controller.signal,
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Nepodařilo obnovit trénink.');
       onWorkoutPlanUpdated?.(data);
       trackWorkoutEvent('workout_original_restored');
     } catch (e) {
-      setWorkoutError(e.message || 'Nepodařilo obnovit trénink.');
+      if (e?.name === 'AbortError') {
+        setWorkoutError('Obnovení trvá déle než obvykle. Zkus to znovu.');
+      } else {
+        setWorkoutError(e.message || 'Nepodařilo obnovit trénink.');
+      }
     } finally {
-      setWorkoutBusy(false);
+      clearTimeout(slowTimer);
+      clearTimeout(abortTimer);
+      setRestoreBusy(false);
+      setRestoreSlow(false);
     }
   };
 
@@ -218,13 +234,19 @@ export default function ProfileTodayPanels({
                   <button
                     type="button"
                     className="profile-today-restore-btn"
-                    disabled={workoutBusy}
+                    disabled={restoreBusy}
+                    aria-busy={restoreBusy}
                     onClick={handleRestoreOriginal}
                   >
-                    Obnovit původní trénink
+                    {restoreBusy ? 'Obnovuji…' : 'Obnovit původní trénink'}
                   </button>
                 ) : null}
               </div>
+            ) : null}
+            {restoreSlow ? (
+              <p className="profile-today-workout-slow" role="status">
+                Obnovení trvá déle než obvykle. Zkus to znovu.
+              </p>
             ) : null}
             {workoutError ? <p className="profile-today-workout-error" role="alert">{workoutError}</p> : null}
             <ul className="profile-today-workout-list">
@@ -430,6 +452,11 @@ export default function ProfileTodayPanels({
           margin: 0 0 10px;
           font-size: 0.88rem;
           color: #fca5a5;
+        }
+        .profile-today-workout-slow {
+          margin: 0 0 8px;
+          font-size: 0.86rem;
+          color: #fbbf24;
         }
         .profile-today-workout-list {
           list-style: none;

@@ -1301,7 +1301,7 @@ export default function PlanViewer({
                 if (data?.structured_plan_json) {
                   setPlanPatch({
                     structured_plan_json: data.structured_plan_json,
-                    plan_html: data.plan_html,
+                    ...(data.plan_html ? { plan_html: data.plan_html } : {}),
                   });
                 }
                 if (onToast) onToast({ message: 'Trénink na dnešek byl aktualizován.', type: 'success' });

@@ -104,6 +104,8 @@ check('migration no public insert', !migration.includes('FOR INSERT TO public'))
 check('replace-today API exists', read('pages/api/workout/replace-today.js').includes('replace-today'));
 check('confirm API exists', read('pages/api/workout/confirm-replacement.js').includes('confirm-replacement'));
 check('restore API exists', read('pages/api/workout/restore-today.js').includes('restore-today'));
+check('restore API no full HTML render', !read('pages/api/workout/restore-today.js').includes('renderPlanHtmlFromStructured'));
+check('restore uses fast lib', read('pages/api/workout/restore-today.js').includes('workoutRestoreToday'));
 check('server ignores body user_id', !read('pages/api/workout/replace-today.js').includes('body.user_id'));
 
 const url = process.env.SUPABASE_URL;

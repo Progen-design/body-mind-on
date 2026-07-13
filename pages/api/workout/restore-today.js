@@ -1,20 +1,16 @@
-// POST /api/workout/restore-today — restore original workout for today
-import { supabaseServer } from '../../../lib/supabaseServer';
+// POST /api/workout/restore-today — restore original workout for today (fast path, no HTML render)
 import { recordProductEvent } from '../../../lib/recordProductEvent';
-import {
-  getWorkoutReplaceAuth,
-  loadOwnedPlanDay,
-  isTodayWorkoutCompleted,
-} from '../../../lib/workoutReplaceAuth';
-import { renderPlanHtmlFromStructured } from '../../../lib/planRenderer';
-import { stripPlanMediaAttrsFromHtml } from '../../../lib/emailTemplates.js';
+import { getWorkoutReplaceAuth } from '../../../lib/workoutReplaceAuth';
+import { restoreTodayWorkout } from '../../../lib/workoutRestoreToday';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  const authStart = Date.now();
   const auth = await getWorkoutReplaceAuth(req);
   if (auth.error) return res.status(auth.status).json({ error: auth.error });
   const { user } = auth;
+  const authMs = Date.now() - authStart;
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {};
@@ -24,59 +20,55 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Chybí plan_id nebo plan_day_index.' });
     }
 
-    const completed = await isTodayWorkoutCompleted(user.id, planId, planDayIndex);
-    if (completed) return res.status(409).json({ error: 'Trénink je již dokončený.' });
+    const result = await restoreTodayWorkout({ userId: user.id, planId, planDayIndex });
 
-    const planCtx = await loadOwnedPlanDay(user.id, planId, planDayIndex);
-    if (planCtx.error) return res.status(planCtx.status).json({ error: planCtx.error });
+    const timings = {
+      auth_ms: authMs,
+      db_read_ms: result.timings?.db_read_ms ?? 0,
+      db_update_ms: result.timings?.db_update_ms ?? 0,
+      total_ms: (result.timings?.total_ms ?? 0) + authMs,
+    };
 
-    const dayWorkout = planCtx.day?.workout;
-    const backup = dayWorkout?.original_workout_backup;
-    if (!backup) return res.status(400).json({ error: 'Původní trénink není k dispozici.' });
+    if (!result.ok) {
+      recordProductEvent({
+        user_id: user.id,
+        event_name: 'workout_change_failed',
+        properties: {
+          success: false,
+          error_category: result.error_category || 'restore_failed',
+          ...timings,
+        },
+        source: 'workout_restore_today',
+      }).catch(() => {});
 
-    const structured = planCtx.structured;
-    structured.days[planCtx.dayIdx].workout = JSON.parse(JSON.stringify(backup));
-
-    const { data: bmRows } = await supabaseServer
-      .from('body_metrics')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1);
-    const bodyMetrics = bmRows?.[0] || null;
-    const planHtml = stripPlanMediaAttrsFromHtml(renderPlanHtmlFromStructured(structured, bodyMetrics));
-
-    const { error: updErr } = await supabaseServer
-      .from('ai_generated_plans')
-      .update({ structured_plan_json: structured, plan_html: planHtml })
-      .eq('id', planId)
-      .eq('user_id', user.id);
-
-    if (updErr) return res.status(500).json({ error: 'Nepodařilo obnovit trénink.' });
-
-    const replId = dayWorkout?.replaced_today_id;
-    if (replId) {
-      await supabaseServer
-        .from('workout_replacements')
-        .update({ status: 'restored', restored_at: new Date().toISOString() })
-        .eq('id', replId)
-        .eq('user_id', user.id);
+      return res.status(result.status).json({ error: result.error, timings });
     }
 
     recordProductEvent({
       user_id: user.id,
       event_name: 'workout_original_restored',
-      properties: { success: true },
+      properties: {
+        success: true,
+        ...timings,
+      },
       source: 'workout_restore_today',
     }).catch(() => {});
 
     return res.status(200).json({
       ok: true,
-      workout: structured.days[planCtx.dayIdx].workout,
-      structured_plan_json: structured,
-      plan_html: planHtml,
+      idempotent: !!result.idempotent,
+      workout: result.workout,
+      structured_plan_json: result.structured_plan_json,
+      timings,
     });
   } catch {
+    recordProductEvent({
+      user_id: user.id,
+      event_name: 'workout_change_failed',
+      properties: { success: false, error_category: 'unexpected', auth_ms: authMs },
+      source: 'workout_restore_today',
+    }).catch(() => {});
+
     return res.status(500).json({ error: 'Nepodařilo obnovit trénink.' });
   }
 }

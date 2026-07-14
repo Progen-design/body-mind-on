@@ -42,21 +42,6 @@ export default async function handler(req, res) {
     const apiKeyHash = sha256HexAppleHealthKey(apiKey);
     const apiKeyPrefix = appleHealthApiKeyPrefix(apiKey);
 
-    const { error: revokeErr } = await supabaseServer
-      .from('apple_health_connections')
-      .update({
-        status: 'revoked',
-        revoked_at: now,
-        updated_at: now,
-      })
-      .eq('id', connectionId)
-      .eq('user_id', authResult.user.id);
-
-    if (revokeErr) {
-      console.error('[health/connections/rotate] revoke error');
-      return res.status(500).json({ error: revokeErr.message || 'Nepodařilo se zrušit starý klíč.' });
-    }
-
     const { data: created, error: insertErr } = await supabaseServer
       .from('apple_health_connections')
       .insert({
@@ -74,6 +59,27 @@ export default async function handler(req, res) {
     if (insertErr) {
       console.error('[health/connections/rotate] insert error');
       return res.status(500).json({ error: insertErr.message || 'Nepodařilo se vytvořit nový klíč.' });
+    }
+
+    const { error: revokeErr } = await supabaseServer
+      .from('apple_health_connections')
+      .update({
+        status: 'revoked',
+        revoked_at: now,
+        updated_at: now,
+      })
+      .eq('id', connectionId)
+      .eq('user_id', authResult.user.id);
+
+    if (revokeErr) {
+      console.error('[health/connections/rotate] revoke error');
+      return res.status(201).json({
+        ok: true,
+        connection: created,
+        api_key: apiKey,
+        warning: 'Nový klíč byl vytvořen, ale starý se nepodařilo zrušit. Můžeš mít krátce dva aktivní klíče.',
+        message: 'API klíč zobrazíme jen jednou. Ulož si ho do Health Auto Export.',
+      });
     }
 
     return res.status(201).json({

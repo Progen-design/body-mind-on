@@ -1,6 +1,6 @@
-import { getAuthUser } from '../../../lib/health/apiAuth';
-import { isUuid } from '../../../lib/health/guards';
-import { supabaseServer } from '../../../lib/supabaseServer';
+import { getAuthUser } from '../../../../lib/health/apiAuth';
+import { isUuid } from '../../../../lib/health/guards';
+import { supabaseServer } from '../../../../lib/supabaseServer';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

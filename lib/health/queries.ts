@@ -1,5 +1,3 @@
-import 'server-only';
-
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabaseServer as supabaseServerUntyped } from '../supabaseServer';
 import { buildConnectionBanner } from './formatters';

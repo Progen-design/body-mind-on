@@ -2,12 +2,12 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { FiArrowLeft, FiRefreshCw } from 'react-icons/fi';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import AppleWatchSection from '../components/health/AppleWatchSection';
-import WithingsScaleSection from '../components/health/WithingsScaleSection';
-import { supabase } from '../lib/supabaseClient';
-import { useHealthData } from '../hooks/useHealthData';
+import Header from '../../components/Header';
+import Footer from '../../components/Footer';
+import AppleWatchSection from '../../components/health/AppleWatchSection';
+import WithingsScaleSection from '../../components/health/WithingsScaleSection';
+import { supabase } from '../../lib/supabaseClient';
+import { useHealthData } from '../../hooks/useHealthData';
 
 export default function HealthDashboardPage() {
   const router = useRouter();

@@ -3081,7 +3081,7 @@ export default function Profil() {
                 <>
                 <p className="chart-hint">
                   {chartWeightSource === 'withings'
-                    ? 'Graf vychází ze skutečných měření z chytré váhy Withings.'
+                    ? 'Graf vychází ze skutečných měření v profilu — s Withings se propisují automaticky.'
                     : chartWeightSource === 'measured'
                       ? 'Graf vychází ze skutečně zaznamenaných měření.'
                       : 'Zatím nemáme dostatek skutečných měření pro zobrazení trendu.'}

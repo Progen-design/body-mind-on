@@ -12,6 +12,7 @@ Projekt: fitness / AI / automatizace. **Hlavní cíl:** AI + API musí spolehliv
 
 ## Language
 - UI a e-maily: **čeština**. Kód, komentáře, identifikátory: **angličtina**.
+- Copy o chytrých zařízeních: viz **docs/copy-rules.md**; po změnách `npm run lint:copy`.
 
 ## Code
 - Při editaci vracet **celé soubory**; minimální diff; žádné nové knihovny bez schválení.

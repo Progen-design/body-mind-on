@@ -1,0 +1,17 @@
+---
+description: Pravidla copy pro chytrá zařízení — povinné při úpravě textů, LP, e-mailů, onboardingu
+globs:
+  - "**/*.{js,jsx,ts,tsx,html,md}"
+alwaysApply: false
+---
+
+# Copy: chytrá zařízení
+
+Před úpravou nebo psaním uživatelských textů si přečti **docs/copy-rules.md**.
+
+Zkráceně:
+
+- Zařízení není podmínka — systém funguje s jedním číslem týdně ručně.
+- Nejdřív co systém dělá, pak zařízení jako pohodlí.
+- Nikdy nezačínej větou „Napojíš váhu…“, „Bez chytré váhy…“, „Váha pošle…“.
+- Po změnách copy spusť `npm run lint:copy`.

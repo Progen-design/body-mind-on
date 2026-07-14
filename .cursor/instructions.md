@@ -46,3 +46,7 @@ AI behavior:
 When unsure:
 - First explain what you are going to do and why
 - Then provide the full updated file
+
+Copy (chytrá zařízení):
+- Před úpravou uživatelských textů si přečti **docs/copy-rules.md**
+- Po změnách copy spusť `npm run lint:copy`

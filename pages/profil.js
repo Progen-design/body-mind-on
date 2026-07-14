@@ -9,6 +9,7 @@ import BetaCohortBanner from '../components/beta/BetaCohortBanner';
 import Footer from '../components/Footer';
 import WelcomeTour from '../components/WelcomeTour';
 import WithingsBodyDevelopmentSection from '../components/profile/WithingsBodyDevelopmentSection';
+import HealthProfileEntry from '../components/health/HealthProfileEntry';
 import ProfileProgressSection from '../components/profile/ProfileProgressSection';
 import { parsePlanHtml } from '../lib/parsePlanHtml';
 import HabitTracker from '../components/HabitTracker';
@@ -2355,6 +2356,9 @@ export default function Profil() {
 
             {/* Sjednocený kontejner bublin – pro trenéra i klienta */}
             <div className={profile?.can_create_calendar_events ? 'profile-bubbles profile-bubbles--trainer' : 'profile-main-stack'}>
+            {!profile?.can_create_calendar_events && (
+              <HealthProfileEntry />
+            )}
             {!profile?.can_create_calendar_events && showWithingsProfileSection && (
               <WithingsBodyDevelopmentSection
                 profile={profile}

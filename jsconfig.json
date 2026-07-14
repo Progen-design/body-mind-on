@@ -6,5 +6,6 @@
       "@/components/*": ["components/*"],
       "@/lib/*": ["lib/*"]
     }
-  }
+  },
+  "exclude": ["lib/health/__tests__/**", "supabase/functions/**"]
 }

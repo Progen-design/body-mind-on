@@ -1,7 +1,19 @@
+import { BM_ON_DESIGN } from '../../lib/designTokens';
 import {
   formatRecoveryStatusLabel,
   getRecoveryBandInfo,
 } from '../../lib/health/formatters';
+
+const RECOVERY_EXPLAIN =
+  'Skóre regenerace (0–100) odhaduje, jak jsi zotavený, z HRV a klidového tepu oproti tvému 7dennímu průměru. Vyšší = odpočatější. Není to zdravotní diagnostika.';
+
+function getRecoveryBandTip(score) {
+  const n = Number(score);
+  if (!Number.isFinite(n)) return null;
+  if (n >= 75) return 'Tělo je zotavené — můžeš zabrat.';
+  if (n >= 50) return 'Částečná únava — zvaž lehčí trénink.';
+  return 'Známky zátěže — dej přednost regeneraci a spánku.';
+}
 
 export default function RecoveryCard({ latest }) {
   if (!latest) {
@@ -20,6 +32,7 @@ export default function RecoveryCard({ latest }) {
   const scoreOk = status === 'ok';
   const bandInfo = scoreOk ? getRecoveryBandInfo(latest.recovery_score) : { band: null, label: null, color: null };
   const statusLabel = !scoreOk ? formatRecoveryStatusLabel(status) : null;
+  const bandTip = scoreOk && latest.recovery_score != null ? getRecoveryBandTip(latest.recovery_score) : null;
 
   return (
     <div className={`health-recovery-card health-recovery-card--${bandInfo.color || 'neutral'}`}>
@@ -34,6 +47,8 @@ export default function RecoveryCard({ latest }) {
           {bandInfo.label && (
             <p className={`health-recovery-band health-recovery-band--${bandInfo.color}`}>{bandInfo.label}</p>
           )}
+          <p className="health-recovery-explain">{RECOVERY_EXPLAIN}</p>
+          {bandTip && <p className="health-recovery-tip">{bandTip}</p>}
         </>
       ) : (
         <div className="health-recovery-incomplete">
@@ -75,9 +90,25 @@ export default function RecoveryCard({ latest }) {
         )}
       </dl>
 
-      <p className="health-recovery-disclaimer">
-        Orientační ukazatel tréninkové zátěže — není zdravotní diagnostika.
-      </p>
+      {!scoreOk && (
+        <p className="health-recovery-disclaimer">
+          Orientační ukazatel tréninkové zátěže — není zdravotní diagnostika.
+        </p>
+      )}
+
+      <style jsx>{`
+        .health-recovery-explain,
+        .health-recovery-tip {
+          margin: 10px 0 0;
+          font-size: 0.82rem;
+          line-height: 1.45;
+          color: ${BM_ON_DESIGN.colors.textMuted};
+        }
+        .health-recovery-tip {
+          margin-top: 6px;
+          color: ${BM_ON_DESIGN.colors.textDim};
+        }
+      `}</style>
     </div>
   );
 }

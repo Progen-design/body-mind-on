@@ -2,6 +2,7 @@ import {
   FiActivity,
   FiCloud,
   FiHeart,
+  FiInfo,
   FiSun,
   FiTrendingUp,
   FiUser,
@@ -24,13 +25,31 @@ const CATEGORY_ICONS = {
   prostredi: FiSun,
 };
 
+const METRIC_HINTS = {
+  heart_rate_variability:
+    'Variabilita tepové frekvence — rozptyl mezi údery srdce. Vyšší bývá spojené s lepší regenerací. Sleduje se trend, ne jedno číslo.',
+  resting_heart_rate:
+    'Tep v klidu. Když vyskočí nad tvůj průměr, tělo často zvládá únavu, stres nebo nemoc.',
+};
+
 function MetricTile({ metric, emphasized = false }) {
   const valueText = formatMetricValue(metric.value, metric.unit);
   const unitText = formatMetricUnitLabel(metric.unit);
+  const hint = METRIC_HINTS[metric.metric_name] || null;
 
   return (
     <div className={`health-metric-tile${emphasized ? ' health-metric-tile--key' : ''}`}>
-      <span className="health-metric-tile-label">{metric.label_cs}</span>
+      <span className="health-metric-tile-label-row">
+        <span className="health-metric-tile-label">{metric.label_cs}</span>
+        {hint ? (
+          <span className="health-metric-tile-info" tabIndex={0} aria-label={hint}>
+            <FiInfo aria-hidden className="health-metric-tile-info-icon" />
+            <span className="health-metric-tile-tooltip" role="tooltip">
+              {hint}
+            </span>
+          </span>
+        ) : null}
+      </span>
       <span className="health-metric-tile-value">
         {valueText}
         {unitText ? <span className="health-metric-tile-unit">{unitText}</span> : null}
@@ -129,10 +148,54 @@ export default function HealthMetricsGrid({ metricRows = [] }) {
           border-color: rgba(14, 165, 233, 0.35);
           background: rgba(14, 165, 233, 0.08);
         }
+        .health-metric-tile-label-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 6px;
+        }
         .health-metric-tile-label {
           font-size: 0.82rem;
           color: ${BM_ON_DESIGN.colors.textMuted};
           line-height: 1.3;
+        }
+        .health-metric-tile-info {
+          position: relative;
+          flex-shrink: 0;
+          display: inline-flex;
+          align-items: center;
+          color: ${BM_ON_DESIGN.colors.textDim};
+          cursor: help;
+        }
+        :global(.health-metric-tile-info-icon) {
+          font-size: 0.85rem;
+        }
+        .health-metric-tile-info:hover .health-metric-tile-tooltip,
+        .health-metric-tile-info:focus .health-metric-tile-tooltip,
+        .health-metric-tile-info:focus-within .health-metric-tile-tooltip {
+          opacity: 1;
+          visibility: visible;
+          transform: translateY(0);
+        }
+        .health-metric-tile-tooltip {
+          position: absolute;
+          z-index: 5;
+          top: calc(100% + 6px);
+          right: 0;
+          width: min(240px, 70vw);
+          padding: 8px 10px;
+          border-radius: 10px;
+          background: rgba(15, 23, 42, 0.95);
+          border: 1px solid ${BM_ON_DESIGN.colors.border};
+          font-size: 0.75rem;
+          line-height: 1.4;
+          font-weight: 400;
+          color: ${BM_ON_DESIGN.colors.textMuted};
+          opacity: 0;
+          visibility: hidden;
+          transform: translateY(-4px);
+          transition: opacity 0.15s ease, transform 0.15s ease;
+          pointer-events: none;
         }
         .health-metric-tile-value {
           font-size: 1.35rem;

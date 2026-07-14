@@ -44,6 +44,7 @@ export default function AppleWatchSection({
       <div className="health-charts-grid">
         <HealthLineChart
           title="HRV vs. baseline (30 dní)"
+          subtitle="Plná čára = dnešek, tečkovaná = tvůj 7denní průměr. Zajímá tě, jestli jsi NAD nebo POD průměrem."
           unit="ms"
           points={hrvPoints}
           baselinePoints={hrvBaseline}
@@ -51,6 +52,7 @@ export default function AppleWatchSection({
         />
         <HealthLineChart
           title="Klidový tep vs. baseline (30 dní)"
+          subtitle="Nižší a stabilní je lepší. Skok nahoru = varování."
           unit="count/min"
           points={rhrPoints}
           baselinePoints={rhrBaseline}
@@ -58,12 +60,14 @@ export default function AppleWatchSection({
         />
         <HealthLineChart
           title="Kroky (30 dní)"
+          subtitle="Denní aktivita."
           unit=""
           points={stepsPoints}
           color={BM_ON_DESIGN.colors.green}
         />
         <HealthLineChart
           title="Aktivní energie (30 dní)"
+          subtitle="Kalorie spálené pohybem navíc k základnímu metabolismu."
           unit="kcal"
           points={energyPoints}
           color={BM_ON_DESIGN.colors.yellow}

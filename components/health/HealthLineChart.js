@@ -49,6 +49,7 @@ function formatDelta(latest, baseline, unitLabel) {
 
 export default function HealthLineChart({
   title,
+  subtitle = '',
   unit = '',
   points = [],
   baselinePoints = [],
@@ -112,6 +113,7 @@ export default function HealthLineChart({
     return (
       <div className="health-chart health-chart--empty">
         <h4 className="health-chart-title">{title}</h4>
+        {subtitle ? <p className="health-chart-subtitle">{subtitle}</p> : null}
         <p className="health-chart-empty">Zatím nemáme dostatek dat.</p>
       </div>
     );
@@ -124,7 +126,10 @@ export default function HealthLineChart({
   return (
     <div className="health-chart">
       <div className="health-chart-head">
-        <h4 className="health-chart-title">{title}</h4>
+        <div className="health-chart-title-block">
+          <h4 className="health-chart-title">{title}</h4>
+          {subtitle ? <p className="health-chart-subtitle">{subtitle}</p> : null}
+        </div>
         <div className="health-chart-latest">
           <span className="health-chart-latest-value">
             {activeValueText}
@@ -263,6 +268,17 @@ export default function HealthLineChart({
           justify-content: space-between;
           gap: 8px 12px;
           margin-bottom: 8px;
+        }
+        .health-chart-title-block {
+          flex: 1 1 180px;
+          min-width: 0;
+        }
+        .health-chart-subtitle {
+          margin: 4px 0 0;
+          font-size: 0.78rem;
+          line-height: 1.4;
+          color: ${BM_ON_DESIGN.colors.textDim};
+          font-weight: 400;
         }
         .health-chart-latest {
           display: flex;

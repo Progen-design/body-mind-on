@@ -17,6 +17,7 @@ const INITIAL = {
   recovery: null,
   scale: null,
   workouts: null,
+  metrics: null,
 };
 
 export function useHealthData(accessToken, { days = 30, workoutLimit = 20 } = {}) {
@@ -37,15 +38,16 @@ export function useHealthData(accessToken, { days = 30, workoutLimit = 20 } = {}
 
     try {
       const qs = `days=${days}`;
-      const [connection, watch, recovery, scale, workouts] = await Promise.all([
+      const [connection, watch, recovery, scale, workouts, metrics] = await Promise.all([
         fetchHealthJson('/api/health/connection', accessToken),
         fetchHealthJson(`/api/health/watch?${qs}`, accessToken),
         fetchHealthJson(`/api/health/recovery?${qs}`, accessToken),
         fetchHealthJson(`/api/health/scale?${qs}`, accessToken),
         fetchHealthJson(`/api/health/workouts?limit=${workoutLimit}`, accessToken),
+        fetchHealthJson(`/api/health/metrics?${qs}`, accessToken),
       ]);
 
-      setData({ connection, watch, recovery, scale, workouts });
+      setData({ connection, watch, recovery, scale, workouts, metrics });
     } catch (err) {
       setError(err?.message || 'Nepodařilo se načíst zdravotní data.');
       setData(INITIAL);

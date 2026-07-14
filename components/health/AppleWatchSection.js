@@ -1,10 +1,17 @@
 import { BM_ON_DESIGN } from '../../lib/designTokens';
 import HealthConnectionBanner from './HealthConnectionBanner';
 import HealthLineChart, { toChartPoints } from './HealthLineChart';
+import HealthMetricsGrid from './HealthMetricsGrid';
 import RecoveryCard from './RecoveryCard';
 import WorkoutsTable from './WorkoutsTable';
 
-export default function AppleWatchSection({ connection, watchRows = [], recoveryRows = [], workoutRows = [] }) {
+export default function AppleWatchSection({
+  connection,
+  watchRows = [],
+  recoveryRows = [],
+  workoutRows = [],
+  metricRows = [],
+}) {
   const latestRecovery = recoveryRows?.[0] || null;
 
   const hrvPoints = toChartPoints(recoveryRows, 'hrv_ms');
@@ -32,6 +39,8 @@ export default function AppleWatchSection({ connection, watchRows = [], recovery
 
       <RecoveryCard latest={latestRecovery} />
 
+      <HealthMetricsGrid metricRows={metricRows} />
+
       <div className="health-charts-grid">
         <HealthLineChart
           title="HRV vs. baseline (30 dní)"
@@ -42,7 +51,7 @@ export default function AppleWatchSection({ connection, watchRows = [], recovery
         />
         <HealthLineChart
           title="Klidový tep vs. baseline (30 dní)"
-          unit="bpm"
+          unit="count/min"
           points={rhrPoints}
           baselinePoints={rhrBaseline}
           color={BM_ON_DESIGN.colors.red}

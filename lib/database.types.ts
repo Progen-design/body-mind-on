@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -3977,6 +3977,7 @@ export type Database = {
         Row: {
           active_kcal: number | null
           exercise_min: number | null
+          has_sleep: boolean | null
           hrv_baseline7: number | null
           hrv_delta_pct: number | null
           hrv_ms: number | null

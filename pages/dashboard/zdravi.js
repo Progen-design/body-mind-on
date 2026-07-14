@@ -82,6 +82,7 @@ export default function HealthDashboardPage() {
                 watchRows={data.watch?.rows || []}
                 recoveryRows={data.recovery?.rows || []}
                 workoutRows={data.workouts?.rows || []}
+                metricRows={data.metrics?.rows || []}
               />
 
               <div className="health-section-divider" role="separator" aria-hidden />

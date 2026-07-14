@@ -51,8 +51,13 @@ const PRIMITIVES_STYLE = `
     font-weight: 800;
     color: #f8fafc;
     letter-spacing: -0.02em;
+    white-space: nowrap;
   }
-  .habit-ui-progress-sep { color: #334155; margin: 0 3px; font-weight: 400; }
+  .habit-ui-progress-sep {
+    color: #94a3b8;
+    margin: 0 4px;
+    font-weight: 600;
+  }
   .habit-ui-progress-bar-wrap {
     width: 130px;
     height: 4px;
@@ -210,8 +215,8 @@ export function HabitUiProgressBar({ done, total, className = '' }) {
   return (
     <>
       <HabitUiStyles />
-      <div className={`habit-ui-progress ${className}`.trim()} aria-live="polite">
-        <span className="habit-ui-progress-nums">
+      <div className={`habit-ui-progress ${className}`.trim()} aria-live="polite" aria-label={`${done} z ${total} hotovo`}>
+        <span className="habit-ui-progress-nums" aria-hidden="true">
           {done}<span className="habit-ui-progress-sep">/</span>{total}
         </span>
         <div className="habit-ui-progress-bar-wrap">

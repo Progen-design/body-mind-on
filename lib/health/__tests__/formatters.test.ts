@@ -3,9 +3,12 @@ import { describe, it } from 'node:test';
 
 import {
   buildConnectionBanner,
+  formatMetricUnitLabel,
+  formatMetricValue,
   formatRecoveryStatusLabel,
   getRecoveryBand,
   getRecoveryBandInfo,
+  groupLatestMetrics,
   isSyncStale,
 } from '../formatters.ts';
 import { clampDays, clampLimit, isUuid, pragueDateDaysAgo } from '../guards.ts';
@@ -92,5 +95,21 @@ describe('health formatters', () => {
   it('formatRecoveryStatusLabel maps known statuses', () => {
     assert.match(formatRecoveryStatusLabel('chybi_hrv') ?? '', /HRV/);
     assert.equal(formatRecoveryStatusLabel('nedostatek_dat'), 'Nedostatek dat pro 7denní baseline');
+  });
+
+  it('groupLatestMetrics picks newest local_date per metric', () => {
+    const { keyMetrics, byCategory } = groupLatestMetrics([
+      { metric_name: 'step_count', label_cs: 'Kroky', category: 'aktivita', unit: 'count', is_key: true, value: 1000, local_date: '2026-07-10' },
+      { metric_name: 'step_count', label_cs: 'Kroky', category: 'aktivita', unit: 'count', is_key: true, value: 1200, local_date: '2026-07-12' },
+      { metric_name: 'heart_rate', label_cs: 'Tep', category: 'srdce', unit: 'count/min', is_key: false, value: 72, local_date: '2026-07-11' },
+    ]);
+    assert.equal(keyMetrics.length, 1);
+    assert.equal(keyMetrics[0].value, 1200);
+    assert.equal(byCategory.srdce?.[0]?.value, 72);
+  });
+
+  it('formatMetricValue formats Czech numbers', () => {
+    assert.match(formatMetricValue(1234.5, 'count'), /1.?235/);
+    assert.equal(formatMetricUnitLabel('count/min'), 'bpm');
   });
 });

@@ -2402,6 +2402,7 @@ export default function Profil() {
                     watchRows={healthData.watch?.rows || []}
                     recoveryRows={healthData.recovery?.rows || []}
                     workoutRows={healthData.workouts?.rows || []}
+                    metricRows={healthData.metrics?.rows || []}
                   />
                 )}
               </div>

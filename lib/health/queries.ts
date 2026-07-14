@@ -84,6 +84,25 @@ export async function getRecovery(userId: string, days = 30) {
   return data ?? [];
 }
 
+const METRICS_DAILY_SELECT =
+  'user_id, local_date, metric_name, label_cs, category, unit, agg, is_key, value, min_value, max_value, samples';
+
+export async function getAllMetrics(userId: string, days = 30) {
+  assertUserId(userId);
+  const safeDays = clampDays(days, 30);
+  const sinceDate = pragueDateDaysAgo(safeDays);
+
+  const { data, error } = await supabaseServer
+    .from('apple_health_metrics_daily')
+    .select(METRICS_DAILY_SELECT)
+    .eq('user_id', userId)
+    .gte('local_date', sinceDate)
+    .order('local_date', { ascending: false });
+
+  if (error) throw new Error(error.message || 'Nepodařilo se načíst metriky Apple Watch.');
+  return data ?? [];
+}
+
 export async function getWorkouts(userId: string, limit = 20) {
   assertUserId(userId);
   const safeLimit = clampLimit(limit, 20, 100);

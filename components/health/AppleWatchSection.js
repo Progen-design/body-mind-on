@@ -1,10 +1,17 @@
 import { BM_ON_DESIGN } from '../../lib/designTokens';
 import HealthConnectionBanner from './HealthConnectionBanner';
 import HealthLineChart, { toChartPoints } from './HealthLineChart';
+import HealthMetricsGrid from './HealthMetricsGrid';
 import RecoveryCard from './RecoveryCard';
 import WorkoutsTable from './WorkoutsTable';
 
-export default function AppleWatchSection({ connection, watchRows = [], recoveryRows = [], workoutRows = [] }) {
+export default function AppleWatchSection({
+  connection,
+  watchRows = [],
+  recoveryRows = [],
+  workoutRows = [],
+  metricRows = [],
+}) {
   const latestRecovery = recoveryRows?.[0] || null;
 
   const hrvPoints = toChartPoints(recoveryRows, 'hrv_ms');
@@ -32,9 +39,12 @@ export default function AppleWatchSection({ connection, watchRows = [], recovery
 
       <RecoveryCard latest={latestRecovery} />
 
+      <HealthMetricsGrid metricRows={metricRows} />
+
       <div className="health-charts-grid">
         <HealthLineChart
           title="HRV vs. baseline (30 dní)"
+          subtitle="Plná čára = dnešek, tečkovaná = tvůj 7denní průměr. Zajímá tě, jestli jsi NAD nebo POD průměrem."
           unit="ms"
           points={hrvPoints}
           baselinePoints={hrvBaseline}
@@ -42,19 +52,22 @@ export default function AppleWatchSection({ connection, watchRows = [], recovery
         />
         <HealthLineChart
           title="Klidový tep vs. baseline (30 dní)"
-          unit="bpm"
+          subtitle="Nižší a stabilní je lepší. Skok nahoru = varování."
+          unit="count/min"
           points={rhrPoints}
           baselinePoints={rhrBaseline}
           color={BM_ON_DESIGN.colors.red}
         />
         <HealthLineChart
           title="Kroky (30 dní)"
+          subtitle="Denní aktivita."
           unit=""
           points={stepsPoints}
           color={BM_ON_DESIGN.colors.green}
         />
         <HealthLineChart
           title="Aktivní energie (30 dní)"
+          subtitle="Kalorie spálené pohybem navíc k základnímu metabolismu."
           unit="kcal"
           points={energyPoints}
           color={BM_ON_DESIGN.colors.yellow}

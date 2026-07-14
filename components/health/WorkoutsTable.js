@@ -1,4 +1,8 @@
+import { useState } from 'react';
+import { BM_ON_DESIGN } from '../../lib/designTokens';
 import { formatDistanceKm, formatDurationMinutes } from '../../lib/health/formatters';
+
+const INITIAL_VISIBLE = 3;
 
 function formatDateTime(value) {
   if (!value) return '—';
@@ -19,6 +23,8 @@ function formatKcal(value) {
 }
 
 export default function WorkoutsTable({ rows = [] }) {
+  const [expanded, setExpanded] = useState(false);
+
   if (!rows.length) {
     return (
       <div className="health-workouts health-workouts--empty">
@@ -27,6 +33,9 @@ export default function WorkoutsTable({ rows = [] }) {
       </div>
     );
   }
+
+  const hiddenCount = Math.max(0, rows.length - INITIAL_VISIBLE);
+  const visibleRows = expanded ? rows : rows.slice(0, INITIAL_VISIBLE);
 
   return (
     <div className="health-workouts">
@@ -43,7 +52,7 @@ export default function WorkoutsTable({ rows = [] }) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {visibleRows.map((row) => (
               <tr key={row.id || `${row.started_at}-${row.external_id}`}>
                 <td>{formatDateTime(row.started_at)}</td>
                 <td>{row.label_cs || row.workout_type || '—'}</td>
@@ -55,6 +64,35 @@ export default function WorkoutsTable({ rows = [] }) {
           </tbody>
         </table>
       </div>
+
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          className="health-workouts-toggle"
+          onClick={() => setExpanded((prev) => !prev)}
+          aria-expanded={expanded}
+        >
+          {expanded ? 'Sbalit' : `Zobrazit dalších ${hiddenCount} tréninků`}
+        </button>
+      )}
+
+      <style jsx>{`
+        .health-workouts-toggle {
+          margin-top: 12px;
+          padding: 8px 14px;
+          border-radius: 10px;
+          border: 1px solid ${BM_ON_DESIGN.colors.border};
+          background: rgba(0, 0, 0, 0.12);
+          color: ${BM_ON_DESIGN.colors.textMuted};
+          font-size: 0.85rem;
+          cursor: pointer;
+          transition: color 0.15s ease, border-color 0.15s ease;
+        }
+        .health-workouts-toggle:hover {
+          color: ${BM_ON_DESIGN.colors.text};
+          border-color: rgba(14, 165, 233, 0.35);
+        }
+      `}</style>
     </div>
   );
 }

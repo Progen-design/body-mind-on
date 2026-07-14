@@ -22,3 +22,6 @@ scripts/tmp-*.mjs
 .env.vercel-production.tmp
 .env.vercel-preview.tmp
 .cursor/hooks/.pending-errors.log
+
+tmp/
+.env*

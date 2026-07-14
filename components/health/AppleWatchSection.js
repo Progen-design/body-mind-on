@@ -1,9 +1,22 @@
 import { BM_ON_DESIGN } from '../../lib/designTokens';
+import {
+  getActiveEnergyChartStatus,
+  getHrvChartStatus,
+  getRhrChartStatus,
+  getStepsChartStatus,
+} from '../../lib/health/formatters';
 import HealthConnectionBanner from './HealthConnectionBanner';
 import HealthLineChart, { toChartPoints } from './HealthLineChart';
 import HealthMetricsGrid from './HealthMetricsGrid';
 import RecoveryCard from './RecoveryCard';
+import RecoveryVitalsTiles from './RecoveryVitalsTiles';
 import WorkoutsTable from './WorkoutsTable';
+
+function latestValue(points) {
+  if (!points?.length) return null;
+  const last = points[points.length - 1];
+  return Number.isFinite(Number(last?.value)) ? Number(last.value) : null;
+}
 
 export default function AppleWatchSection({
   connection,
@@ -20,6 +33,11 @@ export default function AppleWatchSection({
   const rhrBaseline = toChartPoints(recoveryRows, 'rhr_baseline7');
   const stepsPoints = toChartPoints(watchRows, 'steps');
   const energyPoints = toChartPoints(watchRows, 'active_kcal');
+
+  const hrvStatus = getHrvChartStatus(latestValue(hrvPoints), latestValue(hrvBaseline));
+  const rhrStatus = getRhrChartStatus(latestValue(rhrPoints), latestValue(rhrBaseline));
+  const stepsStatus = getStepsChartStatus(latestValue(stepsPoints));
+  const energyStatus = getActiveEnergyChartStatus(latestValue(energyPoints));
 
   return (
     <section className="health-section health-section--watch" aria-labelledby="health-watch-heading">
@@ -39,12 +57,12 @@ export default function AppleWatchSection({
 
       <RecoveryCard latest={latestRecovery} />
 
-      <HealthMetricsGrid metricRows={metricRows} />
+      <RecoveryVitalsTiles latestRecovery={latestRecovery} metricRows={metricRows} />
 
       <div className="health-charts-grid">
         <HealthLineChart
           title="HRV vs. baseline (30 dní)"
-          subtitle="Plná čára = dnešek, tečkovaná = tvůj 7denní průměr. Zajímá tě, jestli jsi NAD nebo POD průměrem."
+          statusLine={hrvStatus}
           unit="ms"
           points={hrvPoints}
           baselinePoints={hrvBaseline}
@@ -52,7 +70,7 @@ export default function AppleWatchSection({
         />
         <HealthLineChart
           title="Klidový tep vs. baseline (30 dní)"
-          subtitle="Nižší a stabilní je lepší. Skok nahoru = varování."
+          statusLine={rhrStatus}
           unit="count/min"
           points={rhrPoints}
           baselinePoints={rhrBaseline}
@@ -60,21 +78,29 @@ export default function AppleWatchSection({
         />
         <HealthLineChart
           title="Kroky (30 dní)"
-          subtitle="Denní aktivita."
+          statusLine={stepsStatus}
           unit=""
           points={stepsPoints}
           color={BM_ON_DESIGN.colors.green}
         />
         <HealthLineChart
           title="Aktivní energie (30 dní)"
-          subtitle="Kalorie spálené pohybem navíc k základnímu metabolismu."
+          statusLine={energyStatus}
           unit="kcal"
           points={energyPoints}
           color={BM_ON_DESIGN.colors.yellow}
         />
       </div>
 
+      <HealthMetricsGrid metricRows={metricRows} />
+
       <WorkoutsTable rows={workoutRows} />
+
+      <style jsx>{`
+        :global(.health-charts-grid) {
+          margin-bottom: 24px;
+        }
+      `}</style>
     </section>
   );
 }

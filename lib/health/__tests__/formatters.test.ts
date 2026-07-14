@@ -3,11 +3,16 @@ import { describe, it } from 'node:test';
 
 import {
   buildConnectionBanner,
+  formatMetricTileDate,
   formatMetricUnitLabel,
   formatMetricValue,
   formatRecoveryStatusLabel,
+  getActiveEnergyChartStatus,
+  getHrvChartStatus,
   getRecoveryBand,
   getRecoveryBandInfo,
+  getRhrChartStatus,
+  getStepsChartStatus,
   groupLatestMetrics,
   isSyncStale,
 } from '../formatters.ts';
@@ -111,5 +116,20 @@ describe('health formatters', () => {
   it('formatMetricValue formats Czech numbers', () => {
     assert.match(formatMetricValue(1234.5, 'count'), /1.?235/);
     assert.equal(formatMetricUnitLabel('count/min'), 'bpm');
+  });
+
+  it('formatMetricTileDate formats short Czech date', () => {
+    assert.equal(formatMetricTileDate('2026-07-14'), '14. 7.');
+    assert.equal(formatMetricTileDate(null), null);
+  });
+
+  it('chart status helpers return layman copy', () => {
+    assert.match(getHrvChartStatus(40, 50) ?? '', /zatížené/);
+    assert.match(getHrvChartStatus(55, 50) ?? '', /regenerace/);
+    assert.match(getRhrChartStatus(68, 60) ?? '', /únava/);
+    assert.match(getRhrChartStatus(62, 60) ?? '', /normě/);
+    assert.match(getStepsChartStatus(3000) ?? '', /Málo pohybu/);
+    assert.match(getStepsChartStatus(12000) ?? '', /Skvělý den/);
+    assert.match(getActiveEnergyChartStatus(422) ?? '', /422.*kcal/);
   });
 });

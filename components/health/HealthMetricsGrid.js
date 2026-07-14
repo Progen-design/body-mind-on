@@ -1,20 +1,19 @@
+import { useState } from 'react';
 import {
   FiActivity,
   FiCloud,
   FiHeart,
-  FiInfo,
   FiSun,
   FiTrendingUp,
   FiUser,
 } from 'react-icons/fi';
 import { BM_ON_DESIGN } from '../../lib/designTokens';
 import {
-  formatMetricUnitLabel,
-  formatMetricValue,
   groupLatestMetrics,
   METRIC_CATEGORY_LABELS,
   METRIC_CATEGORY_ORDER,
 } from '../../lib/health/formatters';
+import MetricTile from './MetricTile';
 
 const CATEGORY_ICONS = {
   aktivita: FiActivity,
@@ -25,50 +24,51 @@ const CATEGORY_ICONS = {
   prostredi: FiSun,
 };
 
-const METRIC_HINTS = {
-  heart_rate_variability:
-    'Variabilita tepové frekvence — rozptyl mezi údery srdce. Vyšší bývá spojené s lepší regenerací. Sleduje se trend, ne jedno číslo.',
-  resting_heart_rate:
-    'Tep v klidu. Když vyskočí nad tvůj průměr, tělo často zvládá únavu, stres nebo nemoc.',
-};
+export const PRIMARY_METRIC_NAMES = [
+  'step_count',
+  'active_energy',
+  'apple_exercise_time',
+  'walking_running_distance',
+  'vo2_max',
+  'blood_oxygen_saturation',
+];
 
-function MetricTile({ metric, emphasized = false }) {
-  const valueText = formatMetricValue(metric.value, metric.unit);
-  const unitText = formatMetricUnitLabel(metric.unit);
-  const hint = METRIC_HINTS[metric.metric_name] || null;
+const EXPAND_CATEGORIES = ['aktivita', 'srdce', 'pohyb', 'dychani', 'telo', 'prostredi'];
 
+function MetricTileFromSummary({ metric, emphasized = false }) {
   return (
-    <div className={`health-metric-tile${emphasized ? ' health-metric-tile--key' : ''}`}>
-      <span className="health-metric-tile-label-row">
-        <span className="health-metric-tile-label">{metric.label_cs}</span>
-        {hint ? (
-          <span className="health-metric-tile-info" tabIndex={0} aria-label={hint}>
-            <FiInfo aria-hidden className="health-metric-tile-info-icon" />
-            <span className="health-metric-tile-tooltip" role="tooltip">
-              {hint}
-            </span>
-          </span>
-        ) : null}
-      </span>
-      <span className="health-metric-tile-value">
-        {valueText}
-        {unitText ? <span className="health-metric-tile-unit">{unitText}</span> : null}
-      </span>
-      <span className="health-metric-tile-date">
-        {metric.local_date ? String(metric.local_date).slice(0, 10) : '—'}
-      </span>
-    </div>
+    <MetricTile
+      label={metric.label_cs}
+      value={metric.value}
+      unit={metric.unit}
+      localDate={metric.local_date}
+      emphasized={emphasized}
+    />
   );
 }
 
 export default function HealthMetricsGrid({ metricRows = [] }) {
-  const { keyMetrics, byCategory } = groupLatestMetrics(metricRows);
-  const nonKeyCategories = METRIC_CATEGORY_ORDER.filter((cat) => {
-    const items = (byCategory[cat] || []).filter((m) => !m.is_key);
-    return items.length > 0;
-  });
+  const [expanded, setExpanded] = useState(false);
+  const { byCategory } = groupLatestMetrics(metricRows);
+  const allMetrics = Object.values(byCategory).flat();
+  const byName = new Map(allMetrics.map((m) => [m.metric_name, m]));
 
-  if (!keyMetrics.length && !nonKeyCategories.length) {
+  const primaryMetrics = PRIMARY_METRIC_NAMES.map((name) => byName.get(name)).filter(Boolean);
+  const primarySet = new Set(PRIMARY_METRIC_NAMES);
+  const recoveryVitalNames = new Set(['heart_rate_variability', 'resting_heart_rate']);
+
+  const otherByCategory = {};
+  for (const cat of EXPAND_CATEGORIES) {
+    const items = (byCategory[cat] || []).filter(
+      (m) => !primarySet.has(m.metric_name) && !recoveryVitalNames.has(m.metric_name),
+    );
+    if (items.length > 0) otherByCategory[cat] = items;
+  }
+
+  const otherCount = Object.values(otherByCategory).reduce((sum, items) => sum + items.length, 0);
+  const hasAnything = primaryMetrics.length > 0 || otherCount > 0;
+
+  if (!hasAnything) {
     return (
       <div className="health-metrics-empty">
         <p className="health-empty-text">Zatím nemáme žádné metriky z Apple Health.</p>
@@ -78,41 +78,58 @@ export default function HealthMetricsGrid({ metricRows = [] }) {
 
   return (
     <div className="health-metrics">
-      {keyMetrics.length > 0 && (
+      {primaryMetrics.length > 0 && (
         <div className="health-metrics-block">
-          <h3 className="health-subsection-title">Klíčové metriky</h3>
-          <div className="health-metrics-grid health-metrics-grid--key">
-            {keyMetrics.map((metric) => (
-              <MetricTile key={metric.metric_name} metric={metric} emphasized />
+          <h3 className="health-subsection-title">Dnešní přehled</h3>
+          <div className="health-metrics-grid">
+            {primaryMetrics.map((metric) => (
+              <MetricTileFromSummary key={metric.metric_name} metric={metric} emphasized />
             ))}
           </div>
         </div>
       )}
 
-      {nonKeyCategories.map((category) => {
-        const Icon = CATEGORY_ICONS[category] || FiActivity;
-        const items = (byCategory[category] || []).filter((m) => !m.is_key);
-        return (
-          <div key={category} className="health-metrics-block">
-            <h3 className="health-metrics-category-title">
-              <Icon aria-hidden className="health-metrics-category-icon" />
-              {METRIC_CATEGORY_LABELS[category] || category}
-            </h3>
-            <div className="health-metrics-grid">
-              {items.map((metric) => (
-                <MetricTile key={metric.metric_name} metric={metric} />
-              ))}
+      {otherCount > 0 && (
+        <div className="health-metrics-expand">
+          <button
+            type="button"
+            className="health-metrics-expand-btn"
+            onClick={() => setExpanded((prev) => !prev)}
+            aria-expanded={expanded}
+          >
+            {expanded ? 'Skrýt všechny metriky' : 'Zobrazit všechny metriky'}
+          </button>
+
+          {expanded && (
+            <div className="health-metrics-all">
+              {EXPAND_CATEGORIES.filter((cat) => otherByCategory[cat]?.length).map((category) => {
+                const Icon = CATEGORY_ICONS[category] || FiActivity;
+                const items = otherByCategory[category];
+                return (
+                  <div key={category} className="health-metrics-block">
+                    <h3 className="health-metrics-category-title">
+                      <Icon aria-hidden className="health-metrics-category-icon" />
+                      {METRIC_CATEGORY_LABELS[category] || category}
+                    </h3>
+                    <div className="health-metrics-grid">
+                      {items.map((metric) => (
+                        <MetricTileFromSummary key={metric.metric_name} metric={metric} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
-        );
-      })}
+          )}
+        </div>
+      )}
 
       <style jsx>{`
         .health-metrics {
-          margin-bottom: 20px;
+          margin-bottom: 24px;
         }
         .health-metrics-block + .health-metrics-block {
-          margin-top: 18px;
+          margin-top: 20px;
         }
         .health-metrics-category-title {
           display: flex;
@@ -128,93 +145,28 @@ export default function HealthMetricsGrid({ metricRows = [] }) {
         }
         .health-metrics-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-          gap: 12px;
+          grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+          gap: 14px;
         }
-        .health-metrics-grid--key {
-          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        .health-metrics-expand {
+          margin-top: 18px;
         }
-        .health-metric-tile {
-          padding: 14px;
-          border-radius: 12px;
-          background: rgba(0, 0, 0, 0.18);
-          border: 1px solid ${BM_ON_DESIGN.colors.border};
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          min-height: 96px;
-        }
-        .health-metric-tile--key {
-          border-color: rgba(14, 165, 233, 0.35);
-          background: rgba(14, 165, 233, 0.08);
-        }
-        .health-metric-tile-label-row {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 6px;
-        }
-        .health-metric-tile-label {
-          font-size: 0.82rem;
-          color: ${BM_ON_DESIGN.colors.textMuted};
-          line-height: 1.3;
-        }
-        .health-metric-tile-info {
-          position: relative;
-          flex-shrink: 0;
-          display: inline-flex;
-          align-items: center;
-          color: ${BM_ON_DESIGN.colors.textDim};
-          cursor: help;
-        }
-        :global(.health-metric-tile-info-icon) {
-          font-size: 0.85rem;
-        }
-        .health-metric-tile-info:hover .health-metric-tile-tooltip,
-        .health-metric-tile-info:focus .health-metric-tile-tooltip,
-        .health-metric-tile-info:focus-within .health-metric-tile-tooltip {
-          opacity: 1;
-          visibility: visible;
-          transform: translateY(0);
-        }
-        .health-metric-tile-tooltip {
-          position: absolute;
-          z-index: 5;
-          top: calc(100% + 6px);
-          right: 0;
-          width: min(240px, 70vw);
-          padding: 8px 10px;
+        .health-metrics-expand-btn {
+          padding: 8px 14px;
           border-radius: 10px;
-          background: rgba(15, 23, 42, 0.95);
           border: 1px solid ${BM_ON_DESIGN.colors.border};
-          font-size: 0.75rem;
-          line-height: 1.4;
-          font-weight: 400;
+          background: rgba(0, 0, 0, 0.12);
           color: ${BM_ON_DESIGN.colors.textMuted};
-          opacity: 0;
-          visibility: hidden;
-          transform: translateY(-4px);
-          transition: opacity 0.15s ease, transform 0.15s ease;
-          pointer-events: none;
+          font-size: 0.85rem;
+          cursor: pointer;
+          transition: color 0.15s ease, border-color 0.15s ease;
         }
-        .health-metric-tile-value {
-          font-size: 1.35rem;
-          font-weight: 700;
+        .health-metrics-expand-btn:hover {
           color: ${BM_ON_DESIGN.colors.text};
-          line-height: 1.2;
+          border-color: rgba(14, 165, 233, 0.35);
         }
-        .health-metric-tile--key .health-metric-tile-value {
-          font-size: 1.5rem;
-        }
-        .health-metric-tile-unit {
-          margin-left: 4px;
-          font-size: 0.78rem;
-          font-weight: 600;
-          color: ${BM_ON_DESIGN.colors.textMuted};
-        }
-        .health-metric-tile-date {
-          font-size: 0.75rem;
-          color: ${BM_ON_DESIGN.colors.textDim};
+        .health-metrics-all {
+          margin-top: 18px;
         }
         .health-metrics-empty {
           margin-bottom: 20px;

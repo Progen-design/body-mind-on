@@ -9,7 +9,7 @@ import BetaCohortBanner from '../components/beta/BetaCohortBanner';
 import Footer from '../components/Footer';
 import WelcomeTour from '../components/WelcomeTour';
 import WithingsBodyDevelopmentSection from '../components/profile/WithingsBodyDevelopmentSection';
-import HealthProfileEntry from '../components/health/HealthProfileEntry';
+import AppleWatchSection from '../components/health/AppleWatchSection';
 import ProfileProgressSection from '../components/profile/ProfileProgressSection';
 import { parsePlanHtml } from '../lib/parsePlanHtml';
 import HabitTracker from '../components/HabitTracker';
@@ -29,6 +29,7 @@ import { validatePublishedPlanHtml } from '../lib/validatePlanHtml';
 import { getHabitById } from '../lib/habits';
 import { normalizeOccupationForForm, activityToFormLabel, goalToFormLabel, normalizeFrequency, getFrequencyDayRange } from '../lib/preferenceConstants';
 import { useProfileData } from '../hooks/useProfileData';
+import { useHealthData } from '../hooks/useHealthData';
 import { usePlanStatus } from '../hooks/usePlanStatus';
 import { PLAN_GENERATION_DURATION_HINT } from '../lib/planGenerationUiCopy';
 import { getRegistrationAnchoredWeek } from '../lib/profileWeekRange';
@@ -323,6 +324,32 @@ function getEventsByDate(events) {
 
 const WEEKDAY_LABELS = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
 
+function ProfileHealthSkeleton() {
+  return (
+    <section
+      className="profile-health-skeleton health-section health-section--watch"
+      aria-busy="true"
+      aria-label="Načítám data z Apple Watch"
+    >
+      <div className="profile-health-skeleton-header">
+        <span className="profile-health-skeleton-emoji" aria-hidden>⌚</span>
+        <div>
+          <div className="profile-health-skeleton-line profile-health-skeleton-line--title" />
+          <div className="profile-health-skeleton-line profile-health-skeleton-line--subtitle" />
+        </div>
+      </div>
+      <div className="profile-health-skeleton-card" />
+      <div className="profile-health-skeleton-charts">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="profile-health-skeleton-chart" />
+        ))}
+      </div>
+      <div className="profile-health-skeleton-table" />
+      <p className="profile-health-skeleton-hint">Načítám zdravotní data…</p>
+    </section>
+  );
+}
+
 export default function Profil() {
   const renderPortal = (node) => (typeof document !== 'undefined' ? createPortal(node, document.body) : null);
   const router = useRouter();
@@ -423,6 +450,12 @@ export default function Profil() {
   const [withingsHeaderWeight, setWithingsHeaderWeight] = useState(null);
   const [withingsWeightHistory, setWithingsWeightHistory] = useState([]);
   const [withingsHistoryLoaded, setWithingsHistoryLoaded] = useState(false);
+
+  const healthAccessToken = profile?.can_create_calendar_events ? null : session?.access_token;
+  const { data: healthData, loading: healthLoading, error: healthError } = useHealthData(healthAccessToken, {
+    days: 30,
+    workoutLimit: 20,
+  });
 
   useEffect(() => {
     setAvatarImageBroken(false);
@@ -2357,14 +2390,31 @@ export default function Profil() {
             {/* Sjednocený kontejner bublin – pro trenéra i klienta */}
             <div className={profile?.can_create_calendar_events ? 'profile-bubbles profile-bubbles--trainer' : 'profile-main-stack'}>
             {!profile?.can_create_calendar_events && (
-              <HealthProfileEntry />
+              <div className="profile-health-inline">
+                {healthError ? (
+                  <p className="profile-health-error" role="alert">{healthError}</p>
+                ) : null}
+                {healthLoading && !healthData.connection ? (
+                  <ProfileHealthSkeleton />
+                ) : (
+                  <AppleWatchSection
+                    connection={healthData.connection}
+                    watchRows={healthData.watch?.rows || []}
+                    recoveryRows={healthData.recovery?.rows || []}
+                    workoutRows={healthData.workouts?.rows || []}
+                  />
+                )}
+              </div>
             )}
             {!profile?.can_create_calendar_events && showWithingsProfileSection && (
-              <WithingsBodyDevelopmentSection
+              <>
+                <div className="profile-health-divider" role="separator" aria-hidden />
+                <WithingsBodyDevelopmentSection
                 profile={profile}
                 onLatestWeightChange={handleWithingsHeaderWeight}
                 onWeightHistoryChange={handleWithingsWeightHistory}
               />
+              </>
             )}
             {/* Mindset na tento týden (jen klienti) – nahoře před plánem */}
             {!profile?.can_create_calendar_events && mindsetTipFromPlan && (
@@ -3810,6 +3860,285 @@ export default function Profil() {
           width: 100%;
           max-width: 100%;
           margin: 0;
+        }
+        .profile-health-inline {
+          width: 100%;
+        }
+        .profile-health-error {
+          margin: 0 0 12px;
+          padding: 12px 14px;
+          border-radius: 12px;
+          background: rgba(251, 113, 133, 0.12);
+          border: 1px solid rgba(251, 113, 133, 0.35);
+          color: #fecdd3;
+          font-size: 0.92rem;
+        }
+        .profile-health-divider {
+          height: 2px;
+          margin: 4px 0;
+          background: linear-gradient(90deg, rgba(14, 165, 233, 0.5), rgba(167, 139, 250, 0.35), rgba(34, 211, 238, 0.2));
+          border-radius: 999px;
+        }
+        .profile-health-skeleton-header {
+          display: flex;
+          gap: 14px;
+          align-items: flex-start;
+          margin-bottom: 18px;
+        }
+        .profile-health-skeleton-emoji {
+          font-size: 1.75rem;
+          line-height: 1;
+          opacity: 0.55;
+        }
+        .profile-health-skeleton-line {
+          height: 14px;
+          border-radius: 8px;
+          background: linear-gradient(90deg, rgba(51, 65, 85, 0.55) 25%, rgba(71, 85, 105, 0.75) 50%, rgba(51, 65, 85, 0.55) 75%);
+          background-size: 200% 100%;
+          animation: profile-health-shimmer 1.4s ease-in-out infinite;
+        }
+        .profile-health-skeleton-line--title {
+          width: min(220px, 70%);
+          height: 18px;
+          margin-bottom: 8px;
+        }
+        .profile-health-skeleton-line--subtitle {
+          width: min(320px, 90%);
+        }
+        .profile-health-skeleton-card {
+          height: 120px;
+          border-radius: 14px;
+          margin-bottom: 20px;
+          background: linear-gradient(90deg, rgba(30, 41, 59, 0.55) 25%, rgba(51, 65, 85, 0.75) 50%, rgba(30, 41, 59, 0.55) 75%);
+          background-size: 200% 100%;
+          animation: profile-health-shimmer 1.4s ease-in-out infinite;
+        }
+        .profile-health-skeleton-charts {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 16px;
+          margin-bottom: 20px;
+        }
+        .profile-health-skeleton-chart {
+          height: 220px;
+          border-radius: 12px;
+          background: linear-gradient(90deg, rgba(15, 23, 42, 0.55) 25%, rgba(30, 41, 59, 0.75) 50%, rgba(15, 23, 42, 0.55) 75%);
+          background-size: 200% 100%;
+          animation: profile-health-shimmer 1.4s ease-in-out infinite;
+        }
+        .profile-health-skeleton-table {
+          height: 160px;
+          border-radius: 12px;
+          background: linear-gradient(90deg, rgba(15, 23, 42, 0.55) 25%, rgba(30, 41, 59, 0.75) 50%, rgba(15, 23, 42, 0.55) 75%);
+          background-size: 200% 100%;
+          animation: profile-health-shimmer 1.4s ease-in-out infinite;
+        }
+        .profile-health-skeleton-hint {
+          margin: 14px 0 0;
+          color: var(--bmon-text-muted);
+          font-size: 0.9rem;
+          text-align: center;
+        }
+        @keyframes profile-health-shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+        :global(.health-section) {
+          background: var(--profil-card-bg);
+          border: 1px solid var(--profil-card-border);
+          border-radius: var(--bmon-radius-card);
+          padding: 20px;
+          box-shadow: var(--bmon-shadow-card);
+        }
+        :global(.health-section--watch) {
+          border-color: rgba(14, 165, 233, 0.35);
+        }
+        :global(.health-section-header) {
+          display: flex;
+          gap: 14px;
+          align-items: flex-start;
+          margin-bottom: 18px;
+        }
+        :global(.health-section-emoji) {
+          font-size: 1.75rem;
+          line-height: 1;
+        }
+        :global(.health-section-title) {
+          margin: 0;
+          font-size: 1.35rem;
+        }
+        :global(.health-section-subtitle) {
+          margin: 4px 0 0;
+          color: var(--bmon-text-muted);
+          font-size: 0.92rem;
+        }
+        :global(.health-banner) {
+          display: flex;
+          gap: 12px;
+          align-items: flex-start;
+          padding: 14px 16px;
+          border-radius: 12px;
+          margin-bottom: 18px;
+        }
+        :global(.health-banner--ok) {
+          background: rgba(34, 197, 94, 0.12);
+          border: 1px solid rgba(34, 197, 94, 0.35);
+        }
+        :global(.health-banner--warning) {
+          background: rgba(251, 191, 36, 0.12);
+          border: 1px solid rgba(251, 191, 36, 0.4);
+        }
+        :global(.health-banner--none) {
+          background: rgba(148, 163, 184, 0.1);
+          border: 1px solid rgba(148, 163, 184, 0.25);
+        }
+        :global(.health-banner-icon) {
+          flex-shrink: 0;
+          margin-top: 2px;
+          font-size: 1.2rem;
+        }
+        :global(.health-banner--ok .health-banner-icon) { color: #22c55e; }
+        :global(.health-banner--warning .health-banner-icon) { color: #fbbf24; }
+        :global(.health-banner--none .health-banner-icon) { color: #94a3b8; }
+        :global(.health-banner-title) {
+          margin: 0 0 4px;
+          font-weight: 600;
+        }
+        :global(.health-banner-text) {
+          margin: 0;
+          color: var(--bmon-text-muted);
+          font-size: 0.92rem;
+        }
+        :global(.health-recovery-card) {
+          padding: 18px;
+          border-radius: 14px;
+          margin-bottom: 20px;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+        :global(.health-recovery-card--green) { border-color: rgba(34, 197, 94, 0.45); }
+        :global(.health-recovery-card--orange) { border-color: rgba(251, 191, 36, 0.45); }
+        :global(.health-recovery-card--red) { border-color: rgba(251, 113, 133, 0.45); }
+        :global(.health-recovery-title) {
+          margin: 0 0 10px;
+          font-size: 1.1rem;
+        }
+        :global(.health-recovery-score-row) {
+          display: flex;
+          align-items: baseline;
+          gap: 4px;
+        }
+        :global(.health-recovery-score) {
+          font-size: 2.5rem;
+          font-weight: 700;
+          line-height: 1;
+        }
+        :global(.health-recovery-score-max) {
+          color: var(--bmon-text-muted);
+        }
+        :global(.health-recovery-band) {
+          margin: 8px 0 0;
+          font-weight: 600;
+        }
+        :global(.health-recovery-band--green) { color: #22c55e; }
+        :global(.health-recovery-band--orange) { color: #fbbf24; }
+        :global(.health-recovery-band--red) { color: #fb7185; }
+        :global(.health-recovery-incomplete-label) {
+          margin: 0;
+          font-weight: 600;
+        }
+        :global(.health-recovery-status-reason) {
+          margin: 6px 0 0;
+          color: var(--bmon-text-muted);
+        }
+        :global(.health-recovery-metrics) {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+          gap: 10px 16px;
+          margin: 16px 0 0;
+        }
+        :global(.health-recovery-metrics dt) {
+          margin: 0;
+          font-size: 0.8rem;
+          color: var(--bmon-text-muted);
+        }
+        :global(.health-recovery-metrics dd) {
+          margin: 2px 0 0;
+          font-weight: 600;
+        }
+        :global(.health-recovery-disclaimer) {
+          margin: 14px 0 0;
+          font-size: 0.82rem;
+          color: var(--bmon-text-muted);
+        }
+        :global(.health-charts-grid) {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 16px;
+          margin-bottom: 20px;
+        }
+        :global(.health-chart) {
+          padding: 12px;
+          border-radius: 12px;
+          background: rgba(0, 0, 0, 0.18);
+          border: 1px solid rgba(148, 163, 184, 0.15);
+        }
+        :global(.health-chart-title) {
+          margin: 0 0 8px;
+          font-size: 0.95rem;
+        }
+        :global(.health-chart-svg-wrap) {
+          width: 100%;
+          height: 180px;
+        }
+        :global(.health-chart-svg) {
+          width: 100%;
+          height: 100%;
+          display: block;
+        }
+        :global(.health-chart-legend) {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin: 8px 0 0;
+          font-size: 0.78rem;
+          color: var(--bmon-text-muted);
+        }
+        :global(.health-chart-legend-line) {
+          width: 18px;
+          height: 3px;
+          border-radius: 2px;
+        }
+        :global(.health-chart-legend-line--baseline) {
+          background: transparent;
+          border-top: 2px dashed #64748b;
+        }
+        :global(.health-chart-empty),
+        :global(.health-empty-text) {
+          color: var(--bmon-text-muted);
+          margin: 0;
+        }
+        :global(.health-subsection-title) {
+          margin: 0 0 12px;
+          font-size: 1rem;
+        }
+        :global(.health-table-wrap) {
+          overflow-x: auto;
+        }
+        :global(.health-table) {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 0.9rem;
+        }
+        :global(.health-table th),
+        :global(.health-table td) {
+          padding: 10px 8px;
+          border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+          text-align: left;
+        }
+        :global(.health-table th) {
+          color: var(--bmon-text-muted);
+          font-weight: 500;
         }
         /* ── Trenérské bubliny ── */
         .profile-bubbles--trainer {

@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 
 import {
   buildConnectionBanner,
+  formatMetricMeasuredAt,
   formatMetricTileDate,
   formatMetricUnitLabel,
   formatMetricValue,
@@ -99,17 +100,18 @@ describe('health formatters', () => {
 
   it('formatRecoveryStatusLabel maps known statuses', () => {
     assert.match(formatRecoveryStatusLabel('chybi_hrv') ?? '', /HRV/);
-    assert.equal(formatRecoveryStatusLabel('nedostatek_dat'), 'Nedostatek dat pro 7denní baseline');
+    assert.equal(formatRecoveryStatusLabel('nedostatek_dat'), 'Nedostatek dat pro 7denní průměr');
   });
 
   it('groupLatestMetrics picks newest local_date per metric', () => {
     const { keyMetrics, byCategory } = groupLatestMetrics([
-      { metric_name: 'step_count', label_cs: 'Kroky', category: 'aktivita', unit: 'count', is_key: true, value: 1000, local_date: '2026-07-10' },
-      { metric_name: 'step_count', label_cs: 'Kroky', category: 'aktivita', unit: 'count', is_key: true, value: 1200, local_date: '2026-07-12' },
-      { metric_name: 'heart_rate', label_cs: 'Tep', category: 'srdce', unit: 'count/min', is_key: false, value: 72, local_date: '2026-07-11' },
+      { metric_name: 'step_count', label_cs: 'Kroky', category: 'aktivita', unit: 'count', is_key: true, value: 1000, local_date: '2026-07-10', last_measured_at: '2026-07-10T08:00:00.000Z' },
+      { metric_name: 'step_count', label_cs: 'Kroky', category: 'aktivita', unit: 'count', is_key: true, value: 1200, local_date: '2026-07-12', last_measured_at: '2026-07-12T12:59:00.000Z' },
+      { metric_name: 'heart_rate', label_cs: 'Tep', category: 'srdce', unit: 'count/min', is_key: false, value: 72, local_date: '2026-07-11', last_measured_at: null },
     ]);
     assert.equal(keyMetrics.length, 1);
     assert.equal(keyMetrics[0].value, 1200);
+    assert.equal(keyMetrics[0].last_measured_at, '2026-07-12T12:59:00.000Z');
     assert.equal(byCategory.srdce?.[0]?.value, 72);
   });
 
@@ -121,6 +123,12 @@ describe('health formatters', () => {
   it('formatMetricTileDate formats short Czech date', () => {
     assert.equal(formatMetricTileDate('2026-07-14'), '14. 7.');
     assert.equal(formatMetricTileDate(null), null);
+  });
+
+  it('formatMetricMeasuredAt adds Prague time when available', () => {
+    assert.equal(formatMetricMeasuredAt('2026-07-14', null), '14. 7.');
+    const formatted = formatMetricMeasuredAt('2026-07-14', '2026-07-14T10:59:00.000Z');
+    assert.match(formatted ?? '', /^14\. 7\. v \d{1,2}:\d{2}$/);
   });
 
   it('chart status helpers return layman copy', () => {

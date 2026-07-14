@@ -42,6 +42,7 @@ function MetricTileFromSummary({ metric, emphasized = false }) {
       value={metric.value}
       unit={metric.unit}
       localDate={metric.local_date}
+      lastMeasuredAt={metric.last_measured_at}
       emphasized={emphasized}
     />
   );

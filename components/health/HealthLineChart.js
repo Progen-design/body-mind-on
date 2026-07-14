@@ -147,7 +147,7 @@ export default function HealthLineChart({
               {deltaPositive ? <FiArrowUp aria-hidden /> : null}
               {deltaNegative ? <FiArrowDown aria-hidden /> : null}
               {!deltaPositive && !deltaNegative ? <FiMinus aria-hidden /> : null}
-              {deltaText} vs 7d prům.
+              {deltaText} vs tvůj průměr
             </span>
           ) : null}
         </div>
@@ -259,7 +259,7 @@ export default function HealthLineChart({
           <span className="health-chart-legend-line health-chart-legend-line--primary" style={{ background: color }} />
           dnes: {formatMetricValue(latestPoint?.value, unit === '' ? 'count' : unit)}{displayUnit ? ` ${displayUnit}` : ''}
           <span className="health-chart-legend-line health-chart-legend-line--baseline" />
-          7d prům.: {formatMetricValue(latestBaseline?.value, unit === '' ? 'count' : unit)}{displayUnit ? ` ${displayUnit}` : ''}
+          7denní průměr: {formatMetricValue(latestBaseline?.value, unit === '' ? 'count' : unit)}{displayUnit ? ` ${displayUnit}` : ''}
         </p>
       )}
 

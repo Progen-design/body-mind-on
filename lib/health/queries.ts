@@ -85,7 +85,7 @@ export async function getRecovery(userId: string, days = 30) {
 }
 
 const METRICS_DAILY_SELECT =
-  'user_id, local_date, metric_name, label_cs, category, unit, agg, is_key, value, min_value, max_value, samples';
+  'user_id, local_date, metric_name, label_cs, category, unit, agg, is_key, value, min_value, max_value, samples, last_measured_at';
 
 export async function getAllMetrics(userId: string, days = 30) {
   assertUserId(userId);

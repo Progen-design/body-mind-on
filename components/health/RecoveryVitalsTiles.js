@@ -18,6 +18,8 @@ export default function RecoveryVitalsTiles({ latestRecovery = null, metricRows 
   const rhrValue = rhrMetric?.value ?? latestRecovery?.resting_hr ?? null;
   const hrvDate = hrvMetric?.local_date ?? latestRecovery?.local_date ?? null;
   const rhrDate = rhrMetric?.local_date ?? latestRecovery?.local_date ?? null;
+  const hrvMeasuredAt = hrvMetric?.last_measured_at ?? null;
+  const rhrMeasuredAt = rhrMetric?.last_measured_at ?? null;
 
   if (hrvValue == null && rhrValue == null) return null;
 
@@ -29,6 +31,7 @@ export default function RecoveryVitalsTiles({ latestRecovery = null, metricRows 
           value={hrvValue}
           unit="ms"
           localDate={hrvDate}
+          lastMeasuredAt={hrvMeasuredAt}
           caption={HRV_CAPTION}
           emphasized
         />
@@ -39,6 +42,7 @@ export default function RecoveryVitalsTiles({ latestRecovery = null, metricRows 
           value={rhrValue}
           unit="count/min"
           localDate={rhrDate}
+          lastMeasuredAt={rhrMeasuredAt}
           caption={RHR_CAPTION}
           emphasized
         />

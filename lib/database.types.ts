@@ -3962,6 +3962,7 @@ export type Database = {
           category: string | null
           is_key: boolean | null
           label_cs: string | null
+          last_measured_at: string | null
           local_date: string | null
           max_value: number | null
           metric_name: string | null

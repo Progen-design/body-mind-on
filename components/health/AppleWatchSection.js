@@ -61,7 +61,7 @@ export default function AppleWatchSection({
 
       <div className="health-charts-grid">
         <HealthLineChart
-          title="HRV vs. baseline (30 dní)"
+          title="HRV — vývoj (30 dní)"
           statusLine={hrvStatus}
           unit="ms"
           points={hrvPoints}
@@ -69,7 +69,7 @@ export default function AppleWatchSection({
           color={BM_ON_DESIGN.colors.cyan}
         />
         <HealthLineChart
-          title="Klidový tep vs. baseline (30 dní)"
+          title="Klidový tep — vývoj (30 dní)"
           statusLine={rhrStatus}
           unit="count/min"
           points={rhrPoints}

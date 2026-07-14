@@ -119,7 +119,7 @@ const RECOVERY_STATUS_LABELS: Record<RecoveryStatus, string> = {
   chybi_hrv: 'Chybí HRV — skóre nelze spočítat',
   chybi_klidovy_tep: 'Chybí klidový tep — skóre nelze spočítat',
   chybi_spanek: 'Chybí údaje o spánku',
-  nedostatek_dat: 'Nedostatek dat pro 7denní baseline',
+  nedostatek_dat: 'Nedostatek dat pro 7denní průměr',
 };
 
 export function formatRecoveryStatusLabel(status: string | null | undefined): string | null {
@@ -205,6 +205,26 @@ export function formatMetricTileDate(value: string | null | undefined): string |
   return `${Number(d)}. ${Number(m)}.`;
 }
 
+export function formatMetricMeasuredAt(
+  localDate: string | null | undefined,
+  lastMeasuredAt: string | null | undefined,
+): string | null {
+  const datePart = formatMetricTileDate(localDate);
+  if (!datePart) return null;
+  if (!lastMeasuredAt) return datePart;
+
+  const ms = new Date(lastMeasuredAt).getTime();
+  if (!Number.isFinite(ms)) return datePart;
+
+  const timePart = new Date(ms).toLocaleTimeString('cs-CZ', {
+    timeZone: 'Europe/Prague',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return `${datePart} v ${timePart}`;
+}
+
 export function getHrvChartStatus(latest: number | null | undefined, baseline: number | null | undefined): string | null {
   const l = Number(latest);
   const b = Number(baseline);
@@ -244,6 +264,7 @@ export interface LatestMetricSummary {
   is_key: boolean;
   value: number | null;
   local_date: string;
+  last_measured_at: string | null;
 }
 
 export function groupLatestMetrics(
@@ -265,6 +286,7 @@ export function groupLatestMetrics(
         is_key: Boolean(row.is_key),
         value: Number.isFinite(Number(row.value)) ? Number(row.value) : null,
         local_date: localDate,
+        last_measured_at: row.last_measured_at ? String(row.last_measured_at) : null,
       });
     }
   }

@@ -1,19 +1,20 @@
 import { FiInfo } from 'react-icons/fi';
 import { BM_ON_DESIGN } from '../../lib/designTokens';
-import { formatMetricTileDate, formatMetricUnitLabel, formatMetricValue } from '../../lib/health/formatters';
+import { formatMetricMeasuredAt, formatMetricUnitLabel, formatMetricValue } from '../../lib/health/formatters';
 
 export default function MetricTile({
   label,
   value,
   unit = '',
   localDate = null,
+  lastMeasuredAt = null,
   hint = null,
   caption = null,
   emphasized = false,
 }) {
   const valueText = formatMetricValue(value, unit);
   const unitText = formatMetricUnitLabel(unit);
-  const dateText = formatMetricTileDate(localDate);
+  const dateText = formatMetricMeasuredAt(localDate, lastMeasuredAt);
 
   return (
     <div className={`health-metric-tile${emphasized ? ' health-metric-tile--key' : ''}`}>

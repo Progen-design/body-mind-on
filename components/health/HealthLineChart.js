@@ -49,6 +49,7 @@ function formatDelta(latest, baseline, unitLabel) {
 
 export default function HealthLineChart({
   title,
+  statusLine = '',
   subtitle = '',
   unit = '',
   points = [],
@@ -109,11 +110,13 @@ export default function HealthLineChart({
     };
   }, [validPoints, validBaseline, height]);
 
+  const headline = statusLine || subtitle;
+
   if (!validPoints.length || !chartData) {
     return (
       <div className="health-chart health-chart--empty">
         <h4 className="health-chart-title">{title}</h4>
-        {subtitle ? <p className="health-chart-subtitle">{subtitle}</p> : null}
+        {headline ? <p className="health-chart-status">{headline}</p> : null}
         <p className="health-chart-empty">Zatím nemáme dostatek dat.</p>
       </div>
     );
@@ -128,7 +131,7 @@ export default function HealthLineChart({
       <div className="health-chart-head">
         <div className="health-chart-title-block">
           <h4 className="health-chart-title">{title}</h4>
-          {subtitle ? <p className="health-chart-subtitle">{subtitle}</p> : null}
+          {headline ? <p className="health-chart-status">{headline}</p> : null}
         </div>
         <div className="health-chart-latest">
           <span className="health-chart-latest-value">
@@ -273,11 +276,12 @@ export default function HealthLineChart({
           flex: 1 1 180px;
           min-width: 0;
         }
-        .health-chart-subtitle {
+        .health-chart-subtitle,
+        .health-chart-status {
           margin: 4px 0 0;
-          font-size: 0.78rem;
-          line-height: 1.4;
-          color: ${BM_ON_DESIGN.colors.textDim};
+          font-size: 0.82rem;
+          line-height: 1.45;
+          color: ${BM_ON_DESIGN.colors.textMuted};
           font-weight: 400;
         }
         .health-chart-latest {

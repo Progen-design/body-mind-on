@@ -197,6 +197,45 @@ export function formatMetricValue(value: unknown, unit?: string | null): string 
   return n.toFixed(2).replace('.', ',');
 }
 
+export function formatMetricTileDate(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const s = String(value).slice(0, 10);
+  const [y, m, d] = s.split('-');
+  if (!y || !m || !d) return null;
+  return `${Number(d)}. ${Number(m)}.`;
+}
+
+export function getHrvChartStatus(latest: number | null | undefined, baseline: number | null | undefined): string | null {
+  const l = Number(latest);
+  const b = Number(baseline);
+  if (!Number.isFinite(l) || !Number.isFinite(b)) return null;
+  if (l < b) return 'Dnes pod tvým 7denním průměrem — tělo je zatížené.';
+  return 'Nad průměrem — dobrá regenerace.';
+}
+
+export function getRhrChartStatus(latest: number | null | undefined, baseline: number | null | undefined): string | null {
+  const l = Number(latest);
+  const b = Number(baseline);
+  if (!Number.isFinite(l) || !Number.isFinite(b)) return null;
+  if (l > b + 3) return 'Zvýšený oproti průměru — možná únava nebo stres.';
+  return 'V normě, tělo je v pohodě.';
+}
+
+export function getStepsChartStatus(latest: number | null | undefined): string | null {
+  const n = Number(latest);
+  if (!Number.isFinite(n)) return null;
+  let msg = `Dnes ${formatMetricValue(n, 'count')} kroků.`;
+  if (n < 5000) msg += ' Málo pohybu.';
+  else if (n > 10000) msg += ' Skvělý den.';
+  return msg;
+}
+
+export function getActiveEnergyChartStatus(latest: number | null | undefined): string | null {
+  const n = Number(latest);
+  if (!Number.isFinite(n)) return null;
+  return `Dnes ${formatMetricValue(n, 'kcal')} kcal spáleno pohybem.`;
+}
+
 export interface LatestMetricSummary {
   metric_name: string;
   label_cs: string;

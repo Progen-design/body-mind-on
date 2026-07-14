@@ -57,39 +57,6 @@ export default function RecoveryCard({ latest }) {
         </div>
       )}
 
-      <dl className="health-recovery-metrics">
-        {latest.hrv_ms != null && (
-          <>
-            <dt>HRV</dt>
-            <dd>{Number(latest.hrv_ms).toFixed(1).replace('.', ',')} ms</dd>
-          </>
-        )}
-        {latest.hrv_baseline7 != null && (
-          <>
-            <dt>Baseline HRV (7 dní)</dt>
-            <dd>{Number(latest.hrv_baseline7).toFixed(1).replace('.', ',')} ms</dd>
-          </>
-        )}
-        {latest.resting_hr != null && (
-          <>
-            <dt>Klidový tep</dt>
-            <dd>{Math.round(Number(latest.resting_hr))} bpm</dd>
-          </>
-        )}
-        {latest.rhr_baseline7 != null && (
-          <>
-            <dt>Baseline klidový tep</dt>
-            <dd>{Math.round(Number(latest.rhr_baseline7))} bpm</dd>
-          </>
-        )}
-        {latest.sleep_asleep_min != null && (
-          <>
-            <dt>Spánek</dt>
-            <dd>{Math.round(Number(latest.sleep_asleep_min))} min</dd>
-          </>
-        )}
-      </dl>
-
       {!scoreOk && (
         <p className="health-recovery-disclaimer">
           Orientační ukazatel tréninkové zátěže — není zdravotní diagnostika.

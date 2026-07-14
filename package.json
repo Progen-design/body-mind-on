@@ -20,6 +20,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit -p jsconfig.json --jsx react",
+    "test:health": "node --experimental-strip-types --test lib/health/__tests__/formatters.test.ts",
     "lint:ci": "next lint --no-cache --file components/PlanViewer.js --file lib/mail.js --file lib/emailTemplates.js --file lib/dailyDigest.js --file lib/planOutputMode.js --file lib/czechShoppingIntro.js --file lib/shoppingListBuilder.js --file pages/api/admin/send-test-plan-email.js",
     "check": "npm run lint:ci && npm run lint:copy && npm run build",
     "smoke:nutrition": "node scripts/smoke-test-nutrition-only.mjs",

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { HabitUiButton } from '../habit/HabitUiPrimitives';
 
 const RATING_OPTIONS = [
   { value: 'great', label: 'Skvěle' },
@@ -78,15 +79,15 @@ export default function DailyCheckinPanel() {
       <h3 className="daily-checkin-title">Jak se ti dnes plán dařil?</h3>
       <div className="daily-checkin-ratings" role="radiogroup" aria-label="Hodnocení dne">
         {RATING_OPTIONS.map((opt) => (
-          <button
+          <HabitUiButton
             key={opt.value}
-            type="button"
-            className={`daily-checkin-pill ${rating === opt.value ? 'daily-checkin-pill--active' : ''}`}
+            variant="pill"
+            className={rating === opt.value ? 'habit-ui-btn--pill-active' : ''}
             onClick={() => setRating(opt.value)}
             aria-pressed={rating === opt.value}
           >
             {opt.label}
-          </button>
+          </HabitUiButton>
         ))}
       </div>
       {rating && rating !== 'great' && (
@@ -94,26 +95,26 @@ export default function DailyCheckinPanel() {
           <p className="daily-checkin-sub">Co byl největší problém? (volitelné)</p>
           <div className="daily-checkin-blocker-list">
             {BLOCKER_OPTIONS.map((opt) => (
-              <button
+              <HabitUiButton
                 key={opt.value}
-                type="button"
-                className={`daily-checkin-pill daily-checkin-pill--sm ${blocker === opt.value ? 'daily-checkin-pill--active' : ''}`}
+                variant="pill"
+                size="sm"
+                className={blocker === opt.value ? 'habit-ui-btn--pill-active' : ''}
                 onClick={() => setBlocker(blocker === opt.value ? '' : opt.value)}
               >
                 {opt.label}
-              </button>
+              </HabitUiButton>
             ))}
           </div>
         </div>
       )}
-      <button
-        type="button"
+      <HabitUiButton
         className="daily-checkin-save"
         disabled={!rating || submitting}
         onClick={submit}
       >
         {submitting ? 'Ukládám…' : saved ? 'Aktualizovat check-in' : 'Uložit check-in'}
-      </button>
+      </HabitUiButton>
       <style jsx>{`
         .daily-checkin {
           margin-top: 1rem;
@@ -124,6 +125,7 @@ export default function DailyCheckinPanel() {
           margin: 0 0 0.5rem;
           font-size: 0.95rem;
           font-weight: 600;
+          color: #e2e8f0;
         }
         .daily-checkin-ratings,
         .daily-checkin-blocker-list {
@@ -131,41 +133,13 @@ export default function DailyCheckinPanel() {
           flex-wrap: wrap;
           gap: 0.4rem;
         }
-        .daily-checkin-pill {
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          background: transparent;
-          color: inherit;
-          border-radius: 999px;
-          padding: 0.35rem 0.75rem;
-          font-size: 0.85rem;
-          cursor: pointer;
-        }
-        .daily-checkin-pill--active {
-          background: rgba(99, 179, 237, 0.25);
-          border-color: rgba(99, 179, 237, 0.6);
-        }
-        .daily-checkin-pill--sm {
-          font-size: 0.78rem;
-          padding: 0.25rem 0.55rem;
-        }
         .daily-checkin-sub {
           margin: 0.5rem 0 0.35rem;
           font-size: 0.82rem;
-          opacity: 0.8;
+          color: #94a3b8;
         }
         .daily-checkin-save {
           margin-top: 0.65rem;
-          padding: 0.45rem 0.9rem;
-          border-radius: 8px;
-          border: none;
-          background: #3182ce;
-          color: #fff;
-          font-size: 0.88rem;
-          cursor: pointer;
-        }
-        .daily-checkin-save:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
         }
       `}</style>
     </div>

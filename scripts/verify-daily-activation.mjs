@@ -59,6 +59,13 @@ const uncomplete = await fetch(`${BASE}/api/daily-activation`, {
 });
 check('uncomplete meal', uncomplete.status === 200);
 
+const habitRejected = await fetch(`${BASE}/api/daily-activation`, {
+  method: 'POST', headers,
+  body: JSON.stringify({ activity_type: 'habit', activity_key: 'training', plan_day: 0 }),
+});
+const habitJson = await habitRejected.json().catch(() => ({}));
+check('habit write rejected', habitRejected.status === 400 && String(habitJson.error || '').includes('habit_logs'));
+
 const checkin1 = await fetch(`${BASE}/api/daily-checkin`, {
   method: 'POST', headers, body: JSON.stringify({ rating: 'good' }),
 });

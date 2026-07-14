@@ -1,6 +1,12 @@
 // components/HabitTracker.js – Denní návyky (dnes + blízká budoucnost; minulé dny jen pokud existují logy)
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { POSITIVE_HABITS, NEGATIVE_HABITS, getHabitById } from '../lib/habits';
+import { getHabitDisplayLabel } from '../lib/habitLabels';
+import {
+  HabitUiButton,
+  HabitUiGridCheckbox,
+  HabitUiProgressBar,
+} from './habit/HabitUiPrimitives';
 
 function toDateStr(date) {
   return getLocalDateStr(date);
@@ -372,7 +378,6 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     );
   }
 
-  const pct = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0;
   const displayDateStr = viewingDateStr || todayStr;
   const displayDateFormatted = new Date(displayDateStr + 'T12:00:00').toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
   const todayFormatted = new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -381,99 +386,6 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   const GAP = '8px';
   const gridCols = `${LABEL_W}px repeat(${days.length}, ${CELL_W}px)`;
 
-  const getCellStyle = (completed, isToday, isFuture, isPast, busy, isNegative) => {
-    const readOnly = isFuture || isPast;
-    const base = {
-      appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none',
-      width: `${CELL_W}px`, height: '56px', padding: 0, margin: 0,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      borderRadius: '11px', cursor: readOnly ? 'default' : 'pointer',
-      border: 'none', outline: 'none', position: 'relative', overflow: 'hidden',
-      transition: 'transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s, opacity 0.18s',
-      touchAction: 'manipulation',
-      opacity: isFuture ? 0.18 : busy ? 0.55 : isPast ? 0.88 : 1,
-      pointerEvents: readOnly ? 'none' : 'auto',
-    };
-    if (completed) {
-      if (isNegative) {
-        return { ...base,
-          background: 'linear-gradient(145deg, #dc2626 0%, #b91c1c 100%)',
-          boxShadow: '0 4px 18px rgba(239,68,68,0.5), 0 0 0 1px rgba(248,113,113,0.3) inset',
-          color: '#fff',
-        };
-      }
-      return { ...base,
-        background: 'linear-gradient(145deg, #22c55e 0%, #15803d 100%)',
-        boxShadow: '0 4px 18px rgba(34,197,94,0.5), 0 0 0 1px rgba(74,222,128,0.3) inset',
-        color: '#fff',
-      };
-    }
-    if (isToday) {
-      return { ...base,
-        background: 'rgba(109,40,217,0.18)',
-        boxShadow: '0 0 0 1.5px rgba(139,92,246,0.5) inset',
-        color: '#a78bfa',
-      };
-    }
-    return { ...base,
-      background: 'rgba(255,255,255,0.055)',
-      boxShadow: '0 0 0 1.5px rgba(255,255,255,0.09) inset',
-      color: '#475569',
-    };
-  };
-
-  const renderHabitRow = (h, isNegative) => (
-    <>
-      <div key={`lbl-${h.id}`} className="hg-label">
-        <span className="hg-emoji" aria-hidden="true">{h.emoji}</span>
-        <div className="hg-name-wrap">
-          <span className="hg-name">{h.label}</span>
-        </div>
-      </div>
-      {days.map((dateStr) => {
-        const completed = getCompleted(h.id, dateStr);
-        const isToday = dateStr === todayStr;
-        const isFuture = dateStr > todayStr;
-        const isPast = dateStr < todayStr;
-        const busy = togglingKeys.has(`${h.id}-${dateStr}`);
-        const editable = !isFuture && !isPast && !busy;
-        return (
-          <button
-            key={`${h.id}-${dateStr}`}
-            type="button"
-            className={`hg-habit-cell${isPast ? ' hg-habit-cell--past' : ''}${isFuture ? ' hg-habit-cell--future' : ''}`}
-            style={getCellStyle(completed, isToday, isFuture, isPast, busy, isNegative)}
-            onClick={() => editable && handleToggle(h.id, dateStr)}
-            disabled={isFuture || isPast || busy}
-            aria-pressed={completed}
-            aria-label={`${h.label}, ${formatShortDate(dateStr)}${completed ? ', splněno' : ', nesplněno'}${isPast ? ', jen zobrazení' : ''}`}
-            onMouseEnter={(e) => { if (editable) { e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)'; e.currentTarget.style.boxShadow = completed ? (isNegative ? '0 8px 24px rgba(239,68,68,0.6)' : '0 8px 24px rgba(34,197,94,0.6)') : isToday ? '0 0 0 1.5px rgba(139,92,246,0.8) inset, 0 8px 20px rgba(0,0,0,0.3)' : '0 0 0 1.5px rgba(255,255,255,0.25) inset, 0 8px 20px rgba(0,0,0,0.25)'; } }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = getCellStyle(completed, isToday, isFuture, isPast, busy, isNegative).boxShadow; }}
-            onMouseDown={(e) => { if (editable) e.currentTarget.style.transform = 'scale(0.9)'; }}
-            onMouseUp={(e) => { if (editable) e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)'; }}
-          >
-            {busy ? (
-              <span className="hg-spin" />
-            ) : completed ? (
-              isNegative ? (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M6 6l12 12M18 6L6 18" stroke="#fff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              ) : (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              )
-            ) : (
-              <span className="hg-cell-empty" style={{ borderColor: isToday ? 'rgba(167,139,250,0.65)' : 'rgba(255,255,255,0.28)' }} aria-hidden />
-            )}
-          </button>
-        );
-      })}
-    </>
-  );
-
-  /** Jen buňky pro daný návyk (pro scrollovatelnou část – první sloupec je vždy vlevo mimo scroll). */
   const renderHabitRowCellsOnly = (h, isNegative) =>
     days.map((dateStr) => {
       const completed = getCompleted(h.id, dateStr);
@@ -481,38 +393,20 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
       const isFuture = dateStr > todayStr;
       const isPast = dateStr < todayStr;
       const busy = togglingKeys.has(`${h.id}-${dateStr}`);
-      const editable = !isFuture && !isPast && !busy;
+      const label = getHabitDisplayLabel(h.id);
       return (
-        <button
+        <HabitUiGridCheckbox
           key={`${h.id}-${dateStr}`}
-          type="button"
-          className={`hg-habit-cell${isPast ? ' hg-habit-cell--past' : ''}${isFuture ? ' hg-habit-cell--future' : ''}`}
-          style={getCellStyle(completed, isToday, isFuture, isPast, busy, isNegative)}
-          onClick={() => editable && handleToggle(h.id, dateStr)}
-          disabled={isFuture || isPast || busy}
-          aria-pressed={completed}
-          aria-label={`${h.label}, ${formatShortDate(dateStr)}${completed ? ', splněno' : ', nesplněno'}${isPast ? ', jen zobrazení' : ''}`}
-          onMouseEnter={(e) => { if (editable) { e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)'; e.currentTarget.style.boxShadow = completed ? (isNegative ? '0 8px 24px rgba(239,68,68,0.6)' : '0 8px 24px rgba(34,197,94,0.6)') : isToday ? '0 0 0 1.5px rgba(139,92,246,0.8) inset, 0 8px 20px rgba(0,0,0,0.3)' : '0 0 0 1.5px rgba(255,255,255,0.25) inset, 0 8px 20px rgba(0,0,0,0.25)'; } }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = getCellStyle(completed, isToday, isFuture, isPast, busy, isNegative).boxShadow; }}
-          onMouseDown={(e) => { if (editable) e.currentTarget.style.transform = 'scale(0.9)'; }}
-          onMouseUp={(e) => { if (editable) e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)'; }}
-        >
-          {busy ? (
-            <span className="hg-spin" />
-          ) : completed ? (
-            isNegative ? (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M6 6l12 12M18 6L6 18" stroke="#fff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            ) : (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            )
-          ) : (
-            <span className="hg-cell-empty" style={{ borderColor: isToday ? 'rgba(167,139,250,0.65)' : 'rgba(255,255,255,0.28)' }} aria-hidden />
-          )}
-        </button>
+          completed={completed}
+          isToday={isToday}
+          isFuture={isFuture}
+          isPast={isPast}
+          busy={busy}
+          isNegative={isNegative}
+          onToggle={() => handleToggle(h.id, dateStr)}
+          ariaLabel={`${label}, ${formatShortDate(dateStr)}${completed ? ', splněno' : ', nesplněno'}${isPast ? ', jen zobrazení' : ''}`}
+          cellWidth={CELL_W}
+        />
       );
     });
 
@@ -534,14 +428,11 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           <p className="ht-hint">Odškrtávat lze jen dnešní den. Minulost je jen pro přehled (sloupce jen u dnů se záznamem). Datum nahoře můžeš kliknout pro zvýraznění dne.</p>
         </div>
         <div className="ht-progress-inline">
-          <span className="ht-prog-nums">{completedToday}<span className="ht-prog-sep">/</span>{totalHabits}</span>
-          <div className="ht-prog-bar-wrap">
-            <div className="ht-prog-bar" style={{ width: `${pct}%` }} role="progressbar" aria-valuenow={completedToday} aria-valuemin={0} aria-valuemax={totalHabits} />
-          </div>
+          <HabitUiProgressBar done={completedToday} total={totalHabits} />
         </div>
-        <button type="button" className="ht-complete-all" onClick={handleCompleteAllToday}>
+        <HabitUiButton className="ht-complete-all" onClick={handleCompleteAllToday}>
           Splnit vše pro dnes
-        </button>
+        </HabitUiButton>
       </div>
 
       {loading ? (
@@ -567,7 +458,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
                       <div key={`lbl-${h.id}`} className="hg-label">
                         <span className="hg-emoji" aria-hidden="true">{h.emoji}</span>
                         <div className="hg-name-wrap">
-                          <span className="hg-name">{h.label}</span>
+                          <span className="hg-name">{getHabitDisplayLabel(h.id)}</span>
                         </div>
                       </div>
                     ))}
@@ -582,7 +473,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
                       <div key={`lbl-${h.id}`} className="hg-label">
                         <span className="hg-emoji" aria-hidden="true">{h.emoji}</span>
                         <div className="hg-name-wrap">
-                          <span className="hg-name">{h.label}</span>
+                          <span className="hg-name">{getHabitDisplayLabel(h.id)}</span>
                         </div>
                       </div>
                     ))}

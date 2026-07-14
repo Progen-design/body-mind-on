@@ -38,9 +38,10 @@ function read(rel) {
 }
 
 const betaToday = read('components/beta/BetaTodaySection.js');
+const habitTracker = read('components/HabitTracker.js');
 const checkin = read('components/beta/DailyCheckinPanel.js');
 const todayPanels = read('components/profile/ProfileTodayPanels.js');
-const habitLabels = read('lib/habitLabels.js');
+const dailyActivation = read('pages/api/daily-activation.js');
 const modal = read('components/workout/WorkoutChangeModal.jsx');
 const setupLib = read('lib/workoutTrainingSetup.js');
 const allowlist = read('lib/productEventAllowlist.js');
@@ -50,7 +51,10 @@ check('habit label training', HABIT_LABELS.training === 'Pohyb nebo trénink');
 check('habit label healthy_diet', HABIT_LABELS.healthy_diet === 'Vyvážené stravování');
 check('habit label quality_sleep', HABIT_LABELS.quality_sleep === 'Kvalitní spánek');
 check('raw training not shown in BetaTodaySection', !betaToday.includes('<span>{hid}</span>'));
-check('getHabitDisplayLabel used', betaToday.includes('getHabitDisplayLabel'));
+check('habits removed from BetaTodaySection', !betaToday.includes('NÁVYKY') && !betaToday.includes("activity_type: 'habit'"));
+check('daily-activation rejects habit writes', dailyActivation.includes("activityType === 'habit'") && dailyActivation.includes('habit_logs'));
+check('getHabitDisplayLabel used in HabitTracker', habitTracker.includes('getHabitDisplayLabel'));
+check('shared HabitUiProgressBar in HabitTracker', habitTracker.includes('HabitUiProgressBar'));
 check('czech labels in mapping', getHabitDisplayLabel('training') === 'Pohyb nebo trénink');
 check('fallback readable label', getHabitDisplayLabel('custom_habit') === 'Custom Habit');
 
@@ -62,7 +66,7 @@ check('feedback below check-in', betaToday.indexOf('DailyCheckinPanel') < betaTo
 check('optimistic completions state', betaToday.includes('setOptimistic'));
 check('optimistic toggle apply', betaToday.includes('applyOptimisticToggle'));
 check('rollback error message', betaToday.includes('Změnu se nepodařilo uložit'));
-check('per-item pending spinner', betaToday.includes('beta-today-spinner'));
+check('per-item pending spinner', betaToday.includes('pendingKeys') && betaToday.includes('HabitUiCheckboxRow'));
 check('success path updates without full reload', betaToday.includes('setCompletions((prev)') && betaToday.includes('setOptimistic(null)'));
 
 check('change workout button', todayPanels.includes('Změnit dnešní trénink'));

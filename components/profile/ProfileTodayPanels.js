@@ -34,7 +34,6 @@ export default function ProfileTodayPanels({
   onScrollToWorkout,
   onScrollToWeek,
   planId = null,
-  habitIds = [],
   onWorkoutPlanUpdated = null,
   trainingEnvironment = 'gym',
 }) {
@@ -147,7 +146,6 @@ export default function ProfileTodayPanels({
         planDay={planDayIdx}
         meals={meals}
         hasWorkout={hasWorkout}
-        habitIds={habitIds}
         feedbackContext="first_plan"
         onCompletionsChange={handleCompletionsChange}
       />

@@ -6,7 +6,9 @@ import { calendarDateIsoInPrague } from '../../lib/czechCalendar';
 import { recordProductEvent } from '../../lib/recordProductEvent';
 import { markFirstAction, markActivityDay } from '../../lib/betaParticipantMilestones';
 
-const ALLOWED_TYPES = new Set(['meal', 'workout', 'habit']);
+const ALLOWED_TYPES = new Set(['meal', 'workout']);
+const HABIT_DEPRECATED_MSG =
+  'Návyky se ukládají přes /api/habits (tabulka habit_logs). daily-activation nepodporuje activity_type=habit.';
 
 async function getAuthUser(req) {
   const auth = req.headers.authorization || '';
@@ -62,6 +64,9 @@ export default async function handler(req, res) {
     const planDay = Number(req.body?.plan_day);
     const sourceComponent = String(req.body?.source_component || 'BetaTodaySection').slice(0, 80);
 
+    if (activityType === 'habit') {
+      return res.status(400).json({ error: HABIT_DEPRECATED_MSG });
+    }
     if (!ALLOWED_TYPES.has(activityType)) {
       return res.status(400).json({ error: 'Neplatný typ aktivity.' });
     }
@@ -104,7 +109,6 @@ export default async function handler(req, res) {
     const eventMap = {
       meal: 'meal_completed',
       workout: 'workout_completed',
-      habit: 'habit_completed',
     };
     await recordProductEvent({
       user_id: user.id,

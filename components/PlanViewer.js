@@ -547,7 +547,6 @@ export default function PlanViewer({
   todayFirstLayout = false,
   program = 'START',
   trainingEnvironmentLabel = '',
-  habitIds = [],
 }) {
   const [parsed, setParsed] = useState(null);
   const [planPatch, setPlanPatch] = useState(null);
@@ -1306,7 +1305,6 @@ export default function PlanViewer({
                 setTimeout(() => document.getElementById('plan-jidelnicek')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
               }}
               planId={plan?.id || null}
-              habitIds={habitIds}
               trainingEnvironment={structuredPlan?.training_environment || trainingEnvironmentLabel || 'gym'}
               onWorkoutPlanUpdated={(data) => {
                 if (data?.structured_plan_json) {

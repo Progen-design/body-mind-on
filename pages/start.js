@@ -12,6 +12,7 @@ import { getFrequencyDayRange } from "../lib/preferenceConstants";
 import { REGISTRATION_STEPS } from "../lib/registrationRules";
 import { PLAN_GENERATION_DURATION_HINT, PLAN_GENERATION_OVERLAY_TITLE } from "../lib/planGenerationUiCopy";
 import { validateBirthDate } from "../lib/bodyMetricsBirthDate";
+import * as fbq from "../lib/fbpixel";
 import { trackProductEvent } from "../lib/productAnalytics";
 
 // Registrace dle pravidel ON Club (stejný flow pro START, ON Club, VIP): https://app.bodyandmindon.cz/on-club
@@ -213,6 +214,12 @@ export default function Start() {
         if (result.plan_state === 'ready' || result.plan_state === 'processing') {
           setStatus("✅ " + (result.message || "Účet je vytvořen. Přesměrování na tvůj plán…"));
           setPlanFailedWithAccount(false);
+          // Měření reklamy: účet je opravdu vytvořen → hlásíme Metě dokončenou registraci.
+          // Záměrně až tady, ne při odeslání formuláře — jinak bychom počítali i neúspěšné pokusy.
+          fbq.event('CompleteRegistration', {
+            content_name: 'START registrace',
+            status: result.plan_state,
+          });
           const doRedirect = async () => {
             if (cleanedData.password && cleanedData.email) {
               const { data: signInData, error } = await supabase.auth.signInWithPassword({

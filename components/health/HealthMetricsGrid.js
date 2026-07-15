@@ -13,6 +13,7 @@ import {
   METRIC_CATEGORY_LABELS,
   METRIC_CATEGORY_ORDER,
 } from '../../lib/health/formatters';
+import { getMetricInsight } from '../../lib/health/insights';
 import MetricTile from './MetricTile';
 
 const CATEGORY_ICONS = {
@@ -36,6 +37,7 @@ export const PRIMARY_METRIC_NAMES = [
 const EXPAND_CATEGORIES = ['aktivita', 'srdce', 'pohyb', 'dychani', 'telo', 'prostredi'];
 
 function MetricTileFromSummary({ metric, emphasized = false }) {
+  const caption = getMetricInsight(metric.metric_name, metric.value);
   return (
     <MetricTile
       label={metric.label_cs}
@@ -43,6 +45,7 @@ function MetricTileFromSummary({ metric, emphasized = false }) {
       unit={metric.unit}
       localDate={metric.local_date}
       lastMeasuredAt={metric.last_measured_at}
+      caption={caption}
       emphasized={emphasized}
     />
   );

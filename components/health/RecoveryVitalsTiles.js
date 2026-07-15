@@ -1,12 +1,16 @@
 import { BM_ON_DESIGN } from '../../lib/designTokens';
 import { groupLatestMetrics } from '../../lib/health/formatters';
+import {
+  getPersonalHrvCaption,
+  getPersonalRhrCaption,
+} from '../../lib/health/insights';
 import MetricTile from './MetricTile';
 
-const HRV_CAPTION =
-  'Variabilita tepové frekvence — rozptyl mezi údery srdce. Vyšší bývá spojené s lepší regenerací. Sleduje se trend, ne jedno číslo.';
+const HRV_HINT =
+  'Variabilita tepové frekvence — rozptyl mezi údery srdce. Sleduje se trend oproti tvému průměru.';
 
-const RHR_CAPTION =
-  'Tep v klidu. Když vyskočí nad tvůj průměr, tělo často zvládá únavu, stres nebo nemoc.';
+const RHR_HINT =
+  'Tep v klidu — když vyskočí nad průměr, tělo často zvládá únavu, stres nebo nemoc.';
 
 export default function RecoveryVitalsTiles({ latestRecovery = null, metricRows = [] }) {
   const { byCategory } = groupLatestMetrics(metricRows);
@@ -21,6 +25,9 @@ export default function RecoveryVitalsTiles({ latestRecovery = null, metricRows 
   const hrvMeasuredAt = hrvMetric?.last_measured_at ?? null;
   const rhrMeasuredAt = rhrMetric?.last_measured_at ?? null;
 
+  const hrvCaption = getPersonalHrvCaption(latestRecovery) || HRV_HINT;
+  const rhrCaption = getPersonalRhrCaption(latestRecovery) || RHR_HINT;
+
   if (hrvValue == null && rhrValue == null) return null;
 
   return (
@@ -32,7 +39,8 @@ export default function RecoveryVitalsTiles({ latestRecovery = null, metricRows 
           unit="ms"
           localDate={hrvDate}
           lastMeasuredAt={hrvMeasuredAt}
-          caption={HRV_CAPTION}
+          hint={HRV_HINT}
+          caption={hrvCaption}
           emphasized
         />
       )}
@@ -43,7 +51,8 @@ export default function RecoveryVitalsTiles({ latestRecovery = null, metricRows 
           unit="count/min"
           localDate={rhrDate}
           lastMeasuredAt={rhrMeasuredAt}
-          caption={RHR_CAPTION}
+          hint={RHR_HINT}
+          caption={rhrCaption}
           emphasized
         />
       )}

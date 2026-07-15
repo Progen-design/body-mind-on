@@ -6,6 +6,7 @@ import {
   getStepsChartStatus,
 } from '../../lib/health/formatters';
 import HealthConnectionBanner from './HealthConnectionBanner';
+import HealthInsightsPanel from './HealthInsightsPanel';
 import HealthLineChart, { toChartPoints } from './HealthLineChart';
 import HealthMetricsGrid from './HealthMetricsGrid';
 import RecoveryCard from './RecoveryCard';
@@ -56,6 +57,12 @@ export default function AppleWatchSection({
       />
 
       <RecoveryCard latest={latestRecovery} />
+
+      <HealthInsightsPanel
+        recoveryRows={recoveryRows}
+        watchRows={watchRows}
+        workoutRows={workoutRows}
+      />
 
       <RecoveryVitalsTiles latestRecovery={latestRecovery} metricRows={metricRows} />
 

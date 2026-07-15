@@ -3,6 +3,7 @@ import {
   formatRecoveryStatusLabel,
   getRecoveryBandInfo,
 } from '../../lib/health/formatters';
+import { formatRecoveryDrivers } from '../../lib/health/insights';
 
 const RECOVERY_EXPLAIN =
   'Skóre regenerace (0–100) odhaduje, jak jsi zotavený, z HRV a klidového tepu oproti tvému 7dennímu průměru. Vyšší = odpočatější. Není to zdravotní diagnostika.';
@@ -33,6 +34,7 @@ export default function RecoveryCard({ latest }) {
   const bandInfo = scoreOk ? getRecoveryBandInfo(latest.recovery_score) : { band: null, label: null, color: null };
   const statusLabel = !scoreOk ? formatRecoveryStatusLabel(status) : null;
   const bandTip = scoreOk && latest.recovery_score != null ? getRecoveryBandTip(latest.recovery_score) : null;
+  const drivers = scoreOk ? formatRecoveryDrivers(latest) : [];
 
   return (
     <div className={`health-recovery-card health-recovery-card--${bandInfo.color || 'neutral'}`}>
@@ -46,6 +48,16 @@ export default function RecoveryCard({ latest }) {
           </div>
           {bandInfo.label && (
             <p className={`health-recovery-band health-recovery-band--${bandInfo.color}`}>{bandInfo.label}</p>
+          )}
+          {drivers.length > 0 && (
+            <dl className="health-recovery-metrics">
+              {drivers.map((driver) => (
+                <div key={driver.label}>
+                  <dt>{driver.label}</dt>
+                  <dd>{driver.detail}</dd>
+                </div>
+              ))}
+            </dl>
           )}
           <p className="health-recovery-explain">{RECOVERY_EXPLAIN}</p>
           {bandTip && <p className="health-recovery-tip">{bandTip}</p>}

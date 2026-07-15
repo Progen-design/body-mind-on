@@ -12,8 +12,6 @@ import WithingsBodyDevelopmentSection from '../components/profile/WithingsBodyDe
 import AppleWatchSection from '../components/health/AppleWatchSection';
 import ProfileProgressSection from '../components/profile/ProfileProgressSection';
 import { parsePlanHtml } from '../lib/parsePlanHtml';
-import HabitTracker from '../components/HabitTracker';
-import HabitEntryWizard from '../components/HabitEntryWizard';
 import Toast from '../components/Toast';
 import WorkoutOverlay from '../components/profile/WorkoutOverlay';
 import PreferencesOverlay from '../components/profile/PreferencesOverlay';
@@ -392,7 +390,6 @@ export default function Profil() {
   const [savingPreferences, setSavingPreferences] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showWelcomeTour, setShowWelcomeTour] = useState(false);
-  const [showHabitEntryWizard, setShowHabitEntryWizard] = useState(false);
   const [toast, setToast] = useState({ message: '', type: 'success' });
   const [showAllWorkouts, setShowAllWorkouts] = useState(false);
   const [sendingPlan, setSendingPlan] = useState(false);
@@ -444,7 +441,7 @@ export default function Profil() {
   const [loadingClients, setLoadingClients] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [showFullClientCard, setShowFullClientCard] = useState(false);
-  const [profileOpenSections, setProfileOpenSections] = useState(new Set(['muj-plan', 'denni-navyky']));
+  const [profileOpenSections, setProfileOpenSections] = useState(new Set(['muj-plan']));
   const [planTab, setPlanTab] = useState('current'); // 'current' | 'next' – Varianta C: Můj plán
   const [statsTab, setStatsTab] = useState('overview'); // 'overview' | 'weight' | 'progress' – Varianta C: Statistiky a progres
   const [withingsHeaderWeight, setWithingsHeaderWeight] = useState(null);
@@ -480,6 +477,24 @@ export default function Profil() {
       next.add(id);
       return next;
     });
+  };
+
+  const scrollToProfileAnchor = (sectionId, elementId, { openShoppingList = false } = {}) => {
+    openProfileSection(sectionId);
+    if (openShoppingList && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('bmo:open-shopping-list'));
+    }
+    let attempts = 0;
+    const tryScroll = () => {
+      const el = document.getElementById(elementId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      attempts += 1;
+      if (attempts < 15) setTimeout(tryScroll, 80);
+    };
+    setTimeout(tryScroll, 60);
   };
   const handleWithingsHeaderWeight = useCallback((payload) => {
     const weight = Number(payload?.weight_kg);
@@ -769,19 +784,15 @@ export default function Profil() {
   useEffect(() => {
     if (!loading && session && !error && profile) {
       const program = profile.program || 'START';
-      const habitWizardSeen = localStorage.getItem('habitEntryWizardSeen');
       const welcomeTourSeen = localStorage.getItem('welcomeTourSeen');
       const timer = setTimeout(() => {
-        const hasNoHabits = !profile.user_habits || profile.user_habits.length === 0;
-        if ((program === 'ON_CLUB' || program === 'VIP') && !habitWizardSeen && hasNoHabits) {
-          setShowHabitEntryWizard(true);
-        } else if ((program === 'ON_CLUB' || program === 'VIP') && !welcomeTourSeen) {
+        if ((program === 'ON_CLUB' || program === 'VIP') && !welcomeTourSeen) {
           setShowWelcomeTour(true);
         }
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [loading, session, error, profile?.program, profile?.user_habits]);
+  }, [loading, session, error, profile?.program]);
 
   // Načíst seznam klientů (jen pro trenéra)
   useEffect(() => {
@@ -1896,16 +1907,6 @@ export default function Profil() {
   return (
     <>
       {showWelcomeTour && <WelcomeTour onClose={() => setShowWelcomeTour(false)} />}
-      {showHabitEntryWizard && (
-        <HabitEntryWizard
-          program={profile?.program || 'START'}
-          session={session}
-          bodyMetrics={profile?.body_metrics}
-          userHabits={profile?.user_habits}
-          onClose={() => setShowHabitEntryWizard(false)}
-          onHabitsSaved={() => refetch(session?.access_token)}
-        />
-      )}
       {toast.message && (
         <Toast
           message={toast.message}
@@ -2044,14 +2045,13 @@ export default function Profil() {
                   <div className="membership-card-nav-wrap">
                     {currentPlan && (currentPlan.plan_html || currentPlan.structured_plan_json) ? (
                       <nav className="profile-quick-nav profile-quick-nav--plan-sections" aria-label="Rychlé sekce plánu">
-                        <button type="button" className="profile-quick-nav-btn" onClick={() => document.getElementById('profile-today-heading')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Dnes</button>
-                        <button type="button" className="profile-quick-nav-btn" onClick={() => document.getElementById('profile-today-meals')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Jídelníček</button>
-                        <button type="button" className="profile-quick-nav-btn" onClick={() => document.getElementById('profile-today-workout')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Trénink</button>
-                        <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('muj-plan'); document.getElementById('plan-nakupni-seznam')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>Nákup</button>
+                        <button type="button" className="profile-quick-nav-btn" onClick={() => scrollToProfileAnchor('muj-plan', 'profile-today-heading')}>Dnes</button>
+                        <button type="button" className="profile-quick-nav-btn" onClick={() => scrollToProfileAnchor('muj-plan', 'profile-today-meals')}>Jídelníček</button>
+                        <button type="button" className="profile-quick-nav-btn" onClick={() => scrollToProfileAnchor('muj-plan', 'profile-today-workout')}>Trénink</button>
+                        <button type="button" className="profile-quick-nav-btn" onClick={() => scrollToProfileAnchor('muj-plan', 'plan-nakupni-seznam', { openShoppingList: true })}>Nákup</button>
                       </nav>
                     ) : (
                       <nav className="profile-quick-nav" aria-label="Rychlá navigace">
-                        <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('denni-navyky'); document.getElementById('denni-navyky')?.scrollIntoView({ behavior: 'smooth' }); }}>Denní návyky</button>
                         <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('statistiky'); document.getElementById('statistiky')?.scrollIntoView({ behavior: 'smooth' }); }}>Statistiky</button>
                       </nav>
                     )}
@@ -2383,7 +2383,7 @@ export default function Profil() {
             {!profile?.can_create_calendar_events && workouts.length === 0 && showReadyBanner && !currentPlan && (
               <div className="first-action-banner">
                 <p className="first-action-banner-lead">Tvůj plán je připraven.</p>
-                <p className="first-action-banner-text">Rozklikni sekce níže – <strong>Jídelníček a tréninkový plán</strong> nebo <strong>Denní návyky</strong>. Trénink zapíšeš tlačítkem nahoře v hlavní kartě.</p>
+                <p className="first-action-banner-text">Rozklikni sekci <strong>Můj plán</strong> níže – jídelníček a trénink. Trénink zapíšeš tlačítkem nahoře v hlavní kartě.</p>
               </div>
             )}
 
@@ -2557,7 +2557,6 @@ export default function Profil() {
                       outputMode="nutrition_training"
                       userName={userName}
                       hideHero
-                      hideShoppingList
                       dietaryPreferences={(() => {
                         const lm = profile?.body_metrics?.[0];
                         if (!lm) return '';
@@ -2588,7 +2587,6 @@ export default function Profil() {
                       outputMode="nutrition_training"
                       userName={userName}
                       hideHero
-                      hideShoppingList
                       dietaryPreferences={(() => {
                         const lm = profile?.body_metrics?.[0];
                         if (!lm) return '';
@@ -2625,7 +2623,6 @@ export default function Profil() {
                   outputMode="nutrition_training"
                   userName={userName}
                   hideHero
-                  hideShoppingList
                   dietaryPreferences={(() => {
                         const lm = profile?.body_metrics?.[0];
                         if (!lm) return '';
@@ -2664,7 +2661,6 @@ export default function Profil() {
                   outputMode="nutrition_training"
                   userName={userName}
                   hideHero
-                  hideShoppingList
                   dietaryPreferences={(() => {
                         const lm = profile?.body_metrics?.[0];
                         if (!lm) return '';
@@ -2947,54 +2943,6 @@ export default function Profil() {
             </section>
               </div>
             </div>
-
-            {/* Denní návyky – bublina (souhrn + tracker + graf v jednom) */}
-            {!profile?.can_create_calendar_events && (
-            <div className="profile-bubble" id="denni-navyky">
-              <button type="button" id="profile-bubble-header-denni-navyky" className="profile-bubble-header" onClick={() => toggleProfileSection('denni-navyky')} aria-expanded={profileOpenSections.has('denni-navyky')} aria-controls="profile-bubble-body-denni-navyky">
-                <span className="profile-bubble-title">Denní návyky</span>
-                <span className={`profile-bubble-chevron ${profileOpenSections.has('denni-navyky') ? 'open' : ''}`} aria-hidden>▼</span>
-              </button>
-              <div id="profile-bubble-body-denni-navyky" role="region" aria-labelledby="profile-bubble-header-denni-navyky" className="profile-bubble-body" data-open={profileOpenSections.has('denni-navyky')}>
-            {(program === 'ON_CLUB' || program === 'VIP') && profile?.user_habits?.length > 0 && (
-              <div className="habit-summary-card">
-                <h3 className="habit-summary-title">Návyky tento týden</h3>
-                <div className="habit-summary-row">
-                  <span className="habit-summary-item habit-summary-positive">
-                    <strong>{profile?.habit_summary_7d?.positiveDone ?? 0}</strong> zdravých návyků splněno
-                  </span>
-                  <span className="habit-summary-item habit-summary-negative">
-                    <strong>{profile?.habit_summary_7d?.negativeDone ?? 0}</strong> zlozvyků (uděláno) – čím méně, tím lépe
-                  </span>
-                </div>
-                <p className="habit-summary-note">Odhad váhy v profilu vychází z tréninků. Na výsledky má vliv i strava a to, jak plníš zdravé návyky a vyhýbáš se zlozvykům.</p>
-              </div>
-            )}
-            {(program === 'ON_CLUB' || program === 'VIP') && (
-              <div className="habit-edit-row">
-                <button
-                  type="button"
-                  className="habit-edit-btn"
-                  onClick={() => {
-                    if (typeof window !== 'undefined') {
-                      try { localStorage.removeItem('habitEntryWizardSeen'); } catch (_) {}
-                    }
-                    setShowHabitEntryWizard(true);
-                  }}
-                >
-                  Upravit moje návyky
-                </button>
-              </div>
-            )}
-            <HabitTracker
-              session={session}
-              userHabits={profile?.user_habits}
-              onToast={(t) => setToast({ message: t.message, type: t.type })}
-              onHabitSaved={() => refetch(session?.access_token)}
-            />
-              </div>
-            </div>
-            )}
 
             {/* Historie tréninků – bublina (jen klienti) */}
             {!profile?.can_create_calendar_events && (

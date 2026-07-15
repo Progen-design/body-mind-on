@@ -857,6 +857,13 @@ export default function PlanViewer({
     setWeeklyPlanOpen(false);
   }, [todayFirstLayout, plan?.id, planWeekDays.length]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || hideShoppingList) return;
+    const openShopping = () => setShoppingListOpen(true);
+    window.addEventListener('bmo:open-shopping-list', openShopping);
+    return () => window.removeEventListener('bmo:open-shopping-list', openShopping);
+  }, [hideShoppingList]);
+
   const planViewedRef = useRef(false);
   const dailyPlanViewedRef = useRef(false);
 

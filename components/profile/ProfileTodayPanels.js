@@ -3,7 +3,6 @@ import { resolveDayCalorieTarget, sumDayNutrition } from '../../lib/mealNutritio
 import MacroRatioChart from '../MacroRatioChart.js';
 import { formatExerciseSetsRepsDisplay } from '../../lib/planDataIntegrity.js';
 import ProfileDayMealsPanel from './ProfileDayMealsPanel.js';
-import BetaTodaySection from '../beta/BetaTodaySection.js';
 import WorkoutChangeModal from '../workout/WorkoutChangeModal.jsx';
 import { supabase } from '../../lib/supabaseClient';
 
@@ -37,7 +36,6 @@ export default function ProfileTodayPanels({
   onWorkoutPlanUpdated = null,
   trainingEnvironment = 'gym',
 }) {
-  const [workoutCompleted, setWorkoutCompleted] = useState(false);
   const [workoutModalOpen, setWorkoutModalOpen] = useState(false);
   const [workoutBusy, setWorkoutBusy] = useState(false);
   const [restoreBusy, setRestoreBusy] = useState(false);
@@ -48,10 +46,6 @@ export default function ProfileTodayPanels({
 
   const captureScrollForModal = useCallback(() => {
     scrollLockYRef.current = window.scrollY;
-  }, []);
-
-  const handleCompletionsChange = useCallback((info) => {
-    setWorkoutCompleted(!!info?.workoutCompleted);
   }, []);
 
   const trackWorkoutEvent = useCallback(async (name) => {
@@ -70,7 +64,7 @@ export default function ProfileTodayPanels({
   }, []);
 
   const handleRestoreOriginal = async () => {
-    if (!planId || restoreBusy || workoutCompleted) return;
+    if (!planId || restoreBusy) return;
     setRestoreBusy(true);
     setRestoreSlow(false);
     setWorkoutError(null);
@@ -141,14 +135,6 @@ export default function ProfileTodayPanels({
 
   return (
     <div className="profile-today-root">
-      <BetaTodaySection
-        planId={planId}
-        planDay={planDayIdx}
-        meals={meals}
-        hasWorkout={hasWorkout}
-        feedbackContext="first_plan"
-        onCompletionsChange={handleCompletionsChange}
-      />
       <section className="profile-today-hero" aria-labelledby="profile-today-heading">
         <p className="profile-today-date">{todayLabel}</p>
         <h2 id="profile-today-heading" className="profile-today-heading">Dnešní plán</h2>
@@ -231,7 +217,7 @@ export default function ProfileTodayPanels({
               {workout?.title ? `${workout.title} · ` : ''}
               {exercises.length} cviků · {workoutMinutes ? `~${workoutMinutes} min` : 'dle plánu'}
             </p>
-            {!workoutCompleted && planId ? (
+            {planId ? (
               <div className="profile-today-workout-actions">
                 <button
                   type="button"

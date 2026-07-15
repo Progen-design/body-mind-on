@@ -38,6 +38,7 @@ import { buildMacroEnergyNutritionHtml } from '../lib/recipeDetailHtml.js';
 import { buildStructuredWeekSource } from '../lib/plan/structuredWeekSource.js';
 import ProfileTodayPanels from './profile/ProfileTodayPanels';
 import { trackProductEvent } from '../lib/productAnalytics';
+import { getPlanCalorieHonestyStatus } from '../lib/nutrition/calorieHonesty.js';
 import ProfileDayMealsPanel from './profile/ProfileDayMealsPanel';
 import MacroRatioChart from './MacroRatioChart';
 
@@ -818,6 +819,7 @@ export default function PlanViewer({
       carbs_g: Number(effectivePlan?.macros?.carbs_g) || null,
       fat_g: Number(effectivePlan?.macros?.fat_g) || null,
     };
+  const calorieHonesty = getPlanCalorieHonestyStatus(structuredPlan);
   const parsedTargets = extractTargetsFromParsedMacros(parsed?.macros);
   const targetMismatch =
     parsedTargets.calories_per_day != null
@@ -1274,6 +1276,34 @@ export default function PlanViewer({
         </p>
       )}
 
+      {calorieHonesty?.banner_cs ? (
+        <div
+          className={`plan-calorie-honesty-banner${calorieHonesty.invalid_inflated ? ' plan-calorie-honesty-banner--invalid' : ''}`}
+          role="status"
+        >
+          <p>{calorieHonesty.banner_cs}</p>
+          {calorieHonesty.avg_achieved_kcal != null && calorieHonesty.target_kcal != null ? (
+            <p className="plan-calorie-honesty-banner-meta">
+              Reálný průměr plánu: {Math.round(calorieHonesty.avg_achieved_kcal).toLocaleString('cs-CZ')} kcal/den
+              {' · '}
+              tvůj cíl: {Math.round(calorieHonesty.target_kcal).toLocaleString('cs-CZ')} kcal/den
+            </p>
+          ) : null}
+          {calorieHonesty.invalid_inflated && canRegeneratePlan && onRegeneratePlan ? (
+            <p>
+              <button
+                type="button"
+                className="plan-expired-btn"
+                onClick={onRegeneratePlan}
+                disabled={regeneratingPlan}
+              >
+                {regeneratingPlan ? 'Generuji nový plán…' : 'Přegenerovat plán'}
+              </button>
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       {showGraphical ? (
         <>
           {todayFirstLayout && planWeekDays?.length > 0 && todayWeekDay ? (
@@ -1348,7 +1378,7 @@ export default function PlanViewer({
               <div className="plan-macros-row">
                 <div className="plan-macro-card">
                   <span className="plan-macro-value">{Math.round(Number(effectiveTargets.calories_per_day) || 0)} kcal</span>
-                  <span className="plan-macro-label">Denní kalorie</span>
+                  <span className="plan-macro-label">Cíl kalorií</span>
                 </div>
                 <div className="plan-macro-card">
                   <span className="plan-macro-value">{Math.round(Number(effectiveTargets.protein_g) || 0)} g</span>
@@ -1409,7 +1439,7 @@ export default function PlanViewer({
                       planValidFrom: plan?.valid_from || null,
                       planValidUntil: plan?.valid_until || null,
                       dailyMacros: [
-                        { label: 'Denní kalorie', value: `${Math.round(Number(effectiveTargets?.calories_per_day) || 0)} kcal` },
+                        { label: 'Cíl kalorií', value: `${Math.round(Number(effectiveTargets?.calories_per_day) || 0)} kcal` },
                         { label: 'Bílkoviny', value: `${Math.round(Number(effectiveTargets?.protein_g) || 0)} g` },
                         { label: 'Sacharidy', value: `${Math.round(Number(effectiveTargets?.carbs_g) || 0)} g` },
                         { label: 'Tuky', value: `${Math.round(Number(effectiveTargets?.fat_g) || 0)} g` },
@@ -1511,6 +1541,11 @@ export default function PlanViewer({
                     const k = Number(m?.kcal ?? m?.recipe?.calories);
                     return Number.isFinite(k) && k > 0 ? sum + k : sum;
                   }, 0);
+                  const dayTargetKcal = Number(structDayForTotal?.daily_target_kcal)
+                    || Number(effectiveTargets?.calories_per_day)
+                    || null;
+                  const dayUnderTarget = structDayForTotal?.calorie_under_target === true
+                    || (dayTargetKcal != null && dayKcalTotal > 0 && dayKcalTotal < Math.round(dayTargetKcal * 0.95));
                   const isDayExpanded = todayFirstLayout
                     ? expandedDayCards.has(di)
                     : true;
@@ -1694,6 +1729,14 @@ export default function PlanViewer({
                         {dayKcalTotal > 0 ? (
                           <p className="plan-day-kcal-total">
                             <strong>Celkem za den:</strong> {Math.round(dayKcalTotal).toLocaleString('cs-CZ')} kcal
+                            {dayTargetKcal ? (
+                              <span className="plan-day-kcal-target">
+                                {' '}(cíl {Math.round(dayTargetKcal).toLocaleString('cs-CZ')} kcal)
+                              </span>
+                            ) : null}
+                            {dayUnderTarget && !calorieHonesty?.invalid_inflated ? (
+                              <span className="plan-day-kcal-under"> · zatím pod cílem</span>
+                            ) : null}
                           </p>
                         ) : null}
                         {day.afterPlanEnd ? (
@@ -1822,6 +1865,14 @@ export default function PlanViewer({
                     {dayKcalTotal > 0 ? (
                       <p className="plan-day-kcal-total">
                         <strong>Celkem za den:</strong> {Math.round(dayKcalTotal).toLocaleString('cs-CZ')} kcal
+                        {dayTargetKcal ? (
+                          <span className="plan-day-kcal-target">
+                            {' '}(cíl {Math.round(dayTargetKcal).toLocaleString('cs-CZ')} kcal)
+                          </span>
+                        ) : null}
+                        {dayUnderTarget && !calorieHonesty?.invalid_inflated ? (
+                          <span className="plan-day-kcal-under"> · zatím pod cílem</span>
+                        ) : null}
                       </p>
                     ) : null}
                     {showTrainingInProfile
@@ -2439,6 +2490,28 @@ const planSectionStyles = `
     margin-bottom: 20px;
     font-size: 14px;
   }
+  .plan-calorie-honesty-banner {
+    background: rgba(14, 165, 233, 0.12);
+    border: 1px solid rgba(14, 165, 233, 0.35);
+    color: #e2e8f0;
+    padding: 14px 16px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .plan-calorie-honesty-banner--invalid {
+    background: rgba(245, 158, 11, 0.14);
+    border-color: rgba(245, 158, 11, 0.45);
+  }
+  .plan-calorie-honesty-banner p { margin: 0 0 8px; }
+  .plan-calorie-honesty-banner p:last-child { margin-bottom: 0; }
+  .plan-calorie-honesty-banner-meta {
+    font-size: 13px;
+    color: #94a3b8;
+  }
+  .plan-day-kcal-target { color: #94a3b8; font-weight: 500; }
+  .plan-day-kcal-under { color: #fbbf24; font-weight: 500; }
   .plan-expired p { margin: 0 0 8px; }
   .plan-expired p:last-child { margin-bottom: 0; }
   .plan-expired a { color: #a78bfa; text-decoration: none; }

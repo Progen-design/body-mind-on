@@ -1,15 +1,18 @@
 #!/usr/bin/env node
+/**
+ * START calorie honesty: multipliers stay in 0.85–1.15; deficit may leave underrun
+ * (never invent kcal). Day sum must equal sum of meal.kcal.
+ */
 import { buildSimpleStartMealSkeleton } from '../lib/services/simpleMealPlannerAgent.js';
 import { resolveSimpleStartLocalSlot } from '../lib/startSimpleMealFilter.js';
 import {
-  balanceDayMealsToCalorieTarget,
-  boostDayMealsToCalorieTarget,
   sumScaledDayKcal,
   planMealTypeToWeightKey,
   slotTargetKcal,
-  DAY_CALORIE_TOLERANCE,
-  DAY_CALORIE_MIN_RATIO,
+  START_MAX_SCALE,
+  START_MIN_SCALE,
 } from '../lib/nutrition/portionScaling.js';
+import { fillDayCaloriesByAddingLibraryMeals } from '../lib/nutrition/calorieHonesty.js';
 
 let failed = 0;
 function fail(msg) {
@@ -19,8 +22,6 @@ function fail(msg) {
 function ok(msg) {
   console.log(`OK ${msg}`);
 }
-
-const TOLERANCE = DAY_CALORIE_TOLERANCE;
 
 function resolveSkeletonDays(skeleton, bodyMetrics) {
   const baseTarget = Number(skeleton.targets.calories_per_day);
@@ -39,9 +40,13 @@ function resolveSkeletonDays(skeleton, bodyMetrics) {
       const { meal } = resolveSimpleStartLocalSlot(slotMeal, slotTarget, mi, bodyMetrics);
       dayMeals.push(meal);
     }
-    boostDayMealsToCalorieTarget(dayMeals, dayTarget, DAY_CALORIE_MIN_RATIO);
-    balanceDayMealsToCalorieTarget(dayMeals, dayTarget, TOLERANCE);
-    days.push({ day_index: day.day_index, daily_target_kcal: dayTarget, meals: dayMeals });
+    const honesty = fillDayCaloriesByAddingLibraryMeals(dayMeals, dayTarget);
+    days.push({
+      day_index: day.day_index,
+      daily_target_kcal: dayTarget,
+      meals: dayMeals,
+      honesty,
+    });
   }
   return days;
 }
@@ -54,15 +59,28 @@ function checkPlan(label, bodyMetrics) {
   for (const day of resolved) {
     const dayTarget = Number(day.daily_target_kcal) || baseTarget;
     const sum = sumScaledDayKcal(day.meals);
-    const minOk = Math.round(dayTarget * (1 - TOLERANCE));
-    const maxOk = Math.round(dayTarget * (1 + TOLERANCE));
-    if (sum < minOk || sum > maxOk) {
-      fail(`${label} day ${day.day_index}: ${sum} kcal outside ${minOk}-${maxOk} (target ${dayTarget})`);
+    if (sum !== day.honesty.achieved_kcal) {
+      fail(`${label} day ${day.day_index}: sum ${sum} != honesty ${day.honesty.achieved_kcal}`);
+    }
+    for (const m of day.meals) {
+      const mult = Number(m.portion_multiplier) || 1;
+      if (mult < START_MIN_SCALE - 0.001 || mult > START_MAX_SCALE + 0.001) {
+        fail(`${label} day ${day.day_index}: mult ${mult} outside ${START_MIN_SCALE}-${START_MAX_SCALE}`);
+      }
+    }
+    const maxInvented = Math.round(dayTarget * 0.95);
+    // Achieved may be under target — that is honest. Must never exceed max via invented scale.
+    if (sum > Math.round(dayTarget * 1.15) + 50) {
+      fail(`${label} day ${day.day_index}: sum ${sum} far above target ${dayTarget}`);
+    }
+    if (day.honesty.under_target && sum >= maxInvented) {
+      fail(`${label} day ${day.day_index}: marked under but sum ${sum} >= ${maxInvented}`);
     }
   }
+  ok(`${label}: honest multipliers + real day sums (target ${baseTarget})`);
 }
 
-console.log(`--- START calorie consistency ±${Math.round(TOLERANCE * 100)}% ---`);
+console.log(`--- START calorie honesty (cap ${START_MIN_SCALE}–${START_MAX_SCALE}) ---`);
 checkPlan('3300 kcal', {
   goal: 'nabirani_svaly',
   weight_kg: 95,
@@ -79,14 +97,15 @@ checkPlan('2200 kcal', {
 });
 checkPlan('cheese excluded 3300', {
   goal: 'nabirani_svaly',
-  weight_kg: 90,
+  weight_kg: 95,
   calories_target: 3300,
   diet_type: 'standard',
   meals_per_day: 4,
   foods_to_avoid: 'sýr',
 });
 
-if (!failed) ok(`all sample days within ±${Math.round(TOLERANCE * 100)}% of target`);
-
-console.log(failed ? `\nRESULT: FAIL (${failed})` : '\nRESULT: PASS');
-process.exit(failed ? 1 : 0);
+if (failed) {
+  console.error(`\n${failed} failure(s)`);
+  process.exit(1);
+}
+console.log('\nAll START calorie honesty checks passed.');

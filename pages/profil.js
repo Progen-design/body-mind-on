@@ -8,6 +8,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import WelcomeTour from '../components/WelcomeTour';
 import WithingsBodyDevelopmentSection from '../components/profile/WithingsBodyDevelopmentSection';
+import ConnectDevicesSection from '../components/profile/ConnectDevicesSection';
 import AppleWatchSection from '../components/health/AppleWatchSection';
 import ProfileProgressSection from '../components/profile/ProfileProgressSection';
 import { parsePlanHtml } from '../lib/parsePlanHtml';
@@ -448,7 +449,7 @@ export default function Profil() {
   const [withingsHistoryLoaded, setWithingsHistoryLoaded] = useState(false);
 
   const healthAccessToken = profile?.can_create_calendar_events ? null : session?.access_token;
-  const { data: healthData, loading: healthLoading, error: healthError } = useHealthData(healthAccessToken, {
+  const { data: healthData, loading: healthLoading, error: healthError, reload: reloadHealth } = useHealthData(healthAccessToken, {
     days: 30,
     workoutLimit: 20,
   });
@@ -2389,6 +2390,12 @@ export default function Profil() {
             <div className={profile?.can_create_calendar_events ? 'profile-bubbles profile-bubbles--trainer' : 'profile-main-stack'}>
             {!profile?.can_create_calendar_events && (
               <div className="profile-health-inline">
+                <ConnectDevicesSection
+                  profile={profile}
+                  session={session}
+                  healthConnection={healthData.connection}
+                  onAppleKeyCreated={() => { reloadHealth(); }}
+                />
                 {healthError ? (
                   <p className="profile-health-error" role="alert">{healthError}</p>
                 ) : null}

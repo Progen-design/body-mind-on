@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabaseClient";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import HabitSelection from "../components/HabitSelection";
-import SmartScaleChoiceField from "../components/SmartScaleChoiceField";
+import DeviceInterestFields from "../components/DeviceInterestFields";
 import TrainingEnvironmentFields from "../components/TrainingEnvironmentFields";
 import { getSuggestedHabits } from "../lib/habits";
 import { getFrequencyDayRange } from "../lib/preferenceConstants";
@@ -43,6 +43,7 @@ export default function Start() {
     foods_to_avoid: "",
     notes: "",
     program: "START",
+    devices: [],
   });
 
   const [status, setStatus] = useState("");
@@ -367,9 +368,9 @@ export default function Start() {
                 <label className="reg-label">Váha (kg)</label>
                 <input name="weight" type="number" className="reg-input" value={formData.weight} onChange={handleChange} placeholder="80" required disabled={isSubmitting} />
               </div>
-              <SmartScaleChoiceField
-                value={formData.smart_scale_choice}
-                onChange={handleChange}
+              <DeviceInterestFields
+                value={formData.devices}
+                onChange={(devices) => setFormData((prev) => ({ ...prev, devices }))}
                 disabled={isSubmitting}
               />
             </div>

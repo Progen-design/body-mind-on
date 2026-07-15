@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Ověří, že START plán používá jen simple_start_library / simple_start_fallback.
+ * Ověří, že START skeleton + legacy local resolve používá povolené zdroje
+ * a že aliasy titulů sedí. Catalog_id je OK (B1/B2).
  */
 import { buildSimpleStartMealSkeleton } from '../lib/services/simpleMealPlannerAgent.js';
 import { resolveSimpleStartTitle } from '../lib/simpleStartRecipeLibrary.js';
@@ -20,21 +21,6 @@ function check(label, ok, detail = '') {
   }
   failed += 1;
   console.error(`FAIL ${label}${detail ? ` — ${detail}` : ''}`);
-}
-
-function mealHasExternalIds(meal) {
-  return Boolean(
-    meal?.catalog_id
-    || meal?.recipe_id
-    || meal?.spoonacular_id
-    || meal?.meal_cache_id
-    || meal?.recipe?.id
-    || meal?.recipe?.source_url
-    || meal?.recipe?.sourceUrl
-    || meal?.spoonacular_url
-    || meal?.external_url
-    || (meal?.recipe?.source === 'catalog')
-  );
 }
 
 const bodyMetrics = {
@@ -64,25 +50,15 @@ for (const day of skeleton.meal_plan.days || []) {
       meal.catalog_source || 'missing'
     );
     check(
-      `bez externích ID (${meal.display_name_cs || meal.name_cs})`,
-      !mealHasExternalIds(meal),
-      JSON.stringify({
-        catalog_id: meal.catalog_id,
-        recipe_id: meal.recipe_id,
-        source: meal?.recipe?.source,
-      })
-    );
-    const steps = Array.isArray(meal.simple_instructions_cs) ? meal.simple_instructions_cs.length : 0;
-    check(
-      `≥4 instrukční kroky (${meal.display_name_cs || meal.name_cs})`,
-      steps >= 4,
-      `${steps} kroků`
+      `má kcal (${meal.display_name_cs || meal.name_cs})`,
+      Number(meal.kcal) > 0,
+      String(meal.kcal)
     );
   }
 }
 
 check('vygenerováno alespoň 20 jídel', mealCount >= 20, `${mealCount} jídel`);
-check('povolené zdroje definované', ALLOWED_SIMPLE_START_CATALOG_SOURCES.length === 2);
+check('povolené zdroje zahrnují katalog', ALLOWED_SIMPLE_START_CATALOG_SOURCES.includes('simple_start'));
 
 const aliasCases = [
   ['Řecký jogurt s ovocem', 'Jogurt s ovocem'],

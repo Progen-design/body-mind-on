@@ -34,6 +34,7 @@
     "verify:ai-instructions": "node scripts/verify-ai-instruction-standards.mjs",
     "verify:program-variants": "node scripts/verify-program-variants-section.mjs",
     "verify:email-and-recipe-content": "node scripts/verify-email-and-recipe-content.mjs",
+    "verify:start-templates-catalog": "node scripts/verify-start-templates-catalog.mjs",
     "verify:start-meals-library-only": "node scripts/verify-start-meals-library-only.mjs",
     "verify:product-consistency": "node scripts/verify-product-consistency.mjs",
     "verify:dietary-exclusions": "node scripts/verify-dietary-exclusions.mjs",

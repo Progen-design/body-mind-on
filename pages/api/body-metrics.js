@@ -27,6 +27,7 @@ import {
   persistBodyMetricsRow,
   buildRegistrationApiResponse,
 } from '../../lib/registration/bodyMetricsRegistration';
+import { deleteAuthUserBestEffort } from '../../lib/authHelpers';
 import { membershipFromRegistration, shouldPreserveMembership } from '../../lib/membershipRegistration';
 import { isTierCheckoutEnabled } from '../../lib/salesFeatureFlags';
 
@@ -69,42 +70,41 @@ export default async function handler(req, res) {
     }
 
     const auth = await createRegistrationAuthUser(payload, password);
-    if (auth.authError === 'existing_account') {
+    if (auth.authError === 'existing_account' || auth.existingAccount) {
       return res.status(400).json({
         error:
           'Účet s tímto e-mailem už existuje. Přihlas se nebo si nech poslat odkaz k obnově hesla — registraci START se stejným e-mailem nelze opakovat.',
       });
     }
 
-    let loginPassword = null;
-    let existingAccount = false;
-    let userChosePassword = false;
-
-    if (auth.authError) {
-      console.info('[body-metrics] Auth failed (no user_id), saving body_metrics without user_id');
-      payload.user_id = null;
-    } else {
-      payload.user_id = auth.userId;
-      loginPassword = auth.loginPassword;
-      existingAccount = auth.existingAccount;
-      userChosePassword = auth.userChosePassword;
-      await applyRegistrationUserMetadata(payload, { birthDateRaw, smartScaleBody, existingAccount });
-    }
-
-    if (payload.user_id && existingAccount) {
-      return res.status(400).json({
-        error:
-          'Účet s tímto e-mailem už existuje. Přihlas se nebo si nech poslat odkaz k obnově hesla — registraci START se stejným e-mailem nelze opakovat.',
+    if (auth.authError || !auth.userId) {
+      console.error('[body-metrics] Auth failed — aborting without DB writes', {
+        error: auth.authError || 'missing_user_id',
+      });
+      return res.status(503).json({
+        error: 'Účet se nepodařilo vytvořit. Zkus to prosím znovu za chvíli — nic jsme neuložili.',
       });
     }
+
+    payload.user_id = auth.userId;
+    const loginPassword = auth.loginPassword;
+    const existingAccount = false;
+    const userChosePassword = auth.userChosePassword;
+    const createdNewUser = auth.createdNewUser === true;
+    await applyRegistrationUserMetadata(payload, { birthDateRaw, smartScaleBody, existingAccount });
 
     const persist = await persistBodyMetricsRow(payload);
     if (persist.error) {
       console.error('[body-metrics] DB insert failed:', persist.error);
-      throw new Error(persist.error);
+      if (createdNewUser) {
+        await deleteAuthUserBestEffort(payload.user_id);
+      }
+      return res.status(500).json({
+        error: 'Registraci se nepodařilo dokončit. Zkus to prosím znovu.',
+      });
     }
     const bodyMetricsId = persist.bodyMetricsId;
-    console.info('[body-metrics] body_metrics inserted', payload.user_id ? `user_id=${payload.user_id} body_metrics_id=${bodyMetricsId}` : `body_metrics_id=${bodyMetricsId} (no user_id)`);
+    console.info('[body-metrics] body_metrics inserted', `user_id=${payload.user_id} body_metrics_id=${bodyMetricsId}`);
 
     const loginUrl = getDefaultLoginUrl();
     const emailOptions = {

@@ -13,6 +13,11 @@ import { REGISTRATION_STEPS } from "../lib/registrationRules";
 import { PLAN_GENERATION_DURATION_HINT, PLAN_GENERATION_OVERLAY_TITLE } from "../lib/planGenerationUiCopy";
 import { validateBirthDate } from "../lib/bodyMetricsBirthDate";
 import { isVipSalesEnabled } from "../lib/salesFeatureFlags";
+import {
+  fetchRegistrationEmailAvailable,
+  EMAIL_TAKEN_MESSAGE_CS,
+  EMAIL_CHECK_FAILED_MESSAGE_CS,
+} from "../lib/registration/checkEmailAvailableClient";
 
 // Registrace dle pravidel ON Club (stejný flow pro všechny programy): https://app.bodyandmindon.cz/on-club
 const MAX_STEP = REGISTRATION_STEPS;
@@ -53,6 +58,7 @@ export default function ChciVipPage() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [selectedHabits, setSelectedHabits] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
 
   const normalizeData = (data) => {
     const cleaned = { ...data };
@@ -94,6 +100,32 @@ export default function ChciVipPage() {
     setFormData({ ...formData, [name]: value });
   };
 
+  const ensureEmailAvailable = async () => {
+    const email = String(formData.email || '').trim();
+    if (!email) return false;
+    setCheckingEmail(true);
+    try {
+      const result = await fetchRegistrationEmailAvailable(email);
+      if (result.rateLimited || result.networkError) {
+        setFieldErrors((prev) => ({ ...prev, email: EMAIL_CHECK_FAILED_MESSAGE_CS }));
+        return false;
+      }
+      if (!result.available) {
+        setFieldErrors((prev) => ({ ...prev, email: EMAIL_TAKEN_MESSAGE_CS }));
+        return false;
+      }
+      setFieldErrors((prev) => {
+        if (!prev.email) return prev;
+        const next = { ...prev };
+        delete next.email;
+        return next;
+      });
+      return true;
+    } finally {
+      setCheckingEmail(false);
+    }
+  };
+
   const getStep2Errors = () => {
     const errors = {};
     const birthCheck = validateBirthDate(formData.birth_date);
@@ -123,10 +155,14 @@ export default function ChciVipPage() {
     notes: formData.notes,
   }), [formData.goal, formData.stress, formData.activity, formData.dietary_restrictions, formData.notes]);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setStatus("");
     setPlanFailedWithAccount(false);
     setPlanFailedCanRetry(false);
+    if (step === 1) {
+      const emailOk = await ensureEmailAvailable();
+      if (!emailOk) return;
+    }
     if (step === 2) {
       const step2Errors = getStep2Errors();
       if (Object.keys(step2Errors).length > 0) {
@@ -298,7 +334,26 @@ export default function ChciVipPage() {
                 </div>
                 <div>
                   <label className="reg-label">E-mail</label>
-                  <input name="email" type="email" className="reg-input" value={formData.email} onChange={handleChange} placeholder="jan@example.com" required disabled={isSubmitting} />
+                  <input
+                    name="email"
+                    type="email"
+                    className="reg-input"
+                    value={formData.email}
+                    onChange={handleChange}
+                    onBlur={() => {
+                      if (String(formData.email || '').trim()) {
+                        ensureEmailAvailable();
+                      }
+                    }}
+                    placeholder="jan@example.com"
+                    required
+                    disabled={isSubmitting || checkingEmail}
+                    autoComplete="email"
+                  />
+                  {fieldErrors.email && <p className="reg-field-error" role="alert">{fieldErrors.email}</p>}
+                  {checkingEmail && !fieldErrors.email ? (
+                    <p className="text-sm text-gray-400 mt-1">Ověřuji e-mail…</p>
+                  ) : null}
                 </div>
               </div>
               <div className="row grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -530,8 +585,8 @@ export default function ChciVipPage() {
               <span />
             )}
             {step < MAX_STEP ? (
-              <button type="submit" className="btn-submit" disabled={isSubmitting || (step === 1 && !canProceedStep1()) || (step === 2 && !canProceedStep2()) || (step === 3 && !canProceedStep3()) || (step === 5 && !canProceedStep5())}>
-                Pokračovat
+              <button type="submit" className="btn-submit" disabled={isSubmitting || checkingEmail || (step === 1 && !canProceedStep1()) || (step === 2 && !canProceedStep2()) || (step === 3 && !canProceedStep3()) || (step === 5 && !canProceedStep5())}>
+                {checkingEmail && step === 1 ? "Ověřuji e-mail…" : "Pokračovat"}
               </button>
             ) : (
               <button type="submit" className="btn-submit btn-submit-large" disabled={!canProceedStep5() || isSubmitting}>

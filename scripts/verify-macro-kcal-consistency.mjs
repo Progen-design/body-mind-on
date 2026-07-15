@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import {
   calculateCaloriesFromMacros,
   getMacroCalorieDelta,
+  passesMacroKcalGate,
 } from '../lib/macroKcalConsistency.js';
 import {
   getMacroEnergyBreakdown,
@@ -53,12 +54,22 @@ if (sample.status !== 'OK') fail(`945/42/112/35 should be OK, got ${sample.statu
 else ok('945/42/112/35 = OK');
 
 const warn = getMacroCalorieDelta(1000, 42, 112, 35);
+// 931 vs 1000 = 6.9% → WARNING under 10% gate
 if (warn.status !== 'WARNING' && warn.status !== 'OK') fail(`borderline delta status ${warn.status}`);
 else ok(`delta ${warn.deltaPercent}% -> ${warn.status}`);
 
 const err = getMacroCalorieDelta(1200, 42, 112, 35);
+// 931 vs 1200 = 22.4% → ERROR (>10%)
 if (err.status !== 'ERROR') fail(`large delta should be ERROR, got ${err.status}`);
 else ok('large delta = ERROR');
+
+const gatePass = passesMacroKcalGate(945, 42, 112, 35);
+if (!gatePass) fail('945/42/112/35 should pass ±10% gate');
+else ok('passesMacroKcalGate OK');
+
+const gateFail = passesMacroKcalGate(1200, 42, 112, 35);
+if (gateFail) fail('1200 vs 931 must fail gate');
+else ok('passesMacroKcalGate rejects bad row');
 
 const macroChart = fs.readFileSync(path.join(root, 'components/MacroRatioChart.js'), 'utf8');
 if (!macroChart.includes('getMacroCalorieDelta')) fail('MacroRatioChart missing delta integration');

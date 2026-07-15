@@ -243,17 +243,25 @@ export default function PreferencesOverlay({
             variant="preferences"
             trainingEnvironment={form.training_environment || ''}
             availableEquipment={Array.isArray(form.available_equipment) ? form.available_equipment : []}
+            trainingEnvironmentDetail={form.training_environment_detail || ''}
             disabled={saving}
-            showErrors={!form.training_environment}
+            showErrors={
+              !form.training_environment
+              || (form.training_environment === 'other' && !String(form.training_environment_detail || '').trim())
+            }
             onTrainingEnvironmentChange={(value) =>
               setForm((current) => ({
                 ...current,
                 training_environment: value,
                 available_equipment: value === 'home_equipment' ? (current.available_equipment || []) : [],
+                training_environment_detail: value === 'other' ? (current.training_environment_detail || '') : '',
               }))
             }
             onAvailableEquipmentChange={(equipment) =>
               setForm((current) => ({ ...current, available_equipment: equipment }))
+            }
+            onTrainingEnvironmentDetailChange={(detail) =>
+              setForm((current) => ({ ...current, training_environment_detail: detail }))
             }
           />
 

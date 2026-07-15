@@ -38,6 +38,7 @@ export default function Start() {
     frequency: "",
     workout_days: [],
     training_environment: "",
+    training_environment_detail: "",
     available_equipment: [],
     diet_type: "",
     dietary_restrictions: "",
@@ -93,6 +94,11 @@ export default function Start() {
     } else if (!Array.isArray(cleaned.available_equipment)) {
       cleaned.available_equipment = [];
     }
+    if (cleaned.training_environment !== 'other') {
+      cleaned.training_environment_detail = '';
+    } else {
+      cleaned.training_environment_detail = String(cleaned.training_environment_detail || '').trim();
+    }
     return cleaned;
   };
 
@@ -106,7 +112,12 @@ export default function Start() {
       });
     }
     if (name === 'training_environment' && value !== 'home_equipment') {
-      setFormData({ ...formData, [name]: value, available_equipment: [] });
+      setFormData({
+        ...formData,
+        [name]: value,
+        available_equipment: [],
+        training_environment_detail: value === 'other' ? formData.training_environment_detail : '',
+      });
       return;
     }
     setFormData({ ...formData, [name]: value });
@@ -134,6 +145,7 @@ export default function Start() {
   const canProceedStep3 = () => {
     return formData.activity && formData.stress && formData.worktype && formData.goal && formData.frequency
       && formData.training_environment
+      && (formData.training_environment !== 'other' || String(formData.training_environment_detail || '').trim())
       && Array.isArray(formData.workout_days) && formData.workout_days.length >= 1;
   };
   const canProceedStep5 = () => selectedHabits.length > 0;
@@ -454,17 +466,22 @@ export default function Start() {
                 <TrainingEnvironmentFields
                   trainingEnvironment={formData.training_environment}
                   availableEquipment={formData.available_equipment}
+                  trainingEnvironmentDetail={formData.training_environment_detail}
                   disabled={isSubmitting}
-                  showErrors={!formData.training_environment}
+                  showErrors={!formData.training_environment || (formData.training_environment === 'other' && !String(formData.training_environment_detail || '').trim())}
                   onTrainingEnvironmentChange={(value) =>
                     setFormData((f) => ({
                       ...f,
                       training_environment: value,
                       available_equipment: value === 'home_equipment' ? f.available_equipment : [],
+                      training_environment_detail: value === 'other' ? f.training_environment_detail : '',
                     }))
                   }
                   onAvailableEquipmentChange={(equipment) =>
                     setFormData((f) => ({ ...f, available_equipment: equipment }))
+                  }
+                  onTrainingEnvironmentDetailChange={(detail) =>
+                    setFormData((f) => ({ ...f, training_environment_detail: detail }))
                   }
                 />
               </div>

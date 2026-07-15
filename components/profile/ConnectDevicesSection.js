@@ -141,7 +141,7 @@ export default function ConnectDevicesSection({
 
       <div className="connect-devices-grid">
         <article className={`connect-card${wantsDevice(devices, 'scale') ? ' connect-card--interest' : ''}`}>
-          <h3>Chytrá váha</h3>
+          <h3>Chytrá váha (Withings)</h3>
           <p>Withings pošle data do profilu. Plán se může upravit podle trendu, ne podle jednoho měření.</p>
           {withingsConnected ? (
             <p className="connect-status connect-status--ok">Připojeno</p>
@@ -155,7 +155,7 @@ export default function ConnectDevicesSection({
         </article>
 
         <article className={`connect-card${wantsDevice(devices, 'watch') ? ' connect-card--interest' : ''}`}>
-          <h3>Chytré hodinky</h3>
+          <h3>Chytré hodinky (Apple Watch)</h3>
           <p>Apple Watch přes Health Auto Export. Data jdou přes naše API do profilu.</p>
 
           {activeApple && watchStep === 0 && !apiKeyOnce ? (

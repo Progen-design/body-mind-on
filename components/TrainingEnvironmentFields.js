@@ -9,13 +9,17 @@ import {
 export default function TrainingEnvironmentFields({
   trainingEnvironment = '',
   availableEquipment = [],
+  trainingEnvironmentDetail = '',
   onTrainingEnvironmentChange,
   onAvailableEquipmentChange,
+  onTrainingEnvironmentDetailChange,
   disabled = false,
   variant = 'registration',
   showErrors = false,
 }) {
   const isPrefs = variant === 'preferences';
+  const detailValue = typeof trainingEnvironmentDetail === 'string' ? trainingEnvironmentDetail : '';
+  const detailMissing = trainingEnvironment === 'other' && !detailValue.trim();
 
   const handleEnvChange = (event) => {
     const value = event.target.value;
@@ -24,6 +28,9 @@ export default function TrainingEnvironmentFields({
     }
     if (value !== 'home_equipment' && typeof onAvailableEquipmentChange === 'function') {
       onAvailableEquipmentChange([]);
+    }
+    if (value !== 'other' && typeof onTrainingEnvironmentDetailChange === 'function') {
+      onTrainingEnvironmentDetailChange('');
     }
   };
 
@@ -84,6 +91,34 @@ export default function TrainingEnvironmentFields({
         </div>
       ) : null}
 
+      {trainingEnvironment === 'other' ? (
+        <div className="training-env-other">
+          <label className={isPrefs ? 'prefs-label' : 'step3-label'} htmlFor="training_environment_detail">
+            Popiš prostředí
+          </label>
+          <textarea
+            id="training_environment_detail"
+            name="training_environment_detail"
+            className={isPrefs ? 'prefs-textarea' : 'reg-textarea'}
+            rows={3}
+            maxLength={280}
+            disabled={disabled}
+            value={detailValue}
+            placeholder="Napiš kde a s čím (např. venku, bazén, v práci s gumami)"
+            onChange={(event) => {
+              if (typeof onTrainingEnvironmentDetailChange === 'function') {
+                onTrainingEnvironmentDetailChange(event.target.value);
+              }
+            }}
+          />
+          {showErrors && detailMissing ? (
+            <p className={isPrefs ? 'prefs-error-inline' : 'step3-hint step3-hint-error'} role="alert">
+              Napiš, kde a s čím budeš cvičit.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       <style jsx>{`
         .training-env-fields {
           display: grid;
@@ -96,7 +131,8 @@ export default function TrainingEnvironmentFields({
           display: grid;
           gap: 6px;
         }
-        .training-env-equipment {
+        .training-env-equipment,
+        .training-env-other {
           display: grid;
           gap: 10px;
           margin-top: 4px;
@@ -125,6 +161,24 @@ export default function TrainingEnvironmentFields({
           margin: 0;
           color: #f87171;
           font-size: 0.88rem;
+        }
+        .reg-textarea,
+        .prefs-textarea {
+          width: 100%;
+          box-sizing: border-box;
+          resize: vertical;
+          min-height: 72px;
+          padding: 12px 14px;
+          border-radius: 12px;
+          border: 1px solid rgba(148, 163, 184, 0.28);
+          background: rgba(15, 23, 42, 0.45);
+          color: #e2e8f0;
+          font: inherit;
+          line-height: 1.45;
+        }
+        .reg-textarea::placeholder,
+        .prefs-textarea::placeholder {
+          color: #94a3b8;
         }
       `}</style>
     </div>

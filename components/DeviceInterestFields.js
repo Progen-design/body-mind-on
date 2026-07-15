@@ -27,6 +27,10 @@ export default function DeviceInterestFields({
         Máš chytrou váhu nebo hodinky? Můžeme z nich brát data automaticky,
         ať nemusíš nic zapisovat ručně. Není to podmínka — appka funguje i bez nich.
       </p>
+      <p className="device-interest-hint device-interest-hint--secondary">
+        Teď umíme napojit váhu Withings a Apple Watch.
+        Další zařízení přidáváme — dej nám vědět, co používáš.
+      </p>
       {/* copy-check:whitelist:end */}
       <div className="device-interest-options" role="group" aria-label="Chytrá zařízení">
         {DEVICE_OPTIONS.map(({ value: optionValue, label }) => (
@@ -56,6 +60,9 @@ export default function DeviceInterestFields({
           font-size: 13px;
           color: #94a3b8;
           line-height: 1.45;
+        }
+        .device-interest-hint--secondary {
+          margin-top: -4px;
         }
         .device-interest-options {
           display: flex;

@@ -67,7 +67,7 @@ export default async function handler(req, res) {
       updates.workout_days = normalizedDays.length > 0 ? normalizedDays.join(',') : null;
     }
     if (b.training_environment !== undefined) {
-      const trainingEnvironment = ['gym', 'home_bodyweight', 'home_equipment'].includes(String(b.training_environment || '').trim())
+      const trainingEnvironment = ['gym', 'home_bodyweight', 'home_equipment', 'other'].includes(String(b.training_environment || '').trim())
         ? String(b.training_environment).trim()
         : null;
       if (!trainingEnvironment) {
@@ -76,7 +76,18 @@ export default async function handler(req, res) {
       const availableEquipment = trainingEnvironment === 'home_equipment' && Array.isArray(b.available_equipment)
         ? b.available_equipment.map((item) => String(item || '').trim()).filter(Boolean)
         : [];
-      updates.notes = mergeTrainingEnvironmentIntoNotes(latest.notes, trainingEnvironment, availableEquipment);
+      const trainingEnvironmentDetail = trainingEnvironment === 'other'
+        ? String(b.training_environment_detail || '').trim().slice(0, 280)
+        : '';
+      if (trainingEnvironment === 'other' && !trainingEnvironmentDetail) {
+        return res.status(400).json({ error: 'Napiš, kde a s čím budeš cvičit.' });
+      }
+      updates.notes = mergeTrainingEnvironmentIntoNotes(
+        latest.notes,
+        trainingEnvironment,
+        availableEquipment,
+        trainingEnvironmentDetail || null
+      );
     }
 
     const effectiveFrequency = normalizeFrequency(

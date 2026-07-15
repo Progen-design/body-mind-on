@@ -18,6 +18,8 @@ const IGNORE_DIRS = new Set([
   '_archive',
   'bodyandmindon-landing',
   'agent-tools',
+  '.specstory',
+  'agent-transcripts',
 ]);
 
 const EXT = new Set(['.js', '.jsx', '.ts', '.tsx', '.html', '.md']);

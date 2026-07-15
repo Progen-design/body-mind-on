@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import Header from '../components/Header';
-import BetaCohortBanner from '../components/beta/BetaCohortBanner';
 import Footer from '../components/Footer';
 import WelcomeTour from '../components/WelcomeTour';
 import WithingsBodyDevelopmentSection from '../components/profile/WithingsBodyDevelopmentSection';
@@ -1970,7 +1969,6 @@ export default function Profil() {
         <div className="page-bg-decor" aria-hidden>
           <span className="page-bg-orb page-bg-orb--center" />
         </div>
-        {!loading && !error && <BetaCohortBanner />}
         {!loading && !error && (
           <header className={`profile-hero ${(!profile?.can_create_calendar_events && (program === 'ON_CLUB' || program === 'VIP')) ? 'profile-hero--with-program' : 'profile-hero--centered'} ${currentPlan ? 'profile-hero--compact' : ''}`}>
             <div className="profile-hero-inner">

@@ -62,7 +62,7 @@ export default async function handler(req, res) {
     const activityKey = String(req.body?.activity_key || '').trim().slice(0, 120);
     const planId = req.body?.plan_id ? String(req.body.plan_id) : null;
     const planDay = Number(req.body?.plan_day);
-    const sourceComponent = String(req.body?.source_component || 'BetaTodaySection').slice(0, 80);
+    const sourceComponent = String(req.body?.source_component || 'daily_activation').slice(0, 80);
 
     if (activityType === 'habit') {
       return res.status(400).json({ error: HABIT_DEPRECATED_MSG });

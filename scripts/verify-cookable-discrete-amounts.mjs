@@ -65,10 +65,12 @@ function collectFailuresFromMeal(meal, path) {
   const mustPass = [
     { name: 'vejce', unit: 'ks', amount: 3.5 },
     { name: 'vejce', unit: 'ks', amount: 3 },
+    { name: 'okurka', unit: 'ks', amount: 0.5 },
     { name: 'okurka', unit: 'ks', amount: 1 },
     { name: 'tuňák', unit: 'konzerva', amount: 1 },
     { name: 'chléb', unit: 'plátky', amount: 2.5 },
     { name: 'rýže', unit: 'g', amount: 92 },
+    'okurka 1/2 ks',
   ];
   for (const e of mustFail) {
     const v = validateDiscreteIngredientAmount(e);

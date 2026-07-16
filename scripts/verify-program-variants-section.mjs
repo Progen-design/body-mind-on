@@ -24,7 +24,6 @@ const requiredStrings = [
   'START',
   'ON CLUB',
   'VIP PERFORMANCE',
-  '12T TRANSFORMACE',
   'START_VARIANT_PRICE_LABEL',
   'ON_CLUB_VARIANT_PRICE_LABEL',
   'VIP_PRICE_LABEL',
@@ -35,7 +34,6 @@ const requiredStrings = [
   'Body &amp; Mind ON',
   'Vstoupit do ON CLUBU',
   'Mám zájem o VIP',
-  'Chci 12T transformaci',
   'Pokračovat ve STARTU',
 ];
 
@@ -50,7 +48,7 @@ check('komponenta má anchor program-variants', component.includes('id="program-
 check('ON CLUB je featured', component.includes('featured: true') && component.includes("id: 'ON_CLUB'"));
 check('profil má kompaktní upsell', profil.includes('ProfileContinuationUpsell') && profil.includes('Chceš pokračovat dál?'));
 check('upsell odkazuje na /on-club', upsell.includes('href="/on-club"'));
-check('12T má badge Připravujeme', component.includes('Připravujeme'));
+check('jen 3 programové varianty', (component.match(/id: '/g) || []).length === 3);
 check('VIP CTA vede na /chci-vip', component.includes("href: '/chci-vip'"));
 check('START CTA vede na /start', component.includes("href: '/start'"));
 check('ON CLUB CTA vede na /on-club', component.includes("href: '/on-club'"));

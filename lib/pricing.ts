@@ -41,6 +41,7 @@ export const START_FEATURES = [
   'Osobní tréninkový plán',
   'Týdenní jídelníček',
   'Týdenní automatická úprava plánu',
+  'Napojení chytrého zařízení — nastavení zdarma',
   '7 pilířů zdraví',
 ];
 

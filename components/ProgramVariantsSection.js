@@ -16,6 +16,8 @@ const PROGRAM_VARIANTS = [
     benefits: [
       'Individuální tréninkový plán',
       'Individuální jídelní plán',
+      'Týdenní automatická úprava plánu',
+      'Napojení chytrého zařízení — nastavení zdarma',
       'E-book 7 pilířů zdraví',
     ],
     cta: 'Pokračovat ve STARTU',

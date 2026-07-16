@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { supabase } from "../lib/supabaseClient";
@@ -14,6 +14,12 @@ import { PLAN_GENERATION_DURATION_HINT, PLAN_GENERATION_OVERLAY_TITLE } from "..
 import { validateBirthDate } from "../lib/bodyMetricsBirthDate";
 import * as fbq from "../lib/fbpixel";
 import { trackProductEvent } from "../lib/productAnalytics";
+import {
+  trackOnboardingStepCompleted,
+  trackOnboardingAbandoned,
+  trackRegistrationEmailConflict,
+  trackDeviceInterestSelected,
+} from "../lib/registrationFunnelTracking";
 import {
   fetchRegistrationEmailAvailable,
   EMAIL_TAKEN_MESSAGE_CS,
@@ -60,11 +66,26 @@ export default function Start() {
   const [selectedHabits, setSelectedHabits] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkingEmail, setCheckingEmail] = useState(false);
+  const funnelDoneRef = useRef(false);
+  const stepRef = useRef(1);
+
+  useEffect(() => {
+    stepRef.current = step;
+  }, [step]);
 
   useEffect(() => {
     if (!router.isReady) return;
     trackProductEvent('onboarding_started', { program: 'START' }, { source: 'start_page', pagePath: '/start' });
   }, [router.isReady]);
+
+  useEffect(() => {
+    const onLeave = () => {
+      if (funnelDoneRef.current) return;
+      trackOnboardingAbandoned(stepRef.current, 'START', 'start_page');
+    };
+    window.addEventListener('pagehide', onLeave);
+    return () => window.removeEventListener('pagehide', onLeave);
+  }, []);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -141,6 +162,7 @@ export default function Start() {
       }
       if (!result.available) {
         setFieldErrors((prev) => ({ ...prev, email: EMAIL_TAKEN_MESSAGE_CS }));
+        trackRegistrationEmailConflict('START', 'start_page');
         return false;
       }
       setFieldErrors((prev) => {
@@ -210,7 +232,10 @@ export default function Start() {
     if (step === 4 && selectedHabits.length === 0 && suggestedHabits.length > 0) {
       setSelectedHabits(suggestedHabits);
     }
-    if (step < MAX_STEP) setStep((s) => s + 1);
+    if (step < MAX_STEP) {
+      trackOnboardingStepCompleted(step, 'START', 'start_page');
+      setStep((s) => s + 1);
+    }
   };
 
   const handleBack = () => {
@@ -260,6 +285,8 @@ export default function Start() {
 
       if (res.ok) {
         if (result.plan_state === 'ready' || result.plan_state === 'processing') {
+          funnelDoneRef.current = true;
+          trackOnboardingStepCompleted(5, 'START', 'start_page');
           setStatus("✅ " + (result.message || "Účet je vytvořen. Přesměrování na tvůj plán…"));
           setPlanFailedWithAccount(false);
           // Měření reklamy: účet je opravdu vytvořen → hlásíme Metě dokončenou registraci.
@@ -444,7 +471,12 @@ export default function Start() {
               </div>
               <DeviceInterestFields
                 value={formData.devices}
-                onChange={(devices) => setFormData((prev) => ({ ...prev, devices }))}
+                onChange={(devices) => {
+                  setFormData((prev) => ({ ...prev, devices }));
+                  if (Array.isArray(devices) && devices.length > 0) {
+                    trackDeviceInterestSelected(devices, 'START', 'start_page');
+                  }
+                }}
                 disabled={isSubmitting}
               />
             </div>

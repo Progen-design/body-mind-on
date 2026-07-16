@@ -19,6 +19,10 @@
             {
                   "path": "/api/cron/lifecycle-email",
                   "schedule": "0 * * * *"
+            },
+            {
+                  "path": "/api/cron/system-health-alert",
+                  "schedule": "30 7 * * *"
             }
       ],
       "functions": {
@@ -39,6 +43,9 @@
             },
             "pages/api/cron/apple-health-daily-review.js": {
                   "maxDuration": 300
+            },
+            "pages/api/cron/system-health-alert.js": {
+                  "maxDuration": 60
             }
       }
 }

@@ -1,5 +1,5 @@
 // /pages/chci-vip.js – Registrace VIP Coaching (stejná grafika jako START)
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "../lib/supabaseClient";
 import Header from "../components/Header";
@@ -13,6 +13,13 @@ import { REGISTRATION_STEPS } from "../lib/registrationRules";
 import { PLAN_GENERATION_DURATION_HINT, PLAN_GENERATION_OVERLAY_TITLE } from "../lib/planGenerationUiCopy";
 import { validateBirthDate } from "../lib/bodyMetricsBirthDate";
 import { isVipSalesEnabled } from "../lib/salesFeatureFlags";
+import { trackProductEvent } from "../lib/productAnalytics";
+import {
+  trackOnboardingStepCompleted,
+  trackOnboardingAbandoned,
+  trackRegistrationEmailConflict,
+  trackDeviceInterestSelected,
+} from "../lib/registrationFunnelTracking";
 import {
   fetchRegistrationEmailAvailable,
   EMAIL_TAKEN_MESSAGE_CS,
@@ -59,6 +66,25 @@ export default function ChciVipPage() {
   const [selectedHabits, setSelectedHabits] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkingEmail, setCheckingEmail] = useState(false);
+  const funnelDoneRef = useRef(false);
+  const stepRef = useRef(1);
+
+  useEffect(() => {
+    stepRef.current = step;
+  }, [step]);
+
+  useEffect(() => {
+    trackProductEvent('onboarding_started', { program: 'VIP' }, { source: 'chci_vip_page', pagePath: '/chci-vip' });
+  }, []);
+
+  useEffect(() => {
+    const onLeave = () => {
+      if (funnelDoneRef.current) return;
+      trackOnboardingAbandoned(stepRef.current, 'VIP', 'chci_vip_page');
+    };
+    window.addEventListener('pagehide', onLeave);
+    return () => window.removeEventListener('pagehide', onLeave);
+  }, []);
 
   const normalizeData = (data) => {
     const cleaned = { ...data };
@@ -112,6 +138,7 @@ export default function ChciVipPage() {
       }
       if (!result.available) {
         setFieldErrors((prev) => ({ ...prev, email: EMAIL_TAKEN_MESSAGE_CS }));
+        trackRegistrationEmailConflict('VIP', 'chci_vip_page');
         return false;
       }
       setFieldErrors((prev) => {
@@ -171,7 +198,10 @@ export default function ChciVipPage() {
       }
     }
     if (step === 4 && selectedHabits.length === 0 && suggestedHabits.length > 0) setSelectedHabits(suggestedHabits);
-    if (step < MAX_STEP) setStep((s) => s + 1);
+    if (step < MAX_STEP) {
+      trackOnboardingStepCompleted(step, 'VIP', 'chci_vip_page');
+      setStep((s) => s + 1);
+    }
   };
   const handleBack = () => {
     setStatus("");
@@ -220,6 +250,8 @@ export default function ChciVipPage() {
 
       if (res.ok) {
         if (result.planSent || result.planPending || result.plan_state === 'ready') {
+          funnelDoneRef.current = true;
+          trackOnboardingStepCompleted(5, 'VIP', 'chci_vip_page');
           setStatus("✅ " + (result.message || "Účet je vytvořen. Přesměrování na tvůj plán…"));
           setPlanFailedWithAccount(false);
           const doRedirect = async () => {
@@ -405,7 +437,13 @@ export default function ChciVipPage() {
               </div>
               <SmartScaleChoiceField
                 value={formData.smart_scale_choice}
-                onChange={handleChange}
+                onChange={(e) => {
+                  handleChange(e);
+                  const v = String(e?.target?.value || '');
+                  if (v && v !== 'none') {
+                    trackDeviceInterestSelected(['scale'], 'VIP', 'chci_vip_page');
+                  }
+                }}
                 disabled={isSubmitting}
               />
             </div>

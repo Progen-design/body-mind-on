@@ -48,6 +48,8 @@ const NAME_MAP = {
   protein: 'proteinový prášek',
   'tuňák ve vlastní šťávě': 'tuňák (v konzervě)',
   tunak: 'tuňák (v konzervě)',
+  'arašídové máslo': 'arašídové máslo',
+  arasidove: 'arašídové máslo',
   mandle: 'ořechy',
   cottage: 'cottage',
   kefír: 'kefír',

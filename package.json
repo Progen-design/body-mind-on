@@ -35,6 +35,7 @@
     "verify:program-variants": "node scripts/verify-program-variants-section.mjs",
     "verify:email-and-recipe-content": "node scripts/verify-email-and-recipe-content.mjs",
     "verify:cookable-discrete-amounts": "node scripts/verify-cookable-discrete-amounts.mjs",
+    "sync:ingredient-nutrition-table": "node scripts/sync-ingredient-nutrition-table.mjs",
     "verify:start-templates-catalog": "node scripts/verify-start-templates-catalog.mjs",
     "verify:start-meals-library-only": "node scripts/verify-start-meals-library-only.mjs",
     "verify:product-consistency": "node scripts/verify-product-consistency.mjs",

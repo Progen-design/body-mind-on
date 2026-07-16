@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient';
 import {
   applyOptimisticToggle,
   completionsToSet,
   mealActivityKey,
-} from '../../lib/dailyActivationClient';
+} from '../lib/dailyActivationClient';
 
 /**
  * Load + toggle daily meal/workout completions via /api/daily-activation.

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * CI: no discrete ingredient (ks/plátky/konzerva/stroužek/svazek) may have
- * a non-cookable amount (must be whole, or .5 for eggs/bread).
+ * a non-cookable amount (must be whole; .5 only for pečivo/plátky/okurka).
+ * Eggs, banana, apple, cans = whole integers only.
  *
  *   node scripts/verify-cookable-discrete-amounts.mjs
  *   node scripts/verify-cookable-discrete-amounts.mjs janprikopa@gmail.com
@@ -55,15 +56,7 @@ function collectFailuresFromMeal(meal, path) {
 
 // Unit-level self-check (always)
 {
-  const mustFail = [
-    { name: 'vejce', unit: 'ks', amount: 3.45 },
-    { name: 'okurka', unit: 'ks', amount: 0.575 },
-    { name: 'tuňák', unit: 'konzerva', amount: 1.15 },
-    'vejce 3.45 ks',
-    'celozrnný chléb 2.3 plátky',
-  ];
   const mustPass = [
-    { name: 'vejce', unit: 'ks', amount: 3.5 },
     { name: 'vejce', unit: 'ks', amount: 3 },
     { name: 'okurka', unit: 'ks', amount: 0.5 },
     { name: 'okurka', unit: 'ks', amount: 1 },
@@ -71,6 +64,15 @@ function collectFailuresFromMeal(meal, path) {
     { name: 'chléb', unit: 'plátky', amount: 2.5 },
     { name: 'rýže', unit: 'g', amount: 92 },
     'okurka 1/2 ks',
+  ];
+  const mustFail = [
+    { name: 'vejce', unit: 'ks', amount: 3.45 },
+    { name: 'vejce', unit: 'ks', amount: 3.5 },
+    { name: 'okurka', unit: 'ks', amount: 0.575 },
+    { name: 'tuňák', unit: 'konzerva', amount: 1.15 },
+    'vejce 3.45 ks',
+    'vejce 3.5 ks',
+    'celozrnný chléb 2.3 plátky',
   ];
   for (const e of mustFail) {
     const v = validateDiscreteIngredientAmount(e);

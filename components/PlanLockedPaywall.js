@@ -10,8 +10,8 @@ import { supabase } from '../lib/supabaseClient';
 import { createStripeCheckoutUrl } from '../lib/stripeCheckoutClient';
 
 const ON_CLUB_FEATURES = [
+  'Napojení chytrého zařízení — nastavení zdarma',
   'Vše ze STARTU',
-  'Napojení chytré váhy', // copy-check:ignore
   'AI trenér TED 24/7',
   'Soukromá komunita',
 ];
@@ -91,7 +91,7 @@ export default function PlanLockedPaywall() {
         <article className="trial-upgrade-card trial-upgrade-card--club">
           <span className="trial-upgrade-badge">Doporučeno</span>
           <h3 className="trial-upgrade-title">ON CLUB</h3>
-          <p className="trial-upgrade-subtitle">Plán se upravuje sám — AI trenér TED, komunita a volitelné napojení chytré váhy.</p>
+          <p className="trial-upgrade-subtitle">Napojíme chytré zařízení za tebe — nastavení zdarma. AI trenér TED a soukromá komunita.</p>
           <span className="trial-upgrade-price">1 499 Kč/měsíc</span>
           <ul className="trial-paywall-features">
             {ON_CLUB_FEATURES.map((f) => <li key={f}>{f}</li>)}

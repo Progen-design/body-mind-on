@@ -41,7 +41,6 @@ export const START_FEATURES = [
   'Osobní tréninkový plán',
   'Týdenní jídelníček',
   'Týdenní automatická úprava plánu',
-  'Napojení chytrého zařízení — nastavení zdarma',
   '7 pilířů zdraví',
 ];
 
@@ -61,10 +60,10 @@ export const PRICING = [
     name: 'ON Club',
     priceCzk: ON_CLUB_PRICE_CZK,
     badge: 'Doporučeno',
-    subtitle: 'Tvůj osobní AI trenér vždy po ruce.',
+    subtitle: 'Napojíme chytré zařízení za tebe — nastavení zdarma.',
     features: [
+      'Napojení chytrého zařízení — nastavení zdarma',
       'VŠE ze START +',
-      'Napojení chytré váhy', // copy-check:ignore
       'Komunita a automatika',
       'AI trenér TED 24/7 (brzy)',
       'Měsíční Q&A s Ondrou',

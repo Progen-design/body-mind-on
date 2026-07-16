@@ -32,7 +32,7 @@ const PROGRAM_VARIANTS = [
       'AI trenér TED 24/7',
       'Soukromá komunita a výzvy',
       'Exkluzivní obsah pro tělo a mysl',
-      'Měsíční živé Q&A s Ondrou',
+      'Každý měsíc živě s Ondrou — ptej se na trénink, jídlo a motivaci',
     ],
     cta: 'Vstoupit do ON CLUBU',
     href: '/on-club',

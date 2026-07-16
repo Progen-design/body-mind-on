@@ -66,7 +66,7 @@ export const PRICING = [
       'VŠE ze START +',
       'Komunita a automatika',
       'AI trenér TED 24/7 (brzy)',
-      'Měsíční Q&A s Ondrou',
+      'Každý měsíc živě s Ondrou — ptej se na trénink, jídlo a motivaci',
     ],
     cta: { label: 'Připojit se k ON Clubu', href: '/on-club' },
   },

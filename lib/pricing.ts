@@ -40,6 +40,7 @@ export const START_POST_TRIAL_OFFER = {
 export const START_FEATURES = [
   'Osobní tréninkový plán',
   'Týdenní jídelníček',
+  'Týdenní automatická úprava plánu (brzy)',
   '7 pilířů zdraví',
 ];
 

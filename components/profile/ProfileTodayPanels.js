@@ -87,14 +87,14 @@ export default function ProfileTodayPanels({
         signal: controller.signal,
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Nepodařilo obnovit trénink.');
+      if (!res.ok) throw new Error(data.error || 'Nepodařilo se obnovit trénink.');
       onWorkoutPlanUpdated?.(data);
       trackWorkoutEvent('workout_original_restored');
     } catch (e) {
       if (e?.name === 'AbortError') {
         setWorkoutError('Obnovení trvá déle než obvykle. Zkus to znovu.');
       } else {
-        setWorkoutError(e.message || 'Nepodařilo obnovit trénink.');
+        setWorkoutError(e.message || 'Nepodařilo se obnovit trénink.');
       }
     } finally {
       clearTimeout(slowTimer);
@@ -146,6 +146,9 @@ export default function ProfileTodayPanels({
             <p className="profile-today-stat profile-today-stat--kcal">
               {dayNutrition.kcal != null ? `cca ${Math.round(dayNutrition.kcal)} kcal` : '— kcal'}
               {targetKcal ? ` / cíl ${Math.round(targetKcal)}` : ''}
+              {structDay?.calorie_under_target === true ? (
+                <span className="profile-today-kcal-under"> · zatím pod cílem</span>
+              ) : null}
             </p>
             <p className="profile-today-macros">
               B {Math.round(dayNutrition.protein) || '—'} g · S {Math.round(dayNutrition.carbs) || '—'} g · T {Math.round(dayNutrition.fat) || '—'} g
@@ -363,6 +366,10 @@ export default function ProfileTodayPanels({
         .profile-today-stat--kcal {
           font-size: 17px;
           color: #f8fafc;
+        }
+        .profile-today-kcal-under {
+          color: #fbbf24;
+          font-weight: 500;
         }
         .profile-today-env-badge {
           display: inline-block;

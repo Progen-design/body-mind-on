@@ -69,6 +69,6 @@ export default async function handler(req, res) {
       source: 'workout_restore_today',
     }).catch(() => {});
 
-    return res.status(500).json({ error: 'Nepodařilo obnovit trénink.' });
+    return res.status(500).json({ error: 'Nepodařilo se obnovit trénink.' });
   }
 }

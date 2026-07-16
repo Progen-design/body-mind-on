@@ -20,6 +20,15 @@ const INITIAL = {
   metrics: null,
 };
 
+const HEALTH_ENDPOINTS = [
+  { key: 'connection', path: '/api/health/connection' },
+  { key: 'watch', path: (days) => `/api/health/watch?days=${days}` },
+  { key: 'recovery', path: (days) => `/api/health/recovery?days=${days}` },
+  { key: 'scale', path: (days) => `/api/health/scale?days=${days}` },
+  { key: 'workouts', path: (_days, workoutLimit) => `/api/health/workouts?limit=${workoutLimit}` },
+  { key: 'metrics', path: (days) => `/api/health/metrics?days=${days}` },
+];
+
 export function useHealthData(accessToken, { days = 30, workoutLimit = 20 } = {}) {
   const [data, setData] = useState(INITIAL);
   const [loading, setLoading] = useState(false);
@@ -37,17 +46,32 @@ export function useHealthData(accessToken, { days = 30, workoutLimit = 20 } = {}
     setError('');
 
     try {
-      const qs = `days=${days}`;
-      const [connection, watch, recovery, scale, workouts, metrics] = await Promise.all([
-        fetchHealthJson('/api/health/connection', accessToken),
-        fetchHealthJson(`/api/health/watch?${qs}`, accessToken),
-        fetchHealthJson(`/api/health/recovery?${qs}`, accessToken),
-        fetchHealthJson(`/api/health/scale?${qs}`, accessToken),
-        fetchHealthJson(`/api/health/workouts?limit=${workoutLimit}`, accessToken),
-        fetchHealthJson(`/api/health/metrics?${qs}`, accessToken),
-      ]);
+      const settled = await Promise.allSettled(
+        HEALTH_ENDPOINTS.map(({ path }) =>
+          fetchHealthJson(
+            typeof path === 'function' ? path(days, workoutLimit) : path,
+            accessToken
+          )
+        )
+      );
 
-      setData({ connection, watch, recovery, scale, workouts, metrics });
+      const next = { ...INITIAL };
+      const failures = [];
+      settled.forEach((result, i) => {
+        const key = HEALTH_ENDPOINTS[i].key;
+        if (result.status === 'fulfilled') {
+          next[key] = result.value;
+        } else {
+          failures.push(result.reason?.message || key);
+        }
+      });
+
+      setData(next);
+      if (failures.length === HEALTH_ENDPOINTS.length) {
+        setError(failures[0] || 'Nepodařilo se načíst zdravotní data.');
+      } else if (failures.length > 0) {
+        setError('Část zdravotních dat se nepodařilo načíst. Zbytek je dostupný.');
+      }
     } catch (err) {
       setError(err?.message || 'Nepodařilo se načíst zdravotní data.');
       setData(INITIAL);

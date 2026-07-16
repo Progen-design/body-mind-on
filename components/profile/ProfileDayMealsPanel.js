@@ -69,7 +69,7 @@ export default function ProfileDayMealsPanel({
               <span className="profile-today-meal-type">{mealTypeLabel(meal.type)}</span>
               <h4 className="profile-today-meal-title">{title || mealTypeLabel(meal.type)}</h4>
               {nutrition.calories != null ? (
-                <p className="profile-today-meal-kcal-main">{nutrition.calories} kcal</p>
+                <p className="profile-today-meal-kcal-main">cca {nutrition.calories} kcal</p>
               ) : null}
               <p className="profile-today-meal-macros">
                 {nutrition.protein_g != null ? `Bílkoviny ${nutrition.protein_g} g` : ''}

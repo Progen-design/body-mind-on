@@ -14,12 +14,13 @@ export default function MacroRatioChart({
   className = '',
 }) {
   const ratio = computeMacroRatio({ protein_g, carbs_g, fat_g, calories });
-  if (!ratio) return null;
-
-  const { proteinPct, carbsPct, fatPct, computedKcal, statedKcal } = ratio;
-  const delta = getMacroCalorieDelta(statedKcal ?? computedKcal, protein_g, carbs_g, fat_g);
+  const { proteinPct, carbsPct, fatPct, computedKcal, statedKcal } = ratio || {};
+  const delta = ratio
+    ? getMacroCalorieDelta(statedKcal ?? computedKcal, protein_g, carbs_g, fat_g)
+    : { status: 'OK', statedKcal: null, kcalFromMacros: null, deltaPercent: null };
 
   useEffect(() => {
+    if (!ratio) return;
     if (delta.status === 'ERROR' && typeof window !== 'undefined') {
       console.warn('[macro-kcal] meal calorie vs macro inconsistency', {
         statedKcal: delta.statedKcal,
@@ -27,7 +28,9 @@ export default function MacroRatioChart({
         deltaPercent: delta.deltaPercent,
       });
     }
-  }, [delta.status, delta.statedKcal, delta.kcalFromMacros, delta.deltaPercent]);
+  }, [ratio, delta.status, delta.statedKcal, delta.kcalFromMacros, delta.deltaPercent]);
+
+  if (!ratio) return null;
 
   const proteinLabel = compact ? `B ${proteinPct}%` : `Bílkoviny ${proteinPct}%`;
   const carbsLabel = compact ? `S ${carbsPct}%` : `Sacharidy ${carbsPct}%`;
@@ -57,7 +60,11 @@ export default function MacroRatioChart({
           <span className="macro-ratio-kcal-note">· cca {statedKcal} kcal</span>
         ) : null}
       </p>
-      {delta.status === 'WARNING' ? (
+      {delta.status === 'ERROR' ? (
+        <p className="macro-ratio-error" role="status">
+          Kalorie a makra se u tohoto jídla neshodují. Ber hodnoty jako orientační.
+        </p>
+      ) : delta.status === 'WARNING' ? (
         <p className="macro-ratio-warning">Kalorie jsou zaokrouhlené podle porcí.</p>
       ) : null}
       <style jsx>{`
@@ -111,6 +118,12 @@ export default function MacroRatioChart({
           margin: 4px 0 0;
           font-size: 11px;
           color: #fcd34d;
+          line-height: 1.4;
+        }
+        .macro-ratio-error {
+          margin: 4px 0 0;
+          font-size: 11px;
+          color: #fca5a5;
           line-height: 1.4;
         }
       `}</style>

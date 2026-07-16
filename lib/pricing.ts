@@ -62,12 +62,11 @@ export const PRICING = [
     subtitle: 'Tvůj osobní AI trenér vždy po ruce.',
     features: [
       'VŠE ze START +',
-      'Osobní AI trenér 24/7',
-      'Adaptivní plán dle výsledků',
-      'Motivační komunita',
-      'Video konzultace s experty',
-      'Detailní statistiky a analýzy',
-      'Pokročilé recepty a variace',
+      'Napojení chytré váhy', // copy-check:ignore
+      'Komunita a automatika',
+      'AI trenér TED 24/7 (brzy)',
+      'Týdenní úprava plánu (brzy)',
+      'Měsíční Q&A s Ondrou',
     ],
     cta: { label: 'Připojit se k ON Clubu', href: '/on-club' },
   },

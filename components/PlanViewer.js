@@ -34,7 +34,7 @@ import {
 } from '../lib/exerciseIntegrity.js';
 import { addCalendarDaysIsoPrague, calendarDateIsoInPrague, weekdayIndexJsFromPragueIso } from '../lib/czechCalendar';
 import { buildMacroPillCss, BM_ON_DESIGN, BM_ON_GRADIENTS } from '../lib/designTokens.js';
-import { buildMacroEnergyNutritionHtml } from '../lib/recipeDetailHtml.js';
+import { buildMacroEnergyNutritionHtml, portionServingLabelCs } from '../lib/recipeDetailHtml.js';
 import { buildStructuredWeekSource } from '../lib/plan/structuredWeekSource.js';
 import ProfileTodayPanels from './profile/ProfileTodayPanels';
 import { trackProductEvent } from '../lib/productAnalytics';
@@ -135,6 +135,16 @@ function ensureMealModalMacroBar(html, displayModel) {
   const macroBlock = buildMacroEnergyNutritionHtml(displayModel);
   if (!macroBlock) return cleaned;
   return `${cleaned}${macroBlock}`;
+}
+
+function portionLabelFromDisplayModel(displayModel) {
+  const mult = Number(
+    displayModel?.portion_multiplier
+    ?? displayModel?.normalizedMeal?.portion_multiplier
+    ?? displayModel?.normalizedMeal?.recipe?.portion_multiplier
+    ?? displayModel?.recipe?.portion_multiplier
+  );
+  return portionServingLabelCs(Number.isFinite(mult) && mult > 0 ? mult : 1);
 }
 
 async function fetchExerciseMediaFromApi({ canonicalKey, wgerId, name }) {
@@ -993,6 +1003,7 @@ export default function PlanViewer({
         anchorRect,
         hasRecipe: true,
         loading: false,
+        portionLabel: portionLabelFromDisplayModel(displayModel),
       });
       return;
     }
@@ -1007,6 +1018,7 @@ export default function PlanViewer({
         loading: false,
         source: displayModel.source,
         consistencyStatus: displayModel.consistencyStatus,
+        portionLabel: portionLabelFromDisplayModel(displayModel),
       });
       return;
     }
@@ -1024,6 +1036,7 @@ export default function PlanViewer({
       anchorRect,
       hasRecipe: true,
       loading: true,
+      portionLabel: portionLabelFromDisplayModel(displayModel),
     });
     const loadRecipe = async () => {
       if (displayModel && !shouldFetchMealRecipeFromApi(displayModel)) {
@@ -1995,7 +2008,7 @@ export default function PlanViewer({
               >
                 <div className="plan-recipe-modal-header">
                   <h3>{recipeModal.title}</h3>
-                  <span className="plan-recipe-portion-label">Na 1 porci</span>
+                  <span className="plan-recipe-portion-label">{recipeModal.portionLabel || 'Na 1 porci'}</span>
                   <button type="button" className="plan-recipe-modal-close" onClick={() => setRecipeModal(null)} aria-label="Zavřít">×</button>
                 </div>
                 {recipeModal.loading ? (

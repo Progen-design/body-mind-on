@@ -37,7 +37,14 @@ import {
   normalizeMeasurementPoints,
   buildMeasuredWeightChart,
 } from '../lib/progressIntegrity';
-const PlanViewer = dynamic(() => import('../components/PlanViewer'), { ssr: false, loading: () => null });
+const PlanViewer = dynamic(() => import('../components/PlanViewer'), {
+  ssr: false,
+  loading: () => (
+    <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+      <p className="plan-preparing-text">Načítám plán…</p>
+    </div>
+  ),
+});
 
 function trainingEnvironmentLabelFromMetrics(bm) {
   if (!bm) return '';
@@ -376,7 +383,7 @@ export default function Profil() {
   });
 
   const loading = !authReady || profileLoading;
-  const { currentPlan, nextPlan, planState, showReadyBanner } = usePlanStatus(profile, { loading });
+  const { currentPlan, nextPlan, planState } = usePlanStatus(profile, { loading });
   const error = profileError;
 
   const [showWorkoutModal, setShowWorkoutModal] = useState(false);
@@ -394,7 +401,6 @@ export default function Profil() {
   const [showAllWorkouts, setShowAllWorkouts] = useState(false);
   const [sendingPlan, setSendingPlan] = useState(false);
   const [retryingPlan, setRetryingPlan] = useState(false);
-  const [generatingNextWeek, setGeneratingNextWeek] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [mindsetTipFromPlan, setMindsetTipFromPlan] = useState('');
@@ -816,9 +822,17 @@ export default function Profil() {
     setShowFullClientCard(false);
   }, [selectedClient?.id]);
 
-  // Načíst plánované tréninky z kalendáře trenéra (info@) – cca 2 týdny zpět + 90 dní dopředu (pro týdenní zobrazení)
+  // Načíst plánované tréninky z kalendáře trenéra (info@) – trenér + ON_CLUB/VIP klienti
   useEffect(() => {
     if (!session?.access_token) return;
+    const isTrainer = !!profile?.can_create_calendar_events;
+    const program = String(profile?.program || profile?.membership_tier || '').toUpperCase();
+    const clientHasTrainerSchedule = program === 'ON_CLUB' || program === 'VIP';
+    if (!isTrainer && !clientHasTrainerSchedule) {
+      setTrainerSchedule({ events: [], connected: false });
+      setLoadingSchedule(false);
+      return;
+    }
     let cancelled = false;
     setLoadingSchedule(true);
     const monday = getMondayOfWeek(new Date());
@@ -835,7 +849,7 @@ export default function Profil() {
       .catch(() => { if (!cancelled) setTrainerSchedule((s) => ({ ...s, connected: false })); })
       .finally(() => { if (!cancelled) setLoadingSchedule(false); });
     return () => { cancelled = true; };
-  }, [session?.access_token, scheduleRefreshAt]);
+  }, [session?.access_token, scheduleRefreshAt, profile?.can_create_calendar_events, profile?.program, profile?.membership_tier]);
 
   // Výchozí datum ve formuláři „Přidat trénink“ = dnešek (lokální čas, ne server UTC)
   useEffect(() => {
@@ -1701,33 +1715,6 @@ export default function Profil() {
       ? 'Pro nový plán potřebuješ aktivní předplatné.'
       : null;
 
-  async function handleGenerateNextWeek() {
-    setGeneratingNextWeek(true);
-    try {
-      const { data: { session: fresh } } = await supabase.auth.refreshSession();
-      const token = fresh?.access_token ?? session?.access_token;
-      if (!token) {
-        setToast({ message: 'Session vypršela. Přihlas se znovu.', type: 'error' });
-        return;
-      }
-      const res = await fetch('/api/generate-plan-next-week', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const json = await res.json();
-      if (res.ok && json.ok) {
-        setToast({ message: 'Jídelníček na příští týden vygenerován. Zkontroluj náhled níže.', type: 'success' });
-        await refetch(token);
-      } else {
-        setToast({ message: json.error || 'Nepodařilo vygenerovat plán.', type: 'error' });
-      }
-    } catch (err) {
-      setToast({ message: 'Chyba připojení.', type: 'error' });
-    } finally {
-      setGeneratingNextWeek(false);
-    }
-  }
-
   async function handleSendPlanAgain() {
     setSendingPlan(true);
     try {
@@ -2392,40 +2379,8 @@ export default function Profil() {
               </>
             )}
 
-            {/* Krátký tip – pro uživatele bez tréninku (jen klienti) */}
-            {!profile?.can_create_calendar_events && workouts.length === 0 && showReadyBanner && !currentPlan && (
-              <div className="first-action-banner">
-                <p className="first-action-banner-lead">Tvůj plán je připraven.</p>
-                <p className="first-action-banner-text">Rozklikni sekci <strong>Můj plán</strong> níže – jídelníček a trénink. Trénink zapíšeš tlačítkem nahoře v hlavní kartě.</p>
-              </div>
-            )}
-
             {/* Sjednocený kontejner bublin – pro trenéra i klienta */}
             <div className={profile?.can_create_calendar_events ? 'profile-bubbles profile-bubbles--trainer' : 'profile-main-stack'}>
-            {!profile?.can_create_calendar_events && (
-              <div className="profile-health-inline">
-                <ConnectDevicesSection
-                  profile={profile}
-                  session={session}
-                  healthConnection={healthData.connection}
-                  onAppleKeyCreated={() => { reloadHealth(); }}
-                />
-                {healthError ? (
-                  <p className="profile-health-error" role="alert">{healthError}</p>
-                ) : null}
-                {healthLoading && !healthData.connection ? (
-                  <ProfileHealthSkeleton />
-                ) : (
-                  <AppleWatchSection
-                    connection={healthData.connection}
-                    watchRows={healthData.watch?.rows || []}
-                    recoveryRows={healthData.recovery?.rows || []}
-                    workoutRows={healthData.workouts?.rows || []}
-                    metricRows={healthData.metrics?.rows || []}
-                  />
-                )}
-              </div>
-            )}
             {!profile?.can_create_calendar_events && showWithingsProfileSection && (
               <>
                 <div className="profile-health-divider" role="separator" aria-hidden />
@@ -2719,6 +2674,31 @@ export default function Profil() {
             )}
 
             {!profile?.can_create_calendar_events && (
+              <div className="profile-health-inline">
+                <ConnectDevicesSection
+                  profile={profile}
+                  session={session}
+                  healthConnection={healthData.connection}
+                  onAppleKeyCreated={() => { reloadHealth(); }}
+                />
+                {healthError ? (
+                  <p className="profile-health-error" role="alert">{healthError}</p>
+                ) : null}
+                {healthLoading && !healthData.connection ? (
+                  <ProfileHealthSkeleton />
+                ) : (
+                  <AppleWatchSection
+                    connection={healthData.connection}
+                    watchRows={healthData.watch?.rows || []}
+                    recoveryRows={healthData.recovery?.rows || []}
+                    workoutRows={healthData.workouts?.rows || []}
+                    metricRows={healthData.metrics?.rows || []}
+                  />
+                )}
+              </div>
+            )}
+
+            {!profile?.can_create_calendar_events && (
             <div className="profile-bubble" id="milniky">
               <button type="button" id="profile-bubble-header-milniky" className="profile-bubble-header" onClick={() => toggleProfileSection('milniky')} aria-expanded={profileOpenSections.has('milniky')} aria-controls="profile-bubble-body-milniky">
                 <span className="profile-bubble-title">Tvé milníky</span>
@@ -2760,7 +2740,8 @@ export default function Profil() {
             </div>
             )}
 
-            {/* Kdy mám trénink? / Můj kalendář – bublina (pro oba) */}
+            {/* Kdy mám trénink? / Můj kalendář – trenér vždy; klienti jen ON_CLUB/VIP */}
+            {(profile?.can_create_calendar_events || ['ON_CLUB', 'VIP'].includes(String(profile?.program || profile?.membership_tier || '').toUpperCase())) && (
             <div className="profile-bubble" id="kalendar">
               <button type="button" id="profile-bubble-header-kalendar" className="profile-bubble-header" onClick={() => toggleProfileSection('kalendar')} aria-expanded={profileOpenSections.has('kalendar')} aria-controls="profile-bubble-body-kalendar">
                 <span className="profile-bubble-title">{profile?.can_create_calendar_events ? 'Můj kalendář tréninků' : 'Kdy mám trénink?'}</span>
@@ -2962,6 +2943,9 @@ export default function Profil() {
             </section>
               </div>
             </div>
+
+
+            )}
 
             {/* Historie tréninků – bublina (jen klienti) */}
             {!profile?.can_create_calendar_events && (
@@ -4663,23 +4647,6 @@ export default function Profil() {
           color: #c4b5fd;
         }
         .btn-refresh:disabled, .btn-send-plan:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-next-week { border-color: rgba(155, 92, 255, 0.4); color: #c4b5fd; }
-        .btn-next-week:hover:not(:disabled) { background: rgba(139, 92, 255, 0.12); }
-
-        .plan-next-week-preview { margin-bottom: 24px; }
-        .plan-next-week-summary {
-          padding: 14px 18px;
-          cursor: pointer;
-          font-weight: 600;
-          color: #c4b5fd;
-          font-size: 15px;
-          list-style: none;
-          border-radius: 12px;
-          background: rgba(124, 58, 237, 0.12);
-        }
-        .plan-next-week-summary::-webkit-details-marker { display: none; }
-        .plan-next-week-preview[open] .plan-next-week-summary { border-radius: 12px 12px 0 0; }
-
         .actions-block {
           margin-bottom: 32px;
           padding: 28px 32px;

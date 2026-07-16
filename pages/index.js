@@ -109,17 +109,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Reference */}
-        <section className="section testimonials">
-          <h2>Skuteční lidé. Skutečné výsledky.</h2>
-          <p className="section-lead">Reálné příběhy našich členů:</p>
-          <div className="testimonial-grid">
-            <blockquote className="testimonial">„Za 6 týdnů jsem získala energii a zhubnula 8 kg.“ <cite>– Petra, 34 let</cite></blockquote>
-            <blockquote className="testimonial">„Konečně mám rutinu a cítím se silnější každý den.“ <cite>– Martin, 29 let</cite></blockquote>
-            <blockquote className="testimonial">„Našla jsem čas na sebe a zlepšila kondici i náladu.“ <cite>– Tereza, 41 let</cite></blockquote>
-            <blockquote className="testimonial">„Přestal jsem se vymlouvat a dosáhl svých fitness cílů.“ <cite>– Jakub, 26 let</cite></blockquote>
-          </div>
-        </section>
+        {/* Reference – záměrně bez fiktivních citací; trust na LP (bodyandmindon-web) */}
 
         {/* Ceník + hodnota */}
         <section id="cenik" className="section section-dark">

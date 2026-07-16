@@ -59,7 +59,7 @@ const structured = {
 
 const planReplace = fs.readFileSync(path.join(root, 'lib/planMealReplace.js'), 'utf8');
 if (!planReplace.includes('replaceMealInStructuredPlan')) fail('planMealReplace missing core function');
-if (!planReplace.includes('balanceDayMealsToCalorieTarget')) fail('planMealReplace missing calorie rebalance');
+if (!planReplace.includes('fillDayCaloriesByAddingLibraryMeals')) fail('planMealReplace missing calorie honesty fill');
 else ok('planMealReplace module persists structured + rebalance logic');
 
 console.log('\n--- pin next week ---');

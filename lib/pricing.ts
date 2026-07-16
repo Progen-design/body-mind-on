@@ -40,7 +40,8 @@ export const START_POST_TRIAL_OFFER = {
 export const START_FEATURES = [
   'Osobní tréninkový plán',
   'Týdenní jídelníček',
-  'Týdenní automatická úprava plánu (brzy)',
+  'Týdenní automatická úprava plánu',
+  'Napojení chytrého zařízení — nastavení zdarma',
   '7 pilířů zdraví',
 ];
 
@@ -66,7 +67,6 @@ export const PRICING = [
       'Napojení chytré váhy', // copy-check:ignore
       'Komunita a automatika',
       'AI trenér TED 24/7 (brzy)',
-      'Týdenní úprava plánu (brzy)',
       'Měsíční Q&A s Ondrou',
     ],
     cta: { label: 'Připojit se k ON Clubu', href: '/on-club' },

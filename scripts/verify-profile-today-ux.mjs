@@ -43,6 +43,13 @@ check('CTA Nahradit jiným u dnešních jídel', dayMealsPanel.includes('Nahradi
 check('CTA Zahrnout od dalšího týdne u dnešních jídel', dayMealsPanel.includes('Zahrnout od dalšího týdne'));
 check('CTA Jak cvik provést', todayPanels.includes('Jak cvik provést'));
 check('typ prostředí v tréninku', todayPanels.includes('profile-today-env-badge') || todayPanels.includes('profile-today-workout-env'));
+check('meal completion checkbox', dayMealsPanel.includes('showMealCompletion') && dayMealsPanel.includes('Splněno'));
+check('workout completion checkbox', todayPanels.includes('Dokončil/a jsem dnešní trénink'));
+check('daily activation hook', todayPanels.includes('useDailyActivation'));
+check('daily check-in panel', todayPanels.includes('DailyCheckinPanel') && todayPanels.includes('Jak se ti dnes plán dařil') === false);
+check('daily check-in component exists', read('components/profile/DailyCheckinPanel.js').includes('Jak se ti dnes plán dařil?'));
+check('progress bar dne', todayPanels.includes('HabitUiProgressBar'));
+check('habit tracker restored in profil', profil.includes("import HabitTracker") && profil.includes('denni-navyky'));
 check('MacroRatioChart v dnešních jídlech', dayMealsPanel.includes('MacroRatioChart'));
 check('MacroRatioChart v PlanViewer u jídel', planViewer.includes('MacroRatioChart'));
 check('denní makro graf v today hero', todayPanels.includes('Jídlo dnes') && todayPanels.includes('MacroRatioChart'));

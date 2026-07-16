@@ -3,7 +3,11 @@ import { resolveDayCalorieTarget, sumDayNutrition } from '../../lib/mealNutritio
 import MacroRatioChart from '../MacroRatioChart.js';
 import { formatExerciseSetsRepsDisplay } from '../../lib/planDataIntegrity.js';
 import ProfileDayMealsPanel from './ProfileDayMealsPanel.js';
+import DailyCheckinPanel from './DailyCheckinPanel.js';
 import WorkoutChangeModal from '../workout/WorkoutChangeModal.jsx';
+import { HabitUiProgressBar } from '../habit/HabitUiPrimitives';
+import { mealActivityKey } from '../../lib/dailyActivationClient.js';
+import { useDailyActivation } from '../../hooks/useDailyActivation.js';
 import { supabase } from '../../lib/supabaseClient';
 
 function envLabelPlain(trainingEnvironmentLabel, structuredPlan) {
@@ -104,16 +108,39 @@ export default function ProfileTodayPanels({
     }
   };
 
+  const planDayIdx = todayDay?.originalIndex ?? todayDayIndex;
+  const structDayEarly = todayDay?.structDay || structuredPlan?.days?.[planDayIdx];
+  const mealsEarly = Array.isArray(todayDay?.meals) ? todayDay.meals : [];
+  const workoutEarly = structDayEarly?.workout;
+  const hasWorkoutEarly = Array.isArray(workoutEarly?.exercises)
+    && workoutEarly.exercises.some((ex) => String(ex?.canonical_key || '').toLowerCase() !== 'rest');
+
+  const {
+    errorMsg: activationError,
+    doneCount,
+    totalActivities,
+    workoutCompleted,
+    isMealCompleted,
+    isPending,
+    toggleMeal,
+    toggleWorkout,
+  } = useDailyActivation({
+    planId,
+    planDay: Number.isFinite(planDayIdx) ? planDayIdx : 0,
+    meals: mealsEarly,
+    hasWorkout: hasWorkoutEarly,
+  });
+
   if (!todayDay) return null;
 
-  const structDay = todayDay.structDay || structuredPlan?.days?.[todayDay.originalIndex ?? todayDayIndex];
-  const meals = Array.isArray(todayDay.meals) ? todayDay.meals : [];
+  const structDay = structDayEarly;
+  const meals = mealsEarly;
   const dayNutrition = sumDayNutrition(meals, structDay);
   const targets = planTargets || structuredPlan?.targets || {};
   const targetKcal = resolveDayCalorieTarget(structDay, targets);
   const envPlain = envLabelPlain(trainingEnvironmentLabel, structuredPlan);
 
-  const workout = structDay?.workout;
+  const workout = workoutEarly;
   const exercises = Array.isArray(workout?.exercises) ? workout.exercises.filter((ex) => {
     const key = String(ex?.canonical_key || '').toLowerCase();
     return key !== 'rest';
@@ -121,7 +148,7 @@ export default function ProfileTodayPanels({
   const hasWorkout = exercises.length > 0;
   const workoutMinutes = Number(workout?.duration_minutes) || (exercises.length ? exercises.length * 8 : 0);
   const hasReplacementBackup = !!workout?.original_workout_backup;
-  const planDayIdx = todayDay.originalIndex ?? todayDayIndex;
+
   const defaultLoc = trainingEnvironment === 'gym'
     ? 'gym'
     : trainingEnvironment === 'home_bodyweight'
@@ -136,9 +163,19 @@ export default function ProfileTodayPanels({
   return (
     <div className="profile-today-root">
       <section className="profile-today-hero" aria-labelledby="profile-today-heading">
-        <p className="profile-today-date">{todayLabel}</p>
-        <h2 id="profile-today-heading" className="profile-today-heading">Dnešní plán</h2>
-        <p className="profile-today-lead">Tvůj dnešní plán je připravený.</p>
+        <div className="profile-today-hero-top">
+          <div>
+            <p className="profile-today-date">{todayLabel}</p>
+            <h2 id="profile-today-heading" className="profile-today-heading">Dnešní plán</h2>
+            <p className="profile-today-lead">Tvůj dnešní plán je připravený.</p>
+          </div>
+          {totalActivities > 0 ? (
+            <HabitUiProgressBar done={doneCount} total={totalActivities} />
+          ) : null}
+        </div>
+        {activationError ? (
+          <p className="profile-today-activation-error" role="alert">{activationError}</p>
+        ) : null}
         <div className="profile-today-quick-cards">
           <article className="profile-today-card">
             <h3>Jídlo dnes</h3>
@@ -203,6 +240,10 @@ export default function ProfileTodayPanels({
           onPinClick={(mi) => onPinClick?.(mi)}
           isMealPinned={isMealPinned}
           pinToastByKey={pinToastByKey}
+          showMealCompletion
+          isMealCompleted={(meal, mi) => isMealCompleted(meal, mi)}
+          isMealCompletionPending={(meal, mi) => isPending('meal', mealActivityKey(meal, mi))}
+          onMealCompleteToggle={(meal, mi) => toggleMeal(meal, mi)}
         />
         <button type="button" className="profile-today-link-btn" onClick={onScrollToWeek}>
           Celý týdenní jídelníček
@@ -254,6 +295,20 @@ export default function ProfileTodayPanels({
               </p>
             ) : null}
             {workoutError ? <p className="profile-today-workout-error" role="alert">{workoutError}</p> : null}
+            <label className={`profile-today-workout-check${workoutCompleted ? ' profile-today-workout-check--done' : ''}`}>
+              <input
+                type="checkbox"
+                checked={workoutCompleted}
+                disabled={isPending('workout', 'plan_day')}
+                onChange={() => toggleWorkout()}
+                aria-label={workoutCompleted ? 'Označit trénink jako nedokončený' : 'Označit trénink jako dokončený'}
+              />
+              <span>
+                {isPending('workout', 'plan_day')
+                  ? 'Ukládám…'
+                  : 'Dokončil/a jsem dnešní trénink'}
+              </span>
+            </label>
             <ul className="profile-today-workout-list">
               {exercises.map((ex, xi) => {
                 const name = ex.display_name_cs || ex.name_cs || ex.name || 'Cvik';
@@ -286,6 +341,11 @@ export default function ProfileTodayPanels({
         )}
       </section>
 
+      <section className="profile-today-section profile-today-section--checkin" aria-labelledby="profile-today-checkin-heading">
+        <h3 id="profile-today-checkin-heading" className="profile-today-section-title">Zpětná vazba k dnešku</h3>
+        <DailyCheckinPanel />
+      </section>
+
       {planId && hasWorkout ? (
         <WorkoutChangeModal
           open={workoutModalOpen}
@@ -313,6 +373,18 @@ export default function ProfileTodayPanels({
         }
         .profile-today-hero {
           margin-bottom: 24px;
+        }
+        .profile-today-hero-top {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 8px;
+        }
+        .profile-today-activation-error {
+          margin: 0 0 12px;
+          font-size: 0.875rem;
+          color: #fca5a5;
         }
         .profile-today-date {
           margin: 0 0 6px;
@@ -469,6 +541,32 @@ export default function ProfileTodayPanels({
           margin: 0 0 8px;
           font-size: 0.86rem;
           color: #fbbf24;
+        }
+        .profile-today-workout-check {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin: 0 0 14px;
+          padding: 12px 14px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: rgba(15, 23, 42, 0.55);
+          font-size: 0.95rem;
+          font-weight: 600;
+          color: #e2e8f0;
+          cursor: pointer;
+          user-select: none;
+        }
+        .profile-today-workout-check--done {
+          border-color: rgba(34, 197, 94, 0.4);
+          background: rgba(22, 101, 52, 0.14);
+          color: #86efac;
+        }
+        .profile-today-workout-check input {
+          width: 18px;
+          height: 18px;
+          accent-color: #22c55e;
+          cursor: pointer;
         }
         .profile-today-workout-list {
           list-style: none;

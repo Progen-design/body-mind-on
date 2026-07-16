@@ -47,6 +47,10 @@ export default function ProfileDayMealsPanel({
   workout = null,
   showWorkout = false,
   onExerciseClick,
+  showMealCompletion = false,
+  isMealCompleted = null,
+  isMealCompletionPending = null,
+  onMealCompleteToggle = null,
 }) {
   const structMeals = Array.isArray(structDay?.meals) ? structDay.meals : [];
   const exercises = showWorkout ? filterWorkoutExercises(workout) : [];
@@ -64,8 +68,25 @@ export default function ProfileDayMealsPanel({
           const mealKey = `${dayIndexForKeys}_${mi}`;
           const pinned = isMealPinned?.(meal.type || '', title) || false;
           const pinToast = pinToastByKey[mealKey];
+          const mealDone = showMealCompletion && isMealCompleted?.(meal, mi);
+          const mealPending = showMealCompletion && isMealCompletionPending?.(meal, mi);
           return (
-            <article key={`${meal.type}-${mi}`} className="profile-today-meal-card">
+            <article
+              key={`${meal.type}-${mi}`}
+              className={`profile-today-meal-card${mealDone ? ' profile-today-meal-card--done' : ''}`}
+            >
+              {showMealCompletion ? (
+                <label className={`profile-today-meal-check${mealDone ? ' profile-today-meal-check--done' : ''}`}>
+                  <input
+                    type="checkbox"
+                    checked={!!mealDone}
+                    disabled={!!mealPending}
+                    onChange={() => onMealCompleteToggle?.(meal, mi)}
+                    aria-label={mealDone ? 'Označit jídlo jako nesplněné' : 'Označit jídlo jako splněné'}
+                  />
+                  <span>{mealPending ? 'Ukládám…' : 'Splněno'}</span>
+                </label>
+              ) : null}
               <span className="profile-today-meal-type">{mealTypeLabel(meal.type)}</span>
               <h4 className="profile-today-meal-title">{title || mealTypeLabel(meal.type)}</h4>
               {nutrition.calories != null ? (
@@ -174,6 +195,30 @@ export default function ProfileDayMealsPanel({
           padding: 14px;
           min-width: 0;
           max-width: 100%;
+        }
+        .profile-today-meal-card--done {
+          border-color: rgba(34, 197, 94, 0.4);
+          background: rgba(22, 101, 52, 0.14);
+        }
+        .profile-today-meal-check {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin: 0 0 10px;
+          font-size: 14px;
+          font-weight: 600;
+          color: #cbd5e1;
+          cursor: pointer;
+          user-select: none;
+        }
+        .profile-today-meal-check--done {
+          color: #86efac;
+        }
+        .profile-today-meal-check input {
+          width: 18px;
+          height: 18px;
+          accent-color: #22c55e;
+          cursor: pointer;
         }
         .profile-today-meal-type {
           display: block;

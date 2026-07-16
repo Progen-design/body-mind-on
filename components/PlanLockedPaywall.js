@@ -73,7 +73,7 @@ export default function PlanLockedPaywall() {
         <article className="trial-upgrade-card trial-upgrade-card--start">
           <span className="trial-upgrade-badge trial-upgrade-badge--free">{TRIAL_DAYS} dní zdarma</span>
           <h3 className="trial-upgrade-title">START</h3>
-          <p className="trial-upgrade-subtitle">Plán, jídelníček a prvních 12 týdnů s jasnou mapou.</p>
+          <p className="trial-upgrade-subtitle">Plán, jídelníček a návyky. Základ, který zvládneš držet.</p>
           <span className="trial-upgrade-price">{START_PRICE_LABEL}</span>
           <ul className="trial-paywall-features">
             {START_FEATURES.map((f) => <li key={f}>{f}</li>)}
@@ -91,7 +91,7 @@ export default function PlanLockedPaywall() {
         <article className="trial-upgrade-card trial-upgrade-card--club">
           <span className="trial-upgrade-badge">Doporučeno</span>
           <h3 className="trial-upgrade-title">ON CLUB</h3>
-          <p className="trial-upgrade-subtitle">Napojíme chytré zařízení za tebe — nastavení zdarma. AI trenér TED a soukromá komunita.</p>
+          <p className="trial-upgrade-subtitle">Komunita, živě s Ondrou a plán, který se sám upravuje.</p>
           <span className="trial-upgrade-price">1 499 Kč/měsíc</span>
           <ul className="trial-paywall-features">
             {ON_CLUB_FEATURES.map((f) => <li key={f}>{f}</li>)}

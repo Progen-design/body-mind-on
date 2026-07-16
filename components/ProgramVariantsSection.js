@@ -12,9 +12,8 @@ const PROGRAM_VARIANTS = [
     id: 'START',
     name: 'START',
     price: START_VARIANT_PRICE_LABEL,
-    description: 'Jednoduchý plán pro člověka, který chce vědět, co má dělat — prvních 12 týdnů s jasnou mapou.',
+    description: 'Jednoduchý plán pro člověka, který chce vědět, co má dělat, bez komunity a osobního vedení.',
     benefits: [
-      'Prvních 12 týdnů — týden po týdnu víš, co dělat',
       'Individuální tréninkový plán',
       'Individuální jídelní plán',
       'Týdenní automatická úprava plánu',
@@ -57,6 +56,22 @@ const PROGRAM_VARIANTS = [
     cta: 'Mám zájem o VIP',
     href: '/chci-vip',
     badge: 'Osobní coaching',
+  },
+  {
+    id: '12T',
+    name: '12T TRANSFORMACE',
+    price: 'Vstupní program',
+    description: '12 týdnů krok za krokem ve stejném systému — skupinová vlna a vstup do ON CLUBu.',
+    benefits: [
+      '12 týdnů strukturovaného programu',
+      'Vše ze STARTu — plán, jídlo, týdenní úpravy',
+      'Skupinová podpora ve vlně',
+      'Po 12. týdnu vstup do ON CLUBu',
+    ],
+    cta: 'Chci 12T transformaci',
+    href: 'mailto:info@bodyandmindon.cz?subject=12T%20Transformace%20-%20p%C5%99edb%C4%9B%C5%BEn%C3%BD%20z%C3%A1jem',
+    badge: 'Připravujeme',
+    preparing: true,
   },
 ];
 

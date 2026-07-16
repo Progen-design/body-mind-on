@@ -38,7 +38,6 @@ export const START_POST_TRIAL_OFFER = {
 };
 
 export const START_FEATURES = [
-  'Prvních 12 týdnů — týden po týdnu víš, co dělat',
   'Osobní tréninkový plán',
   'Týdenní jídelníček',
   'Týdenní automatická úprava plánu',

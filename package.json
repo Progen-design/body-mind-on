@@ -27,6 +27,8 @@
     "send-test-plan-email": "node scripts/send-test-plan-email.mjs",
     "export:recipes-catalog": "node scripts/export-recipes-catalog.mjs",
     "verify:plan-meals": "node scripts/verify-plan-meals-against-catalog.mjs",
+    "verify:catalog-meal-names": "node lib/nutrition/__tests__/catalogMealNameAlignment.test.mjs",
+    "verify:active-plans-catalog-names": "node scripts/verify-active-plans-catalog-names.mjs",
     "verify:recipe-from-catalog": "node scripts/verify-recipe-from-catalog.mjs",
     "verify:simple-start-meals": "node scripts/verify-simple-start-meals.mjs",
     "verify:simple-recipe-details": "node scripts/verify-simple-recipe-detail-hardening.mjs",

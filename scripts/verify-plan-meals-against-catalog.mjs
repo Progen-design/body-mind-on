@@ -185,12 +185,18 @@ async function main() {
         if (!numClose(r.protein_g, cat.protein_g, 2)) issues.push(`protein ${r.protein_g} vs ${cat.protein_g}`);
         if (!numClose(r.carbs_g, cat.carbs_g, 2)) issues.push(`carbs ${r.carbs_g} vs ${cat.carbs_g}`);
         if (!numClose(r.fat_g, cat.fat_g, 2)) issues.push(`fat ${r.fat_g} vs ${cat.fat_g}`);
-        if (cat.name_cs !== name && !name.includes(cat.name_cs.slice(0, 12))) {
-          issues.push(`název plán „${name}“ vs catalog „${cat.name_cs}“`);
+        // Strict invariant: display label must equal catalog.name_cs (no fuzzy match).
+        const display = String(meal.display_name_cs || meal.display_name || meal.name_cs || '').trim();
+        if (display !== String(cat.name_cs || '').trim()) {
+          issues.push(`název plán „${display || name}“ vs catalog „${cat.name_cs}“`);
         }
       }
 
-      const status = issues.length === 0 ? 'OK' : issues.some((i) => i.includes('nenalezen') || i.startsWith('kcal')) ? 'FAIL' : 'WARN';
+      const status = issues.length === 0
+        ? 'OK'
+        : issues.some((i) => i.includes('nenalezen') || i.startsWith('kcal') || i.startsWith('název'))
+          ? 'FAIL'
+          : 'WARN';
       if (status === 'OK') ok += 1;
       else if (status === 'WARN') warn += 1;
       else fail += 1;

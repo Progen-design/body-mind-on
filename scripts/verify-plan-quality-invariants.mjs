@@ -6,6 +6,9 @@
 import {
   normalizePublishableWorkoutExercisesInPlan,
   MAX_PUBLISHABLE_WORKOUT_SETS,
+  catalogMealDisplayFields,
+  mealDisplayMatchesCatalogName,
+  assertPlanMealsMatchCatalogNames,
 } from '../lib/planDataIntegrity.js';
 import {
   computePlanQualityMetrics,
@@ -114,6 +117,34 @@ check('quality metrics missing_gif=0 po gate', metrics.missing_gif_count === 0);
 
 const pipelineSrc = readFileSync(resolve(process.cwd(), 'lib/unifiedPlanPipeline.js'), 'utf8');
 check('pipeline volá logPlanQualityEvent', pipelineSrc.includes('logPlanQualityEvent'));
+
+{
+  const row = { id: 99, name_cs: 'Cottage s pečivem', name_en: 'Cottage' };
+  const labels = catalogMealDisplayFields(row, {
+    name_cs: 'Rýže s tuňákem',
+    planner_source: 'simple_meal_planner_agent',
+  });
+  check(
+    'catalog meal display_name = catalog.name_cs (ne slot)',
+    labels.display_name_cs === 'Cottage s pečivem' && labels.name_cs === 'Cottage s pečivem',
+    labels.display_name_cs
+  );
+  check(
+    'slot název jen jako planner_suggestion_cs',
+    labels.planner_suggestion_cs === 'Rýže s tuňákem'
+  );
+  check(
+    'mealDisplayMatchesCatalogName ok',
+    mealDisplayMatchesCatalogName(labels, row.name_cs).ok
+  );
+  const planCheck = assertPlanMealsMatchCatalogNames(
+    { days: [{ day_index: 0, meals: [{ ...labels, catalog_id: 99 }] }] },
+    { 99: row }
+  );
+  check('assertPlanMealsMatchCatalogNames ok', planCheck.ok);
+  const catalogSrc = readFileSync(resolve(process.cwd(), 'lib/recipesCatalog.js'), 'utf8');
+  check('recipesCatalog nepoužívá agentName pro display', !/display_name_cs\s*=\s*agentName/.test(catalogSrc));
+}
 
 console.log(failed ? `\nRESULT: FAIL (${failed})` : '\nRESULT: PASS');
 process.exit(failed ? 1 : 0);

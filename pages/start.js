@@ -11,7 +11,6 @@ import { getSuggestedHabits } from "../lib/habits";
 import { getFrequencyDayRange } from "../lib/preferenceConstants";
 import { REGISTRATION_STEPS } from "../lib/registrationRules";
 import { PLAN_GENERATION_DURATION_HINT, PLAN_GENERATION_OVERLAY_TITLE } from "../lib/planGenerationUiCopy";
-import { validateBirthDate } from "../lib/bodyMetricsBirthDate";
 import * as fbq from "../lib/fbpixel";
 import { trackProductEvent } from "../lib/productAnalytics";
 import {
@@ -25,6 +24,16 @@ import {
   EMAIL_TAKEN_MESSAGE_CS,
   EMAIL_CHECK_FAILED_MESSAGE_CS,
 } from "../lib/registration/checkEmailAvailableClient";
+import {
+  getStep1FieldErrors,
+  getStep2FieldErrors,
+  getStep2FieldBlurError,
+  canProceedStep1 as step1FieldsValid,
+  canProceedStep2 as step2FieldsValid,
+  isValidEmailFormat,
+  EMAIL_FORMAT_MESSAGE_CS,
+  REQUIRED_FIELD_MESSAGE_CS,
+} from "../lib/registration/registrationStepValidation";
 
 // Registrace dle pravidel ON Club (stejný flow pro START, ON Club, VIP): https://app.bodyandmindon.cz/on-club
 const MAX_STEP = REGISTRATION_STEPS;
@@ -32,6 +41,8 @@ const MAX_STEP = REGISTRATION_STEPS;
 export default function Start() {
   const router = useRouter();
   const [step, setStep] = useState(1);
+  /** Highest step index that was successfully validated and left (progress "done"). */
+  const [maxCompletedStep, setMaxCompletedStep] = useState(0);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -152,7 +163,14 @@ export default function Start() {
 
   const ensureEmailAvailable = async () => {
     const email = String(formData.email || '').trim();
-    if (!email) return false;
+    if (!email) {
+      setFieldErrors((prev) => ({ ...prev, email: REQUIRED_FIELD_MESSAGE_CS }));
+      return false;
+    }
+    if (!isValidEmailFormat(email)) {
+      setFieldErrors((prev) => ({ ...prev, email: EMAIL_FORMAT_MESSAGE_CS }));
+      return false;
+    }
     setCheckingEmail(true);
     try {
       const result = await fetchRegistrationEmailAvailable(email);
@@ -177,25 +195,20 @@ export default function Start() {
     }
   };
 
-  const getStep2Errors = () => {
-    const errors = {};
-    const birthCheck = validateBirthDate(formData.birth_date);
-    if (!birthCheck.valid) {
-      errors.birth_date = birthCheck.error;
-    }
-    const height = Number(formData.height);
-    if (formData.height !== "" && (!Number.isFinite(height) || height < 100 || height > 250)) {
-      errors.height = "Výška musí být mezi 100 a 250 cm.";
-    }
-    return errors;
+  const handleStep2Blur = (e) => {
+    const { name, value } = e.target;
+    const err = getStep2FieldBlurError(name, value);
+    setFieldErrors((prev) => {
+      if (err) return { ...prev, [name]: err };
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
   };
 
-  const canProceedStep1 = () => {
-    return formData.name?.trim() && formData.email?.trim() && formData.password?.length >= 6 && formData.password === formData.passwordConfirm;
-  };
-  const canProceedStep2 = () => {
-    return formData.gender && formData.birth_date && formData.height && formData.weight;
-  };
+  const canProceedStep1 = () => step1FieldsValid(formData, fieldErrors);
+  const canProceedStep2 = () => step2FieldsValid(formData);
   const canProceedStep3 = () => {
     return formData.activity && formData.stress && formData.worktype && formData.goal && formData.frequency
       && formData.training_environment
@@ -219,11 +232,16 @@ export default function Start() {
     setPlanFailedWithAccount(false);
     setPlanFailedCanRetry(false);
     if (step === 1) {
+      const step1Errors = getStep1FieldErrors(formData);
+      if (Object.keys(step1Errors).length > 0) {
+        setFieldErrors((prev) => ({ ...prev, ...step1Errors }));
+        return;
+      }
       const emailOk = await ensureEmailAvailable();
       if (!emailOk) return;
     }
     if (step === 2) {
-      const step2Errors = getStep2Errors();
+      const step2Errors = getStep2FieldErrors(formData);
       if (Object.keys(step2Errors).length > 0) {
         setFieldErrors((prev) => ({ ...prev, ...step2Errors }));
         return;
@@ -234,6 +252,7 @@ export default function Start() {
     }
     if (step < MAX_STEP) {
       trackOnboardingStepCompleted(step, 'START', 'start_page');
+      setMaxCompletedStep((m) => Math.max(m, step));
       setStep((s) => s + 1);
     }
   };
@@ -242,24 +261,35 @@ export default function Start() {
     setStatus("");
     setPlanFailedWithAccount(false);
     setPlanFailedCanRetry(false);
-    if (step > 1) setStep((s) => s - 1);
+    if (step > 1) {
+      setStep((s) => {
+        const next = s - 1;
+        setMaxCompletedStep((m) => Math.min(m, next - 1));
+        return next;
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const step2Errors = getStep2Errors();
-    if (Object.keys(step2Errors).length > 0) {
-      setFieldErrors(step2Errors);
+    const step1Errors = getStep1FieldErrors(formData);
+    if (Object.keys(step1Errors).length > 0) {
+      setFieldErrors((prev) => ({ ...prev, ...step1Errors }));
       setStatus("");
+      setMaxCompletedStep(0);
+      setStep(1);
+      return;
+    }
+    const step2Errors = getStep2FieldErrors(formData);
+    if (Object.keys(step2Errors).length > 0) {
+      setFieldErrors((prev) => ({ ...prev, ...step2Errors }));
+      setStatus("");
+      setMaxCompletedStep((m) => Math.min(m, 1));
       setStep(2);
       return;
     }
-    if (formData.password && formData.password.length < 6) {
-      setStatus("❌ Heslo musí mít alespoň 6 znaků.");
-      return;
-    }
-    if (formData.password !== formData.passwordConfirm) {
-      setStatus("❌ Hesla se neshodují.");
+    if (!canProceedStep5()) {
+      setStatus("❌ Vyber alespoň jeden návyk.");
       return;
     }
     setIsSubmitting(true);
@@ -324,7 +354,23 @@ export default function Start() {
         if (/Výška musí být mezi 100 a 250 cm\./i.test(nextError)) {
           setFieldErrors({ height: "Výška musí být mezi 100 a 250 cm." });
           setStatus("");
+          setMaxCompletedStep((m) => Math.min(m, 1));
           setStep(2);
+        } else if (/Váha musí být mezi 30 a 300 kg\./i.test(nextError)) {
+          setFieldErrors({ weight: "Váha musí být mezi 30 a 300 kg." });
+          setStatus("");
+          setMaxCompletedStep((m) => Math.min(m, 1));
+          setStep(2);
+        } else if (/Věk musí být mezi/i.test(nextError) || /datum narození/i.test(nextError)) {
+          setFieldErrors({ birth_date: nextError });
+          setStatus("");
+          setMaxCompletedStep((m) => Math.min(m, 1));
+          setStep(2);
+        } else if (/e-mail už|už je registrovaný|already/i.test(nextError)) {
+          setFieldErrors({ email: EMAIL_TAKEN_MESSAGE_CS });
+          setStatus("");
+          setMaxCompletedStep(0);
+          setStep(1);
         } else {
           setStatus("❌ " + nextError);
           setPlanFailedCanRetry(result?.hasUserId === true);
@@ -369,7 +415,11 @@ export default function Start() {
         <div className="progress-bar-wrap max-w-3xl mx-auto mb-8">
             <div className="progress-dots">
               {[1, 2, 3, 4, 5].map((s) => (
-                <span key={s} className={s === step ? "active" : s < step ? "done" : ""} aria-hidden>
+                <span
+                  key={s}
+                  className={s === step ? "active" : s <= maxCompletedStep ? "done" : ""}
+                  aria-hidden
+                >
                   {s}
                 </span>
               ))}
@@ -396,6 +446,7 @@ export default function Start() {
                 <div>
                   <label className="reg-label">Jméno a příjmení</label>
                   <input name="name" className="reg-input" value={formData.name} onChange={handleChange} placeholder="Jan Novák" required disabled={isSubmitting} />
+                  {fieldErrors.name && <p className="reg-field-error" role="alert">{fieldErrors.name}</p>}
                 </div>
                 <div>
                   <label className="reg-label">E-mail</label>
@@ -406,16 +457,34 @@ export default function Start() {
                     value={formData.email}
                     onChange={handleChange}
                     onBlur={() => {
-                      if (String(formData.email || '').trim()) {
-                        ensureEmailAvailable();
+                      const email = String(formData.email || '').trim();
+                      if (!email) return;
+                      if (!isValidEmailFormat(email)) {
+                        setFieldErrors((prev) => ({ ...prev, email: EMAIL_FORMAT_MESSAGE_CS }));
+                        return;
                       }
+                      ensureEmailAvailable();
                     }}
                     placeholder="jan@example.com"
                     required
                     disabled={isSubmitting || checkingEmail}
                     autoComplete="email"
                   />
-                  {fieldErrors.email && <p className="reg-field-error" role="alert">{fieldErrors.email}</p>}
+                  {fieldErrors.email && (
+                    <p className="reg-field-error" role="alert">
+                      {fieldErrors.email === EMAIL_TAKEN_MESSAGE_CS ? (
+                        <>
+                          Tento e-mail už je registrovaný.{' '}
+                          <Link href="/login" className="underline text-sky-400 hover:text-sky-300">
+                            Přihlas se
+                          </Link>
+                          .
+                        </>
+                      ) : (
+                        fieldErrors.email
+                      )}
+                    </p>
+                  )}
                   {checkingEmail && !fieldErrors.email ? (
                     <p className="text-sm text-gray-400 mt-1">Ověřuji e-mail…</p>
                   ) : null}
@@ -425,11 +494,16 @@ export default function Start() {
                 <div>
                   <label className="reg-label">Heslo (min. 6 znaků)</label>
                   <input name="password" type="password" className="reg-input" value={formData.password} onChange={handleChange} placeholder="Zvol si heslo pro přístup do profilu" minLength={6} required disabled={isSubmitting} />
-                  <p className="text-sm text-gray-400 mt-1">Alespoň 6 znaků; lépe kombinace písmen a číslic.</p>
+                  {fieldErrors.password ? (
+                    <p className="reg-field-error" role="alert">{fieldErrors.password}</p>
+                  ) : (
+                    <p className="text-sm text-gray-400 mt-1">Alespoň 6 znaků; lépe kombinace písmen a číslic.</p>
+                  )}
                 </div>
                 <div>
                   <label className="reg-label">Heslo znovu</label>
                   <input name="passwordConfirm" type="password" className="reg-input" value={formData.passwordConfirm} onChange={handleChange} placeholder="Zadej heslo znovu" minLength={6} required disabled={isSubmitting} />
+                  {fieldErrors.passwordConfirm && <p className="reg-field-error" role="alert">{fieldErrors.passwordConfirm}</p>}
                 </div>
               </div>
             </>
@@ -440,11 +514,12 @@ export default function Start() {
             <div className="row grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="reg-label">Pohlaví</label>
-                <select name="gender" className="reg-input" value={formData.gender} onChange={handleChange} required disabled={isSubmitting}>
+                <select name="gender" className="reg-input" value={formData.gender} onChange={handleChange} onBlur={handleStep2Blur} required disabled={isSubmitting}>
                   <option value="">Vyber</option>
                   <option value="male">Muž</option>
                   <option value="female">Žena</option>
                 </select>
+                {fieldErrors.gender && <p className="reg-field-error" role="alert">{fieldErrors.gender}</p>}
               </div>
               <div>
                 <label className="reg-label">Datum narození</label>
@@ -454,6 +529,7 @@ export default function Start() {
                   className="reg-input"
                   value={formData.birth_date}
                   onChange={handleChange}
+                  onBlur={handleStep2Blur}
                   required
                   max={new Date().toISOString().split('T')[0]}
                   disabled={isSubmitting}
@@ -462,12 +538,13 @@ export default function Start() {
               </div>
               <div>
                 <label className="reg-label">Výška (cm)</label>
-                <input name="height" type="number" className="reg-input" value={formData.height} onChange={handleChange} placeholder="180" required disabled={isSubmitting} />
+                <input name="height" type="number" className="reg-input" value={formData.height} onChange={handleChange} onBlur={handleStep2Blur} placeholder="180" required disabled={isSubmitting} />
                 {fieldErrors.height && <p className="reg-field-error" role="alert">{fieldErrors.height}</p>}
               </div>
               <div>
                 <label className="reg-label">Váha (kg)</label>
-                <input name="weight" type="number" className="reg-input" value={formData.weight} onChange={handleChange} placeholder="80" required disabled={isSubmitting} />
+                <input name="weight" type="number" className="reg-input" value={formData.weight} onChange={handleChange} onBlur={handleStep2Blur} placeholder="80" required disabled={isSubmitting} />
+                {fieldErrors.weight && <p className="reg-field-error" role="alert">{fieldErrors.weight}</p>}
               </div>
               <DeviceInterestFields
                 value={formData.devices}
@@ -681,7 +758,7 @@ export default function Start() {
                 {checkingEmail && step === 1 ? "Ověřuji e-mail…" : "Pokračovat"}
               </button>
             ) : (
-              <button type="submit" className="btn-submit btn-submit-large" disabled={isSubmitting}>
+              <button type="submit" className="btn-submit btn-submit-large" disabled={!canProceedStep5() || isSubmitting}>
                 {isSubmitting ? "Generuji plán…" : "Dokončit registraci"}
               </button>
             )}

@@ -54,6 +54,7 @@
     "verify:meal-replacement-actions": "node scripts/verify-meal-replacement-actions.mjs",
     "verify:macro-kcal-consistency": "node scripts/verify-macro-kcal-consistency.mjs",
     "verify:profile-today-ux": "node scripts/verify-profile-today-ux.mjs",
+    "verify:shopping-aggregate": "node lib/nutrition/__tests__/shoppingListAggregate.test.mjs",
     "verify:profile-beta-ux": "node scripts/verify-profile-beta-ux.mjs",
     "verify:progress-integrity": "node scripts/verify-progress-integrity.mjs",
     "verify:workout-muscle-selection": "node scripts/verify-workout-muscle-selection.mjs",

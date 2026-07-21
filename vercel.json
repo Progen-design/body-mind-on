@@ -23,6 +23,10 @@
             {
                   "path": "/api/cron/system-health-alert",
                   "schedule": "30 7 * * *"
+            },
+            {
+                  "path": "/api/cron/daily-adherence-sync",
+                  "schedule": "30 22 * * *"
             }
       ],
       "functions": {
@@ -46,6 +50,9 @@
             },
             "pages/api/cron/system-health-alert.js": {
                   "maxDuration": 60
+            },
+            "pages/api/cron/daily-adherence-sync.js": {
+                  "maxDuration": 120
             }
       }
 }

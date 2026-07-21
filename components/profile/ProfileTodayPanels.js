@@ -3,7 +3,7 @@ import { resolveDayCalorieTarget, sumDayNutrition } from '../../lib/mealNutritio
 import MacroRatioChart from '../MacroRatioChart.js';
 import { formatExerciseSetsRepsDisplay } from '../../lib/planDataIntegrity.js';
 import ProfileDayMealsPanel from './ProfileDayMealsPanel.js';
-import DailyCheckinPanel from './DailyCheckinPanel.js';
+import DailyAdherenceStatus from './DailyAdherenceStatus.js';
 import WorkoutChangeModal from '../workout/WorkoutChangeModal.jsx';
 import { HabitUiProgressBar } from '../habit/HabitUiPrimitives';
 import { mealActivityKey } from '../../lib/dailyActivationClient.js';
@@ -120,6 +120,11 @@ export default function ProfileTodayPanels({
     doneCount,
     totalActivities,
     workoutCompleted,
+    watchWorkoutDetected,
+    workoutAutoFromMovement,
+    manualWorkoutDone,
+    adherence,
+    adherenceLoading,
     isMealCompleted,
     isPending,
     toggleMeal,
@@ -176,6 +181,7 @@ export default function ProfileTodayPanels({
         {activationError ? (
           <p className="profile-today-activation-error" role="alert">{activationError}</p>
         ) : null}
+        <DailyAdherenceStatus adherence={adherence} loading={adherenceLoading} />
         <div className="profile-today-quick-cards">
           <article className="profile-today-card">
             <h3>Jídlo dnes</h3>
@@ -295,20 +301,30 @@ export default function ProfileTodayPanels({
               </p>
             ) : null}
             {workoutError ? <p className="profile-today-workout-error" role="alert">{workoutError}</p> : null}
-            <label className={`profile-today-workout-check${workoutCompleted ? ' profile-today-workout-check--done' : ''}`}>
-              <input
-                type="checkbox"
-                checked={workoutCompleted}
-                disabled={isPending('workout', 'plan_day')}
-                onChange={() => toggleWorkout()}
-                aria-label={workoutCompleted ? 'Označit trénink jako nedokončený' : 'Označit trénink jako dokončený'}
-              />
-              <span>
-                {isPending('workout', 'plan_day')
-                  ? 'Ukládám…'
-                  : 'Dokončil/a jsem dnešní trénink'}
-              </span>
-            </label>
+            {workoutCompleted && !manualWorkoutDone ? (
+              <p className="profile-today-workout-done" role="status">
+                {watchWorkoutDetected
+                  ? '✓ Trénink splněn (Apple Watch)'
+                  : workoutAutoFromMovement
+                    ? '✓ Trénink splněn (pohyb z hodinek)'
+                    : '✓ Trénink splněn'}
+              </p>
+            ) : (
+              <label className={`profile-today-workout-check${manualWorkoutDone ? ' profile-today-workout-check--done' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={manualWorkoutDone}
+                  disabled={isPending('workout', 'plan_day')}
+                  onChange={() => toggleWorkout()}
+                  aria-label={manualWorkoutDone ? 'Označit trénink jako nedokončený' : 'Označit trénink jako dokončený'}
+                />
+                <span>
+                  {isPending('workout', 'plan_day')
+                    ? 'Ukládám…'
+                    : 'Dokončil/a jsem dnešní trénink'}
+                </span>
+              </label>
+            )}
             <ul className="profile-today-workout-list">
               {exercises.map((ex, xi) => {
                 const name = ex.display_name_cs || ex.name_cs || ex.name || 'Cvik';
@@ -339,11 +355,6 @@ export default function ProfileTodayPanels({
             </button>
           </div>
         )}
-      </section>
-
-      <section className="profile-today-section profile-today-section--checkin" aria-labelledby="profile-today-checkin-heading">
-        <h3 id="profile-today-checkin-heading" className="profile-today-section-title">Zpětná vazba k dnešku</h3>
-        <DailyCheckinPanel />
       </section>
 
       {planId && hasWorkout ? (
@@ -556,6 +567,16 @@ export default function ProfileTodayPanels({
           color: #e2e8f0;
           cursor: pointer;
           user-select: none;
+        }
+        .profile-today-workout-done {
+          margin: 0 0 14px;
+          padding: 12px 14px;
+          border-radius: 12px;
+          border: 1px solid rgba(34, 197, 94, 0.35);
+          background: rgba(22, 101, 52, 0.12);
+          font-size: 0.95rem;
+          font-weight: 600;
+          color: #86efac;
         }
         .profile-today-workout-check--done {
           border-color: rgba(34, 197, 94, 0.4);

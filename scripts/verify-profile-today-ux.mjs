@@ -44,10 +44,11 @@ check('CTA Zahrnout od dalšího týdne u dnešních jídel', dayMealsPanel.incl
 check('CTA Jak cvik provést', todayPanels.includes('Jak cvik provést'));
 check('typ prostředí v tréninku', todayPanels.includes('profile-today-env-badge') || todayPanels.includes('profile-today-workout-env'));
 check('meal completion checkbox', dayMealsPanel.includes('showMealCompletion') && dayMealsPanel.includes('Splněno'));
-check('workout completion checkbox', todayPanels.includes('Dokončil/a jsem dnešní trénink'));
+check('workout fallback checkbox', todayPanels.includes('Dokončil/a jsem dnešní trénink'));
+check('workout auto from watch', todayPanels.includes('Trénink splněn (Apple Watch)'));
 check('daily activation hook', todayPanels.includes('useDailyActivation'));
-check('daily check-in panel', todayPanels.includes('DailyCheckinPanel') && todayPanels.includes('Jak se ti dnes plán dařil') === false);
-check('daily check-in component exists', read('components/profile/DailyCheckinPanel.js').includes('Jak se ti dnes plán dařil?'));
+check('auto daily adherence status', todayPanels.includes('DailyAdherenceStatus') && !todayPanels.includes('Jak se ti dnes plán dařil'));
+check('daily adherence component', read('components/profile/DailyAdherenceStatus.js').includes('Dnešek:'));
 check('progress bar dne', todayPanels.includes('HabitUiProgressBar'));
 check('habit tracker restored in profil', profil.includes("import HabitTracker") && profil.includes('denni-navyky'));
 check('MacroRatioChart v dnešních jídlech', dayMealsPanel.includes('MacroRatioChart'));

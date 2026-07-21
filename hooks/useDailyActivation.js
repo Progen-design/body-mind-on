@@ -8,14 +8,35 @@ import {
 
 /**
  * Load + toggle daily meal/workout completions via /api/daily-activation.
- * Guards double-clicks with pendingKeys; API unique constraint is the DB backstop.
+ * Workout completion is also derived from get_daily_adherence (Apple Watch / movement).
  */
 export function useDailyActivation({ planId, planDay, meals, hasWorkout }) {
   const [completions, setCompletions] = useState([]);
+  const [adherence, setAdherence] = useState(null);
   const [optimistic, setOptimistic] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [adherenceLoading, setAdherenceLoading] = useState(true);
   const [pendingKeys, setPendingKeys] = useState(() => new Set());
   const [errorMsg, setErrorMsg] = useState(null);
+
+  const loadAdherence = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+      const res = await fetch('/api/stats/adherence', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setAdherence(json.adherence || null);
+      }
+    } catch {
+      /* silent */
+    } finally {
+      setAdherenceLoading(false);
+    }
+  }, []);
 
   const loadCompletions = useCallback(async () => {
     try {
@@ -43,8 +64,10 @@ export function useDailyActivation({ planId, planDay, meals, hasWorkout }) {
 
   useEffect(() => {
     setLoading(true);
+    setAdherenceLoading(true);
     loadCompletions();
-  }, [loadCompletions]);
+    loadAdherence();
+  }, [loadCompletions, loadAdherence]);
 
   const effectiveCompletions = optimistic ?? completions;
   const completedSet = useMemo(
@@ -57,17 +80,24 @@ export function useDailyActivation({ planId, planDay, meals, hasWorkout }) {
     [meals],
   );
 
+  const manualWorkoutDone = completedSet.has('workout:plan_day');
+  const watchWorkoutDetected = (adherence?.watch_workout_count ?? 0) > 0;
+  const treninkSplnen = adherence?.trenink_splnen === true;
+  const workoutCompleted = hasWorkout && (treninkSplnen || manualWorkoutDone);
+  const workoutAutoFromMovement = treninkSplnen
+    && !watchWorkoutDetected
+    && !manualWorkoutDone
+    && (adherence?.pohyb_min ?? 0) >= 30;
+
   const totalActivities = mealKeys.length + (hasWorkout ? 1 : 0);
   const doneCount = useMemo(() => {
     let n = 0;
     for (const key of mealKeys) {
       if (completedSet.has(`meal:${key}`)) n += 1;
     }
-    if (hasWorkout && completedSet.has('workout:plan_day')) n += 1;
+    if (hasWorkout && workoutCompleted) n += 1;
     return n;
-  }, [mealKeys, hasWorkout, completedSet]);
-
-  const workoutCompleted = hasWorkout && completedSet.has('workout:plan_day');
+  }, [mealKeys, hasWorkout, workoutCompleted, completedSet]);
 
   const isMealCompleted = useCallback(
     (meal, index) => completedSet.has(`meal:${mealActivityKey(meal, index)}`),
@@ -78,6 +108,10 @@ export function useDailyActivation({ planId, planDay, meals, hasWorkout }) {
     (activityType, activityKey) => pendingKeys.has(`${activityType}:${activityKey}`),
     [pendingKeys],
   );
+
+  const refreshAfterChange = useCallback(async () => {
+    await Promise.all([loadCompletions(), loadAdherence()]);
+  }, [loadCompletions, loadAdherence]);
 
   const toggleActivity = useCallback(async (activityType, activityKey, wasCompleted) => {
     const pendingKey = `${activityType}:${activityKey}`;
@@ -111,9 +145,10 @@ export function useDailyActivation({ planId, planDay, meals, hasWorkout }) {
       if (!json.ok) throw new Error('api_failed');
       setCompletions((prev) => applyOptimisticToggle(prev, activityType, activityKey, wasCompleted));
       setOptimistic(null);
+      await loadAdherence();
     } catch {
       setOptimistic(null);
-      await loadCompletions();
+      await refreshAfterChange();
       setErrorMsg('Změnu se nepodařilo uložit. Zkus to znovu.');
     } finally {
       setPendingKeys((prev) => {
@@ -122,7 +157,7 @@ export function useDailyActivation({ planId, planDay, meals, hasWorkout }) {
         return next;
       });
     }
-  }, [pendingKeys, optimistic, completions, planId, planDay, loadCompletions]);
+  }, [pendingKeys, optimistic, completions, planId, planDay, loadAdherence, refreshAfterChange]);
 
   const toggleMeal = useCallback((meal, index) => {
     const key = mealActivityKey(meal, index);
@@ -131,18 +166,25 @@ export function useDailyActivation({ planId, planDay, meals, hasWorkout }) {
   }, [completedSet, toggleActivity]);
 
   const toggleWorkout = useCallback(() => {
-    return toggleActivity('workout', 'plan_day', workoutCompleted);
-  }, [toggleActivity, workoutCompleted]);
+    return toggleActivity('workout', 'plan_day', manualWorkoutDone);
+  }, [toggleActivity, manualWorkoutDone]);
 
   return {
-    loading,
+    loading: loading || adherenceLoading,
     errorMsg,
     doneCount,
     totalActivities,
     workoutCompleted,
+    manualWorkoutDone,
+    watchWorkoutDetected,
+    workoutAutoFromMovement,
+    manualWorkoutDone,
+    adherence,
+    adherenceLoading,
     isMealCompleted,
     isPending,
     toggleMeal,
     toggleWorkout,
+    refetchAdherence: loadAdherence,
   };
 }

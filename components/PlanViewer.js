@@ -1554,8 +1554,8 @@ export default function PlanViewer({
                     const k = Number(m?.kcal ?? m?.recipe?.calories);
                     return Number.isFinite(k) && k > 0 ? sum + k : sum;
                   }, 0);
-                  const dayTargetKcal = Number(structDayForTotal?.daily_target_kcal)
-                    || Number(effectiveTargets?.calories_per_day)
+                  const dayTargetKcal = Number(effectiveTargets?.calories_per_day)
+                    || Number(structDayForTotal?.daily_target_kcal)
                     || null;
                   const dayUnderTarget = structDayForTotal?.calorie_under_target === true
                     || (dayTargetKcal != null && dayKcalTotal > 0 && dayKcalTotal < Math.round(dayTargetKcal * 0.95));

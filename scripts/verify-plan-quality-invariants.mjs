@@ -108,7 +108,7 @@ for (const day of plan.days) {
 check('žádný publishable cvik nemá víc než 4 série', !setsViolation);
 check('canonical cviky mají trusted GIF po gate', !gifViolation);
 check(
-  'kcal dny v toleranci ±5 %',
+  'kcal dny v toleranci ±10 %',
   metrics.daily_kcal_out_of_tolerance_count === 0,
   `out=${metrics.daily_kcal_out_of_tolerance_count}`
 );

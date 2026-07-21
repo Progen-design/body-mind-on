@@ -8,6 +8,10 @@ import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getFrequencyDayRange } from '../../lib/preferenceConstants';
 import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
 import { mergeTrainingEnvironmentIntoNotes } from '../../lib/trainingEnvironment.js';
+import {
+  buildCalorieTargetBodyMetricsPatch,
+  CALORIE_TARGET_RECALC_FIELDS,
+} from '../../lib/calorieTargetIntegrity.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'PATCH' && req.method !== 'POST') {
@@ -113,6 +117,10 @@ export default async function handler(req, res) {
 
     if (Object.keys(updates).length > 0) {
       let toUpdate = { ...updates };
+      const shouldRecalcCalories = Object.keys(updates).some((k) => CALORIE_TARGET_RECALC_FIELDS.includes(k));
+      if (shouldRecalcCalories) {
+        Object.assign(toUpdate, buildCalorieTargetBodyMetricsPatch({ ...latest, ...updates }, { forceRecalculate: true }));
+      }
       let updateErr = null;
       let result = await supabaseServer.from('body_metrics').update(toUpdate).eq('id', latest.id);
       updateErr = result.error;
@@ -193,6 +201,10 @@ export default async function handler(req, res) {
     const bmOverride = { ...latest, ...updates, email };
     if (updates.notes !== undefined) {
       bmOverride.notes = updates.notes;
+    }
+    const shouldRecalcCalories = Object.keys(updates).some((k) => CALORIE_TARGET_RECALC_FIELDS.includes(k));
+    if (shouldRecalcCalories) {
+      Object.assign(bmOverride, buildCalorieTargetBodyMetricsPatch(bmOverride, { forceRecalculate: true }));
     }
     let planRegenerated = false;
     try {

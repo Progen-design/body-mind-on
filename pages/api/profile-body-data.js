@@ -4,6 +4,7 @@
  */
 import { supabaseServer } from '../../lib/supabaseServer';
 import { validateBirthDate } from '../../lib/bodyMetricsBirthDate.js';
+import { buildCalorieTargetBodyMetricsPatch } from '../../lib/calorieTargetIntegrity.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'PATCH' && req.method !== 'POST') {
@@ -39,7 +40,7 @@ export default async function handler(req, res) {
 
     const { data: latest, error: latestErr } = await supabaseServer
       .from('body_metrics')
-      .select('id')
+      .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -54,6 +55,12 @@ export default async function handler(req, res) {
     if (height_cm != null) metricsUpdate.height_cm = height_cm;
     if (computedAge != null) metricsUpdate.age = computedAge;
     if (birth_date) metricsUpdate.birth_date = birth_date;
+    if (weight_kg != null) {
+      Object.assign(
+        metricsUpdate,
+        buildCalorieTargetBodyMetricsPatch({ ...latest, ...metricsUpdate }, { forceRecalculate: true }),
+      );
+    }
 
     if (Object.keys(metricsUpdate).length > 0) {
       let { error: updErr } = await supabaseServer

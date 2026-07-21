@@ -27,6 +27,10 @@
             {
                   "path": "/api/cron/daily-adherence-sync",
                   "schedule": "30 22 * * *"
+            },
+            {
+                  "path": "/api/cron/shopping-normalize-audit",
+                  "schedule": "0 4 * * *"
             }
       ],
       "functions": {
@@ -52,6 +56,9 @@
                   "maxDuration": 60
             },
             "pages/api/cron/daily-adherence-sync.js": {
+                  "maxDuration": 120
+            },
+            "pages/api/cron/shopping-normalize-audit.js": {
                   "maxDuration": 120
             }
       }

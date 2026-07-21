@@ -26,7 +26,7 @@ function ingestEndpointUrl() {
 
 /**
  * Profile section: connect Withings / Apple Watch after registration.
- * Highlighted when user expressed device interest at signup.
+ * Connected devices render a compact status row; setup cards only when disconnected.
  */
 export default function ConnectDevicesSection({
   profile,
@@ -43,6 +43,8 @@ export default function ConnectDevicesSection({
     : null;
 
   const [withingsMsg, setWithingsMsg] = useState('');
+  const [manageWithings, setManageWithings] = useState(false);
+  const [manageApple, setManageApple] = useState(false);
   const [watchStep, setWatchStep] = useState(1);
   const [watchBusy, setWatchBusy] = useState(false);
   const [watchError, setWatchError] = useState('');
@@ -53,14 +55,24 @@ export default function ConnectDevicesSection({
   useEffect(() => {
     if (activeApple?.id) {
       setConnectionId(activeApple.id);
-      setWatchStep(0);
+      if (!manageApple && !apiKeyOnce) {
+        setWatchStep(0);
+      }
+      return;
     }
-  }, [activeApple?.id]);
+    if (!apiKeyOnce && watchStep === 0) {
+      setWatchStep(1);
+    }
+  }, [activeApple?.id, manageApple, apiKeyOnce, watchStep]);
 
   const endpoint = useMemo(() => ingestEndpointUrl(), []);
   const lastSyncLabel = formatRelativeCs(activeApple?.last_sync_at)
     || healthConnection?.meta?.last_sync_relative
     || null;
+
+  const appleConnectedCompact = Boolean(activeApple) && !manageApple && !apiKeyOnce && watchStep === 0;
+  const withingsConnectedCompact = withingsConnected && !manageWithings;
+  const bothConnectedCompact = appleConnectedCompact && withingsConnectedCompact;
 
   async function startWithings() {
     const token = session?.access_token;
@@ -121,6 +133,20 @@ export default function ConnectDevicesSection({
     }
   }
 
+  function openAppleManage() {
+    setManageApple(true);
+    setWatchStep(1);
+    setWatchError('');
+    setApiKeyOnce('');
+  }
+
+  function closeAppleManage() {
+    setManageApple(false);
+    setApiKeyOnce('');
+    setWatchError('');
+    setWatchStep(activeApple ? 0 : 1);
+  }
+
   return (
     <section
       className={`connect-devices${highlight ? ' connect-devices--highlight' : ''}`}
@@ -128,56 +154,114 @@ export default function ConnectDevicesSection({
     >
       <header className="connect-devices-head">
         <div>
-          <h2 id="connect-devices-heading">Připojit zařízení</h2>
-          <p>
-            Stačí jedno číslo týdně — a s chytrým zařízením ani to ne.
-            Připojení je volitelné a můžeš ho udělat kdykoli.
-          </p>
+          <h2 id="connect-devices-heading">
+            {bothConnectedCompact ? 'Zařízení' : 'Připojit zařízení'}
+          </h2>
+          {!bothConnectedCompact ? (
+            <p>
+              Stačí jedno číslo týdně — a s chytrým zařízením ani to ne.
+              Připojení je volitelné a můžeš ho udělat kdykoli.
+            </p>
+          ) : null}
         </div>
-        {highlight ? (
+        {highlight && !bothConnectedCompact ? (
           <span className="connect-devices-badge">Zmíněno při registraci</span>
         ) : null}
       </header>
 
-      <div className="connect-devices-grid">
-        <article className={`connect-card${wantsDevice(devices, 'scale') ? ' connect-card--interest' : ''}`}>
-          <h3>Chytrá váha (Withings)</h3>
-          <p>Withings pošle data do profilu. Plán se může upravit podle trendu, ne podle jednoho měření.</p>
-          {withingsConnected ? (
-            <p className="connect-status connect-status--ok">Připojeno</p>
-          ) : (
-            <p className="connect-status">Zatím nepřipojeno</p>
-          )}
-          <button type="button" className="connect-btn" onClick={startWithings} disabled={!session?.access_token}>
-            {withingsConnected ? 'Znovu propojit Withings' : 'Připojit Withings'}
-          </button>
-          {withingsMsg ? <p className="connect-error" role="alert">{withingsMsg}</p> : null}
-        </article>
-
-        <article className={`connect-card${wantsDevice(devices, 'watch') ? ' connect-card--interest' : ''}`}>
-          <h3>Chytré hodinky (Apple Watch)</h3>
-          <p>Apple Watch přes Health Auto Export. Data jdou přes naše API do profilu.</p>
-
-          {activeApple && watchStep === 0 && !apiKeyOnce ? (
-            <div className="connect-apple-active">
-              <p className="connect-status connect-status--ok">Připojeno</p>
-              {lastSyncLabel ? (
-                <p className="connect-meta">Poslední sync: {lastSyncLabel}</p>
-              ) : (
-                <p className="connect-meta">Čekáme na první sync z Health Auto Export.</p>
-              )}
-              {activeApple.api_key_prefix ? (
-                <p className="connect-meta">Klíč: {activeApple.api_key_prefix}…</p>
-              ) : null}
-              <button type="button" className="connect-btn secondary" onClick={() => setWatchStep(1)}>
-                Znovu nastavit / nový klíč
+      <div className="connect-devices-list">
+        {/* —— Withings —— */}
+        {withingsConnectedCompact ? (
+          <div className="connect-status-row">
+            <p className="connect-status-line">
+              <span className="connect-status-check" aria-hidden>✓</span>
+              <span>Chytrá váha · připojeno</span>
+            </p>
+            <button
+              type="button"
+              className="connect-manage-link"
+              onClick={() => setManageWithings(true)}
+              aria-label="Spravovat chytrá váha"
+            >
+              Spravovat
+            </button>
+          </div>
+        ) : withingsConnected && manageWithings ? (
+          <div className="connect-manage-panel">
+            <p className="connect-status-line">
+              <span className="connect-status-check" aria-hidden>✓</span>
+              <span>Chytrá váha · připojeno</span>
+            </p>
+            <p className="connect-manage-hint">
+              Data a synchronizace jsou v sekci Tělesný vývoj níž. Tady jen znovu propojíš účet.
+            </p>
+            <div className="connect-manage-actions">
+              <button type="button" className="connect-btn secondary" onClick={startWithings} disabled={!session?.access_token}>
+                Znovu propojit Withings
+              </button>
+              <button type="button" className="connect-manage-link" onClick={() => setManageWithings(false)}>
+                Zavřít
               </button>
             </div>
-          ) : (
+            {withingsMsg ? <p className="connect-error" role="alert">{withingsMsg}</p> : null}
+          </div>
+        ) : (
+          <article className={`connect-card${wantsDevice(devices, 'scale') ? ' connect-card--interest' : ''}`}>
+            <h3>Chytrá váha (Withings)</h3>
+            <p>Withings pošle data do profilu. Plán se může upravit podle trendu, ne podle jednoho měření.</p>
+            <p className="connect-status">Zatím nepřipojeno</p>
+            <button type="button" className="connect-btn" onClick={startWithings} disabled={!session?.access_token}>
+              Připojit Withings
+            </button>
+            {withingsMsg ? <p className="connect-error" role="alert">{withingsMsg}</p> : null}
+          </article>
+        )}
+
+        {/* —— Apple Watch —— */}
+        {appleConnectedCompact ? (
+          <div className="connect-status-row">
+            <p className="connect-status-line">
+              <span className="connect-status-check" aria-hidden>✓</span>
+              <span>
+                Apple Watch · připojeno
+                {lastSyncLabel ? ` · poslední sync ${lastSyncLabel}` : ''}
+              </span>
+            </p>
+            <button
+              type="button"
+              className="connect-manage-link"
+              onClick={openAppleManage}
+              aria-label="Spravovat Apple Watch"
+            >
+              Spravovat
+            </button>
+          </div>
+        ) : (
+          <article className={`connect-card${wantsDevice(devices, 'watch') ? ' connect-card--interest' : ''}${activeApple && manageApple ? ' connect-card--manage' : ''}`}>
+            {activeApple && manageApple ? (
+              <div className="connect-manage-panel-head">
+                <p className="connect-status-line">
+                  <span className="connect-status-check" aria-hidden>✓</span>
+                  <span>Apple Watch · připojeno</span>
+                </p>
+                <button type="button" className="connect-manage-link" onClick={closeAppleManage}>
+                  Zavřít
+                </button>
+              </div>
+            ) : (
+              <>
+                <h3>Chytré hodinky (Apple Watch)</h3>
+                <p>Apple Watch přes Health Auto Export. Data jdou přes naše API do profilu.</p>
+                <p className="connect-status">Zatím nepřipojeno</p>
+              </>
+            )}
+
             <div className="connect-apple-wizard">
               {watchStep === 1 && (
                 <>
-                  <p className="connect-step-label">Krok 1 z 3</p>
+                  <p className="connect-step-label">
+                    {activeApple ? 'Nový klíč / znovu nastavit' : 'Krok 1 z 3'}
+                  </p>
                   {/* copy-check:whitelist:start */}
                   <p>
                     Pro automatický přenos z Apple Watch potřebuješ iOS aplikaci{' '}
@@ -186,8 +270,13 @@ export default function ConnectDevicesSection({
                   </p>
                   {/* copy-check:whitelist:end */}
                   <button type="button" className="connect-btn" onClick={() => setWatchStep(2)}>
-                    Rozumím, pokračovat
+                    {activeApple ? 'Vygenerovat nový klíč' : 'Rozumím, pokračovat'}
                   </button>
+                  {activeApple ? (
+                    <button type="button" className="connect-btn secondary" onClick={closeAppleManage}>
+                      Zrušit
+                    </button>
+                  ) : null}
                 </>
               )}
 
@@ -198,7 +287,12 @@ export default function ConnectDevicesSection({
                   <button type="button" className="connect-btn" onClick={generateAppleKey} disabled={watchBusy || !session?.access_token}>
                     {watchBusy ? 'Generuji…' : 'Vygenerovat API klíč'}
                   </button>
-                  <button type="button" className="connect-btn secondary" onClick={() => setWatchStep(1)} disabled={watchBusy}>
+                  <button
+                    type="button"
+                    className="connect-btn secondary"
+                    onClick={() => (activeApple ? closeAppleManage() : setWatchStep(1))}
+                    disabled={watchBusy}
+                  >
                     Zpět
                   </button>
                 </>
@@ -236,14 +330,7 @@ export default function ConnectDevicesSection({
                     </>
                   ) : null}
 
-                  <button
-                    type="button"
-                    className="connect-btn"
-                    onClick={() => {
-                      setApiKeyOnce('');
-                      setWatchStep(activeApple || connectionId ? 0 : 1);
-                    }}
-                  >
+                  <button type="button" className="connect-btn" onClick={closeAppleManage}>
                     Hotovo
                   </button>
                 </>
@@ -251,8 +338,8 @@ export default function ConnectDevicesSection({
 
               {watchError ? <p className="connect-error" role="alert">{watchError}</p> : null}
             </div>
-          )}
-        </article>
+          </article>
+        )}
       </div>
 
       <style jsx>{`
@@ -294,15 +381,74 @@ export default function ConnectDevicesSection({
           background: rgba(14, 165, 233, 0.2);
           border: 1px solid rgba(56, 189, 248, 0.35);
         }
-        .connect-devices-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 12px;
+        .connect-devices-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
         }
-        @media (min-width: 720px) {
-          .connect-devices-grid {
-            grid-template-columns: 1fr 1fr;
-          }
+        .connect-status-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 10px 12px;
+          border-radius: 12px;
+          border: 1px solid rgba(34, 197, 94, 0.28);
+          background: rgba(22, 101, 52, 0.12);
+        }
+        .connect-status-line {
+          margin: 0;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: #e2e8f0;
+          line-height: 1.35;
+        }
+        .connect-status-check {
+          color: #86efac;
+          font-weight: 700;
+        }
+        .connect-manage-link {
+          flex-shrink: 0;
+          background: none;
+          border: none;
+          padding: 4px 0;
+          font-size: 0.82rem;
+          font-weight: 600;
+          color: #94a3b8;
+          text-decoration: underline;
+          text-underline-offset: 2px;
+          cursor: pointer;
+        }
+        .connect-manage-link:hover {
+          color: #e2e8f0;
+        }
+        .connect-manage-panel {
+          padding: 12px;
+          border-radius: 12px;
+          border: 1px solid rgba(148, 163, 184, 0.22);
+          background: rgba(2, 6, 23, 0.35);
+        }
+        .connect-manage-hint {
+          margin: 8px 0 10px;
+          font-size: 0.85rem;
+          line-height: 1.4;
+          color: #94a3b8;
+        }
+        .connect-manage-actions {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 10px;
+        }
+        .connect-manage-panel-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 10px;
         }
         .connect-card {
           padding: 14px;
@@ -312,6 +458,9 @@ export default function ConnectDevicesSection({
         }
         .connect-card--interest {
           border-color: rgba(56, 189, 248, 0.4);
+        }
+        .connect-card--manage {
+          border-color: rgba(148, 163, 184, 0.28);
         }
         .connect-card h3 {
           margin: 0 0 6px;
@@ -328,14 +477,6 @@ export default function ConnectDevicesSection({
           margin: 0 0 10px;
           font-size: 0.85rem;
           color: #cbd5e1;
-        }
-        .connect-status--ok {
-          color: #86efac;
-        }
-        .connect-meta {
-          margin: 0 0 6px;
-          font-size: 0.82rem;
-          color: #94a3b8;
         }
         .connect-btn {
           display: inline-flex;
@@ -405,6 +546,12 @@ export default function ConnectDevicesSection({
           margin: 8px 0 0;
           font-size: 0.85rem;
           color: #fca5a5;
+        }
+        .connect-apple-wizard > p {
+          margin: 0 0 10px;
+          font-size: 0.88rem;
+          line-height: 1.4;
+          color: #94a3b8;
         }
       `}</style>
     </section>

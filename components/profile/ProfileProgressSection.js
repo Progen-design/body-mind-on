@@ -1,12 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   PROGRESS_PERIODS,
   normalizeMeasurementPoints,
   buildMeasuredWeightChart,
   getWeightTrend,
+  getPeriodBounds,
   computeActivitySummary,
   getRecommendedNextStep,
 } from '../../lib/progressIntegrity';
+import { parseActivityStatsDays, pickSparseLabelIndices } from '../../lib/stats/activityStats';
 import AddMeasurementModal from './AddMeasurementModal';
 
 function formatShortDate(d) {
@@ -44,6 +46,10 @@ function sourceChartLabel(source) {
   return 'Měření';
 }
 
+function periodIdToDays(periodId) {
+  return parseActivityStatsDays(periodId === 'all' ? 'all' : periodId);
+}
+
 export default function ProfileProgressSection({
   profile,
   withingsWeightHistory = [],
@@ -53,6 +59,8 @@ export default function ProfileProgressSection({
 }) {
   const [periodId, setPeriodId] = useState('30');
   const [showMeasurementModal, setShowMeasurementModal] = useState(false);
+  const [apiStats, setApiStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   const registrationMetric = useMemo(() => {
     const metrics = [...(profile?.body_metrics || [])].sort(
@@ -66,7 +74,31 @@ export default function ProfileProgressSection({
     [profile?.plans],
   );
 
-  const { weightSeries, allPoints, chartData, weightTrend, activity, nextStep } = useMemo(() => {
+  useEffect(() => {
+    if (!accessToken) {
+      setApiStats(null);
+      return undefined;
+    }
+    let cancelled = false;
+    const days = periodIdToDays(periodId);
+    setStatsLoading(true);
+    (async () => {
+      try {
+        const res = await fetch(`/api/stats/activity?days=${days}`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const json = res.ok ? await res.json() : null;
+        if (!cancelled) setApiStats(json?.stats || null);
+      } catch {
+        if (!cancelled) setApiStats(null);
+      } finally {
+        if (!cancelled) setStatsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [accessToken, periodId, profile?._updated]);
+
+  const { allPoints, chartData, weightTrend, activity, nextStep, bodyFromApi } = useMemo(() => {
     const normalized = normalizeMeasurementPoints({
       bodyMeasurements: profile?.body_measurements || [],
       bodyMetrics: profile?.body_metrics || [],
@@ -76,7 +108,7 @@ export default function ProfileProgressSection({
     });
     const chart = buildMeasuredWeightChart(normalized.weightSeries);
     const trend = getWeightTrend(normalized.weightSeries);
-    const act = computeActivitySummary({
+    const localAct = computeActivitySummary({
       periodId,
       userCreatedAt: profile?.user?.created_at,
       workouts: profile?.workouts || [],
@@ -85,14 +117,41 @@ export default function ProfileProgressSection({
       habitLogs: profile?.habit_logs_progress || [],
       plan: activePlan,
     });
+    const bounds = getPeriodBounds(periodId, profile?.user?.created_at);
+
+    const act = apiStats
+      ? {
+          ...localAct,
+          periodStart: bounds.startKey,
+          periodEnd: bounds.endKey,
+          completedWorkouts: apiStats.treninky,
+          totalMinutes: apiStats.pohyb_min,
+          kcalEstimateSecondary: apiStats.aktivni_kcal,
+          activeDays: apiStats.aktivni_dny,
+          periodDays: periodId === 'all' ? (apiStats.obdobi_dnu || 3650) : (Number(periodId) || localAct.periodDays),
+          habitCompletions: apiStats.navyky_splnene,
+          checkinsCount: apiStats.checkiny,
+          completedPlanWorkouts: apiStats.treninky_plan,
+          collectingData: apiStats.treninky <= 1 && apiStats.aktivni_dny <= 1,
+        }
+      : localAct;
+
+    const body = apiStats && (apiStats.vaha_start != null || apiStats.vaha_konec != null)
+      ? {
+          start: apiStats.vaha_start,
+          end: apiStats.vaha_konec,
+          delta: apiStats.vaha_zmena,
+        }
+      : null;
+
     const step = getRecommendedNextStep({ weightTrend: trend, activity: act });
     return {
-      weightSeries: normalized.weightSeries,
       allPoints: normalized.allPoints,
       chartData: chart,
       weightTrend: trend,
       activity: act,
       nextStep: step,
+      bodyFromApi: body,
     };
   }, [
     profile,
@@ -100,6 +159,7 @@ export default function ProfileProgressSection({
     registrationMetric,
     activePlan,
     periodId,
+    apiStats,
   ]);
 
   const latestCircumference = useMemo(() => {
@@ -108,6 +168,11 @@ export default function ProfileProgressSection({
     );
     return withCirc || null;
   }, [allPoints]);
+
+  const weightChartLabelIndices = useMemo(
+    () => new Set(pickSparseLabelIndices(chartData.length, 8)),
+    [chartData],
+  );
 
   return (
     <section className="card card-accent center progress-section progress-detail-end profile-progress-integrity">
@@ -130,6 +195,7 @@ export default function ProfileProgressSection({
 
       <p className="progress-dates">
         Období: <strong>{formatShortDate(activity.periodStart)}</strong> – <strong>{formatShortDate(activity.periodEnd)}</strong>
+        {statsLoading ? <span className="profile-progress-meta"> · načítám…</span> : null}
       </p>
 
       <div className="profile-progress-block">
@@ -185,32 +251,51 @@ export default function ProfileProgressSection({
 
       <div className="profile-progress-block">
         <h3 className="profile-progress-subhead">Tělesné měření</h3>
-        {weightTrend.state === 'none' && (
-          <>
-            <p className="profile-progress-empty">Přidej první měření a začni sledovat svůj vývoj.</p>
-            <p className="profile-progress-empty">Zatím nemáme dostatek skutečných měření pro zobrazení trendu.</p>
-          </>
-        )}
-        {weightTrend.state === 'single' && weightTrend.latest && (
-          <>
-            <p className="profile-progress-measure-row">
-              <strong>Hmotnost</strong> {formatKg(weightTrend.latest.weight_kg)}
-              <span className="profile-progress-meta"> · {formatShortDate(weightTrend.latest.date)} · {weightTrend.latest.source_label}</span>
-            </p>
-            <p className="profile-progress-neutral">{weightTrend.message}</p>
-          </>
-        )}
-        {weightTrend.state === 'trend' && (
+        {bodyFromApi ? (
           <>
             <p className="profile-progress-measure-row">
               <strong>Hmotnost</strong>{' '}
-              {formatKg(weightTrend.first.weight_kg)} → {formatKg(weightTrend.last.weight_kg)}
+              {bodyFromApi.start != null ? formatKg(bodyFromApi.start) : '—'}
+              {' → '}
+              {bodyFromApi.end != null ? formatKg(bodyFromApi.end) : '—'}
             </p>
-            <p className="profile-progress-measure-row">
-              Změna: {weightTrend.delta_kg > 0 ? '+' : ''}{weightTrend.delta_kg.toFixed(1).replace('.', ',')} kg
-              {' · '}Období: {weightTrend.days} dní
-            </p>
-            <p className="profile-progress-neutral">{weightTrend.message}</p>
+            {bodyFromApi.delta != null && Number.isFinite(Number(bodyFromApi.delta)) && (
+              <p className="profile-progress-measure-row">
+                Změna: {Number(bodyFromApi.delta) > 0 ? '+' : ''}
+                {Number(bodyFromApi.delta).toFixed(1).replace('.', ',')} kg
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            {weightTrend.state === 'none' && (
+              <>
+                <p className="profile-progress-empty">Přidej první měření a začni sledovat svůj vývoj.</p>
+                <p className="profile-progress-empty">Zatím nemáme dostatek skutečných měření pro zobrazení trendu.</p>
+              </>
+            )}
+            {weightTrend.state === 'single' && weightTrend.latest && (
+              <>
+                <p className="profile-progress-measure-row">
+                  <strong>Hmotnost</strong> {formatKg(weightTrend.latest.weight_kg)}
+                  <span className="profile-progress-meta"> · {formatShortDate(weightTrend.latest.date)} · {weightTrend.latest.source_label}</span>
+                </p>
+                <p className="profile-progress-neutral">{weightTrend.message}</p>
+              </>
+            )}
+            {weightTrend.state === 'trend' && (
+              <>
+                <p className="profile-progress-measure-row">
+                  <strong>Hmotnost</strong>{' '}
+                  {formatKg(weightTrend.first.weight_kg)} → {formatKg(weightTrend.last.weight_kg)}
+                </p>
+                <p className="profile-progress-measure-row">
+                  Změna: {weightTrend.delta_kg > 0 ? '+' : ''}{weightTrend.delta_kg.toFixed(1).replace('.', ',')} kg
+                  {' · '}Období: {weightTrend.days} dní
+                </p>
+                <p className="profile-progress-neutral">{weightTrend.message}</p>
+              </>
+            )}
           </>
         )}
         {latestCircumference && (
@@ -275,6 +360,25 @@ export default function ProfileProgressSection({
                       );
                     })()}
                   </svg>
+                </div>
+                <div className="chart-labels">
+                  <div className="chart-labels-inner" style={{ paddingLeft: '8.57%', paddingRight: '5%' }}>
+                    {chartData.map((p, i) => (
+                      weightChartLabelIndices.has(i) ? (
+                        <div
+                          key={`${p.date}-${i}`}
+                          className="chart-label-item"
+                          style={{
+                            left: chartData.length > 1 ? `${(i / (chartData.length - 1)) * 100}%` : '50%',
+                            transform: 'translateX(-50%)',
+                          }}
+                        >
+                          <span className="chart-value">{p.weight} kg</span>
+                          <span className="chart-date">{formatShortDate(p.date)}</span>
+                        </div>
+                      ) : null
+                    ))}
+                  </div>
                 </div>
               </div>
             ) : (

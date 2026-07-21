@@ -40,6 +40,11 @@ import {
   normalizeMeasurementPoints,
   buildMeasuredWeightChart,
 } from '../lib/progressIntegrity';
+import {
+  buildDailyLoadBarsFromAppleHealth,
+  buildTypeLoadBarsFromAppleHealth,
+  pickSparseLabelIndices,
+} from '../lib/stats/activityStats';
 const PlanViewer = dynamic(() => import('../components/PlanViewer'), {
   ssr: false,
   loading: () => (
@@ -458,6 +463,9 @@ export default function Profil() {
   const [withingsHeaderWeight, setWithingsHeaderWeight] = useState(null);
   const [withingsWeightHistory, setWithingsWeightHistory] = useState([]);
   const [withingsHistoryLoaded, setWithingsHistoryLoaded] = useState(false);
+  const [activityStats7, setActivityStats7] = useState(null);
+  const [activityStatsAll, setActivityStatsAll] = useState(null);
+  const [activityDaily7, setActivityDaily7] = useState([]);
 
   const healthAccessToken = profile?.can_create_calendar_events ? null : session?.access_token;
   const { data: healthData, loading: healthLoading, error: healthError, reload: reloadHealth } = useHealthData(healthAccessToken, {
@@ -824,6 +832,34 @@ export default function Profil() {
       .finally(() => { if (!cancelled) setLoadingClients(false); });
     return () => { cancelled = true; };
   }, [profile?.can_create_calendar_events, session?.access_token]);
+
+  // Statistiky aktivity z Apple Watch / Withings — /api/stats/activity → get_user_activity_stats
+  useEffect(() => {
+    if (!session?.access_token || profile?.can_create_calendar_events) return;
+    let cancelled = false;
+    const headers = { Authorization: `Bearer ${session.access_token}` };
+    (async () => {
+      try {
+        const [r7, rAll] = await Promise.all([
+          fetch('/api/stats/activity?days=7', { headers }),
+          fetch('/api/stats/activity?days=3650', { headers }),
+        ]);
+        const j7 = r7.ok ? await r7.json() : null;
+        const jAll = rAll.ok ? await rAll.json() : null;
+        if (cancelled) return;
+        setActivityStats7(j7?.stats || null);
+        setActivityDaily7(Array.isArray(j7?.daily) ? j7.daily : []);
+        setActivityStatsAll(jAll?.stats || null);
+      } catch {
+        if (!cancelled) {
+          setActivityStats7(null);
+          setActivityDaily7([]);
+          setActivityStatsAll(null);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [session?.access_token, profile?.can_create_calendar_events, profile?._updated]);
 
   // Při otevření jiného klienta zobrazit nejdřív souhrn, ne celou kartu
   useEffect(() => {
@@ -1701,14 +1737,36 @@ export default function Profil() {
   ]);
 
   const heroWeightValue =
-    Number.isFinite(Number(withingsHeaderWeight?.weight_kg))
-      ? Number(withingsHeaderWeight.weight_kg)
-      : (profileDisplayWeight != null ? Number(profileDisplayWeight) : null);
+    activityStats7?.vaha_konec != null && Number.isFinite(Number(activityStats7.vaha_konec))
+      ? Number(activityStats7.vaha_konec)
+      : Number.isFinite(Number(withingsHeaderWeight?.weight_kg))
+        ? Number(withingsHeaderWeight.weight_kg)
+        : (profileDisplayWeight != null ? Number(profileDisplayWeight) : null);
   const heroWeightKg = heroWeightValue != null ? heroWeightValue.toFixed(1).replace('.', ',') : null;
   const heroWeightLabel =
-    Number.isFinite(Number(withingsHeaderWeight?.weight_kg))
+    activityStats7?.vaha_konec != null && Number.isFinite(Number(activityStats7.vaha_konec))
       ? 'Aktuální váha'
-      : profileWeightLabel;
+      : Number.isFinite(Number(withingsHeaderWeight?.weight_kg))
+        ? 'Aktuální váha'
+        : profileWeightLabel;
+
+  const overviewWorkoutsWeek = activityStats7 != null ? activityStats7.treninky : (workoutsThisWeek?.length ?? 0);
+  const overviewMinutesWeek = activityStats7 != null ? activityStats7.pohyb_min : (totalMinutesThisWeek ?? 0);
+  const overviewKcalWeek = activityStats7 != null ? activityStats7.aktivni_kcal : (estimatedCaloriesThisWeek ?? 0);
+  const overviewWorkoutsAll = activityStatsAll != null ? activityStatsAll.treninky : (workouts?.length ?? 0);
+  const overviewMinutesAll = activityStatsAll != null ? activityStatsAll.pohyb_min : (totalMinutes ?? 0);
+  const overviewKcalAll = activityStatsAll != null ? activityStatsAll.aktivni_kcal : (estimatedCaloriesAll ?? 0);
+  const overviewTypeLoadBars = activityStats7 != null
+    ? buildTypeLoadBarsFromAppleHealth(activityDaily7)
+    : weeklyTypeLoadBars;
+  const overviewDayLoadBars = activityStats7 != null
+    ? buildDailyLoadBarsFromAppleHealth(activityDaily7, 7)
+    : weeklyDayLoadBars;
+  const overviewLoadWeek = overviewDayLoadBars.reduce((s, x) => s + (Number(x.points) || 0), 0);
+  const weightChartLabelIndices = useMemo(
+    () => new Set(pickSparseLabelIndices((chartWeightData || []).length, 8)),
+    [chartWeightData],
+  );
 
   const canRegeneratePlan = membershipStatus === 'active' || (membershipStatus === 'trial' && !isTrialExpired);
   // Plán je vygenerovaný, ale uživatel ještě neprošel checkoutem.
@@ -2111,11 +2169,11 @@ export default function Profil() {
                     {!loading && !error && (
                       <div className="plan-goal-stats">
                         <div className="plan-goal-stat">
-                          <span className="plan-goal-stat-value">{workoutsThisWeek?.length ?? 0} {workoutTrend ? <span className="trend-arrow" title={workoutTrend === '↑' ? 'Víc než minulý týden' : workoutTrend === '↓' ? 'Méně než minulý týden' : 'Stejně'}>{workoutTrend}</span> : null}</span>
+                          <span className="plan-goal-stat-value">{overviewWorkoutsWeek} {workoutTrend ? <span className="trend-arrow" title={workoutTrend === '↑' ? 'Víc než minulý týden' : workoutTrend === '↓' ? 'Méně než minulý týden' : 'Stejně'}>{workoutTrend}</span> : null}</span>
                           <span className="plan-goal-stat-label">Tréninků tento týden</span>
                         </div>
                         <div className="plan-goal-stat">
-                          <span className="plan-goal-stat-value">{totalMinutesThisWeek ?? 0} min</span>
+                          <span className="plan-goal-stat-value">{overviewMinutesWeek} min</span>
                           <span className="plan-goal-stat-label">V pohybu</span>
                         </div>
                         <div className="plan-goal-stat">
@@ -3079,23 +3137,23 @@ export default function Profil() {
               <div className="kpis-bar">
                 <div className="kpi-item">
                   <span className="kpi-icon">🏋️</span>
-                  <span className="kpi-num">{workoutsThisWeek.length}</span>
-                  <span className="kpi-label">tento týden</span>
-                  <span className="kpi-sub">{workouts.length} celkem</span>
+                  <span className="kpi-num">{overviewWorkoutsWeek}</span>
+                  <span className="kpi-label">tréninků</span>
+                  <span className="kpi-sub">{overviewWorkoutsAll} celkem</span>
                 </div>
                 <div className="kpi-divider" />
                 <div className="kpi-item">
                   <span className="kpi-icon">⏱️</span>
-                  <span className="kpi-num">{totalMinutesThisWeek} min</span>
+                  <span className="kpi-num">{overviewMinutesWeek} min</span>
                   <span className="kpi-label">v pohybu</span>
-                  <span className="kpi-sub">{totalMinutes} min celkem</span>
+                  <span className="kpi-sub">{overviewMinutesAll} min celkem</span>
                 </div>
                 <div className="kpi-divider" />
                 <div className="kpi-item">
                   <span className="kpi-icon">🔥</span>
-                  <span className="kpi-num">~{estimatedCaloriesThisWeek}</span>
+                  <span className="kpi-num">~{overviewKcalWeek}</span>
                   <span className="kpi-label" title="Jde pouze o orientační odhad. Skutečný výdej závisí na intenzitě, hmotnosti, kondici a dalších faktorech.">orientační kcal</span>
-                  <span className="kpi-sub">~{estimatedCaloriesAll} celkem</span>
+                  <span className="kpi-sub">~{overviewKcalAll} celkem</span>
                 </div>
                 <div className="kpi-divider" />
                 <div className="kpi-item">
@@ -3107,10 +3165,10 @@ export default function Profil() {
               <div className="workload-panels">
                 <section className="workload-card">
                   <h3 className="workload-title">Zátěž týdne podle typu</h3>
-                  <p className="workload-sub">Typ, délka/vzdálenost, náročnost — stejný výpočet jako u součtu níže.</p>
-                  {weeklyTypeLoadBars.length > 0 ? (
+                  <p className="workload-sub">Minuty tréninků z Apple Watch podle typu aktivity.</p>
+                  {overviewTypeLoadBars.length > 0 ? (
                     <ul className="workload-bars">
-                      {weeklyTypeLoadBars.map((item) => (
+                      {overviewTypeLoadBars.map((item) => (
                         <li key={item.id} className="workload-row">
                           <span className="workload-label">{item.label}</span>
                           <div className="workload-track">
@@ -3127,9 +3185,9 @@ export default function Profil() {
 
                 <section className="workload-card">
                   <h3 className="workload-title">Denní zátěž (tento týden)</h3>
-                  <p className="workload-sub">Součet bodů zátěže za daný den v aktuálním týdnu.</p>
+                  <p className="workload-sub">Minuty pohybu z Apple Watch za posledních 7 dní.</p>
                   <ul className="workload-bars">
-                    {weeklyDayLoadBars.map((item) => (
+                    {overviewDayLoadBars.map((item) => (
                       <li key={item.date} className="workload-row">
                         <span className="workload-label">{item.label}</span>
                         <div className="workload-track">
@@ -3141,7 +3199,7 @@ export default function Profil() {
                   </ul>
                 </section>
               </div>
-              <p className="workload-total">Souhrnná zátěž týdne: <strong>{workoutLoadThisWeek}</strong></p>
+              <p className="workload-total">Souhrnná zátěž týdne: <strong>{Math.round(overviewLoadWeek)}</strong> min</p>
             </section>
               )}
               {statsTab === 'weight' && (
@@ -3204,6 +3262,7 @@ export default function Profil() {
                       <div className="chart-labels">
                         <div className="chart-labels-inner" style={{ paddingLeft: '8.57%', paddingRight: '5%' }}>
                         {(chartWeightData || []).map((p, i) => (
+                          weightChartLabelIndices.has(i) ? (
                           <div
                             key={`${p.date}-${i}`}
                             className="chart-label-item"
@@ -3215,6 +3274,7 @@ export default function Profil() {
                             <span className="chart-value">{p.weight} kg</span>
                             <span className="chart-date">{formatShortDate(p.date)}</span>
                           </div>
+                          ) : null
                         ))}
                         </div>
                       </div>

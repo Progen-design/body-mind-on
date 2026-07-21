@@ -35,6 +35,7 @@ import { PLAN_GENERATION_DURATION_HINT } from '../lib/planGenerationUiCopy';
 import { getRegistrationAnchoredWeek } from '../lib/profileWeekRange';
 import { trainingEnvironmentDisplayFromMetrics } from '../lib/trainingEnvironment.js';
 import { roundLoadTotal } from '../lib/progressModel';
+import { buildProfileButtonSystemCss } from '../lib/designTokens';
 import {
   normalizeMeasurementPoints,
   buildMeasuredWeightChart,
@@ -3316,6 +3317,8 @@ export default function Profil() {
       </main>
 
       <Footer />
+
+      <style jsx global>{`${buildProfileButtonSystemCss()}`}</style>
 
       <style jsx>{`
         .page {

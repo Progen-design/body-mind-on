@@ -133,40 +133,47 @@ const PRIMITIVES_STYLE = `
     animation: habit-ui-spin 0.7s linear infinite;
   }
   .habit-ui-btn {
-    border-radius: 10px;
+    border-radius: var(--bmon-radius-button, 12px);
     font-family: inherit;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s, border-color 0.2s, opacity 0.2s;
+    transition: background 0.15s, border-color 0.15s, opacity 0.15s, transform 0.15s, filter 0.15s, box-shadow 0.15s;
   }
   .habit-ui-btn--primary {
-    padding: 8px 14px;
-    font-size: 0.8125rem;
-    color: #e9d5ff;
-    background: rgba(124, 58, 237, 0.28);
-    border: 1px solid rgba(167, 139, 250, 0.45);
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--bmon-btn-primary, linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%));
+    border: 1px solid rgba(14, 165, 233, 0.45);
+    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.25);
   }
   .habit-ui-btn--primary:hover:not(:disabled) {
-    background: rgba(124, 58, 237, 0.42);
+    filter: brightness(1.05);
+    transform: translateY(-1px);
   }
   .habit-ui-btn--pill {
-    border: 1px solid rgba(167, 139, 250, 0.35);
-    background: rgba(15, 23, 42, 0.6);
-    color: #cbd5e1;
+    border: 1px solid var(--bmon-card-border, rgba(148, 163, 184, 0.22));
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--bmon-text-muted, #94a3b8);
     border-radius: 999px;
-    padding: 0.35rem 0.75rem;
+    min-height: 36px;
+    padding: 0.4rem 0.9rem;
     font-size: 0.85rem;
   }
   .habit-ui-btn--pill-active {
-    background: rgba(124, 58, 237, 0.32);
-    border-color: rgba(167, 139, 250, 0.65);
-    color: #f3e8ff;
+    background: var(--bmon-btn-primary, linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%));
+    border-color: rgba(14, 165, 233, 0.45);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(14, 165, 233, 0.22);
   }
   .habit-ui-btn--pill-sm {
     font-size: 0.78rem;
-    padding: 0.25rem 0.55rem;
+    min-height: 32px;
+    padding: 0.28rem 0.65rem;
   }
-  .habit-ui-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .habit-ui-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; filter: none; box-shadow: none; }
   .habit-ui-cell-empty {
     width: 22px;
     height: 22px;

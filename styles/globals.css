@@ -19,6 +19,8 @@
   --bmon-sky: #0EA5E9;
   --bmon-lavender: #A78BFA;
   --bmon-cyan: #22D3EE;
+  --bmon-red: #FB7185;
+  --bmon-btn-primary: linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%);
   --bmon-radius-card: 18px;
   --bmon-radius-button: 12px;
   --bmon-radius-modal: 22px;

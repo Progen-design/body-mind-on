@@ -31,6 +31,14 @@
             {
                   "path": "/api/cron/shopping-normalize-audit",
                   "schedule": "0 4 * * *"
+            },
+            {
+                  "path": "/api/cron/import-spoonacular",
+                  "schedule": "0 3 * * *"
+            },
+            {
+                  "path": "/api/cron/translate-recipes",
+                  "schedule": "*/5 * * * *"
             }
       ],
       "functions": {
@@ -59,6 +67,18 @@
                   "maxDuration": 120
             },
             "pages/api/cron/shopping-normalize-audit.js": {
+                  "maxDuration": 120
+            },
+            "pages/api/cron/import-spoonacular.js": {
+                  "maxDuration": 300
+            },
+            "pages/api/cron/translate-recipes.js": {
+                  "maxDuration": 120
+            },
+            "pages/api/admin/import-spoonacular.js": {
+                  "maxDuration": 300
+            },
+            "pages/api/admin/translate-recipes.js": {
                   "maxDuration": 120
             }
       }

@@ -5,6 +5,7 @@ import { runCatalogRecipeTranslation } from '../../../lib/spoonacular/catalogTra
 
 const translateBodySchema = z.object({
   batch: z.coerce.number().int().min(1).max(50).optional().default(20),
+  ids: z.array(z.coerce.number().int().positive()).optional(),
 });
 
 export default async function handler(req, res) {
@@ -26,7 +27,10 @@ export default async function handler(req, res) {
   try {
     console.log('[translate-recipes] start', { batch: parsed.data.batch });
 
-    const result = await runCatalogRecipeTranslation({ batch: parsed.data.batch });
+    const result = await runCatalogRecipeTranslation({
+      batch: parsed.data.batch,
+      ids: parsed.data.ids,
+    });
 
     console.log('[translate-recipes] done', {
       translated: result.translated,

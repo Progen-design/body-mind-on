@@ -1,6 +1,9 @@
 // GET/POST /api/cron/import-spoonacular — daily bulk import (CRON_SECRET)
 import { isCronAuthorized } from '../../../lib/adminAuth';
-import { runDailySpoonacularCatalogImport } from '../../../lib/spoonacular/catalogImport';
+import {
+  DEFAULT_CATALOG_IMPORT_FILTERS,
+  runDailySpoonacularCatalogImport,
+} from '../../../lib/spoonacular/catalogImport';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -35,6 +38,7 @@ export default async function handler(req, res) {
       updated: result.updated,
       quotaLeft: result.quotaLeft,
       requestsUsed: result.requestsUsed,
+      filters: DEFAULT_CATALOG_IMPORT_FILTERS,
       stoppedReason: result.stoppedReason,
       byType: result.byType,
     });

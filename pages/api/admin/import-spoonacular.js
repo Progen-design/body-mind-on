@@ -1,7 +1,10 @@
 // POST /api/admin/import-spoonacular — bulk import from Spoonacular complexSearch
 import { z } from 'zod';
 import { isAdmin } from '../../../lib/adminAuth';
-import { runSpoonacularCatalogImport } from '../../../lib/spoonacular/catalogImport';
+import {
+  parseCatalogImportFilters,
+  runSpoonacularCatalogImport,
+} from '../../../lib/spoonacular/catalogImport';
 
 const importBodySchema = z.object({
   type: z.string().trim().optional(),
@@ -9,6 +12,10 @@ const importBodySchema = z.object({
   number: z.coerce.number().int().min(1).max(100).optional().default(100),
   offset: z.coerce.number().int().min(0).optional().default(0),
   pages: z.coerce.number().int().min(1).max(20).optional().default(1),
+  minProtein: z.coerce.number().min(0).max(200).optional(),
+  maxSugar: z.coerce.number().min(0).max(500).optional(),
+  maxCalories: z.coerce.number().min(50).max(5000).optional(),
+  maxReadyTime: z.coerce.number().int().min(1).max(600).optional(),
 });
 
 export default async function handler(req, res) {
@@ -29,6 +36,8 @@ export default async function handler(req, res) {
 
   const { type, diet, number, offset, pages } = parsed.data;
 
+  const filters = parseCatalogImportFilters(parsed.data);
+
   try {
     console.log('[import-spoonacular] start', {
       type: type || null,
@@ -36,6 +45,7 @@ export default async function handler(req, res) {
       number,
       offset,
       pages,
+      filters,
     });
 
     const result = await runSpoonacularCatalogImport({
@@ -44,11 +54,14 @@ export default async function handler(req, res) {
       number,
       offset,
       pages,
+      filters,
     });
 
     console.log('[import-spoonacular] done', {
       imported: result.imported,
       updated: result.updated,
+      matched: result.matched,
+      totalResults: result.totalResults,
       quotaLeft: result.quotaLeft,
       requestsUsed: result.requestsUsed,
       stoppedReason: result.stoppedReason || null,
@@ -57,8 +70,11 @@ export default async function handler(req, res) {
     return res.status(200).json({
       imported: result.imported,
       updated: result.updated,
+      matched: result.matched,
+      totalResults: result.totalResults,
       quotaLeft: result.quotaLeft,
       requestsUsed: result.requestsUsed,
+      filters: result.filters,
       stoppedReason: result.stoppedReason,
       errors: result.errors,
     });

@@ -26,6 +26,7 @@ export default async function handler(req, res) {
     console.log('[cron/import-spoonacular] done', {
       imported: result.imported,
       updated: result.updated,
+      rejected: result.rejected,
       quotaLeft: result.quotaLeft,
       requestsUsed: result.requestsUsed,
       stoppedReason: result.stoppedReason || null,
@@ -36,6 +37,7 @@ export default async function handler(req, res) {
       started_at: startedAt,
       imported: result.imported,
       updated: result.updated,
+      rejected: result.rejected,
       quotaLeft: result.quotaLeft,
       requestsUsed: result.requestsUsed,
       filters: DEFAULT_CATALOG_IMPORT_FILTERS,

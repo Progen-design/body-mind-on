@@ -10,7 +10,7 @@ const importBodySchema = z.object({
   type: z.string().trim().optional(),
   diet: z.string().trim().optional(),
   number: z.coerce.number().int().min(1).max(100).optional().default(100),
-  offset: z.coerce.number().int().min(0).optional().default(0),
+  offset: z.coerce.number().int().min(0).optional(),
   pages: z.coerce.number().int().min(1).max(20).optional().default(1),
   minProtein: z.coerce.number().min(0).max(200).optional(),
   maxSugar: z.coerce.number().min(0).max(500).optional(),
@@ -55,6 +55,7 @@ export default async function handler(req, res) {
       offset,
       pages,
       filters,
+      useCursor: Boolean(type),
     });
 
     console.log('[import-spoonacular] done', {
@@ -62,6 +63,8 @@ export default async function handler(req, res) {
       updated: result.updated,
       matched: result.matched,
       totalResults: result.totalResults,
+      offset: result.offset,
+      nextOffset: result.nextOffset,
       quotaLeft: result.quotaLeft,
       requestsUsed: result.requestsUsed,
       stoppedReason: result.stoppedReason || null,
@@ -72,6 +75,8 @@ export default async function handler(req, res) {
       updated: result.updated,
       matched: result.matched,
       totalResults: result.totalResults,
+      offset: result.offset,
+      nextOffset: result.nextOffset,
       quotaLeft: result.quotaLeft,
       requestsUsed: result.requestsUsed,
       filters: result.filters,

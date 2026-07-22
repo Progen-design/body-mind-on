@@ -70,6 +70,7 @@ export default async function handler(req, res) {
       nextOffset: result.nextOffset,
       quotaLeft: result.quotaLeft,
       requestsUsed: result.requestsUsed,
+      pointsUsed: result.pointsUsed,
       stoppedReason: result.stoppedReason || null,
     });
 
@@ -85,6 +86,7 @@ export default async function handler(req, res) {
       nextOffset: result.nextOffset,
       quotaLeft: result.quotaLeft,
       requestsUsed: result.requestsUsed,
+      pointsUsed: result.pointsUsed,
       filters: result.filters,
       stoppedReason: result.stoppedReason,
       errors: result.errors,

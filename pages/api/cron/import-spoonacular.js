@@ -30,6 +30,7 @@ export default async function handler(req, res) {
       rejectedReason: result.rejectedReason,
       quotaLeft: result.quotaLeft,
       requestsUsed: result.requestsUsed,
+      pointsUsed: result.pointsUsed,
       stoppedReason: result.stoppedReason || null,
     });
 
@@ -42,6 +43,7 @@ export default async function handler(req, res) {
       rejectedReason: result.rejectedReason,
       quotaLeft: result.quotaLeft,
       requestsUsed: result.requestsUsed,
+      pointsUsed: result.pointsUsed,
       filters: DEFAULT_CATALOG_IMPORT_FILTERS,
       stoppedReason: result.stoppedReason,
       byType: result.byType,

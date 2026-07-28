@@ -1,0 +1,172 @@
+[
+  {
+    "_case": "valid_lunch_obed",
+    "expected": "kept",
+    "catalogMealType": "obed",
+    "id": 900001,
+    "title": "Grilled Chicken with Rice and Vegetables",
+    "servings": 1,
+    "extendedIngredients": [
+      { "nameClean": "chicken breast", "name": "chicken breast" },
+      { "nameClean": "rice", "name": "rice" },
+      { "nameClean": "broccoli", "name": "broccoli" },
+      { "nameClean": "bell pepper", "name": "bell pepper" },
+      { "nameClean": "onion", "name": "onion" },
+      { "nameClean": "salt", "name": "salt" },
+      { "nameClean": "olive oil", "name": "olive oil" },
+      { "nameClean": "black pepper", "name": "black pepper" }
+    ],
+    "nutrition": {
+      "nutrients": [
+        { "name": "Calories", "amount": 520 },
+        { "name": "Protein", "amount": 42 },
+        { "name": "Carbohydrates", "amount": 48 },
+        { "name": "Fat", "amount": 14 }
+      ]
+    }
+  },
+  {
+    "_case": "lunch_seven_mains_obed",
+    "expected": "too_complex",
+    "catalogMealType": "obed",
+    "id": 900002,
+    "title": "Loaded Chicken Rice Bowl",
+    "extendedIngredients": [
+      { "nameClean": "chicken breast", "name": "chicken breast" },
+      { "nameClean": "rice", "name": "rice" },
+      { "nameClean": "broccoli", "name": "broccoli" },
+      { "nameClean": "zucchini", "name": "zucchini" },
+      { "nameClean": "onion", "name": "onion" },
+      { "nameClean": "black beans", "name": "black beans" },
+      { "nameClean": "corn", "name": "corn" },
+      { "nameClean": "salt", "name": "salt" }
+    ],
+    "nutrition": {
+      "nutrients": [
+        { "name": "Calories", "amount": 610 },
+        { "name": "Protein", "amount": 38 },
+        { "name": "Carbohydrates", "amount": 62 },
+        { "name": "Fat", "amount": 16 }
+      ]
+    }
+  },
+  {
+    "_case": "breakfast_five_mains_snidane",
+    "expected": "too_complex",
+    "catalogMealType": "snidane",
+    "id": 900003,
+    "title": "Hearty Morning Oats Bowl",
+    "extendedIngredients": [
+      { "nameClean": "oats", "name": "oats" },
+      { "nameClean": "eggs", "name": "eggs" },
+      { "nameClean": "banana", "name": "banana" },
+      { "nameClean": "milk", "name": "milk" },
+      { "nameClean": "honey", "name": "honey" },
+      { "nameClean": "cinnamon", "name": "cinnamon" }
+    ],
+    "nutrition": {
+      "nutrients": [
+        { "name": "Calories", "amount": 420 },
+        { "name": "Protein", "amount": 18 },
+        { "name": "Carbohydrates", "amount": 58 },
+        { "name": "Fat", "amount": 12 }
+      ]
+    }
+  },
+  {
+    "_case": "snack_four_mains_svacina",
+    "expected": "too_complex",
+    "catalogMealType": "svacina",
+    "id": 900004,
+    "title": "Apple Almond Yogurt Snack",
+    "extendedIngredients": [
+      { "nameClean": "apple", "name": "apple" },
+      { "nameClean": "almonds", "name": "almonds" },
+      { "nameClean": "greek yogurt", "name": "greek yogurt" },
+      { "nameClean": "honey", "name": "honey" }
+    ],
+    "nutrition": {
+      "nutrients": [
+        { "name": "Calories", "amount": 280 },
+        { "name": "Protein", "amount": 12 },
+        { "name": "Carbohydrates", "amount": 32 },
+        { "name": "Fat", "amount": 11 }
+      ]
+    }
+  },
+  {
+    "_case": "clickbait_not_a_recipe",
+    "expected": "not_a_recipe",
+    "catalogMealType": "obed",
+    "id": 900005,
+    "title": "How to make the best high-protein lunch?",
+    "extendedIngredients": [
+      { "nameClean": "chicken breast", "name": "chicken breast" },
+      { "nameClean": "rice", "name": "rice" }
+    ],
+    "nutrition": {
+      "nutrients": [
+        { "name": "Calories", "amount": 400 },
+        { "name": "Protein", "amount": 35 },
+        { "name": "Carbohydrates", "amount": 30 },
+        { "name": "Fat", "amount": 10 }
+      ]
+    }
+  },
+  {
+    "_case": "missing_nutrition_zero_kcal",
+    "expected": "missing_nutrition",
+    "catalogMealType": "obed",
+    "id": 900006,
+    "title": "Simple Chicken Salad",
+    "extendedIngredients": [
+      { "nameClean": "chicken breast", "name": "chicken breast" },
+      { "nameClean": "lettuce", "name": "lettuce" },
+      { "nameClean": "tomato", "name": "tomato" }
+    ],
+    "nutrition": {
+      "nutrients": [
+        { "name": "Calories", "amount": 0 },
+        { "name": "Protein", "amount": 25 },
+        { "name": "Carbohydrates", "amount": 6 },
+        { "name": "Fat", "amount": 4 }
+      ]
+    }
+  },
+  {
+    "_case": "verified_protected_source",
+    "expected": "protected",
+    "catalogMealType": "obed",
+    "id": 900007,
+    "title": "Verified Cottage Bowl",
+    "extendedIngredients": [
+      { "nameClean": "cottage cheese", "name": "cottage cheese" },
+      { "nameClean": "cucumber", "name": "cucumber" },
+      { "nameClean": "bread", "name": "bread" }
+    ],
+    "nutrition": {
+      "nutrients": [
+        { "name": "Calories", "amount": 350 },
+        { "name": "Protein", "amount": 28 },
+        { "name": "Carbohydrates", "amount": 32 },
+        { "name": "Fat", "amount": 8 }
+      ]
+    }
+  },
+  {
+    "_case": "missing_nutrition_no_macros",
+    "expected": "missing_nutrition",
+    "catalogMealType": "vecere",
+    "id": 900008,
+    "title": "Tomato Soup",
+    "extendedIngredients": [
+      { "nameClean": "tomatoes", "name": "tomatoes" },
+      { "nameClean": "onion", "name": "onion" }
+    ],
+    "nutrition": {
+      "nutrients": [
+        { "name": "Calories", "amount": 180 }
+      ]
+    }
+  }
+]

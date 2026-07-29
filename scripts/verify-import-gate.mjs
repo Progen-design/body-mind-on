@@ -25,6 +25,7 @@ for (const name of ['.env.local', '.env.production.local', '.env']) {
 
 const BASE_URL = (process.env.BASE_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '');
 const secret = process.env.CRON_SECRET;
+const dryRun = process.argv.includes('--dry-run') || process.env.IMPORT_DRY_RUN === '1';
 
 let failed = 0;
 
@@ -42,12 +43,13 @@ if (!secret) {
   process.exit(1);
 }
 
-console.log(`--- verify-import-gate @ ${BASE_URL} ---`);
+const url = `${BASE_URL}/api/cron/import-spoonacular${dryRun ? '?dry_run=1' : ''}`;
+console.log(`--- verify-import-gate @ ${url} ---`);
 
 let res;
 let body;
 try {
-  res = await fetchWithTimeout(`${BASE_URL}/api/cron/import-spoonacular`, {
+  res = await fetchWithTimeout(url, {
     method: 'GET',
     headers: { Authorization: `Bearer ${secret}` },
   }, 120000);
@@ -68,21 +70,31 @@ pass(`HTTP ${res.status}`);
 const fetched = Number(body.fetched ?? 0);
 const imported = Number(body.imported ?? 0);
 const updated = Number(body.updated ?? 0);
+const skippedDuplicate = Number(body.skipped_duplicate ?? 0);
+const skippedFilter = Number(body.skipped_filter ?? 0);
 const skippedComplex = Number(body.skipped_complex ?? 0);
 const skippedNotRecipe = Number(body.skipped_not_recipe ?? 0);
 const skippedMissingNutrition = Number(body.skipped_missing_nutrition ?? 0);
 const skippedProtected = Number(body.skipped_protected ?? 0);
 const rejected = Number(body.rejected ?? 0);
+const rotationMode = body.skipped_duplicate != null || body.skipped_filter != null;
 
-console.log('\nGate summary:');
+console.log('\nImport summary:');
+console.log(`  dry_run:                  ${body.dry_run === true}`);
+console.log(`  run_id:                   ${body.run_id ?? '—'}`);
 console.log(`  fetched:                  ${fetched}`);
 console.log(`  imported (inserted):      ${imported}`);
 console.log(`  updated:                  ${updated}`);
-console.log(`  skipped_complex:          ${skippedComplex}`);
-console.log(`  skipped_not_recipe:       ${skippedNotRecipe}`);
-console.log(`  skipped_missing_nutrition:${skippedMissingNutrition}`);
-console.log(`  skipped_protected:        ${skippedProtected}`);
+console.log(`  skipped_duplicate:        ${skippedDuplicate}`);
+console.log(`  skipped_filter:           ${skippedFilter}`);
+if (!rotationMode) {
+  console.log(`  skipped_complex:          ${skippedComplex}`);
+  console.log(`  skipped_not_recipe:       ${skippedNotRecipe}`);
+  console.log(`  skipped_missing_nutrition:${skippedMissingNutrition}`);
+  console.log(`  skipped_protected:        ${skippedProtected}`);
+}
 console.log(`  rejected (total):         ${rejected}`);
+console.log(`  quotaLeft:                ${body.quotaLeft ?? '—'}`);
 if (body.rejectedReason) {
   console.log(`  rejectedReason:           ${JSON.stringify(body.rejectedReason)}`);
 }
@@ -90,31 +102,44 @@ if (body.stoppedReason) {
   console.log(`  stoppedReason:            ${body.stoppedReason}`);
 }
 
-const skippedTotal = skippedComplex + skippedNotRecipe + skippedMissingNutrition + skippedProtected;
-const importedTotal = imported + updated;
-const gateAccounted = importedTotal + skippedTotal;
-
 if (Number.isFinite(fetched) && fetched >= 0) {
   pass('fetched is present');
 } else {
   fail('fetched missing or invalid');
 }
 
-if (gateAccounted === fetched) {
-  pass(`imported+updated+skipped_* (${gateAccounted}) === fetched (${fetched})`);
-} else {
-  const simplicityOnly = Math.max(0, rejected - skippedTotal);
-  const fullAccounted = gateAccounted + simplicityOnly;
-  if (fullAccounted === fetched) {
-    pass(
-      `imported+updated+skipped_*+simplicity (${fullAccounted}) === fetched (${fetched}); `
-      + `simplicity-only rejected: ${simplicityOnly}`,
-    );
+if (rotationMode) {
+  const accounted = imported + skippedDuplicate + skippedFilter;
+  if (accounted === fetched) {
+    pass(`imported+skipped_duplicate+skipped_filter (${accounted}) === fetched (${fetched})`);
   } else {
-    fail(
-      `accounting mismatch: imported+updated (${importedTotal}) + skipped_* (${skippedTotal}) `
-      + `+ simplicity (${simplicityOnly}) = ${fullAccounted}, fetched = ${fetched}`,
-    );
+    fail(`rotation accounting mismatch: ${accounted} vs fetched ${fetched}`);
+  }
+  if (dryRun && imported <= 0) {
+    fail('dry-run imported = 0 (expected > 0 new source_ids)');
+  } else if (dryRun) {
+    pass(`dry-run would insert ${imported} new recipes`);
+  }
+} else {
+  const skippedTotal = skippedComplex + skippedNotRecipe + skippedMissingNutrition + skippedProtected;
+  const importedTotal = imported + updated;
+  const gateAccounted = importedTotal + skippedTotal;
+  if (gateAccounted === fetched) {
+    pass(`imported+updated+skipped_* (${gateAccounted}) === fetched (${fetched})`);
+  } else {
+    const simplicityOnly = Math.max(0, rejected - skippedTotal);
+    const fullAccounted = gateAccounted + simplicityOnly;
+    if (fullAccounted === fetched) {
+      pass(
+        `imported+updated+skipped_*+simplicity (${fullAccounted}) === fetched (${fetched}); `
+        + `simplicity-only rejected: ${simplicityOnly}`,
+      );
+    } else {
+      fail(
+        `accounting mismatch: imported+updated (${importedTotal}) + skipped_* (${skippedTotal}) `
+        + `+ simplicity (${simplicityOnly}) = ${fullAccounted}, fetched = ${fetched}`,
+      );
+    }
   }
 }
 

@@ -17,50 +17,62 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'SPOONACULAR_API_KEY is not configured' });
   }
 
+  const dryRun = req.query?.dry_run === '1'
+    || req.query?.dry_run === 'true'
+    || process.env.SPOONACULAR_IMPORT_DRY_RUN === '1';
+
   const startedAt = new Date().toISOString();
-  console.log('[cron/import-spoonacular] start', startedAt);
+  console.log(JSON.stringify({
+    source: 'cron/import-spoonacular',
+    event: 'start',
+    started_at: startedAt,
+    dry_run: dryRun,
+  }));
 
   try {
-    const result = await runDailySpoonacularCatalogImport();
+    const result = await runDailySpoonacularCatalogImport({ dryRun });
 
-    console.log('[cron/import-spoonacular] done', {
+    console.log(JSON.stringify({
+      source: 'cron/import-spoonacular',
+      event: 'done',
+      started_at: startedAt,
+      run_id: result.runId,
+      dry_run: result.dryRun,
       imported: result.imported,
-      updated: result.updated,
       fetched: result.fetched,
-      rejected: result.rejected,
-      rejectedReason: result.rejectedReason,
-      skipped_complex: result.skipped_complex,
-      skipped_not_recipe: result.skipped_not_recipe,
-      skipped_missing_nutrition: result.skipped_missing_nutrition,
-      skipped_protected: result.skipped_protected,
+      skipped_duplicate: result.skipped_duplicate,
+      skipped_filter: result.skipped_filter,
       quotaLeft: result.quotaLeft,
       requestsUsed: result.requestsUsed,
       pointsUsed: result.pointsUsed,
-      stoppedReason: result.stoppedReason || null,
-    });
+    }));
 
     return res.status(200).json({
       ok: true,
       started_at: startedAt,
+      run_id: result.runId,
+      dry_run: result.dryRun,
       imported: result.imported,
       updated: result.updated,
       fetched: result.fetched,
+      skipped_duplicate: result.skipped_duplicate,
+      skipped_filter: result.skipped_filter,
       rejected: result.rejected,
-      rejectedReason: result.rejectedReason,
-      skipped_complex: result.skipped_complex,
-      skipped_not_recipe: result.skipped_not_recipe,
-      skipped_missing_nutrition: result.skipped_missing_nutrition,
-      skipped_protected: result.skipped_protected,
       quotaLeft: result.quotaLeft,
       requestsUsed: result.requestsUsed,
       pointsUsed: result.pointsUsed,
       filters: DEFAULT_CATALOG_IMPORT_FILTERS,
-      stoppedReason: result.stoppedReason,
       byType: result.byType,
+      errors: result.errors,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[cron/import-spoonacular] error', msg);
+    console.error(JSON.stringify({
+      source: 'cron/import-spoonacular',
+      event: 'error',
+      error: msg,
+      started_at: startedAt,
+    }));
     return res.status(500).json({ ok: false, error: msg, started_at: startedAt });
   }
 }

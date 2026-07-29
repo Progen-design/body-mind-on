@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { isAdmin } from '../../../lib/adminAuth';
 import {
   parseCatalogImportFilters,
+  runDailySpoonacularCatalogImport,
   runSpoonacularCatalogImport,
 } from '../../../lib/spoonacular/catalogImport';
 
@@ -16,6 +17,8 @@ const importBodySchema = z.object({
   maxSugar: z.coerce.number().min(0).max(500).optional(),
   maxCalories: z.coerce.number().min(50).max(5000).optional(),
   maxReadyTime: z.coerce.number().int().min(1).max(600).optional(),
+  dry_run: z.coerce.boolean().optional().default(false),
+  rotate: z.coerce.boolean().optional().default(true),
 });
 
 export default async function handler(req, res) {
@@ -34,19 +37,28 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: parsed.error.issues.map((i) => i.message).join('; ') });
   }
 
-  const { type, diet, number, offset, pages } = parsed.data;
+  const { type, diet, number, offset, pages, dry_run: dryRun, rotate } = parsed.data;
 
   const filters = parseCatalogImportFilters(parsed.data);
 
   try {
-    console.log('[import-spoonacular] start', {
+    console.log(JSON.stringify({
+      source: 'admin/import-spoonacular',
+      event: 'start',
       type: type || null,
       diet: diet || null,
       number,
       offset,
       pages,
+      dry_run: dryRun,
+      rotate,
       filters,
-    });
+    }));
+
+    if (rotate && !type && !offset) {
+      const result = await runDailySpoonacularCatalogImport({ dryRun });
+      return res.status(200).json(result);
+    }
 
     const result = await runSpoonacularCatalogImport({
       type: type || undefined,

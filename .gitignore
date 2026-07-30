@@ -15,6 +15,7 @@ supabase/.temp/
 .local/**
 artifacts/
 audits/plan-quality-samples/
+backups/
 scripts/e2e-output/
 scripts/*.log
 scripts/tmp-*.mjs

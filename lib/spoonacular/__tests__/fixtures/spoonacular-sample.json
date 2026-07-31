@@ -51,7 +51,7 @@
     }
   },
   {
-    "_case": "breakfast_five_mains_snidane",
+    "_case": "breakfast_eleven_mains_snidane",
     "expected": "too_complex",
     "catalogMealType": "snidane",
     "id": 900003,
@@ -62,6 +62,12 @@
       { "nameClean": "banana", "name": "banana" },
       { "nameClean": "milk", "name": "milk" },
       { "nameClean": "honey", "name": "honey" },
+      { "nameClean": "blueberries", "name": "blueberries" },
+      { "nameClean": "almond butter", "name": "almond butter" },
+      { "nameClean": "chia seeds", "name": "chia seeds" },
+      { "nameClean": "walnuts", "name": "walnuts" },
+      { "nameClean": "strawberries", "name": "strawberries" },
+      { "nameClean": "protein powder", "name": "protein powder" },
       { "nameClean": "cinnamon", "name": "cinnamon" }
     ],
     "nutrition": {
@@ -74,7 +80,7 @@
     }
   },
   {
-    "_case": "snack_four_mains_svacina",
+    "_case": "snack_eleven_mains_svacina",
     "expected": "too_complex",
     "catalogMealType": "svacina",
     "id": 900004,
@@ -83,7 +89,14 @@
       { "nameClean": "apple", "name": "apple" },
       { "nameClean": "almonds", "name": "almonds" },
       { "nameClean": "greek yogurt", "name": "greek yogurt" },
-      { "nameClean": "honey", "name": "honey" }
+      { "nameClean": "honey", "name": "honey" },
+      { "nameClean": "blueberries", "name": "blueberries" },
+      { "nameClean": "granola", "name": "granola" },
+      { "nameClean": "chia seeds", "name": "chia seeds" },
+      { "nameClean": "pumpkin seeds", "name": "pumpkin seeds" },
+      { "nameClean": "raisins", "name": "raisins" },
+      { "nameClean": "dark chocolate", "name": "dark chocolate" },
+      { "nameClean": "coconut flakes", "name": "coconut flakes" }
     ],
     "nutrition": {
       "nutrients": [

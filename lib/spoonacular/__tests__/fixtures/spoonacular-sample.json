@@ -27,7 +27,7 @@
   },
   {
     "_case": "lunch_seven_mains_obed",
-    "expected": "too_complex",
+    "expected": "kept",
     "catalogMealType": "obed",
     "id": 900002,
     "title": "Loaded Chicken Rice Bowl",

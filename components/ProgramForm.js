@@ -170,7 +170,11 @@ export default function ProgramForm({ planType }) {
             >
               <option value="">Žádná preference</option>
               <option value="vegetarian">Vegetarián</option>
-              <option value="vegan">Vegan</option>
+              {/* DOČASNÉ (2026-07-31): vegan vypnutý, katalog na něj nestačí — aktivních
+                  veganských receptů je 6 snídaní / 4 obědy / 4 svačiny / 3 večeře, takže
+                  generování padá na CATALOG_SLOT_UNRESOLVED hned u prvního slotu.
+                  Vrátit, až bude aspoň 7 aktivních veganských receptů na každý slot. */}
+              <option value="vegan" disabled>Vegan (zatím nedostupné)</option>
               <option value="gluten_free">Bez lepku</option>
               <option value="lactose_free">Bez laktózy</option>
               <option value="paleo">Paleo</option>

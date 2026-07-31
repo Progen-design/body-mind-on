@@ -696,7 +696,10 @@ export default function Start() {
                   <select name="diet_type" className="reg-input" value={formData.diet_type} onChange={handleChange} disabled={isSubmitting}>
                     <option value="">Žádná preference</option>
                     <option value="vegetarian">Vegetarián</option>
-                    <option value="vegan">Vegan</option>
+                    {/* DOČASNÉ (2026-07-31): vegan vypnutý, katalog na něj nestačí — viz
+                        komentář v components/ProgramForm.js. Vrátit, až bude aspoň
+                        7 aktivních veganských receptů na každý slot. */}
+                    <option value="vegan" disabled>Vegan (zatím nedostupné)</option>
                     <option value="gluten_free">Bez lepku</option>
                     <option value="lactose_free">Bez laktózy</option>
                     <option value="paleo">Paleo</option>

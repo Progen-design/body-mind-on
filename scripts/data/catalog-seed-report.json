@@ -1,0 +1,29 @@
+{
+  "phase1_pass": 28,
+  "phase1_fail": 0,
+  "phase2_pass": 125,
+  "phase2_fail": 0,
+  "distribution": {
+    "total_active": 338,
+    "bands": {
+      "lt400": 94,
+      "b400_700": 123,
+      "b700_1000": 108,
+      "ge1000": 13
+    },
+    "types": {
+      "snidane": 65,
+      "obed": 137,
+      "vecere": 100,
+      "svacina": 36
+    },
+    "prep_type": {
+      "rychlovka": 19,
+      "mealprep": 121,
+      "studene": 8,
+      "varit": 5,
+      "null": 185
+    }
+  },
+  "failed": []
+}

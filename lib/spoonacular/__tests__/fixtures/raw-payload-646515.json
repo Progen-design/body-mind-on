@@ -1,0 +1,107 @@
+{
+  "_note": "Skutečný payload ze spoonacular_raw_cache (complexSearch s addRecipeInformation + addRecipeNutrition), recept 646515 z běhu 2026-08-01. Nezkracovat na ruční minimum — smysl fixture je, že má přesně ten tvar, jaký chodí z API.",
+  "id": 646515,
+  "title": "Healthy Southwestern Oatmeal",
+  "servings": 1,
+  "readyInMinutes": 15,
+  "sourceUrl": "https://www.foodista.com/recipe/JMV2JK3H/healthy-southwestern-oatmeal",
+  "image": "https://img.spoonacular.com/recipes/646515-312x231.jpg",
+  "diets": ["gluten free", "lacto ovo vegetarian"],
+  "extendedIngredients": [
+    {
+      "name": "chili powder",
+      "nameClean": "chili powder",
+      "amount": 0.5,
+      "unit": "teaspoon",
+      "original": "1/2 teaspoon chili powder",
+      "measures": {
+        "us": { "amount": 0.5, "unitLong": "teaspoons", "unitShort": "tsps" },
+        "metric": { "amount": 0.5, "unitLong": "teaspoons", "unitShort": "tsps" }
+      }
+    },
+    {
+      "name": "egg whites",
+      "nameClean": "egg whites",
+      "amount": 2,
+      "unit": "",
+      "original": "2 egg whites",
+      "measures": {
+        "us": { "amount": 2, "unitLong": "", "unitShort": "" },
+        "metric": { "amount": 2, "unitLong": "", "unitShort": "" }
+      }
+    },
+    {
+      "name": "old fashioned oats",
+      "nameClean": "old fashioned oats",
+      "amount": 0.5,
+      "unit": "cup",
+      "original": "1/2 cup old fashioned oats",
+      "measures": {
+        "us": { "amount": 0.5, "unitLong": "cups", "unitShort": "cups" },
+        "metric": { "amount": 40.541, "unitLong": "grams", "unitShort": "g" }
+      }
+    },
+    {
+      "name": "reduced fat cheddar cheese",
+      "nameClean": "reduced fat cheddar cheese",
+      "amount": 4,
+      "unit": "tablespoons",
+      "original": "4 tablespoons reduced fat cheddar cheese",
+      "measures": {
+        "us": { "amount": 4, "unitLong": "Tbsps", "unitShort": "Tbsps" },
+        "metric": { "amount": 4, "unitLong": "Tbsps", "unitShort": "Tbsps" }
+      }
+    },
+    {
+      "name": "salt",
+      "nameClean": "salt",
+      "amount": 1,
+      "unit": "serving",
+      "original": "Salt to taste",
+      "measures": {
+        "us": { "amount": 1, "unitLong": "serving", "unitShort": "serving" },
+        "metric": { "amount": 1, "unitLong": "serving", "unitShort": "serving" }
+      }
+    },
+    {
+      "name": "scallions",
+      "nameClean": "scallions",
+      "amount": 2,
+      "unit": "",
+      "original": "2 scallions, chopped (both white and green parts)",
+      "measures": {
+        "us": { "amount": 2, "unitLong": "", "unitShort": "" },
+        "metric": { "amount": 2, "unitLong": "", "unitShort": "" }
+      }
+    }
+  ],
+  "nutrition": {
+    "nutrients": [
+      { "name": "Calories", "unit": "kcal", "amount": 440.15 },
+      { "name": "Fat", "unit": "g", "amount": 23.33 },
+      { "name": "Carbohydrates", "unit": "g", "amount": 31.61 },
+      { "name": "Sugar", "unit": "g", "amount": 1.66 },
+      { "name": "Protein", "unit": "g", "amount": 26.45 }
+    ]
+  },
+  "analyzedInstructions": [
+    {
+      "name": "",
+      "steps": [
+        {
+          "number": 1,
+          "step": "Bring 1 1/2 c. water to a boil; add the oats. reduce to a simmer, and cook for about 10 minutes, until the mixture is starting to be more oats than water.",
+          "length": { "unit": "minutes", "number": 10 }
+        },
+        {
+          "number": 2,
+          "step": "Add the scallions and chili powder, and cook until excess liquid is gone."
+        },
+        {
+          "number": 3,
+          "step": "Add the egg whites, stirring constantly, and cook until the whites are opaque and mixed in.Turn into a serving bowl, add salt and cheddar, and start your day!"
+        }
+      ]
+    }
+  ]
+}

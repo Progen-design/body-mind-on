@@ -39,6 +39,10 @@
             {
                   "path": "/api/cron/translate-recipes",
                   "schedule": "*/5 * * * *"
+            },
+            {
+                  "path": "/api/cron/sweep-catalog-activation",
+                  "schedule": "30 3 * * *"
             }
       ],
       "functions": {

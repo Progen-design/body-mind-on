@@ -77,13 +77,15 @@
                   "maxDuration": 300
             },
             "pages/api/cron/translate-recipes.js": {
-                  "maxDuration": 120
+                  "maxDuration": 120,
+                  "includeFiles": "prompts/**"
             },
             "pages/api/admin/import-spoonacular.js": {
                   "maxDuration": 300
             },
             "pages/api/admin/translate-recipes.js": {
-                  "maxDuration": 120
+                  "maxDuration": 120,
+                  "includeFiles": "prompts/**"
             }
       }
 }

@@ -1,5 +1,4 @@
 // /pages/api/ai/run-scheduler.js - Run AI task generator + scheduler (cron or manual)
-import { generateAITasks } from '../../../lib/generateAITasks';
 import { processAIEvents, runAIScheduler } from '../../../lib/aiScheduler';
 import { runAIDecisionEngine } from '../../../lib/runAIDecisionEngine';
 
@@ -24,20 +23,14 @@ export default async function handler(req, res) {
       }
 
   try {
-          const gen = await generateAITasks();
+          // Týdenní plány tady UŽ NEVZNIKAJÍ. Zakládá je /api/cron/weekly-plan-producer
+          // jednou denně; scheduler je pak jen zpracuje jako každou jinou úlohu.
           const events = await processAIEvents();
           const decisions = await runAIDecisionEngine();
           const run = await runAIScheduler();
-          console.info('[run-scheduler] completed', {
-                    gen: gen?.created,
-                    legacy_regen_queued: gen?.legacy_regen_queued,
-                    events,
-                    decisions,
-                    run,
-          });
+          console.info('[run-scheduler] completed', { events, decisions, run });
           return res.status(200).json({
                     ok: true,
-                    generated: gen?.created,
                     events,
                     decisions,
                     scheduler: run,

@@ -35,6 +35,13 @@ Pečení a vaření patří do aktivního času. Když žádné čekání není,
 Zadání má `max_active_minutes` — recept, který ho překročí, je k ničemu, protože
 neprojde do slotu. Radši navrhni jednodušší jídlo.
 
+## Vždy jedna porce
+
+Recept popisuje **jednu porci pro jednoho člověka**. `servings` je vždy 1 a
+gramáže odpovídají tomu, co si ten člověk dá — ne tomu, co se uvaří do hrnce.
+Katalog počítá kalorie ze surovin, takže suroviny na dvě porce znamenají
+dvojnásobnou porci.
+
 ## Rozsah kalorií
 
 Zadání má `kcal_min` a `kcal_max` — je to hrubý rozsah pro **jednu porci**.
@@ -60,7 +67,7 @@ Vracíš pole `recepty`. Každý recept:
 - `name_cs` — český název
 - `meal_type` — přesně hodnota ze zadání
 - `diet_tags` — pole; uveď jen ty, které recept **skutečně** splňuje
-- `servings` — počet porcí (obvykle 1 nebo 2)
+- `servings` — VŽDY 1. Suroviny uváděj na jednu porci, ne na celý hrnec.
 - `ingredients` — pole `{ "name": "...", "amount": číslo, "unit": "g" | "ml" }`
 - `instructions` — pole vět
 - `active_minutes`, `passive_minutes` — celá čísla

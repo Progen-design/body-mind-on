@@ -10,6 +10,7 @@ import { runRecipeGenerator } from '../../../lib/recipeGeneratorRun';
 const bodySchema = z.object({
   dry_run: z.coerce.boolean().optional().default(false),
   limit: z.coerce.number().int().min(1).max(50).optional(),
+  queue_id: z.coerce.number().int().positive().optional(),
 });
 
 export const config = { maxDuration: 300 };
@@ -32,6 +33,7 @@ export default async function handler(req, res) {
     const vysledek = await runRecipeGenerator({
       dryRun: parsed.data.dry_run,
       limit: parsed.data.limit,
+      queueId: parsed.data.queue_id ?? null,
     });
 
     console.log(JSON.stringify({

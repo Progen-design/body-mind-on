@@ -6,6 +6,7 @@
  *   node scripts/estimate-prep-time.mjs --calibrate --limit=10   zkušební vzorek
  *   node scripts/estimate-prep-time.mjs --rescore          přepočet z ai_runs, bez volání modelu
  *   node scripts/estimate-prep-time.mjs --run              fáze 2: zbytek (jen po schválení)
+ *   node scripts/estimate-prep-time.mjs --regenerate       přepočet zdroje 'llm' po změně promptu
  *   node scripts/estimate-prep-time.mjs --run --dry        vypíše, co by běželo, bez volání
  *
  * FÁZE 1 nic nezapisuje do recipes_catalog — jen do ai_runs a na výstup. Reference
@@ -57,12 +58,15 @@ const openai = new OpenAI({ apiKey: String(process.env.OPENAI_API_KEY || '').tri
 const args = process.argv.slice(2);
 const rezim = args.includes('--calibrate') ? 'calibrate'
   : args.includes('--rescore') ? 'rescore'
-    : args.includes('--run') ? 'run' : null;
+    : args.includes('--regenerate') ? 'regenerate'
+      : args.includes('--run') ? 'run' : null;
+/** Režimy, které zapisují odhad do recipes_catalog. */
+const zapisuje = rezim === 'run' || rezim === 'regenerate';
 const dry = args.includes('--dry');
 const limit = Number((args.find((a) => a.startsWith('--limit=')) || '--limit=0').slice(8)) || 0;
 
 if (!rezim) {
-  console.error('Chybí --calibrate, --rescore nebo --run');
+  console.error('Chybí --calibrate, --rescore, --regenerate nebo --run');
   process.exit(2);
 }
 
@@ -74,6 +78,10 @@ async function nactiRecepty() {
 
   if (rezim === 'calibrate' || rezim === 'rescore') {
     q = q.eq('prep_minutes_source', 'structured_length');
+  } else if (rezim === 'regenerate') {
+    // Přepočet po změně promptu: jen to, co model už jednou odhadl. Měřený čas
+    // ani deterministickou strukturovanou délku nepřepisujeme.
+    q = q.eq('prep_minutes_source', 'llm');
   } else {
     // Fáze 2: má postup, nemá měřený čas ani odhad, není vyřazený.
     q = q.is('prep_minutes_estimated', null).is('ready_in_minutes', null).eq('prep_estimate_blocked', false);
@@ -140,8 +148,12 @@ if (rezim === 'rescore') {
 
   for (const r of recepty) {
     const b = posledni.get(r.id);
-    if (!b?.result?.minutes) { chyby.push(`${r.id}: v ai_runs není odpověď`); continue; }
-    pridejVzorek(r, Number(b.result.minutes), Number(b.result.confidence), String(b.result.reasoning || ''));
+    // `minutes` je tvar před rozdělením na aktivní a pasivní čas; `active_minutes`
+    // je ten dnešní. Otisk promptu se u obou liší, takže se v jednom běhu nepotkají —
+    // čte se obojí jen proto, aby --rescore fungoval i nad starším otiskem.
+    const aktivni = b?.result?.active_minutes ?? b?.result?.minutes;
+    if (aktivni == null) { chyby.push(`${r.id}: v ai_runs není odpověď`); continue; }
+    pridejVzorek(r, Number(aktivni), Number(b.result.confidence), String(b.result.reasoning || ''));
   }
 
   console.log(`přepočet z ai_runs: ${vzorky.length} odpovědí, bez volání modelu (útrata $0)`);
@@ -160,7 +172,7 @@ for (const [i, r] of recepty.entries()) {
     // Bez postupu není z čeho odhadovat. Označit a přestat na něj sahat — jinak
     // ho každý další běh znovu načte, znovu přeskočí a znovu nahlásí jako chybu.
     chyby.push(`${r.id}: bez kroků → prep_estimate_blocked`);
-    if (rezim === 'run') {
+    if (zapisuje) {
       await supabase.from('recipes_catalog').update({ prep_estimate_blocked: true }).eq('id', r.id);
       zablokovano += 1;
     }
@@ -182,20 +194,30 @@ for (const [i, r] of recepty.entries()) {
       input_tokens: odhad.usage.input_tokens,
       output_tokens: odhad.usage.output_tokens,
       cost_usd: odhad.cost_usd,
-      result: { minutes: odhad.minutes, confidence: odhad.confidence, reasoning: odhad.reasoning },
+      result: {
+        active_minutes: odhad.activeMinutes,
+        passive_minutes: odhad.passiveMinutes,
+        confidence: odhad.confidence,
+        reasoning: odhad.reasoning,
+      },
     });
 
     if (rezim === 'calibrate') {
-      pridejVzorek(r, odhad.minutes, odhad.confidence, odhad.reasoning);
+      pridejVzorek(r, odhad.activeMinutes, odhad.confidence, odhad.reasoning);
     } else {
-      // Fáze 2 zapisuje odhad. ready_in_minutes se NEDOTÝKÁ.
+      // Fáze 2 zapisuje AKTIVNÍ čas do prep_minutes_estimated, pasivní vedle.
+      // ready_in_minutes se NEDOTÝKÁ.
       await supabase.from('recipes_catalog').update({
-        prep_minutes_estimated: odhad.minutes,
+        prep_minutes_estimated: odhad.activeMinutes,
+        prep_minutes_passive: odhad.passiveMinutes,
         prep_minutes_source: 'llm',
         prep_minutes_confidence: odhad.confidence,
         prep_minutes_estimated_at: new Date().toISOString(),
       }).eq('id', r.id);
-      zapsane.push({ id: r.id, meal: r.meal_type, minuty: odhad.minutes, confidence: odhad.confidence });
+      zapsane.push({
+        id: r.id, meal: r.meal_type, minuty: odhad.activeMinutes,
+        pasivni: odhad.passiveMinutes, confidence: odhad.confidence,
+      });
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -216,7 +238,7 @@ console.log(`SKUTEČNÁ ÚTRATA: $${cenaCelkem.toFixed(4)}  (vstup ${vstupTok} t
 console.log(`chyb: ${chyby.length}${chyby.length ? ' → ' + chyby.slice(0, 5).join('; ') : ''}`);
 
 if (rezim !== 'calibrate') {
-  if (rezim === 'run') vypisRozdeleniPodleSlotu();
+  if (zapisuje) vypisRozdeleniPodleSlotu();
   process.exit(0);
 }
 

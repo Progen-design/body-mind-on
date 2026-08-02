@@ -18,9 +18,32 @@
  * dalších dotazů (a aby bylo vidět, odkud každé číslo je).
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
-import { dirname } from 'path';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+
+/**
+ * Minimalistický loader .env.local — skript se pouští ručně mimo Next.js,
+ * takže si proměnné musí načíst sám. Bez závislosti na dotenv.
+ * Reálné prostředí (process.env) má vždy přednost před souborem.
+ */
+function loadEnvLocal() {
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const file = join(root, '.env.local');
+  if (!existsSync(file)) return;
+  for (const radek of readFileSync(file, 'utf8').split(/\r?\n/)) {
+    const m = radek.match(/^\s*(?:export\s+)?([A-Z0-9_]+)\s*=\s*(.*)$/i);
+    if (!m || radek.trim().startsWith('#')) continue;
+    const klic = m[1];
+    if (process.env[klic] !== undefined) continue;
+    process.env[klic] = m[2].trim().replace(/^(['"])([\s\S]*)\1$/, '$2');
+  }
+}
+loadEnvLocal();
 
 const KEY = process.env.FDC_API_KEY || 'DEMO_KEY';
+if (KEY === 'DEMO_KEY') {
+  console.warn('[usda] VAROVANI: FDC_API_KEY nenalezen, jede se na DEMO_KEY (limit 10 dotazu).');
+}
 const CACHE = '.cache/usda-ingredients.json';
 const SQL_ONLY = process.argv.includes('--sql');
 
@@ -54,7 +77,10 @@ const POLOZKY = [
   ['bulgur', 'bulgur', 'bulgur cooked'],
   ['pohanka', 'buckwheat', 'buckwheat groats cooked'],
   ['jáhly', 'millet', 'millet cooked'],
-  ['sójové maso', 'textured soy protein', 'soy protein textured'],
+  // POZOR: 'soy protein textured' vrací z USDA izolát (88 g bílkovin/100 g),
+  // což je jiná surovina než TVP granule. Defatted soy flour je to, z čeho se
+  // TVP extruduje, a makra sedí (~47 g bílkovin) — proto tenhle dotaz.
+  ['sójové maso', 'textured soy protein', 'soy flour defatted'],
 ];
 
 const spanek = (ms) => new Promise((r) => setTimeout(r, ms));

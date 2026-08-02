@@ -26,3 +26,6 @@ scripts/tmp-*.mjs
 
 tmp/
 .env*
+
+# Cache USDA FoodData Central — dohledatelnost je v migraci, ne tady
+.cache/

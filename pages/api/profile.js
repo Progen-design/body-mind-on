@@ -7,6 +7,7 @@ import { ensureInitialPlanTask } from '../../lib/ensureInitialPlanTask';
 import { getRegistrationAnchoredWeek } from '../../lib/profileWeekRange';
 import { reconcileUserDataByEmail } from '../../lib/reconcileUserDataByEmail';
 import { shouldShowWithingsSection } from '../../lib/withingsProfileVisibility';
+import { canRenewPlanForMembership } from '../../lib/planGenerationGate';
 
 function toDateKey(value) {
   if (!value) return '';
@@ -289,6 +290,46 @@ export default async function handler(req, res) {
     const daysUntilTrialEnd = program === 'START' && trialEndsAt
       ? Math.ceil((new Date(trialEndsAt) - now) / (24 * 60 * 60 * 1000))
       : null;
+
+    // --- Plán po expiraci ---------------------------------------------------
+    //
+    // Dosud se `valid_until` s dneškem neporovnávalo vůbec: plán platil, dokud
+    // ho nepřepsal nový, takže propadlý týden se uživateli tvářil jako aktuální.
+    // Doplňuje se AŽ TADY, protože verdikt závisí na členství, které se parsuje
+    // o kus výš než blok s plan_state.
+    //
+    // Rozlišení má dvě varianty schválně. „Nový se připravuje“ smí vidět jen ten,
+    // komu ho brána opravdu vygeneruje; komu vypršel trial, tomu nový plán nepřijde
+    // a slibovat mu ho by byla lež, kterou by odhalil tím, že by čekal marně.
+    const expiredPlanCheck = (() => {
+      if (plan_state !== 'ready') return null;
+      const nejnovejsiPlatnost = plansData
+        .map((p) => p.valid_until)
+        .filter(Boolean)
+        .sort()
+        .pop();
+      if (!nejnovejsiPlatnost) return null;
+      // Plán platí VČETNĚ posledního dne — shodně s deactivate_expired_plans().
+      const dnes = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const konec = new Date(`${String(nejnovejsiPlatnost).split('T')[0]}T00:00:00`);
+      if (konec >= dnes) return null;
+
+      const renewal = canRenewPlanForMembership(membershipData);
+      return {
+        state: renewal.allowed ? 'expired_renewing' : 'expired_upgrade',
+        reason: renewal.reason,
+        valid_until: String(nejnovejsiPlatnost).split('T')[0],
+        trial_ended: renewal.trialEnded,
+      };
+    })();
+
+    if (expiredPlanCheck) {
+      plan_state = expiredPlanCheck.state;
+      plan_state_reason = `plan_expired:${expiredPlanCheck.reason}`;
+    }
+    const planExpiredInfo = expiredPlanCheck
+      ? { valid_until: expiredPlanCheck.valid_until, trial_ended: expiredPlanCheck.trial_ended }
+      : null;
     if (workoutsRes.status === 'rejected') {
       console.warn('[profile] workouts fetch failed (table may not exist):', workoutsRes.reason?.message);
     }
@@ -422,6 +463,8 @@ export default async function handler(req, res) {
         profile_plan_returned: hasValidPlan ? true : (initialPlanTask?.status === 'completed' ? false : undefined),
         root_failure_stage: initialPlanResult?.root_failure_stage ?? undefined,
         plan_state,
+        plan_state_reason,
+        plan_expired: planExpiredInfo ?? undefined,
         last_task_status: last_task_status ?? undefined,
         last_task_reason: last_task_reason ?? undefined,
         truth_check_passed: truth_check?.truth_check_passed ?? undefined,

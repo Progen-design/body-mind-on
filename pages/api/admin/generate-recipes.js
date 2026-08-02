@@ -5,10 +5,11 @@
 // Fronta je perzistentní, takže cron se dá přidat později bez přepisování logiky.
 import { z } from 'zod';
 import { isAdmin } from '../../../lib/adminAuth';
+import { booleanParam } from '../../../lib/httpParams';
 import { runRecipeGenerator } from '../../../lib/recipeGeneratorRun';
 
 const bodySchema = z.object({
-  dry_run: z.coerce.boolean().optional().default(false),
+  dry_run: booleanParam(false),
   limit: z.coerce.number().int().min(1).max(50).optional(),
   queue_id: z.coerce.number().int().positive().optional(),
 });

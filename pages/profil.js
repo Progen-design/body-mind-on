@@ -394,6 +394,27 @@ export default function Profil() {
   const { currentPlan, nextPlan, planState } = usePlanStatus(profile, { loading });
   const error = profileError;
 
+  // Doprovodné údaje k expirovanému plánu — datum konce platnosti a jestli
+  // uživateli opravdu skončil trial (jinak by hlavička tvrdila „týden zdarma
+  // skončil“ někomu, komu ještě běží).
+  const planExpiredUntil = (() => {
+    const raw = profile?._diagnostics?.plan_expired?.valid_until;
+    if (!raw) return null;
+    const [rok, mesic, den] = String(raw).split('-').map(Number);
+    if (!rok || !mesic || !den) return null;
+    return `${den}. ${mesic}.`;
+  })();
+  const planTrialEnded = profile?._diagnostics?.plan_expired?.trial_ended === true;
+
+  // Stavy, které si kreslí vlastní blok a plán se pod nimi vykreslovat nemá.
+  // Jeden seznam schválně — dokud se stavy vyjmenovávaly v každé podmínce zvlášť,
+  // znamenal každý nový stav dvě místa, kde se dá zapomenout.
+  const PLAN_STATES_BEZ_VYKRESLENI = [
+    'loading', 'processing', 'invalid', 'failed', 'missing',
+    'expired_renewing', 'expired_upgrade',
+  ];
+  const planStateSkryvaPlan = PLAN_STATES_BEZ_VYKRESLENI.includes(planState);
+
   const [showWorkoutModal, setShowWorkoutModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
@@ -2577,7 +2598,39 @@ export default function Profil() {
                   </button>
                 </div>
               )}
-              {planState !== 'loading' && planState !== 'processing' && planState !== 'invalid' && planState !== 'failed' && planState !== 'missing' && (currentPlan || nextPlan) && (
+              {/* Plán po expiraci. Dvě varianty podle toho, jestli členství na nový
+                  plán vůbec má nárok — verdikt počítá canRenewPlanForMembership, tedy
+                  stejné pravidlo jako brána scheduleru. Slíbit nový plán někomu, komu
+                  ho brána nevygeneruje, by znamenalo nechat ho čekat na něco, co nepřijde. */}
+              {planState === 'expired_renewing' && (
+                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                  <p className="plan-preparing-text">Tvůj plán skončil.</p>
+                  <p className="plan-preparing-hint">
+                    {planExpiredUntil
+                      ? `Platil do ${planExpiredUntil}. Nový se připravuje — najdeš ho tady, jakmile bude hotový.`
+                      : 'Nový se připravuje — najdeš ho tady, jakmile bude hotový.'}
+                  </p>
+                  <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing} style={{ marginTop: '12px' }}>
+                    {refreshing ? 'Obnovuji…' : 'Obnovit'}
+                  </button>
+                </div>
+              )}
+              {planState === 'expired_upgrade' && (
+                <div className="plan-preparing-block" style={{ padding: '1.5rem' }}>
+                  <p className="plan-preparing-text" style={{ textAlign: 'center' }}>
+                    {planTrialEnded ? 'Týden zdarma skončil.' : 'Plán na tenhle týden skončil.'}
+                  </p>
+                  <p className="plan-preparing-hint" style={{ textAlign: 'center' }}>
+                    {planTrialEnded
+                      ? `${planExpiredUntil ? `Plán platil do ${planExpiredUntil}. ` : ''}Pokud chceš pokračovat, aktivuj START.`
+                      : `${planExpiredUntil ? `Platil do ${planExpiredUntil}. ` : ''}V týdnu zdarma dostáváš jeden plán. Pokračovat můžeš se STARTem.`}
+                  </p>
+                  <div style={{ marginTop: '16px' }}>
+                    <TrialExpiredPaywall />
+                  </div>
+                </div>
+              )}
+              {!planStateSkryvaPlan && (currentPlan || nextPlan) && (
               <div
                 className={planAccessLocked ? 'plan-locked-preview' : undefined}
                 aria-hidden={planAccessLocked || undefined}
@@ -2738,7 +2791,7 @@ export default function Profil() {
               ) : null}
               </div>
               )}
-              {(!currentPlan && !nextPlan) && planState !== 'loading' && planState !== 'processing' && planState !== 'invalid' && planState !== 'failed' && planState !== 'missing' && (
+              {(!currentPlan && !nextPlan) && !planStateSkryvaPlan && (
                 <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
                   <p className="plan-preparing-text">Plán zatím nebyl vytvořen.</p>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRetryPlan} disabled={retryingPlan} style={{ marginTop: '12px' }}>

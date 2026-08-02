@@ -35,7 +35,7 @@ import {
   evaluateBinaryCalibration,
   BINARY_CALIBRATION_THRESHOLDS,
 } from '../lib/spoonacular/prepTimeEstimate.js';
-import { MEAL_SIMPLICITY_RULES } from '../lib/spoonacular/catalogImportGate.js';
+import { MEAL_SIMPLICITY_RULES, getMealSimplicityRules } from '../lib/spoonacular/catalogImportGate.js';
 
 for (const name of ['.env.local', '.env']) {
   const p = resolve(process.cwd(), name);
@@ -149,9 +149,23 @@ if (rezim === 'rescore') {
   process.exit(0);
 }
 
+/** Recepty bez použitelných kroků — odhadnout je nejde, blokují se natrvalo. */
+let zablokovano = 0;
+/** Zapsané odhady fáze 2, pro rozdělení podle slotů vůči limitům. */
+const zapsane = [];
+
 for (const [i, r] of recepty.entries()) {
   const vstup = buildEstimateInput(r);
-  if (!vstup.steps.length) { chyby.push(`${r.id}: bez kroků`); continue; }
+  if (!vstup.steps.length) {
+    // Bez postupu není z čeho odhadovat. Označit a přestat na něj sahat — jinak
+    // ho každý další běh znovu načte, znovu přeskočí a znovu nahlásí jako chybu.
+    chyby.push(`${r.id}: bez kroků → prep_estimate_blocked`);
+    if (rezim === 'run') {
+      await supabase.from('recipes_catalog').update({ prep_estimate_blocked: true }).eq('id', r.id);
+      zablokovano += 1;
+    }
+    continue;
+  }
 
   try {
     const odhad = await estimatePrepTime(openai, vstup);
@@ -181,6 +195,7 @@ for (const [i, r] of recepty.entries()) {
         prep_minutes_confidence: odhad.confidence,
         prep_minutes_estimated_at: new Date().toISOString(),
       }).eq('id', r.id);
+      zapsane.push({ id: r.id, meal: r.meal_type, minuty: odhad.minutes, confidence: odhad.confidence });
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -200,7 +215,45 @@ console.log('='.repeat(72));
 console.log(`SKUTEČNÁ ÚTRATA: $${cenaCelkem.toFixed(4)}  (vstup ${vstupTok} tok, výstup ${vystupTok} tok)`);
 console.log(`chyb: ${chyby.length}${chyby.length ? ' → ' + chyby.slice(0, 5).join('; ') : ''}`);
 
-if (rezim !== 'calibrate') process.exit(0);
+if (rezim !== 'calibrate') {
+  if (rezim === 'run') vypisRozdeleniPodleSlotu();
+  process.exit(0);
+}
+
+/**
+ * Rozdělení zapsaných odhadů vůči limitům slotů. Není to verdikt aktivace — ten
+ * dělá trigger nad coalesce(ready_in_minutes, prep_minutes_estimated) — ale ukazuje,
+ * co časová podmínka udělá, až se zapne.
+ */
+function vypisRozdeleniPodleSlotu() {
+  if (!zapsane.length) { console.log('nic zapsáno'); return; }
+  console.log('');
+  console.log('='.repeat(72));
+  console.log(`ODHADY PODLE SLOTŮ (zapsáno ${zapsane.length}, zablokováno ${zablokovano})`);
+  console.log('='.repeat(72));
+  console.log('slot        limit      n   do limitu   nad limit   medián   p90   max');
+
+  const slots = [...new Set(zapsane.map((z) => z.meal))].sort();
+  for (const meal of slots) {
+    const skupina = zapsane.filter((z) => z.meal === meal);
+    const limit = getMealSimplicityRules(meal).maxReadyTime;
+    const serazene = skupina.map((z) => z.minuty).sort((a, b) => a - b);
+    const kvantil = (p) => serazene[Math.min(serazene.length - 1, Math.floor(p * (serazene.length - 1)))];
+    const doLimitu = skupina.filter((z) => z.minuty <= limit).length;
+    const pct = ((doLimitu / skupina.length) * 100).toFixed(0);
+    console.log(
+      `${meal.padEnd(10)} ${String(limit).padStart(3)} min ${String(skupina.length).padStart(4)}   `
+      + `${String(doLimitu).padStart(4)} (${pct.padStart(3)} %)   ${String(skupina.length - doLimitu).padStart(9)}   `
+      + `${String(kvantil(0.5)).padStart(6)}   ${String(kvantil(0.9)).padStart(3)}   ${String(serazene[serazene.length - 1]).padStart(3)}`,
+    );
+  }
+
+  const celkemDoLimitu = zapsane.filter((z) => z.minuty <= getMealSimplicityRules(z.meal).maxReadyTime).length;
+  console.log('');
+  console.log(`celkem do limitu ${celkemDoLimitu} z ${zapsane.length} (${((celkemDoLimitu / zapsane.length) * 100).toFixed(1)} %)`);
+  const nizkaConf = zapsane.filter((z) => z.confidence < 0.5).length;
+  console.log(`odhadů s confidence < 0,5: ${nizkaConf}`);
+}
 
 vypisBinarniKalibraci();
 

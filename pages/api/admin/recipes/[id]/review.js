@@ -5,11 +5,13 @@
 // Zamítnutí recept smaže a důvod zapíše do ai_runs, ať je z čeho upravovat prompt.
 import { z } from 'zod';
 import { isAdmin } from '../../../../../lib/adminAuth';
+import { booleanParamRequired } from '../../../../../lib/httpParams';
 import { supabaseServer } from '../../../../../lib/supabaseServer';
 import { RECIPE_GEN_MODEL, RECIPE_GEN_TEMPERATURE, RECIPE_GEN_PROMPT_SHA256 } from '../../../../../lib/recipeGenerator';
 
 const bodySchema = z.object({
-  approve: z.coerce.boolean(),
+  // Ne z.coerce.boolean() — to by z {"approve":"false"} udělalo schválení.
+  approve: booleanParamRequired(),
   reason: z.string().trim().max(500).optional(),
 });
 

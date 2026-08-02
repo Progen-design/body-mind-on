@@ -1,6 +1,7 @@
 // POST /api/admin/import-spoonacular — bulk import from Spoonacular complexSearch
 import { z } from 'zod';
 import { isAdmin } from '../../../lib/adminAuth';
+import { booleanParam } from '../../../lib/httpParams';
 import {
   parseCatalogImportFilters,
   runDailySpoonacularCatalogImport,
@@ -17,8 +18,8 @@ const importBodySchema = z.object({
   maxSugar: z.coerce.number().min(0).max(500).optional(),
   maxCalories: z.coerce.number().min(50).max(5000).optional(),
   maxReadyTime: z.coerce.number().int().min(1).max(600).optional(),
-  dry_run: z.coerce.boolean().optional().default(false),
-  rotate: z.coerce.boolean().optional().default(true),
+  dry_run: booleanParam(false),
+  rotate: booleanParam(true),
 });
 
 export default async function handler(req, res) {

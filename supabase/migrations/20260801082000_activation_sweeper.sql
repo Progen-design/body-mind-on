@@ -37,6 +37,7 @@ BEGIN
         )
       )
       -- ČAS zatím nevynucován — shodně s triggerem, viz 20260801081000.
+      -- Až se zapne, platí limity slotů snidane 20, svacina 15, obed 30, vecere 30.
     RETURNING r.id
   )
   SELECT count(*) INTO v_aktivovano FROM zmeneno;

@@ -29,3 +29,6 @@ tmp/
 
 # Cache USDA FoodData Central — dohledatelnost je v migraci, ne tady
 .cache/
+ 
+# Zalohy produkcnich dat - obsahuji osobni udaje, do gitu nepatri 
+zaloha-*/ 

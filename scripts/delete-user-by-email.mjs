@@ -70,7 +70,10 @@ async function findAuthUserIdByEmail(targetEmail) {
 }
 
 async function deleteRowsForUser(userId) {
-  const { data, error } = await supabase.rpc('delete_user_data', { target_user_id: userId });
+  const { data, error } = await supabase.rpc('delete_user_data', {
+    target_user_id: userId,
+    target_email: emailArg,
+  });
   if (error) {
     throw new Error(`delete_user_data: ${error.message}`);
   }

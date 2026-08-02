@@ -93,11 +93,12 @@ BEGIN
   -- ready_in_minutes má vyplněno 4 z 509 receptů, prep_minutes_estimated 154.
   -- Zapnout tuhle podmínku teď by znamenalo, že neprojde prakticky nic.
   -- Zpřísnit až po LLM odhadu a kalibraci (samostatný krok). Až na to dojde,
-  -- odkomentovat a doplnit limity slotů: snidane 15, svacina 10, obed 20, vecere 20.
+  -- odkomentovat; limity slotů jsou snidane 20, svacina 15, obed 30, vecere 30
+  -- (zvednuto 1. 8. 2026, shodně s MEAL_SIMPLICITY_RULES v catalogImportGate.js).
   --
   -- IF coalesce(NEW.ready_in_minutes, NEW.prep_minutes_estimated) IS NULL
   --    OR coalesce(NEW.ready_in_minutes, NEW.prep_minutes_estimated) > CASE NEW.meal_type
-  --         WHEN 'snidane' THEN 15 WHEN 'svacina' THEN 10 ELSE 20 END THEN
+  --         WHEN 'snidane' THEN 20 WHEN 'svacina' THEN 15 ELSE 30 END THEN
   --   NEW.active := false;
   --   RETURN NEW;
   -- END IF;

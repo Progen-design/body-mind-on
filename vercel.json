@@ -41,6 +41,10 @@
                   "schedule": "*/5 * * * *"
             },
             {
+                  "path": "/api/cron/generate-recipes",
+                  "schedule": "15 3 * * *"
+              },
+              {
                   "path": "/api/cron/sweep-catalog-activation",
                   "schedule": "30 3 * * *"
             },

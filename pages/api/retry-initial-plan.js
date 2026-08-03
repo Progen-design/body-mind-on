@@ -157,10 +157,42 @@ export default async function handler(req, res) {
         .eq('id', taskToRun.id);
 
       if (exec?.ok) {
+        // executeTrainerTask umi vratit ok:true a pritom plan NEPREGENEROVAT —
+        // kdyz uz existuje pouzitelny a neni force_regenerate, vraci
+        // skip_reason 'skipped_existing_valid_plan'. Hlasit v takovem pripade
+        // "Plán byl vygenerován" je lez, kterou uzivatel odhali tim, ze kouka
+        // na stary plan. Odpoved proto rozlisuje oba pripady a vraci
+        // updated_at, aby sla cerstvost overit i zvenku.
+        const preskoceno = exec?.result?.skipped === true;
+        const planId = exec?.result?.plan_id ?? null;
+        let updatedAt = null;
+        if (planId) {
+          const { data: planRow } = await supabaseServer
+            .from('ai_generated_plans')
+            .select('updated_at')
+            .eq('id', planId)
+            .maybeSingle();
+          updatedAt = planRow?.updated_at ?? null;
+        }
+
+        if (preskoceno) {
+          return res.status(200).json({
+            ok: true,
+            message: 'Plán už je aktuální, nový se negeneroval.',
+            plan_created: false,
+            skipped: true,
+            skip_reason: exec?.result?.skip_reason ?? null,
+            plan_id: planId,
+            plan_updated_at: updatedAt,
+          });
+        }
+
         return res.status(200).json({
           ok: true,
           message: 'Plán byl vygenerován. Obnov stránku.',
           plan_created: true,
+          plan_id: planId,
+          plan_updated_at: updatedAt,
           email_sent: exec?.result?.email_sent === true,
         });
       }

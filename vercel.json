@@ -41,6 +41,10 @@
                   "schedule": "*/5 * * * *"
             },
             {
+                  "path": "/api/cron/import-exercises",
+                  "schedule": "45 2 * * *"
+              },
+              {
                   "path": "/api/cron/generate-recipes",
                   "schedule": "15 3 * * *"
               },

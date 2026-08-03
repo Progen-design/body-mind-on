@@ -64,12 +64,31 @@ export function median(cisla) {
 }
 
 const cestaNavrhu = process.argv[2] || '.cache/alias-navrh.json';
+
+/**
+ * Prefix vystupnich souboru. Bez nej by druhe kolo prepsalo zaznam prvniho —
+ * a prave druhe kolo je bezny pripad: kdyz se doplni slovnik, cast drive
+ * zamitnutych aliasu uz merit jde.
+ */
+const OUT = (() => {
+  const a = process.argv.find((x) => x.startsWith('--out='));
+  return a ? a.slice(6) : 'aliasy';
+})();
+
+/**
+ * Vstup snese oba tvary: navrh { alias: 'cil' } i vystup teto brany
+ * { alias: { cil, ... } }. Diky tomu jde branu pustit primo nad jejim
+ * vlastnim souborem neproslych, bez rucniho prevodu.
+ */
 const navrh = JSON.parse(readFileSync(cestaNavrhu, 'utf8'));
-const mapa = new Map(Object.entries(navrh).map(([k, v]) => [normalizuj(k), v]));
+const mapa = new Map(Object.entries(navrh).map(([k, v]) => [
+  normalizuj(k),
+  typeof v === 'string' ? v : v?.cil,
+]).filter(([, cil]) => typeof cil === 'string' && cil.length > 0));
 
 const { data: recepty, error } = await supabase
   .from('recipes_catalog')
-  .select('id, name_cs, kcal, ingredients')
+  .select('id, name_cs, kcal, servings, ingredients')
   .eq('active', true);
 if (error) throw new Error(error.message);
 
@@ -112,7 +131,12 @@ for (const r of recepty) {
 
   if (chyba || !n) continue;
   const ulozeno = Number(r.kcal) || 0;
-  const spocteno = Number(n.kcal) || 0;
+  // kcal je v katalogu NA PORCI, ale suroviny u importovanych receptu casto
+  // popisuji cely pekac ("12 porci sul a pepr", 450 g ziti). Bez deleni
+  // porcemi porovnavame celou formu proti jednomu talíri a kazdy vicedavkovy
+  // recept vyjde jako desetinasobny prestrel — coz nerika nic o aliasu.
+  const porci = Math.max(1, Number(r.servings) || 1);
+  const spocteno = (Number(n.kcal) || 0) / porci;
   const zaznam = {
     id: r.id,
     name_cs: r.name_cs,
@@ -123,8 +147,9 @@ for (const r of recepty) {
     // Kolik dal soucet BEZ prepisu. U nekompletnich receptu je to jediny zpusob,
     // jak alias zmerit: nezname suroviny prispivaji nulou, takze soucet vzdycky
     // podstreli — ale prestrelit ho alias nesmi.
-    spocteno_pred: Number(nPred?.kcal) || 0,
-    prestrel: ulozeno > 0 ? (Number(n.kcal) || 0) / ulozeno : null,
+    porci,
+    spocteno_pred: (Number(nPred?.kcal) || 0) / porci,
+    prestrel: ulozeno > 0 ? spocteno / ulozeno : null,
   };
   for (const i of r.ingredients || []) {
     const key = normalizuj(i?.name);
@@ -132,6 +157,19 @@ for (const r of recepty) {
     if (!vysledky.has(key)) vysledky.set(key, []);
     if (!vysledky.get(key).some((x) => x.id === r.id)) vysledky.get(key).push(zaznam);
   }
+}
+
+/** Overi, ze cilova surovina je dohledatelna — jinak by alias mlcky nedelal nic. */
+const cacheCilu = new Map();
+async function cilSeParuje(cil) {
+  if (cacheCilu.has(cil)) return cacheCilu.get(cil);
+  const { data } = await supabase.rpc('compute_nutrition_for_ingredients', {
+    p_ingredients: [{ name: cil, amount: 100, unit: 'g' }],
+  });
+  const n = Array.isArray(data) ? data[0] : data;
+  const ok = n?.complete === true;
+  cacheCilu.set(cil, ok);
+  return ok;
 }
 
 const prosly = {};
@@ -167,17 +205,20 @@ for (const [alias, cil] of mapa) {
     const kandidati = vsechny.filter((v) => v.prestrel != null);
     const prestrely = kandidati.map((v) => v.prestrel);
     const nejvyssi = prestrely.length ? Math.max(...prestrely) : null;
-    const pridal = kandidati.some((v) => v.spocteno > v.spocteno_pred);
+    // Puvodne se testovalo "prepis neco pridal". U bylinek a vody je prirustek
+    // v jednotkach kcal, takze test padal i u spravnych aliasu. Spravna otazka
+    // je jina: parujeme vubec cil? To se da overit primo, jednou surovinou.
+    const pridal = await cilSeParuje(cil);
     const zaznam2 = {
       ...zaznam,
       kriterium: 'smer (recepty nejsou kompletni)',
       nejvyssi_prestrel: nejvyssi == null ? null : Number(nejvyssi.toFixed(3)),
-      pridal_hmotu: pridal,
+      cil_se_paruje: pridal,
     };
     if (!kandidati.length) {
       neprosly[alias] = { ...zaznam2, duvod: 'zadny zasazeny aktivni recept' };
     } else if (!pridal) {
-      neprosly[alias] = { ...zaznam2, duvod: 'prepis nic nepridal — cil se nespáruje' };
+      neprosly[alias] = { ...zaznam2, duvod: 'cil se nesparuje — alias by mlcky nedelal nic' };
     } else if (nejvyssi > 1 + MAX_LIMIT) {
       neprosly[alias] = { ...zaznam2, duvod: `soucet prestrelil ulozene kcal ${(nejvyssi * 100).toFixed(0)} %` };
     } else {
@@ -192,8 +233,8 @@ for (const [alias, cil] of mapa) {
   }
 }
 
-writeFileSync('.cache/aliasy-prosly.json', JSON.stringify(prosly, null, 2));
-writeFileSync('.cache/aliasy-neprosly.json', JSON.stringify(neprosly, null, 2));
+writeFileSync(`.cache/${OUT}-prosly.json`, JSON.stringify(prosly, null, 2));
+writeFileSync(`.cache/${OUT}-neprosly.json`, JSON.stringify(neprosly, null, 2));
 
 const duvody = {};
 for (const v of Object.values(neprosly)) {
@@ -206,4 +247,4 @@ console.log('PROSLO:           %d', Object.keys(prosly).length);
 console.log('NEPROSLO:         %d', Object.keys(neprosly).length);
 console.log('  podle duvodu:   %s', JSON.stringify(duvody));
 console.log('');
-console.log('vystup: .cache/aliasy-prosly.json, .cache/aliasy-neprosly.json');
+console.log('vystup: .cache/%s-prosly.json, .cache/%s-neprosly.json', OUT, OUT);

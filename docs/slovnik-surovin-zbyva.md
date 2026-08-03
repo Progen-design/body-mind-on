@@ -3,46 +3,27 @@
 Stav po dávce 3 (USDA) a aliasech z dlouhého ocasu.
 
 Výchozí měření: 485 neznámých názvů blokovalo 192 ze 426 aktivních receptů.
-Po zásahu: **289 názvů, 162 blokovaných receptů**.
+Po zásahu (kolo 1 + kolo 2): **270 názvů, 157 blokovaných receptů**.
 
 Číslo v závorce = kolik aktivních receptů ten název blokuje.
 
 ---
 
-## 1. Aliasy, které neprošly ověřovací bránou (23)
+## 1. Aliasy, které neprošly ověřovací bránou (4)
 
-Brána: `scripts/verify-ingredient-aliases.mjs`. Návrh dával smysl, ale výpočet
-nad skutečnými recepty ho nepotvrdil. Čísla jsou v `.cache/aliasy-neprosly.json`.
+Kolo 2: brána se pustila znovu nad 23 zamítnutými z kola 1 a **19 z nich prošlo**.
+Většinu neshodil alias, ale chyba v bráně — porovnávala součet za celý pekáč
+proti `kcal`, které jsou na porci. Po vydělení počtem porcí sedí. Detaily
+v migraci `20260803170000`.
+
+Zbylé čtyři jsou v `.cache/aliasy-kolo2-neprosly.json`:
 
 | alias | navržený cíl | proč neprošel |
 |---|---|---|
 | `banany` | `banan` | median odchylky 31.2 % > 25 % |
-| `houb` | `houby` | soucet prestrelil ulozene kcal 349 % |
-| `soda na peceni` | `jedla soda` | prepis nic nepridal — cil se nespáruje |
-| `bazalka natrhana na kousky` | `bazalka` | prepis nic nepridal — cil se nespáruje |
-| `chilli prasek` | `chili prasek` | soucet prestrelil ulozene kcal 320 % |
-| `dalsi mata` | `mata` | prepis nic nepridal — cil se nespáruje |
-| `jalapeno papricky` | `jalapeno` | soucet prestrelil ulozene kcal 855 % |
-| `klas kukurice` | `kukurice` | soucet prestrelil ulozene kcal 855 % |
 | `kureci prsa bez kuze a kosti` | `kureci prsa` | soucet prestrelil ulozene kcal 171 % |
-| `limetkove klinky` | `limetka` | prepis nic nepridal — cil se nespáruje |
-| `lzice vody` | `voda` | prepis nic nepridal — cil se nespáruje |
-| `mild cheddar` | `cheddar` | median odchylky 1116.3 % > 25 % |
-| `mild cheddar syr` | `cheddar` | prepis nic nepridal — cil se nespáruje |
-| `mint` | `mata` | prepis nic nepridal — cil se nespáruje |
-| `nakrajeny mlady zazvor` | `zazvor` | prepis nic nepridal — cil se nespáruje |
-| `nove brambory` | `brambory` | soucet prestrelil ulozene kcal 297 % |
-| `portobello zampiony` | `houby` | prepis nic nepridal — cil se nespáruje |
-| `praskovy cukr` | `cukr` | soucet prestrelil ulozene kcal 1180 % |
-| `stavnata zrala rajcata` | `rajce` | prepis nic nepridal — cil se nespáruje |
-| `svestkove rajcata` | `rajce` | soucet prestrelil ulozene kcal 562 % |
-| `vlazna voda` | `voda` | prepis nic nepridal — cil se nespáruje |
+| `mild cheddar` | `cheddar` | median odchylky 52.0 % > 25 % |
 | `zelene cibule` | `jarni cibulka` | soucet prestrelil ulozene kcal 171 % |
-| `ziti` | `testoviny` | soucet prestrelil ulozene kcal 1270 % |
-
-U přestřelů obvykle nesedí uložené kcal receptu, ne alias — např. `ziti` →
-`těstoviny` přestřelí o 1270 %, protože recept má uloženo řádově míň, než
-z jeho surovin vychází. Alias by tu chybu zabetonoval.
 
 ## 2. Zakázané aliasy — modifikátor, který cíl nemá (9)
 

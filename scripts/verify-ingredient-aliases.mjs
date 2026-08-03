@@ -1,0 +1,209 @@
+#!/usr/bin/env node
+/**
+ * Ověřovací brána pro navržené aliasy surovin.
+ *
+ *   node scripts/verify-ingredient-aliases.mjs .cache/alias-navrh.json
+ *
+ * PROČ EXISTUJE: alias, který dává jazykový smysl, může být nutriční nesmysl
+ * („non-fat milk" není „mléko", liší se tuk). Návrh proto nerozhoduje — rozhoduje
+ * výpočet nad skutečnými recepty.
+ *
+ * Postup pro alias X → Y:
+ *   a) najde aktivní recepty, které X obsahují
+ *   b) spočítá jejich nutrici přes compute_nutrition_for_ingredients nad
+ *      UPRAVENÝM jsonb (X přepsáno na Y). Do DB se nic nezapisuje.
+ *   c) porovná výsledek s kcal uloženými u receptu
+ *   d) alias PROJDE, jen když medián relativní odchylky ≤ 25 % a žádný recept
+ *      nepřekročí 60 %
+ *
+ * Tolerance je široká schválně: kolísání porcí a jednotek je normální, chytáme
+ * hrubé chyby, ne drobnosti. Špatný alias se pozná tím, že kalorie utečou řádově.
+ *
+ * Aby test vůbec něco změřil, aplikují se PŘI VÝPOČTU všechny navržené aliasy
+ * najednou — recept obvykle blokuje víc neznámých názvů a s jediným opraveným
+ * by zůstal nekompletní.
+ */
+import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { resolve } from 'path';
+import { createClient } from '@supabase/supabase-js';
+
+for (const name of ['.env.local', '.env']) {
+  const p = resolve(process.cwd(), name);
+  if (!existsSync(p)) continue;
+  for (const line of readFileSync(p, 'utf8').split('\n')) {
+    const m = line.match(/^([^#=]+)=(.*)$/);
+    if (m && process.env[m[1].trim()] == null) {
+      process.env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, '');
+    }
+  }
+}
+
+const supabase = createClient(
+  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+);
+
+export const MEDIAN_LIMIT = 0.25;
+export const MAX_LIMIT = 0.60;
+
+/** Stejná normalizace jako v compute_nutrition_for_ingredients. */
+export function normalizuj(s) {
+  return String(s || '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '');
+}
+
+export function median(cisla) {
+  if (!cisla.length) return null;
+  const s = [...cisla].sort((a, b) => a - b);
+  const p = Math.floor(s.length / 2);
+  return s.length % 2 ? s[p] : (s[p - 1] + s[p]) / 2;
+}
+
+const cestaNavrhu = process.argv[2] || '.cache/alias-navrh.json';
+const navrh = JSON.parse(readFileSync(cestaNavrhu, 'utf8'));
+const mapa = new Map(Object.entries(navrh).map(([k, v]) => [normalizuj(k), v]));
+
+const { data: recepty, error } = await supabase
+  .from('recipes_catalog')
+  .select('id, name_cs, kcal, ingredients')
+  .eq('active', true);
+if (error) throw new Error(error.message);
+
+/** Které recepty obsahují který alias. */
+const zasazene = new Map();
+for (const r of recepty) {
+  for (const i of r.ingredients || []) {
+    const n = normalizuj(i?.name);
+    if (mapa.has(n)) {
+      if (!zasazene.has(n)) zasazene.set(n, []);
+      if (!zasazene.get(n).includes(r.id)) zasazene.get(n).push(r.id);
+    }
+  }
+}
+
+/** Suroviny receptu s aplikovanými VŠEMI navrženými aliasy. */
+function prepis(ingredients) {
+  return (ingredients || []).map((i) => {
+    const cil = mapa.get(normalizuj(i?.name));
+    return cil ? { ...i, name: cil } : i;
+  });
+}
+
+const vysledky = new Map();
+let hotovo = 0;
+for (const r of recepty) {
+  const zasahuje = (r.ingredients || []).some((i) => mapa.has(normalizuj(i?.name)));
+  if (!zasahuje) continue;
+
+  const [po, pred] = await Promise.all([
+    supabase.rpc('compute_nutrition_for_ingredients', { p_ingredients: prepis(r.ingredients) }),
+    supabase.rpc('compute_nutrition_for_ingredients', { p_ingredients: r.ingredients }),
+  ]);
+  const { data, error: chyba } = po;
+  const n = Array.isArray(data) ? data[0] : data;
+  const nPred = Array.isArray(pred.data) ? pred.data[0] : pred.data;
+
+  hotovo += 1;
+  if (hotovo % 25 === 0) console.error(`  … ${hotovo} receptů`);
+
+  if (chyba || !n) continue;
+  const ulozeno = Number(r.kcal) || 0;
+  const spocteno = Number(n.kcal) || 0;
+  const zaznam = {
+    id: r.id,
+    name_cs: r.name_cs,
+    complete: n.complete === true,
+    ulozeno,
+    spocteno,
+    odchylka: ulozeno > 0 ? Math.abs(spocteno - ulozeno) / ulozeno : null,
+    // Kolik dal soucet BEZ prepisu. U nekompletnich receptu je to jediny zpusob,
+    // jak alias zmerit: nezname suroviny prispivaji nulou, takze soucet vzdycky
+    // podstreli — ale prestrelit ho alias nesmi.
+    spocteno_pred: Number(nPred?.kcal) || 0,
+    prestrel: ulozeno > 0 ? (Number(n.kcal) || 0) / ulozeno : null,
+  };
+  for (const i of r.ingredients || []) {
+    const key = normalizuj(i?.name);
+    if (!mapa.has(key)) continue;
+    if (!vysledky.has(key)) vysledky.set(key, []);
+    if (!vysledky.get(key).some((x) => x.id === r.id)) vysledky.get(key).push(zaznam);
+  }
+}
+
+const prosly = {};
+const neprosly = {};
+for (const [alias, cil] of mapa) {
+  const vsechny = vysledky.get(alias) || [];
+  // Merit jde jen tam, kde je nutrice po prepisu KOMPLETNI. Necompletni soucet
+  // je castecny a porovnavat ho s ulozenymi kcal by merilo diry, ne alias.
+  const meritelne = vsechny.filter((v) => v.complete && v.odchylka != null);
+  const odchylky = meritelne.map((v) => v.odchylka);
+  const med = median(odchylky);
+  const max = odchylky.length ? Math.max(...odchylky) : null;
+
+  const zaznam = {
+    cil,
+    receptu_celkem: (zasazene.get(alias) || []).length,
+    meritelnych: meritelne.length,
+    median_odchylky: med == null ? null : Number(med.toFixed(3)),
+    max_odchylky: max == null ? null : Number(max.toFixed(3)),
+    recepty: meritelne.map((v) => ({
+      id: v.id, name_cs: v.name_cs, ulozeno: v.ulozeno,
+      spocteno: v.spocteno, odchylka: Number(v.odchylka.toFixed(3)),
+    })),
+  };
+
+  if (!meritelne.length) {
+    // Druhe kriterium pro recepty, ktere kompletni nebudou ani po prepisu
+    // (blokuji je dalsi nezname nazvy). Merit odchylku od ulozenych kcal nema
+    // smysl — soucet je castecny a vzdycky podstreli. Merit se da smer:
+    // spatny alias se pozna tim, ze kalorie UTECOU nahoru, protoze surovina
+    // ma nekolikanasobnou hustotu. Alias projde, kdyz po prepisu soucet
+    // neprestreli ulozenou hodnotu o vic nez MAX_LIMIT a zaroven neco pridal.
+    const kandidati = vsechny.filter((v) => v.prestrel != null);
+    const prestrely = kandidati.map((v) => v.prestrel);
+    const nejvyssi = prestrely.length ? Math.max(...prestrely) : null;
+    const pridal = kandidati.some((v) => v.spocteno > v.spocteno_pred);
+    const zaznam2 = {
+      ...zaznam,
+      kriterium: 'smer (recepty nejsou kompletni)',
+      nejvyssi_prestrel: nejvyssi == null ? null : Number(nejvyssi.toFixed(3)),
+      pridal_hmotu: pridal,
+    };
+    if (!kandidati.length) {
+      neprosly[alias] = { ...zaznam2, duvod: 'zadny zasazeny aktivni recept' };
+    } else if (!pridal) {
+      neprosly[alias] = { ...zaznam2, duvod: 'prepis nic nepridal — cil se nespáruje' };
+    } else if (nejvyssi > 1 + MAX_LIMIT) {
+      neprosly[alias] = { ...zaznam2, duvod: `soucet prestrelil ulozene kcal ${(nejvyssi * 100).toFixed(0)} %` };
+    } else {
+      prosly[alias] = zaznam2;
+    }
+  } else if (med > MEDIAN_LIMIT) {
+    neprosly[alias] = { ...zaznam, duvod: `median odchylky ${(med * 100).toFixed(1)} % > ${MEDIAN_LIMIT * 100} %` };
+  } else if (max > MAX_LIMIT) {
+    neprosly[alias] = { ...zaznam, duvod: `nejhorsi recept ${(max * 100).toFixed(1)} % > ${MAX_LIMIT * 100} %` };
+  } else {
+    prosly[alias] = zaznam;
+  }
+}
+
+writeFileSync('.cache/aliasy-prosly.json', JSON.stringify(prosly, null, 2));
+writeFileSync('.cache/aliasy-neprosly.json', JSON.stringify(neprosly, null, 2));
+
+const duvody = {};
+for (const v of Object.values(neprosly)) {
+  const k = v.duvod.startsWith('neoveritelne') ? 'neoveritelne' : v.duvod.split(' ')[0];
+  duvody[k] = (duvody[k] || 0) + 1;
+}
+console.log('');
+console.log('navrzeno aliasu:  %d', mapa.size);
+console.log('PROSLO:           %d', Object.keys(prosly).length);
+console.log('NEPROSLO:         %d', Object.keys(neprosly).length);
+console.log('  podle duvodu:   %s', JSON.stringify(duvody));
+console.log('');
+console.log('vystup: .cache/aliasy-prosly.json, .cache/aliasy-neprosly.json');

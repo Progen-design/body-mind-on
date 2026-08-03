@@ -46,6 +46,17 @@ if (KEY === 'DEMO_KEY') {
 }
 const CACHE = '.cache/usda-ingredients.json';
 const SQL_ONLY = process.argv.includes('--sql');
+/**
+ * --batch=N omezi bezi i vystup SQL na jednu davku. Bez nej jedou vsechny.
+ * Davka = ctvrty prvek polozky; drzi historii pohromade, ale migrace pak
+ * obsahuje jen to nove (starsi uz v DB jsou a ON CONFLICT by je jen prepsal
+ * na nic).
+ */
+const BATCH = (() => {
+  const a = process.argv.find((x) => x.startsWith('--batch='));
+  return a ? Number(a.slice(8)) : null;
+})();
+const vDavce = (p) => BATCH == null || (p[3] ?? 1) === BATCH;
 
 /** Energie: 1008 = Energy, 2047/2048 = Atwater. Bereme první v kcal. */
 const ENERGIE = new Set([1008, 2047, 2048]);
@@ -81,6 +92,63 @@ const POLOZKY = [
   // což je jiná surovina než TVP granule. Defatted soy flour je to, z čeho se
   // TVP extruduje, a makra sedí (~47 g bílkovin) — proto tenhle dotaz.
   ['sójové maso', 'textured soy protein', 'soy flour defatted'],
+
+  // --- Davka 3: dlouhy ocas z .cache/nezname-suroviny.json -------------------
+  // Suroviny, ktere blokovaly recepty tim, ze nejsou ve slovniku. Alias na
+  // neco podobneho by u nich lhal o tuku nebo o zpracovani, proto vlastni radek.
+  ['feta', 'feta cheese', 'cheese feta', 3],
+  ['nízkotučný řecký jogurt', 'low fat greek yogurt', 'yogurt greek plain lowfat', 3],
+  ['šlehačka', 'whipping cream', 'cream fluid heavy whipping', 3],
+  ['rozinky', 'raisins', 'raisins golden seedless', 3],
+  ['podmáslí', 'buttermilk', 'buttermilk fluid cultured lowfat', 3],
+  ['sušená rajčata', 'sun-dried tomatoes', 'tomatoes sun-dried', 3],
+  ['pomerančová kůra', 'orange peel', 'orange peel raw', 3],
+  ['čokoládové kousky', 'chocolate chips', 'chocolate semisweet', 3],
+  ['odtučněné mléko', 'skim milk', 'milk nonfat fluid', 3],
+  ['kozí sýr', 'goat cheese', 'cheese goat soft type', 3],
+  // VYNECHANO: USDA na 'mascarpone' vraci restauracni ravioli, na 'cheese cream'
+  // zase smetanovy syr (ten uz mame). Vlastni radek pro mascarpone tak neni
+  // z ceho postavit — dohledat rucne v SR Legacy a doplnit zvlast.
+  // ['mascarpone', 'mascarpone', '???', 3],
+  ['mandlové máslo', 'almond butter', 'almond butter plain', 3],
+  ['kokosová mouka', 'coconut flour', 'coconut flour', 3],
+  ['kokosové vločky', 'shredded coconut', 'nuts coconut meat dried not sweetened', 3],
+  ['krupice', 'semolina', 'semolina enriched', 3],
+  ['meruňky', 'apricots', 'apricots raw', 3],
+  ['melasa', 'molasses', 'molasses', 3],
+  ['olivy', 'olives', 'olives ripe canned', 3],
+  ['ostružiny', 'blackberries', 'blackberries raw', 3],
+  ['pohanková mouka', 'buckwheat flour', 'buckwheat flour whole groat', 3],
+  ['pomeranč', 'orange', 'oranges raw all commercial varieties', 3],
+  ['rozmarýn', 'rosemary', 'rosemary fresh', 3],
+  ['dýňové pyré', 'pumpkin puree', 'pumpkin canned without salt', 3],
+  // VYNECHANO: 'tea green brewed' vraci uvareny caj (0 kcal), 'spices tea powder'
+  // vraci chilli prasek. Matcha jako prasek v SR Legacy nejspis neni.
+  // ['matcha prášek', 'matcha powder', '???', 3],
+  // VYNECHANO: oba dotazy vratily jinou polozku (naposledy jablecne pyre).
+  // ['sušené brusinky', 'dried cranberries', '???', 3],
+  ['datle', 'dates', 'dates medjool', 3],
+  ['fíky', 'figs', 'figs raw', 3],
+  ['hroznové víno', 'grapes', 'grapes red or green european type raw', 3],
+  ['pistácie', 'pistachios', 'nuts pistachio nuts raw', 3],
+  ['kokos', 'coconut', 'nuts coconut meat raw', 3],
+  ['vodní meloun', 'watermelon', 'watermelon raw', 3],
+  ['ředkvičky', 'radishes', 'radishes raw', 3],
+  ['růžičková kapusta', 'brussels sprouts', 'brussels sprouts raw', 3],
+  ['sádlo', 'lard', 'lard', 3],
+  ['želatina', 'gelatin', 'gelatins dry powder unsweetened', 3],
+  ['hovězí vývar', 'beef broth', 'soup beef broth or bouillon ready to serve', 3],
+  ['sušené mléko', 'milk powder', 'milk dry nonfat regular', 3],
+  ['granola', 'granola', 'cereals ready-to-eat granola homemade', 3],
+  ['chilli vločky', 'chili flakes', 'spices pepper red or cayenne', 3],
+  ['semínka granátového jablka', 'pomegranate seeds', 'pomegranates raw', 3],
+  ['černý rybíz', 'black currants', 'currants european black raw', 3],
+  ['sušené třešně', 'dried cherries', 'cherries tart dried sweetened', 3],
+  ['dýně', 'pumpkin', 'pumpkin raw', 3],
+  ['smetana a mléko (half-and-half)', 'half and half', 'cream fluid half and half', 3],
+  ['vanilkový extrakt', 'vanilla extract', 'vanilla extract', 3],
+  ['konzervovaná rajčata', 'canned tomatoes', 'tomatoes red ripe canned packed in tomato juice', 3],
+  ['grilovaná kuřecí prsa', 'grilled chicken breast', 'chicken breast meat only cooked roasted', 3],
 ];
 
 const spanek = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -102,6 +170,7 @@ function sqlText(s) {
 /** Vypíše INSERT jen pro ověřené položky. Neověřené se vynechají. */
 function vypisSql(cache) {
   const radky = POLOZKY
+    .filter(vDavce)
     .filter(([cs]) => cache[cs])
     .map(([cs, en]) => {
       const z = cache[cs];
@@ -133,7 +202,7 @@ ON CONFLICT DO NOTHING;`);
 
 async function stahni(cache) {
   const chybi = [];
-  for (const [cs, , dotaz] of POLOZKY) {
+  for (const [cs, , dotaz] of POLOZKY.filter(vDavce)) {
     if (cache[cs]) { console.error(`cache: ${cs}`); continue; }
 
     const url = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${KEY}`

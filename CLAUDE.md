@@ -27,6 +27,27 @@ Plný produktový a byznys kontext je v Claude projektu "bodyandmindon" (`BMON_M
 - Tabulky s prefixem `_backup_2026_06_02_*` jsou stará záloha — neopírej se o ně, kandidát na smazání (potvrdit s uživatelem).
 - AI orchestrační vrstva (`ai_agents`, `ai_tasks`, `ai_trigger_rules`, `ai_executor_bindings`, `ai_context_profiles`) je runtime mozek aplikace — necháváme ji v Supabase, nestavíme paralelní orchestraci jinde (Make apod.).
 
+## Nutrice receptů — co metrika `complete` znamená a co ne
+
+`compute_nutrition_for_ingredients` má **jediné produkční použití**: `zapisRecept()`
+v `lib/recipeGeneratorRun.js`, který zahodí nově generovaný recept s nespočítatelnou
+nutricí. Nehlídá zobrazení, sestavování jídelníčku ani filtrování katalogu.
+
+Z toho plyne, jak metriku čítat a jak ne:
+
+- Správný název není „spočítatelné recepty", ale **„recepty s nezávisle ověřitelnou
+  nutricí"**. Hodnota `complete` je *druhý názor* na uložená čísla, ne podmínka
+  funkčnosti receptu.
+- **Nehnat ji k 100 %.** Strop je daný zdrojem: české generátory mají 100 % (píšou
+  proti našemu slovníku a brána je k tomu nutí), Spoonacular ~52 % (otevřený slovník
+  značkových a složených názvů). Blokované recepty mají uložené kcal i makra, jsou
+  aktivní a mají obrázky — nejsou rozbité.
+- Dominantní příčina „nespočítatelnosti" je **chybějící množství**, ne chybějící
+  surovina (sentinel `servings`, jednotky `pkg`/`large`/`strips`). Další dávky USDA
+  a další kola aliasů na to nesahají a jejich výnos klesá.
+- Kořen se řeší **na hranici importu** (`lib/spoonacular/catalogImport.js`), ne
+  doplňováním slovníku.
+
 ## Edge Functions (aktivní)
 
 - `generate-plan` — hlavní generování jídelníčku/tréninku přes OpenAI

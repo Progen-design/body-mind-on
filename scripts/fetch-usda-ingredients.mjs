@@ -149,6 +149,144 @@ const POLOZKY = [
   ['vanilkový extrakt', 'vanilla extract', 'vanilla extract', 3],
   ['konzervovaná rajčata', 'canned tomatoes', 'tomatoes red ripe canned packed in tomato juice', 3],
   ['grilovaná kuřecí prsa', 'grilled chicken breast', 'chicken breast meat only cooked roasted', 3],
+
+  // --- Davka 4: hromadka "doplnit" z .cache/chybejici-suroviny-navrh.csv ------
+  //
+  // 149 nazvu, ktere v aktivnich receptech blokuji 158 vyskytu a nejsou to
+  // aliasy — surovina ve slovniku chybi cela. Nize je 88 z nich; zbytek je
+  // zakomentovany na konci bloku, protoze dotaz nejde polozit tak, aby trefil
+  // presne tu surovinu. Radeji chybejici radek nez radek se spatnymi makry.
+  //
+  // Nazvy jsou ceske, protoze se ukazuji uzivateli. Anglicke a znackove
+  // podoby z receptu ("swiss cheese", "sou cream") na ne miri aliasem
+  // v migraci — bez toho by se recept neodblokoval.
+
+  // syry
+  ['ementál', 'swiss cheese', 'cheese swiss', 4],
+  ['brie', 'brie cheese', 'cheese brie', 4],
+  ['gouda', 'gouda cheese', 'cheese gouda', 4],
+  ['gruyère', 'gruyere cheese', 'cheese gruyere', 4],
+  ['monterey jack', 'monterey jack cheese', 'cheese monterey', 4],
+  ['pecorino romano', 'romano cheese', 'cheese romano', 4],
+  // ['sýr asiago', 'asiago cheese', 'cheese asiago', 4],
+  ['americký tavený sýr', 'american cheese', 'cheese pasteurized process american', 4],
+  // ['cheddar se sníženým obsahem tuku', 'reduced fat cheddar', 'cheese cheddar reduced fat', 4],
+
+  // mlecne
+  ['zakysaná smetana', 'sour cream', 'cream sour cultured', 4],
+  // ['lehká smetana', 'light cream', 'cream fluid light', 4],
+  ['plnotučný bílý jogurt', 'whole milk yogurt', 'yogurt plain whole milk', 4],
+  ['netučný bílý jogurt', 'nonfat yogurt', 'yogurt plain skim milk', 4],
+  ['plnotučný řecký jogurt', 'whole milk greek yogurt', 'yogurt greek plain whole milk', 4],
+  ['vanilkový řecký jogurt', 'vanilla greek yogurt', 'yogurt greek vanilla', 4],
+  ['vanilkový jogurt', 'vanilla yogurt', 'yogurt vanilla low fat', 4],
+  ['vanilkové mandlové mléko', 'vanilla almond milk', 'almond milk vanilla', 4],
+  ['rostlinný tuk', 'margarine spread', 'margarine like vegetable oil spread', 4],
+
+  // maso a ryby
+  ['kuře', 'chicken', 'chicken broilers or fryers meat and skin cooked roasted', 4],
+  ['kuřecí paličky', 'chicken drumstick', 'chicken broilers or fryers drumstick meat only cooked roasted', 4],
+  ['mleté vepřové', 'ground pork', 'pork ground raw', 4],
+  ['vepřová plec', 'pork shoulder', 'pork fresh shoulder blade boston butt cooked roasted', 4],
+  ['klobása', 'sausage', 'sausage polish pork', 4],
+  ['krůtí klobása', 'turkey sausage', 'sausage turkey cooked', 4],
+  ['chorizo', 'chorizo sausage', 'sausage chorizo pork and beef', 4],
+  ['nakládané hovězí', 'corned beef', 'beef corned beef brisket cooked', 4],
+  ['hovězí hash', 'corned beef hash', 'corned beef hash canned', 4],
+  ['kachní vejce', 'duck egg', 'egg duck whole fresh raw', 4],
+  ['náhrada vajec', 'egg substitute', 'egg substitute liquid', 4],
+
+  // zelenina a ovoce
+  ['rukola', 'arugula', 'arugula raw', 4],
+  ['červená řepa', 'beets', 'beets raw', 4],
+  ['listy červené řepy', 'beet greens', 'beet greens raw', 4],
+  ['listová kapusta collard', 'collard greens', 'collards raw', 4],
+  ['pastinák', 'parsnip', 'parsnips raw', 4],
+  ['řeřicha', 'watercress', 'watercress raw', 4],
+  ['cukrový hrášek', 'snow peas', 'peas edible-podded raw', 4],
+  ['máslová dýně vařená', 'cooked butternut squash', 'squash winter butternut cooked', 4],
+  ['kaki', 'persimmon', 'persimmons japanese raw', 4],
+  ['mangostana', 'mangosteen', 'mangosteen canned syrup pack', 4],
+  ['koktejlové třešně', 'maraschino cherries', 'cherries maraschino canned', 4],
+  ['sušené brusinky', 'dried cranberries', 'cranberries dried sweetened', 4],
+  ['limetková šťáva', 'lime juice', 'lime juice raw', 4],
+  ['kokosová voda', 'coconut water', 'nuts coconut water', 4],
+
+  // pecivo, mouky, testa
+  ['chléb', 'bread', 'bread white commercially prepared', 4],
+  ['vícezrnný chléb', 'multigrain bread', 'bread multi-grain', 4],
+  ['challah chléb', 'challah bread', 'bread egg', 4],
+  ['naan', 'naan bread', 'bread naan plain', 4],
+  ['pita', 'pita bread', 'bread pita white enriched', 4],
+  ['celozrnná pita', 'whole wheat pita', 'bread pita whole-wheat', 4],
+  // ['pšeničná tortilla', 'flour tortilla', 'tortillas ready-to-bake or -fry flour', 4],
+  // ['kukuřičná tortilla', 'corn tortilla', 'tortillas ready-to-bake or -fry corn', 4],
+  ['croissant', 'croissant', 'croissants butter', 4],
+  ['krutony', 'croutons', 'croutons plain', 4],
+  ['ovesná mouka', 'oat flour', 'oat flour partially debranned', 4],
+  ['kukuřičná krupice', 'cornmeal', 'cornmeal degermed enriched yellow', 4],
+  ['těsto na koláč', 'pie crust', 'pie crust standard-type dry mix', 4],
+  ['palačinková směs', 'pancake mix', 'pancakes plain dry mix', 4],
+  ['pufovaná rýže', 'puffed rice', 'cereals ready-to-eat rice puffed', 4],
+  ['droždí', 'yeast', 'leavening agents yeast bakers active dry', 4],
+
+  // omacky, dresinky, polevky
+  ['barbecue omáčka', 'barbecue sauce', 'sauce barbecue', 4],
+  ['hoisin omáčka', 'hoisin sauce', 'sauce hoisin ready-to-serve', 4],
+  ['ústřicová omáčka', 'oyster sauce', 'sauce oyster ready-to-serve', 4],
+  ['pálivá omáčka', 'hot sauce', 'sauce ready-to-serve pepper or hot', 4],
+  ['salsa', 'salsa', 'sauce salsa ready-to-serve', 4],
+  ['pesto', 'pesto sauce', 'sauce pesto', 4],
+  ['ranch dresink', 'ranch dressing', 'salad dressing ranch dressing regular', 4],
+  ['brusinková omáčka', 'cranberry sauce', 'cranberry sauce canned sweetened', 4],
+  ['rajčatový protlak', 'tomato paste', 'tomato paste canned without salt added', 4],
+  ['houbová polévka', 'cream of mushroom soup', 'soup cream of mushroom canned condensed', 4],
+  ['kuřecí polévka', 'cream of chicken soup', 'soup cream of chicken canned condensed', 4],
+  ['guacamole', 'guacamole', 'guacamole', 4],
+  ['miso', 'miso paste', 'miso', 4],
+  ['fazolová kaše', 'refried beans', 'beans refried canned traditional', 4],
+  ['džem', 'jam', 'jams and preserves', 4],
+
+  // koreni a ostatni
+  ['šafrán', 'saffron', 'spices saffron', 4],
+  ['kardamom', 'cardamom', 'spices cardamom', 4],
+  ['hřebíček', 'cloves', 'spices cloves ground', 4],
+  ['anýzová semínka', 'anise seed', 'spices anise seed', 4],
+  ['estragon', 'tarragon', 'spices tarragon dried', 4],
+  ['hořčičný prášek', 'ground mustard', 'spices mustard seed ground', 4],
+  ['cibulové vločky', 'onion flakes', 'onions dehydrated flakes', 4],
+  ['mák', 'poppy seed', 'seeds poppy seed', 4],
+  ['sušená cizrna', 'dried chickpeas', 'chickpeas garbanzo beans bengal gram mature seeds raw', 4],
+  ['káva', 'coffee', 'beverages coffee brewed prepared with tap water', 4],
+  ['rum', 'rum', 'alcoholic beverage distilled rum 80 proof', 4],
+
+  // ---------------------------------------------------------------------------
+  // K RUCNI KONTROLE — dotaz nejde polozit tak, aby jistě trefil tu surovinu.
+  //
+  // Skript bere prvni vysledek, takze nepresny dotaz ulozi cizi makra a nikdo
+  // si toho nevsimne. U techhle polozek je bud surovina v SR Legacy/Foundation
+  // pravdepodobne vubec neni, nebo je nazev v receptu tak obecny, ze nejde
+  // urcit, co presne se ma dohledat.
+  //
+  //   znackove vyrobky (USDA je v Foundation/SR Legacy nema):
+  //     alouette creme fraiche, diestel breakfast sausage,
+  //     syr gouda prima donna -> resen radkem 'gouda' vyse
+  //   slozene pokrmy, ne suroviny:
+  //     amaretti, jahodovy marshmallow, brusinkovo-pomerancova omacka,
+  //     cerna fazolova cesnekova omacka, masova omacka, tzatziki, rybi kolacek,
+  //     makova napln, orechove ovesne vlocky, smes bobuloveho ovoce,
+  //     kandovana pomerancova kura, barbecue seasoning, enchilada omacka,
+  //     chilli pasta, koncentrat limonady, limonada
+  //   prilis obecne, nelze urcit variantu:
+  //     maso na duseni, maso na gulas, kureci kousky, mlete klobasy,
+  //     nepsenicna mouka, pasta omacka, rostlinne mleko, mlady kapustovy salat,
+  //     zelena dyne, horka cokolada, smazeny cesnek
+  //   v USDA nedohledano ani na opakovany dotaz:
+  //     mascarpone (viz davka 3), matcha prasek (viz davka 3), asafoetida,
+  //     vanilka, vanilkovy lusk, vanilkova pasta, almond extract,
+  //     mata peprna (extrakt), mirin, wasabi paste, stevie, farro,
+  //     lepkava ryzova mouka, lime kura, konopny proteinovy prasek,
+  //     syr havarti
 ];
 
 const spanek = (ms) => new Promise((r) => setTimeout(r, ms));

@@ -112,6 +112,42 @@ function prepis(ingredients) {
   });
 }
 
+/** Totéž, ale JEDEN alias se záměrně neaplikuje — pro měření jeho příspěvku. */
+function prepisKrome(ingredients, vynechany) {
+  return (ingredients || []).map((i) => {
+    const n = normalizuj(i?.name);
+    const cil = mapa.get(n);
+    return cil && n !== vynechany ? { ...i, name: cil } : i;
+  });
+}
+
+/**
+ * Kolik kcal DO RECEPTU PŘIDÁ právě tenhle alias.
+ *
+ * PROČ TO POTŘEBUJEME. Bez toho brána soudila alias podle celkové chyby
+ * receptu. Naměřeno: „olive oil", „garlic", „butter" i „parsley" spadly se
+ * shodnou odchylkou 50,5 %, protože všechny čtyři měly jediný měřitelný
+ * recept — #651 alfredo omáčku, kde uložených 501 kcal nesedí se 754 kcal ze
+ * surovin. Česnek za ten rozdíl nemůže; přispívá do receptu jednotkami kalorií.
+ * Recept, ve kterém alias skoro nic neváží, o něm nemůže nic vypovědět.
+ */
+async function prispevek(r, alias) {
+  const [sNim, bezNej] = await Promise.all([
+    supabase.rpc('compute_nutrition_for_ingredients', { p_ingredients: prepis(r.ingredients) }),
+    supabase.rpc('compute_nutrition_for_ingredients', { p_ingredients: prepisKrome(r.ingredients, alias) }),
+  ]);
+  const a = Array.isArray(sNim.data) ? sNim.data[0] : sNim.data;
+  const b = Array.isArray(bezNej.data) ? bezNej.data[0] : bezNej.data;
+  return Math.abs((Number(a?.kcal) || 0) - (Number(b?.kcal) || 0));
+}
+
+/**
+ * Kolik musí alias v receptu vážit, aby ten recept o něm něco vypovídal.
+ * 10 % uložených kcal: pod tím je chyba receptu vždycky větší než celý
+ * příspěvek aliasu a měřili bychom šum.
+ */
+const MIN_PODIL = 0.10;
+
 const vysledky = new Map();
 let hotovo = 0;
 for (const r of recepty) {
@@ -178,7 +214,19 @@ for (const [alias, cil] of mapa) {
   const vsechny = vysledky.get(alias) || [];
   // Merit jde jen tam, kde je nutrice po prepisu KOMPLETNI. Necompletni soucet
   // je castecny a porovnavat ho s ulozenymi kcal by merilo diry, ne alias.
-  const meritelne = vsechny.filter((v) => v.complete && v.odchylka != null);
+  const kompletni = vsechny.filter((v) => v.complete && v.odchylka != null);
+
+  // …a kde alias zaroven neco vazi. Recept, do ktereho prispiva par kalorii,
+  // nemuze jeho spravnost ani potvrdit, ani vyvratit.
+  const meritelne = [];
+  const nevypovidajici = [];
+  for (const v of kompletni) {
+    const r = recepty.find((x) => x.id === v.id);
+    const kcalAliasu = r ? await prispevek(r, alias) / v.porci : 0;
+    const podil = v.ulozeno > 0 ? kcalAliasu / v.ulozeno : 0;
+    if (podil >= MIN_PODIL) meritelne.push(v);
+    else nevypovidajici.push({ id: v.id, podil: Number(podil.toFixed(3)) });
+  }
   const odchylky = meritelne.map((v) => v.odchylka);
   const med = median(odchylky);
   const max = odchylky.length ? Math.max(...odchylky) : null;
@@ -187,6 +235,8 @@ for (const [alias, cil] of mapa) {
     cil,
     receptu_celkem: (zasazene.get(alias) || []).length,
     meritelnych: meritelne.length,
+    kompletnich: kompletni.length,
+    nevypovidajicich: nevypovidajici.length,
     median_odchylky: med == null ? null : Number(med.toFixed(3)),
     max_odchylky: max == null ? null : Number(max.toFixed(3)),
     recepty: meritelne.map((v) => ({

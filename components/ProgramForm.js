@@ -177,7 +177,16 @@ export default function ProgramForm({ planType }) {
               <option value="vegan" disabled>Vegan (zatím nedostupné)</option>
               <option value="gluten_free">Bez lepku</option>
               <option value="lactose_free">Bez laktózy</option>
-              <option value="paleo">Paleo</option>
+              {/* DOČASNÉ (2026-08-05): paleo vypnuté, protože se NIKDY nefiltrovalo.
+                  dietTagsFromProfile() v lib/recipesCatalog.js zná jen vegan,
+                  vegetarian, low_carb a gluten_free — pro paleo vracelo prázdný
+                  seznam, tedy ŽÁDNÝ filtr, a vylučovací logika pro něj (na rozdíl
+                  od lactose_free) neexistuje. Kdo si vybral paleo, dostal
+                  nefiltrovaný jídelníček včetně pečiva, těstovin a mléčných výrobků.
+                  Zapojit filtr nestačí: katalog má 11 receptů s tagem `paleolithic`,
+                  z toho 0 večeří a 1 svačinu, takže plán by se nesestavil vůbec.
+                  Vrátit, až bude obsah — pak namapovat paleo → paleolithic. */}
+              <option value="paleo" disabled>Paleo (zatím nedostupné)</option>
               <option value="low_carb">Nízkosacharidová</option>
               <option value="other">Jiné</option>
             </select>

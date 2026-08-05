@@ -8,6 +8,7 @@ import { isValidHabitId, POSITIVE_HABITS } from '../../lib/habits';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getFrequencyDayRange } from '../../lib/preferenceConstants';
 import { enqueueAIEvent, triggerImmediateDecision } from '../../lib/aiEvents';
 import { mergeTrainingEnvironmentIntoNotes } from '../../lib/trainingEnvironment.js';
+import { dietTypeRejectionReason } from '../../lib/dietOptions.js';
 import {
   buildCalorieTargetBodyMetricsPatch,
   CALORIE_TARGET_RECALC_FIELDS,
@@ -60,7 +61,13 @@ export default async function handler(req, res) {
         updates.weekly_sessions_user = canonicalFreq.includes('1') ? 1 : canonicalFreq.includes('4') ? 5 : 3;
       }
     }
-    if (b.diet_type !== undefined) updates.diet_type = (b.diet_type || '').trim() || null;
+    if (b.diet_type !== undefined) {
+      // Stejná brána jako v registraci — `disabled` v UI je jen kosmetika.
+      // Bez tohohle šlo změnou profilu nastavit dietu, kterou neumíme sestavit.
+      const dietDuvod = dietTypeRejectionReason(b.diet_type);
+      if (dietDuvod) return res.status(400).json({ error: dietDuvod });
+      updates.diet_type = (b.diet_type || '').trim() || null;
+    }
     if (b.dietary_restrictions !== undefined) updates.dietary_restrictions = (b.dietary_restrictions || '').trim() || null;
     if (b.foods_to_avoid !== undefined) updates.foods_to_avoid = (b.foods_to_avoid || '').trim() || null;
     if (b.workout_days !== undefined) {

@@ -668,10 +668,17 @@ export default function OnClubPage() {
                   <select name="diet_type" className="reg-input" value={formData.diet_type} onChange={handleChange} disabled={isSubmitting}>
                     <option value="">Žádná preference</option>
                     <option value="vegetarian">Vegetarián</option>
-                    <option value="vegan">Vegan</option>
+                    {/* DOČASNÉ (2026-07-31): vegan vypnutý, katalog na něj nestačí.
+                        Tady chyběl `disabled`, i když na start.js, ProgramForm.js
+                        a PreferencesOverlay.jsx byl — tudy si ho šlo vybrat.
+                        Viz komentář v components/ProgramForm.js. */}
+                    <option value="vegan" disabled>Vegan (zatím nedostupné)</option>
                     <option value="gluten_free">Bez lepku</option>
                     <option value="lactose_free">Bez laktózy</option>
-                    <option value="paleo">Paleo</option>
+                    {/* DOČASNÉ (2026-08-05): paleo vypnuté — nikdy se nefiltrovalo
+                        a katalog na něj nestačí. Viz komentář v
+                        components/ProgramForm.js. */}
+                    <option value="paleo" disabled>Paleo (zatím nedostupné)</option>
                     <option value="low_carb">Nízkosacharidová</option>
                     <option value="other">Jiné (popiš v poli Zdravotní omezení)</option>
                   </select>

@@ -307,7 +307,10 @@ export default function PreferencesOverlay({
                 <option value="vegan" disabled>Vegan (zatím nedostupné)</option>
                 <option value="gluten_free">Bez lepku</option>
                 <option value="lactose_free">Bez laktózy</option>
-                <option value="paleo">Paleo</option>
+                {/* DOČASNÉ (2026-08-05): paleo vypnuté — nikdy se nefiltrovalo
+                    a katalog na něj nestačí. Viz komentář v
+                    components/ProgramForm.js. */}
+                <option value="paleo" disabled>Paleo (zatím nedostupné)</option>
                 <option value="low_carb">Nízkosacharidová</option>
                 <option value="other">Jiné</option>
               </select>

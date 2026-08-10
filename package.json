@@ -10,6 +10,7 @@
     "test:expired-trial": "node scripts/set-expired-trial-for-test.js",
     "smoke-test": "node scripts/smoke-test-critical-path.mjs",
     "smoke-test:prod": "node scripts/smoke-test-critical-path.mjs --prod",
+    "smoke-test:matrix": "node scripts/smoke-test-critical-path.mjs --prod --matrix",
     "e2e:profile-mobile": "node scripts/e2e-profile-mobile.mjs",
     "e2e:workout-body-map": "node scripts/e2e-workout-body-map.mjs",
     "e2e:visual-system-review": "node scripts/e2e-visual-system-review.mjs",

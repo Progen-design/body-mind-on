@@ -8,6 +8,7 @@ import { getRegistrationAnchoredWeek } from '../../lib/profileWeekRange';
 import { reconcileUserDataByEmail } from '../../lib/reconcileUserDataByEmail';
 import { shouldShowWithingsSection } from '../../lib/withingsProfileVisibility';
 import { canRenewPlanForMembership } from '../../lib/planGenerationGate';
+import { resolveProgramTier } from '../../lib/programTier.js';
 
 function toDateKey(value) {
   if (!value) return '';
@@ -276,12 +277,15 @@ export default async function handler(req, res) {
     const userHabits = (userHabitsRes.status === 'fulfilled' && userHabitsRes.value?.data) ? userHabitsRes.value.data : [];
     const membershipData = (membershipRes.status === 'fulfilled' && membershipRes.value?.data) ? membershipRes.value.data : null;
 
-    // Priorita: tabulka memberships > body_metrics.program > fallback START
-    const program = (() => {
-      if (membershipData?.tier) return membershipData.tier;
-      const reg = bodyMetrics.find(m => m.program) || bodyMetrics[bodyMetrics.length - 1];
-      return reg?.program || 'START';
-    })();
+    // Priorita: tabulka memberships > body_metrics.program > fallback START.
+    // Odvození je v lib/programTier.js, protože podle programu se od 10. 8. 2026
+    // větví i tréninková logika (START = A/B full-body s progresí). Kdyby si to
+    // profil odvozoval sám, viděl by uživatel jiný program, než podle jakého
+    // mu vznikl plán.
+    const program = resolveProgramTier(
+      bodyMetrics.find(m => m.program) || bodyMetrics[bodyMetrics.length - 1],
+      membershipData
+    );
     const membershipStatus = membershipData?.status
       || (program === 'START' ? 'trial' : (program === 'ON_CLUB' || program === 'VIP' ? 'pending_payment' : 'trial'));
     const membershipSince = membershipData?.started_at || null;

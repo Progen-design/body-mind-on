@@ -125,6 +125,9 @@ export default async function handler(req, res) {
     let lastResortError = null;
     let savedPlanId = null;
     let savedPlanExists = false;
+    // Nouzová šablona diety neumí, takže se pro ně vůbec nepoužije. Plán tím
+    // pádem není a nesmí se tvářit, že bude — viz odpověď 503 níž.
+    let dietBlockedPlan = false;
     const accountCreated = payload.user_id != null;
 
     // SYNC: Plán musí být vždy vygenerován před odpovědí – čekáme na AI v rámci requestu
@@ -255,9 +258,14 @@ export default async function handler(req, res) {
           try {
             let fallbackResult = await persistPublishableFallbackPlanForUser(payload.user_id);
             lastResortError = fallbackResult?.plan_id ? null : (fallbackResult?.error ?? null);
-            if (!fallbackResult?.plan_id) {
+            // Dieta není přechodná chyba — druhý pokus dopadne stejně a jen by
+            // zdržel odpověď. Zastavit se dá jen tady, opakování nic nespraví.
+            if (!fallbackResult?.plan_id && fallbackResult?.error !== 'diet_requires_verified_plan') {
               fallbackResult = await persistPublishableFallbackPlanForUser(payload.user_id);
               if (!lastResortError && !fallbackResult?.plan_id) lastResortError = fallbackResult?.error ?? null;
+            }
+            if (fallbackResult?.error === 'diet_requires_verified_plan') {
+              dietBlockedPlan = true;
             }
             if (fallbackResult?.plan_id) {
               lastResortRan = true;
@@ -404,26 +412,43 @@ export default async function handler(req, res) {
       else plan_state = 'processing';
     }
 
+    // Plán zablokovaný dietou NENÍ „processing“. Nic se nedopočítává a samo od
+    // sebe nedorazí — čekat na něj by znamenalo lhát. Uživatel má účet, data
+    // uložená a retry CTA (pages/start.js čte hasUserId).
+    const dietBlockMsg =
+      'Účet je vytvořen a údaje máme uložené. Jídelníček pro tvoje stravovací '
+      + 'omezení se nám teď nepodařilo sestavit, a poslat ti plán, který ho '
+      + 'nerespektuje, nechceme. Zkus to prosím za chvíli znovu.';
+
     let message = successMsg;
-    if (plan_state === 'ready' && !planSent) message = emailFailedPlanReadyMsg;
+    if (dietBlockedPlan && !savedPlanExists) message = dietBlockMsg;
+    else if (plan_state === 'ready' && !planSent) message = emailFailedPlanReadyMsg;
     else if (plan_state === 'processing') {
       message = savedPlanExists
         ? emailFailedPlanReadyMsg
         : 'Účet je vytvořen. Plán se dokončuje – za chvíli ho uvidíš v profilu.';
     }
 
+    const dietBlockActive = dietBlockedPlan && !savedPlanExists;
+
     const finalResponseReason =
-      plan_state === 'ready'
-        ? (planSent ? 'plan_ready_email_sent' : 'plan_ready_email_not_sent')
-        : lastResortFailed
-          ? 'plan_processing_last_resort_failed'
-          : 'plan_processing';
+      dietBlockActive
+        ? 'plan_blocked_dietary_gate'
+        : plan_state === 'ready'
+          ? (planSent ? 'plan_ready_email_sent' : 'plan_ready_email_not_sent')
+          : lastResortFailed
+            ? 'plan_processing_last_resort_failed'
+            : 'plan_processing';
 
     const onboardingResult =
-      plan_state === 'ready'
-        ? (lastResortRan ? 'fallback_success' : 'ai_success')
-        : 'processing';
-    planPending = plan_state === 'processing';
+      dietBlockActive
+        ? 'blocked_dietary_gate'
+        : plan_state === 'ready'
+          ? (lastResortRan ? 'fallback_success' : 'ai_success')
+          : 'processing';
+    // `pending` slibuje, že plán dorazí sám. U dietního bloku nedorazí — nic
+    // dalšího neběží a čekání by uživatele jen nechalo hledět na prázdný profil.
+    planPending = plan_state === 'processing' && !dietBlockActive;
 
     let initialPlanTaskId = null;
     let initialPlanTaskCreatedAt = null;
@@ -510,6 +535,22 @@ export default async function handler(req, res) {
       lastResortFailed,
       lastResortError,
     });
+
+    // 503 + hasUserId je existující kontrakt pro „účet je, plán ne, zkus znovu“
+    // (pages/start.js:376 → setPlanFailedCanRetry). Vrátit 200 by znamenalo,
+    // že se uživatel dozví o chybějícím plánu až tím, že žádný nepřijde.
+    if (dietBlockActive) {
+      console.error('[body-metrics] plan blocked by dietary gate — vracim 503 s retry CTA', {
+        user_id: payload.user_id,
+        diet_type: payload.diet_type ?? null,
+      });
+      return res.status(503).json({
+        ...response,
+        ok: false,
+        planPending: false,
+        error: dietBlockMsg,
+      });
+    }
 
     return res.status(200).json(response);
 

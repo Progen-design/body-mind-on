@@ -204,11 +204,15 @@ async function ziskejSupabase() {
  * Počet jídel v plánu a kolik z nich je ověřených.
  *
  * `recipe_verified` je na jídle, ne na dni — počítá se přes všechny dny.
- * Když plán ještě nedoběhl (plan_state: processing), řádek nemusí existovat;
- * to není chyba testu, vrátí se `null` a v tabulce bude `—`.
+ *
+ * ROZLIŠUJE SE „NEVÍM“ A „NENÍ“:
+ *   null            → zkontrolovat to nešlo (chybí service key, dotaz selhal)
+ *   {planId: null}  → zkontrolováno, plán NEEXISTUJE
+ * Bez toho rozdílu by matice hlásila PASS jak u chybějícího klíče, tak
+ * u chybějícího plánu — a to druhé je přesně to, co má chytat.
  *
  * @param {string} email
- * @returns {Promise<{planId:string|null, jidel:number, verified:number}|null>}
+ * @returns {Promise<{planId:string|null, generatedBy:string|null, jidel:number|null, verified:number|null}|null>}
  */
 async function metrikyPlanu(email) {
   const supabase = await ziskejSupabase();
@@ -217,7 +221,7 @@ async function metrikyPlanu(email) {
   for (let pokus = 0; pokus < 3; pokus++) {
     const { data, error } = await supabase
       .from('ai_generated_plans')
-      .select('id, structured_plan_json')
+      .select('id, generated_by, structured_plan_json')
       .eq('email', email)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -237,9 +241,45 @@ async function metrikyPlanu(email) {
           if (m?.recipe_verified === true) verified += 1;
         }
       }
-      return { planId: data.id, jidel, verified };
+      return { planId: data.id, generatedBy: data.generated_by ?? null, jidel, verified };
+    }
+    // Řádek existuje, ale je bez strukturovaného plánu — to není „ještě neběží“,
+    // to je nouzová šablona. Nemá smysl na ni čekat, vrací se rovnou.
+    if (data?.id) {
+      return { planId: data.id, generatedBy: data.generated_by ?? null, jidel: null, verified: null };
     }
     if (pokus < 2) await new Promise((r) => setTimeout(r, 4000));
+  }
+  // Dotaz proběhl, řádek prostě není.
+  return { planId: null, generatedBy: null, jidel: null, verified: null };
+}
+
+/**
+ * Zpřísněné kritérium POUZE pro matici.
+ *
+ * PROČ. 10. 8. 2026 matice nahlásila gluten-free jako PASS: API vrátilo 200,
+ * účet vznikl, plán existoval. Jenže `initial_plan` selhal na dietní bráně,
+ * nouzová větev poslala statickou šablonu s chlebem a těstovinami a uložila ji
+ * bez `structured_plan_json`. Podle HTTP statusu to byl úspěch, pro uživatele
+ * s celiakií ne.
+ *
+ * Jednoprofilový režim tohle SCHVÁLNĚ nedělá — `scripts/system-audit.mjs:34`
+ * pouští `smoke-test:prod` jako kritický krok a jeho význam je „registrace
+ * projde“, ne „plán je použitelný“.
+ *
+ * @param {{jidel:number|null, generatedBy:string|null}|null} metriky
+ * @returns {string|null} důvod k FAIL, nebo null
+ */
+function duvodProPadMatice(metriky) {
+  if (!metriky) return null; // zkontrolovat to nešlo — viz metrikyPlanu()
+  if (!metriky.planId) {
+    return 'plán vůbec nevznikl — uživatel s touto dietou zůstal bez jídelníčku';
+  }
+  if (metriky.generatedBy === 'reg_deterministic') {
+    return 'plán je nouzová šablona (generated_by=reg_deterministic), ne sestavený jídelníček';
+  }
+  if (metriky.jidel == null) {
+    return 'plán nemá structured_plan_json — není co zkontrolovat proti dietě';
   }
   return null;
 }
@@ -262,6 +302,7 @@ async function spustProfil(profil, payloadZaklad) {
     status: null,
     elapsed: '0.0',
     planId: null,
+    generatedBy: null,
     jidel: null,
     verified: null,
     email,
@@ -333,6 +374,16 @@ async function spustProfil(profil, payloadZaklad) {
     vysledek.planId = vysledek.planId ?? metriky.planId;
     vysledek.jidel = metriky.jidel;
     vysledek.verified = metriky.verified;
+    vysledek.generatedBy = metriky.generatedBy;
+  }
+
+  // Zpřísnění jen pro matici — jednoprofilový režim zůstává na HTTP statusu.
+  if (MATRIX && vysledek.ok) {
+    const duvod = duvodProPadMatice(metriky);
+    if (duvod) {
+      vysledek.ok = false;
+      vysledek.poznamka = duvod;
+    }
   }
 
   const stav = vysledek.ok ? 'PASS' : 'FAIL';
@@ -352,6 +403,7 @@ function vypisTabulku(vysledky) {
     ['HTTP', (v) => (v.status == null ? '—' : String(v.status))],
     ['čas', (v) => `${v.elapsed}s`],
     ['plan_id', (v) => (v.planId ? String(v.planId).slice(0, 8) : '—')],
+    ['zdroj', (v) => v.generatedBy ?? '—'],
     ['jídel', (v) => (v.jidel == null ? '—' : String(v.jidel))],
     ['verified', (v) => (v.verified == null ? '—' : String(v.verified))],
   ];

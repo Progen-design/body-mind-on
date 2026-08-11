@@ -19,6 +19,7 @@ import WorkoutOverlay from '../components/profile/WorkoutOverlay';
 import PreferencesOverlay from '../components/profile/PreferencesOverlay';
 import TrialExpiredPaywall from '../components/TrialExpiredPaywall';
 import TrialEndingSoonBanner, { shouldShowTrialEndingSoon } from '../components/TrialEndingSoonBanner';
+import TrialPlanScopeNote, { shouldShowTrialPlanScopeNote } from '../components/TrialPlanScopeNote';
 import PlanLockedPaywall from '../components/PlanLockedPaywall';
 import { shouldShowWithingsSection } from '../lib/withingsProfileVisibility';
 import { metadataToSmartScaleChoice } from '../lib/smartScalePreference';
@@ -2183,6 +2184,11 @@ export default function Profil() {
                 </div>
               ) : shouldShowTrialEndingSoon({ membershipStatus, isTrialExpired, daysUntilTrialEnd }) ? (
                 <TrialEndingSoonBanner daysUntilTrialEnd={daysUntilTrialEnd} />
+              ) : shouldShowTrialPlanScopeNote(profile) ? (
+                // Uprostřed trialu uživatel dosud nikde nevidel, že týdenní plán
+                // je až za předplatné — dozvěděl by se to tím, že v pondělí
+                // nepřijde. Ze 43 členství jich bylo 41 přesně v tomhle stavu.
+                <TrialPlanScopeNote trialEndsAt={trialEndsAt} />
               ) : null}
               {(currentPlan || program === 'ON_CLUB' || program === 'VIP') && (
                 <div className="plan-goal-in-card">

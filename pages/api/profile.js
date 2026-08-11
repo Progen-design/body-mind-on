@@ -290,7 +290,21 @@ export default async function handler(req, res) {
       || (program === 'START' ? 'trial' : (program === 'ON_CLUB' || program === 'VIP' ? 'pending_payment' : 'trial'));
     const membershipSince = membershipData?.started_at || null;
     const trialEndsAt = membershipData?.trial_ends_at || null;
-    const isTrialExpired = program === 'START' && trialEndsAt && new Date(trialEndsAt) < now;
+
+    // PŘIJDE UŽIVATELI DALŠÍ PLÁN? Rozhoduje `canRenewPlanForMembership()`,
+    // tedy TÁ SAMÁ funkce, podle které se řídí weeklyPlanProducer i scheduler.
+    //
+    // Do 11. 8. 2026 si profil expiraci počítal sám (`trialEndsAt < now`).
+    // Fungovalo to, ale byla to druhá implementace téhož pravidla — a rozejít
+    // se mohla při první změně tarifů: uživatel by v profilu viděl „plán
+    // přijde“, zatímco producent by ho nikdy nezaložil. Profil teď vrací
+    // verdikt brány a UI si nic nedovozuje.
+    const planRenewal = canRenewPlanForMembership({
+      tier: program,
+      status: membershipStatus,
+      trial_ends_at: trialEndsAt,
+    });
+    const isTrialExpired = program === 'START' && planRenewal.trialEnded;
     const daysUntilTrialEnd = program === 'START' && trialEndsAt
       ? Math.ceil((new Date(trialEndsAt) - now) / (24 * 60 * 60 * 1000))
       : null;
@@ -318,12 +332,15 @@ export default async function handler(req, res) {
       const konec = new Date(`${String(nejnovejsiPlatnost).split('T')[0]}T00:00:00`);
       if (konec >= dnes) return null;
 
-      const renewal = canRenewPlanForMembership(membershipData);
+      // Tentýž verdikt jako výš (`planRenewal`), ne druhý výpočet. Dřív se tu
+      // volalo `canRenewPlanForMembership(membershipData)` s HOLÝM řádkem z DB,
+      // zatímco zbytek profilu pracuje s odvozeným `program`. U uživatele bez
+      // řádku v `memberships` z toho vyšly dva různé důvody pro tentýž stav.
       return {
-        state: renewal.allowed ? 'expired_renewing' : 'expired_upgrade',
-        reason: renewal.reason,
+        state: planRenewal.allowed ? 'expired_renewing' : 'expired_upgrade',
+        reason: planRenewal.reason,
         valid_until: String(nejnovejsiPlatnost).split('T')[0],
-        trial_ended: renewal.trialEnded,
+        trial_ended: planRenewal.trialEnded,
       };
     })();
 
@@ -411,6 +428,16 @@ export default async function handler(req, res) {
       trialEndsAt: trialEndsAt || undefined,
       isTrialExpired: isTrialExpired || undefined,
       daysUntilTrialEnd: daysUntilTrialEnd != null ? daysUntilTrialEnd : undefined,
+      /**
+       * Verdikt brány o dalším plánu. UI podle něj rozhoduje, co uživateli
+       * napsat — nesmí si expiraci ani nárok dovozovat samo.
+       * `reason` je stabilní klíč z lib/planRenewalRules.js.
+       */
+      plan_renewal: {
+        allowed: planRenewal.allowed,
+        reason: planRenewal.reason,
+        trial_ended: planRenewal.trialEnded,
+      },
       can_create_calendar_events: canCreateCalendarEvents,
       has_withings_connection: hasWithingsConnection,
       user: {

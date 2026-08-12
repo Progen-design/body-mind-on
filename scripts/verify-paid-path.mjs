@@ -10,14 +10,13 @@
  * 'trial', nula z nich `stripe_customer_id`, a `stripe_events` bylo prázdné —
  * Stripe s naším webhookem nikdy nemluvil.
  *
- * PROČ SE PLATÍ SKUTEČNOU KARTOU V PROHLÍŽEČI. Checkout Session se v testovacím
- * režimu nedá doklikat přes API. A obejít se nedá ani vytvořením subscription
- * rovnou: `customer.subscription.updated` páruje uživatele VÝHRADNĚ přes
- * `memberships.stripe_subscription_id` / `stripe_customer_id`
- * (`resolveMembershipUserId`), na `metadata.user_id` nesahá. Ty sloupce plní
- * teprve `checkout.session.completed`. Kdo přeskočí checkout, dostane
- * `skipped_no_membership_match` a nic se neaktivuje. Proto Playwright
- * a testovací karta 4242 — jinak se ta část řetězu neotestuje vůbec.
+ * JAK SE PLATÍ. Výchozí cesta je Stripe API (zákazník + pm_card_visa +
+ * subscription), protože hostovaná Checkout stránka je Stripe UI — běží
+ * v iframech, mění se a její selhání o našem kódu nic neříká. Podrobnosti
+ * a dvě nutné odchylky jsou u kroku 4.
+ *
+ * ČEHO SE API CESTA NEDOTKNE: propojení uživatele se Stripe zákazníkem, které
+ * v produkci dělá `checkout.session.completed`. Na to je `--browser`.
  *
  * CO SKRIPT ZODPOVÍ HNED V KROKU 3. Jestli je v produkci nastavené
  * `STRIPE_PRICE_START_MONTHLY`. Zvenčí to jinak zjistit nejde: endpoint
@@ -27,7 +26,8 @@
  *   npm run verify:paid-path                 celý řetěz proti produkci
  *   npm run verify:paid-path -- --checkout-only   zastaví po kroku 3
  *   npm run verify:paid-path -- --keep       neuklidí testovací data
- *   npm run verify:paid-path -- --headed     ukáže prohlížeč u platby
+ *   npm run verify:paid-path -- --browser    platba přes hostovaný Checkout (Playwright)
+ *   npm run verify:paid-path -- --headed     to samé, ale s viditelným prohlížečem
  *
  * STOPA: vznikne reálný uživatel v produkční DB, reálný plán, odejde e-mail
  * a v testovacím Stripu vznikne zákazník + subscription. Stejná stopa jako
@@ -49,6 +49,8 @@ const ARGS = new Set(process.argv.slice(2));
 const CHECKOUT_ONLY = ARGS.has('--checkout-only');
 const KEEP = ARGS.has('--keep');
 const HEADED = ARGS.has('--headed');
+// Výchozí platební cesta je Stripe API; prohlížeč jen na vyžádání.
+const BROWSER = ARGS.has('--browser') || ARGS.has('--headed');
 const BASE_URL = (process.env.BASE_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '');
 
 const TEST_CARD = { number: '4242424242424242', exp: '12 / 34', cvc: '123', zip: '11000' };
@@ -56,6 +58,10 @@ const TIMEOUT = { register: 120_000, webhook: 120_000, plan: 180_000 };
 
 let failed = 0;
 const kroky = [];
+/** Zapsali jsme stripe_customer_id sami místo checkout.session.completed? */
+let simulovanoPropojeni = false;
+/** Posunuli jsme platnost plánu, aby producent viděl konec týdne? */
+let simulovanoUkonceniTydne = false;
 
 function krok(nazev) {
   console.log(`\n── ${nazev} ${'─'.repeat(Math.max(0, 62 - nazev.length))}`);
@@ -84,6 +90,18 @@ function souhrn() {
   console.log(`\n${'═'.repeat(66)}`);
   for (const k of kroky) console.log(`${k.ok ? 'OK  ' : 'FAIL'}  ${k.msg}`);
   console.log(`${'═'.repeat(66)}`);
+  // Bez tohohle by se zelený běh dal přečíst jako „otestováno všechno“.
+  if (simulovanoPropojeni || simulovanoUkonceniTydne) {
+    console.log('\nSIMULOVANÉ KROKY (zbytek řetězu je skutečný):');
+    if (simulovanoPropojeni) {
+      console.log('  • stripe_customer_id zapsán skriptem — v produkci ho doplní');
+      console.log('    checkout.session.completed; tu část ověří jen --browser');
+    }
+    if (simulovanoUkonceniTydne) {
+      console.log('  • valid_until plánu posunut na dnešek, aby producent viděl');
+      console.log('    konec týdne — jinak by se čekalo 7 dní');
+    }
+  }
   console.log(failed ? `\n${failed}× FAIL\n` : '\nCelý řetěz prošel.\n');
 }
 
@@ -249,10 +267,35 @@ if (CHECKOUT_ONLY) {
   process.exit(failed ? 1 : 0);
 }
 
-// ── 4. PLATBA V PROHLÍŽEČI ──────────────────────────────────────────────────
-krok('4. Platba testovací kartou (Playwright)');
+// ── 4. PLATBA ───────────────────────────────────────────────────────────────
+//
+// VÝCHOZÍ CESTA JE STRIPE API, ne prohlížeč. Hostovaná Checkout stránka je
+// Stripe UI, běží v iframech a mění se — 11. 8. 2026 na ní běh spadl na
+// `locator.fill: Timeout 30000ms exceeded`, což o našem kódu neřeklo nic.
+// Playwright zůstává za `--browser` pro případ, kdy chceme opravdu celou cestu
+// včetně hostované stránky.
+//
+// DVĚ ODCHYLKY OD „prostě vytvoř subscription a Stripe pošle created":
+//
+//  1. `customer.subscription.created` NENÍ v `enabled_events` našeho endpointu
+//     (jsou tam jen checkout.session.completed, customer.subscription.updated
+//     a .deleted) a handler pro něj nemá case — spadl by na
+//     `ignored_customer.subscription.created`. Proto se po vytvoření
+//     subscription vynutí `customer.subscription.updated`, který endpoint
+//     odebírá i zpracovává.
+//
+//  2. `metadata.user_id` webhooku k ničemu není. `resolveMembershipUserId()`
+//     hledá uživatele VÝHRADNĚ přes `memberships.stripe_subscription_id`
+//     nebo `stripe_customer_id`; do metadat u subscription se nedívá. Ty
+//     sloupce plní jedině `checkout.session.completed`. API cesta ho
+//     přeskakuje, takže musí propojení zapsat sama — jinak každý běh skončí
+//     na `skipped_no_membership_match` a nic se neaktivuje.
+//
+// CO API CESTA NEOVĚŘUJE: krok checkout → propojení uživatele se Stripe
+// zákazníkem. Ten pokrývá jedině `--browser`.
+krok(BROWSER ? '4. Platba přes hostovaný Checkout (Playwright)' : '4. Platba přes Stripe API');
 
-{
+if (BROWSER) {
   const { chromium } = await import('playwright');
   const browser = await chromium.launch({ headless: !HEADED });
   try {
@@ -274,10 +317,58 @@ krok('4. Platba testovací kartou (Playwright)');
     ok('Platba prošla, Stripe přesměroval na ?checkout=success');
   } catch (e) {
     fail(`Platba v prohlížeči selhala: ${e?.message?.split('\n')[0]}`);
-    info('Zkus --headed a podívej se, na čem to stojí (Stripe mění popisky polí).');
+    info('Stripe mění popisky polí — zkus --headed. Bez --browser jede API cesta.');
   } finally {
     await browser.close();
   }
+} else {
+  const priceId = String(process.env.STRIPE_PRICE_START_MONTHLY || '').trim();
+  if (!priceId) {
+    stop('Pro API cestu je potřeba lokální STRIPE_PRICE_START_MONTHLY (produkční proměnná se odsud nepřečte).');
+  }
+
+  const zakaznik = await stripeApi('customers', {
+    method: 'POST',
+    body: { email, 'metadata[user_id]': userId, description: 'verify:paid-path' },
+  });
+  ok(`Stripe zákazník ${zakaznik.id}`);
+
+  const pm = await stripeApi('payment_methods/pm_card_visa/attach', {
+    method: 'POST',
+    body: { customer: zakaznik.id },
+  });
+  await stripeApi(`customers/${zakaznik.id}`, {
+    method: 'POST',
+    body: { 'invoice_settings[default_payment_method]': pm.id },
+  });
+  ok('Testovací karta připojena jako výchozí');
+
+  // Krok, který v produkci dělá checkout.session.completed.
+  const { error: linkErr } = await db.from('memberships')
+    .update({ stripe_customer_id: zakaznik.id })
+    .eq('user_id', userId);
+  if (linkErr) stop(`Nepodařilo se propojit členství se Stripe zákazníkem: ${linkErr.message}`);
+  simulovanoPropojeni = true;
+  info('SIMULOVÁNO: stripe_customer_id zapsán ručně (jinak to dělá checkout.session.completed)');
+
+  const sub = await stripeApi('subscriptions', {
+    method: 'POST',
+    body: {
+      customer: zakaznik.id,
+      'items[0][price]': priceId,
+      default_payment_method: pm.id,
+      'metadata[user_id]': userId,
+      'metadata[expected_tier]': 'START',
+    },
+  });
+  ok(`Subscription ${sub.id} (Stripe status: ${sub.status})`);
+
+  // Vynucený `customer.subscription.updated` — `created` endpoint neodebírá.
+  await stripeApi(`subscriptions/${sub.id}`, {
+    method: 'POST',
+    body: { 'metadata[verify_run]': String(stamp) },
+  });
+  ok('Vynucen customer.subscription.updated → webhook');
 }
 
 // ── 5. WEBHOOK ──────────────────────────────────────────────────────────────
@@ -326,21 +417,48 @@ async function producent(dryRun) {
   return { status: res.status, json: await res.json().catch(() => ({})) };
 }
 
+async function ulohyUzivatele() {
+  const { data } = await db.from('ai_tasks')
+    .select('id, task_type, status, created_at')
+    .eq('user_id', userId).eq('task_type', 'weekly_plan_update')
+    .order('created_at', { ascending: false });
+  return data || [];
+}
+
 {
+  // NEJDŘÍV SPRÁVNÉ ODMÍTNUTÍ. Producent bere jen uživatele, jejichž aktivní
+  // plán končí do WEEKLY_PRODUCER_LEAD_DAYS (= 1 den) — nebo žádný nemají.
+  // Testovací uživatel dostal plán před minutou, takže kandidát být NESMÍ.
+  // Kdyby byl, vyráběl by producent plány každý den znovu.
   const dry = await producent(true);
-  if (dry.status === 200) ok(`dry_run prošel (kandidátů ${dry.json?.candidates_total ?? '?'}, vzniklo by ${dry.json?.created ?? '?'})`);
-  else fail(`dry_run: HTTP ${dry.status} ${dry.json?.error || ''}`);
+  if (dry.status !== 200) {
+    fail(`dry_run: HTTP ${dry.status} ${dry.json?.error || ''}`);
+  } else if ((await ulohyUzivatele()).length === 0) {
+    ok('Čerstvý plán ještě nekončí → producent uživatele správně nebere');
+  } else {
+    fail('Producent založil úlohu, i když plán ještě platí');
+  }
+
+  // TEĎ SIMULACE KONCE TÝDNE. Bez toho by se dalo čekat 7 dní.
+  const dnes = new Date().toISOString().slice(0, 10);
+  const { error: posunErr } = await db.from('ai_generated_plans')
+    .update({ valid_until: dnes })
+    .eq('user_id', userId).eq('is_active', true);
+  if (posunErr) stop(`Nepodařilo se posunout platnost plánu: ${posunErr.message}`);
+  simulovanoUkonceniTydne = true;
+  info(`SIMULOVÁNO: valid_until aktivního plánu posunut na ${dnes} (konec týdne)`);
+
+  const dry2 = await producent(true);
+  if (dry2.status === 200) ok(`dry_run po posunu: kandidátů ${dry2.json?.candidates_total ?? '?'}`);
+  else fail(`dry_run po posunu: HTTP ${dry2.status} ${dry2.json?.error || ''}`);
 
   const real = await producent(false);
   if (real.status === 200) ok(`Producent proběhl (created ${real.json?.created ?? '?'})`);
   else fail(`Producent: HTTP ${real.status} ${real.json?.error || ''}`);
 
-  const { data: tasks } = await db.from('ai_tasks')
-    .select('id, task_type, status, created_at')
-    .eq('user_id', userId).eq('task_type', 'weekly_plan_update')
-    .order('created_at', { ascending: false });
-  if (tasks?.length) ok(`Úloha weekly_plan_update vznikla (status ${tasks[0].status})`);
-  else fail('Úloha weekly_plan_update nevznikla — producent uživatele nevzal jako kandidáta');
+  const tasks = await ulohyUzivatele();
+  if (tasks.length) ok(`Úloha weekly_plan_update vznikla (status ${tasks[0].status})`);
+  else fail('Úloha weekly_plan_update nevznikla ani po posunu platnosti');
 }
 
 // ── 8. DRUHÝ PLÁN ───────────────────────────────────────────────────────────

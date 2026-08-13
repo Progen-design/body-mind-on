@@ -514,10 +514,37 @@ async function uklid() {
     for (const t of ['ai_tasks', 'ai_generated_plans', 'memberships', 'start_workout_progression', 'body_metrics']) {
       await db.from(t).delete().eq('user_id', userId);
     }
+    // `registrations` se váže e-mailem, ne user_id — smazání auth uživatele
+    // (a s ním profilu) ji tu nechá viset a hlídka `registrations_viselec`
+    // pak hlásí registraci bez účtu. Čtyři takové řádky po bězích z 10.–12. 8.
+    // 2026 byly přesně tohle.
+    const { error: regErr } = await db.from('registrations').delete().eq('email', email);
+    if (regErr) fail(`Úklid registrations selhal: ${regErr.message} (${email})`);
+
     await db.auth.admin.deleteUser(userId);
     ok('Testovací uživatel smazán');
   } catch (e) {
     fail(`Úklid uživatele selhal: ${e?.message} (user_id ${userId})`);
+  }
+
+  // Kontrola dopadu: úklid, který tiše nechá stopu, je horší než žádný.
+  try {
+    const zbytky = [];
+    for (const t of ['ai_tasks', 'ai_generated_plans', 'memberships', 'start_workout_progression', 'body_metrics']) {
+      const { count } = await db.from(t).select('*', { count: 'exact', head: true }).eq('user_id', userId);
+      if (count) zbytky.push(`${t}=${count}`);
+    }
+    const { count: regZbytek } = await db.from('registrations')
+      .select('*', { count: 'exact', head: true }).eq('email', email);
+    if (regZbytek) zbytky.push(`registrations=${regZbytek}`);
+
+    const { data: authPo } = await db.auth.admin.listUsers({ page: 1, perPage: 200 });
+    if ((authPo?.users || []).some((u) => u.id === userId)) zbytky.push('auth.users=1');
+
+    if (zbytky.length) fail(`Po úklidu zůstaly řádky: ${zbytky.join(', ')}`);
+    else ok('Po úklidu nezůstala žádná stopa (včetně registrations)');
+  } catch (e) {
+    info(`Ověření úklidu selhalo: ${e?.message}`);
   }
 }
 

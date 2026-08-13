@@ -36,8 +36,14 @@ function check(label, ok, detail = '') {
 
 const webhookSrc = readFileSync(join(ROOT, 'pages/api/webhooks/stripe.js'), 'utf8');
 const checkoutSrc = readFileSync(join(ROOT, 'pages/api/stripe/create-checkout-session.js'), 'utf8');
-const migrationExists = readFileSync(join(ROOT, 'supabase/migrations/20260712120000_stripe_events_idempotency.sql'), 'utf8');
-const statusMigration = readFileSync(join(ROOT, 'supabase/migrations/20260712121000_membership_status_contract.sql'), 'utf8');
+// Původní migrace 20260712120000_stripe_events_idempotency a
+// 20260712121000_membership_status_contract spolkl re-baseline squash 30. 7.
+// 2026 (commit bc60a3d). Skript na ně sahal dál a od té doby padal na ENOENT
+// hned při startu — celé ověření mapování tierů tím bylo mrtvé, aniž by to
+// kdokoli viděl. Schéma teď žije v baseline, tak se čte odtamtud.
+const baseline = readFileSync(join(ROOT, 'supabase/migrations/20260714180000_baseline_schema.sql'), 'utf8');
+const migrationExists = baseline;
+const statusMigration = baseline;
 const eventStoreSrc = readFileSync(join(ROOT, 'lib/stripeEventStore.js'), 'utf8');
 const legacySrc = readFileSync(join(ROOT, 'lib/stripeLegacyCheckout.js'), 'utf8');
 
@@ -53,13 +59,26 @@ check('legacy flag defaults false', isStripeLegacyCheckoutAllowed() === false);
 check('legacy env STRIPE_ALLOW_LEGACY_CHECKOUT', legacySrc.includes('STRIPE_ALLOW_LEGACY_CHECKOUT'));
 check('checkout endpoint allowlist', checkoutSrc.includes('ALLOWED_TIERS') && checkoutSrc.includes('START'));
 check('checkout price from env only', checkoutSrc.includes('getStripePriceIdForTier'));
-check('migration stripe_events status column', migrationExists.includes('status text'));
+// Baseline uvozuje identifikátory ("status" "text"), původní migrace ne.
+check('migration stripe_events status column', /"stripe_events"[\s\S]{0,400}"status"\s+"text"/.test(migrationExists));
 check('event store stale processing', eventStoreSrc.includes('STALE_PROCESSING_MS'));
 check('membership status migration exists', statusMigration.includes('memberships_status_check'));
 check('DB allows pending_payment', statusMigration.includes("'pending_payment'"));
 check('DB allows past_due', statusMigration.includes("'past_due'"));
 check('DB allows canceled', statusMigration.includes("'canceled'"));
-check('DB migrates cancelled spelling', statusMigration.includes("WHERE status = 'cancelled'"));
+// Původně se kontroloval jednorázový `UPDATE ... WHERE status = 'cancelled'`,
+// který britský pravopis přepsal na americký. Takový krok ale squash z principu
+// nepřežije — v baseline je koncový stav, ne cesta k němu. Kontroluje se proto
+// výsledek: constraint musí 'canceled' pouštět a 'cancelled' NE. To je navíc
+// silnější tvrzení, protože platí i po dalším re-baseline.
+{
+  const radek = statusMigration
+    .split('\n')
+    .find((l) => l.includes('memberships_status_check') && l.includes('CHECK')) || '';
+  check('DB allows canceled spelling only',
+    radek.includes("'canceled'") && !radek.includes("'cancelled'"),
+    radek ? '' : 'constraint memberships_status_check se v baseline nenašel');
+}
 
 const testEnv = {
   STRIPE_PRICE_START_MONTHLY: 'price_start_test',

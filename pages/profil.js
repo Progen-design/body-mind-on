@@ -941,6 +941,50 @@ export default function Profil() {
     }
   }, [router.query?.payment]);
 
+  // NÁVRAT ZE STRIPE CHECKOUTU — spustí čekající týdenní plán hned.
+  //
+  // `success_url` v create-checkout-session je `/profil?checkout=success`.
+  // Webhook po aktivaci úlohu jen ZALOŽÍ (Stripe čeká na 200, generovat v něm
+  // nejde), takže bez tohohle by uživatel čekal na scheduler — ten žene
+  // GitHub Actions zhruba jednou za hodinu. Za plán, který právě zaplatil.
+  //
+  // Endpoint je bezpečné zavolat víckrát: claim je podmíněný na `pending`.
+  const checkoutRunRef = useRef(false);
+  useEffect(() => {
+    if (router.query?.checkout !== 'success') return;
+    if (checkoutRunRef.current || !session?.access_token) return;
+    checkoutRunRef.current = true;
+
+    setToast({ message: 'Platba proběhla. Připravuji tvůj plán…', type: 'success' });
+    router.replace('/profil', undefined, { shallow: true });
+
+    (async () => {
+      try {
+        const res = await fetch('/api/plan/run-pending-weekly', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (data?.ok) {
+          setToast({ message: 'Nový týdenní plán je připravený.', type: 'success' });
+        } else if (data?.status === 'already_running') {
+          setToast({ message: 'Plán se právě připravuje, za chvíli se objeví.', type: 'success' });
+        } else if (data?.status === 'retry_scheduled') {
+          setToast({ message: 'Plán se nepodařilo dokončit napoprvé, zkoušíme to znovu.', type: 'success' });
+        } else if (String(data?.status || '').startsWith('start_trial') || data?.status === 'no_pending_task') {
+          // Plán na tenhle týden už existuje, nebo na něj uživatel nemá nárok.
+          // Není to chyba — profil se přenačte a ukáže skutečný stav.
+        } else {
+          setToast({ message: 'Plán se zatím nepodařilo připravit, zkusíme to znovu automaticky.', type: 'error' });
+        }
+      } catch {
+        // Ticho schválně: plán doplní scheduler, uživatele nemá cenu strašit.
+      } finally {
+        await refetch().catch(() => {});
+      }
+    })();
+  }, [router.query?.checkout, session?.access_token, refetch]);
+
   async function handleCalendarEventSubmit(e) {
     e.preventDefault();
     if (!session?.access_token || calendarEventSubmit.loading) return;

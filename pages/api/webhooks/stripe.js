@@ -16,6 +16,7 @@ import {
 } from '../../../lib/stripeEventStore';
 import { isStripeLegacyCheckoutAllowed } from '../../../lib/stripeLegacyCheckout';
 import { mapStripeSubscriptionStatusToMembership } from '../../../lib/stripeSubscriptionStatus';
+import { produceWeeklyTaskForUser } from '../../../lib/weeklyPlanProducer';
 
 export const config = { api: { bodyParser: false } };
 
@@ -162,8 +163,47 @@ async function resolveTierFromCheckoutSession(stripe, session) {
  * @param {import('stripe').Stripe.Event} event
  * @param {string} result
  */
-async function finishSkipped(event, result) {
-  await skipStripeEvent(event.id, result);
+async function finishSkipped(event, result, errorMessage = null) {
+  await skipStripeEvent(event.id, result, errorMessage);
+}
+
+/**
+ * Po aktivaci předplatného založí úlohu na nový týdenní plán.
+ *
+ * PROČ TADY. 13. 8. 2026 uživatel zaplatil v 16:31, členství se přepnulo na
+ * `active` a tím to skončilo — úlohu zakládá jen denní cron ve 04:00 UTC,
+ * takže na plán by čekal 11,5 hodiny (a při platbě těsně po cronu skoro den).
+ *
+ * Zakládá se JEN úloha, nic se negeneruje: Stripe čeká na 200 a webhook, který
+ * se zdrží skládáním plánu, dostane timeout a Stripe ho přehraje. Vlastní
+ * generování spustí `/api/plan/run-pending-weekly` hned po návratu uživatele
+ * na profil, jinak scheduler.
+ *
+ * Selhání se NESMÍ propsat do odpovědi: členství už je aktivní a opakovaný
+ * webhook by ho jen upsertoval znovu. Úlohu doplní cron.
+ *
+ * @param {string} userId
+ * @param {string} eventId
+ * @param {string} tier
+ */
+async function zaloziWeeklyUlohu(userId, eventId, tier) {
+  try {
+    const vysledek = await produceWeeklyTaskForUser(userId);
+    console.log('[webhooks/stripe] weekly task po aktivaci', {
+      event_id: eventId,
+      user_id: userId,
+      tier,
+      created: vysledek.created,
+      reason: vysledek.reason,
+      target_from: vysledek.target_from,
+    });
+  } catch (e) {
+    console.error('[webhooks/stripe] zalozeni weekly ulohy selhalo', {
+      event_id: eventId,
+      user_id: userId,
+      error: e?.message || String(e),
+    });
+  }
 }
 
 /**
@@ -237,7 +277,14 @@ export default async function handler(req, res) {
             session_id: session.id,
             price_id: priceId || 'missing',
           });
-          await finishSkipped(event, 'skipped_unknown_price');
+          // 200, ne 4xx: opakovaným doručením se neznámé price ID nespraví
+          // a Stripe by to zkoušel dokola. Musí to ale být VIDĚT — price ID
+          // se ukládá a system_health_alerts na to má vlastní hlídku.
+          await finishSkipped(
+            event,
+            'skipped_unknown_price',
+            `checkout.session.completed: neznamy price_id ${priceId || 'missing'} (session ${session.id})`
+          );
           return res.status(200).json({ received: true, skipped: 'unknown_price' });
         }
 
@@ -308,6 +355,11 @@ export default async function handler(req, res) {
           trial_ends_at: state.trialEndsAt,
           legacy_email_fallback: usedLegacyEmail,
         });
+
+        if (membershipStatus === 'active') {
+          await zaloziWeeklyUlohu(userId, event.id, tier);
+        }
+
         await completeStripeEvent(event.id, `${membershipStatus}_${tier}`);
         break;
       }
@@ -326,7 +378,11 @@ export default async function handler(req, res) {
             event_id: event.id,
             subscription_id: subscriptionId,
           });
-          await finishSkipped(event, 'skipped_unknown_price');
+          await finishSkipped(
+            event,
+            'skipped_unknown_price',
+            `${event.type}: neznamy price_id ${sub?.items?.data?.[0]?.price?.id || 'missing'} (subscription ${subscriptionId})`
+          );
           break;
         }
 
@@ -369,6 +425,13 @@ export default async function handler(req, res) {
           console.error('[webhooks/stripe] subscription sync failed:', err.message);
           await failStripeEvent(event.id, 'subscription_sync_db_error', err.message);
           return res.status(500).json({ error: 'Database error' });
+        }
+
+        // Sem vede přechod trialing → active. Dnešní uživatelé Stripe trial
+        // nedostávají (registrace zapisuje trial_ends_at), ale kdyby se to
+        // změnilo, aktivace přijde právě touhle větví, ne checkoutem.
+        if (membershipStatus === 'active') {
+          await zaloziWeeklyUlohu(userId, event.id, tier);
         }
 
         await completeStripeEvent(event.id, `subscription_${membershipStatus}_${tier}`);

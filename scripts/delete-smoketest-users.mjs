@@ -1,10 +1,37 @@
 #!/usr/bin/env node
 /**
- * Smaže všechny Supabase Auth uživatele s e-mailem smoketest+*@bodyandmindon.cz (+ související řádky).
- * Stejná logika jako delete-user-by-email.mjs. Vyžaduje SUPABASE_SERVICE_ROLE_KEY a URL v .env / .env.local.
+ * Úklid účtů, které po sobě nechávají testovací běhy (smoke test, paid path).
  *
- * Použití: node scripts/delete-smoketest-users.mjs
- * Dry run (jen výpis): node scripts/delete-smoketest-users.mjs --dry-run
+ * ─────────────────────────────────────────────────────────────────────────────
+ * PROČ SE TENHLE SKRIPT PŘEPISOVAL (14. 8. 2026)
+ *
+ * V release testu selhal dvakrát a pokaždé tiše:
+ *
+ *   1. `AuthApiError: Unregistered API key`. Načítal `.env` PŘED `.env.local`
+ *      a nastavoval jen dosud nedefinované klíče, takže starý
+ *      SUPABASE_SERVICE_ROLE_KEY v `.env` přebil platný v `.env.local`.
+ *      Pořadí je teď opačné — `.env` je poslední záchrana, ne autorita.
+ *
+ *   2. Hledal jen `smoketest+*@bodyandmindon.cz`. Jenže smoke test zakládá
+ *      `info+bm-smoke-<dieta>-<čas>@bodyandmindon.cz` (proti produkci) nebo
+ *      `bm-smoke-<dieta>-<čas>@example.com` (lokálně) a `verify:paid-path`
+ *      zakládá `info+bm-paid-<čas>@…`. Se správným klíčem tedy skript našel
+ *      NULA účtů a hlásil „Nic ke smazání“, zatímco jich v ostré DB leželo 41.
+ *
+ * Úklid, který skončí bez chyby a nic neudělá, je horší než úklid, který spadne.
+ * Skript proto na konci ověřuje dopad a při zbytku končí nenulově.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * PROČ SE NEZRCADLÍ `je_testovaci_email()` Z DB
+ *
+ * Ta funkce má větev `^(info|smoketest)\+[^@]+@bodyandmindon\.cz$`, tedy JAKÝKOLI
+ * `info+…` alias. Pro hlídku v `system_health_alerts` je to správně (falešně
+ * nezakřičí), pro MAZÁNÍ je to mina — ručně založený `info+neco@` by zmizel.
+ * Tady se proto vypisují konkrétní prefixy, které generují naše skripty.
+ *
+ * Použití:
+ *   npm run admin:delete-smoketest-users -- --dry-run
+ *   npm run admin:delete-smoketest-users
  */
 import { readFileSync, existsSync } from 'fs';
 import { createClient } from '@supabase/supabase-js';
@@ -24,7 +51,7 @@ function loadDotEnvFile(relPath) {
     const eq = t.indexOf('=');
     if (eq <= 0) continue;
     const key = t.slice(0, eq).trim();
-    let val = t.slice(eq + 1).trim();
+    let val = t.slice(eq + 1).trim().replace(/\r$/, '');
     if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
       val = val.slice(1, -1);
     }
@@ -32,12 +59,15 @@ function loadDotEnvFile(relPath) {
   }
 }
 
-loadDotEnvFile('.env');
+// POŘADÍ JE ZÁVAZNÉ. Vyhrává první nalezená hodnota, takže nejkonkrétnější
+// soubor musí jít první. Obrácené pořadí je přesně bug č. 1 z hlavičky.
 loadDotEnvFile('.env.local');
 loadDotEnvFile('.env.production.local');
+loadDotEnvFile('.env');
 
 const DRY = process.argv.includes('--dry-run');
 
+/** Tabulky vázané na `user_id`. Pořadí = od závislých k nadřazeným. */
 const TABLES_WITH_USER_ID = [
   'habit_logs',
   'workouts',
@@ -49,13 +79,24 @@ const TABLES_WITH_USER_ID = [
   'ai_content_drafts',
   'ai_tasks',
   'ai_generated_plans',
+  // Doplněno 14. 8. 2026 — `verify:paid-path` ho uklízí, tenhle skript ne,
+  // takže po smoke testech zůstávalo 15 řádků na účet.
+  'start_workout_progression',
   'body_metrics',
   'memberships',
   'ai_logs',
 ];
 
-/** smoketest+cokoli@bodyandmindon.cz */
-const SMOKE_PATTERN = /^smoketest\+.+@bodyandmindon\.cz$/i;
+/**
+ * Tabulky vázané E-MAILEM, ne `user_id`. Smazání auth uživatele je tu nechá
+ * viset — přesně tak vznikly osiřelé `registrations`, na které křičela hlídka
+ * `registrations_viselec` (viz migrace 20260813214759).
+ */
+const TABLES_WITH_EMAIL = ['registrations', 'body_metrics'];
+
+// VZORY ŽIJÍ V `lib/testAccountEmails.js`, ne tady. Zadrátovaný vzor u skriptu
+// byl přesně to, co v release testu selhalo — a bez testu se to nedalo poznat.
+const { isTestAccountEmail: jeTestovaciEmail } = await import('../lib/testAccountEmails.js');
 
 const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -66,8 +107,13 @@ if (!url || !key) {
 
 const supabase = createClient(url, key, { auth: { persistSession: false } });
 
-async function listAllSmokeEmails() {
-  const emails = new Set();
+/**
+ * Jeden průchod auth uživateli. Dřív se `listUsers` volal ZNOVU pro každý
+ * e-mail, aby se dohledalo `id` — u 41 účtů to bylo 41 enumerací celé tabulky.
+ * @returns {Promise<Array<{id: string, email: string}>>}
+ */
+async function nactiTestovaciAuthUcty() {
+  const nalezene = new Map();
   let page = 1;
   const perPage = 200;
   for (;;) {
@@ -76,7 +122,7 @@ async function listAllSmokeEmails() {
     const users = data?.users || [];
     for (const u of users) {
       const em = (u.email || '').trim().toLowerCase();
-      if (em && SMOKE_PATTERN.test(em)) emails.add(em);
+      if (em && jeTestovaciEmail(em) && !nalezene.has(em)) nalezene.set(em, u.id);
     }
     if (users.length < perPage) break;
     page += 1;
@@ -85,10 +131,26 @@ async function listAllSmokeEmails() {
       break;
     }
   }
-  return [...emails].sort();
+  return [...nalezene].map(([email, id]) => ({ email, id })).sort((a, b) => a.email.localeCompare(b.email));
 }
 
-async function deleteRowsForUser(userId) {
+/**
+ * Profily bez auth uživatele. Vznikají, když se dřívější úklid nedokončil.
+ * @returns {Promise<Array<{id: string, email: string}>>}
+ */
+async function nactiOsireleProfily(smazaneEmaily) {
+  const { data, error } = await supabase.from('profiles').select('id, email');
+  if (error) {
+    console.warn('[profiles sken]', error.message);
+    return [];
+  }
+  const jizReseno = new Set(smazaneEmaily);
+  return (data || [])
+    .filter((p) => jeTestovaciEmail(p.email) && !jizReseno.has(String(p.email).toLowerCase()))
+    .map((p) => ({ id: p.id, email: String(p.email).toLowerCase() }));
+}
+
+async function smazRadkyUzivatele(userId) {
   for (const table of TABLES_WITH_USER_ID) {
     const { error } = await supabase.from(table).delete().eq('user_id', userId);
     if (error && !/relation|does not exist|column/i.test(error.message)) {
@@ -101,58 +163,94 @@ async function deleteRowsForUser(userId) {
   }
 }
 
-async function findAuthUserIdByEmail(targetEmail) {
-  const needle = targetEmail.toLowerCase();
-  let page = 1;
-  const perPage = 200;
-  for (;;) {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
-    if (error) throw error;
-    const users = data?.users || [];
-    const hit = users.find((u) => (u.email || '').toLowerCase() === needle);
-    if (hit) return hit.id;
-    if (users.length < perPage) return null;
-    page += 1;
-    if (page > 100) return null;
+async function smazRadkyPodleEmailu(email) {
+  for (const table of TABLES_WITH_EMAIL) {
+    const { error } = await supabase.from(table).delete().eq('email', email);
+    if (error && !/relation|does not exist|column/i.test(error.message)) {
+      console.warn(`[${table} by email]`, error.message);
+    }
   }
 }
 
-async function deleteOrphanBodyMetricsByEmail(targetEmail) {
-  const { error } = await supabase.from('body_metrics').delete().eq('email', targetEmail);
-  if (error && !/relation|does not exist/i.test(error.message)) {
-    console.warn('[body_metrics by email]', error.message);
-  }
-}
-
-async function deleteOneEmail(email) {
-  const userId = await findAuthUserIdByEmail(email);
-  if (userId) {
-    await deleteRowsForUser(userId);
-    const { error: delAuth } = await supabase.auth.admin.deleteUser(userId);
-    if (delAuth) throw new Error(`deleteUser ${email}: ${delAuth.message}`);
-    console.log('Smazán auth:', email, '→', userId);
+async function smazJeden({ id, email, maAuth }) {
+  if (maAuth) {
+    await smazRadkyUzivatele(id);
+    const { error } = await supabase.auth.admin.deleteUser(id);
+    if (error) throw new Error(`deleteUser ${email}: ${error.message}`);
   } else {
-    console.log('Auth nenalezen (jen orphan?):', email);
+    await smazRadkyUzivatele(id);
   }
-  await deleteOrphanBodyMetricsByEmail(email);
+  await smazRadkyPodleEmailu(email);
+}
+
+/**
+ * KONTROLA DOPADU. Bez ní skript hlásil úspěch i tehdy, když nesmazal nic.
+ * @returns {Promise<string[]>} popisy zbytků, prázdné = čisto
+ */
+async function overUklid() {
+  const zbytky = [];
+
+  const authZbytek = await nactiTestovaciAuthUcty();
+  if (authZbytek.length) zbytky.push(`auth.users=${authZbytek.length}`);
+
+  const { data: profily } = await supabase.from('profiles').select('id, email');
+  const profZbytek = (profily || []).filter((p) => jeTestovaciEmail(p.email));
+  if (profZbytek.length) zbytky.push(`profiles=${profZbytek.length}`);
+
+  for (const table of TABLES_WITH_EMAIL) {
+    const { data, error } = await supabase.from(table).select('email');
+    if (error) continue;
+    const pocet = (data || []).filter((r) => jeTestovaciEmail(r.email)).length;
+    if (pocet) zbytky.push(`${table}=${pocet}`);
+  }
+
+  return zbytky;
 }
 
 async function main() {
-  const emails = await listAllSmokeEmails();
-  console.log(`Nalezeno smoketest+*@bodyandmindon.cz: ${emails.length}`);
-  if (emails.length === 0) {
-    console.log('Nic ke smazání.');
+  const authUcty = await nactiTestovaciAuthUcty();
+  const osirele = await nactiOsireleProfily(authUcty.map((u) => u.email));
+
+  const kSmazani = [
+    ...authUcty.map((u) => ({ ...u, maAuth: true })),
+    ...osirele.map((p) => ({ ...p, maAuth: false })),
+  ];
+
+  console.log(`Testovací účty: ${authUcty.length} v auth, ${osirele.length} osiřelých profilů.`);
+  for (const u of kSmazani) console.log(`  ${u.maAuth ? 'auth  ' : 'orphan'} ${u.email}`);
+
+  if (kSmazani.length === 0) {
+    const zbytky = await overUklid();
+    if (zbytky.length) {
+      console.error(`Nic k mazání, ale kontrola našla zbytky: ${zbytky.join(', ')}`);
+      process.exit(1);
+    }
+    console.log('Nic ke smazání, produkce je čistá.');
     return;
   }
-  for (const em of emails) console.log(' ', em);
+
   if (DRY) {
-    console.log('Dry run – nic se nesmazalo.');
+    console.log('\nDry run – nic se nesmazalo.');
     return;
   }
-  for (const em of emails) {
-    await deleteOneEmail(em);
+
+  let chyb = 0;
+  for (const u of kSmazani) {
+    try {
+      await smazJeden(u);
+      console.log('Smazán:', u.email);
+    } catch (e) {
+      chyb += 1;
+      console.error('Selhalo:', u.email, e?.message || e);
+    }
   }
-  console.log('Hotovo.');
+
+  const zbytky = await overUklid();
+  if (zbytky.length || chyb) {
+    console.error(`\nÚKLID NEDOKONČEN — chyb ${chyb}, zbytky: ${zbytky.join(', ') || 'žádné'}`);
+    process.exit(1);
+  }
+  console.log(`\nHotovo: smazáno ${kSmazani.length}, po kontrole nezůstala žádná stopa.`);
 }
 
 main().catch((e) => {

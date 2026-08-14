@@ -38,6 +38,28 @@ import { trainingEnvironmentDisplayFromMetrics } from '../lib/trainingEnvironmen
 import { roundLoadTotal } from '../lib/progressModel';
 import { buildProfileButtonSystemCss } from '../lib/designTokens';
 import {
+  WORKOUT_TYPES,
+  WORKOUT_DIFFICULTY_OPTIONS,
+  normalizeWorkoutTypeId,
+  parseWorkoutMetaFromNotes,
+  serializeWorkoutNotesWithMeta,
+  getWorkoutDurationMinutes,
+  getWorkoutDetailLabel,
+  estimatedCalories,
+  getWorkoutLoadPoints,
+} from '../lib/workoutFormat';
+import {
+  WEEKDAY_LABELS,
+  formatDate,
+  formatShortDate,
+  getLocalDateStr,
+  getMondayOfWeek,
+  dateStrAddDays,
+  getWeekDays,
+  formatWeekRange,
+  getEventsByDate,
+} from '../lib/profileDates';
+import {
   normalizeMeasurementPoints,
   buildMeasuredWeightChart,
 } from '../lib/progressIntegrity';
@@ -66,277 +88,7 @@ const PROGRAM_LABELS = {
   VIP: { subtitle: 'Máš přístup ke všem funkcím včetně habit trackeru.' },
 };
 
-const WORKOUT_TYPES = [
-  { id: 'silovy', label: 'Silový', emoji: '🏋️' },
-  { id: 'kardio', label: 'Kardio', emoji: '🏃' },
-  { id: 'beh', label: 'Běh', emoji: '👟' },
-  { id: 'kolo', label: 'Kolo', emoji: '🚴' },
-  { id: 'chuze', label: 'Chůze', emoji: '🚶' },
-  { id: 'plavani', label: 'Plavání', emoji: '🏊' },
-  { id: 'strečink', label: 'Strečink', emoji: '🧘' },
-  { id: 'joga', label: 'Jóga', emoji: '🪷' },
-  { id: 'nordic_walking', label: 'Nordic walking', emoji: '🥢' },
-  { id: 'brusleni', label: 'Bruslení', emoji: '⛸️' },
-  { id: 'lyzovani', label: 'Lyžování', emoji: '🎿' },
-  { id: 'sauna', label: 'Sauna', emoji: '🧖' },
-  { id: 'ostatni', label: 'Ostatní', emoji: '✨' },
-];
 
-const WORKOUT_DIFFICULTY_OPTIONS = [
-  { id: 'easy', label: 'Snadné, zvládl bych více' },
-  { id: 'just_right', label: 'Tak akorát' },
-  { id: 'hard', label: 'Náročné, ale zvládl jsem to' },
-  { id: 'too_hard', label: 'Příliš náročné' },
-];
-
-const WORKOUT_TYPE_SPECS = {
-  silovy: { kcalPerMin: 5, loadPerMin: 1.1 },
-  kardio: { kcalPerMin: 8, loadPerMin: 1.4 },
-  beh: { kcalPerMin: 10, loadPerMin: 1.6, kcalPerKm: 60, paceMinPerKm: 6.5, loadPerKm: 9.5 },
-  kolo: { kcalPerMin: 7, loadPerMin: 1.3, kcalPerKm: 30, paceMinPerKm: 3.3, loadPerKm: 5.5 },
-  chuze: { kcalPerMin: 4, loadPerMin: 0.7, kcalPerKm: 35, paceMinPerKm: 12, loadPerKm: 4.2 },
-  plavani: { kcalPerMin: 10, loadPerMin: 1.8, kcalPerKm: 100, loadPerKm: 12 }, // 10 kcal / 100 m
-  'strečink': { kcalPerMin: 2.5, loadPerMin: 0.45 },
-  strecink: { kcalPerMin: 2.5, loadPerMin: 0.45 }, // fallback bez diakritiky
-  joga: { kcalPerMin: 3, loadPerMin: 0.55 },
-  nordic_walking: { kcalPerMin: 6, loadPerMin: 1, kcalPerKm: 45, paceMinPerKm: 10, loadPerKm: 6.5 },
-  brusleni: { kcalPerMin: 8, loadPerMin: 1.35, kcalPerKm: 50, paceMinPerKm: 5, loadPerKm: 7.8 },
-  lyzovani: { kcalPerMin: 8, loadPerMin: 1.45, kcalPerKm: 55, paceMinPerKm: 6, loadPerKm: 8.4 },
-  sauna: { kcalPerMin: 1.5, loadPerMin: 0.2 },
-  ostatni: { kcalPerMin: 4, loadPerMin: 0.8 },
-};
-
-const WORKOUT_DIFFICULTY_MULTIPLIER = {
-  easy: 0.9,
-  just_right: 1,
-  hard: 1.12,
-  too_hard: 1.2,
-};
-
-function normalizeWorkoutTypeId(type) {
-  const raw = String(type || 'ostatni').toLowerCase();
-  return raw === 'strecink' ? 'strečink' : raw;
-}
-
-function getWorkoutTypeSpec(type) {
-  const normalized = normalizeWorkoutTypeId(type);
-  return WORKOUT_TYPE_SPECS[normalized] || WORKOUT_TYPE_SPECS.ostatni;
-}
-
-function parseWorkoutMetaFromNotes(rawNotes) {
-  const notes = typeof rawNotes === 'string' ? rawNotes : '';
-  const marker = /\n?\[BMO_META\](\{[\s\S]*\})$/;
-  const m = notes.match(marker);
-  if (!m) return { userNotes: notes.trim(), meta: {} };
-  try {
-    const meta = JSON.parse(m[1]) || {};
-    return { userNotes: notes.replace(marker, '').trim(), meta };
-  } catch (_) {
-    return { userNotes: notes.trim(), meta: {} };
-  }
-}
-
-function parsePositiveNumber(value) {
-  if (value == null || value === '') return 0;
-  const normalized = String(value).trim().replace(',', '.');
-  const n = Number(normalized);
-  return Number.isFinite(n) && n > 0 ? n : 0;
-}
-
-function normalizeDistanceKmForType(type, rawKm, durationMin) {
-  let km = parsePositiveNumber(rawKm);
-  if (km <= 0) return 0;
-
-  // Legacy / user-input guard: values like "1000" for run are often meters.
-  if (km >= 200) km = km / 1000;
-
-  const minutes = parsePositiveNumber(durationMin);
-  if (minutes <= 0) return km;
-
-  const hours = minutes / 60;
-  const maxSpeedByType = {
-    beh: 28,
-    chuze: 10,
-    nordic_walking: 12,
-    brusleni: 45,
-    lyzovani: 90,
-    kolo: 90,
-    plavani: 12,
-  };
-  const maxSpeed = maxSpeedByType[type] || 40;
-  const maxReasonableKm = maxSpeed * hours * 1.25;
-  if (km > maxReasonableKm) {
-    const asMetersKm = km / 1000;
-    if (asMetersKm > 0 && asMetersKm <= maxReasonableKm) return asMetersKm;
-  }
-
-  return km;
-}
-
-function serializeWorkoutNotesWithMeta(userNotes, meta) {
-  const clean = (userNotes || '').trim();
-  const normalizedMeta = {};
-  Object.entries(meta || {}).forEach(([key, value]) => {
-    const numeric = Number(value);
-    if (Number.isFinite(numeric) && numeric > 0) {
-      normalizedMeta[key] = numeric;
-    }
-  });
-  if (Object.keys(normalizedMeta).length === 0) return clean;
-  const payload = `${clean}\n[BMO_META]${JSON.stringify(normalizedMeta)}`.trim();
-  return payload;
-}
-
-function getWorkoutDistanceKm(workout) {
-  const type = normalizeWorkoutTypeId(workout?.workout_type);
-  const { meta } = parseWorkoutMetaFromNotes(workout?.notes);
-  const durationMin = parsePositiveNumber(workout?.duration_min);
-  if (type === 'plavani') {
-    const meters = parsePositiveNumber(meta?.distance_m);
-    return meters > 0 ? meters / 1000 : 0;
-  }
-  const km = parsePositiveNumber(meta?.distance_km);
-  if (km > 0) return normalizeDistanceKmForType(type, km, durationMin);
-
-  const metersFallback = parsePositiveNumber(meta?.distance_m);
-  if (metersFallback > 0) return normalizeDistanceKmForType(type, metersFallback / 1000, durationMin);
-  return 0;
-}
-
-function getWorkoutDurationMinutes(workout) {
-  const explicit = Number(workout?.duration_min) || 0;
-  if (explicit > 0) return explicit;
-  const type = normalizeWorkoutTypeId(workout?.workout_type);
-  const km = getWorkoutDistanceKm(workout);
-  const pace = getWorkoutTypeSpec(type)?.paceMinPerKm;
-  if (km > 0 && pace) return Math.round(km * pace);
-  return 0;
-}
-
-function getWorkoutDetailLabel(workout) {
-  const type = normalizeWorkoutTypeId(workout?.workout_type);
-  const { meta } = parseWorkoutMetaFromNotes(workout?.notes);
-  if (type === 'plavani') {
-    const meters = parsePositiveNumber(meta?.distance_m);
-    if (meters > 0) return `${meters} m`;
-  }
-  const km = getWorkoutDistanceKm(workout);
-  if (km > 0) return `${km.toFixed(km < 10 ? 1 : 0)} km`;
-  return '';
-}
-
-function estimatedCalories(workout) {
-  const type = normalizeWorkoutTypeId(workout?.workout_type);
-  const spec = getWorkoutTypeSpec(type);
-  const km = getWorkoutDistanceKm(workout);
-  if (km > 0) {
-    const perKm = spec?.kcalPerKm;
-    if (perKm) return Math.round(km * perKm);
-  }
-  const min = getWorkoutDurationMinutes(workout);
-  const kcalPerMin = spec?.kcalPerMin ?? WORKOUT_TYPE_SPECS.ostatni.kcalPerMin;
-  return Math.round(min * kcalPerMin);
-}
-
-function getWorkoutLoadPoints(workout) {
-  const type = normalizeWorkoutTypeId(workout?.workout_type);
-  const spec = getWorkoutTypeSpec(type);
-  const km = getWorkoutDistanceKm(workout);
-  const minutes = getWorkoutDurationMinutes(workout);
-  const difficultyMul = WORKOUT_DIFFICULTY_MULTIPLIER[workout?.perceived_difficulty] || 1;
-
-  const baseLoad = km > 0 && spec?.loadPerKm
-    ? km * spec.loadPerKm
-    : minutes * (spec?.loadPerMin ?? WORKOUT_TYPE_SPECS.ostatni.loadPerMin);
-
-  return Math.round(baseLoad * difficultyMul * 10) / 10;
-}
-
-function formatDate(d) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('cs-CZ', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
-function formatShortDate(d) {
-  if (!d) return '—';
-  // Pokud je to string ve formátu YYYY-MM-DD, přidat čas pro správné parsování
-  let dateStr = d;
-  if (typeof d === 'string' && d.match(/^\d{4}-\d{2}-\d{2}$/)) {
-    // Přidat čas pro správné parsování (UTC, aby se předešlo problémům s timezone)
-    dateStr = `${d}T12:00:00Z`;
-  }
-  const date = new Date(dateStr);
-  // Zkontrolovat, zda je datum platné
-  if (isNaN(date.getTime())) {
-    console.warn('Invalid date:', d);
-    return '—';
-  }
-  return date.toLocaleDateString('cs-CZ', {
-    day: 'numeric',
-    month: 'short',
-  });
-}
-
-// Pondělí daného týdne (Po = první den týdne)
-function getMondayOfWeek(d) {
-  const date = new Date(d);
-  date.setHours(12, 0, 0, 0);
-  const day = date.getDay();
-  const diff = day === 0 ? 6 : day - 1;
-  date.setDate(date.getDate() - diff);
-  return date;
-}
-function dateStrAddDays(dateStr, n) {
-  const d = new Date(dateStr + 'T12:00:00');
-  d.setDate(d.getDate() + n);
-  return getLocalDateStr(d);
-}
-/** Vrací YYYY-MM-DD v lokálním čase (ne UTC). */
-function getLocalDateStr(d = new Date()) {
-  const x = new Date(d);
-  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
-}
-// Jeden týden: 7 dní od pondělí
-function getWeekDays(weekStartStr) {
-  const out = [];
-  const todayStr = getLocalDateStr(new Date());
-  for (let i = 0; i < 7; i++) {
-    const dateKey = dateStrAddDays(weekStartStr, i);
-    const d = new Date(dateKey + 'T12:00:00');
-    out.push({
-      dateKey,
-      dayNum: d.getDate(),
-      isToday: dateKey === todayStr,
-    });
-  }
-  return out;
-}
-function formatWeekRange(weekStartStr) {
-  const start = new Date(weekStartStr + 'T12:00:00');
-  const end = new Date(dateStrAddDays(weekStartStr, 6) + 'T12:00:00');
-  const fmt = (d) => d.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short', year: 'numeric' });
-  return `${fmt(start)} – ${fmt(end)}`;
-}
-
-/** Události seskupí podle lokálního data (ne UTC), aby se zobrazily ve správném dnu. */
-function getEventsByDate(events) {
-  const byDate = {};
-  (events || []).forEach((ev) => {
-    if (!ev.start) return;
-    const d = new Date(ev.start);
-    if (isNaN(d.getTime())) return;
-    const key = getLocalDateStr(d);
-    if (!byDate[key]) byDate[key] = [];
-    byDate[key].push(ev);
-  });
-  return byDate;
-}
-
-const WEEKDAY_LABELS = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
 
 function ProfileHealthSkeleton() {
   return (
@@ -932,6 +684,45 @@ export default function Profil() {
       router.replace('/profil', undefined, { shallow: true });
     }
   }, [router.query?.calendar]);
+
+  // VÝSLEDEK WITHINGS PROPOJENÍ (redirect z /api/withings/callback).
+  //
+  // Callback vrací `/profil?withings=<stav>` se čtyřmi stavy, ale profil ten
+  // parametr do 14. 8. 2026 vůbec nečetl. Uživatel prošel celým OAuth, vrátil
+  // se na profil — a karta dál hlásila „Zatím nepřipojeno“, bez jediného slova
+  // o tom, že se něco nepovedlo. Přesně tohle se stalo 13. 8. ve 23:51 a 23:52.
+  //
+  // Technický důvod do UI nepatří; ten jde do `withings_callback_events`.
+  useEffect(() => {
+    const stav = router.query?.withings;
+    if (!stav) return;
+
+    const hlasky = {
+      connected: {
+        message: 'Withings je propojený. Naměřené hodnoty se teď propisují samy.',
+        type: 'success',
+      },
+      connected_sync_pending: {
+        message: 'Withings je propojený. První hodnoty dorazí během chvíle.',
+        type: 'success',
+      },
+      denied: {
+        message: 'Propojení nebylo dokončeno. Zkus to prosím znovu.',
+        type: 'error',
+      },
+      error: {
+        message: 'Propojení se nepovedlo, zkus to znovu — pokud potíže trvají, napiš nám.',
+        type: 'error',
+      },
+    };
+
+    const hlaska = hlasky[String(stav)];
+    if (hlaska) setToast(hlaska);
+
+    // Úklid parametru i u neznámé hodnoty — jinak by v URL zůstal viset
+    // a hláška by naskočila znovu po refreshi.
+    router.replace('/profil', undefined, { shallow: true });
+  }, [router.query?.withings]);
 
   // Toast po úspěšné platbě (redirect ze Stripe)
   useEffect(() => {

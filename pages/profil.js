@@ -10,6 +10,7 @@ import WelcomeTour from '../components/WelcomeTour';
 import HabitTracker from '../components/HabitTracker';
 import HabitEntryWizard from '../components/HabitEntryWizard';
 import WithingsBodyDevelopmentSection from '../components/profile/WithingsBodyDevelopmentSection';
+import WorkoutLogSection from '../components/profile/WorkoutLogSection';
 import ConnectDevicesSection from '../components/profile/ConnectDevicesSection';
 import AppleWatchSection from '../components/health/AppleWatchSection';
 import ProfileProgressSection from '../components/profile/ProfileProgressSection';
@@ -2330,6 +2331,14 @@ export default function Profil() {
               />
               </>
             )}
+            {/* Zápis odcvičeného tréninku (jen klienti).
+                Bez něj zůstávaly předpisy ve stavu `prescribed` a progrese
+                neměla z čeho počítat — další týden předepsal to samé.
+                Komponenta se sama skryje, když uživatel žádné předpisy nemá. */}
+            {!profile?.can_create_calendar_events && (
+              <WorkoutLogSection accessToken={session?.access_token ?? null} />
+            )}
+
             {/* Mindset na tento týden (jen klienti) – nahoře před plánem */}
             {!profile?.can_create_calendar_events && mindsetTipFromPlan && (
             <div className="profile-bubble" id="mindset">

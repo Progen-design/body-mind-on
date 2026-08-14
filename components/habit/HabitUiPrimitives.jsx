@@ -186,7 +186,7 @@ const PRIMITIVES_STYLE = `
 `;
 
 function HabitUiStyles() {
-  return <style jsx>{PRIMITIVES_STYLE}</style>;
+  return <style dangerouslySetInnerHTML={{ __html: PRIMITIVES_STYLE }} />;
 }
 
 function CheckIcon() {

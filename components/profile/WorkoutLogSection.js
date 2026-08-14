@@ -165,7 +165,7 @@ export default function WorkoutLogSection({ accessToken }) {
       <div className="profile-bubble" id="zapis-treninku">
         <h3 className="wl-title">Zápis tréninku</h3>
         <p className="wl-muted">Načítám…</p>
-        <style jsx>{styly}</style>
+        <style dangerouslySetInnerHTML={{ __html: styly }} />
       </div>
     );
   }
@@ -260,7 +260,7 @@ export default function WorkoutLogSection({ accessToken }) {
       )}
 
       {hlaska && <p className="wl-err" role="alert">{hlaska}</p>}
-      <style jsx>{styly}</style>
+      <style dangerouslySetInnerHTML={{ __html: styly }} />
     </div>
   );
 }

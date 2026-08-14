@@ -60,6 +60,8 @@ export default function ProfileProgressSection({
   const [periodId, setPeriodId] = useState('30');
   const [showMeasurementModal, setShowMeasurementModal] = useState(false);
   const [apiStats, setApiStats] = useState(null);
+  /** Denní řádky z apple_health_daily — potřeba na sjednocení aktivních dnů. */
+  const [apiDaily, setApiDaily] = useState([]);
   const [statsLoading, setStatsLoading] = useState(false);
 
   const registrationMetric = useMemo(() => {
@@ -88,9 +90,15 @@ export default function ProfileProgressSection({
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         const json = res.ok ? await res.json() : null;
-        if (!cancelled) setApiStats(json?.stats || null);
+        if (!cancelled) {
+          setApiStats(json?.stats || null);
+          setApiDaily(Array.isArray(json?.daily) ? json.daily : []);
+        }
       } catch {
-        if (!cancelled) setApiStats(null);
+        if (!cancelled) {
+          setApiStats(null);
+          setApiDaily([]);
+        }
       } finally {
         if (!cancelled) setStatsLoading(false);
       }
@@ -119,20 +127,43 @@ export default function ProfileProgressSection({
     });
     const bounds = getPeriodBounds(periodId, profile?.user?.created_at);
 
+    // RUČNĚ ZAPSANÝ TRÉNINK SE MUSÍ PŘIČÍST, NE PŘEPSAT.
+    //
+    // `get_user_activity_stats` počítá tréninky jen z `apple_health_daily`
+    // a z odškrtnutých plánových tréninků — tabulku `workouts`, kam míří
+    // ruční zápis z profilu, vůbec nečte. Dokud se jeho čísla dosazovala
+    // místo lokálního souhrnu, zapsané plavání 60 min zmizelo z počtu
+    // tréninků, minut i kalorií (změřeno 15. 8. 2026).
+    //
+    // Sčítat lze bezpečně, protože zdroje se nepřekrývají: do `workouts`
+    // zapisuje jen `/api/workouts`, integrace zařízení nikdy.
+    // Aktivní dny se ale sčítat NESMÍ — plavání zapsané v den, kdy hodinky
+    // hlásily pohyb, je jeden den. Proto se dělá sjednocení dnů.
+    const aktivniDnyZeZarizeni = (apiDaily || [])
+      .filter((d) => (Number(d?.exercise_min) || 0) > 10
+        || (Number(d?.workout_count) || 0) > 0
+        || (Number(d?.steps) || 0) > 6000)
+      .map((d) => String(d.local_date).slice(0, 10));
+    const sjednoceneDny = new Set([
+      ...aktivniDnyZeZarizeni,
+      ...(localAct.activeDayKeys || []),
+    ]);
+
     const act = apiStats
       ? {
           ...localAct,
           periodStart: bounds.startKey,
           periodEnd: bounds.endKey,
-          completedWorkouts: apiStats.treninky,
-          totalMinutes: apiStats.pohyb_min,
-          kcalEstimateSecondary: apiStats.aktivni_kcal,
-          activeDays: apiStats.aktivni_dny,
+          completedWorkouts: (apiStats.treninky || 0) + localAct.completedWorkouts,
+          totalMinutes: (apiStats.pohyb_min || 0) + localAct.totalMinutes,
+          kcalEstimateSecondary: (apiStats.aktivni_kcal || 0) + localAct.kcalEstimateSecondary,
+          activeDays: Math.max(sjednoceneDny.size, apiStats.aktivni_dny || 0),
           periodDays: periodId === 'all' ? (apiStats.obdobi_dnu || 3650) : (Number(periodId) || localAct.periodDays),
           habitCompletions: apiStats.navyky_splnene,
           checkinsCount: apiStats.checkiny,
           completedPlanWorkouts: apiStats.treninky_plan,
-          collectingData: apiStats.treninky <= 1 && apiStats.aktivni_dny <= 1,
+          collectingData: ((apiStats.treninky || 0) + localAct.completedWorkouts) <= 1
+            && sjednoceneDny.size <= 1,
         }
       : localAct;
 
@@ -160,6 +191,7 @@ export default function ProfileProgressSection({
     activePlan,
     periodId,
     apiStats,
+    apiDaily,
   ]);
 
   const latestCircumference = useMemo(() => {

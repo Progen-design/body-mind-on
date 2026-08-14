@@ -82,7 +82,21 @@ export default function AddMeasurementModal({ accessToken, onClose, onSaved }) {
             <button type="submit" disabled={saving}>{saving ? 'Ukládám…' : 'Uložit měření'}</button>
           </div>
         </form>
-        <style jsx>{`
+        {/*
+          GLOBAL, NE SCOPED — a je to podmínka funkčnosti, ne kosmetika.
+
+          Tenhle modal se vykresluje `createPortal`em do `document.body` a jeho
+          JSX je nejdřív v proměnné `modal`. styled-jsx na takový strom svoji
+          scopovací třídu nepřilepí — změřeno 15. 8. 2026, element měl
+          `class="amm-overlay"` bez `jsx-…`, takže se z pravidel neuplatnilo NIC.
+          Overlay pak neměl `position: fixed` ani `z-index` a vykreslil se ve
+          statickém toku až pod stránkou (top 1147 px). Kliknutí na „Přidat
+          měření“ tím vypadalo, že nic nedělá — modal byl mimo obrazovku.
+
+          Selektory jsou proto prefixované `.amm-`; holé `label`/`input` by se
+          jako global rozlily do celé aplikace.
+        */}
+        <style jsx global>{`
           .amm-overlay {
             position: fixed;
             inset: 0;
@@ -104,14 +118,14 @@ export default function AddMeasurementModal({ accessToken, onClose, onSaved }) {
           }
           .amm-modal h3 { margin: 0 0 8px; }
           .amm-hint { margin: 0 0 16px; font-size: 0.9rem; color: #c4b5fd; }
-          label {
+          .amm-modal label {
             display: flex;
             flex-direction: column;
             gap: 6px;
             margin-bottom: 12px;
             font-size: 0.9rem;
           }
-          input {
+          .amm-modal input {
             border-radius: 8px;
             border: 1px solid rgba(167, 139, 250, 0.35);
             background: rgba(0, 0, 0, 0.25);

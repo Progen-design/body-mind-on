@@ -900,7 +900,25 @@ export default function PlanViewer({
         <p className="empty-plan">
           Zatím nemáš žádný plán. Vyplň dotazník na <Link href="/start">stránce START</Link> a dostaneš osobní plán na míru.
         </p>
-        <style jsx>{planSectionStyles}</style>
+        {/*
+        NENÍ TO styled-jsx A NESMÍ BÝT.
+
+        `<style jsx>{planSectionStyles}</style>` tady nefungovalo: styled-jsx
+        neumí obsah předaný proměnnou (ne literálem) — vygeneroval elementům
+        `class="jsx-undefined"` a pravidla do dokumentu nevložil vůbec.
+        Změřeno 15. 8. 2026: 206 prvků profilu bez stylů a `document.styleSheets`
+        neobsahoval jediné pravidlo pro `.plan-recipe-modal-overlay`. Modal
+        receptu tím přišel o `position: fixed` i `z-index`, vykreslil se ve
+        statickém toku a na desktopu se nedal otevřít; při skrolu ho překreslil
+        obsah stránky (`.page > *` má `z-index: 1`, portál u `body` má `auto`).
+        Přepnutí na `<style jsx global>` nepomohlo — omezení je v tom, že
+        obsah není literál, ne ve scopování.
+
+        Prostý `<style>` je deterministický. Obsah je konstanta z tohohle
+        souboru, žádný uživatelský vstup, takže `dangerouslySetInnerHTML`
+        nic nevystavuje.
+      */}
+      <style dangerouslySetInnerHTML={{ __html: planSectionStyles }} />
       </section>
     );
   }
@@ -2317,7 +2335,7 @@ export default function PlanViewer({
         </>
       )}
 
-      <style jsx>{planSectionStyles}</style>
+      <style dangerouslySetInnerHTML={{ __html: planSectionStyles }} />
     </section>
   );
 }

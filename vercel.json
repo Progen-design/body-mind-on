@@ -37,6 +37,10 @@
                   "schedule": "0 3 * * *"
             },
             {
+                  "path": "/api/cron/inactivity-reminder",
+                  "schedule": "0 16 * * *"
+            },
+            {
                   "path": "/api/cron/translate-recipes",
                   "schedule": "*/5 * * * *"
             },

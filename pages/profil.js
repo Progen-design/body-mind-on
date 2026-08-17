@@ -10,7 +10,6 @@ import WelcomeTour from '../components/WelcomeTour';
 import HabitTracker from '../components/HabitTracker';
 import HabitEntryWizard from '../components/HabitEntryWizard';
 import WithingsBodyDevelopmentSection from '../components/profile/WithingsBodyDevelopmentSection';
-import WorkoutLogSection from '../components/profile/WorkoutLogSection';
 import ConnectDevicesSection from '../components/profile/ConnectDevicesSection';
 import AppleWatchSection from '../components/health/AppleWatchSection';
 import ProfileProgressSection from '../components/profile/ProfileProgressSection';
@@ -23,6 +22,7 @@ import TrialEndingSoonBanner, { shouldShowTrialEndingSoon } from '../components/
 import TrialPlanScopeNote, { shouldShowTrialPlanScopeNote } from '../components/TrialPlanScopeNote';
 import PlanLockedPaywall from '../components/PlanLockedPaywall';
 import { shouldShowWithingsSection } from '../lib/withingsProfileVisibility';
+import { shouldPromoteDeviceConnect } from '../lib/registrationDevices';
 import { metadataToSmartScaleChoice } from '../lib/smartScalePreference';
 import { parseTrainingEnvironment, parseAvailableEquipment, parseTrainingEnvironmentDetail } from '../lib/trainingEnvironment';
 import { supabase } from '../lib/supabaseClient';
@@ -254,6 +254,12 @@ export default function Profil() {
 
   const showWithingsProfileSection =
     profile?.show_withings_section === true || shouldShowWithingsSection(profile);
+
+  // Zaškrtl si zařízení a ještě nepřipojil? Sekce patří nahoru, ne pod plán.
+  // Po připojení predikát spadne a zmizí odtud sama — dole se pak vykreslí
+  // plná verze jako dřív. Nikdy obojí naráz; dvě stejné sekce na jedné
+  // stránce je přesně ta chyba, kterou řešil zápis tréninku.
+  const promoteDeviceConnect = shouldPromoteDeviceConnect(profile, healthData?.connection);
 
   const toggleProfileSection = (id) => {
     setProfileOpenSections((prev) => {
@@ -2331,13 +2337,20 @@ export default function Profil() {
               />
               </>
             )}
-            {/* Zápis odcvičeného tréninku (jen klienti).
-                Bez něj zůstávaly předpisy ve stavu `prescribed` a progrese
-                neměla z čeho počítat — další týden předepsal to samé.
-                Komponenta se sama skryje, když uživatel žádné předpisy nemá. */}
-            {!profile?.can_create_calendar_events && (
-              <WorkoutLogSection accessToken={session?.access_token ?? null} />
+            {!profile?.can_create_calendar_events && promoteDeviceConnect && (
+              <ConnectDevicesSection
+                variant="top"
+                profile={profile}
+                session={session}
+                healthConnection={healthData.connection}
+                onAppleKeyCreated={() => { reloadHealth(); }}
+              />
             )}
+
+            {/* Zápis odcvičeného tréninku se vykresluje U DNEŠNÍHO TRÉNINKU
+                (components/profile/ProfileTodayPanels.js), ne tady nahoře.
+                Odtržený od cviků, které popisuje, ukazoval uživateli tytéž
+                cviky podruhé — viz komentář na místě vykreslení. */}
 
             {/* Mindset na tento týden (jen klienti) – nahoře před plánem */}
             {!profile?.can_create_calendar_events && mindsetTipFromPlan && (
@@ -2702,12 +2715,17 @@ export default function Profil() {
 
             {!profile?.can_create_calendar_events && (
               <div className="profile-health-inline">
-                <ConnectDevicesSection
-                  profile={profile}
-                  session={session}
-                  healthConnection={healthData.connection}
-                  onAppleKeyCreated={() => { reloadHealth(); }}
-                />
+                {/* Jen SEKCE připojení se přesouvá nahoru, ne celý blok —
+                    jsou v něm i chyby a `AppleWatchSection` s daty z hodinek,
+                    které patří dolů vždycky. */}
+                {promoteDeviceConnect ? null : (
+                  <ConnectDevicesSection
+                    profile={profile}
+                    session={session}
+                    healthConnection={healthData.connection}
+                    onAppleKeyCreated={() => { reloadHealth(); }}
+                  />
+                )}
                 {healthError ? (
                   <p className="profile-health-error" role="alert">{healthError}</p>
                 ) : null}

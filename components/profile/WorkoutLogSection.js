@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCanonicalExercise } from '../../lib/exerciseCanonicalMap';
+import { supabase } from '../../lib/supabaseClient';
 
 /**
  * ZÁPIS ODCVIČENÉHO TRÉNINKU — jediné místo, kde uživatel řekne, co zvedl.
@@ -50,7 +51,24 @@ function jeZatizeny(kind) {
   return kind === 'barbell' || kind === 'dumbbell' || kind === 'machine';
 }
 
-export default function WorkoutLogSection({ accessToken }) {
+export default function WorkoutLogSection({ accessToken: accessTokenProp = null, poradiCviku = null }) {
+  // TOKEN SI UMÍ SEHNAT SÁM.
+  //
+  // Sekce se přesunula z vrcholu profilu k dnešnímu tréninku (do
+  // ProfileTodayPanels), kam se `accessToken` neprotahuje — visel by přes tři
+  // komponenty jen kvůli tomuhle. Prop má přednost, když ho volající má.
+  const [accessTokenState, setAccessTokenState] = useState(null);
+  const accessToken = accessTokenProp ?? accessTokenState;
+
+  useEffect(() => {
+    if (accessTokenProp) return undefined;
+    let zruseno = false;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!zruseno) setAccessTokenState(data?.session?.access_token ?? null);
+    });
+    return () => { zruseno = true; };
+  }, [accessTokenProp]);
+
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [vstupy, setVstupy] = useState({});
@@ -87,14 +105,32 @@ export default function WorkoutLogSection({ accessToken }) {
     return nevyplnene.map((i) => i.performed_on).sort().slice(-1)[0];
   }, [items]);
 
+  /**
+   * Pořadí cviků JAKO V PLÁNU.
+   *
+   * `start_workout_progression` nemá sloupec pořadí a předpisy se nezakládají
+   * v pořadí plánu, takže zápis vracel cviky přeházené — uživatel viděl tytéž
+   * cviky nad sebou ve dvou různých posloupnostech. Pořadí proto určuje plán;
+   * co v něm není, jde na konec a drží si vzájemné pořadí z API.
+   */
+  const seraď = useCallback((seznam) => {
+    if (!Array.isArray(poradiCviku) || poradiCviku.length === 0) return seznam;
+    const poradi = new Map(poradiCviku.map((k, i) => [k, i]));
+    return [...seznam].sort((a, b) => {
+      const ia = poradi.has(a.canonical_key) ? poradi.get(a.canonical_key) : Number.MAX_SAFE_INTEGER;
+      const ib = poradi.has(b.canonical_key) ? poradi.get(b.canonical_key) : Number.MAX_SAFE_INTEGER;
+      return ia - ib;
+    });
+  }, [poradiCviku]);
+
   const kDopsani = useMemo(
-    () => items.filter((i) => i.performed_on === den && i.status === 'prescribed'),
-    [items, den]
+    () => seraď(items.filter((i) => i.performed_on === den && i.status === 'prescribed')),
+    [items, den, seraď]
   );
 
   const hotovoDnes = useMemo(
-    () => items.filter((i) => i.performed_on === den && i.status !== 'prescribed'),
-    [items, den]
+    () => seraď(items.filter((i) => i.performed_on === den && i.status !== 'prescribed')),
+    [items, den, seraď]
   );
 
   function hodnota(item, pole, vychozi) {

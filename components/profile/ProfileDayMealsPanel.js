@@ -6,6 +6,7 @@ import MacroRatioChart from '../MacroRatioChart.js';
 import { mealDisplayTitleForStructuredMeal } from '../../lib/mealDisplayNameHelpers.js';
 import { createMealDisplayModelFromStructuredMeal } from '../../lib/mealRecipeDisplay.js';
 import { formatExerciseSetsRepsDisplay } from '../../lib/planDataIntegrity.js';
+import { getCanonicalExercise } from '../../lib/exerciseCanonicalMap';
 
 export function mealTypeLabel(type) {
   const t = String(type || '').toLowerCase();
@@ -148,7 +149,13 @@ export default function ProfileDayMealsPanel({
             <h4 className="profile-day-workout-title">Trénink tento den</h4>
             <ul className="profile-today-workout-list">
               {exercises.map((ex, xi) => {
-                const name = ex.display_name_cs || ex.name_cs || ex.name || 'Cvik';
+                // JEDEN NÁZEV PRO CVIK V CELÉ APLIKACI.
+                // Plán si nesl vlastní `display_name_cs` („Bench press“),
+                // zatímco zápis tréninku bere název z kanonického registru
+                // („Tlak na lavici“). Uživatel viděl u téhož cviku dvě jména.
+                // Registr je zdroj pravdy — klíčem je `canonical_key`.
+                const name = getCanonicalExercise(ex.canonical_key)?.display_name_cs
+                  || ex.display_name_cs || ex.name_cs || ex.name || 'Cvik';
                 const part = formatExerciseSetsRepsDisplay(ex);
                 return (
                   <li key={xi} className="profile-today-workout-item">

@@ -66,7 +66,12 @@ export default async function handler(req, res) {
         .eq('user_id', user.id)
         .gte('performed_on', from)
         .lte('performed_on', to)
-        .order('performed_on', { ascending: true });
+        .order('performed_on', { ascending: true })
+        // Sekundární řazení podle `id`. Tabulka nemá sloupec pořadí a předpisy
+        // se zakládají v pořadí cviků v plánu, takže vzestupné `id` to pořadí
+        // vrací. Bez toho vracel Postgres cviky v pořadí, které se s plánem
+        // neshodovalo — zápis měl obrácenou posloupnost než „Dnešní trénink“.
+        .order('id', { ascending: true });
 
       if (error) return res.status(500).json({ error: error.message });
 

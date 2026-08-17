@@ -8,6 +8,8 @@ import WorkoutChangeModal from '../workout/WorkoutChangeModal.jsx';
 import { HabitUiProgressBar } from '../habit/HabitUiPrimitives';
 import { mealActivityKey } from '../../lib/dailyActivationClient.js';
 import { useDailyActivation } from '../../hooks/useDailyActivation.js';
+import WorkoutLogSection from './WorkoutLogSection';
+import { getCanonicalExercise } from '../../lib/exerciseCanonicalMap';
 import { supabase } from '../../lib/supabaseClient';
 
 function envLabelPlain(trainingEnvironmentLabel, structuredPlan) {
@@ -327,7 +329,11 @@ export default function ProfileTodayPanels({
             )}
             <ul className="profile-today-workout-list">
               {exercises.map((ex, xi) => {
-                const name = ex.display_name_cs || ex.name_cs || ex.name || 'Cvik';
+                // Název z kanonického registru — stejný zdroj jako zápis
+                // tréninku. Plán si nesl vlastní „Bench press“, zápis ukazoval
+                // „Tlak na lavici“ a byl to týž cvik.
+                const name = getCanonicalExercise(ex.canonical_key)?.display_name_cs
+                  || ex.display_name_cs || ex.name_cs || ex.name || 'Cvik';
                 const part = formatExerciseSetsRepsDisplay(ex);
                 return (
                   <li key={xi} className="profile-today-workout-item">
@@ -346,6 +352,13 @@ export default function ProfileTodayPanels({
                 );
               })}
             </ul>
+            {/* ZÁPIS PATŘÍ POD CVIKY, KTERÉ POPISUJE.
+                Do 18. 8. 2026 se vykresloval úplně nahoře v profilu, odtržený
+                od „Dnešního tréninku“ — uživatel viděl tytéž cviky dvakrát,
+                pokaždé pod jiným názvem a v jiném pořadí. Pořadí se komponentě
+                předává z plánu, názvy si obě strany berou z kanonického
+                registru. Sama se skryje, když není co dopsat. */}
+            <WorkoutLogSection poradiCviku={exercises.map((ex) => ex.canonical_key)} />
           </>
         ) : (
           <div className="profile-today-rest">

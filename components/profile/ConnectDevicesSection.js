@@ -33,7 +33,13 @@ export default function ConnectDevicesSection({
   session,
   healthConnection,
   onAppleKeyCreated,
+  /** 'top' = zkrácená varianta nad plánem, jinak plná sekce dole. */
+  variant = 'full',
 }) {
+  // Zkrácená varianta drží jen to nutné: co si vybral, jedna věta, tlačítko.
+  // Health Auto Export, Premium a klíč jsou návod k instalaci — ten dává smysl
+  // až ve chvíli, kdy uživatel řekne „jdu do toho“, ne jako uvítání profilu.
+  const [navodRozbalen, setNavodRozbalen] = useState(false);
   const devices = getProfileDevices(profile);
   const highlight = hasDeviceInterest(devices);
   const withingsConnected = profile?.has_withings_connection === true;
@@ -145,6 +151,40 @@ export default function ConnectDevicesSection({
     setApiKeyOnce('');
     setWatchError('');
     setWatchStep(activeApple ? 0 : 1);
+  }
+
+  if (variant === 'top' && !navodRozbalen) {
+    const chceVahu = wantsDevice(devices, 'scale');
+    const chceHodinky = wantsDevice(devices, 'watch');
+    const co = chceVahu && chceHodinky ? 'Chytrou váhu a hodinky'
+      : chceVahu ? 'Chytrou váhu'
+        : chceHodinky ? 'Chytré hodinky' : 'Zařízení';
+    return (
+      <section className="connect-devices connect-devices--top" aria-labelledby="connect-devices-top-heading">
+        <h2 id="connect-devices-top-heading">Připojit zařízení</h2>
+        <p className="connect-devices-top-lead">
+          {co} máš z registrace — připojením se váha a pohyb propisují samy.
+        </p>
+        <button type="button" className="connect-devices-top-cta" onClick={() => setNavodRozbalen(true)}>
+          Rozumím, pokračovat
+        </button>
+        <style jsx>{`
+          .connect-devices--top {
+            margin: 0 0 14px;
+            padding: 16px 18px;
+            border: 1px solid rgba(167, 139, 250, 0.32);
+            border-radius: 14px;
+            background: rgba(124, 58, 237, 0.10);
+          }
+          .connect-devices--top h2 { margin: 0 0 6px; font-size: 1.05rem; }
+          .connect-devices-top-lead { margin: 0 0 12px; font-size: 0.92rem; color: #cbd5e1; }
+          .connect-devices-top-cta {
+            padding: 9px 18px; border: 0; border-radius: 8px;
+            background: #7c3aed; color: #fff; font-weight: 600; cursor: pointer;
+          }
+        `}</style>
+      </section>
+    );
   }
 
   return (

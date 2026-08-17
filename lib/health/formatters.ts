@@ -188,8 +188,9 @@ export function formatMetricUnitLabel(unit: string | null | undefined): string {
 }
 
 export function formatMetricValue(value: unknown, unit?: string | null): string {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return '—';
+  // Prázdná hodnota je „—“, ne „0“ — ze stejného důvodu jako u stráží výš.
+  const n = cisloNeboNull(value);
+  if (n === null) return '—';
   const u = String(unit || '').trim();
   if (u === 'count' || u === '') return Math.round(n).toLocaleString('cs-CZ');
   if (Math.abs(n) >= 100) return Math.round(n).toLocaleString('cs-CZ');
@@ -225,25 +226,46 @@ export function formatMetricMeasuredAt(
   return `${datePart} v ${timePart}`;
 }
 
+/**
+ * ČÍSLO, NEBO NIC — NIKDY NULA Z PRÁZDNÉ HODNOTY.
+ *
+ * `Number(null)` je 0 a `Number.isFinite(0)` je true, takže stráž
+ * `if (!Number.isFinite(Number(v))) return null` chybějící data propustí
+ * a funkce z nich vyrobí tvrzení. Přesně tak vznikly na stránce Apple Watch
+ * hodnotící texty NAD hláškou „Zatím nemáme dostatek dat“:
+ *
+ *   getStepsChartStatus(null)  → „Dnes 0 kroků. Málo pohybu.“
+ *   getHrvChartStatus(null,null) → 0 < 0 je false → „Nad průměrem — dobrá regenerace.“
+ *   getRhrChartStatus(null,null) → 0 > 3 je false → „V normě, tělo je v pohodě.“
+ *
+ * Ta nula nebyla naměřená, byla dopočítaná z prázdna. Projekt zakazuje
+ * zdravotní závěry bez podkladu, takže se tady rozlišuje „nevím“ a „nula“.
+ */
+function cisloNeboNull(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
 export function getHrvChartStatus(latest: number | null | undefined, baseline: number | null | undefined): string | null {
-  const l = Number(latest);
-  const b = Number(baseline);
-  if (!Number.isFinite(l) || !Number.isFinite(b)) return null;
+  const l = cisloNeboNull(latest);
+  const b = cisloNeboNull(baseline);
+  if (l === null || b === null) return null;
   if (l < b) return 'Dnes pod tvým 7denním průměrem — tělo je zatížené.';
   return 'Nad průměrem — dobrá regenerace.';
 }
 
 export function getRhrChartStatus(latest: number | null | undefined, baseline: number | null | undefined): string | null {
-  const l = Number(latest);
-  const b = Number(baseline);
-  if (!Number.isFinite(l) || !Number.isFinite(b)) return null;
+  const l = cisloNeboNull(latest);
+  const b = cisloNeboNull(baseline);
+  if (l === null || b === null) return null;
   if (l > b + 3) return 'Zvýšený oproti průměru — možná únava nebo stres.';
   return 'V normě, tělo je v pohodě.';
 }
 
 export function getStepsChartStatus(latest: number | null | undefined): string | null {
-  const n = Number(latest);
-  if (!Number.isFinite(n)) return null;
+  const n = cisloNeboNull(latest);
+  if (n === null) return null;
   let msg = `Dnes ${formatMetricValue(n, 'count')} kroků.`;
   if (n < 5000) msg += ' Málo pohybu.';
   else if (n > 10000) msg += ' Skvělý den.';
@@ -251,8 +273,8 @@ export function getStepsChartStatus(latest: number | null | undefined): string |
 }
 
 export function getActiveEnergyChartStatus(latest: number | null | undefined): string | null {
-  const n = Number(latest);
-  if (!Number.isFinite(n)) return null;
+  const n = cisloNeboNull(latest);
+  if (n === null) return null;
   return `Dnes ${formatMetricValue(n, 'kcal')} kcal spáleno pohybem.`;
 }
 

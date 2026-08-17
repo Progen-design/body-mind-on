@@ -22,12 +22,23 @@ function formatPctCs(value: number): string {
   return Math.abs(value).toFixed(0).replace('.', ',');
 }
 
+/**
+ * Viz `cisloNeboNull` v lib/health/formatters.ts — `Number(null)` je 0 a projde
+ * přes `Number.isFinite`, takže chybějící metrika se tváří jako naměřená nula
+ * a vyrobí doporučení („Málo kroků“) z prázdna. Tady platí totéž.
+ */
+function cisloNeboNull(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
 export function formatRecoveryDrivers(latest: RecoveryRow): RecoveryDriver[] {
   if (!latest) return [];
   const drivers: RecoveryDriver[] = [];
 
-  const hrvDelta = Number(latest.hrv_delta_pct);
-  if (Number.isFinite(hrvDelta)) {
+  const hrvDelta = cisloNeboNull(latest.hrv_delta_pct);
+  if (hrvDelta !== null) {
     const dir = hrvDelta >= 0 ? 'nad' : 'pod';
     let interp = 'Blízko tvého průměru.';
     if (hrvDelta >= 5) interp = 'Lepší regenerace než obvykle.';
@@ -38,8 +49,8 @@ export function formatRecoveryDrivers(latest: RecoveryRow): RecoveryDriver[] {
     });
   }
 
-  const rhrDelta = Number(latest.rhr_delta_bpm);
-  if (Number.isFinite(rhrDelta)) {
+  const rhrDelta = cisloNeboNull(latest.rhr_delta_bpm);
+  if (rhrDelta !== null) {
     const sign = rhrDelta > 0 ? '+' : '';
     let interp = 'V toleranci k průměru.';
     if (rhrDelta > 3) interp = 'Možná stres, únava nebo nemoc.';
@@ -50,8 +61,8 @@ export function formatRecoveryDrivers(latest: RecoveryRow): RecoveryDriver[] {
     });
   }
 
-  const sleepMin = Number(latest.sleep_asleep_min);
-  if (Number.isFinite(sleepMin) && sleepMin > 0) {
+  const sleepMin = cisloNeboNull(latest.sleep_asleep_min);
+  if (sleepMin !== null && sleepMin > 0) {
     const hours = (sleepMin / 60).toFixed(1).replace('.', ',');
     let interp = 'Střední délka — sleduj trend.';
     if (sleepMin < 360) interp = 'Krátký spánek snižuje zotavení.';
@@ -85,8 +96,8 @@ export function getPersonalRhrCaption(latest: RecoveryRow): string | null {
 }
 
 export function getMetricInsight(metricName: string, value: unknown): string | null {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return null;
+  const n = cisloNeboNull(value);
+  if (n === null) return null;
 
   switch (metricName) {
     case 'step_count':
@@ -137,7 +148,7 @@ export function buildHealthDailyInsight({
       'Dva dny po sobě nízká regenerace — zvaž odpočinek nebo lehký pohyb místo tvrdého tréninku.';
   }
 
-  const score = Number(latest?.recovery_score);
+  const score = cisloNeboNull(latest?.recovery_score) ?? NaN;
   const statusOk = latest?.recovery_status === 'ok';
 
   if (!latest) {
@@ -168,15 +179,15 @@ export function buildHealthDailyInsight({
     recommendations.push('Dnes spíš chůze, strečink nebo volno; spánek a hydratace pomůžou nejvíc.');
   }
 
-  const sleepMin = Number(latest.sleep_asleep_min);
-  if (Number.isFinite(sleepMin) && sleepMin > 0 && sleepMin < 360) {
+  const sleepMin = cisloNeboNull(latest.sleep_asleep_min);
+  if (sleepMin !== null && sleepMin > 0 && sleepMin < 360) {
     recommendations.push(
       `Krátký spánek (${(sleepMin / 60).toFixed(1).replace('.', ',')} h) — dnes pomůže dřívější ulehnutí.`,
     );
   }
 
-  const steps = Number(watchLatest?.steps ?? latest.steps);
-  if (Number.isFinite(steps)) {
+  const steps = cisloNeboNull(watchLatest?.steps ?? latest.steps);
+  if (steps !== null) {
     if (steps < 5000 && score >= 50) {
       recommendations.push('Málo kroků — 20–30 min chůze zlepší prokrvení bez další zátěže.');
     } else if (steps > 10000 && score < 50) {
@@ -188,7 +199,7 @@ export function buildHealthDailyInsight({
 
   const lastWorkout = workoutRows?.[0];
   if (lastWorkout) {
-    const dur = Number(lastWorkout.duration_s);
+    const dur = cisloNeboNull(lastWorkout.duration_s) ?? NaN;
     const recentDate = String(lastWorkout.local_date || '').slice(0, 10);
     const recoveryDate = String(latest.local_date || '').slice(0, 10);
     const label = String(lastWorkout.label_cs || lastWorkout.workout_type || 'trénink');
@@ -199,8 +210,8 @@ export function buildHealthDailyInsight({
     }
   }
 
-  const exerciseMin = Number(watchLatest?.exercise_min ?? latest.exercise_min);
-  if (Number.isFinite(exerciseMin) && exerciseMin < 20 && score >= 60) {
+  const exerciseMin = cisloNeboNull(watchLatest?.exercise_min ?? latest.exercise_min);
+  if (exerciseMin !== null && exerciseMin < 20 && score >= 60) {
     recommendations.push('Cvičební kruh pod 20 min — krátká procházka doplní aktivní minuty.');
   }
 

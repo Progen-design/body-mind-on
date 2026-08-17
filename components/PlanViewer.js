@@ -15,6 +15,7 @@ import { parsePlanHtml } from '../lib/parsePlanHtml';
 import { getPlanOutputMode, shouldRenderTraining } from '../lib/planOutputMode.js';
 import { buildPlanPdfHtml } from '../lib/planPdf';
 import { formatExerciseSetsRepsDisplay } from '../lib/planDataIntegrity.js';
+import { structuredMealForCard, sameTypeOrdinalIn } from '../lib/plan/structuredMealLookup.js';
 import { renderPlanHtmlFromStructured } from '../lib/planRenderer.js';
 import { catalogLookupIdFromMeal } from '../lib/recipeDetailUrl.js';
 import {
@@ -190,22 +191,13 @@ function structMealTypeFromParserLabel(mealTypeLabel) {
  * Položka meals[] ze structured_plan pro daný den — podle typu jídla, ne jen podle indexu
  * (pořadí v HTML může chvíli nesedět s JSON).
  */
-function structuredMealForDaySlot(structuredPlan, structDayIdx, mealTypeLabel, fallbackMi) {
-  const day = structuredPlan?.days?.[structDayIdx];
-  const arr = day?.meals;
-  if (!Array.isArray(arr) || arr.length === 0) return null;
-  const want = structMealTypeFromParserLabel(mealTypeLabel);
-  if (want) {
-    const hit = arr.find((m) => String(m?.type || '').toLowerCase() === want);
-    if (hit) return hit;
-  }
-  return arr[fallbackMi] ?? null;
+function structuredMealForDaySlot(structuredPlan, structDayIdx, mealTypeLabel, fallbackMi, sameTypeOrdinal = 0) {
+  return structuredMealForCard(structuredPlan?.days?.[structDayIdx], mealTypeLabel, fallbackMi, sameTypeOrdinal);
 }
 
 /** Stejná logika jako structuredMealForDaySlot, ale pro jeden den už vybraný podle data (valid_from). */
-function structuredMealForStructuredDay(sd, mealTypeLabel, fallbackMi) {
-  if (!sd) return null;
-  return structuredMealForDaySlot({ days: [sd] }, 0, mealTypeLabel, fallbackMi);
+function structuredMealForStructuredDay(sd, mealTypeLabel, fallbackMi, sameTypeOrdinal = 0) {
+  return structuredMealForCard(sd, mealTypeLabel, fallbackMi, sameTypeOrdinal);
 }
 
 /**
@@ -221,9 +213,10 @@ function collapsedDayMealsPeekParts(day, di, mealOverrides, structuredPlan, plan
     let title = '';
     if (ovr?.title) title = String(ovr.title).trim();
     else if (day.structDay || (structuredPlan?.days && structDayIdx >= 0)) {
+      const ordinal = sameTypeOrdinalIn(day.meals, mj);
       const sm = day.structDay
-        ? structuredMealForStructuredDay(day.structDay, m.type, mj)
-        : structuredMealForDaySlot(structuredPlan, structDayIdx, m.type, mj);
+        ? structuredMealForStructuredDay(day.structDay, m.type, mj, ordinal)
+        : structuredMealForDaySlot(structuredPlan, structDayIdx, m.type, mj, ordinal);
       title = sm ? String(mealDisplayTitleForStructuredMeal(sm, planHtml || '', day.dayName || '') || '').trim() : '';
     }
     if (!title && m.text) title = String(m.text).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -576,6 +569,26 @@ export default function PlanViewer({
   const [exerciseMediaMap, setExerciseMediaMap] = useState({});
   const [showRawPlanFallback, setShowRawPlanFallback] = useState(false);
   const [exerciseHintModal, setExerciseHintModal] = useState(null); // { name, part, wgerId }
+
+  // ESCAPE ZAVIRA MODAL.
+  //
+  // Klik mimo uz fungoval (overlay ma vlastni onClick), klavesnice ne — a modal
+  // receptu prekryva cely viewport, takze bez Escape z nej neslo odejit jinak
+  // nez trefit se vedle. Swap se pri ukladani nezavira zamerne: behem `loading`
+  // uz je pozadavek na serveru a zavrit ho pod rukama by uzivateli zamlcelo
+  // vysledek — stejne pravidlo drzi i onClick na jeho overlayi.
+  useEffect(() => {
+    const otevreno = recipeModal || exerciseHintModal || (swapModal && !swapModal.loading);
+    if (!otevreno) return undefined;
+    const naKlavesu = (e) => {
+      if (e.key !== 'Escape') return;
+      if (recipeModal) setRecipeModal(null);
+      else if (exerciseHintModal) setExerciseHintModal(null);
+      else if (swapModal && !swapModal.loading) setSwapModal(null);
+    };
+    document.addEventListener('keydown', naKlavesu);
+    return () => document.removeEventListener('keydown', naKlavesu);
+  }, [recipeModal, exerciseHintModal, swapModal]);
   const [weeklyPlanOpen, setWeeklyPlanOpen] = useState(!todayFirstLayout);
   const [expandedDayCards, setExpandedDayCards] = useState(() => new Set());
   const recipeOpenHandlersRef = useRef({});
@@ -946,13 +959,16 @@ export default function PlanViewer({
     const structDayIdx = day.originalIndex ?? di;
     const structDay = day.structDay
       || (structuredPlan?.days?.[structDayIdx] ?? null);
+    // Pozice v dni je identita jidla. Bez `ordinal` by druha svacina otevrela
+    // prvni — viz lib/plan/structuredMealLookup.js.
+    const ordinal = sameTypeOrdinalIn(day.meals, mi);
     const structMeal = structDay
-      ? structuredMealForStructuredDay(structDay, meal.type, mi)
+      ? structuredMealForStructuredDay(structDay, meal.type, mi, ordinal)
       : structuredPlan?.days
         && Array.isArray(structuredPlan.days)
         && structDayIdx >= 0
         && structDayIdx < structuredPlan.days.length
-        ? structuredMealForDaySlot(structuredPlan, structDayIdx, meal.type, mi)
+        ? structuredMealForDaySlot(structuredPlan, structDayIdx, meal.type, mi, ordinal)
         : null;
     const displayMealTitle = structMeal
       ? mealDisplayTitleForStructuredMeal(structMeal, plan.plan_html || '', day.dayName || '')
@@ -1178,8 +1194,14 @@ export default function PlanViewer({
     if (!day) return;
     const structDay = day.structDay || structuredPlan?.days?.[day.originalIndex ?? di];
     const meal = day.meals?.[mi];
-    const structMeal = structDay?.meals?.[mi]
-      || structDay?.meals?.find((m) => (m?.type || '') === (meal?.type || ''));
+    // Stejna past jako u modalu receptu: `find` podle typu vraci prvni jidlo
+    // toho typu, takze u druhe svaciny ukazoval swap nazev te prvni.
+    const structMeal = structuredMealForCard(
+      structDay,
+      meal?.type,
+      mi,
+      sameTypeOrdinalIn(day.meals, mi),
+    );
     const currentTitle = structMeal
       ? mealDisplayTitleForStructuredMeal(structMeal, effectivePlan?.plan_html || '', day.dayName || '')
       : (meal?.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();

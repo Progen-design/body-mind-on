@@ -54,6 +54,25 @@ Dostaneš `uz_mame` — názvy receptů, které v katalogu jsou. Nevymýšlej je
 varianty. „Čočkové kari“ a „Kari z červené čočky“ je pro nás totéž jídlo.
 Každý recept v odpovědi musí být jiný i vůči ostatním v téže odpovědi.
 
+## Hlavní bílkovina — když je zadaná, je závazná
+
+Někdy dostaneš `hlavni_bilkovina` (například `hovezi`), k tomu `hlavni_bilkovina_popis`
+a `hlavni_bilkovina_suroviny` — konkrétní povolené názvy ze slovníku.
+
+Když je zadaná, **každý** recept v odpovědi na ní musí stát:
+
+- postav ho na některé surovině z `hlavni_bilkovina_suroviny`, opsané doslova
+- dej jí porcovou gramáž, **nejméně 40 g** — deset gramů slaniny v kuřecím
+  salátu je ochucení, ne vepřové jídlo
+- jinou masitou surovinu do stejného receptu nepřidávej
+
+Katalog je v téhle bílkovině prázdný a doplňujeme přesně ji. Recept s jinou
+hlavní surovinou proto zahodíme, i kdyby byl dobrý — nesplnil by zadání.
+Když z té suroviny nedokážeš vymyslet dost různých jídel, vrať jich radši míň,
+než abys sáhl po drůbeži.
+
+Bez `hlavni_bilkovina` v zadání vybíráš surovinu volně jako dosud.
+
 ## Tón názvů a postupu
 
 Název česky, konkrétně, bez superlativů: „Čočka na kyselo s cibulí“, ne

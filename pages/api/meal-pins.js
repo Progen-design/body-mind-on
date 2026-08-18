@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const { data: rows, error } = await supabaseServer
         .from('user_meal_pins')
-        .select('meal_type, meal_text')
+        .select('meal_type, meal_text, catalog_id')
         .eq('user_id', userId);
 
       if (error) {
@@ -43,6 +43,13 @@ export default async function handler(req, res) {
       const action = b.action;
       const mealType = (b.meal_type || '').trim();
       const mealTextRaw = (b.meal_text || '').trim();
+      // Pin se váže na RECEPT, ne na zobrazovaný text. `meal_text` zůstává kvůli
+      // starým záznamům a kvůli zobrazení, ale vylučování jídel z minulých týdnů
+      // (lib/plan/historieJidel.js) porovnává catalog_id — text s porcí
+      // („… — porce 180/300“) by se párovat nedal.
+      const catalogId = Number.isFinite(Number(b.catalog_id)) && Number(b.catalog_id) > 0
+        ? Number(b.catalog_id)
+        : null;
 
       if (!action || !mealType || !mealTextRaw) {
         return res.status(400).json({ error: 'Chybí action, meal_type nebo meal_text.' });
@@ -60,7 +67,9 @@ export default async function handler(req, res) {
         const { error: insErr } = await supabaseServer
           .from('user_meal_pins')
           .upsert(
-            { user_id: userId, meal_type: mealType, meal_text: mealTextNorm },
+            {
+              user_id: userId, meal_type: mealType, meal_text: mealTextNorm, catalog_id: catalogId,
+            },
             { onConflict: 'user_id,meal_type,meal_text', ignoreDuplicates: true }
           );
 
@@ -84,7 +93,7 @@ export default async function handler(req, res) {
 
       const { data: pins } = await supabaseServer
         .from('user_meal_pins')
-        .select('meal_type, meal_text')
+        .select('meal_type, meal_text, catalog_id')
         .eq('user_id', userId);
 
       return res.status(200).json({ ok: true, pins: pins || [] });

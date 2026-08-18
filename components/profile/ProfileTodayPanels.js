@@ -43,6 +43,8 @@ export default function ProfileTodayPanels({
   trainingEnvironment = 'gym',
 }) {
   const [workoutModalOpen, setWorkoutModalOpen] = useState(false);
+  /** Zápis tréninku je sbalený, dokud si ho uživatel nevyžádá. */
+  const [zapisOtevren, setZapisOtevren] = useState(false);
   const [workoutBusy, setWorkoutBusy] = useState(false);
   const [restoreBusy, setRestoreBusy] = useState(false);
   const [restoreSlow, setRestoreSlow] = useState(false);
@@ -327,7 +329,7 @@ export default function ProfileTodayPanels({
                 </span>
               </label>
             )}
-            <ul className="profile-today-workout-list">
+            <ul className="wo-list">
               {exercises.map((ex, xi) => {
                 // Název z kanonického registru — stejný zdroj jako zápis
                 // tréninku. Plán si nesl vlastní „Bench press“, zápis ukazoval
@@ -336,29 +338,46 @@ export default function ProfileTodayPanels({
                   || ex.display_name_cs || ex.name_cs || ex.name || 'Cvik';
                 const part = formatExerciseSetsRepsDisplay(ex);
                 return (
-                  <li key={xi} className="profile-today-workout-item">
-                    <div>
-                      <strong>{name}</strong>
-                      <span className="profile-today-workout-part"> · {part}</span>
+                  <li key={xi} className="wo-item">
+                    <div className="wo-main">
+                      <strong className="wo-name">{name}</strong>
+                      {part ? <span className="wo-badge">{part}</span> : null}
                     </div>
                     <button
                       type="button"
-                      className="profile-today-exercise-btn"
+                      className="wo-help"
                       onClick={() => onExerciseClick?.(xi)}
+                      title="Jak cvik provést"
+                      aria-label={`Jak provést cvik ${name}`}
                     >
-                      Jak cvik provést
+                      <span aria-hidden>?</span>
                     </button>
                   </li>
                 );
               })}
             </ul>
-            {/* ZÁPIS PATŘÍ POD CVIKY, KTERÉ POPISUJE.
+            {/* ZÁPIS PATŘÍ POD CVIKY, KTERÉ POPISUJE — A AŽ NA VYŽÁDÁNÍ.
                 Do 18. 8. 2026 se vykresloval úplně nahoře v profilu, odtržený
                 od „Dnešního tréninku“ — uživatel viděl tytéž cviky dvakrát,
                 pokaždé pod jiným názvem a v jiném pořadí. Pořadí se komponentě
-                předává z plánu, názvy si obě strany berou z kanonického
-                registru. Sama se skryje, když není co dopsat. */}
-            <WorkoutLogSection poradiCviku={exercises.map((ex) => ex.canonical_key)} />
+                předává z plánu, názvy si obě strany berou z kanonického registru.
+
+                Sbalený stav NEVYKRESLUJE nic: formulář na sérii ke každému cviku
+                je dlouhý a hned po přihlášení překrýval samotný plán. Kdo si
+                trénink zapsat chce, klikne. Podmíněný render, ne CSS `display`
+                — jinak by se komponenta i tak namontovala a natáhla data. */}
+            {zapisOtevren ? (
+              <WorkoutLogSection poradiCviku={exercises.map((ex) => ex.canonical_key)} />
+            ) : null}
+            <button
+              type="button"
+              className="profile-today-log-toggle"
+              onClick={() => setZapisOtevren((v) => !v)}
+              aria-expanded={zapisOtevren}
+              aria-controls="zapis-treninku"
+            >
+              {zapisOtevren ? 'Skrýt zápis tréninku' : 'Zapsat trénink'}
+            </button>
           </>
         ) : (
           <div className="profile-today-rest">
@@ -503,6 +522,76 @@ export default function ProfileTodayPanels({
           font-size: 18px;
           font-weight: 700;
           color: #e9d5ff;
+        }
+        /* ── DNEŠNÍ TRÉNINK ──────────────────────────────────────────────────
+           Stejný vizuál jako „Trénink tento den“ v týdenním přehledu
+           (ProfileDayMealsPanel). Obě místa vykreslují tentýž seznam cviků;
+           když se styloval jen jeden, aplikace měla dvě různé podoby téhož. */
+        .wo-list {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+        @media (min-width: 880px) {
+          .wo-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        .wo-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          padding: 10px 12px;
+          border-radius: 12px;
+          border: 1px solid rgba(148, 163, 184, 0.18);
+          background: rgba(30, 41, 59, 0.72);
+          min-width: 0;
+        }
+        .wo-main { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
+        .wo-name { font-size: 15px; font-weight: 700; color: #f1f5f9; min-width: 0; }
+        .wo-badge {
+          flex-shrink: 0;
+          padding: 3px 9px;
+          border-radius: 999px;
+          font-size: 12px;
+          font-weight: 700;
+          color: #7dd3fc;
+          background: rgba(56, 189, 248, 0.14);
+          border: 1px solid rgba(56, 189, 248, 0.35);
+          white-space: nowrap;
+        }
+        .wo-help {
+          flex-shrink: 0;
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          border: 1px solid rgba(56, 189, 248, 0.45);
+          background: rgba(14, 165, 233, 0.15);
+          color: #e0f2fe;
+          font-weight: 800;
+          font-size: 15px;
+          cursor: pointer;
+          line-height: 1;
+        }
+        .wo-help:hover { background: rgba(14, 165, 233, 0.3); }
+        /* Sbalený zápis tréninku: vypadá jako akce, ne jako nadpis sekce. */
+        .profile-today-log-toggle {
+          margin-top: 14px;
+          width: 100%;
+          min-height: 46px;
+          border-radius: 12px;
+          border: 1px dashed rgba(167, 139, 250, 0.5);
+          background: rgba(124, 58, 237, 0.12);
+          color: #ddd6fe;
+          font-weight: 700;
+          font-size: 15px;
+          cursor: pointer;
+        }
+        .profile-today-log-toggle:hover {
+          background: rgba(124, 58, 237, 0.22);
+          border-style: solid;
         }
         .profile-today-link-btn {
           margin-top: 12px;

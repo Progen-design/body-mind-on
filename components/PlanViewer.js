@@ -774,7 +774,7 @@ export default function PlanViewer({
     return mealPins.some((p) => (p.meal_type || '').trim() === (mealType || '').trim() && normalizeMealTextForPin(p.meal_text) === norm);
   };
 
-  const handleTogglePin = async (mealType, mealText, toastKey) => {
+  const handleTogglePin = async (mealType, mealText, toastKey, catalogId = null) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) {
       (onToast || (() => {}))({ message: 'Pro označení jídla se přihlas.', type: 'error' });
@@ -787,7 +787,14 @@ export default function PlanViewer({
       const res = await fetch('/api/meal-pins', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ action: pinned ? 'remove' : 'add', meal_type: mealType, meal_text: mealText }),
+        body: JSON.stringify({
+          action: pinned ? 'remove' : 'add',
+          meal_type: mealType,
+          meal_text: mealText,
+          // Bez catalog_id by se pin nedal spárovat s vylučováním jídel
+          // z minulých týdnů — to porovnává recepty, ne názvy s porcí.
+          catalog_id: catalogId,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Chyba');
@@ -1113,7 +1120,7 @@ export default function PlanViewer({
     const ctx = buildMealActionContext(di, mi);
     if (!ctx) return;
     const { meal, mealTextForPin, overrideKey } = ctx;
-    return handleTogglePin(meal.type || '', mealTextForPin, overrideKey);
+    return handleTogglePin(meal.type || '', mealTextForPin, overrideKey, meal.catalog_id ?? null);
   };
 
   const buildExerciseActionContext = (di, xi, { excludeRest = false } = {}) => {

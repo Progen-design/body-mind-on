@@ -11,7 +11,7 @@ import { useDailyActivation } from '../../hooks/useDailyActivation.js';
 import WorkoutLogSection from './WorkoutLogSection';
 import { getCanonicalExercise } from '../../lib/exerciseCanonicalMap';
 import { HelpCircle } from 'lucide-react';
-import { PANEL, TLACITKO } from '../../lib/profile/designTokens.js';
+import { KARTA_HOVER, PANEL, STITEK, TLACITKO } from '../../lib/profile/designTokens.js';
 import { supabase } from '../../lib/supabaseClient';
 
 function envLabelPlain(trainingEnvironmentLabel, structuredPlan) {
@@ -188,18 +188,18 @@ export default function ProfileTodayPanels({
           <p className="profile-today-activation-error" role="alert">{activationError}</p>
         ) : null}
         <DailyAdherenceStatus adherence={adherence} loading={adherenceLoading} />
-        <div className="profile-today-quick-cards">
-          <article className="profile-today-card">
-            <h3>Jídlo dnes</h3>
-            <p className="profile-today-stat">{meals.length} jídel</p>
-            <p className="profile-today-stat profile-today-stat--kcal">
+        <div className="grid grid-cols-1 gap-3.5 sm:gap-4 min-[880px]:grid-cols-2">
+          <article className={`${KARTA_HOVER} flex flex-col gap-2 p-5 sm:p-6`}>
+            <h3 className="m-0 text-lg font-bold tracking-tight text-white">Jídlo dnes</h3>
+            <p className="m-0 text-sm text-neutral-400">{meals.length} jídel</p>
+            <p className="m-0 text-lg font-bold text-white">
               {dayNutrition.kcal != null ? `cca ${Math.round(dayNutrition.kcal)} kcal` : '— kcal'}
               {targetKcal ? ` / cíl ${Math.round(targetKcal)}` : ''}
               {structDay?.calorie_under_target === true ? (
-                <span className="profile-today-kcal-under"> · zatím pod cílem</span>
+                <span className="text-amber-300"> · zatím pod cílem</span>
               ) : null}
             </p>
-            <p className="profile-today-macros">
+            <p className="m-0 text-xs text-neutral-400">
               B {Math.round(dayNutrition.protein) || '—'} g · S {Math.round(dayNutrition.carbs) || '—'} g · T {Math.round(dayNutrition.fat) || '—'} g
             </p>
             <MacroRatioChart
@@ -209,27 +209,27 @@ export default function ProfileTodayPanels({
               calories={dayNutrition.kcal}
               compact
             />
-            <button type="button" className="profile-today-cta" onClick={onScrollToMeals}>
+            <button type="button" className={`${TLACITKO} mt-auto min-h-[42px] w-full`} onClick={onScrollToMeals}>
               Zobrazit dnešní jídla
             </button>
           </article>
-          <article className="profile-today-card">
-            <h3>Trénink dnes</h3>
+          <article className={`${KARTA_HOVER} flex flex-col gap-2 p-5 sm:p-6`}>
+            <h3 className="m-0 text-lg font-bold tracking-tight text-white">Trénink dnes</h3>
             {envPlain ? (
-              <p className="profile-today-env-badge">{envPlain}</p>
+              <p className={`${STITEK} w-fit bg-[#00f2fe]/15 text-[#7dd3fc]`}>{envPlain}</p>
             ) : null}
             {hasWorkout ? (
               <>
-                <p className="profile-today-stat">{exercises.length} cviků</p>
-                <p className="profile-today-stat">{workoutMinutes ? `~${workoutMinutes} min` : 'Dle plánu'}</p>
-                <button type="button" className="profile-today-cta" onClick={onScrollToWorkout}>
+                <p className="m-0 text-sm text-neutral-400">{exercises.length} cviků</p>
+                <p className="m-0 text-sm text-neutral-400">{workoutMinutes ? `~${workoutMinutes} min` : 'Dle plánu'}</p>
+                <button type="button" className={`${TLACITKO} mt-auto min-h-[42px] w-full`} onClick={onScrollToWorkout}>
                   Zobrazit trénink
                 </button>
               </>
             ) : (
               <>
-                <p className="profile-today-stat">Dnes nemáš naplánovaný trénink.</p>
-                <button type="button" className="profile-today-cta" onClick={onScrollToWeek}>
+                <p className="m-0 text-sm text-neutral-400">Dnes nemáš naplánovaný trénink.</p>
+                <button type="button" className={`${TLACITKO} mt-auto min-h-[42px] w-full`} onClick={onScrollToWeek}>
                   Zobrazit týdenní trénink
                 </button>
               </>
@@ -239,7 +239,7 @@ export default function ProfileTodayPanels({
       </section>
 
       <section id="profile-today-meals" className="profile-today-section" aria-labelledby="profile-today-meals-heading">
-        <h3 id="profile-today-meals-heading" className="profile-today-section-title">Dnešní jídla</h3>
+        <h3 id="profile-today-meals-heading" className="m-0 mb-3 text-xs font-extrabold uppercase tracking-[0.06em] text-[#c4b5fd]">Dnešní jídla</h3>
         <ProfileDayMealsPanel
           meals={meals}
           structDay={structDay}
@@ -263,7 +263,7 @@ export default function ProfileTodayPanels({
       </section>
 
       <section id="profile-today-workout" className="profile-today-section" aria-labelledby="profile-today-workout-heading">
-        <h3 id="profile-today-workout-heading" className="profile-today-section-title">Dnešní trénink</h3>
+        <h3 id="profile-today-workout-heading" className="m-0 mb-3 text-xs font-extrabold uppercase tracking-[0.06em] text-[#c4b5fd]">Dnešní trénink</h3>
         {envPlain ? (
           <p className="profile-today-workout-env">Typ: {envPlain}</p>
         ) : null}
@@ -448,82 +448,10 @@ export default function ProfileTodayPanels({
           color: #cbd5e1;
           font-size: 15px;
         }
-        .profile-today-quick-cards {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 12px;
-        }
         @media (min-width: 720px) {
-          .profile-today-quick-cards {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-        .profile-today-card {
-          background: rgba(15, 23, 42, 0.85);
-          border: 1px solid rgba(124, 58, 237, 0.35);
-          border-radius: 14px;
-          padding: 16px;
-          min-width: 0;
-          max-width: 100%;
-        }
-        .profile-today-card h3 {
-          margin: 0 0 10px;
-          font-size: 14px;
-          font-weight: 700;
-          color: #c4b5fd;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-        }
-        .profile-today-stat {
-          margin: 0 0 6px;
-          font-size: 15px;
-          color: #e2e8f0;
-          font-weight: 600;
-        }
-        .profile-today-stat--kcal {
-          font-size: 17px;
-          color: #f8fafc;
-        }
-        .profile-today-kcal-under {
-          color: #fbbf24;
-          font-weight: 500;
-        }
-        .profile-today-env-badge {
-          display: inline-block;
-          margin: 0 0 10px;
-          padding: 4px 10px;
-          border-radius: 999px;
-          font-size: 12px;
-          font-weight: 700;
-          color: #e0f2fe;
-          background: rgba(14, 165, 233, 0.2);
-          border: 1px solid rgba(56, 189, 248, 0.35);
-        }
-        .profile-today-macros {
-          margin: 0 0 12px;
-          font-size: 13px;
-          color: #94a3b8;
-        }
-        .profile-today-cta {
-          width: 100%;
-          min-height: 48px;
-          border: none;
-          border-radius: 10px;
-          background: linear-gradient(135deg, #0ea5e9, #7c3aed);
-          color: #fff;
-          font-weight: 700;
-          font-size: 14px;
-          cursor: pointer;
-          padding: 10px 14px;
         }
         .profile-today-section {
           margin-bottom: 24px;
-        }
-        .profile-today-section-title {
-          margin: 0 0 12px;
-          font-size: 18px;
-          font-weight: 700;
-          color: #e9d5ff;
         }
         /* ── DNEŠNÍ TRÉNINK ──────────────────────────────────────────────────
            Stejný vizuál jako „Trénink tento den“ v týdenním přehledu

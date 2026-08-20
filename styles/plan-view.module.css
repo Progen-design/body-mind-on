@@ -1,3 +1,16 @@
+/*
+ * VEŘEJNÁ STRÁNKA SDÍLENÉHO PLÁNU (/plan/[id]).
+ *
+ * Hodnoty níž jsou sladěné s lib/profile/designTokens.js, aby stránka, kterou
+ * dostane člověk odkazem, vypadala jako zbytek aplikace. Zůstává to CSS modul
+ * (ne Tailwind třídy v JSX), protože tahle komponenta se vykresluje i do PDF
+ * a do e-mailu, kde utility třídy nemusí být k dispozici — hodnoty se proto
+ * mění tady, na jednom místě.
+ *
+ * Stránka běží BEZ přihlášení a `PlanWebView.js` nemá žádný fetch ani session;
+ * je čistě prezentační. Sjednocení vzhledu se tím ničeho funkčního nedotýká.
+ */
+
 /* Body & Mind ON · Plan Web View – brand-aligned (sky/lavender/cyan, slate base).
    Responsive: mobile 1-col, tablet 2-col, desktop 3-col for the 7-day grid. */
 
@@ -191,10 +204,11 @@
 }
 
 .card {
-  background-color: #121826;
-  border: 1px solid rgba(14, 165, 233, 0.16);
-  border-radius: 20px;
-  padding: 32px;
+  background-image: linear-gradient(180deg, rgba(19, 22, 34, 0.9) 0%, rgba(14, 17, 26, 0.95) 100%);
+  border: 1px solid rgba(38, 38, 38, 0.9);
+  border-radius: 16px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  padding: 28px;
 }
 .cardBadge {
   display: inline-block;
@@ -390,9 +404,9 @@
   .habitGrid { grid-template-columns: 1fr; }
 }
 .habit {
-  background-color: #1E293B;
-  border: 1px solid rgba(14, 165, 233, 0.16);
-  border-radius: 14px;
+  background-color: rgba(23, 28, 42, 0.8);
+  border: 1px solid rgba(38, 38, 38, 0.8);
+  border-radius: 12px;
   padding: 20px;
   display: flex;
   gap: 16px;
@@ -536,8 +550,8 @@
 }
 
 .mealCard {
-  background-color: #121826;
-  border: 1px solid rgba(14, 165, 233, 0.14);
+  background-color: rgba(23, 28, 42, 0.8);
+  border: 1px solid rgba(38, 38, 38, 0.8);
   border-left: 3px solid var(--accent, #0EA5E9);
   border-radius: 12px;
   padding: 14px 16px;
@@ -561,9 +575,9 @@
   font-weight: 600;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  color: var(--accent, #0EA5E9);
-  background-color: rgba(14, 165, 233, 0.10);
-  border: 1px solid rgba(14, 165, 233, 0.30);
+  color: #baf6ff;
+  background-color: rgba(0, 242, 254, 0.15);
+  border: 1px solid rgba(0, 242, 254, 0.45);
   padding: 4px 10px;
   border-radius: 999px;
   text-decoration: none;
@@ -586,8 +600,8 @@
 }
 
 .dailyPill {
-  background-color: #121826;
-  border: 1px solid rgba(14, 165, 233, 0.20);
+  background-color: rgba(23, 28, 42, 0.8);
+  border: 1px solid rgba(0, 242, 254, 0.25);
   border-radius: 999px;
   padding: 12px 20px;
   display: flex;

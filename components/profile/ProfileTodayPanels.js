@@ -11,7 +11,7 @@ import { useDailyActivation } from '../../hooks/useDailyActivation.js';
 import WorkoutLogSection from './WorkoutLogSection';
 import { getCanonicalExercise } from '../../lib/exerciseCanonicalMap';
 import { HelpCircle } from 'lucide-react';
-import { KARTA_HOVER, PANEL, STITEK, TLACITKO } from '../../lib/profile/designTokens.js';
+import { MAKRO, PANEL, STITEK, TLACITKO, podilyMaker } from '../../lib/profile/designTokens.js';
 import { supabase } from '../../lib/supabaseClient';
 
 function envLabelPlain(trainingEnvironmentLabel, structuredPlan) {
@@ -37,8 +37,6 @@ export default function ProfileTodayPanels({
   isMealPinned,
   pinToastByKey = {},
   onExerciseClick,
-  onScrollToMeals,
-  onScrollToWorkout,
   onScrollToWeek,
   planId = null,
   onWorkoutPlanUpdated = null,
@@ -147,6 +145,12 @@ export default function ProfileTodayPanels({
   const structDay = structDayEarly;
   const meals = mealsEarly;
   const dayNutrition = sumDayNutrition(meals, structDay);
+  /** Podíly maker za celý den — pro pruh nad seznamem jídel. */
+  const podilyDne = podilyMaker({
+    protein_g: dayNutrition?.protein,
+    carbs_g: dayNutrition?.carbs,
+    fat_g: dayNutrition?.fat,
+  });
   const targets = planTargets || structuredPlan?.targets || {};
   const targetKcal = resolveDayCalorieTarget(structDay, targets);
   const envPlain = envLabelPlain(trainingEnvironmentLabel, structuredPlan);
@@ -188,58 +192,51 @@ export default function ProfileTodayPanels({
           <p className="profile-today-activation-error" role="alert">{activationError}</p>
         ) : null}
         <DailyAdherenceStatus adherence={adherence} loading={adherenceLoading} />
-        <div className="grid grid-cols-1 gap-3.5 sm:gap-4 min-[880px]:grid-cols-2">
-          <article className={`${KARTA_HOVER} flex flex-col gap-2 p-5 sm:p-6`}>
-            <h3 className="m-0 text-lg font-bold tracking-tight text-white">Jídlo dnes</h3>
-            <p className="m-0 text-sm text-neutral-400">{meals.length} jídel</p>
-            <p className="m-0 text-lg font-bold text-white">
-              {dayNutrition.kcal != null ? `cca ${Math.round(dayNutrition.kcal)} kcal` : '— kcal'}
-              {targetKcal ? ` / cíl ${Math.round(targetKcal)}` : ''}
-              {structDay?.calorie_under_target === true ? (
-                <span className="text-amber-300"> · zatím pod cílem</span>
-              ) : null}
-            </p>
-            <p className="m-0 text-xs text-neutral-400">
-              B {Math.round(dayNutrition.protein) || '—'} g · S {Math.round(dayNutrition.carbs) || '—'} g · T {Math.round(dayNutrition.fat) || '—'} g
-            </p>
-            <MacroRatioChart
-              protein_g={dayNutrition.protein}
-              carbs_g={dayNutrition.carbs}
-              fat_g={dayNutrition.fat}
-              calories={dayNutrition.kcal}
-              compact
-            />
-            <button type="button" className={`${TLACITKO} mt-auto min-h-[42px] w-full`} onClick={onScrollToMeals}>
-              Zobrazit dnešní jídla
-            </button>
-          </article>
-          <article className={`${KARTA_HOVER} flex flex-col gap-2 p-5 sm:p-6`}>
-            <h3 className="m-0 text-lg font-bold tracking-tight text-white">Trénink dnes</h3>
-            {envPlain ? (
-              <p className={`${STITEK} w-fit bg-[#00f2fe]/15 text-[#7dd3fc]`}>{envPlain}</p>
-            ) : null}
-            {hasWorkout ? (
-              <>
-                <p className="m-0 text-sm text-neutral-400">{exercises.length} cviků</p>
-                <p className="m-0 text-sm text-neutral-400">{workoutMinutes ? `~${workoutMinutes} min` : 'Dle plánu'}</p>
-                <button type="button" className={`${TLACITKO} mt-auto min-h-[42px] w-full`} onClick={onScrollToWorkout}>
-                  Zobrazit trénink
-                </button>
-              </>
-            ) : (
-              <>
-                <p className="m-0 text-sm text-neutral-400">Dnes nemáš naplánovaný trénink.</p>
-                <button type="button" className={`${TLACITKO} mt-auto min-h-[42px] w-full`} onClick={onScrollToWeek}>
-                  Zobrazit týdenní trénink
-                </button>
-              </>
-            )}
-          </article>
-        </div>
       </section>
 
       <section id="profile-today-meals" className="profile-today-section" aria-labelledby="profile-today-meals-heading">
         <h3 id="profile-today-meals-heading" className="m-0 mb-3 text-xs font-extrabold uppercase tracking-[0.06em] text-[#c4b5fd]">Dnešní jídla</h3>
+
+        {/* DENNÍ SOUČET NAD SEZNAMEM, NE JAKO SAMOSTATNÁ KARTA.
+            Do 20. 8. 2026 nad tímhle seznamem stály souhrnné karty „Jídlo dnes“
+            a „Trénink dnes“ — ukazovaly totéž, co je hned pod nimi, jen zkráceně,
+            a jejich tlačítka nic nerozbalovala, jen odscrollovala o dvě stě
+            pixelů níž. Zůstala z nich jediná informace, kterou seznam sám nenese:
+            kolik z denního cíle je pokryto. */}
+        {dayNutrition.kcal != null || targetKcal ? (
+          <div className={`${PANEL} mb-3.5 flex flex-wrap items-center justify-between gap-3 px-4 py-3`}>
+            <div className="min-w-0">
+              <div className="text-xs text-neutral-400">
+                {meals.length} {meals.length === 1 ? 'jídlo' : meals.length >= 2 && meals.length <= 4 ? 'jídla' : 'jídel'} dnes
+              </div>
+              <div className="mt-0.5 text-lg font-bold text-white">
+                {dayNutrition.kcal != null ? `${Math.round(dayNutrition.kcal)} kcal` : '— kcal'}
+                {targetKcal ? (
+                  <span className="text-sm font-medium text-neutral-400">{` / cíl ${Math.round(targetKcal)}`}</span>
+                ) : null}
+                {structDay?.calorie_under_target === true ? (
+                  <span className="ml-2 text-xs font-semibold text-amber-300">zatím pod cílem</span>
+                ) : null}
+              </div>
+            </div>
+
+            {podilyDne ? (
+              <div className="min-w-[180px] flex-1 space-y-1.5 sm:max-w-xs">
+                <div className="flex h-2.5 w-full gap-1 overflow-hidden rounded-full border border-neutral-800 bg-[#181c28] p-0.5">
+                  <div style={{ width: `${podilyDne.bilkoviny}%` }} className={`h-full rounded-sm ${MAKRO.bilkoviny.trida}`} title={`Bílkoviny ${podilyDne.bilkoviny} %`} />
+                  <div style={{ width: `${podilyDne.sacharidy}%` }} className={`h-full rounded-sm ${MAKRO.sacharidy.trida}`} title={`Sacharidy ${podilyDne.sacharidy} %`} />
+                  <div style={{ width: `${podilyDne.tuky}%` }} className={`h-full rounded-sm ${MAKRO.tuky.trida}`} title={`Tuky ${podilyDne.tuky} %`} />
+                </div>
+                <div className="flex items-center justify-between text-xs font-semibold text-neutral-300">
+                  <span>B {Math.round(dayNutrition.protein) || '—'} g</span>
+                  <span>S {Math.round(dayNutrition.carbs) || '—'} g</span>
+                  <span>T {Math.round(dayNutrition.fat) || '—'} g</span>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         <ProfileDayMealsPanel
           meals={meals}
           structDay={structDay}
@@ -264,14 +261,19 @@ export default function ProfileTodayPanels({
 
       <section id="profile-today-workout" className="profile-today-section" aria-labelledby="profile-today-workout-heading">
         <h3 id="profile-today-workout-heading" className="m-0 mb-3 text-xs font-extrabold uppercase tracking-[0.06em] text-[#c4b5fd]">Dnešní trénink</h3>
-        {envPlain ? (
-          <p className="profile-today-workout-env">Typ: {envPlain}</p>
-        ) : null}
         {hasWorkout ? (
           <>
-            <p className="profile-today-workout-meta">
-              {workout?.title ? `${workout.title} · ` : ''}
-              {exercises.length} cviků · {workoutMinutes ? `~${workoutMinutes} min` : 'dle plánu'}
+            {/* Prostředí, počet cviků a odhad délky v jednom podtitulku.
+                Dřív to byly dva řádky nad sebou plus totéž ještě jednou
+                v souhrnné kartě „Trénink dnes“ — ta je zrušená, tohle zbylo. */}
+            <p className="m-0 mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-neutral-400">
+              {envPlain ? (
+                <span className={`${STITEK} bg-[#00f2fe]/15 text-[#7dd3fc]`}>{envPlain}</span>
+              ) : null}
+              {workout?.title ? <span className="font-semibold text-neutral-200">{workout.title}</span> : null}
+              <span>{exercises.length} cviků</span>
+              <span aria-hidden>·</span>
+              <span>{workoutMinutes ? `~${workoutMinutes} min` : 'dle plánu'}</span>
             </p>
             {planId ? (
               <div className="profile-today-workout-actions">

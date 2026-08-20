@@ -10,6 +10,8 @@ import { mealActivityKey } from '../../lib/dailyActivationClient.js';
 import { useDailyActivation } from '../../hooks/useDailyActivation.js';
 import WorkoutLogSection from './WorkoutLogSection';
 import { getCanonicalExercise } from '../../lib/exerciseCanonicalMap';
+import { HelpCircle } from 'lucide-react';
+import { PANEL, TLACITKO } from '../../lib/profile/designTokens.js';
 import { supabase } from '../../lib/supabaseClient';
 
 function envLabelPlain(trainingEnvironmentLabel, structuredPlan) {
@@ -329,7 +331,7 @@ export default function ProfileTodayPanels({
                 </span>
               </label>
             )}
-            <ul className="wo-list">
+            <ul className="m-0 grid list-none grid-cols-1 gap-2 p-0 min-[880px]:grid-cols-2">
               {exercises.map((ex, xi) => {
                 // Název z kanonického registru — stejný zdroj jako zápis
                 // tréninku. Plán si nesl vlastní „Bench press“, zápis ukazoval
@@ -338,19 +340,19 @@ export default function ProfileTodayPanels({
                   || ex.display_name_cs || ex.name_cs || ex.name || 'Cvik';
                 const part = formatExerciseSetsRepsDisplay(ex);
                 return (
-                  <li key={xi} className="wo-item">
-                    <div className="wo-main">
-                      <strong className="wo-name">{name}</strong>
-                      {part ? <span className="wo-badge">{part}</span> : null}
+                  <li key={xi} className={`${PANEL} flex min-w-0 items-center justify-between gap-2.5 px-3 py-2.5`}>
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <strong className="min-w-0 text-[15px] font-bold text-white">{name}</strong>
+                      {part ? <span className="shrink-0 rounded-full border border-[#00f2fe]/35 bg-[#00f2fe]/12 px-2.5 py-0.5 text-xs font-bold text-[#7dd3fc]">{part}</span> : null}
                     </div>
                     <button
                       type="button"
-                      className="wo-help"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#00f2fe]/45 bg-[#00f2fe]/15 text-[#e0f2fe] transition-colors hover:bg-[#00f2fe]/30"
                       onClick={() => onExerciseClick?.(xi)}
                       title="Jak cvik provést"
                       aria-label={`Jak provést cvik ${name}`}
                     >
-                      <span aria-hidden>?</span>
+                      <HelpCircle className="h-4 w-4" aria-hidden />
                     </button>
                   </li>
                 );
@@ -371,7 +373,7 @@ export default function ProfileTodayPanels({
             ) : null}
             <button
               type="button"
-              className="profile-today-log-toggle"
+              className={`${TLACITKO} mt-3.5 min-h-[46px] w-full border-dashed border-[#00f2fe]/40 text-[#baf6ff] hover:border-solid`}
               onClick={() => setZapisOtevren((v) => !v)}
               aria-expanded={zapisOtevren}
               aria-controls="zapis-treninku"
@@ -527,72 +529,18 @@ export default function ProfileTodayPanels({
            Stejný vizuál jako „Trénink tento den“ v týdenním přehledu
            (ProfileDayMealsPanel). Obě místa vykreslují tentýž seznam cviků;
            když se styloval jen jeden, aplikace měla dvě různé podoby téhož. */
-        .wo-list {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 8px;
-        }
+        
         @media (min-width: 880px) {
-          .wo-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          
         }
-        .wo-item {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 10px;
-          padding: 10px 12px;
-          border-radius: 12px;
-          border: 1px solid rgba(148, 163, 184, 0.18);
-          background: rgba(30, 41, 59, 0.72);
-          min-width: 0;
-        }
-        .wo-main { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
-        .wo-name { font-size: 15px; font-weight: 700; color: #f1f5f9; min-width: 0; }
-        .wo-badge {
-          flex-shrink: 0;
-          padding: 3px 9px;
-          border-radius: 999px;
-          font-size: 12px;
-          font-weight: 700;
-          color: #7dd3fc;
-          background: rgba(56, 189, 248, 0.14);
-          border: 1px solid rgba(56, 189, 248, 0.35);
-          white-space: nowrap;
-        }
-        .wo-help {
-          flex-shrink: 0;
-          width: 34px;
-          height: 34px;
-          border-radius: 50%;
-          border: 1px solid rgba(56, 189, 248, 0.45);
-          background: rgba(14, 165, 233, 0.15);
-          color: #e0f2fe;
-          font-weight: 800;
-          font-size: 15px;
-          cursor: pointer;
-          line-height: 1;
-        }
-        .wo-help:hover { background: rgba(14, 165, 233, 0.3); }
+        
+        
+        
+        
+        
         /* Sbalený zápis tréninku: vypadá jako akce, ne jako nadpis sekce. */
-        .profile-today-log-toggle {
-          margin-top: 14px;
-          width: 100%;
-          min-height: 46px;
-          border-radius: 12px;
-          border: 1px dashed rgba(167, 139, 250, 0.5);
-          background: rgba(124, 58, 237, 0.12);
-          color: #ddd6fe;
-          font-weight: 700;
-          font-size: 15px;
-          cursor: pointer;
-        }
-        .profile-today-log-toggle:hover {
-          background: rgba(124, 58, 237, 0.22);
-          border-style: solid;
-        }
+        
+
         .profile-today-link-btn {
           margin-top: 12px;
           background: transparent;

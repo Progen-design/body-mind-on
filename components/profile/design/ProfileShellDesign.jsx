@@ -58,12 +58,16 @@ export function ProfileTopBar({
   zarizeni = [],
 }) {
   return (
-    <header className="relative z-30 mb-2 flex items-center justify-between px-2 py-4 sm:px-4">
-      {/* Značka tu záměrně NENÍ. Stránku už uvozuje globální `components/Header.js`
-          a druhá řádka „Body & Mind ON“ hned pod ním vypadala jako chyba
-          vykreslení. Návrh v4 počítá s tím, že tahle lišta je jediná — sladit
-          to je samostatné rozhodnutí, ne věc přebíraného vzhledu. */}
-      <span className="text-xs font-bold uppercase tracking-wider text-neutral-500">Profil</span>
+    <header className="relative z-30 mb-1 flex items-center justify-between px-1 py-2 sm:px-2 sm:py-3">
+      {/* Značka je zpátky: globální `Header.js` se na profilu už nevykresluje,
+          takže tahle lišta je jediná. Krátce tu místo ní stál štítek „Profil“,
+          který se na úzkých displejích ořezával na „ROFIL“. */}
+      <div className="flex min-w-0 select-none items-center gap-2">
+        <h1 className="m-0 flex items-center gap-1.5 truncate text-lg font-bold tracking-tight text-white sm:text-2xl">
+          <span>Body &amp; Mind</span>
+          <span className="font-extrabold text-[#39ff14] drop-shadow-[0_0_12px_rgba(57,255,20,0.6)]">ON</span>
+        </h1>
+      </div>
 
       <button
         type="button"
@@ -187,7 +191,7 @@ export function ProfileUserCard({
   const iniciala = String(jmeno || '').trim().charAt(0).toUpperCase() || '?';
 
   return (
-    <div className={`${SKLO} relative overflow-hidden p-4 sm:p-5`}>
+    <div className={`${SKLO} relative mb-2.5 overflow-hidden p-3.5 sm:p-4`}>
       <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[#00f2fe]/10 blur-2xl" aria-hidden />
       <div className="pointer-events-none absolute -bottom-12 -left-12 h-36 w-36 rounded-full bg-[#39ff14]/10 blur-2xl" aria-hidden />
 

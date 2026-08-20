@@ -1066,9 +1066,17 @@ export default function PlanViewer({
 
     const dishName = (mealFullText.replace(/\s*\([^)]*\)\s*$/g, '').trim() || meal.type || 'Jídlo').slice(0, 150);
     const isUnverifiedPlaceholder = mealFullText?.toLowerCase().includes('neověřeno') || dishName === 'Jídlo';
-    const recipeId = displayModel?.normalizedMeal
-      ? catalogLookupIdFromMeal(displayModel.normalizedMeal)
-      : catalogLookupIdForModal;
+    // POŘADÍ ROZHODUJE, JESTLI SE ZEPTÁME KATALOGU, NEBO MODELU.
+    //
+    // Dřív se při existujícím `normalizedMeal` bralo výhradně
+    // `catalogLookupIdFromMeal(...)` — jenže u receptu označeného za fallback
+    // normalizace `catalog_id` ztrácí, takže vyšlo null a `catalogLookupIdForModal`
+    // se nikdy nepoužil. Modal pak spadl až na `/api/recipe`, což je endpoint,
+    // který nechá model recept VYMYSLET. Tak se pod „Rychlá avokádová pomazánka“
+    // objevil česnek a olivový olej, které v katalogu 866 nejsou.
+    const recipeId = displayModel?.catalogId
+      ?? (displayModel?.normalizedMeal ? catalogLookupIdFromMeal(displayModel.normalizedMeal) : null)
+      ?? catalogLookupIdForModal;
     const htmlRecipeFallback = matchingRecipeHtml ? recipeContentOnly(matchingRecipeHtml) : null;
     setRecipeModal({
       openId: thisOpenId,

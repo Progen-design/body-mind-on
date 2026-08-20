@@ -25,16 +25,27 @@ import {
   TrendingUp,
   Wifi,
 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import {
   MIN_BODU_GRAFU,
+  ROZSAHY_GRAFU,
   celkovaZmena,
+  dostupneRozsahy,
+  filtrujRozsah,
   formatMetrikaCs,
+  pocatecniRozsah,
   smerTrendu,
 } from '../../../lib/profile/telesneMetriky.js';
-
-const KARTA = 'rounded-2xl bg-gradient-to-b from-[#131622]/90 to-[#0e111a]/95 '
-  + 'backdrop-blur-xl border border-neutral-800/90 shadow-[0_0_15px_rgba(0,0,0,0.4)] '
-  + 'transition-all duration-300';
+import {
+  IKONA_DOBRE,
+  IKONA_NEUTRALNI,
+  IKONA_SPATNE,
+  KARTA,
+  KARTA_NEON,
+  KARTA_NEON_JEMNA,
+  PREPINAC_AKTIVNI,
+  TLACITKO,
+} from '../../../lib/profile/designTokens.js';
 
 const cislo = formatMetrikaCs;
 
@@ -49,9 +60,7 @@ function Trend({ hodnota, jednotka, popis, dobreKdyz = 'klesa' }) {
   const roste = n > 0;
   const dobre = smer === 'dobre';
   const barva = dobre ? 'text-[#39ff14]' : smer === 'neutralni' ? 'text-neutral-300' : 'text-amber-400';
-  const ramecek = dobre
-    ? 'border-[#39ff14]/40 bg-[#14291f]'
-    : smer === 'neutralni' ? 'border-neutral-700 bg-neutral-900' : 'border-amber-400/40 bg-[#2a2113]';
+  const ramecek = dobre ? IKONA_DOBRE : smer === 'neutralni' ? IKONA_NEUTRALNI : IKONA_SPATNE;
   const Ikona = roste ? TrendingUp : TrendingDown;
   return (
     <div className="flex items-center gap-2.5">
@@ -96,13 +105,13 @@ export function UserGreetingCard({ jmeno, program, poslednePřed }) {
 export function StatCards({ vaha, vahaZmena, tuk, tukZmena, svaly, bmi }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 sm:gap-4 w-full">
-      <div className={`${KARTA} md:col-span-5 p-5 sm:p-6 border-[#00f2fe]/30 shadow-[0_0_20px_rgba(0,242,254,0.08)] flex flex-col justify-between`}>
+      <div className={`${KARTA_NEON} md:col-span-5 flex flex-col justify-between p-5 sm:p-6`}>
         <div>
           <div className="flex items-center justify-between text-neutral-400 text-sm font-medium">
             <span>Váha</span>
             <Activity className="w-4 h-4 text-[#00f2fe]/60" />
           </div>
-          <div className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-none mt-2">
+          <div className="mt-2 text-3xl font-extrabold leading-none tracking-tight text-white sm:text-4xl lg:text-[42px]">
             {cislo(vaha) ?? '—'}
             {cislo(vaha) ? <span className="text-2xl font-semibold text-neutral-200">&nbsp;kg</span> : null}
           </div>
@@ -113,7 +122,7 @@ export function StatCards({ vaha, vahaZmena, tuk, tukZmena, svaly, bmi }) {
       </div>
 
       <div className="md:col-span-7 flex flex-col gap-3.5 sm:gap-4">
-        <div className={`${KARTA} p-5 flex items-center justify-between gap-3`}>
+        <div className={`${KARTA_NEON_JEMNA} flex items-center justify-between gap-3 p-5`}>
           <div>
             <div className="flex items-center gap-1.5 text-neutral-400 text-sm font-medium">
               <span>Tuk</span>
@@ -130,7 +139,7 @@ export function StatCards({ vaha, vahaZmena, tuk, tukZmena, svaly, bmi }) {
         </div>
 
         <div className="grid grid-cols-2 gap-3.5 sm:gap-4">
-          <div className={`${KARTA} p-4 sm:p-5`}>
+          <div className={`${KARTA_NEON_JEMNA} p-4 sm:p-5`}>
             <div className="flex items-center justify-between text-neutral-400 text-xs sm:text-sm font-medium">
               <span>Svalová hmota</span>
               <Dumbbell className="w-3.5 h-3.5 text-neutral-500" />
@@ -140,7 +149,7 @@ export function StatCards({ vaha, vahaZmena, tuk, tukZmena, svaly, bmi }) {
               {cislo(svaly) ? <span className="text-base font-normal text-neutral-400">&nbsp;kg</span> : null}
             </div>
           </div>
-          <div className={`${KARTA} p-4 sm:p-5`}>
+          <div className={`${KARTA_NEON_JEMNA} p-4 sm:p-5`}>
             <div className="flex items-center justify-between text-neutral-400 text-xs sm:text-sm font-medium">
               <span>BMI</span>
               <Gauge className="w-3.5 h-3.5 text-neutral-500" />
@@ -161,18 +170,62 @@ export function StatCards({ vaha, vahaZmena, tuk, tukZmena, svaly, bmi }) {
  * Kreslí se ručním SVG, ne knihovnou — návrh to tak měl a přidávat kvůli
  * jedné křivce další závislost nedává smysl. Pod třemi body se graf nekreslí:
  * dvě tečky nejsou trend a spojnice mezi nimi by tvrdila víc, než data unesou.
+ *
+ * ČASOVÉ ROZSAHY FILTRUJÍ DOOPRAVDY. Návrh v3 měl přepínač 1M/3M/6M/1R jen
+ * jako ozdobu — `selectedRange` se v něm nikde nepoužil a graf pořád kreslil
+ * všechna data. Tady se podle rozsahu data opravdu ořezávají a rozsah, ve
+ * kterém nejsou aspoň tři měření, se ZAKÁŽE. Prázdný graf vypadá jako chyba
+ * aplikace; zašedlé tlačítko je informace, že v tom okně zatím nic není.
  */
 export function WeightChartCard({ zaznamy = [] }) {
-  const body = (zaznamy || [])
-    .map((r) => ({ datum: r.datum, vaha: Number(r.vaha) }))
+  const vsechny = (zaznamy || [])
+    .map((r) => ({ datum: r.datum, cas: r.cas, vaha: Number(r.vaha) }))
     .filter((r) => Number.isFinite(r.vaha));
+
+  const dostupne = useMemo(() => dostupneRozsahy(vsechny), [vsechny]);
+  const vychozi = useMemo(() => pocatecniRozsah(vsechny), [vsechny]);
+  const [rozsah, setRozsah] = useState(vychozi);
+  const aktivni = rozsah && dostupne[rozsah] ? rozsah : vychozi;
+
+  const body = aktivni ? filtrujRozsah(vsechny, aktivni) : [];
+
+  const prepinac = (
+    <div className="flex items-center gap-1.5 self-start rounded-xl border border-neutral-800 bg-[#0f121a] p-1 sm:self-auto">
+      {ROZSAHY_GRAFU.map((r) => {
+        const lze = dostupne[r.id];
+        const jeAktivni = r.id === aktivni;
+        return (
+          <button
+            key={r.id}
+            type="button"
+            disabled={!lze}
+            onClick={() => setRozsah(r.id)}
+            title={lze ? r.popis : `${r.popis} — zatím není dost měření`}
+            aria-pressed={jeAktivni}
+            className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+              jeAktivni
+                ? PREPINAC_AKTIVNI
+                : lze
+                  ? 'cursor-pointer text-neutral-400 hover:text-white'
+                  : 'cursor-not-allowed text-neutral-700'
+            }`}
+          >
+            {r.id}
+          </button>
+        );
+      })}
+    </div>
+  );
 
   if (body.length < MIN_BODU_GRAFU) {
     return (
       <div className={`${KARTA} p-5 sm:p-6`}>
-        <h3 className="text-lg font-bold text-white tracking-tight">Vývoj váhy</h3>
-        <p className="mt-2 text-sm text-neutral-400">
-          Na graf je potřeba aspoň tři měření. Zatím jich máš {body.length}.
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-lg font-bold tracking-tight text-white">Vývoj váhy</h3>
+          {prepinac}
+        </div>
+        <p className="mt-3 text-sm text-neutral-400">
+          Na graf je potřeba aspoň {MIN_BODU_GRAFU} měření. Zatím jich máš {vsechny.length}.
         </p>
       </div>
     );
@@ -186,28 +239,45 @@ export function WeightChartCard({ zaznamy = [] }) {
   const hodnoty = body.map((b) => b.vaha);
   const min = Math.min(...hodnoty);
   const max = Math.max(...hodnoty);
-  const rozsah = max - min || 1;
+  const rozpeti = max - min || 1;
   const x = (i) => P.left + (i / (body.length - 1)) * sirka;
-  const y = (v) => P.top + vyska - ((v - min) / rozsah) * vyska;
+  const y = (v) => P.top + vyska - ((v - min) / rozpeti) * vyska;
 
   const cara = body.map((b, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)},${y(b.vaha).toFixed(1)}`).join(' ');
   const plocha = `${cara} L ${x(body.length - 1).toFixed(1)},${P.top + vyska} L ${x(0).toFixed(1)},${P.top + vyska} Z`;
   const zmena = celkovaZmena(body) ?? 0;
+  const klesa = zmena <= 0;
 
   return (
     <div className={`${KARTA} p-5 sm:p-6`}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-lg font-bold text-white tracking-tight">Vývoj váhy</h3>
-          <p className="text-xs text-neutral-400 mt-0.5">{body.length} měření</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <h3 className="text-lg font-bold tracking-tight text-white sm:text-xl">Vývoj váhy</h3>
+          <span
+            className={`rounded-md border px-2 py-0.5 text-xs font-medium ${
+              klesa
+                ? 'border-[#39ff14]/30 bg-[#132326] text-[#39ff14]'
+                : 'border-amber-400/30 bg-[#2a2113] text-amber-300'
+            }`}
+          >
+            {zmena > 0 ? '+' : ''}{formatMetrikaCs(zmena)} kg celkem
+          </span>
         </div>
-        <div className={`text-sm font-bold ${zmena <= 0 ? 'text-[#39ff14]' : 'text-amber-400'}`}>
-          {zmena > 0 ? '+' : ''}{cislo(zmena)} kg
-        </div>
+        {prepinac}
       </div>
 
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto mt-4" role="img" aria-label="Graf vývoje váhy">
+      <p className="mt-1 text-xs text-neutral-500">
+        {body.length} měření · {ROZSAHY_GRAFU.find((r) => r.id === aktivni)?.popis}
+      </p>
+
+      <svg viewBox={`0 0 ${W} ${H}`} className="mt-4 h-auto w-full" role="img" aria-label={`Graf vývoje váhy, ${body.length} měření`}>
         <defs>
+          {/* Přechod podél křivky z azurové do limetkové — detail z návrhu v3. */}
+          <linearGradient id="bmon-vaha-cara" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#00f2fe" />
+            <stop offset="60%" stopColor="#00f2fe" />
+            <stop offset="100%" stopColor="#39ff14" />
+          </linearGradient>
           <linearGradient id="bmon-vaha-plocha" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#00f2fe" stopOpacity="0.28" />
             <stop offset="100%" stopColor="#00f2fe" stopOpacity="0" />
@@ -225,12 +295,22 @@ export function WeightChartCard({ zaznamy = [] }) {
           />
         ))}
         <path d={plocha} fill="url(#bmon-vaha-plocha)" />
-        <path d={cara} fill="none" stroke="#00f2fe" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+        <path
+          d={cara}
+          fill="none"
+          stroke="url(#bmon-vaha-cara)"
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          style={{ filter: 'drop-shadow(0 0 6px rgba(0,242,254,0.35))' }}
+        />
         {body.map((b, i) => (
-          <circle key={`${b.datum}-${i}`} cx={x(i)} cy={y(b.vaha)} r="3.5" fill="#0a0b0e" stroke="#00f2fe" strokeWidth="2" />
+          <circle key={`${b.cas ?? b.datum}-${i}`} cx={x(i)} cy={y(b.vaha)} r="3.5" fill="#0a0b0e" stroke="#00f2fe" strokeWidth="2">
+            <title>{`${b.datum} · ${formatMetrikaCs(b.vaha)} kg`}</title>
+          </circle>
         ))}
-        <text x={P.left - 8} y={P.top + 4} textAnchor="end" fontSize="11" fill="#94a3b8">{cislo(max)}</text>
-        <text x={P.left - 8} y={P.top + vyska} textAnchor="end" fontSize="11" fill="#94a3b8">{cislo(min)}</text>
+        <text x={P.left - 8} y={P.top + 4} textAnchor="end" fontSize="11" fill="#94a3b8">{formatMetrikaCs(max)}</text>
+        <text x={P.left - 8} y={P.top + vyska} textAnchor="end" fontSize="11" fill="#94a3b8">{formatMetrikaCs(min)}</text>
         <text x={P.left} y={H - 8} fontSize="11" fill="#94a3b8">{body[0].datum}</text>
         <text x={W - P.right} y={H - 8} textAnchor="end" fontSize="11" fill="#94a3b8">{body[body.length - 1].datum}</text>
       </svg>
@@ -294,7 +374,7 @@ export function WithingsSyncCard({
             type="button"
             onClick={onConnect}
             disabled={connectDisabled}
-            className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl bg-neutral-900/80 border border-neutral-700 text-neutral-200 font-semibold text-sm hover:border-neutral-500 disabled:opacity-60 transition-all"
+            className={`${TLACITKO} min-h-[44px] px-4`}
           >
             <Link2 className="w-4 h-4" />
             {connectLabel}

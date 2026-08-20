@@ -119,7 +119,9 @@ export default function WithingsBodyDevelopmentSection({ profile, onLatestWeight
     if (!token) return;
     setHistoryLoading(true);
     try {
-      const res = await fetch('/api/withings/history?limit=30', {
+      // 100 = strop endpointu. Třicet měření pokryje sotva měsíc, takže by
+      // roční rozsah v grafu neměl z čeho kreslit.
+      const res = await fetch('/api/withings/history?limit=100', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json().catch(() => ({}));

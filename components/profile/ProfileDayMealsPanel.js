@@ -8,9 +8,9 @@ import { formatExerciseSetsRepsDisplay } from '../../lib/planDataIntegrity.js';
 import { getCanonicalExercise } from '../../lib/exerciseCanonicalMap';
 import { BookOpen, Check, HelpCircle, RefreshCw, Star } from 'lucide-react';
 import {
+  KARTA_NEON_JEMNA,
   HOTOVO_RAM,
   HOTOVO_TEXT,
-  KARTA_HOVER,
   MAKRO,
   PANEL,
   STITEK,
@@ -90,7 +90,7 @@ export default function ProfileDayMealsPanel({
           return (
             <article
               key={`${meal.type}-${mi}`}
-              className={`${KARTA_HOVER} border-l-4 ${akcent.ram} p-4 sm:p-5 flex flex-col gap-3 min-w-0${mealDone ? ` ${HOTOVO_RAM}` : ''}`}
+              className={`${KARTA_NEON_JEMNA} border-l-4 ${akcent.ram} p-4 sm:p-5 flex flex-col gap-3 min-w-0${mealDone ? ` ${HOTOVO_RAM}` : ''}`}
             >
               <header className="flex items-start justify-between gap-3">
                 <span className={`${STITEK} ${akcent.stitek}`}>{mealTypeLabel(meal.type)}</span>

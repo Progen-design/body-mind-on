@@ -29,7 +29,7 @@ import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
 import { validatePublishedPlanHtml } from '../lib/validatePlanHtml';
 import { getHabitById } from '../lib/habits';
-import { KARTA, TLACITKO } from '../lib/profile/designTokens.js';
+import { AMBIENTNI_KRUHY, AMBIENTNI_OBAL, KARTA, TLACITKO } from '../lib/profile/designTokens.js';
 import { celeJmeno, krestniJmeno } from '../lib/profile/jmenoUzivatele.js';
 import { normalizeOccupationForForm, activityToFormLabel, goalToFormLabel, normalizeFrequency, getFrequencyDayRange } from '../lib/preferenceConstants';
 import { useProfileData } from '../hooks/useProfileData';
@@ -1910,8 +1910,17 @@ export default function Profil() {
       )}
       <Header />
       <main className="page">
-        <div className="page-bg-decor" aria-hidden>
-          <span className="page-bg-orb page-bg-orb--center" />
+        {/* AMBIENTNÍ POZADÍ (návrh v3) — tři rozostřené kruhy, které dodají
+            stránce hloubku. Čistá dekorace: `aria-hidden`, `pointer-events-none`
+            a `z-0`, takže nebere kliknutí ani nepřekryje obsah. Nahradilo
+            jediný modrý orb; dvě dekorace přes sebe by jen kalily pozadí. */}
+        {/* Třída `page-bg-decor` zůstává kvůli pravidlu `.page > *:not(.page-bg-decor)`,
+            které staví obsah nad dekoraci. Bez ní by ambientní obal dostal
+            `z-index: 1` a soupeřil by s obsahem o vrstvu. */}
+        <div className={`page-bg-decor ${AMBIENTNI_OBAL}`} aria-hidden>
+          {AMBIENTNI_KRUHY.map((trida, i) => (
+            <span key={i} className={trida} />
+          ))}
         </div>
         {!loading && !error && (
           <header className={`profile-hero ${(!profile?.can_create_calendar_events && (program === 'ON_CLUB' || program === 'VIP')) ? 'profile-hero--with-program' : 'profile-hero--centered'} ${currentPlan ? 'profile-hero--compact' : ''}`}>
@@ -3324,59 +3333,7 @@ export default function Profil() {
           position: relative;
           overflow-x: hidden;
         }
-        .page-bg-decor {
-          position: fixed;
-          inset: 0;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          pointer-events: none;
-          z-index: 0;
-          overflow: hidden;
-          background-color: #0b1220;
-          background-image:
-            linear-gradient(180deg, rgba(11, 18, 32, 0.92) 0%, rgba(15, 23, 42, 0.88) 50%, rgba(11, 18, 32, 0.94) 100%),
-            url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1920&q=80');
-          background-size: cover;
-          background-position: center;
-        }
         .page-bg-decor::before,
-        .page-bg-decor::after {
-          content: '';
-          position: absolute;
-          border-radius: 50%;
-          filter: blur(120px);
-          opacity: 0.35;
-        }
-        .page-bg-decor::before {
-          width: 550px;
-          height: 550px;
-          background: radial-gradient(circle, rgba(14, 165, 233, 0.22) 0%, transparent 65%);
-          top: -180px;
-          right: -120px;
-        }
-        .page-bg-decor::after {
-          width: 450px;
-          height: 450px;
-          background: radial-gradient(circle, rgba(167, 139, 250, 0.18) 0%, transparent 65%);
-          bottom: -120px;
-          left: -100px;
-        }
-        .page-bg-orb {
-          position: absolute;
-          border-radius: 50%;
-          filter: blur(80px);
-          opacity: 0.25;
-        }
-        .page-bg-orb--center {
-          width: 350px;
-          height: 350px;
-          background: radial-gradient(circle, rgba(14, 165, 233, 0.16) 0%, transparent 70%);
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-        }
         .page > *:not(.page-bg-decor) {
           position: relative;
           z-index: 1;

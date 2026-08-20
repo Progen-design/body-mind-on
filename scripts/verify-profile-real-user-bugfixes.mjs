@@ -58,7 +58,9 @@ check('today onPinClick does not use pinOpenHandlersRef', !todayPinHandler.inclu
 check('today exercise calls performOpenExercise directly', /onExerciseClick=\{[\s\S]*?performOpenExercise\(di, xi/.test(planViewer));
 check('performOpenExercise helper exists', planViewer.includes('const performOpenExercise ='));
 check('buildExerciseActionContext shared helper', planViewer.includes('const buildExerciseActionContext ='));
-const todayExerciseHandler = planViewer.match(/onExerciseClick=\{[\s\S]*?\}\s*onScrollToMeals=/)?.[0] || '';
+// `onScrollToMeals` zmizel se souhrnnými kartami (20. 8. 2026); handler
+// dnešního cviku končí u `onScrollToWeek`.
+const todayExerciseHandler = planViewer.match(/onExerciseClick=\{[\s\S]*?\}\s*onScrollToWeek=/)?.[0] || '';
 check('today onExerciseClick does not use exerciseOpenHandlersRef', !todayExerciseHandler.includes('exerciseOpenHandlersRef'));
 check('no exerciseOpenHandlersRef ref', !planViewer.includes('exerciseOpenHandlersRef'));
 check('weekly exercise button uses performOpenExercise', planViewer.includes('onClick={() => performOpenExercise(di, xi)}'));

@@ -252,7 +252,10 @@ async function captureProfileVisuals() {
     report.visual.equipmentVisible = /Jednoručky/i.test(badgeText) && /Lavice/i.test(badgeText);
 
     const badgeOverflow = await badgeLocator.evaluate((el) => {
-      const card = el.closest('.profile-today-card') || el.parentElement;
+      // Souhrnné karty „Jídlo dnes“/„Trénink dnes“ byly 20. 8. 2026 zrušené
+      // (duplikovaly detail pod sebou). Badge prostředí je teď v podtitulku
+      // sekce tréninku, takže se měří proti té sekci.
+      const card = el.closest('#profile-today-workout') || el.parentElement;
       const badgeRect = el.getBoundingClientRect();
       const cardRect = card ? card.getBoundingClientRect() : badgeRect;
       return {

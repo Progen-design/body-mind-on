@@ -6,6 +6,7 @@ import {
   WithingsSyncCard,
 } from './design/BodyMetricsDesign.jsx';
 import { bodyGrafuVahy } from '../../lib/profile/telesneMetriky.js';
+import { krestniJmeno } from '../../lib/profile/jmenoUzivatele.js';
 import { supabase } from '../../lib/supabaseClient';
 import { formatTrendDelta } from '../../lib/withings/withingsTrends.js';
 import { shouldShowWithingsSection, shouldShowWithingsConnectUi } from '../../lib/withingsProfileVisibility';
@@ -277,7 +278,7 @@ export default function WithingsBodyDevelopmentSection({ profile, onLatestWeight
           `/sync` i `/connect`. Vyměnil se obal, ne obsah. */}
       <div className="wbd-design">
         <UserGreetingCard
-          jmeno={profile?.user?.name}
+          jmeno={krestniJmeno(profile)}
           program={profileProgram}
           poslednePřed={measuredAt ? formatDateTime(measuredAt) : null}
         />

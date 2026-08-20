@@ -1404,8 +1404,6 @@ export default function PlanViewer({
                 const di = todayWeekIdx >= 0 ? todayWeekIdx : 0;
                 performOpenExercise(di, xi, { excludeRest: true });
               }}
-              onScrollToMeals={() => document.getElementById('profile-today-meals')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-              onScrollToWorkout={() => document.getElementById('profile-today-workout')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
               onScrollToWeek={() => {
                 setWeeklyPlanOpen(true);
                 setTimeout(() => document.getElementById('plan-jidelnicek')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);

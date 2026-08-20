@@ -30,6 +30,7 @@ import { getPlanTypeLabel } from '../lib/planLabels';
 import { validatePublishedPlanHtml } from '../lib/validatePlanHtml';
 import { getHabitById } from '../lib/habits';
 import { KARTA, TLACITKO } from '../lib/profile/designTokens.js';
+import { celeJmeno, krestniJmeno } from '../lib/profile/jmenoUzivatele.js';
 import { normalizeOccupationForForm, activityToFormLabel, goalToFormLabel, normalizeFrequency, getFrequencyDayRange } from '../lib/preferenceConstants';
 import { useProfileData } from '../hooks/useProfileData';
 import { useHealthData } from '../hooks/useHealthData';
@@ -1443,9 +1444,9 @@ export default function Profil() {
       ? (thisWeek.length > lastWeek.length ? '↑' : thisWeek.length < lastWeek.length ? '↓' : '→')
       : null;
 
-    // Oslovení: jméno a příjmení z registrace (nejstarší body_metrics), ne přezdívka
-    const registrationName = registrationMetric?.name?.trim();
-    const name = registrationName || profile?.user?.name || profile?.user?.email?.split('@')[0] || 'Sportovče';
+    // Oslovení řeší lib/profile/jmenoUzivatele.js — jeden zdroj pro celý profil,
+    // aby se jméno neobjevilo na dvou místech ve dvou tvarech.
+    const name = celeJmeno(profile);
     // Výchozí váha a výška z registrace (Start) – nevyplňovat znovu
     const startWeight = registrationMetric?.weight_kg != null ? Number(registrationMetric.weight_kg) : (profile?.user?.start_weight_kg != null ? Number(profile.user.start_weight_kg) : null);
     const heightCm = registrationMetric?.height_cm != null ? Number(registrationMetric.height_cm) : (profile?.user?.height_cm != null ? Number(profile.user.height_cm) : null);
@@ -1551,7 +1552,7 @@ export default function Profil() {
       weeklyTypeLoadBars,
       weeklyDayLoadBars,
       userName: name,
-      firstName: (name || '').trim().split(/\s+/)[0] || name || 'ty',
+      firstName: krestniJmeno(profile),
       lastWeekCount: lastWeek.length,
       lastWeekMinutes: lastWeekMin,
       workoutTrend,

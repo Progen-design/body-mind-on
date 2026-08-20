@@ -1,6 +1,7 @@
 // /components/PlanViewer.js – Zobrazení AI plánu; trénink v UI jen v režimu nutrition_training (lib/planOutputMode.js).
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { KARTA, PANEL, STITEK, TLACITKO, TLACITKO_HLAVNI } from '../lib/profile/designTokens.js';
 import Link from 'next/link';
 import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
@@ -1425,8 +1426,8 @@ export default function PlanViewer({
 
           {/* Osobní údaje & cíle – karty s ikonami */}
           {!todayFirstLayout && parsed.personal?.length > 0 && (
-            <div className="plan-block">
-              <h3 className="plan-block-title">Osobní údaje & cíle</h3>
+            <div className={`${KARTA} p-4 sm:p-5`}>
+              <h3 className="m-0 text-lg font-bold tracking-tight text-white">Osobní údaje & cíle</h3>
               <div className="plan-cards-grid">
                 {parsed.personal.map((item, i) => (
                   <div key={i} className="plan-card" style={{ animationDelay: `${i * 0.05}s` }}>
@@ -1441,24 +1442,24 @@ export default function PlanViewer({
 
           {/* Denní cíle – makra (source of truth = structured_plan_json.targets) */}
           {!todayFirstLayout && effectiveTargets?.calories_per_day && (
-            <div className="plan-block">
-              <h3 className="plan-block-title">Dnešní plán · cíle</h3>
+            <div className={`${KARTA} p-4 sm:p-5`}>
+              <h3 className="m-0 text-lg font-bold tracking-tight text-white">Dnešní plán · cíle</h3>
               <div className="plan-macros-row">
-                <div className="plan-macro-card">
-                  <span className="plan-macro-value">{Math.round(Number(effectiveTargets.calories_per_day) || 0)} kcal</span>
-                  <span className="plan-macro-label">Cíl kalorií</span>
+                <div className={`${PANEL} px-3 py-2.5`}>
+                  <span className="m-0 text-base font-bold text-white">{Math.round(Number(effectiveTargets.calories_per_day) || 0)} kcal</span>
+                  <span className="m-0 text-[11px] uppercase tracking-wide text-neutral-400">Cíl kalorií</span>
                 </div>
-                <div className="plan-macro-card">
-                  <span className="plan-macro-value">{Math.round(Number(effectiveTargets.protein_g) || 0)} g</span>
-                  <span className="plan-macro-label">Bílkoviny</span>
+                <div className={`${PANEL} px-3 py-2.5`}>
+                  <span className="m-0 text-base font-bold text-white">{Math.round(Number(effectiveTargets.protein_g) || 0)} g</span>
+                  <span className="m-0 text-[11px] uppercase tracking-wide text-neutral-400">Bílkoviny</span>
                 </div>
-                <div className="plan-macro-card">
-                  <span className="plan-macro-value">{Math.round(Number(effectiveTargets.carbs_g) || 0)} g</span>
-                  <span className="plan-macro-label">Sacharidy</span>
+                <div className={`${PANEL} px-3 py-2.5`}>
+                  <span className="m-0 text-base font-bold text-white">{Math.round(Number(effectiveTargets.carbs_g) || 0)} g</span>
+                  <span className="m-0 text-[11px] uppercase tracking-wide text-neutral-400">Sacharidy</span>
                 </div>
-                <div className="plan-macro-card">
-                  <span className="plan-macro-value">{Math.round(Number(effectiveTargets.fat_g) || 0)} g</span>
-                  <span className="plan-macro-label">Tuky</span>
+                <div className={`${PANEL} px-3 py-2.5`}>
+                  <span className="m-0 text-base font-bold text-white">{Math.round(Number(effectiveTargets.fat_g) || 0)} g</span>
+                  <span className="m-0 text-[11px] uppercase tracking-wide text-neutral-400">Tuky</span>
                 </div>
               </div>
             </div>
@@ -1476,13 +1477,13 @@ export default function PlanViewer({
 
           {/* Když parser nevrátil dny, ale máme rawSections – zobrazit plán po sekcích */}
           {showGraphical && !hasParsedDays && Object.keys(parsed?.rawSections || {}).length > 0 && (
-            <div className="plan-block plan-raw-sections-fallback">
+            <div className={`${KARTA} p-4 sm:p-5`}>
               <p className="plan-parse-fallback-msg" style={{ marginBottom: 16 }}>Plán zobrazen po sekcích (parser nerozpoznal jídelníček).</p>
               {Object.entries(parsed.rawSections)
                 .filter(([sectionTitle]) => !/trénink|treninkovy/i.test(sectionTitle))
                 .map(([sectionTitle, sectionHtml]) => (
                 <div key={sectionTitle} className="plan-raw-section-block">
-                  <h3 className="plan-block-title">{sectionTitle}</h3>
+                  <h3 className="m-0 text-lg font-bold tracking-tight text-white">{sectionTitle}</h3>
                   <div className="plan-raw-section-content" dangerouslySetInnerHTML={{ __html: sanitizeHtmlForFallback(sectionHtml) }} />
                 </div>
               ))}
@@ -1491,10 +1492,10 @@ export default function PlanViewer({
 
           {/* Export jídelníčku – PDF s češtinou a obrázky */}
           {planWeekDays?.length > 0 && (
-            <div className="plan-block plan-export-row">
+            <div className={`${KARTA} flex flex-wrap items-center gap-3 p-4 sm:p-5`}>
               <button
                 type="button"
-                className="plan-export-btn"
+                className={`${TLACITKO_HLAVNI} min-h-[44px] px-4`}
                 onClick={async (e) => {
                   const btn = e.currentTarget;
                   const origText = btn.textContent;
@@ -1543,15 +1544,15 @@ export default function PlanViewer({
           {planWeekDays?.length > 0 && (
             <>
             {todayFirstLayout ? (
-              <div className="plan-block plan-week-accordion" id="plan-tyden-accordion">
-                <div className="plan-week-accordion-header">
-                  <div className="plan-week-accordion-titles">
-                    <h3 className="plan-block-title" style={{ margin: 0 }}>Celý týdenní plán</h3>
-                    <p className="plan-week-accordion-sub">Celý týdenní jídelníček a tréninky po dnech</p>
+              <div className={`${KARTA} p-4 sm:p-5`} id="plan-tyden-accordion">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="m-0 text-lg font-bold tracking-tight text-white" style={{ margin: 0 }}>Celý týdenní plán</h3>
+                    <p className="m-0 mt-1 text-xs text-neutral-400">Celý týdenní jídelníček a tréninky po dnech</p>
                   </div>
                   <button
                     type="button"
-                    className="plan-week-accordion-toggle"
+                    className={`${TLACITKO_HLAVNI} min-h-[42px] shrink-0 px-4`}
                     onClick={() => setWeeklyPlanOpen((v) => !v)}
                     aria-expanded={weeklyPlanOpen}
                   >
@@ -1562,11 +1563,11 @@ export default function PlanViewer({
             ) : null}
             <div
               id="plan-jidelnicek"
-              className="plan-block"
+              className={`${KARTA} p-4 sm:p-5`}
               style={todayFirstLayout && !weeklyPlanOpen ? { display: 'none' } : undefined}
             >
-              <h3 className="plan-block-title">Týdenní plán</h3>
-              <p className="plan-block-subtitle">
+              <h3 className="m-0 text-lg font-bold tracking-tight text-white">Týdenní plán</h3>
+              <p className="m-0 mt-1 text-xs text-neutral-400">
                 Každý den je plně rozepsaný — jídla s makry, součet kalorií a trénink.
               </p>
               <p id="plan-varianty-jidel" className="plan-variant-hint">
@@ -1699,14 +1700,14 @@ export default function PlanViewer({
                       };
                       return (
                         <div className="plan-day-shopping-actions plan-order-ingredients">
-                          <div className="plan-shopping-actions">
-                            <button type="button" className="plan-btn-order" onClick={copyAndOpenDay}>
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <button type="button" className={`${TLACITKO} min-h-[40px] px-3.5`} onClick={copyAndOpenDay}>
                               🛒 Nákupní seznam
                             </button>
-                            <button type="button" className="plan-btn-share" onClick={handleSendEmailDay} disabled={dayState.email.loading}>
+                            <button type="button" className={`${TLACITKO} min-h-[40px] px-3.5`} onClick={handleSendEmailDay} disabled={dayState.email.loading}>
                               {dayState.email.loading ? 'Odesílám…' : '✉️ Poslat e-mailem'}
                             </button>
-                            <button type="button" className="plan-btn-share" onClick={handleShareWhatsAppDay}>
+                            <button type="button" className={`${TLACITKO} min-h-[40px] px-3.5`} onClick={handleShareWhatsAppDay}>
                               📱 Sdílet WhatsApp
                             </button>
                           </div>
@@ -2266,22 +2267,22 @@ export default function PlanViewer({
             const hasAnyList = fullList.length > 0 || weekShoppingSections.some((s) => (s.items || []).length > 0);
             if (!hasAnyList) {
               return hasParsedDays ? (
-                <div id="plan-nakupni-seznam" className="plan-block plan-shopping-block plan-shopping-empty-anchor">
-                  <h3 className="plan-block-title">Suroviny a nákup</h3>
-                  <p className="plan-block-subtitle">
+                <div id="plan-nakupni-seznam" className={`${KARTA} p-4 sm:p-5`}>
+                  <h3 className="m-0 text-lg font-bold tracking-tight text-white">Suroviny a nákup</h3>
+                  <p className="m-0 mt-1 text-xs text-neutral-400">
                     Hromadný nákupní seznam zatím není k dispozici. U každého dne pod jídly můžeš zkopírovat řádky přes týdenní nákupní sekci níže nebo použít odkaz Nákup.
                   </p>
                 </div>
               ) : null;
             }
             return (
-              <div id="plan-nakupni-seznam" className="plan-block plan-shopping-block">
+              <div id="plan-nakupni-seznam" className={`${KARTA} p-4 sm:p-5`}>
                 <details className="plan-shopping-details" open={shoppingListOpen} onToggle={(e) => setShoppingListOpen(e.target.open)}>
                   <summary className="plan-shopping-summary">
-                    <span className="plan-block-title">Nákupní seznam na týden</span>
+                    <span className="m-0 text-lg font-bold tracking-tight text-white">Nákupní seznam na týden</span>
                     <span className="plan-shopping-chevron" aria-hidden>{shoppingListOpen ? '▼' : '▶'}</span>
                   </summary>
-                  <div className="plan-shopping-inner">
+                  <div className={`${PANEL} mt-3 p-3.5`}>
                     <div className="plan-shopping-filter-wrap">
                       <label htmlFor="shopping-filter" className="plan-shopping-filter-label">Zobrazit:</label>
                       <select
@@ -2314,14 +2315,14 @@ export default function PlanViewer({
                           <p className="plan-shopping-empty-day">{selectedDaySection.note}</p>
                         ) : null}
                         <div className="plan-order-ingredients">
-                          <div className="plan-shopping-actions">
-                            <button type="button" className="plan-btn-order" onClick={copyAndOpen}>
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <button type="button" className={`${TLACITKO} min-h-[40px] px-3.5`} onClick={copyAndOpen}>
                               🛒 Nákupní seznam
                             </button>
-                            <button type="button" className="plan-btn-share" onClick={handleSendEmail} disabled={shoppingSendEmail.loading}>
+                            <button type="button" className={`${TLACITKO} min-h-[40px] px-3.5`} onClick={handleSendEmail} disabled={shoppingSendEmail.loading}>
                               {shoppingSendEmail.loading ? 'Odesílám…' : '✉️ Poslat e-mailem'}
                             </button>
-                            <button type="button" className="plan-btn-share" onClick={handleShareWhatsApp}>
+                            <button type="button" className={`${TLACITKO} min-h-[40px] px-3.5`} onClick={handleShareWhatsApp}>
                               📱 Sdílet WhatsApp
                             </button>
                           </div>
@@ -2362,7 +2363,7 @@ export default function PlanViewer({
           )}
           <div className="plan-parse-fallback-block">
             <p className="plan-parse-fallback-msg">Plán existuje, ale nepodařilo se ho správně vykreslit.</p>
-            <button type="button" className="plan-btn-raw-fallback" onClick={() => setShowRawPlanFallback((v) => !v)}>
+            <button type="button" className={`${TLACITKO} min-h-[40px] px-3.5`} onClick={() => setShowRawPlanFallback((v) => !v)}>
               {showRawPlanFallback ? 'Skrýt plán jako text' : 'Zobrazit plán jako text'}
             </button>
             {showRawPlanFallback && plan?.plan_html && (

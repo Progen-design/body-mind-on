@@ -29,6 +29,7 @@ import { supabase } from '../lib/supabaseClient';
 import { getPlanTypeLabel } from '../lib/planLabels';
 import { validatePublishedPlanHtml } from '../lib/validatePlanHtml';
 import { getHabitById } from '../lib/habits';
+import { KARTA, TLACITKO } from '../lib/profile/designTokens.js';
 import { normalizeOccupationForForm, activityToFormLabel, goalToFormLabel, normalizeFrequency, getFrequencyDayRange } from '../lib/preferenceConstants';
 import { useProfileData } from '../hooks/useProfileData';
 import { useHealthData } from '../hooks/useHealthData';
@@ -2516,11 +2517,11 @@ export default function Profil() {
               ) : currentPlan && nextPlan ? (
                 <>
                   <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                    <div className="profile-bubble-tabs" role="tablist" aria-label="Týden plánu">
-                      <button type="button" role="tab" aria-selected={planTab === 'current'} className={`profile-bubble-tab ${planTab === 'current' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setPlanTab('current')}>Tento týden</button>
-                      <button type="button" role="tab" aria-selected={planTab === 'next'} className={`profile-bubble-tab ${planTab === 'next' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setPlanTab('next')}>Příští týden</button>
+                    <div className="inline-flex gap-1.5 rounded-xl border border-neutral-800 bg-[#0e111a]/80 p-1" role="tablist" aria-label="Týden plánu">
+                      <button type="button" role="tab" aria-selected={planTab === 'current'} className={`min-h-[38px] rounded-lg px-4 text-sm font-bold transition-all ${planTab === 'current' ? 'bg-[#00f2fe]/15 text-[#baf6ff] border border-[#00f2fe]/45' : 'text-neutral-400 hover:text-neutral-200'}`} onClick={() => setPlanTab('current')}>Tento týden</button>
+                      <button type="button" role="tab" aria-selected={planTab === 'next'} className={`min-h-[38px] rounded-lg px-4 text-sm font-bold transition-all ${planTab === 'next' ? 'bg-[#00f2fe]/15 text-[#baf6ff] border border-[#00f2fe]/45' : 'text-neutral-400 hover:text-neutral-200'}`} onClick={() => setPlanTab('next')}>Příští týden</button>
                     </div>
-                    <button type="button" className="profile-quick-nav-btn" onClick={handleSendPlanAgain} disabled={sendingPlan} style={{ marginLeft: 'auto' }}>
+                    <button type="button" className={`${TLACITKO} min-h-[38px] px-3.5`} onClick={handleSendPlanAgain} disabled={sendingPlan} style={{ marginLeft: 'auto' }}>
                       {sendingPlan ? 'Odesílám…' : 'Znovu poslat plán na e-mail'}
                     </button>
                   </div>
@@ -3054,10 +3055,10 @@ export default function Profil() {
                 <span className={`profile-bubble-chevron ${profileOpenSections.has('statistiky') ? 'open' : ''}`} aria-hidden>▼</span>
               </button>
               <div id="profile-bubble-body-statistiky" role="region" aria-labelledby="profile-bubble-header-statistiky" className="profile-bubble-body" data-open={profileOpenSections.has('statistiky')}>
-              <div className="profile-bubble-tabs" role="tablist" aria-label="Sekce statistik">
-                <button type="button" role="tab" aria-selected={statsTab === 'overview'} className={`profile-bubble-tab ${statsTab === 'overview' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setStatsTab('overview')}>Přehled</button>
-                <button type="button" role="tab" aria-selected={statsTab === 'weight'} className={`profile-bubble-tab ${statsTab === 'weight' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setStatsTab('weight')}>Vývoj váhy</button>
-                <button type="button" role="tab" aria-selected={statsTab === 'progress'} className={`profile-bubble-tab ${statsTab === 'progress' ? 'profile-bubble-tab--active' : ''}`} onClick={() => setStatsTab('progress')}>Progres</button>
+              <div className="inline-flex gap-1.5 rounded-xl border border-neutral-800 bg-[#0e111a]/80 p-1" role="tablist" aria-label="Sekce statistik">
+                <button type="button" role="tab" aria-selected={statsTab === 'overview'} className={`min-h-[38px] rounded-lg px-4 text-sm font-bold transition-all ${statsTab === 'overview' ? 'bg-[#00f2fe]/15 text-[#baf6ff] border border-[#00f2fe]/45' : 'text-neutral-400 hover:text-neutral-200'}`} onClick={() => setStatsTab('overview')}>Přehled</button>
+                <button type="button" role="tab" aria-selected={statsTab === 'weight'} className={`min-h-[38px] rounded-lg px-4 text-sm font-bold transition-all ${statsTab === 'weight' ? 'bg-[#00f2fe]/15 text-[#baf6ff] border border-[#00f2fe]/45' : 'text-neutral-400 hover:text-neutral-200'}`} onClick={() => setStatsTab('weight')}>Vývoj váhy</button>
+                <button type="button" role="tab" aria-selected={statsTab === 'progress'} className={`min-h-[38px] rounded-lg px-4 text-sm font-bold transition-all ${statsTab === 'progress' ? 'bg-[#00f2fe]/15 text-[#baf6ff] border border-[#00f2fe]/45' : 'text-neutral-400 hover:text-neutral-200'}`} onClick={() => setStatsTab('progress')}>Progres</button>
               </div>
               {statsTab === 'overview' && (
             <section className="kpi-section">
@@ -4272,12 +4273,15 @@ export default function Profil() {
         .profile-bubble {
           width: 100%;
           max-width: 100%;
-          border-radius: 20px;
-          border: 1px solid #1e293b;
-          background: #121826;
-          backdrop-filter: blur(6px);
-          -webkit-backdrop-filter: blur(6px);
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+          /* Sladěno s KARTA z lib/profile/designTokens.js. Sekce profilu
+             (Zpráva od kouče, Můj plán, Denní návyky…) sdílejí tenhle obal,
+             takže se vzhled mění tady, ne na deseti místech. */
+          border-radius: 16px;
+          border: 1px solid rgba(38, 38, 38, 0.9);
+          background: linear-gradient(180deg, rgba(19, 22, 34, 0.9) 0%, rgba(14, 17, 26, 0.95) 100%);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
           overflow: hidden;
           transition: border-color 0.2s, box-shadow 0.2s, max-width 0.35s ease, border-radius 0.3s ease;
         }

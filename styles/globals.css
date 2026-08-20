@@ -15,7 +15,7 @@
 @import "tailwindcss/utilities.css" layer(utilities);
 
 :root {
-  --bg: #070B18;
+  --bg: #08090d;   /* obsidián, návrh v4 (dřív #070B18) */
   --panel: #111827;
   --border: rgba(148, 163, 184, 0.22);
   --text: #F8FAFC;
@@ -25,7 +25,7 @@
   --success: #22c55e;
   --error: #ef4444;
   /* BMON unified design tokens */
-  --bmon-bg: #070B18;
+  --bmon-bg: #08090d;
   --bmon-panel: #111827;
   --bmon-panel-soft: #172033;
   --bmon-card-bg: #121826;
@@ -151,7 +151,7 @@ html, body {
   padding: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family: 'Plus Jakarta Sans', Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -401,3 +401,18 @@ main.page {
 /* ---- Motion preference ---- */
 @media (prefers-reduced-motion: reduce){ * { animation: none !important; transition: none !important; } }
 
+
+/*
+ * SCROLLBARY (návrh v4). Ze zdrojového `index.css` se přenesla jen tahle část
+ * a barva pozadí — zbytek jeho pomocných tříd žije v `lib/profile/designTokens.js`
+ * jako řetězce Tailwind tříd. Jeho `@import "tailwindcss"` se nepřenesl vůbec:
+ * je v něm Preflight, který by přepsal styled-jsx v celé aplikaci.
+ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+/* Vodorovná lišta záložek nemá mít vlastní scrollbar — posouvá se tahem. */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

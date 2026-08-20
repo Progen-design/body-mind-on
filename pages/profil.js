@@ -31,6 +31,14 @@ import { validatePublishedPlanHtml } from '../lib/validatePlanHtml';
 import { getHabitById } from '../lib/habits';
 import { AMBIENTNI_KRUHY, AMBIENTNI_OBAL, KARTA, TLACITKO } from '../lib/profile/designTokens.js';
 import { celeJmeno, krestniJmeno } from '../lib/profile/jmenoUzivatele.js';
+import {
+  ProfileQuickActions,
+  ProfileTabs,
+  ProfileTopBar,
+  ProfileUserCard,
+  tridaStavu,
+} from '../components/profile/design/ProfileShellDesign.jsx';
+import { ZALOZKY, odznakZalozky } from '../lib/profile/profilZalozky.js';
 import { normalizeOccupationForForm, activityToFormLabel, goalToFormLabel, normalizeFrequency, getFrequencyDayRange } from '../lib/preferenceConstants';
 import { useProfileData } from '../hooks/useProfileData';
 import { useHealthData } from '../hooks/useHealthData';
@@ -237,6 +245,9 @@ export default function Profil() {
   const [profileOpenSections, setProfileOpenSections] = useState(new Set(['muj-plan', 'denni-navyky']));
   const [planTab, setPlanTab] = useState('current'); // 'current' | 'next' – Varianta C: Můj plán
   const [statsTab, setStatsTab] = useState('overview'); // 'overview' | 'weight' | 'progress' – Varianta C: Statistiky a progres
+  const [menuOtevrene, setMenuOtevrene] = useState(false);
+  const [aktivniZalozka, setAktivniZalozka] = useState('dnes');
+  const [withingsSynchronizuji, setWithingsSynchronizuji] = useState(false);
   const [withingsHeaderWeight, setWithingsHeaderWeight] = useState(null);
   const [withingsWeightHistory, setWithingsWeightHistory] = useState([]);
   const [withingsHistoryLoaded, setWithingsHistoryLoaded] = useState(false);
@@ -1837,6 +1848,114 @@ export default function Profil() {
 
   if (!session && !loading) return null;
 
+  /* ── SHELL PODLE NÁVRHU v4 ─────────────────────────────────────────────────
+   *
+   * Odvozené hodnoty pro horní lištu, kartu uživatele, záložky a rychlé akce.
+   * Všechno vzniká ze skutečných dat — kde data nejsou, je null a prvek se
+   * nevykreslí. Návrh měl na těchhle místech zástupná čísla (odznak „70“
+   * u regenerace, „Baterie 92 %“ u Withings); sem se nepřenesla.
+   *
+   * Deklarace stojí až tady, těsně před renderem, protože čtou `membershipStatus`
+   * a `program` z useMemo výš. Výš v souboru by to byl temporal dead zone —
+   * build projde, běh spadne.
+   */
+  const stavKlic = membershipStatus === 'active'
+    ? 'aktivni'
+    : (membershipStatus === 'pending_payment'
+      || membershipStatus === 'past_due'
+      || (membershipStatus === 'trial' && !isTrialExpired))
+      ? 'ceka'
+      : 'neaktivni';
+
+  const stavPopisek = membershipStatus === 'active' ? 'Aktivní'
+    : membershipStatus === 'pending_payment' ? 'Čeká na platbu'
+    : membershipStatus === 'past_due' ? 'Po splatnosti'
+    : (membershipStatus === 'trial' && isTrialExpired) ? 'Vypršelo'
+    : membershipStatus === 'trial' ? 'Zkušební'
+    : membershipStatus === 'canceled' ? 'Zrušeno'
+    : 'Neaktivní';
+
+  const popisClenstvi = program === 'ON_CLUB'
+    ? 'Program ON club'
+    : program === 'VIP'
+      ? 'Program VIP'
+      : `Program ${getPlanTypeLabel(currentPlan?.plan_type) || 'START'}`;
+
+  /* Odznaky záložek. `odznakZalozky` vrátí null, když hodnota chybí — počet
+     nesplněných návyků zatím profil.js nezná (drží si ho HabitTracker), takže
+     se posílá null a odznak u návyků se nevykreslí. Radši nic než výmysl. */
+  const odznakyZalozek = {};
+  for (const z of ZALOZKY) {
+    const odznak = odznakZalozky(z.id, {
+      radkyRegenerace: healthData?.recovery?.rows || [],
+      nesplnenoDnes: null,
+    });
+    if (odznak) odznakyZalozek[z.id] = odznak;
+  }
+
+  const vybratZalozku = (zalozka) => {
+    setAktivniZalozka(zalozka.id);
+    scrollToProfileAnchor(zalozka.sekce, zalozka.kotva, { openShoppingList: zalozka.otevritNakup === true });
+  };
+
+  const polozkyMenu = [
+    { id: 'sekce:muj-plan', popisek: 'Můj plán' },
+    { id: 'sekce:statistiky', popisek: 'Statistiky a progres' },
+    { id: 'sekce:denni-navyky', popisek: 'Denní návyky' },
+    { id: 'akce:odhlasit', popisek: 'Odhlásit se' },
+    { id: 'akce:zrusit-profil', popisek: 'Zrušit profil' },
+  ];
+
+  const vybratPolozkuMenu = (id) => {
+    if (id === 'akce:odhlasit') { handleLogout(); return; }
+    if (id === 'akce:zrusit-profil') { setShowDeleteAccountModal(true); return; }
+    const sekce = String(id).replace('sekce:', '');
+    openProfileSection(sekce);
+    if (typeof document !== 'undefined') {
+      document.getElementById(sekce)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  /* Zařízení v menu. Vypisují se jen ta, o jejichž stavu něco skutečně víme —
+     návrh tu měl stav baterie a sílu Wi-Fi, které z API nečteme. */
+  const stavZarizeni = [];
+  if (showWithingsProfileSection) {
+    stavZarizeni.push({ nazev: 'Withings váha', stav: 'Sekce zapnutá', pripojeno: true });
+  }
+  if (healthData?.connection) {
+    const aktivni = healthData.connection.status === 'active';
+    stavZarizeni.push({
+      nazev: healthData.connection.device_label || 'Apple Health',
+      stav: aktivni ? 'Připojeno' : 'Nepřipojeno',
+      pripojeno: aktivni,
+    });
+  }
+
+  /* Rychlá akce „Synchronizovat teď“. Vlastní synchronizaci umí jen
+     WithingsBodyDevelopmentSection — má token i `runSync`. Lišta si o ni řekne
+     událostí, stejně jako `bmo:open-shopping-list` otevírá nákupní seznam.
+     Druhá kopie volání /api/withings/sync by byla druhý zdroj pravdy. */
+  const spustitWithingsSync = () => {
+    if (typeof window === 'undefined') return;
+    setWithingsSynchronizuji(true);
+    window.dispatchEvent(new CustomEvent('bmo:withings-sync'));
+    // Sekce si stav dokončení drží sama; tohle jen vrátí tlačítko do klidu.
+    window.setTimeout(() => setWithingsSynchronizuji(false), 2500);
+  };
+
+  /* Rychlá akce „Nové vážení“. Modal patří ProfileProgressSection, která se
+     montuje až se záložkou „Progres“ v otevřené sekci Statistiky — proto se
+     nejdřív otevře sekce a přepne záložka, a teprve pak jde událost. */
+  const otevritZapisMereni = () => {
+    openProfileSection('statistiky');
+    setStatsTab('progress');
+    if (typeof window === 'undefined') return;
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('bmo:add-measurement'));
+    }, 80);
+  };
+
+
   return (
     <>
       {showWelcomeTour && <WelcomeTour onClose={() => setShowWelcomeTour(false)} />}
@@ -1923,63 +2042,42 @@ export default function Profil() {
           ))}
         </div>
         {!loading && !error && (
-          <header className={`profile-hero ${(!profile?.can_create_calendar_events && (program === 'ON_CLUB' || program === 'VIP')) ? 'profile-hero--with-program' : 'profile-hero--centered'} ${currentPlan ? 'profile-hero--compact' : ''}`}>
+          <ProfileTopBar
+            isMenuOpen={menuOtevrene}
+            onOpenMenu={() => setMenuOtevrene(true)}
+            onCloseMenu={() => setMenuOtevrene(false)}
+            polozkyMenu={polozkyMenu}
+            onVybratPolozku={vybratPolozkuMenu}
+            zarizeni={stavZarizeni}
+          />
+        )}
+        {!loading && !error && !profile?.can_create_calendar_events && (
+          <ProfileUserCard
+            jmeno={firstName}
+            popisPlanu={popisClenstvi}
+            stavPopisek={stavPopisek}
+            stavTrida={tridaStavu(stavKlic)}
+            avatarUrl={profile?.user?.avatar_url || null}
+            avatarRozbity={avatarImageBroken}
+            onAvatarChyba={() => setAvatarImageBroken(true)}
+            onZmenitFoto={() => avatarInputRef.current?.click()}
+            nahravam={uploadingAvatar}
+            chyba={avatarError}
+            inputRef={avatarInputRef}
+            onSouborZmenen={handleAvatarUpload}
+          />
+        )}
+        {!loading && !error && profile?.can_create_calendar_events && (
+          <header className="profile-hero profile-hero--centered">
             <div className="profile-hero-inner">
-              {!profile?.can_create_calendar_events && (program === 'ON_CLUB' || program === 'VIP') && (
-                <div className="profile-hero-brand">
-                  <span className="profile-hero-brand-label">Body & Mind ON</span>
-                  <span className="profile-hero-brand-welcome">
-                    Vítej v programu {program === 'ON_CLUB' ? 'ON club' : program === 'VIP' ? 'VIP' : (getPlanTypeLabel(currentPlan?.plan_type) || 'START').toLowerCase()}
-                  </span>
-                </div>
-              )}
               <div className="profile-hero-main">
-                {!profile?.can_create_calendar_events ? (
-                  <>
-                    <div className="profile-hero-copy">
-                      <h1 className="profile-hero-title">
-                        <span>{firstName}</span>
-                      </h1>
-                      <p className="profile-hero-tagline">Sleduj návyky, tréninky a svůj progres.</p>
-                      <p className="profile-hero-date" aria-hidden>
-                        {new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' })}
-                      </p>
-                    </div>
-                    <div className="profile-hero-avatar-wrap">
-                      <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="profile-hero-avatar-btn" aria-label="Změnit profilový obrázek">
-                        {profile?.user?.avatar_url && !avatarImageBroken ? (
-                          <img
-                            src={profile.user.avatar_url}
-                            alt=""
-                            className="profile-hero-avatar"
-                            onError={() => setAvatarImageBroken(true)}
-                          />
-                        ) : (
-                          <span className="profile-hero-avatar-placeholder" aria-hidden>{firstName?.charAt(0)?.toUpperCase() || '?'}</span>
-                        )}
-                      </button>
-                      <input
-                        type="file"
-                        ref={avatarInputRef}
-                        accept="image/jpeg,image/png,image/gif,image/webp"
-                        className="hero-avatar-input-hidden"
-                        onChange={handleAvatarUpload}
-                      />
-                      <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="profile-hero-avatar-change">
-                        {uploadingAvatar ? 'Nahrávám…' : 'Změnit foto'}
-                      </button>
-                      {avatarError && <p className="profile-hero-avatar-error" role="alert">{avatarError}</p>}
-                    </div>
-                  </>
-                ) : (
-                  <div className="profile-hero-copy">
-                    <h1 className="profile-hero-title"><span>{firstName}</span></h1>
-                    <p className="profile-hero-tagline">Přehled klientů a kalendář tréninků.</p>
-                    <p className="profile-hero-date" aria-hidden>
-                      {new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' })}
-                    </p>
-                  </div>
-                )}
+                <div className="profile-hero-copy">
+                  <h1 className="profile-hero-title"><span>{firstName}</span></h1>
+                  <p className="profile-hero-tagline">Přehled klientů a kalendář tréninků.</p>
+                  <p className="profile-hero-date" aria-hidden>
+                    {new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' })}
+                  </p>
+                </div>
               </div>
             </div>
           </header>
@@ -1992,50 +2090,40 @@ export default function Profil() {
                   Do 20. 8. 2026 byly v jedné řadě, takže „Nákup“ stálo vedle
                   „Zrušit profil“ — skok v plánu vypadal stejně nebezpečně jako
                   smazání účtu. Horní lišta odteď jen naviguje, spodní jedná. */}
-              <nav className="profile-navbar" aria-label="Sekce plánu">
-                <span className="profile-navbar-icon" aria-hidden>
-                  {program === 'VIP' ? '👑' : program === 'ON_CLUB' ? '⚡' : '🚀'}
-                </span>
-                {currentPlan && (currentPlan.plan_html || currentPlan.structured_plan_json) ? (
-                  <div className="profile-navbar-items">
-                    <button type="button" className="pnav pnav--dnes" onClick={() => scrollToProfileAnchor('muj-plan', 'profile-today-heading')}>
-                      <span aria-hidden>📅</span> Dnes
-                    </button>
-                    <button type="button" className="pnav pnav--jidlo" onClick={() => scrollToProfileAnchor('muj-plan', 'profile-today-meals')}>
-                      <span aria-hidden>🍽️</span> Jídelníček
-                    </button>
-                    <button type="button" className="pnav pnav--trenink" onClick={() => scrollToProfileAnchor('muj-plan', 'profile-today-workout')}>
-                      <span aria-hidden>🏋️</span> Trénink
-                    </button>
-                    <button type="button" className="pnav pnav--nakup" onClick={() => scrollToProfileAnchor('muj-plan', 'plan-nakupni-seznam', { openShoppingList: true })}>
-                      <span aria-hidden>🛒</span> Nákup
-                    </button>
-                    <button type="button" className="pnav pnav--navyky" onClick={() => scrollToProfileAnchor('denni-navyky', 'denni-navyky')}>
-                      <span aria-hidden>✅</span> Denní návyky
-                    </button>
-                  </div>
-                ) : (
-                  <div className="profile-navbar-items">
-                    <button type="button" className="pnav pnav--dnes" onClick={() => { openProfileSection('statistiky'); document.getElementById('statistiky')?.scrollIntoView({ behavior: 'smooth' }); }}>
-                      <span aria-hidden>📊</span> Statistiky
-                    </button>
-                  </div>
-                )}
-              </nav>
+              {/* ZÁLOŽKY (návrh v4) nahradily `profile-navbar`.
+                  Chování je stejné jako předtím: otevřít sekci a odscrollovat
+                  na kotvu. Skutečné přepínání panelů dává smysl až ve chvíli,
+                  kdy jednotlivé sekce budou panely — teď by jen schovalo
+                  obsah, který se nemá kam přepnout. */}
+              {currentPlan && (currentPlan.plan_html || currentPlan.structured_plan_json) ? (
+                <ProfileTabs
+                  zalozky={ZALOZKY}
+                  aktivni={aktivniZalozka}
+                  odznaky={odznakyZalozek}
+                  onVybrat={vybratZalozku}
+                />
+              ) : (
+                <ProfileTabs
+                  zalozky={ZALOZKY.filter((z) => z.id === 'regenerace' || z.id === 'navyky')}
+                  aktivni={aktivniZalozka}
+                  odznaky={odznakyZalozek}
+                  onVybrat={vybratZalozku}
+                />
+              )}
 
-              <div className="profile-actionbar">
-                <button type="button" className="pact pact--primary" onClick={openWorkoutWorkspace}>
-                  <span aria-hidden>🏋️</span> Zapsat trénink
-                </button>
-                <span className={`membership-status-badge membership-status--${isTrialExpired && membershipStatus === 'trial' ? 'expired' : membershipStatus}`}>
-                  {membershipStatus === 'active' ? 'Aktivní' : membershipStatus === 'pending_payment' ? 'Čeká na platbu' : membershipStatus === 'past_due' ? 'Po splatnosti' : (membershipStatus === 'trial' && isTrialExpired) ? 'Vypršelo' : membershipStatus === 'trial' ? 'Zkušební' : membershipStatus === 'canceled' ? 'Zrušeno' : 'Neaktivní'}
-                </span>
-                <span className="profile-actionbar-spacer" />
-                <button type="button" className="pact" onClick={handleLogout}>Odhlásit se</button>
-                <button type="button" className="pact pact--danger" onClick={() => setShowDeleteAccountModal(true)} title="Trvale smazat účet a všechna data">
-                  Zrušit profil
-                </button>
-              </div>
+              {/* RYCHLÉ AKCE (návrh v4).
+                  Odhlášení a zrušení profilu se přesunulo do menu v horní
+                  liště. Vedle „Zapsat trénink“ nemají co dělat — jedno je
+                  každodenní úkon, druhé nevratná operace, a v jedné řadě
+                  vypadaly stejně nevinně. */}
+              <ProfileQuickActions
+                onZapsatTrenink={openWorkoutWorkspace}
+                onZapsatVahu={otevritZapisMereni}
+                onUpravitPreference={() => setShowPreferencesModal(true)}
+                onSynchronizovat={spustitWithingsSync}
+                synchronizuji={withingsSynchronizuji}
+                lzeSynchronizovat={showWithingsProfileSection}
+              />
               {membershipStatus === 'pending_payment' ? (
                 <PlanLockedPaywall />
               ) : isTrialExpired && membershipStatus === 'trial' ? (
@@ -2732,7 +2820,7 @@ export default function Profil() {
             )}
 
             {!profile?.can_create_calendar_events && (
-              <div className="profile-health-inline">
+              <div className="profile-health-inline" id="profile-regenerace">
                 {/* Jen SEKCE připojení se přesouvá nahoru, ne celý blok —
                     jsou v něm i chyby a `AppleWatchSection` s daty z hodinek,
                     které patří dolů vždycky. */}

@@ -1977,46 +1977,53 @@ export default function Profil() {
         {!loading && !error && !profile?.can_create_calendar_events && (
           <>
             <div className={`profile-membership-plan-card membership-card--${(program || 'START').toLowerCase().replace('_', '-')}`}>
-              <div className="membership-card-row">
-                <div className="membership-card-left">
-                  <span className="membership-icon">
-                    {program === 'VIP' ? '👑' : program === 'ON_CLUB' ? '⚡' : '🚀'}
-                  </span>
-                  <div className="membership-card-nav-wrap">
-                    {currentPlan && (currentPlan.plan_html || currentPlan.structured_plan_json) ? (
-                      <nav className="profile-quick-nav profile-quick-nav--plan-sections" aria-label="Rychlé sekce plánu">
-                        <button type="button" className="profile-quick-nav-btn" onClick={() => scrollToProfileAnchor('muj-plan', 'profile-today-heading')}>Dnes</button>
-                        <button type="button" className="profile-quick-nav-btn" onClick={() => scrollToProfileAnchor('muj-plan', 'profile-today-meals')}>Jídelníček</button>
-                        <button type="button" className="profile-quick-nav-btn" onClick={() => scrollToProfileAnchor('muj-plan', 'profile-today-workout')}>Trénink</button>
-                        <button type="button" className="profile-quick-nav-btn" onClick={() => scrollToProfileAnchor('muj-plan', 'plan-nakupni-seznam', { openShoppingList: true })}>Nákup</button>
-                        <button type="button" className="profile-quick-nav-btn" onClick={() => scrollToProfileAnchor('denni-navyky', 'denni-navyky')}>Denní návyky</button>
-                      </nav>
-                    ) : (
-                      <nav className="profile-quick-nav" aria-label="Rychlá navigace">
-                        <button type="button" className="profile-quick-nav-btn" onClick={() => { openProfileSection('statistiky'); document.getElementById('statistiky')?.scrollIntoView({ behavior: 'smooth' }); }}>Statistiky</button>
-                      </nav>
-                    )}
+              {/* NAVIGACE A AKCE JSOU DVĚ RŮZNÉ VĚCI.
+                  Do 20. 8. 2026 byly v jedné řadě, takže „Nákup“ stálo vedle
+                  „Zrušit profil“ — skok v plánu vypadal stejně nebezpečně jako
+                  smazání účtu. Horní lišta odteď jen naviguje, spodní jedná. */}
+              <nav className="profile-navbar" aria-label="Sekce plánu">
+                <span className="profile-navbar-icon" aria-hidden>
+                  {program === 'VIP' ? '👑' : program === 'ON_CLUB' ? '⚡' : '🚀'}
+                </span>
+                {currentPlan && (currentPlan.plan_html || currentPlan.structured_plan_json) ? (
+                  <div className="profile-navbar-items">
+                    <button type="button" className="pnav pnav--dnes" onClick={() => scrollToProfileAnchor('muj-plan', 'profile-today-heading')}>
+                      <span aria-hidden>📅</span> Dnes
+                    </button>
+                    <button type="button" className="pnav pnav--jidlo" onClick={() => scrollToProfileAnchor('muj-plan', 'profile-today-meals')}>
+                      <span aria-hidden>🍽️</span> Jídelníček
+                    </button>
+                    <button type="button" className="pnav pnav--trenink" onClick={() => scrollToProfileAnchor('muj-plan', 'profile-today-workout')}>
+                      <span aria-hidden>🏋️</span> Trénink
+                    </button>
+                    <button type="button" className="pnav pnav--nakup" onClick={() => scrollToProfileAnchor('muj-plan', 'plan-nakupni-seznam', { openShoppingList: true })}>
+                      <span aria-hidden>🛒</span> Nákup
+                    </button>
+                    <button type="button" className="pnav pnav--navyky" onClick={() => scrollToProfileAnchor('denni-navyky', 'denni-navyky')}>
+                      <span aria-hidden>✅</span> Denní návyky
+                    </button>
                   </div>
-                </div>
-                <div className="membership-card-right">
-                  <button
-                    type="button"
-                    className="profile-main-workout-btn"
-                    onClick={openWorkoutWorkspace}
-                  >
-                    <span className="profile-main-workout-btn-emoji" aria-hidden>🏋️</span>
-                    Zapsat trénink
-                  </button>
-                  <div className="membership-status-block">
-                    <span className={`membership-status-badge membership-status--${isTrialExpired && membershipStatus === 'trial' ? 'expired' : membershipStatus}`}>
-                      {membershipStatus === 'active' ? 'Aktivní' : membershipStatus === 'pending_payment' ? 'Čeká na platbu' : membershipStatus === 'past_due' ? 'Po splatnosti' : (membershipStatus === 'trial' && isTrialExpired) ? 'Vypršelo' : membershipStatus === 'trial' ? 'Zkušební' : membershipStatus === 'canceled' ? 'Zrušeno' : 'Neaktivní'}
-                    </span>
+                ) : (
+                  <div className="profile-navbar-items">
+                    <button type="button" className="pnav pnav--dnes" onClick={() => { openProfileSection('statistiky'); document.getElementById('statistiky')?.scrollIntoView({ behavior: 'smooth' }); }}>
+                      <span aria-hidden>📊</span> Statistiky
+                    </button>
                   </div>
-                  <div className="profile-quick-nav-account">
-                    <button type="button" className="profile-quick-nav-btn profile-quick-nav-btn-account" onClick={handleLogout}>Odhlásit se</button>
-                    <button type="button" className="profile-quick-nav-btn profile-quick-nav-btn-danger" onClick={() => setShowDeleteAccountModal(true)} title="Trvale smazat účet a všechna data">Zrušit profil</button>
-                  </div>
-                </div>
+                )}
+              </nav>
+
+              <div className="profile-actionbar">
+                <button type="button" className="pact pact--primary" onClick={openWorkoutWorkspace}>
+                  <span aria-hidden>🏋️</span> Zapsat trénink
+                </button>
+                <span className={`membership-status-badge membership-status--${isTrialExpired && membershipStatus === 'trial' ? 'expired' : membershipStatus}`}>
+                  {membershipStatus === 'active' ? 'Aktivní' : membershipStatus === 'pending_payment' ? 'Čeká na platbu' : membershipStatus === 'past_due' ? 'Po splatnosti' : (membershipStatus === 'trial' && isTrialExpired) ? 'Vypršelo' : membershipStatus === 'trial' ? 'Zkušební' : membershipStatus === 'canceled' ? 'Zrušeno' : 'Neaktivní'}
+                </span>
+                <span className="profile-actionbar-spacer" />
+                <button type="button" className="pact" onClick={handleLogout}>Odhlásit se</button>
+                <button type="button" className="pact pact--danger" onClick={() => setShowDeleteAccountModal(true)} title="Trvale smazat účet a všechna data">
+                  Zrušit profil
+                </button>
               </div>
               {membershipStatus === 'pending_payment' ? (
                 <PlanLockedPaywall />
@@ -3587,6 +3594,112 @@ export default function Profil() {
         .membership-card-nav-wrap {
           flex: 1;
           min-width: 0;
+        }
+        /* ── LIŠTA NAVIGACE ──────────────────────────────────────────────────
+           Barevný akcent na buňku, stejný jazyk jako karty jídel z #86:
+           jemný gradient, barevný levý proužek, emoji jako kotva pro oko.
+           Barva tu nese význam — každá sekce má svou, takže se lišta čte
+           jako mapa, ne jako řada stejných tlačítek. */
+        .profile-navbar {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 14px;
+          border-radius: 16px;
+          border: 1px solid rgba(148, 163, 184, 0.18);
+          background: linear-gradient(180deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9));
+        }
+        .profile-navbar-icon { font-size: 22px; flex-shrink: 0; }
+        .profile-navbar-items {
+          display: grid;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          gap: 8px;
+          flex: 1;
+          min-width: 0;
+        }
+        .pnav {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          min-height: 46px;
+          padding: 8px 10px;
+          border-radius: 12px;
+          border: 1px solid var(--c-bd, rgba(148, 163, 184, 0.3));
+          background: var(--c-bg, rgba(15, 23, 42, 0.6));
+          color: var(--c-fg, #e2e8f0);
+          font-size: 13px;
+          font-weight: 700;
+          cursor: pointer;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+        }
+        .pnav:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28); }
+        .pnav:active { transform: translateY(0); }
+        .pnav span { font-size: 15px; line-height: 1; }
+
+        .pnav--dnes    { --c-bg: rgba(56, 189, 248, 0.16); --c-bd: rgba(56, 189, 248, 0.45); --c-fg: #bae6fd; }
+        .pnav--jidlo   { --c-bg: rgba(245, 158, 11, 0.16); --c-bd: rgba(245, 158, 11, 0.45); --c-fg: #fde68a; }
+        .pnav--trenink { --c-bg: rgba(167, 139, 250, 0.16); --c-bd: rgba(167, 139, 250, 0.45); --c-fg: #ddd6fe; }
+        .pnav--nakup   { --c-bg: rgba(34, 197, 94, 0.16); --c-bd: rgba(34, 197, 94, 0.45); --c-fg: #bbf7d0; }
+        .pnav--navyky  { --c-bg: rgba(251, 113, 133, 0.16); --c-bd: rgba(251, 113, 133, 0.45); --c-fg: #fecdd3; }
+
+        /* ── LIŠTA AKCÍ ──────────────────────────────────────────────────────
+           Vizuálně tišší než navigace: akce se nemají nabízet, mají být
+           po ruce. „Zrušit profil“ je jediná červená na stránce. */
+        .profile-actionbar {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 10px;
+          padding: 10px 14px;
+          border-radius: 14px;
+          border: 1px solid rgba(148, 163, 184, 0.14);
+          background: rgba(2, 6, 23, 0.42);
+        }
+        .profile-actionbar-spacer { flex: 1 1 auto; }
+        .pact {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          min-height: 42px;
+          padding: 9px 14px;
+          border-radius: 11px;
+          border: 1px solid rgba(148, 163, 184, 0.3);
+          background: rgba(15, 23, 42, 0.6);
+          color: #cbd5e1;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+        .pact:hover { border-color: rgba(148, 163, 184, 0.6); color: #f1f5f9; }
+        .pact--primary {
+          border-color: rgba(167, 139, 250, 0.55);
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.5), rgba(56, 189, 248, 0.32));
+          color: #f5f3ff;
+          font-weight: 700;
+          font-size: 14px;
+        }
+        .pact--primary:hover { border-color: rgba(196, 181, 253, 0.8); }
+        .pact--danger { border-color: rgba(248, 113, 113, 0.4); color: #fca5a5; }
+        .pact--danger:hover { border-color: rgba(248, 113, 113, 0.75); color: #fecaca; }
+
+        @media (max-width: 900px) {
+          .profile-navbar { flex-direction: column; align-items: stretch; gap: 10px; }
+          .profile-navbar-icon { display: none; }
+          .profile-navbar-items { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+          .pnav { font-size: 12px; }
+        }
+        @media (max-width: 520px) {
+          .profile-navbar-items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .profile-actionbar-spacer { display: none; }
+          .pact { flex: 1 1 calc(50% - 10px); justify-content: center; }
+          .pact--primary { flex-basis: 100%; justify-content: center; }
         }
         .profile-quick-nav {
           display: flex;

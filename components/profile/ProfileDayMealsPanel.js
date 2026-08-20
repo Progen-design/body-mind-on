@@ -302,20 +302,27 @@ export default function ProfileDayMealsPanel({
           border-radius: 999px;
           background: var(--akcent-soft);
         }
+        /* Kalorie jsou údaj, název je jídlo. Do 20. 8. 2026 bylo číslo větší
+           než název a karta se četla jako tabulka čísel — hierarchie otočená. */
         .meal-kcal {
-          font-size: 22px;
-          font-weight: 800;
-          color: #f8fafc;
+          font-size: 15px;
+          font-weight: 700;
+          color: #cbd5e1;
           line-height: 1;
           white-space: nowrap;
         }
-        .meal-kcal small { font-size: 11px; font-weight: 600; color: #94a3b8; margin-left: 3px; }
+        .meal-kcal small { font-size: 10px; font-weight: 600; color: #94a3b8; margin-left: 3px; }
 
         .meal-title {
           margin: 0;
-          font-size: 15px;
-          line-height: 1.35;
-          color: #f1f5f9;
+          font-size: 20px;
+          font-weight: 700;
+          letter-spacing: -0.01em;
+          line-height: 1.25;
+          color: #f8fafc;
+        }
+        @media (max-width: 480px) {
+          .meal-title { font-size: 18px; }
         }
 
         /* Makra jako tři čipy místo jedné šedé věty — čitelné na jeden pohled. */

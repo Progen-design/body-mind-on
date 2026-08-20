@@ -1,8 +1,11 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { resolveDayCalorieTarget, sumDayNutrition } from '../../lib/mealNutritionDisplay.js';
 import MacroRatioChart from '../MacroRatioChart.js';
 import { formatExerciseSetsRepsDisplay } from '../../lib/planDataIntegrity.js';
 import ProfileDayMealsPanel from './ProfileDayMealsPanel.js';
+import VlastniJidlaPanel from './VlastniJidlaPanel.jsx';
+import { getLocalDateStr } from '../../lib/profileDates.js';
+import { popisNezapocteneho, souctyDne } from '../../lib/profile/vlastniJidlo.js';
 import DailyAdherenceStatus from './DailyAdherenceStatus.js';
 import WorkoutChangeModal from '../workout/WorkoutChangeModal.jsx';
 import { HabitUiProgressBar } from '../habit/HabitUiPrimitives';
@@ -140,11 +143,37 @@ export default function ProfileTodayPanels({
     hasWorkout: hasWorkoutEarly,
   });
 
+  const dnesniDatum = getLocalDateStr();
+
+  /* VLASTNÍ JÍDLA. Načítají se zvlášť od plánu — nejsou jeho součástí a týdenní
+     generace by je přepsala. Do denního součtu vstupují jen ta s vyplněnými
+     kaloriemi; o zbytku se pod součtem napíše, že se nepočítají. */
+  const [vlastniJidla, setVlastniJidla] = useState([]);
+  const nactiVlastniJidla = useCallback(async () => {
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data?.session?.access_token;
+      if (!token) return;
+      const res = await fetch(`/api/custom-meals?from=${dnesniDatum}&to=${dnesniDatum}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const json = await res.json().catch(() => ({}));
+      setVlastniJidla(Array.isArray(json?.meals) ? json.meals : []);
+    } catch {
+      /* Bez vlastních jídel se profil vykreslí dál — jsou to doplňková data. */
+    }
+  }, [dnesniDatum]);
+  useEffect(() => { nactiVlastniJidla(); }, [nactiVlastniJidla]);
+
   if (!todayDay) return null;
 
   const structDay = structDayEarly;
   const meals = mealsEarly;
-  const dayNutrition = sumDayNutrition(meals, structDay);
+
+  const planovanaNutrice = sumDayNutrition(meals, structDay);
+  const dayNutrition = souctyDne({ planovane: planovanaNutrice, vlastni: vlastniJidla });
+  const vetaNezapocteno = popisNezapocteneho(dayNutrition.nezapocteno);
   /** Podíly maker za celý den — pro pruh nad seznamem jídel. */
   const podilyDne = podilyMaker({
     protein_g: dayNutrition?.protein,
@@ -228,11 +257,17 @@ export default function ProfileTodayPanels({
                   <div style={{ width: `${podilyDne.tuky}%` }} className={`h-full rounded-sm ${MAKRO.tuky.trida}`} title={`Tuky ${podilyDne.tuky} %`} />
                 </div>
                 <div className="flex items-center justify-between text-xs font-semibold text-neutral-300">
-                  <span>B {Math.round(dayNutrition.protein) || '—'} g</span>
-                  <span>S {Math.round(dayNutrition.carbs) || '—'} g</span>
-                  <span>T {Math.round(dayNutrition.fat) || '—'} g</span>
+                  {/* `Math.round(x) || '—'` dělalo z nulových bílkovin pomlčku:
+                      0 je falsy. Nula gramů je platný údaj, „nevíme“ je null. */}
+                  <span>B {dayNutrition.protein == null ? '—' : Math.round(dayNutrition.protein)} g</span>
+                  <span>S {dayNutrition.carbs == null ? '—' : Math.round(dayNutrition.carbs)} g</span>
+                  <span>T {dayNutrition.fat == null ? '—' : Math.round(dayNutrition.fat)} g</span>
                 </div>
               </div>
+            ) : null}
+
+            {vetaNezapocteno ? (
+              <p className="m-0 w-full text-[11px] text-amber-300/90">{vetaNezapocteno}</p>
             ) : null}
           </div>
         ) : null}
@@ -253,6 +288,12 @@ export default function ProfileTodayPanels({
           isMealCompleted={(meal, mi) => isMealCompleted(meal, mi)}
           isMealCompletionPending={(meal, mi) => isPending('meal', mealActivityKey(meal, mi))}
           onMealCompleteToggle={(meal, mi) => toggleMeal(meal, mi)}
+        />
+        <VlastniJidlaPanel
+          datum={dnesniDatum}
+          planId={planId}
+          jidla={vlastniJidla}
+          onZmena={nactiVlastniJidla}
         />
         <button type="button" className="profile-today-link-btn" onClick={onScrollToWeek}>
           Celý týdenní jídelníček

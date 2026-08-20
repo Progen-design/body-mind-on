@@ -39,6 +39,7 @@ import { buildMacroPillCss, BM_ON_DESIGN, BM_ON_GRADIENTS } from '../lib/designT
 import { buildMacroEnergyNutritionHtml, portionServingLabelCs } from '../lib/recipeDetailHtml.js';
 import { buildStructuredWeekSource } from '../lib/plan/structuredWeekSource.js';
 import ProfileTodayPanels from './profile/ProfileTodayPanels';
+import VlastniPolozkyNakupu from './profile/VlastniPolozkyNakupu.jsx';
 import { trackProductEvent } from '../lib/productAnalytics';
 import { getPlanCalorieHonestyStatus } from '../lib/nutrition/calorieHonesty.js';
 import ProfileDayMealsPanel from './profile/ProfileDayMealsPanel';
@@ -2342,6 +2343,9 @@ export default function PlanViewer({
                       </p>
                     )}
                   </div>
+                  {/* Ručně dopsané položky. Váží se k plánu, ne k receptům —
+                      generovaná část seznamu se jimi nemění. */}
+                  <VlastniPolozkyNakupu planId={plan?.id || null} />
                 </details>
               </div>
             );
@@ -3465,7 +3469,9 @@ const planSectionStyles = `
   .plan-recipe-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.75);
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     display: flex;
     align-items: flex-start;
     justify-content: flex-start;
@@ -3473,17 +3479,22 @@ const planSectionStyles = `
     padding: 12px;
     box-sizing: border-box;
   }
+  /* Sklo a azurová kontura podle návrhu v4 — sladěno se SKLO
+     v lib/profile/designTokens.js. Jen vzhled; obsah modalu se dál skládá
+     ze structured data / katalogu (PR #90). */
   .plan-recipe-modal {
-    background: linear-gradient(180deg, #111827 0%, #070B18 100%);
-    border: 1px solid rgba(148, 163, 184, 0.22);
-    border-radius: 22px;
+    background: rgba(14, 19, 29, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(0, 242, 254, 0.25);
+    border-radius: 24px;
     max-width: 520px;
     width: 100%;
     max-height: 85vh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 24px 48px rgba(0,0,0,0.5);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 24px -6px rgba(0, 242, 254, 0.18);
   }
   .plan-recipe-modal-dynamic {
     align-self: stretch;

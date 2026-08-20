@@ -1,4 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  StatCards,
+  UserGreetingCard,
+  WeightChartCard,
+  WithingsSyncCard,
+} from './design/BodyMetricsDesign.jsx';
+import { bodyGrafuVahy } from '../../lib/profile/telesneMetriky.js';
 import { supabase } from '../../lib/supabaseClient';
 import { formatTrendDelta } from '../../lib/withings/withingsTrends.js';
 import { shouldShowWithingsSection, shouldShowWithingsConnectUi } from '../../lib/withingsProfileVisibility';
@@ -226,6 +233,12 @@ export default function WithingsBodyDevelopmentSection({ profile, onLatestWeight
     };
   }, [historyItems, latest, measurementCount30d, trends]);
 
+  /**
+   * Body do grafu — z historie měření, seřazené od nejstaršího.
+   * `/api/withings/history` vrací nejnovější první, což by křivku otočilo.
+   */
+  const grafData = useMemo(() => bodyGrafuVahy(historyItems), [historyItems]);
+
   const reconnectLabel = connected ? 'Znovu propojit Withings' : 'Připojit Withings';
   const connectDisabled = latestData?.configured === false;
 
@@ -258,91 +271,82 @@ export default function WithingsBodyDevelopmentSection({ profile, onLatestWeight
 
   return (
     <section className="withings-body-dev" aria-label="Tělesný vývoj" data-profile-program={profileProgram}>
-      <div className="withings-head">
-        <div>
-          <h2>Tělesný vývoj</h2>
-          {withingsConnectUi ? (
-            <p>Data z chytré váhy Withings se automaticky propisují do profilu a slouží jako vstup pro další týdenní plán.</p>
-          ) : (
-            <p>Sleduješ vývoj přes jinou chytrou váhu. Ruční váhu můžeš zadávat v profilu.</p>
-          )}
-        </div>
-        {withingsConnectUi ? (
-          connected ? <span className="withings-state withings-state--ok">Propojeno</span> : <span className="withings-state">Nepřipojeno</span>
+      {/* VZHLED Z NÁVRHU (temp-design, srpen 2026), DATA BEZE ZMĚNY.
+          Karty jsou čistě prezentační (components/profile/design/), veškerá
+          data i akce zůstávají tady: `/api/withings/latest`, `/history`,
+          `/sync` i `/connect`. Vyměnil se obal, ne obsah. */}
+      <div className="wbd-design">
+        <UserGreetingCard
+          jmeno={profile?.user?.name}
+          program={profileProgram}
+          poslednePřed={measuredAt ? formatDateTime(measuredAt) : null}
+        />
+
+        {!withingsConnectUi ? (
+          <p className="withings-status">
+            Sleduješ vývoj přes jinou chytrou váhu. Ruční váhu můžeš zadávat v profilu.
+          </p>
         ) : null}
-      </div>
 
-      {(loading || syncing) && withingsConnectUi ? <p className="withings-status">Načítám Withings data…</p> : null}
-      {message && withingsConnectUi ? <p className="withings-status">{message}</p> : null}
+        {(loading || syncing) && withingsConnectUi ? (
+          <p className="withings-status">Načítám Withings data…</p>
+        ) : null}
 
-      {withingsConnectUi && connected ? (
-        <>
-          <div className="withings-metrics">
-            <div><span>Váha</span><strong>{formatMetric(latest?.weight_kg, ' kg')}</strong></div>
-            <div><span>Tuk %</span><strong>{formatMetric(latest?.fat_percent, ' %')}</strong></div>
-            <div><span>Tuková hmota</span><strong>{formatMetric(latest?.fat_mass_kg, ' kg')}</strong></div>
-            <div><span>Svalová hmota</span><strong>{formatMetric(latest?.muscle_mass_kg, ' kg')}</strong></div>
-            <div><span>Kostní hmota</span><strong>{formatMetric(latest?.bone_mass_kg, ' kg')}</strong></div>
-            <div><span>Hydratace</span><strong>{formatMetric(latest?.hydration_kg, ' kg')}</strong></div>
-            <div><span>BMI</span><strong>{formatMetric(latest?.bmi)}</strong></div>
-            <div><span>Tep</span><strong>{formatMetric(latest?.pulse, ' bpm')}</strong></div>
-            <div className="withings-metric-wide"><span>Poslední měření</span><strong>{formatDateTime(measuredAt)}</strong></div>
-          </div>
-
-          <div className="withings-trends">
-            <h3>Trend</h3>
-            <div className="withings-trend-grid">
-              <div><span>Od minula</span><strong>{formatTrendDelta(trends?.delta?.weight_kg, ' kg')}</strong></div>
-              <div><span>7 dní</span><strong>{formatTrendDelta(trends?.trend7d?.weight_kg, ' kg')}</strong></div>
-              <div><span>30 dní</span><strong>{formatTrendDelta(trends?.trend30d?.weight_kg, ' kg')}</strong></div>
-              <div><span>Tuk 7 dní</span><strong>{formatTrendDelta(trends?.trend7d?.fat_percent, ' %')}</strong></div>
-            </div>
-          </div>
-
-          <div className="withings-impact">
-            <h3>Vliv na další plán</h3>
-            <p>{infoText}</p>
-          </div>
-        </>
-      ) : withingsConnectUi ? (
-        <div className="withings-impact">
-          <h3>Vliv na další plán</h3>
-          <p>{infoText}</p>
-        </div>
-      ) : null}
-
-      {withingsConnectUi ? (
-      <div className="withings-actions">
-        {connected ? (
+        {withingsConnectUi && connected ? (
           <>
-            <button type="button" onClick={() => runSync(session?.access_token)} disabled={syncing || !session?.access_token}>Synchronizovat teď</button>
-            <button type="button" className="secondary" onClick={openHistory} disabled={historyLoading || !session?.access_token}>Historie</button>
-            <button type="button" className="secondary" onClick={startConnect} disabled={!session?.access_token}>{reconnectLabel}</button>
-          </>
-        ) : (
-          <button type="button" onClick={startConnect} disabled={!session?.access_token || connectDisabled}>Připojit Withings</button>
-        )}
-      </div>
-      ) : null}
+            <StatCards
+              vaha={latest?.weight_kg}
+              vahaZmena={trends?.trend7d?.weight_kg}
+              tuk={latest?.fat_percent}
+              tukZmena={trends?.trend7d?.fat_percent}
+              svaly={latest?.muscle_mass_kg}
+              bmi={latest?.bmi}
+            />
 
-      {withingsConnectUi && historyOpen ? (
-        <div className="withings-history">
-          {historyLoading ? <p>Načítám historii…</p> : null}
-          {!historyLoading && !historyItems.length ? <p>Zatím nejsou k dispozici žádná měření.</p> : null}
-          {!historyLoading && historyItems.length ? (
-            <ul>
-              {historyItems.map((item) => (
-                <li key={`${item.measured_at}-${item.weight_kg || 'x'}`}>
-                  <strong>{formatDateTime(item.measured_at)}</strong>
-                  <span>
-                    {formatMetric(item.weight_kg, ' kg')} · tuk {formatMetric(item.fat_percent, ' %')} · svaly {formatMetric(item.muscle_mass_kg, ' kg')}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-      ) : null}
+            <WeightChartCard zaznamy={grafData} />
+          </>
+        ) : null}
+
+        {withingsConnectUi ? (
+          <WithingsSyncCard
+            pripojeno={connected}
+            synchronizuje={syncing}
+            poslednePřed={measuredAt ? formatDateTime(measuredAt) : null}
+            hlaska={message}
+            onSync={() => runSync(session?.access_token)}
+            onConnect={startConnect}
+            connectLabel={reconnectLabel}
+            connectDisabled={connectDisabled || !session?.access_token}
+          />
+        ) : null}
+
+        {withingsConnectUi && connected ? (
+          <div className="withings-history">
+            <button
+              type="button"
+              className="secondary"
+              onClick={openHistory}
+              disabled={historyLoading || !session?.access_token}
+            >
+              {historyOpen ? 'Skrýt historii měření' : 'Historie měření'}
+            </button>
+            {historyOpen && historyItems.length ? (
+              <ul>
+                {historyItems.map((item) => (
+                  <li key={item.id || item.measured_at}>
+                    <span>{formatDateTime(item.measured_at)}</span>
+                    <strong>
+                      {formatMetric(item.weight_kg, ' kg')} · tuk {formatMetric(item.fat_percent, ' %')} · svaly {formatMetric(item.muscle_mass_kg, ' kg')}
+                    </strong>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
+
+        <p className="withings-info">{infoText}</p>
+      </div>
 
       <style jsx>{`
         .withings-body-dev {

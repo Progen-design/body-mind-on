@@ -64,6 +64,20 @@ export default function ProfileProgressSection({
   const [apiDaily, setApiDaily] = useState([]);
   const [statsLoading, setStatsLoading] = useState(false);
 
+  /*
+   * Rychlá akce „Nové vážení“ v hlavičce profilu.
+   *
+   * Modal na ruční zápis měření patří téhle sekci a zná svoje `onSave`
+   * i překreslení statistik. Lišta nahoře si o něj řekne událostí — stejný
+   * postup jako `bmo:open-shopping-list`. Druhý modal nahoře by znamenal dvě
+   * cesty, jak se měření ukládá.
+   */
+  useEffect(() => {
+    const handler = () => setShowMeasurementModal(true);
+    window.addEventListener('bmo:add-measurement', handler);
+    return () => window.removeEventListener('bmo:add-measurement', handler);
+  }, []);
+
   const registrationMetric = useMemo(() => {
     const metrics = [...(profile?.body_metrics || [])].sort(
       (a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')),

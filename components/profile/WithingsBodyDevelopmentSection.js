@@ -171,6 +171,23 @@ export default function WithingsBodyDevelopmentSection({ profile, onLatestWeight
     loadLatest(token);
   }, [sectionVisible, session?.access_token, loadLatest]);
 
+  /*
+   * Rychlá akce „Synchronizovat teď“ v hlavičce profilu.
+   *
+   * Synchronizace umí jen tahle sekce — má token, `runSync` i stav zprávy.
+   * Lišta nahoře o Withings nic neví, takže si o synchronizaci řekne událostí,
+   * stejně jako to dělá `bmo:open-shopping-list` pro nákupní seznam. Druhá
+   * kopie `runSync` v `profil.js` by znamenala dvě místa, která můžou začít
+   * volat API jinak.
+   */
+  useEffect(() => {
+    const token = session?.access_token;
+    if (!token || !sectionVisible) return undefined;
+    const handler = () => { runSync(token).catch(() => {}); };
+    window.addEventListener('bmo:withings-sync', handler);
+    return () => window.removeEventListener('bmo:withings-sync', handler);
+  }, [sectionVisible, session?.access_token, runSync]);
+
   useEffect(() => {
     const token = session?.access_token;
     if (!token || !latestData || autoSyncDoneRef.current) return;

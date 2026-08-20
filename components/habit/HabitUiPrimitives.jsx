@@ -1,12 +1,18 @@
 /** Sdílené UI primitivy pro panel Dnes a Denní návyky. */
+import { getHabitGridCellStyle } from '../../lib/profile/navykyVzhled.js';
+export { getHabitGridCellStyle };
 
 const PRIMITIVES_STYLE = `
   .habit-ui-card {
     padding: 1rem 1.1rem;
     border-radius: 20px;
-    background: linear-gradient(160deg, rgba(22, 32, 55, 0.98) 0%, rgba(10, 15, 30, 0.98) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+    /* Návrh v2: skleněná karta — stejný gradient a rám jako karty jídla
+       a tělesného vývoje, aby profil vypadal jako jeden systém. */
+    background: linear-gradient(180deg, rgba(19, 22, 34, 0.9) 0%, rgba(14, 17, 26, 0.95) 100%);
+    border: 1px solid rgba(38, 38, 38, 0.9);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
   .habit-ui-card-header {
     display: flex;
@@ -79,9 +85,9 @@ const PRIMITIVES_STYLE = `
     width: 100%;
     min-height: 48px;
     padding: 8px 12px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(15, 23, 42, 0.55);
+    border-radius: 14px;
+    border: 1px solid rgba(38, 38, 38, 0.9);
+    background: rgba(18, 21, 31, 0.8);
     cursor: pointer;
     text-align: left;
     font-family: inherit;
@@ -92,10 +98,17 @@ const PRIMITIVES_STYLE = `
     border-color: rgba(167, 139, 250, 0.35);
     background: rgba(30, 41, 59, 0.75);
   }
+  /* Splněno = zelená se září. V celém profilu je tahle zelená vyhrazená
+     pro „hotovo“, takže se význam nemusí louskat z kontextu. */
   .habit-ui-check-row--done {
-    border-color: rgba(34, 197, 94, 0.35);
-    background: rgba(22, 101, 52, 0.12);
+    border-color: rgba(57, 255, 20, 0.4);
+    background: linear-gradient(180deg, rgba(19, 27, 32, 0.9) 0%, rgba(14, 20, 26, 0.95) 100%);
+    box-shadow: 0 0 18px rgba(57, 255, 20, 0.12);
   }
+  /* Nesplněný návyk se ztlumí, ale zůstane čitelný — není to chyba, jen
+     ještě neudělaná věc. */
+  .habit-ui-check-row:not(.habit-ui-check-row--done) { opacity: 0.72; }
+  .habit-ui-check-row:not(.habit-ui-check-row--done):hover { opacity: 1; }
   .habit-ui-check-row--pending { opacity: 0.85; cursor: wait; }
   .habit-ui-check-row:disabled { cursor: not-allowed; opacity: 0.7; }
   .habit-ui-check-box {
@@ -111,9 +124,10 @@ const PRIMITIVES_STYLE = `
     box-sizing: border-box;
   }
   .habit-ui-check-box--done {
-    border-color: transparent;
-    background: linear-gradient(145deg, #22c55e 0%, #15803d 100%);
-    box-shadow: 0 4px 14px rgba(34, 197, 94, 0.45);
+    border-color: #39ff14;
+    background: #1b3d26;
+    color: #39ff14;
+    box-shadow: 0 0 12px rgba(57, 255, 20, 0.4);
   }
   .habit-ui-check-emoji { font-size: 1.1rem; line-height: 1; flex-shrink: 0; }
   .habit-ui-check-label {
@@ -295,69 +309,6 @@ export function HabitUiButton({
   );
 }
 
-export function getHabitGridCellStyle({
-  completed,
-  isToday,
-  isFuture,
-  isPast,
-  busy,
-  isNegative,
-  cellWidth = 56,
-}) {
-  const readOnly = isFuture || isPast;
-  const base = {
-    appearance: 'none',
-    WebkitAppearance: 'none',
-    MozAppearance: 'none',
-    width: `${cellWidth}px`,
-    height: '56px',
-    padding: 0,
-    margin: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: '11px',
-    cursor: readOnly ? 'default' : 'pointer',
-    border: 'none',
-    outline: 'none',
-    position: 'relative',
-    overflow: 'hidden',
-    transition: 'transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s, opacity 0.18s',
-    touchAction: 'manipulation',
-    opacity: isFuture ? 0.18 : busy ? 0.55 : isPast ? 0.88 : 1,
-    pointerEvents: readOnly ? 'none' : 'auto',
-  };
-  if (completed) {
-    if (isNegative) {
-      return {
-        ...base,
-        background: 'linear-gradient(145deg, #dc2626 0%, #b91c1c 100%)',
-        boxShadow: '0 4px 18px rgba(239, 68, 68, 0.5), 0 0 0 1px rgba(248, 113, 113, 0.3) inset',
-        color: '#fff',
-      };
-    }
-    return {
-      ...base,
-      background: 'linear-gradient(145deg, #22c55e 0%, #15803d 100%)',
-      boxShadow: '0 4px 18px rgba(34, 197, 94, 0.5), 0 0 0 1px rgba(74, 222, 128, 0.3) inset',
-      color: '#fff',
-    };
-  }
-  if (isToday) {
-    return {
-      ...base,
-      background: 'rgba(109, 40, 217, 0.18)',
-      boxShadow: '0 0 0 1.5px rgba(139, 92, 246, 0.5) inset',
-      color: '#a78bfa',
-    };
-  }
-  return {
-    ...base,
-    background: 'rgba(255, 255, 255, 0.055)',
-    boxShadow: '0 0 0 1.5px rgba(255, 255, 255, 0.09) inset',
-    color: '#475569',
-  };
-}
 
 export function HabitUiGridCheckbox({
   completed,

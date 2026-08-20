@@ -2,11 +2,23 @@
 // Používá ho horní „Dnešní plán“ (ProfileTodayPanels) i ostatní dny v týdenním přehledu (PlanViewer),
 // aby měl celý profil jeden vizuální systém a jeden zdroj dat (structured_plan_json).
 import { getMealNutritionDisplay, pairStructMeal } from '../../lib/mealNutritionDisplay.js';
-import MacroRatioChart from '../MacroRatioChart.js';
 import { mealDisplayTitleForStructuredMeal } from '../../lib/mealDisplayNameHelpers.js';
 import { createMealDisplayModelFromStructuredMeal } from '../../lib/mealRecipeDisplay.js';
 import { formatExerciseSetsRepsDisplay } from '../../lib/planDataIntegrity.js';
 import { getCanonicalExercise } from '../../lib/exerciseCanonicalMap';
+import { BookOpen, Check, HelpCircle, RefreshCw, Star } from 'lucide-react';
+import {
+  HOTOVO_RAM,
+  HOTOVO_TEXT,
+  KARTA_HOVER,
+  MAKRO,
+  PANEL,
+  STITEK,
+  TLACITKO,
+  TLACITKO_HLAVNI,
+  akcentJidla,
+  podilyMaker,
+} from '../../lib/profile/designTokens.js';
 
 export function mealTypeLabel(type) {
   const t = String(type || '').toLowerCase();
@@ -18,32 +30,6 @@ export function mealTypeLabel(type) {
 }
 
 
-/**
- * BARVA PODLE TYPU JÍDLA.
- *
- * Karty byly všechny stejně šedé, takže se den četl jako jeden blok textu.
- * Akcent je jediné, co odlišuje snídani od večeře na první pohled — proto
- * jeden odstín na typ, ne duha: barva nese informaci, není dekorace.
- *
- * @param {string} type
- * @returns {string} CSS třída
- */
-function mealAccentClass(type) {
-  // POZOR NA DVA TVARY TÉHOŽ TYPU.
-  // Ze `structured_plan_json` chodí anglický klíč (`breakfast`), z HTML plánu
-  // parsovaný český popisek („Snídaně“) — a tenhle panel dostává to druhé.
-  // První verze porovnávala jen anglické klíče, takže všechny karty spadly na
-  // výchozí šedou a barevný akcent nebyl vidět vůbec.
-  const t = String(type || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '');
-  if (t.startsWith('breakfast') || t.startsWith('snidan')) return 'meal--breakfast';
-  if (t.startsWith('snack') || t.startsWith('svacin')) return 'meal--snack';
-  if (t.startsWith('lunch') || t.startsWith('obed')) return 'meal--lunch';
-  if (t.startsWith('dinner') || t.startsWith('vecer')) return 'meal--dinner';
-  return 'meal--other';
-}
 
 function topIngredients(structMeal, limit = 3) {
   const model = structMeal ? createMealDisplayModelFromStructuredMeal(structMeal) : null;
@@ -85,8 +71,8 @@ export default function ProfileDayMealsPanel({
   const exercises = showWorkout ? filterWorkoutExercises(workout) : [];
 
   return (
-    <div className="profile-day-panel">
-      <div className="profile-today-meals-list">
+    <div className="w-full min-w-0 max-w-full">
+      <div className="grid grid-cols-1 gap-3.5 min-[880px]:grid-cols-2 sm:gap-4">
         {(meals || []).map((meal, mi) => {
           const structMeal = pairStructMeal(structMeals, meal, mi);
           const title = structMeal
@@ -99,91 +85,105 @@ export default function ProfileDayMealsPanel({
           const pinToast = pinToastByKey[mealKey];
           const mealDone = showMealCompletion && isMealCompleted?.(meal, mi);
           const mealPending = showMealCompletion && isMealCompletionPending?.(meal, mi);
+          const akcent = akcentJidla(meal.type);
+          const podily = podilyMaker(nutrition);
           return (
             <article
               key={`${meal.type}-${mi}`}
-              className={`profile-today-meal-card ${mealAccentClass(meal.type)}${mealDone ? ' profile-today-meal-card--done' : ''}`}
+              className={`${KARTA_HOVER} border-l-4 ${akcent.ram} p-4 sm:p-5 flex flex-col gap-3 min-w-0${mealDone ? ` ${HOTOVO_RAM}` : ''}`}
             >
-              <header className="meal-head">
-                <span className="meal-type">{mealTypeLabel(meal.type)}</span>
+              <header className="flex items-start justify-between gap-3">
+                <span className={`${STITEK} ${akcent.stitek}`}>{mealTypeLabel(meal.type)}</span>
                 {nutrition.calories != null ? (
-                  <span className="meal-kcal">{nutrition.calories}<small>kcal</small></span>
+                  <span className="shrink-0 text-sm font-bold text-neutral-300">
+                    {nutrition.calories}
+                    <span className="ml-0.5 text-[10px] font-medium text-neutral-500">kcal</span>
+                  </span>
                 ) : null}
               </header>
 
-              <h4 className="meal-title">{title || mealTypeLabel(meal.type)}</h4>
+              {/* Název je to hlavní na kartě — musí být větší než kalorie (feedback trenéra). */}
+              <h4 className="m-0 text-xl sm:text-[22px] font-bold leading-snug tracking-tight text-white">
+                {title || mealTypeLabel(meal.type)}
+              </h4>
 
-              {(nutrition.protein_g != null || nutrition.carbs_g != null || nutrition.fat_g != null) ? (
-                <ul className="meal-macros" aria-label="Makroživiny">
-                  {nutrition.protein_g != null ? (
-                    <li className="macro macro--p"><b>{nutrition.protein_g}<i>g</i></b><span>Bílkoviny</span></li>
-                  ) : null}
-                  {nutrition.carbs_g != null ? (
-                    <li className="macro macro--c"><b>{nutrition.carbs_g}<i>g</i></b><span>Sacharidy</span></li>
-                  ) : null}
-                  {nutrition.fat_g != null ? (
-                    <li className="macro macro--f"><b>{nutrition.fat_g}<i>g</i></b><span>Tuky</span></li>
-                  ) : null}
-                </ul>
+              {podily ? (
+                <div className="space-y-2">
+                  <div className="flex h-2.5 w-full gap-1 overflow-hidden rounded-full border border-neutral-800 bg-[#181c28] p-0.5">
+                    <div style={{ width: `${podily.bilkoviny}%` }} className={`h-full rounded-sm ${MAKRO.bilkoviny.trida} shadow-[0_0_8px_rgba(0,242,254,0.6)]`} title={`Bílkoviny ${podily.bilkoviny} %`} />
+                    <div style={{ width: `${podily.sacharidy}%` }} className={`h-full rounded-sm ${MAKRO.sacharidy.trida} shadow-[0_0_8px_rgba(34,197,94,0.6)]`} title={`Sacharidy ${podily.sacharidy} %`} />
+                    <div style={{ width: `${podily.tuky}%` }} className={`h-full rounded-sm ${MAKRO.tuky.trida} shadow-[0_0_8px_rgba(132,204,22,0.6)]`} title={`Tuky ${podily.tuky} %`} />
+                  </div>
+                  <ul className="m-0 flex list-none items-center justify-between p-0 text-xs font-semibold text-neutral-300" aria-label="Makroživiny">
+                    <li className="flex items-center gap-1.5">
+                      <span className={`h-2 w-2 rounded-full ${MAKRO.bilkoviny.trida}`} aria-hidden />
+                      <span>B {nutrition.protein_g != null ? `${nutrition.protein_g} g` : `${podily.bilkoviny} %`}</span>
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <span className={`h-2 w-2 rounded-full ${MAKRO.sacharidy.trida}`} aria-hidden />
+                      <span>S {nutrition.carbs_g != null ? `${nutrition.carbs_g} g` : `${podily.sacharidy} %`}</span>
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <span className={`h-2 w-2 rounded-full ${MAKRO.tuky.trida}`} aria-hidden />
+                      <span>T {nutrition.fat_g != null ? `${nutrition.fat_g} g` : `${podily.tuky} %`}</span>
+                    </li>
+                  </ul>
+                </div>
               ) : null}
-
-              <MacroRatioChart
-                protein_g={nutrition.protein_g}
-                carbs_g={nutrition.carbs_g}
-                fat_g={nutrition.fat_g}
-                calories={nutrition.calories}
-                compact
-              />
 
               {ings.length > 0 ? (
-                <p className="meal-ings">{ings.join(' · ')}</p>
+                <p className="m-0 text-xs leading-relaxed text-neutral-400">{ings.join(' · ')}</p>
               ) : null}
 
-              <div className="meal-actions">
+              <div className="mt-auto flex items-center gap-2 pt-1">
                 <button
                   type="button"
-                  className="act act--primary"
+                  className={`${TLACITKO_HLAVNI} min-h-[40px] flex-1 px-3`}
                   onClick={(e) => onRecipeClick?.(mi, e)}
                 >
-                  <span aria-hidden>📖</span> Recept
+                  <BookOpen className="h-4 w-4" aria-hidden /> Recept
                 </button>
                 <button
                   type="button"
-                  className="act"
+                  className={`${TLACITKO} min-h-[40px] w-10 shrink-0 px-0`}
                   onClick={() => onSwapClick?.(mi)}
                   title="Nahradit jiným jídlem"
                   aria-label="Nahradit jiným jídlem"
                 >
-                  <span aria-hidden>🔄</span>
+                  <RefreshCw className="h-4 w-4" aria-hidden />
                 </button>
                 {canPinMeals ? (
                   <button
                     type="button"
-                    className={`act${pinned ? ' act--on' : ''}`}
+                    className={`${TLACITKO} min-h-[40px] w-10 shrink-0 px-0${pinned ? ' border-amber-400/60 text-amber-300' : ''}`}
                     onClick={() => onPinClick?.(mi)}
                     title={pinned ? 'Zahrnuto od dalšího týdne' : 'Zahrnout od dalšího týdne'}
                     aria-label={pinned ? 'Zahrnuto od dalšího týdne' : 'Zahrnout od dalšího týdne'}
                     aria-pressed={pinned}
                   >
-                    <span aria-hidden>{pinned ? '★' : '☆'}</span>
+                    <Star className={`h-4 w-4${pinned ? ' fill-current' : ''}`} aria-hidden />
                   </button>
                 ) : null}
                 {showMealCompletion ? (
-                  <label className={`act act--check${mealDone ? ' act--on' : ''}`} title={mealDone ? 'Splněno' : 'Označit jako splněné'}>
+                  <label
+                    className={`${TLACITKO} relative min-h-[40px] w-10 shrink-0 px-0${mealDone ? ` border-[#39ff14]/60 ${HOTOVO_TEXT}` : ''}`}
+                    title={mealDone ? 'Splněno' : 'Označit jako splněné'}
+                  >
                     <input
                       type="checkbox"
+                      className="absolute inset-0 cursor-pointer opacity-0"
                       checked={!!mealDone}
                       disabled={!!mealPending}
                       onChange={() => onMealCompleteToggle?.(meal, mi)}
                       aria-label={mealDone ? 'Označit jídlo jako nesplněné' : 'Označit jídlo jako splněné'}
                     />
-                    <span aria-hidden>{mealPending ? '…' : '✓'}</span>
+                    {mealPending ? <span aria-hidden>…</span> : <Check className="h-4 w-4" aria-hidden />}
                   </label>
                 ) : null}
               </div>
 
               {pinToast ? (
-                <p className={`meal-toast${pinToast.type === 'error' ? ' meal-toast--error' : ''}`}>
+                <p className={`m-0 text-xs ${pinToast.type === 'error' ? 'text-red-300' : HOTOVO_TEXT}`}>
                   {pinToast.message}
                 </p>
               ) : null}
@@ -194,9 +194,9 @@ export default function ProfileDayMealsPanel({
 
       {showWorkout ? (
         exercises.length > 0 ? (
-          <div className="profile-day-workout">
-            <h4 className="wo-title">Trénink tento den</h4>
-            <ul className="wo-list">
+          <div className="mt-5">
+            <h4 className="m-0 mb-2.5 text-xs font-extrabold uppercase tracking-[0.06em] text-[#c4b5fd]">Trénink tento den</h4>
+            <ul className="m-0 grid list-none grid-cols-1 gap-2 p-0 min-[880px]:grid-cols-2">
               {exercises.map((ex, xi) => {
                 // JEDEN NÁZEV PRO CVIK V CELÉ APLIKACI.
                 // Plán si nesl vlastní `display_name_cs` („Bench press“),
@@ -207,19 +207,19 @@ export default function ProfileDayMealsPanel({
                   || ex.display_name_cs || ex.name_cs || ex.name || 'Cvik';
                 const part = formatExerciseSetsRepsDisplay(ex);
                 return (
-                  <li key={xi} className="wo-item">
-                    <div className="wo-main">
-                      <strong className="wo-name">{name}</strong>
-                      {part ? <span className="wo-badge">{part}</span> : null}
+                  <li key={xi} className={`${PANEL} flex min-w-0 items-center justify-between gap-2.5 px-3 py-2.5`}>
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <strong className="min-w-0 text-[15px] font-bold text-white">{name}</strong>
+                      {part ? <span className="shrink-0 rounded-full border border-[#00f2fe]/35 bg-[#00f2fe]/12 px-2.5 py-0.5 text-xs font-bold text-[#7dd3fc]">{part}</span> : null}
                     </div>
                     <button
                       type="button"
-                      className="wo-help"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#00f2fe]/45 bg-[#00f2fe]/15 text-[#e0f2fe] transition-colors hover:bg-[#00f2fe]/30"
                       onClick={() => onExerciseClick?.(xi)}
                       title="Jak cvik provést"
                       aria-label={`Jak provést cvik ${name}`}
                     >
-                      <span aria-hidden>?</span>
+                      <HelpCircle className="h-4 w-4" aria-hidden />
                     </button>
                   </li>
                 );
@@ -227,268 +227,13 @@ export default function ProfileDayMealsPanel({
             </ul>
           </div>
         ) : (
-          <div className="profile-day-workout">
-            <h4 className="wo-title">Trénink tento den</h4>
-            <p className="wo-rest">Tento den je bez plánovaného tréninku — volno / regenerace.</p>
+          <div className="mt-5">
+            <h4 className="m-0 mb-2.5 text-xs font-extrabold uppercase tracking-[0.06em] text-[#c4b5fd]">Trénink tento den</h4>
+            <p className="m-0 text-sm text-neutral-300">Tento den je bez plánovaného tréninku — volno / regenerace.</p>
           </div>
         )
       ) : null}
 
-      <style jsx>{`
-        /* ── DENNÍ JÍDLA ──────────────────────────────────────────────────────
-           Původní karty byly jednosloupcové, šedé, s třemi tlačítky přes celou
-           šířku pod sebou — na desktopu z toho byl úzký sloupec s prázdnem
-           vpravo a text splýval. Přepracováno na mřížku s barevným akcentem
-           podle typu jídla, výrazným číslem kalorií a kompaktní řadou akcí.
-           Vzor je Whoop/Fitbod: jedno velké číslo, makra jako čipy, ovládání
-           malé a po straně. */
-        .profile-day-panel { width: 100%; max-width: 100%; box-sizing: border-box; min-width: 0; }
-
-        .profile-today-meals-list {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 12px;
-        }
-        /* Dva sloupce až tam, kde se karta nezmáčkne. Mobil zůstává 1 sloupec. */
-        @media (min-width: 880px) {
-          .profile-today-meals-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        }
-
-        .profile-today-meal-card {
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          padding: 14px 14px 14px 18px;
-          border-radius: 14px;
-          border: 1px solid rgba(148, 163, 184, 0.18);
-          background: linear-gradient(180deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.85));
-          min-width: 0;
-          overflow: hidden;
-        }
-        /* Barevný pruh vlevo = typ jídla. Nese informaci, proto je součástí
-           karty, ne dekorace navíc. */
-        .profile-today-meal-card::before {
-          content: '';
-          position: absolute;
-          inset: 0 auto 0 0;
-          width: 4px;
-          background: var(--akcent, #64748b);
-        }
-        .meal--breakfast { --akcent: #f59e0b; --akcent-soft: rgba(245, 158, 11, 0.16); }
-        .meal--snack     { --akcent: #22d3ee; --akcent-soft: rgba(34, 211, 238, 0.16); }
-        .meal--lunch     { --akcent: #a78bfa; --akcent-soft: rgba(167, 139, 250, 0.16); }
-        .meal--dinner    { --akcent: #fb7185; --akcent-soft: rgba(251, 113, 133, 0.16); }
-        .meal--other     { --akcent: #94a3b8; --akcent-soft: rgba(148, 163, 184, 0.16); }
-
-        .profile-today-meal-card--done {
-          border-color: rgba(34, 197, 94, 0.45);
-          background: linear-gradient(180deg, rgba(22, 101, 52, 0.28), rgba(15, 23, 42, 0.85));
-        }
-
-        .meal-head {
-          display: flex;
-          align-items: baseline;
-          justify-content: space-between;
-          gap: 10px;
-        }
-        .meal-type {
-          font-size: 11px;
-          font-weight: 800;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: var(--akcent);
-          padding: 3px 8px;
-          border-radius: 999px;
-          background: var(--akcent-soft);
-        }
-        /* Kalorie jsou údaj, název je jídlo. Do 20. 8. 2026 bylo číslo větší
-           než název a karta se četla jako tabulka čísel — hierarchie otočená. */
-        .meal-kcal {
-          font-size: 15px;
-          font-weight: 700;
-          color: #cbd5e1;
-          line-height: 1;
-          white-space: nowrap;
-        }
-        .meal-kcal small { font-size: 10px; font-weight: 600; color: #94a3b8; margin-left: 3px; }
-
-        .meal-title {
-          margin: 0;
-          font-size: 20px;
-          font-weight: 700;
-          letter-spacing: -0.01em;
-          line-height: 1.25;
-          color: #f8fafc;
-        }
-        @media (max-width: 480px) {
-          .meal-title { font-size: 18px; }
-        }
-
-        /* Makra jako tři čipy místo jedné šedé věty — čitelné na jeden pohled. */
-        .meal-macros {
-          list-style: none;
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 6px;
-          margin: 0;
-          padding: 0;
-        }
-        .macro {
-          display: flex;
-          flex-direction: column;
-          gap: 1px;
-          padding: 6px 8px;
-          border-radius: 9px;
-          background: rgba(2, 6, 23, 0.5);
-          border-left: 3px solid var(--m, #64748b);
-          min-width: 0;
-        }
-        .macro b { font-size: 15px; font-weight: 800; color: #e2e8f0; line-height: 1.1; }
-        .macro b i { font-style: normal; font-size: 10px; color: #94a3b8; margin-left: 1px; }
-        .macro span {
-          font-size: 10px;
-          color: #94a3b8;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        .macro--p { --m: #38bdf8; }
-        .macro--c { --m: #fbbf24; }
-        .macro--f { --m: #f472b6; }
-
-        .meal-ings {
-          margin: 0;
-          font-size: 12px;
-          line-height: 1.45;
-          color: #94a3b8;
-        }
-
-        /* Akce v jedné řadě: text jen u primární, zbytek ikony s aria-label. */
-        .meal-actions {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-top: auto;
-          padding-top: 4px;
-        }
-        .act {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          min-height: 40px;
-          min-width: 40px;
-          padding: 0 10px;
-          border-radius: 10px;
-          border: 1px solid rgba(148, 163, 184, 0.3);
-          background: rgba(15, 23, 42, 0.6);
-          color: #e2e8f0;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: border-color 0.15s ease, background 0.15s ease;
-        }
-        .act:hover { border-color: rgba(148, 163, 184, 0.6); }
-        .act--primary {
-          flex: 1;
-          border-color: rgba(167, 139, 250, 0.5);
-          background: rgba(124, 58, 237, 0.32);
-          color: #f5f3ff;
-          font-weight: 700;
-        }
-        .act--on {
-          border-color: rgba(250, 204, 21, 0.6);
-          color: #fde68a;
-          background: rgba(250, 204, 21, 0.12);
-        }
-        .act--check { position: relative; }
-        .act--check input {
-          position: absolute;
-          inset: 0;
-          opacity: 0;
-          cursor: pointer;
-        }
-        .act--check.act--on {
-          border-color: rgba(34, 197, 94, 0.6);
-          color: #86efac;
-          background: rgba(34, 197, 94, 0.14);
-        }
-
-        .meal-toast { margin: 0; font-size: 12px; color: #86efac; }
-        .meal-toast--error { color: #fca5a5; }
-
-        /* ── TRÉNINK TENTO DEN ────────────────────────────────────────────────
-           Bylo: prázdná buňka, název vlevo, tlačítko „Jak cvik provést“ přes
-           celou šířku. Teď je název dominantní, série/opakování jako badge
-           a nápověda jako ikona — řádek se vejde na jednu výšku. */
-        .profile-day-workout { margin-top: 18px; }
-        .wo-title {
-          margin: 0 0 10px;
-          font-size: 13px;
-          font-weight: 800;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-          color: #c4b5fd;
-        }
-        .wo-rest { margin: 0; font-size: 14px; color: #cbd5e1; }
-        .wo-list {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 8px;
-        }
-        @media (min-width: 880px) {
-          .wo-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        }
-        .wo-item {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 10px;
-          padding: 10px 12px;
-          border-radius: 12px;
-          border: 1px solid rgba(148, 163, 184, 0.18);
-          background: rgba(30, 41, 59, 0.72);
-          min-width: 0;
-        }
-        .wo-main { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
-        .wo-name {
-          font-size: 15px;
-          font-weight: 700;
-          color: #f1f5f9;
-          min-width: 0;
-        }
-        .wo-badge {
-          flex-shrink: 0;
-          padding: 3px 9px;
-          border-radius: 999px;
-          font-size: 12px;
-          font-weight: 700;
-          color: #7dd3fc;
-          background: rgba(56, 189, 248, 0.14);
-          border: 1px solid rgba(56, 189, 248, 0.35);
-          white-space: nowrap;
-        }
-        .wo-help {
-          flex-shrink: 0;
-          width: 34px;
-          height: 34px;
-          border-radius: 50%;
-          border: 1px solid rgba(56, 189, 248, 0.45);
-          background: rgba(14, 165, 233, 0.15);
-          color: #e0f2fe;
-          font-weight: 800;
-          font-size: 15px;
-          cursor: pointer;
-          line-height: 1;
-        }
-        .wo-help:hover { background: rgba(14, 165, 233, 0.3); }
-      `}</style>
     </div>
   );
 }

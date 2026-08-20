@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
-import Header from '../components/Header';
 import Footer from '../components/Footer';
 import WelcomeTour from '../components/WelcomeTour';
 import HabitTracker from '../components/HabitTracker';
@@ -39,6 +38,8 @@ import {
   tridaStavu,
 } from '../components/profile/design/ProfileShellDesign.jsx';
 import { ZALOZKY, odznakZalozky } from '../lib/profile/profilZalozky.js';
+import { kmNeboNull, sjednocenaHistorie, souhrnHistorie } from '../lib/profile/historieTreninku.js';
+import { milniky } from '../lib/profile/milniky.js';
 import { normalizeOccupationForForm, activityToFormLabel, goalToFormLabel, normalizeFrequency, getFrequencyDayRange } from '../lib/preferenceConstants';
 import { useProfileData } from '../hooks/useProfileData';
 import { useHealthData } from '../hooks/useHealthData';
@@ -1893,6 +1894,28 @@ export default function Profil() {
     if (odznak) odznakyZalozek[z.id] = odznak;
   }
 
+  /* Historie tréninků z obou zdrojů. Minuty a popisek si modul nepočítá sám —
+     dostane je z `lib/workoutFormat.js`, aby existoval jediný výklad
+     `duration`/`notes` sdílený se statistikami. */
+  const historieZaznamy = sjednocenaHistorie({
+    rucni: workouts || [],
+    zHodinek: healthData?.workouts?.rows || [],
+    pomocnici: {
+      minuty: getWorkoutDurationMinutes,
+      popisek: getWorkoutDetailLabel,
+      nazev: (w) => WORKOUT_TYPES.find((t) => t.id === (w.workout_type || '').toLowerCase())?.label || w.workout_name || null,
+      poznamka: (w) => parseWorkoutMetaFromNotes(w.notes).userNotes || null,
+    },
+  });
+  const historieSouhrn = souhrnHistorie(historieZaznamy);
+  const profilMilniky = milniky({
+    plan: currentPlan,
+    historie: historieZaznamy,
+    registrovanOd: profile?.user?.created_at || null,
+    mereni: profile?.body_metrics || [],
+    dnesMs: Date.now(),
+  });
+
   const vybratZalozku = (zalozka) => {
     setAktivniZalozka(zalozka.id);
     scrollToProfileAnchor(zalozka.sekce, zalozka.kotva, { openShoppingList: zalozka.otevritNakup === true });
@@ -1901,7 +1924,10 @@ export default function Profil() {
   const polozkyMenu = [
     { id: 'sekce:muj-plan', popisek: 'Můj plán' },
     { id: 'sekce:statistiky', popisek: 'Statistiky a progres' },
+    { id: 'sekce:historie', popisek: 'Historie tréninků' },
     { id: 'sekce:denni-navyky', popisek: 'Denní návyky' },
+    // Odkaz z původní globální lišty — ta se na profilu už nevykresluje.
+    { id: 'odkaz:/komunita', popisek: 'Komunita' },
     { id: 'akce:odhlasit', popisek: 'Odhlásit se' },
     { id: 'akce:zrusit-profil', popisek: 'Zrušit profil' },
   ];
@@ -1909,6 +1935,7 @@ export default function Profil() {
   const vybratPolozkuMenu = (id) => {
     if (id === 'akce:odhlasit') { handleLogout(); return; }
     if (id === 'akce:zrusit-profil') { setShowDeleteAccountModal(true); return; }
+    if (String(id).startsWith('odkaz:')) { router.push(String(id).slice('odkaz:'.length)); return; }
     const sekce = String(id).replace('sekce:', '');
     openProfileSection(sekce);
     if (typeof document !== 'undefined') {
@@ -2027,7 +2054,10 @@ export default function Profil() {
           </div>
         </div>
       )}
-      <Header />
+      {/* Globální `Header.js` se na profilu nevykresluje. Nová horní lišta
+          z návrhu v4 má vlastní slide-out menu a dvě navigace nad sebou
+          si braly čtvrtinu první obrazovky. Odkaz na Komunitu i odhlášení
+          se přesunuly do menu, takže se nic neztratilo. */}
       <main className="page">
         {/* AMBIENTNÍ POZADÍ (návrh v3) — tři rozostřené kruhy, které dodají
             stránce hloubku. Čistá dekorace: `aria-hidden`, `pointer-events-none`
@@ -2857,34 +2887,24 @@ export default function Profil() {
               </button>
               <div id="profile-bubble-body-milniky" role="region" aria-labelledby="profile-bubble-header-milniky" className="profile-bubble-body" data-open={profileOpenSections.has('milniky')}>
             <section className="milestones-block">
-              <h2 className="section-head">Tvé milníky</h2>
+              {/* Milníky nesou datum a u nesplněných i co k nim chybí.
+                  Dřív to byly tři holé odznaky ✓/○ bez kontextu. „První trénink“
+                  se navíc ptal jen na ruční zápisy, takže s Apple Watch zůstával
+                  nesplněný — počítá se teď ze sjednocené historie. */}
               <div className="milestones-list">
-                <div className={`milestone-item ${currentPlan ? 'done' : ''}`}>
-                  <span className="milestone-icon">{currentPlan ? '✓' : '○'}</span>
-                  <span className="milestone-label">Plán připraven</span>
-                </div>
-                <div className={`milestone-item ${workouts.length > 0 ? 'done' : ''}`}>
-                  <span className="milestone-icon">{workouts.length > 0 ? '✓' : '○'}</span>
-                  <span className="milestone-label">První trénink</span>
-                </div>
-                <div className={`milestone-item ${(() => {
-                  const created = profile?.user?.created_at;
-                  if (!created) return false;
-                  const reg = new Date(created);
-                  const now = new Date();
-                  const diffDays = (now - reg) / (1000 * 60 * 60 * 24);
-                  return diffDays >= 7;
-                })() ? 'done' : ''}`}>
-                  <span className="milestone-icon">{(() => {
-                    const created = profile?.user?.created_at;
-                    if (!created) return '○';
-                    const reg = new Date(created);
-                    const now = new Date();
-                    const diffDays = (now - reg) / (1000 * 60 * 60 * 24);
-                    return diffDays >= 7 ? '✓' : '○';
-                  })()}</span>
-                  <span className="milestone-label">Týden s námi</span>
-                </div>
+                {profilMilniky.map((m) => (
+                  <div key={m.id} className={`milestone-item ${m.splneno ? 'done' : ''}`}>
+                    <span className="milestone-icon">{m.splneno ? '✓' : '○'}</span>
+                    <span className="milestone-body">
+                      <span className="milestone-label">{m.popisek}</span>
+                      {m.splneno && m.datum ? (
+                        <span className="milestone-detail">{formatShortDate(m.datum)}</span>
+                      ) : m.detail ? (
+                        <span className="milestone-detail">{m.detail}</span>
+                      ) : null}
+                    </span>
+                  </div>
+                ))}
               </div>
             </section>
               </div>
@@ -3107,35 +3127,70 @@ export default function Profil() {
               </button>
               <div id="profile-bubble-body-historie" role="region" aria-labelledby="profile-bubble-header-historie" className="profile-bubble-body" data-open={profileOpenSections.has('historie')}>
             <section className="card history-section">
-              <h2 className="section-head">Historie tréninků</h2>
-              {workouts.length === 0 ? (
-                <p className="empty-history">Zatím nemáš žádné záznamy. Klikni na „Zapsat trénink“ a první trénink se objeví zde i v přehledu.</p>
+              {/* HISTORIE ČTE OBA ZDROJE.
+                  Do 21. 8. 2026 tahle sekce četla jen `workouts` (ruční zápis),
+                  zatímco „Statistiky a progres“ počítaly i `apple_health_workouts`.
+                  Kdo nosí hodinky a ručně nic nezapisuje, viděl „Zatím nemáš žádné
+                  záznamy“ vedle statistik hlásících pět tréninků a 505 minut.
+                  Sloučení dělá `lib/profile/historieTreninku.js`; záznamy se
+                  nespojují do jednoho, jen se odliší zdrojem — ruční zápis nese
+                  jen datum, takže shodu s měřením z hodinek bychom museli hádat. */}
+              {historieZaznamy.length === 0 ? (
+                <p className="empty-history">
+                  Zatím nemáš žádné záznamy — ani ruční, ani z hodinek. Klikni na „Zapsat trénink“,
+                  nebo připoj Apple Watch a tréninky se sem doplní samy.
+                </p>
               ) : (
                 <>
+                  <p className="history-summary">
+                    {historieSouhrn.celkem}{' '}
+                    {historieSouhrn.celkem === 1 ? 'trénink' : historieSouhrn.celkem <= 4 ? 'tréninky' : 'tréninků'}
+                    {historieSouhrn.minutyCelkem !== null ? ` · ${historieSouhrn.minutyCelkem} min celkem` : ''}
+                    {historieSouhrn.zHodinek > 0 && historieSouhrn.rucnich > 0
+                      ? ` · ${historieSouhrn.rucnich}× ručně, ${historieSouhrn.zHodinek}× z hodinek`
+                      : historieSouhrn.zHodinek > 0
+                        ? ' · vše z hodinek'
+                        : ' · vše zapsané ručně'}
+                  </p>
                   <ul className="workout-list" key={`workouts-${profile?._updated ?? 0}`}>
-                    {(showAllWorkouts ? workouts : workouts.slice(0, 3)).map((w, idx) => {
-                      const { userNotes } = parseWorkoutMetaFromNotes(w.notes);
-                      const minutes = getWorkoutDurationMinutes(w);
-                      const detailLabel = getWorkoutDetailLabel(w);
+                    {(showAllWorkouts ? historieZaznamy : historieZaznamy.slice(0, 5)).map((z) => {
+                      const km = kmNeboNull(z.vzdalenostM);
+                      const detaily = [
+                        z.minuty !== null ? `${z.minuty} min` : null,
+                        z.kcal !== null ? `${Math.round(z.kcal)} kcal` : null,
+                        km !== null ? `${String(km).replace('.', ',')} km` : null,
+                        z.tepPrumer !== null ? `⌀ ${Math.round(z.tepPrumer)} tep` : null,
+                        z.tepMax !== null ? `max ${Math.round(z.tepMax)}` : null,
+                        z.popisek || null,
+                        z.poznamka || null,
+                      ].filter(Boolean);
                       return (
-                        <li key={w.id ?? `w-${idx}-${w.workout_date}`} className="workout-item">
-                          <span className="workout-icon">{WORKOUT_TYPES.find((t) => t.id === (w.workout_type || '').toLowerCase())?.emoji || '🏋️'}</span>
+                        <li key={z.klic} className={`workout-item workout-item--${z.zdroj}`}>
+                          <span className="workout-icon">{z.zdroj === 'hodinky' ? '⌚' : '🏋️'}</span>
                           <div className="workout-info">
-                            <strong>{WORKOUT_TYPES.find((t) => t.id === (w.workout_type || '').toLowerCase())?.label || w.workout_name || 'Trénink'}</strong>
+                            <strong>
+                              {z.nazev}
+                              <span className={`workout-source workout-source--${z.zdroj}`}>
+                                {z.zdroj === 'hodinky' ? 'Apple Watch' : 'ručně'}
+                              </span>
+                            </strong>
                             <span className="workout-meta">
-                              {formatShortDate(w.workout_date)} · {minutes} min
-                              {detailLabel ? ` · ${detailLabel}` : ''}
-                              {userNotes ? ` · ${userNotes}` : ''}
+                              {formatShortDate(z.datum)}
+                              {detaily.length ? ` · ${detaily.join(' · ')}` : ''}
                             </span>
                           </div>
-                          <button type="button" onClick={() => handleDeleteWorkout(w.id)} className="workout-delete" title="Smazat">✕</button>
+                          {z.lzeSmazat ? (
+                            <button type="button" onClick={() => handleDeleteWorkout(z.id)} className="workout-delete" title="Smazat">✕</button>
+                          ) : (
+                            <span className="workout-delete workout-delete--disabled" title="Trénink změřily hodinky — mažeš ho v Apple Health" aria-hidden>⌚</span>
+                          )}
                         </li>
                       );
                     })}
                   </ul>
-                  {workouts.length > 3 && (
+                  {historieZaznamy.length > 5 && (
                     <button type="button" className="workout-expand-btn" onClick={() => setShowAllWorkouts((v) => !v)}>
-                      {showAllWorkouts ? 'Skrýt starší tréninky' : `Zobrazit starší tréninky (${workouts.length - 3})`}
+                      {showAllWorkouts ? 'Skrýt starší tréninky' : `Zobrazit starší tréninky (${historieZaznamy.length - 5})`}
                     </button>
                   )}
                 </>
@@ -3160,7 +3215,6 @@ export default function Profil() {
               </div>
               {statsTab === 'overview' && (
             <section className="kpi-section">
-              <h2 className="section-head">Přehled</h2>
               <div className="kpis-bar">
                 <div className="kpi-item">
                   <span className="kpi-icon">🏋️</span>
@@ -3410,7 +3464,7 @@ export default function Profil() {
       <style jsx>{`
         .page {
           min-height: 100vh;
-          padding: max(8px, env(safe-area-inset-top)) clamp(0.75rem, 4vw, 1.25rem) 100px;
+          padding: max(4px, env(safe-area-inset-top)) clamp(0.75rem, 4vw, 1.25rem) 56px;
           margin: 0;
           background: transparent;
           color: #e2e8f0;
@@ -3599,8 +3653,10 @@ export default function Profil() {
         }
 
         .profile-membership-plan-card {
-          margin-bottom: 16px;
-          padding: 16px 20px 20px;
+          /* Zhuštěno 21. 8. 2026 — profil byl zbytečně dlouhý a mezi kartou
+             uživatele a navigací zbývalo prázdné pásmo přes celou šířku. */
+          margin-bottom: 10px;
+          padding: 12px 16px 14px;
           border-radius: 20px;
           border: 1px solid;
           display: flex;
@@ -4010,10 +4066,10 @@ export default function Profil() {
         .profile-main-stack {
           width: min(1180px, 100%);
           max-width: 1180px;
-          margin: 0 auto 32px;
+          margin: 0 auto 20px;
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 10px;
           padding: 0;
           box-sizing: border-box;
         }
@@ -4360,7 +4416,7 @@ export default function Profil() {
           align-items: center;
           justify-content: center;
           gap: 10px;
-          padding: 14px 24px;
+          padding: 11px 20px;
           background: transparent;
           border: none;
           color: #e2e8f0;
@@ -4740,16 +4796,18 @@ export default function Profil() {
           border: 1px solid rgba(255,255,255,0.08);
         }
         .milestones-block .section-head { margin-bottom: 16px; }
+        /* Mřížka místo řady chipů: milníky teď nesou datum nebo větu o tom,
+           co k nim chybí, a do úzkého chipu se to nevešlo. */
         .milestones-list {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 16px 24px;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 10px;
         }
         .milestone-item {
           display: flex;
           align-items: center;
           gap: 10px;
-          padding: 10px 16px;
+          padding: 10px 14px;
           background: rgba(255,255,255,0.04);
           border-radius: 12px;
           border: 1px solid rgba(255,255,255,0.06);
@@ -4767,6 +4825,8 @@ export default function Profil() {
           background: rgba(255,255,255,0.06);
         }
         .milestone-item.done .milestone-icon { color: #22c55e; background: rgba(34, 197, 94, 0.2); }
+        .milestone-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .milestone-detail { font-size: 11px; color: #64748b; line-height: 1.35; }
         .milestone-label { font-size: 14px; color: #94a3b8; }
         .milestone-item.done .milestone-label { color: #e9d5ff; }
 
@@ -5649,6 +5709,39 @@ export default function Profil() {
           font-size: 15px;
           margin: 0;
         }
+        /* Souhrn nad seznamem — kolik tréninků, kolik minut, odkud. */
+        .history-summary {
+          margin: 0 0 12px;
+          font-size: 12px;
+          color: #94a3b8;
+          font-weight: 600;
+        }
+        /* Ruční zápis a měření z hodinek se musí rozeznat na první pohled —
+           jsou to dva různé zdroje, ne jeden seznam. */
+        .workout-item--hodinky { border-left: 3px solid rgba(0, 242, 254, 0.55); }
+        .workout-item--rucni { border-left: 3px solid rgba(57, 255, 20, 0.45); }
+        .workout-source {
+          margin-left: 8px;
+          padding: 1px 7px;
+          border-radius: 999px;
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+          vertical-align: middle;
+        }
+        .workout-source--hodinky {
+          color: #00f2fe;
+          background: rgba(0, 242, 254, 0.12);
+          border: 1px solid rgba(0, 242, 254, 0.35);
+        }
+        .workout-source--rucni {
+          color: #39ff14;
+          background: rgba(57, 255, 20, 0.10);
+          border: 1px solid rgba(57, 255, 20, 0.30);
+        }
+        /* Trénink z hodinek nemažeme — patří do Apple Health, ne nám. */
+        .workout-delete--disabled { opacity: 0.35; cursor: default; }
         .workout-list {
           list-style: none;
           margin: 0;

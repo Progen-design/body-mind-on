@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { POSITIVE_HABITS, NEGATIVE_HABITS, getHabitById } from '../lib/habits';
 import { getHabitDisplayLabel } from '../lib/habitLabels';
+import { hornMez, maSpodniPul, popiskyOsy } from '../lib/profile/osaNavyku.js';
 import {
   HabitUiButton,
   HabitUiGridCheckbox,
@@ -348,12 +349,9 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
   }, [days, todayStr, positiveHabits, negativeHabits, allLogs]);
 
   const chartMaxVal = useMemo(() => {
-    let maxPos = 0, maxNeg = 0;
-    chartData.forEach(({ posCount, negCount }) => {
-      if (posCount > maxPos) maxPos = posCount;
-      if (negCount > maxNeg) maxNeg = negCount;
-    });
-    return Math.max(1, maxPos, maxNeg);
+    // Horní mez je nejvyšší naměřená hodnota, ne počet všech návyků — u patnácti
+    // sledovaných a třech splněných denně by osa do patnácti stlačila sloupce k nule.
+    return hornMez(chartData);
   }, [chartData]);
   const CHART_BAR_HEIGHT_PX = 360;
   // 50 % / 50 % vůči dennímu plánu – horní (zdravé) a dolní (zlozvyky) polovina stejná výška i měřítko
@@ -518,11 +516,18 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
             </div>
 
             <div className="ht-chart-wrap">
-              <p className="ht-chart-title">Přehled po dnech (zelená / červená)</p>
+              <p className="ht-chart-title">Přehled po dnech</p>
+              <p className="ht-chart-legend">
+                <span className="ht-legend-pos">▲ zdravé splněno</span>
+                {negativeHabits.length > 0 ? <span className="ht-legend-neg">▼ zlozvyky</span> : null}
+              </p>
               <div className="ht-chart-inner">
+                {/* Popisky jsou v absolutní hodnotě. Dolů se počítají zlozvyky, ne
+                    záporné splněné návyky — „−2“ se četlo jako minus dva návyky.
+                    Směr nese legenda pod nadpisem. */}
                 <div className="ht-chart-y-axis">
-                  {Array.from({ length: 2 * chartMaxVal + 1 }, (_, i) => chartMaxVal - i).map((n) => (
-                    <span key={n} className="ht-chart-y-tick">{n}</span>
+                  {popiskyOsy(chartMaxVal, maSpodniPul(negativeHabits.length)).map((t) => (
+                    <span key={t.hodnota} className="ht-chart-y-tick">{t.popisek}</span>
                   ))}
                 </div>
                 <div className="ht-chart-bars" style={{ height: `${CHART_BAR_HEIGHT_PX}px` }}>
@@ -601,9 +606,15 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           box-shadow: 0 20px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.02) inset;
         }
         .ht-chart-title {
-          margin: 0 0 10px; font-size: 0.6875rem; font-weight: 700; color: #94a3b8;
+          margin: 0 0 4px; font-size: 0.6875rem; font-weight: 700; color: #94a3b8;
           letter-spacing: 0.02em; text-transform: uppercase;
         }
+        /* Legenda nese směr, který dřív nesly minusy na ose. */
+        .ht-chart-legend {
+          margin: 0 0 10px; display: flex; gap: 12px; font-size: 0.6875rem; font-weight: 600;
+        }
+        .ht-legend-pos { color: #39ff14; }
+        .ht-legend-neg { color: #fb7185; }
         .ht-chart-inner {
           display: flex; align-items: stretch; gap: 6px; margin-bottom: 6px;
         }

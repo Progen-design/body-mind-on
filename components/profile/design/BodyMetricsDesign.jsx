@@ -77,16 +77,20 @@ function Trend({ hodnota, jednotka, popis, dobreKdyz = 'klesa' }) {
   );
 }
 
-/** Uvítací karta se jménem z profilu. */
-export function UserGreetingCard({ jmeno, program, poslednePřed }) {
+/**
+ * Hlavička sekce Tělesný vývoj.
+ *
+ * JMÉNO TU NENÍ. Dřív se sem vypisovalo křestní jméno jako nadpis, takže „Jan“
+ * stál na jedné stránce dvakrát — v kartě uživatele nahoře a znovu tady. Kdo
+ * si prohlíží svůj vlastní vývoj, nepotřebuje připomenout, jak se jmenuje;
+ * potřebuje vědět, z kdy jsou čísla pod tím.
+ */
+export function UserGreetingCard({ program, poslednePřed }) {
   return (
-    <div className={`${KARTA} p-5 sm:p-6 flex items-center justify-between gap-4`}>
+    <div className={`${KARTA} p-4 sm:p-5 flex items-center justify-between gap-4`}>
       <div className="min-w-0">
-        <div className="text-xs font-semibold uppercase tracking-[0.08em] text-[#00f2fe]/80">
+        <h2 className="m-0 text-xl sm:text-2xl font-extrabold tracking-tight text-white">
           Tělesný vývoj
-        </div>
-        <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold text-white tracking-tight truncate">
-          {jmeno || 'Tvůj profil'}
         </h2>
         <p className="mt-1 text-xs sm:text-sm text-neutral-400">
           {poslednePřed ? `Poslední měření ${poslednePřed}` : 'Zatím bez měření z váhy'}

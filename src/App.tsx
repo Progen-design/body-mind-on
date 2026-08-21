@@ -356,7 +356,15 @@ function AppContent() {
   }, [setBiometrics, setWeightRecords, setLastSyncedText, showToast]);
 
   // Active workout
-  const todayWorkout = workouts.find(w => w.isToday) || workouts[3];
+  // Pri prazdnem planu vracelo workouts[3] undefined a komponenty pak cetly
+  // todayWorkout.title -> bila obrazovka. Prazdny plan je bezny stav (novy
+  // uzivatel, plan se prave generuje), takze musi projit bez padu.
+  const maPlan = meals.length > 0 || workouts.length > 0;
+  const todayWorkout: WorkoutDay = workouts.find(w => w.isToday) || workouts[0] || {
+    // Den bez tréninku je platný stav plánu, ne chybějící data.
+    dayName: '', dayShort: '', title: 'Dnes bez tréninku', durationMin: 0,
+    caloriesBurned: 0, isToday: true, isCompleted: false, focus: '', exercises: []
+  };
 
   // Calculated macros
   const totalCalories = meals.reduce((acc, m) => acc + (m.completed ? m.calories : 0), 0);
@@ -418,6 +426,31 @@ function AppContent() {
             className="px-4 py-2.5 rounded-2xl bg-[#39ff14] text-[#08090d] font-bold text-sm"
           >
             Zkusit znovu
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Plán se po registraci generuje ~30 s a po aktivaci členství chvíli trvá,
+  // než doběhne. Do té doby nemá smysl ukazovat prázdný jídelníček.
+  if (!maPlan) {
+    return (
+      <div className="min-h-screen bg-[#08090d] flex items-center justify-center p-4">
+        <div className="max-w-sm w-full rounded-3xl bg-[#0c1017] border border-cyan-500/25 p-6 text-center">
+          <h1 className="text-xl font-bold text-white flex items-center justify-center gap-1.5 mb-3">
+            <span>Body &amp; Mind</span>
+            <span className="text-[#39ff14] font-extrabold">ON</span>
+          </h1>
+          <p className="text-sm text-slate-300 mb-1">Tvůj plán se připravuje.</p>
+          <p className="text-xs text-slate-500 mb-4">
+            Generování trvá zhruba půl minuty. Až bude hotový, přijde ti i e-mailem.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2.5 rounded-2xl bg-[#39ff14] text-[#08090d] font-bold text-sm"
+          >
+            Zkusit načíst znovu
           </button>
         </div>
       </div>

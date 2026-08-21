@@ -18,7 +18,21 @@ export async function apiFetch<T>(cesta: string, init: RequestInit = {}): Promis
   });
 
   const text = await odpoved.text();
-  const telo = text ? JSON.parse(text) : {};
+
+  let telo: any = {};
+  if (text) {
+    try {
+      telo = JSON.parse(text);
+    } catch {
+      // Server vratil HTML nebo prazdno (vypadek, chybne smerovani). Syrova
+      // hlaska z JSON.parse ("Unexpected token '<'") nema co delat pred
+      // uzivatelem.
+      throw Object.assign(
+        new Error('Server neodpověděl očekávaným způsobem. Zkus to prosím za chvíli znovu.'),
+        { status: odpoved.status }
+      );
+    }
+  }
 
   if (!odpoved.ok) {
     const zprava = telo?.error || telo?.message || `Chyba ${odpoved.status}`;

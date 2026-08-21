@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, ArrowRight, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Loader2, Sparkles } from 'lucide-react';
 import {
   getStep1FieldErrors,
   getStep2FieldErrors,
@@ -16,6 +16,7 @@ import {
   EMAIL_TAKEN_MESSAGE_CS,
   EMAIL_CHECK_FAILED_MESSAGE_CS
 } from '@lib/registration/checkEmailAvailableClient.js';
+import { useKontrolaEmailu } from '../../hooks/useKontrolaEmailu';
 import { Krokovac, Pole, Vicenasobny, Vyber, Popisek, Chyba } from './prvky';
 import { AKTIVITA, CIL, CHYTRA_VAHA, DIETA, DNY, FREKVENCE, KROKY, POHLAVI, STRES, TYP_PRACE } from './volby';
 
@@ -52,7 +53,10 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
   const [stav, setStav] = useState<{ typ: 'chyba' | 'ok'; text: string } | null>(null);
   const [odesilam, setOdesilam] = useState(false);
   const [overuji, setOveruji] = useState(false);
-  const [uctExistuje, setUctExistuje] = useState(false);
+
+  // Dostupnost e-mailu se hlida uz pri psani.
+  const stavEmailu = useKontrolaEmailu(data.email);
+  const uctExistuje = stavEmailu === 'obsazeny';
 
   const zmen = <K extends keyof Formular>(klic: K, hodnota: Formular[K]) => {
     setData((d) => ({ ...d, [klic]: hodnota }));
@@ -109,22 +113,22 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
       return;
     }
 
-    // Obsazeny e-mail zjistime uz na kroku 1. Driv se to poznalo az po odeslani
-    // celeho dotazniku, takze uzivatel vyplnil pet kroku zbytecne.
+    // Dostupnost e-mailu uz zna useKontrolaEmailu z psani. Znovu se pta jen
+    // tehdy, kdyz vysledek jeste nemame (napr. vlozeni schranky a hned klik).
     if (krok === 1) {
-      setOveruji(true);
-      const vysledek = await fetchRegistrationEmailAvailable(data.email);
-      setOveruji(false);
-      if (!vysledek.available) {
-        if (vysledek.networkError || vysledek.rateLimited) {
-          setStav({ typ: 'chyba', text: EMAIL_CHECK_FAILED_MESSAGE_CS });
-          return;
-        }
+      if (uctExistuje) {
         setChyby((c) => ({ ...c, email: EMAIL_TAKEN_MESSAGE_CS }));
-        setUctExistuje(true);
         return;
       }
-      setUctExistuje(false);
+      if (stavEmailu !== 'volny') {
+        setOveruji(true);
+        const vysledek = await fetchRegistrationEmailAvailable(data.email);
+        setOveruji(false);
+        if (!vysledek.available && !vysledek.networkError && !vysledek.rateLimited) {
+          setChyby((c) => ({ ...c, email: EMAIL_TAKEN_MESSAGE_CS }));
+          return;
+        }
+      }
     }
 
     setStav(null);
@@ -147,7 +151,6 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
     // s chybou o poli, ktere je o ctyri kroky zpatky.
     if (/už existuje|už je registrovan|nelze opakovat|already (registered|exists)/i.test(zprava)) {
       setChyby({ email: EMAIL_TAKEN_MESSAGE_CS });
-      setUctExistuje(true);
       setKrok(1);
       return true;
     }
@@ -227,9 +230,25 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
       <Pole id="name" popisek="Jméno" value={data.name} chyba={chyby.name}
         autoComplete="name" placeholder="Jak ti máme říkat"
         onChange={(e) => zmen('name', e.target.value)} />
-      <Pole id="email" popisek="E-mail" type="email" value={data.email} chyba={chyby.email}
-        autoComplete="email" placeholder="tvuj@email.cz"
-        onChange={(e) => zmen('email', e.target.value)} />
+      <div>
+        <Pole id="email" popisek="E-mail" type="email" value={data.email}
+          chyba={chyby.email || (uctExistuje ? EMAIL_TAKEN_MESSAGE_CS : null)}
+          autoComplete="email" placeholder="tvuj@email.cz"
+          onChange={(e) => zmen('email', e.target.value)} />
+        {stavEmailu === 'overuji' && (
+          <p className="mt-1.5 text-[11px] text-slate-500 flex items-center gap-1.5">
+            <Loader2 className="w-3 h-3 animate-spin" /> Ověřuji e-mail…
+          </p>
+        )}
+        {stavEmailu === 'volny' && (
+          <p className="mt-1.5 text-[11px] text-emerald-400 flex items-center gap-1.5">
+            <Check className="w-3 h-3" /> E-mail je volný.
+          </p>
+        )}
+        {stavEmailu === 'nelze' && (
+          <p className="mt-1.5 text-[11px] text-amber-400">{EMAIL_CHECK_FAILED_MESSAGE_CS}</p>
+        )}
+      </div>
       <Pole id="password" popisek="Heslo" type="password" value={data.password} chyba={chyby.password}
         autoComplete="new-password" placeholder="Aspoň 6 znaků"
         onChange={(e) => zmen('password', e.target.value)} />

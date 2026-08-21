@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useMemo } from 'react';
-import { AccountProfile, AuthSession } from '../types';
-import { availableAccounts, defaultAccountId } from '../data/accounts';
+import type { AccountProfile, AuthSession } from '../types';
+import { availableAccounts, defaultAccountId, resolveAccount } from '../data/accounts';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
 interface AuthContextValue {
@@ -25,8 +25,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loggedInAt: new Date().toISOString()
   });
 
-  const account = useMemo(
-    () => availableAccounts.find(a => a.id === session?.accountId) ?? null,
+  /**
+   * Chybějící session znamená odhlášeného uživatele — to je platný stav.
+   * Session s neznámým nebo poškozeným id ale chyba není: dřív spadla na
+   * přihlašovací obrazovku, teď se tiše použije výchozí profil.
+   */
+  const account = useMemo<AccountProfile | null>(
+    () => (session ? resolveAccount(session.accountId) : null),
     [session]
   );
 

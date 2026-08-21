@@ -1,4 +1,4 @@
-import { AccountProfile } from '../types';
+import type { AccountProfile } from '../types';
 
 /**
  * Účty dostupné na tomto zařízení. Reálné přihlášení zatím řeší
@@ -36,3 +36,42 @@ export const availableAccounts: AccountProfile[] = [
 ];
 
 export const defaultAccountId = availableAccounts[0].id;
+
+/** Výchozí profil — sem se spadne, když uložené id nedává smysl. */
+export const defaultAccount: AccountProfile = availableAccounts[0];
+
+/**
+ * Starší nebo cizí identifikátory téhož člověka. Kanonické id zůstává
+ * `acc-jan` schválně: data v localStorage jsou klíčovaná účtem
+ * (`bmon:v1:acc-jan:meals`), takže přejmenování id by uživateli
+ * odřízlo všechno, co má uložené.
+ */
+const ACCOUNT_ID_ALIASES: Record<string, string> = {
+  'jan-prikopa': 'acc-jan',
+  'jan-novak': 'acc-jan',
+  'jan.prikopa': 'acc-jan',
+  'tereza-markova': 'acc-tereza',
+  'martin-dvorak': 'acc-coach'
+};
+
+export function findAccount(accountId: string | null | undefined): AccountProfile | null {
+  if (!accountId || typeof accountId !== 'string') return null;
+
+  const primy = availableAccounts.find(a => a.id === accountId);
+  if (primy) return primy;
+
+  const alias = ACCOUNT_ID_ALIASES[accountId.trim().toLowerCase()];
+  if (alias) {
+    return availableAccounts.find(a => a.id === alias) ?? null;
+  }
+
+  return null;
+}
+
+/**
+ * Účet pro dané id — vždy něco vrátí. Neznámé, poškozené nebo prázdné id
+ * není důvod k chybové hlášce, uživatel dostane výchozí profil.
+ */
+export function resolveAccount(accountId: string | null | undefined): AccountProfile {
+  return findAccount(accountId) ?? defaultAccount;
+}

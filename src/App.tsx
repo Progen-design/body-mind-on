@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from './components/Header';
 import { UserProfileCard } from './components/UserProfileCard';
 import { AICoachBanner } from './components/AICoachBanner';
@@ -35,6 +35,7 @@ import {
   buildSyncedWeightRecord,
   formatLastSynced
 } from './lib/syncEngine';
+import { currentPath, pathForTab, tabFromPath } from './lib/routing';
 
 // Initial Data
 import {
@@ -92,7 +93,8 @@ function AppContent() {
   const scope = account?.id ?? 'guest';
 
   // Central State Management (trvale uložený v localStorage)
-  const [activeTab, setActiveTab] = useState<ActiveTab>('dnes');
+  // Záložka se bere z adresy, ať /profil otevře profil i po přímém vstupu.
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => tabFromPath(currentPath()));
   const [profile] = useLocalStorage<UserProfile>(`${scope}:profile`, initialProfile, mergeObject);
   const [weightRecords, setWeightRecords] = useLocalStorage<Record<string, WeightRecord[]>>(
     `${scope}:weight-records`,
@@ -165,6 +167,30 @@ function AppContent() {
   const latestRecordRef = useRef(latestRecord);
   latestRecordRef.current = latestRecord;
   const isSyncingRef = useRef(false);
+
+  // Adresa a záložka drží krok — sdílený odkaz, tlačítko zpět i přímý vstup.
+  const urlNormalizedRef = useRef(false);
+
+  useEffect(() => {
+    const onPopState = () => setActiveTab(tabFromPath(currentPath()));
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  useEffect(() => {
+    const target = pathForTab(activeTab);
+
+    if (window.location.pathname !== target) {
+      // Prvni beh jen srovna neznamou adresu, at v historii nevznika krok navic.
+      if (urlNormalizedRef.current) {
+        window.history.pushState(null, '', target);
+      } else {
+        window.history.replaceState(null, '', target);
+      }
+    }
+
+    urlNormalizedRef.current = true;
+  }, [activeTab]);
 
   // Handlers: Nutrition & Meals
   const handleToggleMeal = (id: string) => {

@@ -117,7 +117,12 @@ describe('health formatters', () => {
 
   it('formatMetricValue formats Czech numbers', () => {
     assert.match(formatMetricValue(1234.5, 'count'), /1.?235/);
-    assert.equal(formatMetricUnitLabel('count/min'), 'bpm');
+    // „bpm“ je anglická zkratka („beats per minute“) a v české aplikaci stála
+    // bez vysvětlení. Píše se proto „tepů/min“ — a to VŠUDE, ne jen na hlavním
+    // místě: dva tvary téže jednotky by znamenaly dva zdroje pravdy.
+    // Delší popisek layout unese, mapa už obsahuje „ml/kg/min“ a „kcal/h/kg“
+    // (9 znaků) a vykresluje je týž MetricTile i HealthLineChart.
+    assert.equal(formatMetricUnitLabel('count/min'), 'tepů/min');
   });
 
   it('formatMetricTileDate formats short Czech date', () => {

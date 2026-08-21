@@ -167,7 +167,11 @@ export function formatMetricUnitLabel(unit: string | null | undefined): string {
   if (!u || u === 'count') return '';
   const map: Record<string, string> = {
     // „bpm“ je anglická zkratka; v české aplikaci se píše „tepů/min“.
+    // Obě podoby vstupu: `count/min` chodí z HealthKitu, `bpm` z Withings
+    // ingestu (lib/withingsServer.js). Ta ingest mapa zůstává anglicky —
+    // je to kód jednotky ukládaný do DB, ne popisek pro uživatele.
     'count/min': 'tepů/min',
+    bpm: 'tepů/min',
     kcal: 'kcal',
     min: 'min',
     km: 'km',

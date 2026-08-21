@@ -2600,7 +2600,10 @@ const planSectionStyles = `
   .plan-expires-soon-btn {
     background: transparent;
     color: #a78bfa;
-    padding: 0;
+    /* Nulový padding dělal z odkazu 16px vysoký cíl — pod hranicí, kterou
+       jde na dotyk trefit. Vzhled zůstává textový, jen se zvětšila plocha. */
+    padding: 6px 4px;
+    min-height: 28px;
     font-size: inherit;
     font-weight: 600;
     text-decoration: underline;

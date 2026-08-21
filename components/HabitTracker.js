@@ -723,7 +723,8 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           .hg-scroll { -webkit-overflow-scrolling: touch; }
           .hg-days-grid { padding: 12px 16px 18px 12px; }
           .ht-chart-wrap { padding: 20px 16px; }
-          .ht-chart-title { font-size: 0.65rem; }
+          /* 0.65rem = 10,4 px, pod hranicí čitelnosti na mobilu. */
+          .ht-chart-title { font-size: 0.7rem; }
         }
 
         /* ── Top header (sticky při vertikálním scrollu stránky) ── */

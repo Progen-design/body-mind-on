@@ -13,7 +13,7 @@ import { useDailyActivation } from '../../hooks/useDailyActivation.js';
 import WorkoutLogSection from './WorkoutLogSection';
 import { getCanonicalExercise } from '../../lib/exerciseCanonicalMap';
 import { Check, HelpCircle } from 'lucide-react';
-import { HOTOVO_RAM, HOTOVO_TEXT, MAKRO, PANEL, STITEK, TLACITKO, podilyMaker } from '../../lib/profile/designTokens.js';
+import { HOTOVO_RAM, HOTOVO_TEXT, MAKRO, PANEL, STITEK, TLACITKO, TLACITKO_IKONA, podilyMaker } from '../../lib/profile/designTokens.js';
 import { supabase } from '../../lib/supabaseClient';
 
 function envLabelPlain(trainingEnvironmentLabel, structuredPlan) {
@@ -380,7 +380,7 @@ export default function ProfileTodayPanels({
                           dopíše i „celý trénink hotov“ — ruční přepínání
                           toho zaškrtávátka níž zůstává funkční. */}
                       <label
-                        className={`relative flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-colors ${
+                        className={`relative flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-colors ${
                           cvikHotovy
                             ? 'border-[#39ff14]/70 bg-[#39ff14]/20 text-[#39ff14]'
                             : 'border-neutral-700 bg-[#11141e] text-transparent hover:border-neutral-500'
@@ -389,7 +389,7 @@ export default function ProfileTodayPanels({
                       >
                         <input
                           type="checkbox"
-                          className="absolute inset-0 cursor-pointer opacity-0"
+                          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                           checked={cvikHotovy}
                           disabled={cvikCeka}
                           onChange={() => toggleExercise(xi)}
@@ -403,7 +403,7 @@ export default function ProfileTodayPanels({
                     </div>
                     <button
                       type="button"
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#00f2fe]/45 bg-[#00f2fe]/15 text-[#e0f2fe] transition-colors hover:bg-[#00f2fe]/30"
+                      className={TLACITKO_IKONA}
                       onClick={() => onExerciseClick?.(xi)}
                       title="Jak cvik provést"
                       aria-label={`Jak provést cvik ${name}`}
@@ -645,9 +645,12 @@ export default function ProfileTodayPanels({
           color: #86efac;
         }
         .profile-today-workout-check input {
-          width: 18px;
-          height: 18px;
-          accent-color: #22c55e;
+          /* 18 px byl moc malý dotykový cíl. Celý řádek je <label>, takže se
+             dá kliknout kamkoli, ale samotné zaškrtávátko musí jít trefit taky.
+             Limetková místo emeraldové kvůli sladění s v4. */
+          width: 28px;
+          height: 28px;
+          accent-color: #39ff14;
           cursor: pointer;
         }
         .profile-today-workout-list {

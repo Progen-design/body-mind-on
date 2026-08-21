@@ -45,6 +45,8 @@ import {
   KARTA_NEON_JEMNA,
   PREPINAC_AKTIVNI,
   TLACITKO,
+  NEON_TLACITKO,
+  TLACITKO_VYSKA,
 } from '../../../lib/profile/designTokens.js';
 
 const cislo = formatMetrikaCs;
@@ -327,6 +329,7 @@ export function WithingsSyncCard({
   pripojeno,
   synchronizuje,
   poslednePřed,
+  automatickyPred,
   hlaska,
   onSync,
   onConnect,
@@ -359,6 +362,16 @@ export function WithingsSyncCard({
               <span>Poslední přenos: {poslednePřed}</span>
             </div>
           ) : null}
+          {/* Kdy naposledy proběhla AUTOMATICKÁ synchronizace. Není to totéž co
+              „Poslední přenos“ výš — ten je čas měření na váze. Bez tohohle
+              údaje uživatel netuší, jestli se něco děje samo, a mačká ruční
+              tlačítko zbytečně. Automatika běží každou hodinu. */}
+          {automatickyPred ? (
+            <div className="text-[11px] text-neutral-500 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#39ff14]" />
+              <span>Automaticky naposledy: {automatickyPred} · běží každou hodinu</span>
+            </div>
+          ) : null}
           {hlaska ? <p className="text-xs text-amber-300 pt-1">{hlaska}</p> : null}
         </div>
 
@@ -368,7 +381,7 @@ export function WithingsSyncCard({
               type="button"
               onClick={onSync}
               disabled={synchronizuje}
-              className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl bg-[#00f2fe]/15 border border-[#00f2fe]/45 text-[#baf6ff] font-bold text-sm hover:bg-[#00f2fe]/25 disabled:opacity-60 transition-all"
+              className={`${NEON_TLACITKO} ${TLACITKO_VYSKA} px-4 text-sm`}
             >
               <RefreshCw className={`w-4 h-4 ${synchronizuje ? 'animate-spin' : ''}`} />
               {synchronizuje ? 'Synchronizuji…' : 'Synchronizovat teď'}

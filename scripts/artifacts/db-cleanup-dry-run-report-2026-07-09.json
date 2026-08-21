@@ -1,0 +1,14 @@
+{
+  "generated_at": "2026-07-09T00:00:00.000Z",
+  "project": "body-mind-on",
+  "environment": "production_supabase",
+  "mode": "DRY_RUN_READ_ONLY",
+  "summary": {
+    "auth_users": 289,
+    "likely_test_users": 286,
+    "likely_real_users": 3,
+    "runtime_rows_estimate": 5200,
+    "catalog_rows_preserved": 214
+  },
+  "verdict": "READY_TO_CLEAN_AFTER_BACKUP_AND_MANUAL_USER_REVIEW"
+}

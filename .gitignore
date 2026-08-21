@@ -1,34 +1,24 @@
-.next
-node_modules
-.env
-.env.local
-.env.production.local
-.env*.local
-.env.*
-!.env.example
-!.env.local.example
-.vercel
-.specstory
-supabase/.temp/
-
-.local/
-.local/**
-artifacts/
-audits/plan-quality-samples/
-backups/
-scripts/e2e-output/
-scripts/*.log
-scripts/tmp-*.mjs
-.env.stripe-e2e.tmp
-.env.vercel-production.tmp
-.env.vercel-preview.tmp
-.cursor/hooks/.pending-errors.log
-
-tmp/
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
 .env*
+!.env.example
 
-# Cache USDA FoodData Central — dohledatelnost je v migraci, ne tady
+*.sql
+backups/
+zaloha*/
+.env.local
+.env
+
+# Build a cache artefakty - nepatri do gitu
+.next/
 .cache/
- 
-# Zalohy produkcnich dat - obsahuji osobni udaje, do gitu nepatri 
-zaloha-*/ 
+tmp/
+.specstory/
+.vercel/
+
+# *.sql vyse ignoruje i DB migrace - ty sledovat musime
+!supabase/migrations/*.sql

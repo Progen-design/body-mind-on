@@ -1,0 +1,132 @@
+{
+  "production": {
+    "deploymentId": "dpl_4j5625SJcpRsT8EDMNJbYXeWxhFF",
+    "productionCommit": "9559f1d (expected)",
+    "state": "Ready",
+    "hasMacroBarBundle": true,
+    "hasTodayExerciseBundle": false,
+    "commitDeployed": true
+  },
+  "testAccount": {
+    "email": "info+bm-mobile-e2e-1782869498733@bodyandmindon.cz",
+    "registrationStatus": 200,
+    "emailSent": true,
+    "planState": "ready",
+    "plan_id": "b82afae6-688e-4e91-9459-d030a0664ac4",
+    "user_id": "a1f9cac1-e9dd-4716-bf3e-e6adc849a570",
+    "email_sent": true
+  },
+  "mobileE2E": {
+    "profileOpened": true,
+    "horizontalScroll": false,
+    "duplicateNav": false,
+    "todayMealsVisible": true,
+    "todayWorkoutVisible": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-mobile-top.png"
+  },
+  "recipe": {
+    "recipeOpened": true,
+    "ingredientsVisible": true,
+    "instructionsVisible": true,
+    "nutritionVisible": true,
+    "macroPercentagesAllZero": false,
+    "macroBarVisible": true,
+    "horizontalScroll": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-recipe-modal.png"
+  },
+  "mealReplacement": {
+    "oldMeal": "Ovesná kaše s proteinem",
+    "clicked": true,
+    "rateLimitShown": false,
+    "newMeal": "Vejce s pečivem a zeleninou",
+    "mealChanged": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-meal-replaced.png"
+  },
+  "includeNextWeek": {
+    "clicked": true,
+    "feedbackVisible": true,
+    "rateLimitShown": false,
+    "planChangedImmediately": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-meal-pin-feedback.png"
+  },
+  "exerciseModal": {
+    "clicked": true,
+    "correctExercise": true,
+    "jakNaToVisible": true,
+    "dýcháníVisible": true,
+    "tempoVisible": true,
+    "pozorVisible": true,
+    "lehčíVariantaVisible": true,
+    "wrongMediaShown": false,
+    "bigEmptyBox": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-exercise-modal.png"
+  },
+  "accordion": {
+    "onlyOneDayOpen": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-week-accordion.png"
+  },
+  "settings": {
+    "bodyDataSectionVisible": true,
+    "weightEditable": true,
+    "heightEditable": true,
+    "birthDateEditable": true,
+    "ageCalculated": true,
+    "duplicateSaveButtons": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-settings-body-data.png"
+  },
+  "runtimeLogs": {
+    "errors": [],
+    "apiCalls": [
+      {
+        "url": "https://app.bodyandmindon.cz/api/meal-pins",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/plan-replace-meal",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/meal-pins",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/exercise-media?canonical_key=goblet_squat&wger_id=1948&name=Goblet+d%C5%99ep",
+        "status": 200
+      }
+    ],
+    "errors500": 0,
+    "errors429": 0,
+    "authErrors": 0
+  },
+  "tests": {
+    "build": "PASS",
+    "verify:withings-widget-ux": "PASS",
+    "verify:profile-layout-focus": "FAIL",
+    "verify:profile-layout-focus_output": "-decor\",\"top\":0,\"h\":844},{\"tag\":\"HEADER\",\"cls\":\"jsx-432e72e2eebfd395 profile-hero profile-hero--\",\"top\":77,\"h\":245},{\"tag\":\"DIV\",\"cls\":\"jsx-432e72e2eebfd395 profile-membership-plan-car\",\"top\":342,\"h\":550},{\"tag\":\"DIV\",\"cls\":\"jsx-432e72e2eebfd395 profile-bubbles\",\"top\":908,\"h\":5753},{\"tag\":\"ASIDE\",\"cls\":\"jsx-9a8be45847ff247f profile-continuation-upsell\",\"top\":6693,\"h\":163}]\nOK mobile bez horizontálního scrollu\nOK mobile bez program-variants ve foldu\nOK upsell je pod dnešním přehledem — upsell=6693.484375, today=1047.640625\n\n2 CHECK(S) FAILED\n\nFAIL desktop obsahuje Dnes máš jasno — top=null\nFAIL desktop bez velké mezery pod headerem — gap=null, children=[{\"tag\":\"DIV\",\"cls\":\"jsx-432e72e2eebfd395 page-bg-decor\",\"top\":0,\"h\":800},{\"tag\":\"P\",\"cls\":\"jsx-432e72e2eebfd395 loading\",\"top\":97,\"h\":24}]\n",
+    "verify:profile-real-user-bugfixes": "PASS",
+    "verify:profile-today-ux": "PASS",
+    "verify:profile-macro-chart": "PASS",
+    "verify:macro-kcal-consistency": "PASS",
+    "verify:meal-replacement-actions": "PASS",
+    "verify:exercise-assets": "PASS",
+    "verify:training-environment-strictness": "PASS",
+    "verify:email-cta-profile-access": "PASS",
+    "verify:product-consistency": "PASS",
+    "smoke-test:prod": "PASS",
+    "e2e:profile-mobile": "PASS"
+  },
+  "verdict": "READY",
+  "verdictReason": "all critical checks passed",
+  "withingsMobile": {
+    "defaultCollapsed": true,
+    "launcherVisible": true,
+    "overlapsTodayCta": false,
+    "horizontalScroll": false,
+    "collapsedScreenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\withings-collapsed-mobile.png",
+    "expandedOnLauncherClick": true,
+    "technicalOAuthText": false,
+    "expandedScreenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\withings-expanded-mobile.png",
+    "hideReturnsCollapsed": true,
+    "todayCtaStillVisible": true
+  }
+}

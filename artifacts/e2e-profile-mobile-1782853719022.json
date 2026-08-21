@@ -1,0 +1,117 @@
+{
+  "production": {
+    "deploymentId": "dpl_3hqKfKLZorprbjyxXZ45cvESLHVM",
+    "productionCommit": "9559f1d (expected)",
+    "state": "Ready",
+    "hasMacroBarBundle": true,
+    "hasExerciseHandlerBundle": false,
+    "commitDeployed": false
+  },
+  "testAccount": {
+    "email": "info+bm-mobile-e2e-1782853719022@bodyandmindon.cz",
+    "registrationStatus": 200,
+    "emailSent": true,
+    "planState": "ready",
+    "plan_id": "1ff9f674-cebc-4d28-b206-659a7560d8d0",
+    "user_id": "4e2c65fc-9995-467e-95ba-301ae4b053ad",
+    "email_sent": true
+  },
+  "mobileE2E": {
+    "profileOpened": true,
+    "horizontalScroll": false,
+    "duplicateNav": false,
+    "todayMealsVisible": true,
+    "todayWorkoutVisible": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-mobile-top.png"
+  },
+  "recipe": {
+    "recipeOpened": true,
+    "ingredientsVisible": true,
+    "instructionsVisible": true,
+    "nutritionVisible": true,
+    "macroPercentagesAllZero": false,
+    "macroBarVisible": true,
+    "horizontalScroll": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-recipe-modal.png"
+  },
+  "mealReplacement": {
+    "oldMeal": "Cottage s pečivem",
+    "clicked": true,
+    "rateLimitShown": false,
+    "newMeal": "Ovesná kaše s proteinem",
+    "mealChanged": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-meal-replaced.png"
+  },
+  "includeNextWeek": {
+    "clicked": true,
+    "feedbackVisible": true,
+    "rateLimitShown": false,
+    "planChangedImmediately": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-meal-pin-feedback.png"
+  },
+  "exerciseModal": {
+    "clicked": true,
+    "correctExercise": true,
+    "jakNaToVisible": true,
+    "dýcháníVisible": true,
+    "tempoVisible": true,
+    "pozorVisible": true,
+    "lehčíVariantaVisible": true,
+    "wrongMediaShown": false,
+    "bigEmptyBox": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-exercise-modal.png"
+  },
+  "accordion": {
+    "onlyOneDayOpen": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-week-accordion.png"
+  },
+  "settings": {
+    "bodyDataSectionVisible": true,
+    "weightEditable": true,
+    "heightEditable": true,
+    "birthDateEditable": true,
+    "ageCalculated": true,
+    "duplicateSaveButtons": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-settings-body-data.png"
+  },
+  "runtimeLogs": {
+    "errors": [],
+    "apiCalls": [
+      {
+        "url": "https://app.bodyandmindon.cz/api/meal-pins",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/plan-replace-meal",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/meal-pins",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/exercise-media?canonical_key=leg_press&wger_id=154&name=Tlaky+nohama",
+        "status": 200
+      }
+    ],
+    "errors500": 0,
+    "errors429": 0,
+    "authErrors": 0
+  },
+  "tests": {
+    "build": "SKIP",
+    "verify:profile-real-user-bugfixes": "SKIP (set E2E_RUN_VERIFY=1 to run)",
+    "verify:profile-today-ux": "SKIP (set E2E_RUN_VERIFY=1 to run)",
+    "verify:profile-macro-chart": "SKIP (set E2E_RUN_VERIFY=1 to run)",
+    "verify:macro-kcal-consistency": "SKIP (set E2E_RUN_VERIFY=1 to run)",
+    "verify:meal-replacement-actions": "SKIP (set E2E_RUN_VERIFY=1 to run)",
+    "verify:exercise-assets": "SKIP (set E2E_RUN_VERIFY=1 to run)",
+    "verify:training-environment-strictness": "SKIP (set E2E_RUN_VERIFY=1 to run)",
+    "verify:email-cta-profile-access": "SKIP (set E2E_RUN_VERIFY=1 to run)",
+    "verify:product-consistency": "SKIP (set E2E_RUN_VERIFY=1 to run)",
+    "smoke-test:prod": "SKIP (set E2E_RUN_VERIFY=1 to run)",
+    "e2e:profile-mobile": "FAIL"
+  },
+  "verdict": "PARTIAL",
+  "verdictReason": "production bundle missing expected markers"
+}

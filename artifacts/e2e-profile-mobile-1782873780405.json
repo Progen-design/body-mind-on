@@ -1,0 +1,148 @@
+{
+  "production": {
+    "deploymentId": "dpl_DroN3tg8dtMv5SHqoREpmhAyNUub",
+    "productionCommit": "9559f1d (expected)",
+    "state": "Ready",
+    "hasMacroBarBundle": true,
+    "hasTodayExerciseBundle": false,
+    "commitDeployed": true
+  },
+  "testAccount": {
+    "email": "info+bm-mobile-e2e-1782873780405@bodyandmindon.cz",
+    "registrationStatus": 200,
+    "emailSent": true,
+    "planState": "ready",
+    "plan_id": "df0bb134-f2ae-4bb0-a3db-acae8580e87d",
+    "user_id": "8860a91d-113e-4f06-8916-35b1c91c5ef8",
+    "email_sent": true
+  },
+  "mobileE2E": {
+    "profileOpened": true,
+    "horizontalScroll": false,
+    "duplicateNav": false,
+    "todayMealsVisible": true,
+    "todayWorkoutVisible": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-mobile-top.png"
+  },
+  "recipe": {
+    "recipeOpened": true,
+    "ingredientsVisible": true,
+    "instructionsVisible": true,
+    "nutritionVisible": true,
+    "macroPercentagesAllZero": false,
+    "macroBarVisible": true,
+    "horizontalScroll": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-recipe-modal.png"
+  },
+  "mealReplacement": {
+    "oldMeal": "Ovesná kaše s proteinem",
+    "clicked": true,
+    "rateLimitShown": false,
+    "newMeal": "Vejce s pečivem a zeleninou",
+    "mealChanged": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-meal-replaced.png"
+  },
+  "includeNextWeek": {
+    "clicked": true,
+    "feedbackVisible": true,
+    "rateLimitShown": false,
+    "planChangedImmediately": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-meal-pin-feedback.png"
+  },
+  "exerciseModal": {
+    "clicked": true,
+    "correctExercise": true,
+    "jakNaToVisible": true,
+    "dýcháníVisible": true,
+    "tempoVisible": true,
+    "pozorVisible": true,
+    "lehčíVariantaVisible": true,
+    "wrongMediaShown": false,
+    "bigEmptyBox": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-exercise-modal.png"
+  },
+  "accordion": {
+    "onlyOneDayOpen": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-week-accordion.png"
+  },
+  "settings": {
+    "bodyDataSectionVisible": true,
+    "weightEditable": true,
+    "heightEditable": true,
+    "birthDateEditable": true,
+    "ageCalculated": true,
+    "duplicateSaveButtons": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-settings-body-data.png"
+  },
+  "workoutCopy": {
+    "todayWorkoutText": "Dnešní trénink\n\nTyp: Doma s vybavením · Pomůcky: Jednoručky, Lavice\n\n5 cviků · ~60 min\n\nDřepy · 5×10\nJak cvik provést\nVýpady · 5×10 per leg\nJak cvik provést\nBench press · 5×10\nJak cvik provést\nBicepsový zdvih · 5×12\nJak cvik provést\nTricepsové tlaky · 5×12\nJak cvik provést",
+    "hasPerLegEnglish": true,
+    "hasLunges": true,
+    "lungesUseCzech": false,
+    "squatsNoPerLeg": true,
+    "noSalesBlockAfterWorkout": true,
+    "noSalesScreenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-mobile-no-sales-upsell.png",
+    "workoutCopyScreenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-mobile-workout-copy.png",
+    "squatModalFound": true,
+    "lungeModalFound": true,
+    "squatVsLungeModalDifferent": true
+  },
+  "runtimeLogs": {
+    "errors": [],
+    "apiCalls": [
+      {
+        "url": "https://app.bodyandmindon.cz/api/meal-pins",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/plan-replace-meal",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/meal-pins",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/exercise-media?canonical_key=squat&wger_id=111&name=D%C5%99epy",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/exercise-media?canonical_key=squat&wger_id=111&name=D%C5%99epy",
+        "status": 200
+      }
+    ],
+    "errors500": 0,
+    "errors429": 0,
+    "authErrors": 0
+  },
+  "tests": {
+    "build": "PASS",
+    "verify:withings-widget-ux": "PASS",
+    "verify:profile-layout-focus": "PASS",
+    "verify:profile-real-user-bugfixes": "PASS",
+    "verify:profile-today-ux": "PASS",
+    "verify:profile-macro-chart": "PASS",
+    "verify:macro-kcal-consistency": "PASS",
+    "verify:meal-replacement-actions": "PASS",
+    "verify:exercise-assets": "PASS",
+    "verify:training-environment-strictness": "PASS",
+    "verify:email-cta-profile-access": "PASS",
+    "verify:product-consistency": "PASS",
+    "smoke-test:prod": "PASS",
+    "e2e:profile-mobile": "FAIL"
+  },
+  "verdict": "PARTIAL",
+  "verdictReason": "english per leg visible in workout",
+  "withingsMobile": {
+    "defaultCollapsed": true,
+    "launcherVisible": true,
+    "overlapsTodayCta": false,
+    "horizontalScroll": false,
+    "collapsedScreenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\withings-collapsed-mobile.png",
+    "expandedOnLauncherClick": true,
+    "technicalOAuthText": false,
+    "expandedScreenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\withings-expanded-mobile.png",
+    "hideReturnsCollapsed": true,
+    "todayCtaStillVisible": true
+  }
+}

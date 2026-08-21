@@ -1,0 +1,133 @@
+{
+  "production": {
+    "deploymentId": "dpl_4wtnvy78cb8msc2enTryUwTHizHF",
+    "productionCommit": "9559f1d (expected)",
+    "state": "Ready",
+    "hasMacroBarBundle": true,
+    "hasTodayExerciseBundle": false,
+    "commitDeployed": true
+  },
+  "testAccount": {
+    "email": "info+bm-mobile-e2e-1782866608960@bodyandmindon.cz",
+    "registrationStatus": 200,
+    "emailSent": true,
+    "planState": "ready",
+    "plan_id": "b3818475-e7d8-4fd8-812d-3baf9758dc00",
+    "user_id": "c3420e56-ed4e-4550-93f0-81a0b4d53d35",
+    "email_sent": true
+  },
+  "mobileE2E": {
+    "profileOpened": true,
+    "horizontalScroll": false,
+    "duplicateNav": false,
+    "todayMealsVisible": true,
+    "todayWorkoutVisible": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-mobile-top.png"
+  },
+  "recipe": {
+    "recipeOpened": true,
+    "ingredientsVisible": true,
+    "instructionsVisible": true,
+    "nutritionVisible": true,
+    "macroPercentagesAllZero": false,
+    "macroBarVisible": true,
+    "horizontalScroll": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-recipe-modal.png"
+  },
+  "mealReplacement": {
+    "oldMeal": "Ovesná kaše s proteinem",
+    "clicked": true,
+    "rateLimitShown": false,
+    "newMeal": "Vejce s pečivem a zeleninou",
+    "mealChanged": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-meal-replaced.png"
+  },
+  "includeNextWeek": {
+    "clicked": true,
+    "feedbackVisible": true,
+    "rateLimitShown": false,
+    "planChangedImmediately": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-meal-pin-feedback.png"
+  },
+  "exerciseModal": {
+    "clicked": true,
+    "correctExercise": true,
+    "jakNaToVisible": true,
+    "dýcháníVisible": true,
+    "tempoVisible": true,
+    "pozorVisible": true,
+    "lehčíVariantaVisible": true,
+    "wrongMediaShown": false,
+    "bigEmptyBox": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-exercise-modal.png"
+  },
+  "accordion": {
+    "onlyOneDayOpen": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-week-accordion.png"
+  },
+  "settings": {
+    "bodyDataSectionVisible": true,
+    "weightEditable": true,
+    "heightEditable": true,
+    "birthDateEditable": true,
+    "ageCalculated": true,
+    "duplicateSaveButtons": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-settings-body-data.png"
+  },
+  "runtimeLogs": {
+    "errors": [],
+    "apiCalls": [
+      {
+        "url": "https://app.bodyandmindon.cz/api/meal-pins",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/plan-replace-meal",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/meal-pins",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/exercise-media?canonical_key=goblet_squat&wger_id=1948&name=Goblet+d%C5%99ep",
+        "status": 200
+      }
+    ],
+    "errors500": 0,
+    "errors429": 0,
+    "authErrors": 0
+  },
+  "tests": {
+    "build": "PASS",
+    "verify:withings-widget-ux": "FAIL",
+    "verify:withings-widget-ux_output": "sanitize technical OAuth messages\nOK no technical OAuth text in JSX\nOK mobile max height 80vh\nOK desktop max width ~400px\nOK latest API exposes configured\nOK npm script verify:withings-widget-ux\nOK mobile CSS bez fixed width >100vw\nStarting local server at http://127.0.0.1:3024…\nLocal server ready\n\n--- Visual Withings widget checks ---\n\n1 CHECK(S) FAILED\n\n(node:236268) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.\n(Use `node --trace-deprecation ...` to show where the warning was created)\nFAIL visual checks — locator.waitFor: Timeout 45000ms exceeded.\nCall log:\n  - waiting for locator('input.login-input[type=\"email\"], input[type=\"email\"]').first() to be visible\n\n",
+    "verify:profile-layout-focus": "FAIL",
+    "verify:profile-layout-focus_output": "ní\nOK upsell je pod profile-bubbles\nOK upsell je pod Můj plán\nOK PlanViewer scrolluje na profile-continuation-upsell\nOK profil má profile-hero--compact\nOK page padding-top není extrémní\nOK hero inner padding zmenšené\nOK hero nemá min-height 40vh+\nOK Dnes máš jasno v PlanViewer před upsell v profilu\nOK npm script verify:profile-layout-focus\nStarting local server at http://127.0.0.1:3021…\nLocal server ready\n\n--- Visual / E2E layout checks ---\n\n1 CHECK(S) FAILED\n\n(node:226072) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.\n(Use `node --trace-deprecation ...` to show where the warning was created)\nFAIL visual checks — page.waitForFunction: Timeout 120000ms exceeded.\n",
+    "verify:profile-real-user-bugfixes": "PASS",
+    "verify:profile-today-ux": "PASS",
+    "verify:profile-macro-chart": "PASS",
+    "verify:macro-kcal-consistency": "PASS",
+    "verify:meal-replacement-actions": "PASS",
+    "verify:exercise-assets": "PASS",
+    "verify:training-environment-strictness": "PASS",
+    "verify:email-cta-profile-access": "PASS",
+    "verify:product-consistency": "PASS",
+    "smoke-test:prod": "PASS",
+    "e2e:profile-mobile": "PASS"
+  },
+  "verdict": "READY",
+  "verdictReason": "all critical checks passed",
+  "withingsMobile": {
+    "defaultCollapsed": true,
+    "launcherVisible": true,
+    "overlapsTodayCta": false,
+    "horizontalScroll": false,
+    "collapsedScreenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\withings-collapsed-mobile.png",
+    "expandedOnLauncherClick": true,
+    "technicalOAuthText": false,
+    "expandedScreenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\withings-expanded-mobile.png",
+    "hideReturnsCollapsed": true,
+    "todayCtaStillVisible": true
+  }
+}

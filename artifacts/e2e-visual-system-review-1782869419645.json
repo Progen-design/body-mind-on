@@ -1,0 +1,128 @@
+{
+  "baseUrl": "https://app.bodyandmindon.cz",
+  "testAccount": {
+    "email": "info+bm-visual-review-1782869419645@bodyandmindon.cz",
+    "registrationStatus": 200,
+    "planReady": true
+  },
+  "screenshots": {
+    "emailHtml": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\final-email-preview.html",
+    "emailDesktop": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\final-email-desktop.png",
+    "emailMobile": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\final-email-mobile.png",
+    "profileDesktop": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\final-profile-desktop.png",
+    "profileMobile": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\final-profile-mobile.png",
+    "recipeModalMobile": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\final-recipe-modal-mobile.png",
+    "exerciseModalMobile": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\final-exercise-modal-mobile.png"
+  },
+  "checks": {
+    "email CTA login redirect profil": {
+      "ok": true,
+      "detail": "https://app.bodyandmindon.cz/login?redirect=%2Fprofil"
+    },
+    "email HTML CTA Otevřít plán": {
+      "ok": true
+    },
+    "email bez hlavního CTA /start": {
+      "ok": true
+    },
+    "email bez technických protein_g": {
+      "ok": true
+    },
+    "email bez debug activity": {
+      "ok": true
+    },
+    "email brand header": {
+      "ok": true
+    },
+    "email dark card bg": {
+      "ok": true
+    },
+    "email makra viditelná": {
+      "ok": true
+    },
+    "desktop bez horizontálního scrollu": {
+      "ok": true
+    },
+    "desktop bez programových karet": {
+      "ok": true
+    },
+    "desktop pokračovací CTA pod dnešním přehledem": {
+      "ok": true
+    },
+    "desktop brand feeling (sky/lavender v UI)": {
+      "ok": true
+    },
+    "mobile bez horizontálního scrollu": {
+      "ok": true
+    },
+    "mobile bez programových karet": {
+      "ok": true
+    },
+    "mobile pokračovací CTA kompaktní": {
+      "ok": true
+    },
+    "mobile pokračovací CTA nízko pod plánem": {
+      "ok": true
+    },
+    "recept modal čitelný (suroviny + postup)": {
+      "ok": true
+    },
+    "recept modal makra viditelná": {
+      "ok": true
+    },
+    "recept modal bez technických názvů": {
+      "ok": true
+    },
+    "recept modal bez horizontálního scrollu": {
+      "ok": true
+    },
+    "cvik modal čitelný (Jak na to)": {
+      "ok": true
+    },
+    "cvik modal bez debug textu": {
+      "ok": true
+    },
+    "Withings widget viditelný collapsed": {
+      "ok": true
+    },
+    "Withings widget nepřekrývá CTA": {
+      "ok": true
+    },
+    "brand consistency profil gradient": {
+      "ok": true
+    },
+    "brand consistency email + profil dark bg": {
+      "ok": true
+    },
+    "screenshot profileDesktop": {
+      "ok": true,
+      "detail": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\final-profile-desktop.png"
+    },
+    "screenshot profileMobile": {
+      "ok": true,
+      "detail": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\final-profile-mobile.png"
+    },
+    "screenshot recipeModalMobile": {
+      "ok": true,
+      "detail": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\final-recipe-modal-mobile.png"
+    },
+    "screenshot exerciseModalMobile": {
+      "ok": true,
+      "detail": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\final-exercise-modal-mobile.png"
+    },
+    "screenshot emailDesktop": {
+      "ok": true,
+      "detail": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\final-email-desktop.png"
+    },
+    "screenshot emailMobile": {
+      "ok": true,
+      "detail": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\final-email-mobile.png"
+    },
+    "screenshot emailHtml": {
+      "ok": true,
+      "detail": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\final-email-preview.html"
+    }
+  },
+  "verdict": "READY",
+  "verdictReason": "profile, mobile modals and email preview visually consistent"
+}

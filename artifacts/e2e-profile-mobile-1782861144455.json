@@ -1,0 +1,90 @@
+{
+  "production": {
+    "deploymentId": "dpl_9DoWqhCRPtXD6bpM4Baey3APPjos",
+    "productionCommit": "9559f1d (expected)",
+    "state": "Ready",
+    "hasMacroBarBundle": true,
+    "hasTodayExerciseBundle": false,
+    "commitDeployed": true
+  },
+  "testAccount": {
+    "email": "info+bm-mobile-e2e-1782861144455@bodyandmindon.cz",
+    "registrationStatus": 200,
+    "emailSent": true,
+    "planState": "ready",
+    "plan_id": "981aff04-0fa4-46f1-828b-8bad881b4912",
+    "user_id": "96b7ceea-dc3f-43cd-83c3-eb84a1a19bd4",
+    "email_sent": true
+  },
+  "mobileE2E": {
+    "profileOpened": true,
+    "horizontalScroll": false,
+    "duplicateNav": false,
+    "todayMealsVisible": true,
+    "todayWorkoutVisible": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-mobile-top.png"
+  },
+  "recipe": {
+    "recipeOpened": true,
+    "ingredientsVisible": true,
+    "instructionsVisible": true,
+    "nutritionVisible": true,
+    "macroPercentagesAllZero": false,
+    "macroBarVisible": true,
+    "horizontalScroll": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-recipe-modal.png"
+  },
+  "mealReplacement": {
+    "oldMeal": "Ovesná kaše s proteinem",
+    "clicked": true,
+    "rateLimitShown": false,
+    "newMeal": "Vejce s pečivem a zeleninou",
+    "mealChanged": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-meal-replaced.png"
+  },
+  "includeNextWeek": {
+    "clicked": true,
+    "feedbackVisible": true,
+    "rateLimitShown": false,
+    "planChangedImmediately": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-meal-pin-feedback.png"
+  },
+  "exerciseModal": {
+    "clicked": true,
+    "correctExercise": true,
+    "jakNaToVisible": true,
+    "dýcháníVisible": true,
+    "tempoVisible": true,
+    "pozorVisible": true,
+    "lehčíVariantaVisible": true,
+    "wrongMediaShown": false,
+    "bigEmptyBox": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-exercise-modal.png"
+  },
+  "accordion": {},
+  "settings": {},
+  "runtimeLogs": {
+    "errors": [],
+    "apiCalls": [
+      {
+        "url": "https://app.bodyandmindon.cz/api/meal-pins",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/plan-replace-meal",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/meal-pins",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/exercise-media?canonical_key=goblet_squat&wger_id=1948&name=Goblet+d%C5%99ep",
+        "status": 200
+      }
+    ]
+  },
+  "tests": {},
+  "verdict": "FAIL",
+  "verdictReason": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('button:has-text(\"Rozbalit týden\")')\n    - locator resolved to <button type=\"button\" aria-expanded=\"false\" class=\"jsx-undefined plan-week-accordion-toggle\">Rozbalit týden</button>\n  - attempting click action\n    - waiting for element to be visible, enabled and stable\n    - element is visible, enabled and stable\n    - scrolling into view if needed\n    - done scrolling\n    - <div class=\"jsx-c4fb1043d3635ee6 withings-head\">…</div> from <aside aria-label=\"Withings chytrá váha\" class=\"jsx-c4fb1043d3635ee6 withings-floating-card \">…</aside> subtree intercepts pointer events\n  - retrying click action\n    - waiting for element to be visible, enabled and stable\n    - element is visible, enabled and stable\n    - scrolling into view if needed\n    - done scrolling\n    - <aside aria-label=\"Withings chytrá váha\" class=\"jsx-c4fb1043d3635ee6 withings-floating-card \">…</aside> intercepts pointer events\n  - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not stable\n    - retrying click action\n      - waiting 100ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <aside aria-label=\"Withings chytrá váha\" class=\"jsx-c4fb1043d3635ee6 withings-floating-card \">…</aside> intercepts pointer events\n    - retrying click action\n      - waiting 500ms\n    13 × waiting for element to be visible, enabled and stable\n       - element is visible, enabled and stable\n       - scrolling into view if needed\n       - done scrolling\n       - <div class=\"jsx-c4fb1043d3635ee6 withings-head\">…</div> from <aside aria-label=\"Withings chytrá váha\" class=\"jsx-c4fb1043d3635ee6 withings-floating-card \">…</aside> subtree intercepts pointer events\n     - retrying click action\n       - waiting 500ms\n       - waiting for element to be visible, enabled and stable\n       - element is visible, enabled and stable\n       - scrolling into view if needed\n       - done scrolling\n       - <div class=\"jsx-undefined plan-recipe-modal-overlay\">…</div> intercepts pointer events\n     - retrying click action\n       - waiting 500ms\n       - waiting for element to be visible, enabled and stable\n       - element is visible, enabled and stable\n       - scrolling into view if needed\n       - done scrolling\n       - <div class=\"jsx-undefined plan-recipe-modal-overlay\">…</div> intercepts pointer events\n     - retrying click action\n       - waiting 500ms\n       - waiting for element to be visible, enabled and stable\n       - element is visible, enabled and stable\n       - scrolling into view if needed\n       - done scrolling\n       - <aside aria-label=\"Withings chytrá váha\" class=\"jsx-c4fb1043d3635ee6 withings-floating-card \">…</aside> intercepts pointer events\n     - retrying click action\n       - waiting 500ms\n    - waiting for element to be visible, enabled and stable\n    - element is visible, enabled and stable\n    - scrolling into view if needed\n    - done scrolling\n    - <div class=\"jsx-c4fb1043d3635ee6 withings-head\">…</div> from <aside aria-label=\"Withings chytrá váha\" class=\"jsx-c4fb1043d3635ee6 withings-floating-card \">…</aside> subtree intercepts pointer events\n  - retrying click action\n    - waiting 500ms\n    - waiting for element to be visible, enabled and stable\n    - element is visible, enabled and stable\n    - scrolling into view if needed\n    - done scrolling\n    - <div class=\"jsx-undefined plan-recipe-modal-overlay\">…</div> intercepts pointer events\n  - retrying click action\n    - waiting 500ms\n"
+}

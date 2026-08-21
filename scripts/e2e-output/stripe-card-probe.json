@@ -1,0 +1,54 @@
+[
+  {
+    "click": "fail",
+    "err": "locator.click: Element is outside of the viewport\nCall log:\n  - waiting for locator('[data-testid=\"card-accordion-item-b"
+  },
+  {
+    "frameSummary": [
+      {
+        "urlPart": "anon",
+        "inputCount": 5,
+        "cardnumber": 0,
+        "name": ""
+      }
+    ]
+  },
+  {
+    "click": "fail",
+    "err": "locator.click: Element is outside of the viewport\nCall log:\n  - waiting for getByRole('button', { name: /zaplatit kartou"
+  },
+  {
+    "frameSummary": [
+      {
+        "urlPart": "anon",
+        "inputCount": 5,
+        "cardnumber": 0,
+        "name": ""
+      }
+    ]
+  },
+  {
+    "frameSummary": [
+      {
+        "urlPart": "anon",
+        "inputCount": 9,
+        "cardnumber": 1,
+        "name": ""
+      }
+    ]
+  },
+  {
+    "click": "fail",
+    "err": "locator.click: Timeout 5000ms exceeded.\nCall log:\n  - waiting for locator('label[for=\"payment-method-accordion-item-titl"
+  },
+  {
+    "frameSummary": [
+      {
+        "urlPart": "anon",
+        "inputCount": 9,
+        "cardnumber": 1,
+        "name": ""
+      }
+    ]
+  }
+]

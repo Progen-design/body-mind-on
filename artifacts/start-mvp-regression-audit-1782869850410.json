@@ -1,0 +1,136 @@
+{
+  "timestamp": 1782869850410,
+  "baseUrl": "https://app.bodyandmindon.cz",
+  "accounts": {
+    "gym": {
+      "email": "info+bm-mvp-gym-1782869850410@bodyandmindon.cz",
+      "password": "StartMvpAudit2026!",
+      "registrationStatus": 200,
+      "planGenerated": true,
+      "planId": "d1707e3b-b270-49a8-8321-55acdb322a7a",
+      "emailSent": true,
+      "emailCount": 1,
+      "trainingLabel": "Posilovna",
+      "exerciseKeys": [
+        "goblet_squat",
+        "leg_press",
+        "romanian_deadlift",
+        "chest_press",
+        "lat_pulldown",
+        "leg_press",
+        "goblet_squat",
+        "chest_press",
+        "lat_pulldown",
+        "bent_over_row",
+        "bench_press",
+        "bent_over_row",
+        "overhead_press",
+        "lateral_raise",
+        "tricep_extension",
+        "leg_press",
+        "bench_press",
+        "bent_over_row",
+        "romanian_deadlift",
+        "overhead_press",
+        "leg_press",
+        "bench_press",
+        "bent_over_row",
+        "tricep_extension",
+        "bicep_curl"
+      ],
+      "bodyMetricsSaved": false,
+      "workoutDays": [
+        1,
+        2,
+        4,
+        5
+      ],
+      "strictness": {
+        "ok": true,
+        "issues": [],
+        "hasGym": true,
+        "forbidden": []
+      },
+      "labelMatch": true
+    },
+    "home_bodyweight": {
+      "email": "info+bm-mvp-hbw-1782869850410@bodyandmindon.cz",
+      "password": "StartMvpAudit2026!",
+      "registrationStatus": 200,
+      "planGenerated": true,
+      "planId": "ad153d75-106f-4800-a52a-1835947a1991",
+      "emailSent": true,
+      "emailCount": 1,
+      "trainingLabel": "Doma bez vybavení",
+      "exerciseKeys": [
+        "squat",
+        "lunges",
+        "glute_bridge",
+        "plank",
+        "pushup",
+        "pushup",
+        "superman",
+        "pushup",
+        "plank",
+        "lunges",
+        "squat",
+        "pushup",
+        "superman",
+        "plank",
+        "lunges"
+      ],
+      "bodyMetricsSaved": false,
+      "workoutDays": [
+        1,
+        3,
+        5
+      ],
+      "strictness": {
+        "ok": true,
+        "issues": [],
+        "machines": []
+      },
+      "labelMatch": true
+    },
+    "home_equipment": {
+      "email": "info+bm-mvp-heq-1782869850410@bodyandmindon.cz",
+      "password": "StartMvpAudit2026!",
+      "registrationStatus": 200,
+      "planGenerated": true,
+      "planId": "abf50b78-91a6-4b16-ac47-f5f7215d6f2b",
+      "emailSent": true,
+      "emailCount": 1,
+      "trainingLabel": "Doma s vybavením · Jednoručky, Lavice",
+      "exerciseKeys": [
+        "squat",
+        "lunges",
+        "bench_press",
+        "bicep_curl",
+        "tricep_extension",
+        "romanian_deadlift",
+        "bent_over_row",
+        "overhead_press",
+        "lateral_raise",
+        "plank",
+        "squat",
+        "bench_press",
+        "bent_over_row",
+        "romanian_deadlift",
+        "overhead_press"
+      ],
+      "bodyMetricsSaved": false,
+      "workoutDays": [
+        2,
+        4,
+        6
+      ],
+      "strictness": {
+        "ok": true,
+        "issues": [],
+        "hasEquip": true,
+        "machines": []
+      },
+      "labelMatch": true
+    }
+  }
+}

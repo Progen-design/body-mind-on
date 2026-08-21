@@ -1,0 +1,20 @@
+{
+  "production": {},
+  "testAccount": {
+    "email": "info+bm-mobile-e2e-1782862842027@bodyandmindon.cz"
+  },
+  "mobileE2E": {},
+  "recipe": {},
+  "mealReplacement": {},
+  "includeNextWeek": {},
+  "exerciseModal": {},
+  "accordion": {},
+  "settings": {},
+  "runtimeLogs": {
+    "errors": [],
+    "apiCalls": []
+  },
+  "tests": {},
+  "verdict": "FAIL",
+  "verdictReason": "fetch failed"
+}

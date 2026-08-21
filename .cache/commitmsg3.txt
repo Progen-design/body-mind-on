@@ -1,0 +1,18 @@
+fix(api): z.coerce.boolean() delal z "false" true
+
+z.coerce.boolean() vola Boolean(hodnota). Z query stringu prijde vzdycky
+retezec, a "false" je neprazdny retezec, tedy true. Dopady:
+
+- /api/admin/generate-recipes?dry_run=false spustil DRY RUN misto ostreho
+  behu. Vypadalo to, ze generator nic nedela.
+- /api/admin/import-spoonacular?rotate=false rotaci nevypnul
+- /api/admin/recipes/{id}/review s {"approve":"false"} recept SCHVALIL
+  misto zamitnuti
+
+V JSON tele s pravym booleanem to fungovalo spravne, takze se to dalo
+prehlednout dlouho.
+
+Novy lib/httpParams.js bere jen explicitni pravdive hodnoty
+(1/true/yes/ano/on), cokoli jineho je false — u parametru, ktery spousti
+placenou operaci nebo schvaluje obsah, je tohle spravna strana, na kterou
+se mylit. Plus regresni test.

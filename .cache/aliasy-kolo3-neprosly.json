@@ -1,0 +1,203 @@
+{
+  "olive oil": {
+    "cil": "olivovy olej",
+    "receptu_celkem": 11,
+    "meritelnych": 1,
+    "median_odchylky": 0.505,
+    "max_odchylky": 0.505,
+    "recepty": [
+      {
+        "id": 651,
+        "name_cs": "Lehká a jednoduchá alfredo omáčka",
+        "ulozeno": 501,
+        "spocteno": 753.8,
+        "odchylka": 0.505
+      }
+    ],
+    "duvod": "median odchylky 50.5 % > 25 %"
+  },
+  "garlic": {
+    "cil": "cesnek",
+    "receptu_celkem": 6,
+    "meritelnych": 1,
+    "median_odchylky": 0.505,
+    "max_odchylky": 0.505,
+    "recepty": [
+      {
+        "id": 651,
+        "name_cs": "Lehká a jednoduchá alfredo omáčka",
+        "ulozeno": 501,
+        "spocteno": 753.8,
+        "odchylka": 0.505
+      }
+    ],
+    "duvod": "median odchylky 50.5 % > 25 %"
+  },
+  "banany": {
+    "cil": "banan",
+    "receptu_celkem": 4,
+    "meritelnych": 1,
+    "median_odchylky": 0.312,
+    "max_odchylky": 0.312,
+    "recepty": [
+      {
+        "id": 487,
+        "name_cs": "Smoothie s arašídovým máslem a ovocem",
+        "ulozeno": 779,
+        "spocteno": 536,
+        "odchylka": 0.312
+      }
+    ],
+    "duvod": "median odchylky 31.2 % > 25 %"
+  },
+  "butter": {
+    "cil": "maslo",
+    "receptu_celkem": 4,
+    "meritelnych": 1,
+    "median_odchylky": 0.505,
+    "max_odchylky": 0.505,
+    "recepty": [
+      {
+        "id": 651,
+        "name_cs": "Lehká a jednoduchá alfredo omáčka",
+        "ulozeno": 501,
+        "spocteno": 753.8,
+        "odchylka": 0.505
+      }
+    ],
+    "duvod": "median odchylky 50.5 % > 25 %"
+  },
+  "extra virgin olive oil": {
+    "cil": "olivovy olej",
+    "receptu_celkem": 3,
+    "meritelnych": 1,
+    "median_odchylky": 0.396,
+    "max_odchylky": 0.396,
+    "recepty": [
+      {
+        "id": 650,
+        "name_cs": "Čerstvý rajčatový salát s mozzarellou",
+        "ulozeno": 212,
+        "spocteno": 295.9,
+        "odchylka": 0.396
+      }
+    ],
+    "duvod": "median odchylky 39.6 % > 25 %"
+  },
+  "parsley": {
+    "cil": "petrzel",
+    "receptu_celkem": 2,
+    "meritelnych": 1,
+    "median_odchylky": 0.505,
+    "max_odchylky": 0.505,
+    "recepty": [
+      {
+        "id": 651,
+        "name_cs": "Lehká a jednoduchá alfredo omáčka",
+        "ulozeno": 501,
+        "spocteno": 753.8,
+        "odchylka": 0.505
+      }
+    ],
+    "duvod": "median odchylky 50.5 % > 25 %"
+  },
+  "bel gioioso mozzarella": {
+    "cil": "mozzarella",
+    "receptu_celkem": 1,
+    "meritelnych": 1,
+    "median_odchylky": 0.396,
+    "max_odchylky": 0.396,
+    "recepty": [
+      {
+        "id": 650,
+        "name_cs": "Čerstvý rajčatový salát s mozzarellou",
+        "ulozeno": 212,
+        "spocteno": 295.9,
+        "odchylka": 0.396
+      }
+    ],
+    "duvod": "median odchylky 39.6 % > 25 %"
+  },
+  "cracked pepper": {
+    "cil": "pepr",
+    "receptu_celkem": 1,
+    "meritelnych": 0,
+    "median_odchylky": null,
+    "max_odchylky": null,
+    "recepty": [],
+    "kriterium": "smer (recepty nejsou kompletni)",
+    "nejvyssi_prestrel": 1.926,
+    "cil_se_paruje": true,
+    "duvod": "soucet prestrelil ulozene kcal 193 %"
+  },
+  "filet mignon steaks": {
+    "cil": "libove hovezi maso",
+    "receptu_celkem": 1,
+    "meritelnych": 0,
+    "median_odchylky": null,
+    "max_odchylky": null,
+    "recepty": [],
+    "kriterium": "smer (recepty nejsou kompletni)",
+    "nejvyssi_prestrel": 1.926,
+    "cil_se_paruje": true,
+    "duvod": "soucet prestrelil ulozene kcal 193 %"
+  },
+  "kosher salt": {
+    "cil": "sul",
+    "receptu_celkem": 2,
+    "meritelnych": 1,
+    "median_odchylky": 0.396,
+    "max_odchylky": 0.396,
+    "recepty": [
+      {
+        "id": 650,
+        "name_cs": "Čerstvý rajčatový salát s mozzarellou",
+        "ulozeno": 212,
+        "spocteno": 295.9,
+        "odchylka": 0.396
+      }
+    ],
+    "duvod": "median odchylky 39.6 % > 25 %"
+  },
+  "kureci prsa bez kuze a kosti": {
+    "cil": "kureci prsa",
+    "receptu_celkem": 1,
+    "meritelnych": 0,
+    "median_odchylky": null,
+    "max_odchylky": null,
+    "recepty": [],
+    "kriterium": "smer (recepty nejsou kompletni)",
+    "nejvyssi_prestrel": 1.711,
+    "cil_se_paruje": true,
+    "duvod": "soucet prestrelil ulozene kcal 171 %"
+  },
+  "olive oil extra virgin": {
+    "cil": "olivovy olej",
+    "receptu_celkem": 1,
+    "meritelnych": 0,
+    "median_odchylky": null,
+    "max_odchylky": null,
+    "recepty": [],
+    "kriterium": "smer (recepty nejsou kompletni)",
+    "nejvyssi_prestrel": 1.926,
+    "cil_se_paruje": true,
+    "duvod": "soucet prestrelil ulozene kcal 193 %"
+  },
+  "soja omacka s nizkym obsahem sodiku": {
+    "cil": "sojova omacka",
+    "receptu_celkem": 1,
+    "meritelnych": 1,
+    "median_odchylky": 0.497,
+    "max_odchylky": 0.497,
+    "recepty": [
+      {
+        "id": 118,
+        "name_cs": "Kuřecí hnědá \"smažená\" rýže",
+        "ulozeno": 468,
+        "spocteno": 700.48,
+        "odchylka": 0.497
+      }
+    ],
+    "duvod": "median odchylky 49.7 % > 25 %"
+  }
+}

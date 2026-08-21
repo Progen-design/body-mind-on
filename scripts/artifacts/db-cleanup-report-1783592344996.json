@@ -1,0 +1,718 @@
+{
+  "generated_at": "2026-07-09T10:19:04.995Z",
+  "mode": "DRY_RUN",
+  "keep_auth_emails": [
+    "prikopa@pro-security.cz"
+  ],
+  "before_counts": [
+    {
+      "table": "habit_logs",
+      "count": 0
+    },
+    {
+      "table": "workouts",
+      "count": 0
+    },
+    {
+      "table": "user_meal_pins",
+      "count": 0
+    },
+    {
+      "table": "user_habits",
+      "count": 0
+    },
+    {
+      "table": "user_checkins",
+      "count": 0
+    },
+    {
+      "table": "user_ai_memory",
+      "count": 2
+    },
+    {
+      "table": "ai_messages",
+      "count": 2
+    },
+    {
+      "table": "ai_content_drafts",
+      "count": 0
+    },
+    {
+      "table": "ai_logs",
+      "count": 10
+    },
+    {
+      "table": "ai_tasks",
+      "count": 4
+    },
+    {
+      "table": "ai_events",
+      "count": 2
+    },
+    {
+      "table": "withings_measurements",
+      "count": 0
+    },
+    {
+      "table": "withings_body_snapshots",
+      "count": 0
+    },
+    {
+      "table": "withings_oauth_states",
+      "count": 0
+    },
+    {
+      "table": "withings_connections",
+      "count": 0
+    },
+    {
+      "table": "ai_generated_plans",
+      "count": 2
+    },
+    {
+      "table": "body_metrics",
+      "count": 2
+    },
+    {
+      "table": "memberships",
+      "count": 2
+    },
+    {
+      "table": "community_replies",
+      "count": 0
+    },
+    {
+      "table": "community_posts",
+      "count": 0
+    },
+    {
+      "table": "nutrition_logs",
+      "count": 0
+    },
+    {
+      "table": "fitness_goals",
+      "count": 0
+    },
+    {
+      "table": "progress_tracking",
+      "count": 0
+    },
+    {
+      "table": "subscriptions",
+      "count": 0
+    },
+    {
+      "table": "ai_agents_logs",
+      "count": 0
+    },
+    {
+      "table": "trainer_calendar_tokens",
+      "count": 0
+    },
+    {
+      "table": "openai_response_cache",
+      "count": 2
+    },
+    {
+      "table": "openai_daily_usage",
+      "count": 1
+    },
+    {
+      "table": "meal_metadata_cache",
+      "count": 0
+    },
+    {
+      "table": "exercise_metadata_cache",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_ai_agents",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_body_metrics",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_exercise_cache",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_meal_cache",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_memberships",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_plans",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_profiles",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_user_habits",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_users",
+      "count": 0
+    },
+    {
+      "table": "recipes_catalog",
+      "count": 161
+    },
+    {
+      "table": "exercise_asset_registry",
+      "count": 41
+    },
+    {
+      "table": "ai_agents",
+      "count": 6
+    },
+    {
+      "table": "ai_agent_settings",
+      "count": 2
+    },
+    {
+      "table": "ai_agent_tools",
+      "count": 0
+    },
+    {
+      "table": "ai_agent_versions",
+      "count": 0
+    },
+    {
+      "table": "ai_trigger_rules",
+      "count": 7
+    },
+    {
+      "table": "ai_task_types",
+      "count": 12
+    },
+    {
+      "table": "ai_executor_bindings",
+      "count": 6
+    },
+    {
+      "table": "ai_context_profiles",
+      "count": 4
+    },
+    {
+      "table": "ai_supporting_documents",
+      "count": 0
+    },
+    {
+      "table": "ai_config",
+      "count": 1
+    },
+    {
+      "table": "community_categories",
+      "count": 4
+    },
+    {
+      "table": "trainer_alert_state",
+      "count": 1
+    },
+    {
+      "table": "registrations",
+      "count": 0
+    },
+    {
+      "table": "users",
+      "count": 0
+    },
+    {
+      "table": "profiles",
+      "count": 2
+    }
+  ],
+  "after_counts": [
+    {
+      "table": "habit_logs",
+      "count": 0
+    },
+    {
+      "table": "workouts",
+      "count": 0
+    },
+    {
+      "table": "user_meal_pins",
+      "count": 0
+    },
+    {
+      "table": "user_habits",
+      "count": 0
+    },
+    {
+      "table": "user_checkins",
+      "count": 0
+    },
+    {
+      "table": "user_ai_memory",
+      "count": 2
+    },
+    {
+      "table": "ai_messages",
+      "count": 2
+    },
+    {
+      "table": "ai_content_drafts",
+      "count": 0
+    },
+    {
+      "table": "ai_logs",
+      "count": 10
+    },
+    {
+      "table": "ai_tasks",
+      "count": 4
+    },
+    {
+      "table": "ai_events",
+      "count": 2
+    },
+    {
+      "table": "withings_measurements",
+      "count": 0
+    },
+    {
+      "table": "withings_body_snapshots",
+      "count": 0
+    },
+    {
+      "table": "withings_oauth_states",
+      "count": 0
+    },
+    {
+      "table": "withings_connections",
+      "count": 0
+    },
+    {
+      "table": "ai_generated_plans",
+      "count": 2
+    },
+    {
+      "table": "body_metrics",
+      "count": 2
+    },
+    {
+      "table": "memberships",
+      "count": 2
+    },
+    {
+      "table": "community_replies",
+      "count": 0
+    },
+    {
+      "table": "community_posts",
+      "count": 0
+    },
+    {
+      "table": "nutrition_logs",
+      "count": 0
+    },
+    {
+      "table": "fitness_goals",
+      "count": 0
+    },
+    {
+      "table": "progress_tracking",
+      "count": 0
+    },
+    {
+      "table": "subscriptions",
+      "count": 0
+    },
+    {
+      "table": "ai_agents_logs",
+      "count": 0
+    },
+    {
+      "table": "trainer_calendar_tokens",
+      "count": 0
+    },
+    {
+      "table": "openai_response_cache",
+      "count": 2
+    },
+    {
+      "table": "openai_daily_usage",
+      "count": 1
+    },
+    {
+      "table": "meal_metadata_cache",
+      "count": 0
+    },
+    {
+      "table": "exercise_metadata_cache",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_ai_agents",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_body_metrics",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_exercise_cache",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_meal_cache",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_memberships",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_plans",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_profiles",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_user_habits",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_users",
+      "count": 0
+    },
+    {
+      "table": "recipes_catalog",
+      "count": 161
+    },
+    {
+      "table": "exercise_asset_registry",
+      "count": 41
+    },
+    {
+      "table": "ai_agents",
+      "count": 6
+    },
+    {
+      "table": "ai_agent_settings",
+      "count": 2
+    },
+    {
+      "table": "ai_agent_tools",
+      "count": 0
+    },
+    {
+      "table": "ai_agent_versions",
+      "count": 0
+    },
+    {
+      "table": "ai_trigger_rules",
+      "count": 7
+    },
+    {
+      "table": "ai_task_types",
+      "count": 12
+    },
+    {
+      "table": "ai_executor_bindings",
+      "count": 6
+    },
+    {
+      "table": "ai_context_profiles",
+      "count": 4
+    },
+    {
+      "table": "ai_supporting_documents",
+      "count": 0
+    },
+    {
+      "table": "ai_config",
+      "count": 1
+    },
+    {
+      "table": "community_categories",
+      "count": 4
+    },
+    {
+      "table": "trainer_alert_state",
+      "count": 1
+    },
+    {
+      "table": "registrations",
+      "count": 0
+    },
+    {
+      "table": "users",
+      "count": 0
+    },
+    {
+      "table": "profiles",
+      "count": 2
+    }
+  ],
+  "auth": {
+    "total": 2,
+    "delete": 2,
+    "keep": 0
+  },
+  "actions": [
+    {
+      "phase": "truncate_runtime",
+      "table": "habit_logs",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "workouts",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "user_meal_pins",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "user_habits",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "user_checkins",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "user_ai_memory",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "ai_messages",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "ai_content_drafts",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "ai_logs",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "ai_tasks",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "ai_events",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "withings_measurements",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "withings_body_snapshots",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "withings_oauth_states",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "withings_connections",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "ai_generated_plans",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "body_metrics",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "memberships",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "community_replies",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "community_posts",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "nutrition_logs",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "fitness_goals",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "progress_tracking",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "subscriptions",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "ai_agents_logs",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "trainer_calendar_tokens",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "openai_response_cache",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "openai_daily_usage",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "meal_metadata_cache",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "exercise_metadata_cache",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "_backup_2026_06_02_ai_agents",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "_backup_2026_06_02_body_metrics",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "_backup_2026_06_02_exercise_cache",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "_backup_2026_06_02_meal_cache",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "_backup_2026_06_02_memberships",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "_backup_2026_06_02_plans",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "_backup_2026_06_02_profiles",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "_backup_2026_06_02_user_habits",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "_backup_2026_06_02_users",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "avatars_bucket",
+      "bucket": "avatars",
+      "removed": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "1e4b68ed-dcc9-4c06-9601-65c645e3a171",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "8f35934c-cc5c-4675-8960-7865bcbf7584",
+      "dryRun": true
+    }
+  ]
+}

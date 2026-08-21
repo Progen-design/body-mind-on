@@ -1,0 +1,288 @@
+{
+  "profile_id": "08-sedava-prace",
+  "profile_label": "Sedavá práce",
+  "input_summary": {
+    "goal": "udrzovani",
+    "training_environment": "home_equipment",
+    "diet_type": "standard",
+    "freq_choice": "3-4",
+    "has_health_notes": false
+  },
+  "plan_summary": {
+    "targets": {
+      "calories_per_day": 1653,
+      "protein_g": 93,
+      "carbs_g": 206,
+      "fat_g": 51
+    },
+    "days": [
+      {
+        "day": "Pondělí",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Ovesná kaše PB a J přes noc",
+            "kcal": 496,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Plněný losos s tapenádou z rajčat a oliv",
+            "kcal": 661,
+            "source": "spoonacular"
+          },
+          {
+            "type": "dinner",
+            "name": "Losos s pečenou zeleninou",
+            "kcal": 496,
+            "source": "spoonacular"
+          }
+        ],
+        "workout_minutes": 60,
+        "exercises": [
+          {
+            "name": "Dřepy",
+            "sets": 4,
+            "reps": "10-12",
+            "canonical_key": "squat"
+          },
+          {
+            "name": "Bench press",
+            "sets": 4,
+            "reps": "10",
+            "canonical_key": "bench_press"
+          },
+          {
+            "name": "Přítahy v předklonu",
+            "sets": 4,
+            "reps": "10",
+            "canonical_key": "bent_over_row"
+          },
+          {
+            "name": "Rumunský mrtvý tah",
+            "sets": 4,
+            "reps": "10",
+            "canonical_key": "romanian_deadlift"
+          },
+          {
+            "name": "Tlaky nad hlavu",
+            "sets": 4,
+            "reps": "10",
+            "canonical_key": "overhead_press"
+          }
+        ]
+      },
+      {
+        "day": "Úterý",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Chlazená švýcarská ovesná kaše",
+            "kcal": 496,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Kuře Piri Piri s pikantní rýží",
+            "kcal": 661,
+            "source": "spoonacular"
+          },
+          {
+            "type": "dinner",
+            "name": "Kuřecí těstoviny Primavera - styl farmářky Flower Patch",
+            "kcal": 496,
+            "source": "spoonacular"
+          }
+        ],
+        "exercises": []
+      },
+      {
+        "day": "Středa",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Zdravá jihozápadní ovesná kaše",
+            "kcal": 496,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Grilovaný losos s brambory",
+            "kcal": 661,
+            "source": "meal_cache"
+          },
+          {
+            "type": "dinner",
+            "name": "Chili mac z instantního hrnce",
+            "kcal": 496,
+            "source": "spoonacular"
+          }
+        ],
+        "workout_minutes": 60,
+        "exercises": [
+          {
+            "name": "Bicepsový zdvih",
+            "sets": 3,
+            "reps": "12",
+            "canonical_key": "bicep_curl"
+          },
+          {
+            "name": "Výpady",
+            "sets": 4,
+            "reps": "10 per leg",
+            "canonical_key": "lunges"
+          },
+          {
+            "name": "Rozpažky",
+            "sets": 3,
+            "reps": "12",
+            "canonical_key": "lateral_raise"
+          },
+          {
+            "name": "Prkno",
+            "sets": 3,
+            "reps": null,
+            "canonical_key": "plank"
+          },
+          {
+            "name": "Tricepsové tlaky",
+            "sets": 4,
+            "reps": "12",
+            "canonical_key": "tricep_extension"
+          }
+        ]
+      },
+      {
+        "day": "Čtvrtek",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Jogurtový parfait",
+            "kcal": 496,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Jarní salát s vlašským ořechovým vinaigretterem",
+            "kcal": 661,
+            "source": "spoonacular"
+          },
+          {
+            "type": "dinner",
+            "name": "Italské těstoviny s tuňákem",
+            "kcal": 496,
+            "source": "spoonacular"
+          }
+        ],
+        "exercises": []
+      },
+      {
+        "day": "Pátek",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Ovesná kaše s arašídovým máslem a čokoládou",
+            "kcal": 496,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Hovězí maso s quinoou",
+            "kcal": 661,
+            "source": "meal_cache"
+          },
+          {
+            "type": "dinner",
+            "name": "Těstoviny se sýrem a masem",
+            "kcal": 496,
+            "source": "spoonacular"
+          }
+        ],
+        "workout_minutes": 60,
+        "exercises": [
+          {
+            "name": "Přítahy v předklonu",
+            "sets": 3,
+            "reps": "10",
+            "canonical_key": "bent_over_row"
+          },
+          {
+            "name": "Rumunský mrtvý tah",
+            "sets": 3,
+            "reps": "10",
+            "canonical_key": "romanian_deadlift"
+          },
+          {
+            "name": "Tlaky nad hlavu",
+            "sets": 3,
+            "reps": "10",
+            "canonical_key": "overhead_press"
+          },
+          {
+            "name": "Výpady",
+            "sets": 3,
+            "reps": "10 per leg",
+            "canonical_key": "lunges"
+          },
+          {
+            "name": "Bicepsový zdvih",
+            "sets": 3,
+            "reps": "12",
+            "canonical_key": "bicep_curl"
+          }
+        ]
+      },
+      {
+        "day": "Sobota",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Ovesné palačinky s ovocem",
+            "kcal": 496,
+            "source": "meal_cache"
+          },
+          {
+            "type": "lunch",
+            "name": "Krůtí prsa s rýží",
+            "kcal": 661,
+            "source": "meal_cache"
+          },
+          {
+            "type": "dinner",
+            "name": "Těstoviny se sýrem a masem",
+            "kcal": 496,
+            "source": "spoonacular"
+          }
+        ],
+        "exercises": []
+      },
+      {
+        "day": "Neděle",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Ovesná kaše s broskvemi a kokosovou smetanou",
+            "kcal": 496,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Sýrové pikantní kuře a rýže z pomalého hrnce",
+            "kcal": 661,
+            "source": "spoonacular"
+          },
+          {
+            "type": "dinner",
+            "name": "Pečené kuře a hnědá rýžová polévka",
+            "kcal": 496,
+            "source": "spoonacular"
+          }
+        ],
+        "exercises": []
+      }
+    ]
+  },
+  "technical_hints": [
+    "Žádné automatické varování z heuristik."
+  ]
+}

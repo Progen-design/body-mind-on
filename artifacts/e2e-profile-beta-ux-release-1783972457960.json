@@ -1,0 +1,111 @@
+{
+  "baseUrl": "https://app.bodyandmindon.cz",
+  "email": "janprikopa@gmail.com",
+  "results": {
+    "habit_label_diet": {
+      "ok": true,
+      "detail": ""
+    },
+    "habit_label_sleep": {
+      "ok": true,
+      "detail": ""
+    },
+    "habit_labels_no_raw_ids": {
+      "ok": true,
+      "detail": ""
+    },
+    "single_feedback_button": {
+      "ok": true,
+      "detail": ""
+    },
+    "optimistic_checkbox_toggle": {
+      "ok": true,
+      "detail": ""
+    },
+    "optimistic_progress_update": {
+      "ok": true,
+      "detail": ""
+    },
+    "desktop_modal_portal_body": {
+      "ok": true,
+      "detail": "BODY"
+    },
+    "desktop_modal_scrollY_unchanged": {
+      "ok": false,
+      "detail": "1681 -> locked 3746"
+    },
+    "desktop_modal_in_viewport": {
+      "ok": true,
+      "detail": "{\"sheetBox\":{\"x\":260,\"y\":24,\"width\":760,\"height\":672},\"viewport\":{\"width\":1280,\"height\":720}}"
+    },
+    "desktop_cta_visible": {
+      "ok": true,
+      "detail": ""
+    },
+    "desktop_modal_scrollY_restored": {
+      "ok": false,
+      "detail": "1681 -> 3746"
+    },
+    "desktop_modal_focus_return": {
+      "ok": true,
+      "detail": ""
+    },
+    "workout_preview": {
+      "ok": true,
+      "detail": ""
+    },
+    "workout_preview_has_exercises": {
+      "ok": true,
+      "detail": ""
+    },
+    "workout_confirmed": {
+      "ok": false,
+      "detail": ""
+    },
+    "workout_restored": {
+      "ok": false,
+      "detail": ""
+    },
+    "duplicate_restore_idempotent": {
+      "ok": false,
+      "detail": "no restore button"
+    },
+    "mobile_no_horizontal_scroll": {
+      "ok": true,
+      "detail": ""
+    },
+    "mobile_modal_portal_body": {
+      "ok": true,
+      "detail": "BODY"
+    },
+    "mobile_modal_scrollY_unchanged": {
+      "ok": false,
+      "detail": "2936 -> locked 5236"
+    },
+    "mobile_modal_in_viewport": {
+      "ok": true,
+      "detail": "{\"sheetBox\":{\"x\":0,\"y\":84.40625,\"width\":390,\"height\":759.59375},\"viewport\":{\"width\":390,\"height\":844}}"
+    },
+    "mobile_modal_bottom_sheet": {
+      "ok": true,
+      "detail": ""
+    },
+    "mobile_cta_visible": {
+      "ok": true,
+      "detail": ""
+    },
+    "mobile_modal_scrollY_restored": {
+      "ok": false,
+      "detail": "2936 -> 5236"
+    },
+    "mobile_modal_focus_return": {
+      "ok": true,
+      "detail": ""
+    },
+    "mobile_tap_targets": {
+      "ok": true,
+      "detail": ""
+    }
+  },
+  "failed": 7
+}

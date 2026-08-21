@@ -1,0 +1,15 @@
+{
+  "testEmail": "info+bm-training-e2e-1782857271942@bodyandmindon.cz",
+  "environmentStored": null,
+  "equipmentStored": [],
+  "workoutDaysStored": null,
+  "forbiddenGymMachinesFound": [],
+  "unselectedEquipmentFound": [],
+  "pureBodyweightOnlyDespiteEquipment": false,
+  "profileEnvironmentLabel": null,
+  "profileEquipmentLabel": null,
+  "structuredTrainingLabel": null,
+  "exerciseCanonicalKeys": [],
+  "verdict": "FAIL",
+  "verdictReason": "Registration failed HTTP 500: {}"
+}

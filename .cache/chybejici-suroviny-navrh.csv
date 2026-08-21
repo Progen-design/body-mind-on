@@ -1,0 +1,298 @@
+nazev_suroviny,pocet_blokovanych_receptu,hromadka,navrh_cile_nebo_duvod
+olive oil,10,alias,olivovy olej
+garlic,6,alias,cesnek
+honey,6,alias,med
+smes smetany a mleka,5,k_rozhodnuti,"oznaceno jako nejednoznacne — ve slovniku ale existuje presny cil ""smetana a mleko (half-and-half)"""
+smetana ke slehani,5,alias,slehacka
+banany,4,alias,banan
+butter,4,alias,maslo
+lemon juice,4,alias,citronova stava
+vanilka,4,doplnit,"lusk/prasek neni totez co vanilkovy extrakt"
+water,4,alias,voda
+extra virgin olive oil,3,alias,olivovy olej
+non-fat milk,3,alias,odtucnene mleko
+salt,3,alias,sul
+baking powder,2,alias,prasek do peciva
+cayenne pepper,2,alias,chili prasek
+feta cheese,2,alias,feta
+goat cheese,2,alias,kozi syr
+mascarpone,2,doplnit,USDA
+matcha prasek,2,doplnit,USDA
+muffiny,2,zahodit,"hotovy vyrobek, ne surovina"
+parsley,2,alias,petrzel
+pesto,2,doplnit,USDA
+potravinarske barvivo,2,zahodit,"nulova vyziva — patri do spize"
+salt & pepper,2,zahodit,"dve suroviny v jednom poli (chyba importu)"
+syr asiago,2,doplnit,USDA
+vanilla almond milk,2,doplnit,"slazene — lisi se od mandloveho mleka"
+vanilla extract,2,alias,vanilkovy extrakt
+vanilla yogurt,2,doplnit,"slazeny — lisi se od bileho jogurtu"
+vinegar,2,alias,ocet
+worcestershire sauce,2,alias,worcesterska omacka
+zlate rozinky,2,alias,rozinky
+almond extract,1,doplnit,USDA
+alouette berries & cream spreadable cheese,1,zahodit,znackovy vyrobek
+alouette creme fraiche,1,doplnit,USDA
+amaretti,1,doplnit,USDA
+anyzova seminka,1,doplnit,USDA
+arenkha msc,1,zahodit,znacka
+arenkha msc caviar substitute,1,zahodit,znacka
+asafoetida,1,doplnit,USDA
+baby arugula,1,doplnit,"rukola ve slovniku neni"
+baby beets,1,doplnit,"cervena repa ve slovniku neni"
+baking soda,1,alias,jedla soda
+barbecue omacka,1,doplnit,USDA
+barbecue sauce,1,doplnit,"az bude barbecue omacka, pak alias na ni"
+barbecue seasoning,1,doplnit,USDA
+basil,1,alias,bazalka
+bel gioioso mozzarella,1,alias,mozzarella
+berries,1,zahodit,"prilis obecne — nelze urcit druh"
+berry cranberry sauce,1,doplnit,USDA
+bob's mill steel cut oats,1,alias,ovesne vlocky
+bread,1,doplnit,"chleb obecne ve slovniku neni, jen celozrnny"
+brusinkovo-pomerancova omacka,1,doplnit,USDA
+butternut squash,1,alias,maslova dyne
+bylinkove koreni,1,zahodit,smes koreni — spiz
+cereal,1,zahodit,prilis obecne
+cerna fazolova cesnekova omacka,1,doplnit,USDA
+challah chleb,1,doplnit,USDA
+chavrie goat cheese,1,alias,kozi syr
+chili,1,k_rozhodnuti,"papricky nebo prasek — nelze rozlisit"
+chilli flakes,1,alias,chilli vlocky
+chilli pasta,1,doplnit,USDA
+chobani yogurt,1,alias,recky jogurt
+chorizo klobasa,1,doplnit,USDA
+cibulove vlocky,1,doplnit,"vlocky nejsou totez co cibulovy prasek"
+cinnamon,1,alias,skorice
+citronovy tymian,1,alias,tymian
+cizrna *1,1,zahodit,artefakt parsovani
+coconut water,1,doplnit,USDA
+cokolada a extra kakaovy prasek,1,zahodit,dve suroviny v jednom poli
+cokoladove hoblinky,1,alias,cokoladove kousky
+collard greens,1,doplnit,"neni totez co kapusta"
+condensed milk,1,alias,slazene kondenzovane mleko
+corn tortillas,1,doplnit,USDA
+corned beef hash,1,doplnit,USDA
+cracked pepper,1,alias,pepr
+cranberry,1,alias,brusinky
+creamed wildflower honey,1,alias,med
+crepes,1,zahodit,hotovy vyrobek
+croissant,1,doplnit,USDA
+croissanty,1,doplnit,USDA
+crust,1,zahodit,prilis obecne
+cukrovy hrasek,1,doplnit,"snow peas — lisi se od hrasku"
+dale's seasoning,1,zahodit,znacka koreni
+datle mejdool,1,alias,datle
+diestel breakfast sausage,1,doplnit,USDA
+drozdi,1,doplnit,USDA
+dynove koreni,1,zahodit,smes koreni — spiz
+dzem,1,doplnit,USDA
+enchilada omacka,1,doplnit,USDA
+farro,1,doplnit,USDA
+figs,1,alias,fiky
+fiky mission,1,alias,fiky
+filet mignon steaks,1,alias,libove hovezi maso
+filety z halibuta,1,alias,bila ryba
+flour,1,alias,mouka
+freshly cracked pepper,1,alias,pepr
+fruit,1,alias,cerstve ovoce
+grain bread,1,doplnit,USDA
+grape preserves,1,doplnit,USDA
+grapes,1,alias,hroznove vino
+grilovane kure,1,alias,grilovana kureci prsa
+guacamole,1,doplnit,USDA
+habanero omacka a chile,1,zahodit,dve suroviny v jednom poli
+herbed butter,1,alias,maslo
+himalajska sul,1,alias,sul
+hnizda spenatovych fettuccine,1,alias,testoviny
+hoisin sauce,1,doplnit,USDA
+horcicny prasek,1,doplnit,"prasek neni totez co hotova horcice"
+horka cokolada,1,doplnit,USDA
+hot sauce,1,doplnit,"nelze urcit druh — sriracha je jen jedna z moznosti"
+houbova polevka,1,doplnit,USDA
+hrasek a mrkev,1,zahodit,dve suroviny v jednom poli
+hrnec. odlomte a odhodte tvrde konce z,1,zahodit,chyba parsovani — kus postupu
+hruba morska sul,1,alias,sul
+jack cheese,1,doplnit,USDA
+jahodovy marshmallow,1,doplnit,USDA
+jedle kvety,1,zahodit,dekorace bez vyzivy
+jogurt z plnotucneho mleka,1,doplnit,"plnotucny ma ~2x tuku proti bilemu jogurtu"
+kachni vejce,1,doplnit,USDA
+kaki,1,doplnit,USDA
+kandovana pomerancova kura,1,doplnit,"kandovana — neni totez co pomerancova kura"
+kardamom,1,doplnit,USDA
+klobasa,1,doplnit,USDA
+knorr hollandaise sauce mix,1,zahodit,znackovy polotovar
+kokosove mleko plnotucne,1,alias,kokosove mleko
+koncentrat limonady,1,doplnit,USDA
+kondenzovane mleko,1,k_rozhodnuti,"slazene vs neslazene se lisi ~2x v kcal"
+konopny proteinovy prasek,1,doplnit,"lisi se od syrovatkoveho"
+koreni,1,zahodit,prilis obecne — spiz
+koreni citron a pepr,1,zahodit,smes koreni — spiz
+koreni na dynovy kolac,1,zahodit,smes koreni — spiz
+koreni v kostce,1,zahodit,"nejasne — bujon nebo smes"
+koriandrova seminka,1,alias,mlety koriandr
+kosher salt,1,alias,sul
+kost s uzeninou,1,zahodit,chyba parsovani
+kozi syr chavrie,1,alias,kozi syr
+krupavy chleb k podavani,1,zahodit,instrukce k servirovani
+kruti klobasa,1,doplnit,USDA
+krutonky,1,doplnit,USDA
+kure,1,doplnit,"cele kure neni totez co kureci prsa"
+kureci kousky,1,doplnit,"nelze urcit, ze ktere casti"
+kureci palicky,1,doplnit,"jiny obsah tuku nez prsa"
+kureci prsa bez kuze a kosti,1,alias,kureci prsa
+kyselina vinna,1,zahodit,nulova vyziva
+lamanka,1,zahodit,nejasny nazev
+lasagne bez vareni,1,alias,testoviny
+lehce oslazena slehacka nebo,1,zahodit,useknuta veta
+lepkava ryzova mouka,1,doplnit,USDA
+lime juice,1,doplnit,"limetkova stava ve slovniku neni"
+lime kura,1,doplnit,USDA
+lime stava,1,doplnit,USDA
+limonada,1,doplnit,USDA
+liquid egg substitute,1,doplnit,USDA
+lzice smetany,1,alias,smetana
+mahagonova ryze,1,alias,ryze
+makova napln,1,doplnit,USDA
+mangosteen,1,doplnit,USDA
+maraschino tresen,1,doplnit,USDA
+maslo country crock,1,doplnit,"Country Crock je margarin, ne maslo"
+maslova dynova kase,1,doplnit,"kase neni totez co syrova dyne"
+maso na duseni,1,doplnit,"nelze urcit druh a cast"
+maso na gulas,1,doplnit,"nelze urcit druh a cast"
+masova omacka,1,doplnit,USDA
+mata peprna (extrakt),1,doplnit,USDA
+mexicka smes syra,1,alias,syr
+mild cheddar,1,k_rozhodnuti,"POZOR: overovaci brana ho drive zamitla, medianova odchylka 52 %"
+mirin,1,doplnit,USDA
+miso paste,1,doplnit,USDA
+mlade listy cervene repy,1,doplnit,USDA
+mlady kapustovy salat,1,doplnit,USDA
+mleta horcice,1,doplnit,USDA
+mleta kukuricna krupice,1,doplnit,USDA
+mlete hrebicek,1,doplnit,USDA
+mlete klobasy,1,doplnit,USDA
+mlete veprove,1,doplnit,"jiny obsah tuku nez veprova panenka"
+mlety horcicny prasek,1,doplnit,USDA
+mlety kardamom,1,doplnit,USDA
+monterey jack syr,1,doplnit,USDA
+muffins,1,zahodit,hotovy vyrobek
+multigrain bread,1,doplnit,USDA
+naan bread,1,doplnit,USDA
+nahrada vajec,1,doplnit,USDA
+nakladane hovezi,1,doplnit,USDA
+nefiltrovany med,1,alias,med
+nepecene testo na kolac,1,doplnit,USDA
+nepsenicna mouka,1,doplnit,"nelze urcit druh mouky"
+non fat yogurt,1,doplnit,"nelze urcit, jestli recky nebo bily"
+nonfat cottage cheese,1,alias,cottage
+olive oil extra virgin,1,alias,olivovy olej
+olivy plnene pimentem,1,alias,olivy
+omacka hollandaise knorr,1,zahodit,znackovy polotovar
+orange pepper,1,alias,paprika (cervena)
+orechove ovesne vlocky,1,doplnit,USDA
+ostre americke syry,1,doplnit,USDA
+ovesna mouka,1,doplnit,USDA
+palacinkova smes,1,doplnit,USDA
+paliva chilli paprika,1,alias,chili papricky
+paprika (koreni),1,k_rozhodnuti,"ve slovniku je ""paprika"" i ""paprika (cervena)"" — nejasne, ktera je koreni"
+parsnip,1,doplnit,"pastinak ve slovniku neni"
+pasta omacka,1,doplnit,"nelze urcit, jestli rajcatova nebo smetanova"
+pch salt,1,zahodit,preklep
+pecorino romano,1,doplnit,USDA
+pepper flakes,1,alias,chilli vlocky
+pikantni marinara omacka,1,alias,marinara omacka
+piknikova sunka,1,alias,sunka
+pistachios,1,alias,pistacie
+pita chleb z celozrnne mouky,1,doplnit,USDA
+pita pockets,1,doplnit,USDA
+posirovany losos,1,alias,losos
+poznamka: pouzil jsem pomerance,1,zahodit,chyba parsovani — poznamka autora
+predpeceny korpus,1,doplnit,USDA
+prirodni jogurt (neslazeny),1,alias,bily jogurt
+privedte k varu nekolik hrnku vody,1,zahodit,chyba parsovani — kus postupu
+proteinovy prasek premier protein,1,alias,proteinovy prasek
+pufovany ryzovy cerealie,1,doplnit,USDA
+rainbow chard,1,alias,svycarsky mangold
+rajcata z konzervy,1,alias,konzervovana rajcata
+rajcatovy protlak,1,doplnit,"protlak je koncentrovanejsi nez rajcatova omacka"
+ramen,1,alias,testoviny
+ranch dressing,1,doplnit,USDA
+raspberries and mint leaves,1,zahodit,dve suroviny v jednom poli
+raspberry fruit spread,1,doplnit,USDA
+recky jogurt plnotucny,1,doplnit,"ve slovniku je jen recky a nizkotucny recky"
+recky jogurt s vanilkou,1,doplnit,slazeny
+reconstituted sun-dried tomatoes,1,alias,susena rajcata
+reduced fat cheddar cheese,1,doplnit,"jiny obsah tuku nez cheddar"
+refried fazole,1,doplnit,"smazene s tukem — lisi se od fazoli"
+roast turkey,1,alias,kruti prsa
+romano syr,1,doplnit,USDA
+rosemary and thyme,1,zahodit,dve suroviny v jednom poli
+rostlinne mleko,1,doplnit,"nelze urcit druh — sojove/mandlove/ovesne"
+rum,1,doplnit,USDA
+ruzova voda,1,zahodit,nulova vyziva
+rybi filety,1,alias,bila ryba
+rybi kolacek,1,doplnit,USDA
+safran,1,doplnit,USDA
+salsa,1,doplnit,USDA
+seafood seasoning,1,zahodit,smes koreni — spiz
+seasonings,1,zahodit,prilis obecne — spiz
+silna kava,1,doplnit,USDA
+smazeny cesnek,1,doplnit,"smazeny na tuku — lisi se od cesneku"
+smes bobuloveho ovoce,1,doplnit,USDA
+smes na dresink hidden valley ranch,1,zahodit,znackovy polotovar
+smetanova houbova polevka,1,doplnit,USDA
+smetanova kureci polevka,1,doplnit,USDA
+snizenotucna smetana,1,doplnit,"jiny obsah tuku nez smetana"
+soja omacka s nizkym obsahem sodiku,1,alias,sojova omacka
+sou cream,1,doplnit,"preklep sour cream — zakysana smetana ve slovniku neni"
+soy sauce,1,alias,sojova omacka
+spring mix greens,1,alias,smes salatu
+stava z citronu meyer,1,alias,citronova stava
+stevie,1,doplnit,USDA
+sugar,1,alias,cukr
+susena cizrna,1,doplnit,"susena ma ~3x vic kcal na 100 g nez varena"
+susene brusinky,1,doplnit,"susene se lisi od cerstvych brusinek"
+suseny tymian,1,alias,tymian
+swiss cheese,1,doplnit,USDA
+syr brie,1,doplnit,USDA
+syr gouda prima donna,1,doplnit,USDA
+syr gruyere,1,doplnit,USDA
+syr havarti,1,doplnit,USDA
+t cream,1,zahodit,useknuty nazev
+tarragon leaves,1,doplnit,"estragon ve slovniku neni"
+tarragon stalks,1,zahodit,stonky se nejedi
+tekuty kour,1,zahodit,nulova vyziva
+testo na kolac,1,doplnit,USDA
+testo na kolac o prumeru 23 cm,1,zahodit,rozmer v nazvu — chyba parsovani
+testo na quiche,1,doplnit,USDA
+thajska bazalka,1,alias,bazalka
+to),1,zahodit,chyba parsovani
+tortilla,1,doplnit,USDA
+trocha maku,1,doplnit,"mak ve slovniku neni"
+tuna,1,k_rozhodnuti,"ve slovniku je jen ""tunak (v konzerve)"" — cerstvy se lisi"
+tvrdy syr,1,alias,syr
+tzatziki,1,doplnit,USDA
+udon s krevetami,1,zahodit,dve suroviny v jednom poli
+ustricova omacka,1,doplnit,USDA
+vajecny nahrazka,1,doplnit,USDA
+vanilkova pasta,1,doplnit,USDA
+vanilkovy lusk,1,doplnit,USDA
+vanilkovy proteinovy prasek,1,alias,proteinovy prasek
+vanilla almond granola,1,alias,granola
+vanilla silk almond milk,1,doplnit,slazene
+vanilla sugar,1,alias,cukr
+veganske maslo,1,doplnit,USDA
+veprova plec,1,doplnit,"jiny obsah tuku nez veprova panenka"
+vino,1,k_rozhodnuti,"ve slovniku je bile i cervene — nelze urcit"
+voda - prave tolik,1,zahodit,chyba parsovani
+voda *2,1,zahodit,artefakt parsovani
+voda minus 2 lzice & pridat 2,1,zahodit,chyba parsovani
+wasabi paste,1,doplnit,USDA
+watercress,1,doplnit,"rericha ve slovniku neni"
+whip cream,1,alias,slehacka
+zbytky kurete milanskeho stylu,1,zahodit,zbytek jineho jidla
+zelena dyne,1,doplnit,USDA
+zelene cibule,1,k_rozhodnuti,"POZOR: overovaci brana ho drive zamitla, prestrel 171 %"
+zlate maliny,1,alias,maliny

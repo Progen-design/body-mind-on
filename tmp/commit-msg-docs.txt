@@ -1,0 +1,6 @@
+docs(email): v7 brand palette + public /plan/[id] web view documented
+
+Document the brand-aligned color rebrand (sky #0EA5E9 + lavender #A78BFA +
+cyan #22D3EE on slate-900/800) and the new public web view route, including
+the responsive grid breakpoints (3/2/1 col), data mapping, cache headers, and
+the Zobrazit v prohlizeci link wiring through {{web_view_url}}.

@@ -1,0 +1,1280 @@
+{
+  "cizrna": {
+    "fdcId": 2644288,
+    "popis": "Chickpeas (garbanzo beans, bengal gram), canned, sodium added, drained and rinsed",
+    "dataType": "Foundation",
+    "kcal": 137,
+    "fat": 3.1,
+    "protein": 7.02,
+    "carbs": 20.3
+  },
+  "sójové mléko": {
+    "fdcId": 1999630,
+    "popis": "Soy milk, unsweetened, plain, shelf stable",
+    "dataType": "Foundation",
+    "kcal": 38.5,
+    "fat": 2.12,
+    "protein": 3.55,
+    "carbs": 1.29
+  },
+  "mandlové mléko": {
+    "fdcId": 2257045,
+    "popis": "Almond milk, unsweetened, plain, refrigerated",
+    "dataType": "Foundation",
+    "kcal": 19.3,
+    "fat": 1.56,
+    "protein": 0.656,
+    "carbs": 0.671
+  },
+  "ovesné mléko": {
+    "fdcId": 2257046,
+    "popis": "Oat milk, unsweetened, plain, refrigerated",
+    "dataType": "Foundation",
+    "kcal": 48.3,
+    "fat": 2.75,
+    "protein": 0.797,
+    "carbs": 5.1
+  },
+  "rostlinný jogurt": {
+    "fdcId": 175227,
+    "popis": "SILK Plain soy yogurt",
+    "dataType": "SR Legacy",
+    "kcal": 66,
+    "protein": 2.64,
+    "fat": 1.76,
+    "carbs": 9.69
+  },
+  "mandle": {
+    "fdcId": 2346393,
+    "popis": "Nuts, almonds, whole, raw",
+    "dataType": "Foundation",
+    "kcal": 626,
+    "fat": 51.1,
+    "carbs": 20,
+    "protein": 21.5
+  },
+  "kešu": {
+    "fdcId": 2515374,
+    "popis": "Nuts, cashew nuts, raw",
+    "dataType": "Foundation",
+    "kcal": 565,
+    "fat": 38.9,
+    "protein": 17.4,
+    "carbs": 36.3
+  },
+  "vlašské ořechy": {
+    "fdcId": 2346394,
+    "popis": "Nuts, walnuts, English, halves, raw",
+    "dataType": "Foundation",
+    "kcal": 730,
+    "fat": 69.7,
+    "carbs": 10.9,
+    "protein": 14.6
+  },
+  "dýňová semínka": {
+    "fdcId": 170556,
+    "popis": "Seeds, pumpkin and squash seed kernels, dried",
+    "dataType": "SR Legacy",
+    "kcal": 559,
+    "carbs": 10.7,
+    "protein": 30.2,
+    "fat": 49
+  },
+  "slunečnicová semínka": {
+    "fdcId": 170562,
+    "popis": "Seeds, sunflower seed kernels, dried",
+    "dataType": "SR Legacy",
+    "kcal": 584,
+    "protein": 20.8,
+    "fat": 51.5,
+    "carbs": 20
+  },
+  "lněná semínka": {
+    "fdcId": 2262075,
+    "popis": "Flaxseed, ground",
+    "dataType": "Foundation",
+    "kcal": 545,
+    "fat": 37.3,
+    "carbs": 34.4,
+    "protein": 18
+  },
+  "tahini": {
+    "fdcId": 168604,
+    "popis": "Seeds, sesame butter, tahini, type of kernels unspecified",
+    "dataType": "SR Legacy",
+    "kcal": 592,
+    "fat": 53,
+    "protein": 17.4,
+    "carbs": 21.5
+  },
+  "tempeh": {
+    "fdcId": 172467,
+    "popis": "Tempeh, cooked",
+    "dataType": "SR Legacy",
+    "kcal": 195,
+    "protein": 19.9,
+    "carbs": 7.62,
+    "fat": 11.4
+  },
+  "seitan": {
+    "fdcId": 168147,
+    "popis": "Vital wheat gluten",
+    "dataType": "SR Legacy",
+    "kcal": 370,
+    "protein": 75.2,
+    "fat": 1.85,
+    "carbs": 13.8
+  },
+  "edamame": {
+    "fdcId": 168411,
+    "popis": "Edamame, frozen, prepared",
+    "dataType": "SR Legacy",
+    "kcal": 121,
+    "fat": 5.2,
+    "carbs": 8.91,
+    "protein": 11.9
+  },
+  "hummus": {
+    "fdcId": 174289,
+    "popis": "Hummus, commercial",
+    "dataType": "SR Legacy",
+    "kcal": 237,
+    "protein": 7.78,
+    "fat": 17.8,
+    "carbs": 15
+  },
+  "bulgur": {
+    "fdcId": 170287,
+    "popis": "Bulgur, cooked",
+    "dataType": "SR Legacy",
+    "kcal": 83,
+    "protein": 3.08,
+    "fat": 0.24,
+    "carbs": 18.6
+  },
+  "pohanka": {
+    "fdcId": 170686,
+    "popis": "Buckwheat groats, roasted, cooked",
+    "dataType": "SR Legacy",
+    "kcal": 92,
+    "fat": 0.62,
+    "carbs": 19.9,
+    "protein": 3.38
+  },
+  "jáhly": {
+    "fdcId": 168871,
+    "popis": "Millet, cooked",
+    "dataType": "SR Legacy",
+    "kcal": 119,
+    "protein": 3.51,
+    "fat": 1,
+    "carbs": 23.7
+  },
+  "sójové maso": {
+    "fdcId": 1104705,
+    "popis": "Flour, soy, defatted",
+    "dataType": "Foundation",
+    "kcal": 366,
+    "fat": 3.33,
+    "carbs": 32.9,
+    "protein": 51.1
+  },
+  "feta": {
+    "fdcId": 173420,
+    "popis": "Cheese, feta",
+    "dataType": "SR Legacy",
+    "kcal": 265,
+    "fat": 21.5,
+    "carbs": 3.88,
+    "protein": 14.2
+  },
+  "nízkotučný řecký jogurt": {
+    "fdcId": 170903,
+    "popis": "Yogurt, Greek, plain, lowfat",
+    "dataType": "SR Legacy",
+    "kcal": 73,
+    "fat": 1.92,
+    "carbs": 3.94,
+    "protein": 9.95
+  },
+  "šlehačka": {
+    "fdcId": 170859,
+    "popis": "Cream, fluid, heavy whipping",
+    "dataType": "SR Legacy",
+    "kcal": 340,
+    "fat": 36.1,
+    "protein": 2.84,
+    "carbs": 2.84
+  },
+  "podmáslí": {
+    "fdcId": 170874,
+    "popis": "Milk, buttermilk, fluid, cultured, lowfat",
+    "dataType": "SR Legacy",
+    "kcal": 40,
+    "fat": 1.07,
+    "protein": 3.31,
+    "carbs": 4.79
+  },
+  "sušená rajčata": {
+    "fdcId": 168567,
+    "popis": "Tomatoes, sun-dried",
+    "dataType": "SR Legacy",
+    "kcal": 258,
+    "carbs": 55.8,
+    "protein": 14.1,
+    "fat": 2.97
+  },
+  "pomerančová kůra": {
+    "fdcId": 169103,
+    "popis": "Orange peel, raw",
+    "dataType": "SR Legacy",
+    "kcal": 97,
+    "protein": 1.5,
+    "fat": 0.2,
+    "carbs": 25
+  },
+  "čokoládové kousky": {
+    "fdcId": 167976,
+    "popis": "Candies, semisweet chocolate",
+    "dataType": "SR Legacy",
+    "kcal": 480,
+    "carbs": 63.9,
+    "protein": 4.2,
+    "fat": 30
+  },
+  "odtučněné mléko": {
+    "fdcId": 169868,
+    "popis": "Milk, fluid, nonfat, calcium fortified (fat free or skim)",
+    "dataType": "SR Legacy",
+    "kcal": 35,
+    "fat": 0.18,
+    "carbs": 4.85,
+    "protein": 3.4
+  },
+  "kozí sýr": {
+    "fdcId": 173435,
+    "popis": "Cheese, goat, soft type",
+    "dataType": "SR Legacy",
+    "kcal": 264,
+    "carbs": 0,
+    "fat": 21.1,
+    "protein": 18.5
+  },
+  "mandlové máslo": {
+    "fdcId": 168603,
+    "popis": "Nuts, almond butter, plain, with salt added",
+    "dataType": "SR Legacy",
+    "kcal": 614,
+    "protein": 21,
+    "fat": 55.5,
+    "carbs": 18.8
+  },
+  "kokosová mouka": {
+    "fdcId": 2515382,
+    "popis": "Flour, coconut",
+    "dataType": "Foundation",
+    "kcal": 438,
+    "fat": 15.3,
+    "protein": 16.1,
+    "carbs": 58.9
+  },
+  "krupice": {
+    "fdcId": 169715,
+    "popis": "Semolina, enriched",
+    "dataType": "SR Legacy",
+    "kcal": 360,
+    "protein": 12.7,
+    "fat": 1.05,
+    "carbs": 72.8
+  },
+  "meruňky": {
+    "fdcId": 171697,
+    "popis": "Apricots, raw",
+    "dataType": "SR Legacy",
+    "kcal": 48,
+    "protein": 1.4,
+    "fat": 0.39,
+    "carbs": 11.1
+  },
+  "melasa": {
+    "fdcId": 168820,
+    "popis": "Molasses",
+    "dataType": "SR Legacy",
+    "kcal": 290,
+    "carbs": 74.7,
+    "fat": 0.1,
+    "protein": 0
+  },
+  "olivy": {
+    "fdcId": 169095,
+    "popis": "Olives, ripe, canned (jumbo-super colossal)",
+    "dataType": "SR Legacy",
+    "kcal": 81,
+    "protein": 0.97,
+    "fat": 6.87,
+    "carbs": 5.61
+  },
+  "ostružiny": {
+    "fdcId": 173946,
+    "popis": "Blackberries, raw",
+    "dataType": "SR Legacy",
+    "kcal": 43,
+    "fat": 0.49,
+    "protein": 1.39,
+    "carbs": 9.61
+  },
+  "pohanková mouka": {
+    "fdcId": 170687,
+    "popis": "Buckwheat flour, whole-groat",
+    "dataType": "SR Legacy",
+    "kcal": 335,
+    "protein": 12.6,
+    "fat": 3.1,
+    "carbs": 70.6
+  },
+  "pomeranč": {
+    "fdcId": 169097,
+    "popis": "Oranges, raw, all commercial varieties",
+    "dataType": "SR Legacy",
+    "kcal": 47,
+    "fat": 0.12,
+    "carbs": 11.8,
+    "protein": 0.94
+  },
+  "rozmarýn": {
+    "fdcId": 173473,
+    "popis": "Rosemary, fresh",
+    "dataType": "SR Legacy",
+    "kcal": 131,
+    "fat": 5.86,
+    "carbs": 20.7,
+    "protein": 3.31
+  },
+  "dýňové pyré": {
+    "fdcId": 168450,
+    "popis": "Pumpkin, canned, without salt",
+    "dataType": "SR Legacy",
+    "kcal": 34,
+    "carbs": 8.09,
+    "protein": 1.1,
+    "fat": 0.28
+  },
+  "datle": {
+    "fdcId": 168191,
+    "popis": "Dates, medjool",
+    "dataType": "SR Legacy",
+    "kcal": 277,
+    "fat": 0.15,
+    "protein": 1.81,
+    "carbs": 75
+  },
+  "fíky": {
+    "fdcId": 173021,
+    "popis": "Figs, raw",
+    "dataType": "SR Legacy",
+    "kcal": 74,
+    "fat": 0.3,
+    "carbs": 19.2,
+    "protein": 0.75
+  },
+  "hroznové víno": {
+    "fdcId": 174683,
+    "popis": "Grapes, red or green (European type, such as Thompson seedless), raw",
+    "dataType": "SR Legacy",
+    "kcal": 69,
+    "fat": 0.16,
+    "protein": 0.72,
+    "carbs": 18.1
+  },
+  "pistácie": {
+    "fdcId": 170184,
+    "popis": "Nuts, pistachio nuts, raw",
+    "dataType": "SR Legacy",
+    "kcal": 560,
+    "fat": 45.3,
+    "carbs": 27.2,
+    "protein": 20.2
+  },
+  "kokos": {
+    "fdcId": 170169,
+    "popis": "Nuts, coconut meat, raw",
+    "dataType": "SR Legacy",
+    "kcal": 354,
+    "protein": 3.33,
+    "fat": 33.5,
+    "carbs": 15.2
+  },
+  "vodní meloun": {
+    "fdcId": 167765,
+    "popis": "Watermelon, raw",
+    "dataType": "SR Legacy",
+    "kcal": 30,
+    "protein": 0.61,
+    "fat": 0.15,
+    "carbs": 7.55
+  },
+  "ředkvičky": {
+    "fdcId": 169276,
+    "popis": "Radishes, raw",
+    "dataType": "SR Legacy",
+    "kcal": 16,
+    "carbs": 3.4,
+    "protein": 0.68,
+    "fat": 0.1
+  },
+  "růžičková kapusta": {
+    "fdcId": 2685575,
+    "popis": "Brussels sprouts, raw",
+    "dataType": "Foundation",
+    "kcal": 59.5,
+    "fat": 0.565,
+    "protein": 3.98,
+    "carbs": 9.62
+  },
+  "sádlo": {
+    "fdcId": 171401,
+    "popis": "Lard",
+    "dataType": "SR Legacy",
+    "kcal": 902,
+    "protein": 0,
+    "fat": 100,
+    "carbs": 0
+  },
+  "želatina": {
+    "fdcId": 169599,
+    "popis": "Gelatins, dry powder, unsweetened",
+    "dataType": "SR Legacy",
+    "kcal": 335,
+    "protein": 85.6,
+    "fat": 0.1,
+    "carbs": 0
+  },
+  "sušené mléko": {
+    "fdcId": 172195,
+    "popis": "Milk, dry, nonfat, regular, with added vitamin A and vitamin D",
+    "dataType": "SR Legacy",
+    "kcal": 362,
+    "fat": 0.77,
+    "carbs": 52,
+    "protein": 36.2
+  },
+  "granola": {
+    "fdcId": 171646,
+    "popis": "Cereals ready-to-eat, granola, homemade",
+    "dataType": "SR Legacy",
+    "kcal": 489,
+    "fat": 24.3,
+    "carbs": 53.9,
+    "protein": 13.7
+  },
+  "chilli vločky": {
+    "fdcId": 170932,
+    "popis": "Spices, pepper, red or cayenne",
+    "dataType": "SR Legacy",
+    "kcal": 318,
+    "fat": 17.3,
+    "carbs": 56.6,
+    "protein": 12
+  },
+  "semínka granátového jablka": {
+    "fdcId": 169134,
+    "popis": "Pomegranates, raw",
+    "dataType": "SR Legacy",
+    "kcal": 83,
+    "protein": 1.67,
+    "fat": 1.17,
+    "carbs": 18.7
+  },
+  "černý rybíz": {
+    "fdcId": 173963,
+    "popis": "Currants, european black, raw",
+    "dataType": "SR Legacy",
+    "kcal": 63,
+    "protein": 1.4,
+    "fat": 0.41,
+    "carbs": 15.4
+  },
+  "dýně": {
+    "fdcId": 168448,
+    "popis": "Pumpkin, raw",
+    "dataType": "SR Legacy",
+    "kcal": 26,
+    "carbs": 6.5,
+    "fat": 0.1,
+    "protein": 1
+  },
+  "smetana a mléko (half-and-half)": {
+    "fdcId": 171255,
+    "popis": "Cream, fluid, half and half",
+    "dataType": "SR Legacy",
+    "kcal": 131,
+    "protein": 3.13,
+    "fat": 11.5,
+    "carbs": 4.3
+  },
+  "vanilkový extrakt": {
+    "fdcId": 173471,
+    "popis": "Vanilla extract",
+    "dataType": "SR Legacy",
+    "kcal": 288,
+    "fat": 0.06,
+    "carbs": 12.6,
+    "protein": 0.06
+  },
+  "konzervovaná rajčata": {
+    "fdcId": 170051,
+    "popis": "Tomatoes, red, ripe, canned, packed in tomato juice",
+    "dataType": "SR Legacy",
+    "kcal": 16,
+    "fat": 0.25,
+    "carbs": 3.47,
+    "protein": 0.79
+  },
+  "grilovaná kuřecí prsa": {
+    "fdcId": 171477,
+    "popis": "Chicken, broilers or fryers, breast, meat only, cooked, roasted",
+    "dataType": "SR Legacy",
+    "kcal": 165,
+    "fat": 3.57,
+    "carbs": 0,
+    "protein": 31
+  },
+  "rozinky": {
+    "fdcId": 168164,
+    "popis": "Raisins, golden, seedless",
+    "dataType": "SR Legacy",
+    "kcal": 301,
+    "fat": 0.2,
+    "carbs": 80,
+    "protein": 3.28
+  },
+  "kokosové vločky": {
+    "fdcId": 170170,
+    "popis": "Nuts, coconut meat, dried (desiccated), not sweetened",
+    "dataType": "SR Legacy",
+    "kcal": 660,
+    "fat": 64.5,
+    "protein": 6.88,
+    "carbs": 23.6
+  },
+  "hovězí vývar": {
+    "fdcId": 171538,
+    "popis": "Soup, beef broth or bouillon canned, ready-to-serve",
+    "dataType": "SR Legacy",
+    "kcal": 7,
+    "fat": 0.22,
+    "carbs": 0.04,
+    "protein": 1.14
+  },
+  "sušené třešně": {
+    "fdcId": 171708,
+    "popis": "Cherries, tart, dried, sweetened (Includes foods for USDA's Food Distribution Program)",
+    "dataType": "SR Legacy",
+    "kcal": 333,
+    "fat": 0.73,
+    "carbs": 80.4,
+    "protein": 1.25
+  },
+  "ementál": {
+    "fdcId": 746767,
+    "popis": "Cheese, swiss",
+    "dataType": "Foundation",
+    "kcal": 393,
+    "fat": 31,
+    "carbs": 1.44,
+    "protein": 27
+  },
+  "brie": {
+    "fdcId": 172177,
+    "popis": "Cheese, brie",
+    "dataType": "SR Legacy",
+    "kcal": 334,
+    "protein": 20.8,
+    "fat": 27.7,
+    "carbs": 0.45
+  },
+  "gouda": {
+    "fdcId": 171241,
+    "popis": "Cheese, gouda",
+    "dataType": "SR Legacy",
+    "kcal": 356,
+    "protein": 24.9,
+    "fat": 27.4,
+    "carbs": 2.22
+  },
+  "gruyère": {
+    "fdcId": 171242,
+    "popis": "Cheese, gruyere",
+    "dataType": "SR Legacy",
+    "kcal": 413,
+    "fat": 32.3,
+    "carbs": 0.36,
+    "protein": 29.8
+  },
+  "monterey jack": {
+    "fdcId": 170844,
+    "popis": "Cheese, monterey",
+    "dataType": "SR Legacy",
+    "kcal": 373,
+    "fat": 30.3,
+    "carbs": 0.68,
+    "protein": 24.5
+  },
+  "pecorino romano": {
+    "fdcId": 171249,
+    "popis": "Cheese, romano",
+    "dataType": "SR Legacy",
+    "kcal": 387,
+    "fat": 26.9,
+    "carbs": 3.63,
+    "protein": 31.8
+  },
+  "americký tavený sýr": {
+    "fdcId": 171254,
+    "popis": "Cheese spread, pasteurized process, American",
+    "dataType": "SR Legacy",
+    "kcal": 290,
+    "fat": 21.2,
+    "carbs": 8.73,
+    "protein": 16.4
+  },
+  "zakysaná smetana": {
+    "fdcId": 171257,
+    "popis": "Cream, sour, cultured",
+    "dataType": "SR Legacy",
+    "kcal": 198,
+    "protein": 2.44,
+    "fat": 19.4,
+    "carbs": 4.63
+  },
+  "plnotučný bílý jogurt": {
+    "fdcId": 171284,
+    "popis": "Yogurt, plain, whole milk",
+    "dataType": "SR Legacy",
+    "kcal": 61,
+    "protein": 3.47,
+    "fat": 3.25,
+    "carbs": 4.66
+  },
+  "netučný bílý jogurt": {
+    "fdcId": 170887,
+    "popis": "Yogurt, plain, skim milk",
+    "dataType": "SR Legacy",
+    "kcal": 56,
+    "protein": 5.73,
+    "fat": 0.18,
+    "carbs": 7.68
+  },
+  "plnotučný řecký jogurt": {
+    "fdcId": 2259794,
+    "popis": "Yogurt, Greek, plain, whole milk",
+    "dataType": "Foundation",
+    "kcal": 93.7,
+    "fat": 4.39,
+    "carbs": 4.75,
+    "protein": 8.78
+  },
+  "vanilkový řecký jogurt": {
+    "fdcId": 170907,
+    "popis": "Yogurt, Greek, vanilla, lowfat",
+    "dataType": "SR Legacy",
+    "kcal": 95,
+    "fat": 2.5,
+    "protein": 8.64,
+    "carbs": 9.54
+  },
+  "vanilkový jogurt": {
+    "fdcId": 170888,
+    "popis": "Yogurt, vanilla, low fat.",
+    "dataType": "SR Legacy",
+    "kcal": 85,
+    "fat": 1.25,
+    "carbs": 13.8,
+    "protein": 4.93
+  },
+  "vanilkové mandlové mléko": {
+    "fdcId": 168751,
+    "popis": "Beverages, almond milk, sweetened, vanilla flavor, ready-to-drink",
+    "dataType": "SR Legacy",
+    "kcal": 38,
+    "fat": 1.04,
+    "carbs": 6.59,
+    "protein": 0.42
+  },
+  "rostlinný tuk": {
+    "fdcId": 171431,
+    "popis": "Margarine, margarine-like vegetable oil spread, 67-70% fat, tub",
+    "dataType": "SR Legacy",
+    "kcal": 606,
+    "protein": 0.07,
+    "fat": 68.3,
+    "carbs": 0.59
+  },
+  "kuře": {
+    "fdcId": 171450,
+    "popis": "Chicken, broilers or fryers, meat and skin, cooked, roasted",
+    "dataType": "SR Legacy",
+    "kcal": 239,
+    "fat": 13.6,
+    "carbs": 0,
+    "protein": 27.3
+  },
+  "kuřecí paličky": {
+    "fdcId": 172376,
+    "popis": "Chicken, broilers or fryers, dark meat, drumstick, meat only, cooked, roasted",
+    "dataType": "SR Legacy",
+    "kcal": 155,
+    "protein": 24.2,
+    "fat": 5.7,
+    "carbs": 0
+  },
+  "mleté vepřové": {
+    "fdcId": 2514745,
+    "popis": "Pork, ground, raw",
+    "dataType": "Foundation",
+    "kcal": 228,
+    "fat": 17.5,
+    "protein": 17.8,
+    "carbs": 0
+  },
+  "vepřová plec": {
+    "fdcId": 167850,
+    "popis": "Pork, fresh, shoulder, (Boston butt), blade (steaks), separable lean and fat, cooked, braised",
+    "dataType": "SR Legacy",
+    "kcal": 267,
+    "carbs": 0,
+    "fat": 17.7,
+    "protein": 25.1
+  },
+  "klobása": {
+    "fdcId": 174577,
+    "popis": "Polish sausage, pork",
+    "dataType": "SR Legacy",
+    "kcal": 326,
+    "protein": 14.1,
+    "fat": 28.7,
+    "carbs": 1.63
+  },
+  "krůtí klobása": {
+    "fdcId": 173871,
+    "popis": "Sausage, turkey, fresh, cooked",
+    "dataType": "SR Legacy",
+    "kcal": 196,
+    "protein": 23.9,
+    "fat": 10.4,
+    "carbs": 0
+  },
+  "chorizo": {
+    "fdcId": 173859,
+    "popis": "Sausage, pork, chorizo, link or ground, raw",
+    "dataType": "SR Legacy",
+    "kcal": 296,
+    "fat": 25.1,
+    "carbs": 3.78,
+    "protein": 13.6
+  },
+  "nakládané hovězí": {
+    "fdcId": 170200,
+    "popis": "Beef, cured, corned beef, brisket, cooked",
+    "dataType": "SR Legacy",
+    "kcal": 251,
+    "protein": 18.2,
+    "fat": 19,
+    "carbs": 0.47
+  },
+  "hovězí hash": {
+    "fdcId": 173332,
+    "popis": "Beef, corned beef hash, with potato, canned",
+    "dataType": "SR Legacy",
+    "kcal": 164,
+    "protein": 8.73,
+    "fat": 10.2,
+    "carbs": 9.27
+  },
+  "kachní vejce": {
+    "fdcId": 172189,
+    "popis": "Egg, duck, whole, fresh, raw",
+    "dataType": "SR Legacy",
+    "kcal": 185,
+    "protein": 12.8,
+    "fat": 13.8,
+    "carbs": 1.45
+  },
+  "náhrada vajec": {
+    "fdcId": 173462,
+    "popis": "Egg substitute, liquid or frozen, fat free",
+    "dataType": "SR Legacy",
+    "kcal": 48,
+    "protein": 10,
+    "fat": 0,
+    "carbs": 2
+  },
+  "rukola": {
+    "fdcId": 169387,
+    "popis": "Arugula, raw",
+    "dataType": "SR Legacy",
+    "kcal": 25,
+    "carbs": 3.65,
+    "protein": 2.58,
+    "fat": 0.66
+  },
+  "červená řepa": {
+    "fdcId": 2685576,
+    "popis": "Beets, raw",
+    "dataType": "Foundation",
+    "kcal": 44.6,
+    "fat": 0.302,
+    "carbs": 8.79,
+    "protein": 1.69
+  },
+  "listy červené řepy": {
+    "fdcId": 170375,
+    "popis": "Beet greens, raw",
+    "dataType": "SR Legacy",
+    "kcal": 22,
+    "protein": 2.2,
+    "carbs": 4.33,
+    "fat": 0.13
+  },
+  "listová kapusta collard": {
+    "fdcId": 170406,
+    "popis": "Collards, raw",
+    "dataType": "SR Legacy",
+    "kcal": 32,
+    "fat": 0.61,
+    "carbs": 5.42,
+    "protein": 3.02
+  },
+  "pastinák": {
+    "fdcId": 170417,
+    "popis": "Parsnips, raw",
+    "dataType": "SR Legacy",
+    "kcal": 75,
+    "carbs": 18,
+    "protein": 1.2,
+    "fat": 0.3
+  },
+  "řeřicha": {
+    "fdcId": 170068,
+    "popis": "Watercress, raw",
+    "dataType": "SR Legacy",
+    "kcal": 11,
+    "carbs": 1.29,
+    "protein": 2.3,
+    "fat": 0.1
+  },
+  "cukrový hrášek": {
+    "fdcId": 170010,
+    "popis": "Peas, edible-podded, raw",
+    "dataType": "SR Legacy",
+    "kcal": 42,
+    "carbs": 7.55,
+    "protein": 2.8,
+    "fat": 0.2
+  },
+  "máslová dýně vařená": {
+    "fdcId": 170130,
+    "popis": "Squash, winter, butternut, cooked, baked, with salt",
+    "dataType": "SR Legacy",
+    "kcal": 40,
+    "carbs": 10.5,
+    "fat": 0.09,
+    "protein": 0.9
+  },
+  "kaki": {
+    "fdcId": 169941,
+    "popis": "Persimmons, japanese, raw",
+    "dataType": "SR Legacy",
+    "kcal": 70,
+    "protein": 0.58,
+    "fat": 0.19,
+    "carbs": 18.6
+  },
+  "mangostana": {
+    "fdcId": 169090,
+    "popis": "Mangosteen, canned, syrup pack",
+    "dataType": "SR Legacy",
+    "kcal": 73,
+    "protein": 0.41,
+    "fat": 0.58,
+    "carbs": 17.9
+  },
+  "koktejlové třešně": {
+    "fdcId": 167766,
+    "popis": "Maraschino cherries, canned, drained",
+    "dataType": "SR Legacy",
+    "kcal": 165,
+    "fat": 0.21,
+    "carbs": 42,
+    "protein": 0.22
+  },
+  "limetková šťáva": {
+    "fdcId": 168156,
+    "popis": "Lime juice, raw",
+    "dataType": "SR Legacy",
+    "kcal": 25,
+    "protein": 0.42,
+    "fat": 0.07,
+    "carbs": 8.42
+  },
+  "kokosová voda": {
+    "fdcId": 170174,
+    "popis": "Nuts, coconut water (liquid from coconuts)",
+    "dataType": "SR Legacy",
+    "kcal": 19,
+    "protein": 0.72,
+    "fat": 0.2,
+    "carbs": 3.71
+  },
+  "chléb": {
+    "fdcId": 174925,
+    "popis": "Bread, white, commercially prepared, toasted",
+    "dataType": "SR Legacy",
+    "kcal": 290,
+    "fat": 4,
+    "protein": 9,
+    "carbs": 54.5
+  },
+  "vícezrnný chléb": {
+    "fdcId": 168013,
+    "popis": "Bread, multi-grain (includes whole-grain)",
+    "dataType": "SR Legacy",
+    "kcal": 265,
+    "fat": 4.23,
+    "carbs": 43.3,
+    "protein": 13.4
+  },
+  "challah chléb": {
+    "fdcId": 172673,
+    "popis": "Bread, egg",
+    "dataType": "SR Legacy",
+    "kcal": 287,
+    "protein": 9.5,
+    "fat": 6,
+    "carbs": 47.8
+  },
+  "naan": {
+    "fdcId": 171845,
+    "popis": "Bread, naan, plain, commercially prepared, refrigerated",
+    "dataType": "SR Legacy",
+    "kcal": 291,
+    "protein": 9.62,
+    "fat": 5.65,
+    "carbs": 50.4
+  },
+  "pita": {
+    "fdcId": 174915,
+    "popis": "Bread, pita, white, enriched",
+    "dataType": "SR Legacy",
+    "kcal": 275,
+    "fat": 1.2,
+    "carbs": 55.7,
+    "protein": 9.1
+  },
+  "celozrnná pita": {
+    "fdcId": 174916,
+    "popis": "Bread, pita, whole-wheat",
+    "dataType": "SR Legacy",
+    "kcal": 262,
+    "fat": 1.71,
+    "protein": 9.8,
+    "carbs": 55.9
+  },
+  "croissant": {
+    "fdcId": 174987,
+    "popis": "Croissants, butter",
+    "dataType": "SR Legacy",
+    "kcal": 406,
+    "protein": 8.2,
+    "fat": 21,
+    "carbs": 45.8
+  },
+  "krutony": {
+    "fdcId": 172751,
+    "popis": "Croutons, plain",
+    "dataType": "SR Legacy",
+    "kcal": 407,
+    "fat": 6.6,
+    "carbs": 73.5,
+    "protein": 11.9
+  },
+  "ovesná mouka": {
+    "fdcId": 169741,
+    "popis": "Oat flour, partially debranned",
+    "dataType": "SR Legacy",
+    "kcal": 404,
+    "carbs": 65.7,
+    "protein": 14.7,
+    "fat": 9.12
+  },
+  "kukuřičná krupice": {
+    "fdcId": 168867,
+    "popis": "Cornmeal, degermed, enriched, yellow",
+    "dataType": "SR Legacy",
+    "kcal": 370,
+    "protein": 7.11,
+    "fat": 1.75,
+    "carbs": 79.4
+  },
+  "těsto na koláč": {
+    "fdcId": 175022,
+    "popis": "Pie crust, standard-type, dry mix",
+    "dataType": "SR Legacy",
+    "kcal": 518,
+    "protein": 6.9,
+    "fat": 31.4,
+    "carbs": 52.1
+  },
+  "palačinková směs": {
+    "fdcId": 175006,
+    "popis": "Pancakes, plain, dry mix, complete, prepared",
+    "dataType": "SR Legacy",
+    "kcal": 194,
+    "fat": 2.5,
+    "carbs": 36.7,
+    "protein": 5.2
+  },
+  "pufovaná rýže": {
+    "fdcId": 173912,
+    "popis": "Cereals ready-to-eat, rice, puffed, fortified",
+    "dataType": "SR Legacy",
+    "kcal": 402,
+    "protein": 6.3,
+    "fat": 0.5,
+    "carbs": 89.8
+  },
+  "droždí": {
+    "fdcId": 175043,
+    "popis": "Leavening agents, yeast, baker's, active dry",
+    "dataType": "SR Legacy",
+    "kcal": 325,
+    "fat": 7.61,
+    "carbs": 41.2,
+    "protein": 40.4
+  },
+  "barbecue omáčka": {
+    "fdcId": 174523,
+    "popis": "Sauce, barbecue",
+    "dataType": "SR Legacy",
+    "kcal": 172,
+    "fat": 0.63,
+    "carbs": 40.8,
+    "protein": 0.82
+  },
+  "hoisin omáčka": {
+    "fdcId": 172886,
+    "popis": "Sauce, hoisin, ready-to-serve",
+    "dataType": "SR Legacy",
+    "kcal": 220,
+    "fat": 3.39,
+    "carbs": 44.1,
+    "protein": 3.31
+  },
+  "ústřicová omáčka": {
+    "fdcId": 174529,
+    "popis": "Sauce, oyster, ready-to-serve",
+    "dataType": "SR Legacy",
+    "kcal": 51,
+    "protein": 1.35,
+    "fat": 0.25,
+    "carbs": 10.9
+  },
+  "pálivá omáčka": {
+    "fdcId": 174527,
+    "popis": "Sauce, ready-to-serve, pepper or hot",
+    "dataType": "SR Legacy",
+    "kcal": 11,
+    "protein": 0.51,
+    "fat": 0.37,
+    "carbs": 1.75
+  },
+  "salsa": {
+    "fdcId": 746777,
+    "popis": "Sauce, salsa, ready-to-serve",
+    "dataType": "Foundation",
+    "kcal": 29,
+    "protein": 1.44,
+    "carbs": 6.74,
+    "fat": 0.19
+  },
+  "pesto": {
+    "fdcId": 171582,
+    "popis": "Sauce, pesto, CLASSICO, basil pesto, ready-to-serve",
+    "dataType": "SR Legacy",
+    "kcal": 372,
+    "protein": 4.16,
+    "fat": 36.4,
+    "carbs": 6.93
+  },
+  "ranch dresink": {
+    "fdcId": 173592,
+    "popis": "Salad dressing, ranch dressing, regular",
+    "dataType": "SR Legacy",
+    "kcal": 430,
+    "protein": 1.32,
+    "fat": 44.5,
+    "carbs": 5.9
+  },
+  "brusinková omáčka": {
+    "fdcId": 173961,
+    "popis": "Cranberry sauce, canned, sweetened",
+    "dataType": "SR Legacy",
+    "kcal": 159,
+    "carbs": 40.4,
+    "protein": 0.9,
+    "fat": 0.15
+  },
+  "rajčatový protlak": {
+    "fdcId": 2685580,
+    "popis": "Tomato, paste, canned, without salt added",
+    "dataType": "Foundation",
+    "kcal": 104,
+    "fat": 0.732,
+    "protein": 4.23,
+    "carbs": 20.2
+  },
+  "houbová polévka": {
+    "fdcId": 171155,
+    "popis": "Soup, cream of mushroom, canned, condensed",
+    "dataType": "SR Legacy",
+    "kcal": 79,
+    "protein": 1.35,
+    "fat": 5.3,
+    "carbs": 6.8
+  },
+  "kuřecí polévka": {
+    "fdcId": 171146,
+    "popis": "Soup, cream of chicken, canned, condensed",
+    "dataType": "SR Legacy",
+    "kcal": 90,
+    "protein": 2.38,
+    "fat": 5.77,
+    "carbs": 7.16
+  },
+  "miso": {
+    "fdcId": 172442,
+    "popis": "Miso",
+    "dataType": "SR Legacy",
+    "kcal": 198,
+    "protein": 12.8,
+    "carbs": 25.4,
+    "fat": 6.01
+  },
+  "fazolová kaše": {
+    "fdcId": 172438,
+    "popis": "Refried beans, canned, traditional style",
+    "dataType": "SR Legacy",
+    "kcal": 90,
+    "fat": 2.01,
+    "carbs": 13.6,
+    "protein": 4.98
+  },
+  "džem": {
+    "fdcId": 169641,
+    "popis": "Jams and preserves",
+    "dataType": "SR Legacy",
+    "kcal": 278,
+    "protein": 0.37,
+    "fat": 0.07,
+    "carbs": 68.9
+  },
+  "šafrán": {
+    "fdcId": 170934,
+    "popis": "Spices, saffron",
+    "dataType": "SR Legacy",
+    "kcal": 310,
+    "carbs": 65.4,
+    "protein": 11.4,
+    "fat": 5.85
+  },
+  "kardamom": {
+    "fdcId": 170919,
+    "popis": "Spices, cardamom",
+    "dataType": "SR Legacy",
+    "kcal": 311,
+    "protein": 10.8,
+    "fat": 6.7,
+    "carbs": 68.5
+  },
+  "hřebíček": {
+    "fdcId": 171321,
+    "popis": "Spices, cloves, ground",
+    "dataType": "SR Legacy",
+    "kcal": 274,
+    "fat": 13,
+    "carbs": 65.5,
+    "protein": 5.97
+  },
+  "anýzová semínka": {
+    "fdcId": 171316,
+    "popis": "Spices, anise seed",
+    "dataType": "SR Legacy",
+    "kcal": 337,
+    "fat": 15.9,
+    "carbs": 50,
+    "protein": 17.6
+  },
+  "estragon": {
+    "fdcId": 170937,
+    "popis": "Spices, tarragon, dried",
+    "dataType": "SR Legacy",
+    "kcal": 295,
+    "protein": 22.8,
+    "carbs": 50.2,
+    "fat": 7.24
+  },
+  "hořčičný prášek": {
+    "fdcId": 170929,
+    "popis": "Spices, mustard seed, ground",
+    "dataType": "SR Legacy",
+    "kcal": 508,
+    "protein": 26.1,
+    "fat": 36.2,
+    "carbs": 28.1
+  },
+  "cibulové vločky": {
+    "fdcId": 170002,
+    "popis": "Onions, dehydrated flakes",
+    "dataType": "SR Legacy",
+    "kcal": 349,
+    "fat": 0.46,
+    "carbs": 83.3,
+    "protein": 8.95
+  },
+  "mák": {
+    "fdcId": 171330,
+    "popis": "Spices, poppy seed",
+    "dataType": "SR Legacy",
+    "kcal": 525,
+    "fat": 41.6,
+    "protein": 18,
+    "carbs": 28.1
+  },
+  "sušená cizrna": {
+    "fdcId": 173756,
+    "popis": "Chickpeas (garbanzo beans, bengal gram), mature seeds, raw",
+    "dataType": "SR Legacy",
+    "kcal": 378,
+    "carbs": 63,
+    "protein": 20.5,
+    "fat": 6.04
+  },
+  "káva": {
+    "fdcId": 171890,
+    "popis": "Beverages, coffee, brewed, prepared with tap water",
+    "dataType": "SR Legacy",
+    "kcal": 1,
+    "protein": 0.12,
+    "fat": 0.02,
+    "carbs": 0
+  },
+  "rum": {
+    "fdcId": 174817,
+    "popis": "Alcoholic beverage, distilled, rum, 80 proof",
+    "dataType": "SR Legacy",
+    "kcal": 231,
+    "protein": 0,
+    "fat": 0,
+    "carbs": 0
+  }
+}

@@ -1,0 +1,44 @@
+
+=== queue 1 | HTTP 200 | dry_run=false ===
+{
+  "ok": true,
+  "dry_run": false,
+  "zapsano": 5,
+  "cena_usd": 0.021832,
+  "zahozeno": []
+}
+
+=== queue 2 | HTTP 200 | dry_run=false ===
+{
+  "ok": true,
+  "dry_run": false,
+  "zapsano": 5,
+  "cena_usd": 0.025922,
+  "zahozeno": [
+    {
+      "name_cs": "Broskvový salát s dýňovými semínky",
+      "duvod": "surovina_mimo_seznam",
+      "detail": [
+        "balzamikový ocet"
+      ]
+    }
+  ]
+}
+
+=== queue 4 | HTTP 200 | dry_run=false ===
+{
+  "ok": true,
+  "dry_run": false,
+  "zapsano": 2,
+  "cena_usd": 0.015983,
+  "zahozeno": []
+}
+
+=== queue 5 | HTTP 200 | dry_run=false ===
+{
+  "ok": true,
+  "dry_run": false,
+  "zapsano": 2,
+  "cena_usd": 0.018707,
+  "zahozeno": []
+}

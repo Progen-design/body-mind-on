@@ -1,0 +1,35 @@
+{
+  "testEmail": "info+bm-training-e2e-1782857171270@bodyandmindon.cz",
+  "environmentStored": "home_equipment",
+  "equipmentStored": [
+    "dumbbells",
+    "bench"
+  ],
+  "workoutDaysStored": "2,4,6",
+  "forbiddenGymMachinesFound": [],
+  "unselectedEquipmentFound": [],
+  "pureBodyweightOnlyDespiteEquipment": false,
+  "profileEnvironmentLabel": null,
+  "profileEquipmentLabel": null,
+  "structuredTrainingLabel": "Doma s vybavením",
+  "exerciseCanonicalKeys": [
+    "squat",
+    "lunges",
+    "glute_bridge",
+    "plank",
+    "pushup",
+    "pushup",
+    "bent_over_row",
+    "overhead_press",
+    "plank",
+    "lunges",
+    "squat",
+    "pushup",
+    "bent_over_row",
+    "plank",
+    "lunges"
+  ],
+  "verdict": "FAIL",
+  "verdictReason": "profile missing home_equipment label; profile missing equipment labels",
+  "displayFromMetrics": "Typ: Doma s vybavením · Pomůcky: Jednoručky, Lavice"
+}

@@ -1,0 +1,224 @@
+{
+  "profile_id": "03-zacatecnik-2x",
+  "profile_label": "Začátečník, 2× týdně",
+  "input_summary": {
+    "goal": "udrzovani",
+    "training_environment": "home_bodyweight",
+    "diet_type": "standard",
+    "freq_choice": "1-2",
+    "has_health_notes": false
+  },
+  "plan_summary": {
+    "targets": {
+      "calories_per_day": 2508,
+      "protein_g": 141,
+      "carbs_g": 311,
+      "fat_g": 78
+    },
+    "days": [
+      {
+        "day": "Pondělí",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Snídaňový burrito se slaninou a vejcem",
+            "kcal": 752,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Losos confit s omáčkou z citronové trávy",
+            "kcal": 1003,
+            "source": "spoonacular"
+          },
+          {
+            "type": "dinner",
+            "name": "Grilované kuře s arašídovou omáčkou",
+            "kcal": 752,
+            "source": "spoonacular"
+          }
+        ],
+        "exercises": []
+      },
+      {
+        "day": "Úterý",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Vejce se zeleninou",
+            "kcal": 752,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Kuře Adobo s kokosovou zázvorovou rýží",
+            "kcal": 1003,
+            "source": "spoonacular"
+          },
+          {
+            "type": "dinner",
+            "name": "Jak udělat nejvíce sýrové mačkané těstoviny",
+            "kcal": 752,
+            "source": "spoonacular"
+          }
+        ],
+        "workout_minutes": 60,
+        "exercises": [
+          {
+            "name": "Dřepy",
+            "sets": 4,
+            "reps": "10-12",
+            "canonical_key": "squat"
+          },
+          {
+            "name": "Kliky",
+            "sets": 4,
+            "reps": "8-10",
+            "canonical_key": "pushup"
+          },
+          {
+            "name": "Superman",
+            "sets": 3,
+            "reps": "12",
+            "canonical_key": "superman"
+          },
+          {
+            "name": "Prkno",
+            "sets": 4,
+            "reps": null,
+            "canonical_key": "plank"
+          },
+          {
+            "name": "Výpady",
+            "sets": 4,
+            "reps": "10 per leg",
+            "canonical_key": "lunges"
+          }
+        ]
+      },
+      {
+        "day": "Středa",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Jogurt s ovocem",
+            "kcal": 752,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Kuře s rýží a zeleninou",
+            "kcal": 1003,
+            "source": "spoonacular"
+          },
+          {
+            "type": "dinner",
+            "name": "Salát s vejci a zeleninou",
+            "kcal": 752,
+            "source": "spoonacular"
+          }
+        ],
+        "exercises": []
+      },
+      {
+        "day": "Čtvrtek",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Chlebová omeleta",
+            "kcal": 752,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Sladký a kouřový losos s zázvorovou mahagonovou rýží",
+            "kcal": 1003,
+            "source": "spoonacular"
+          },
+          {
+            "type": "dinner",
+            "name": "Kuře s bramborami a zeleninou",
+            "kcal": 752,
+            "source": "spoonacular"
+          }
+        ],
+        "exercises": []
+      },
+      {
+        "day": "Pátek",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Vejce s lososem a zeleninou",
+            "kcal": 752,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Kuře s rýží a zeleninou",
+            "kcal": 1003,
+            "source": "spoonacular"
+          },
+          {
+            "type": "dinner",
+            "name": "Těstoviny se sýrem a masem",
+            "kcal": 752,
+            "source": "spoonacular"
+          }
+        ],
+        "exercises": []
+      },
+      {
+        "day": "Sobota",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Krabí koláčky s vejci Benedikt",
+            "kcal": 752,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Ryba s rýží a salátem",
+            "kcal": 960,
+            "source": "meal_cache"
+          },
+          {
+            "type": "dinner",
+            "name": "Těstoviny se sýrem a masem",
+            "kcal": 752,
+            "source": "spoonacular"
+          }
+        ],
+        "exercises": []
+      },
+      {
+        "day": "Neděle",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Předkrmy: Muffiny z frittaty",
+            "kcal": 752,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Pomerančové kuře s hnědou rýží (bez lepku)",
+            "kcal": 1003,
+            "source": "spoonacular"
+          },
+          {
+            "type": "dinner",
+            "name": "Těstoviny se sýrem a masem",
+            "kcal": 752,
+            "source": "spoonacular"
+          }
+        ],
+        "exercises": []
+      }
+    ]
+  },
+  "technical_hints": [
+    "Žádné automatické varování z heuristik."
+  ]
+}

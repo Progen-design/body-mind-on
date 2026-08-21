@@ -1,0 +1,59 @@
+{
+  "baseUrl": "http://localhost:3000",
+  "email": "janprikopa@gmail.com",
+  "results": {
+    "habit_label_diet": {
+      "ok": true,
+      "detail": ""
+    },
+    "habit_label_sleep": {
+      "ok": true,
+      "detail": ""
+    },
+    "habit_labels_no_raw_ids": {
+      "ok": true,
+      "detail": ""
+    },
+    "single_feedback_button": {
+      "ok": true,
+      "detail": ""
+    },
+    "optimistic_checkbox_toggle": {
+      "ok": true,
+      "detail": ""
+    },
+    "optimistic_progress_update": {
+      "ok": true,
+      "detail": ""
+    },
+    "workout_preview": {
+      "ok": true,
+      "detail": ""
+    },
+    "workout_preview_has_exercises": {
+      "ok": true,
+      "detail": ""
+    },
+    "workout_confirmed": {
+      "ok": true,
+      "detail": ""
+    },
+    "workout_restored": {
+      "ok": true,
+      "detail": ""
+    },
+    "mobile_no_horizontal_scroll": {
+      "ok": true,
+      "detail": ""
+    },
+    "mobile_bottom_sheet_visible": {
+      "ok": true,
+      "detail": ""
+    },
+    "mobile_tap_targets": {
+      "ok": true,
+      "detail": ""
+    }
+  },
+  "failed": 0
+}

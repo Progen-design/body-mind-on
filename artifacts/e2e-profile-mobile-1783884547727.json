@@ -1,0 +1,149 @@
+{
+  "production": {
+    "deploymentId": "dpl_2MTc2L9HqE5T7FE14xYHkT8Kzctj",
+    "productionCommit": "9559f1d (expected)",
+    "state": "Ready",
+    "hasMacroBarBundle": true,
+    "hasTodayExerciseBundle": false,
+    "commitDeployed": true
+  },
+  "testAccount": {
+    "email": "info+bm-mobile-e2e-1783884547727@bodyandmindon.cz",
+    "registrationStatus": 200,
+    "emailSent": true,
+    "planState": "ready",
+    "plan_id": "3eec9b7d-a95d-409c-b25d-a165b8cfc5a7",
+    "user_id": "41024824-038d-47cc-9d71-414bf0ee38c6",
+    "email_sent": true
+  },
+  "mobileE2E": {
+    "profileOpened": true,
+    "horizontalScroll": false,
+    "duplicateNav": false,
+    "todayMealsVisible": true,
+    "todayWorkoutVisible": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-mobile-top.png"
+  },
+  "recipe": {
+    "recipeOpened": true,
+    "ingredientsVisible": true,
+    "instructionsVisible": true,
+    "nutritionVisible": true,
+    "macroPercentagesAllZero": false,
+    "macroBarVisible": true,
+    "horizontalScroll": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-recipe-modal.png"
+  },
+  "mealReplacement": {
+    "oldMeal": "Tvaroh s vločkami a banánem",
+    "clicked": true,
+    "rateLimitShown": false,
+    "newMeal": "Ovesná kaše s proteinem",
+    "mealChanged": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-meal-replaced.png"
+  },
+  "includeNextWeek": {
+    "clicked": true,
+    "feedbackVisible": true,
+    "rateLimitShown": false,
+    "planChangedImmediately": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-meal-pin-feedback.png"
+  },
+  "exerciseModal": {
+    "clicked": true,
+    "correctExercise": true,
+    "jakNaToVisible": true,
+    "dýcháníVisible": true,
+    "tempoVisible": true,
+    "pozorVisible": true,
+    "lehčíVariantaVisible": true,
+    "wrongMediaShown": false,
+    "bigEmptyBox": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-exercise-modal.png"
+  },
+  "accordion": {
+    "onlyOneDayOpen": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-week-accordion.png"
+  },
+  "settings": {
+    "bodyDataSectionVisible": true,
+    "weightEditable": true,
+    "heightEditable": true,
+    "birthDateEditable": true,
+    "ageCalculated": false,
+    "duplicateSaveButtons": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-settings-body-data.png"
+  },
+  "workoutCopy": {
+    "todayWorkoutText": "Dnešní trénink\n\nTyp: Doma s vybavením · Pomůcky: Jednoručky, Lavice\n\n5 cviků · ~60 min\n\nDřepy · 4×10-12\nJak cvik provést\nBench press · 4×10\nJak cvik provést\nPřítahy v předklonu · 4×10\nJak cvik provést\nRumunský mrtvý tah · 4×10\nJak cvik provést\nTlaky nad hlavu · 4×10\nJak cvik provést",
+    "hasPerLegEnglish": false,
+    "hasLunges": false,
+    "lungesUseCzech": false,
+    "squatsNoPerLeg": true,
+    "noSalesBlockAfterWorkout": true,
+    "noSalesScreenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-mobile-no-sales-upsell.png",
+    "workoutCopyScreenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-mobile-workout-copy.png",
+    "squatModalFound": true,
+    "lungeModalFound": false,
+    "squatVsLungeModalDifferent": false
+  },
+  "runtimeLogs": {
+    "errors": [],
+    "apiCalls": [
+      {
+        "url": "https://app.bodyandmindon.cz/api/meal-pins",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/plan-replace-meal",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/meal-pins",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/exercise-media?canonical_key=squat&wger_id=111&name=D%C5%99epy",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/exercise-media?canonical_key=squat&wger_id=111&name=D%C5%99epy",
+        "status": 200
+      }
+    ],
+    "errors500": 0,
+    "errors429": 0,
+    "authErrors": 0
+  },
+  "tests": {
+    "build": "PASS",
+    "verify:withings-widget-ux": "FAIL",
+    "verify:withings-widget-ux_output": "ver at http://127.0.0.1:3022…\nLocal server ready\n\n--- Visual Withings widget checks ---\n\n9 CHECK(S) FAILED\n\nFAIL default collapsed state\nFAIL launcher button exists\nFAIL Skrýt collapses widget\nFAIL not_configured friendly copy\nFAIL Připravujeme disabled button\nFAIL sanitize technical OAuth messages\nFAIL mobile max height 80vh\nFAIL desktop max width ~400px\n(node:347964) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.\n(Use `node --trace-deprecation ...` to show where the warning was created)\nFAIL visual checks — locator.waitFor: Timeout 45000ms exceeded.\nCall log:\n  - waiting for locator('input.login-input[type=\"email\"], input[type=\"email\"]').first() to be visible\n\n",
+    "verify:profile-layout-focus": "PASS",
+    "verify:profile-real-user-bugfixes": "PASS",
+    "verify:profile-today-ux": "PASS",
+    "verify:profile-macro-chart": "PASS",
+    "verify:macro-kcal-consistency": "PASS",
+    "verify:meal-replacement-actions": "PASS",
+    "verify:exercise-assets": "PASS",
+    "verify:training-environment-strictness": "PASS",
+    "verify:email-cta-profile-access": "PASS",
+    "verify:product-consistency": "PASS",
+    "smoke-test:prod": "PASS",
+    "e2e:profile-mobile": "PASS"
+  },
+  "verdict": "READY",
+  "verdictReason": "all critical checks passed",
+  "withingsMobile": {
+    "available": false,
+    "skipped": "withings widget not present",
+    "defaultCollapsed": true,
+    "launcherVisible": true,
+    "expandedOnLauncherClick": true,
+    "hideReturnsCollapsed": true,
+    "technicalOAuthText": false,
+    "overlapsTodayCta": false,
+    "horizontalScroll": false,
+    "todayCtaStillVisible": true
+  }
+}

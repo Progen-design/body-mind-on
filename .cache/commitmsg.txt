@@ -1,0 +1,17 @@
+feat(nutrition): USDA slovnik batch 2 pro vegan sloty
+
+20 surovin z USDA FoodData Central (18 novych, 2 uz existovaly).
+Kazdy radek nese FDC ID a nazev zdrojove polozky — hodnoty jsou
+dohledatelne a nejsou odhadnute.
+
+Bez cizrny, rostlinnych mlek, tahini a tempehu neprosla vegan snidane
+ani vetsina vegan obedu gate na kompletni nutrici (compute_recipe_nutrition
+paruje pres name_cs).
+
+Skript navic:
+- nacita .env.local sam (nativne, bez dotenv) — jinak spadl na DEMO_KEY
+  a limit 10 dotazu
+- varuje, kdyz FDC_API_KEY chybi
+- 'sojove maso': dotaz "soy protein textured" vraci z USDA izolat
+  (88 g bilkovin/100 g), coz je jina surovina. Nahrazeno defatted soy
+  flour (FDC 1104705), ze ktereho se TVP extruduje.

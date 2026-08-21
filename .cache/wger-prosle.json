@@ -1,0 +1,2941 @@
+[
+ {
+  "wger_id": 1962,
+  "name_en": "Step Jack",
+  "category": "Cardio",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Quads"
+  ],
+  "muscles_secondary": [
+   "Shoulders",
+   "Glutes",
+   "Obliquus externus abdominis",
+   "Abs"
+  ],
+  "image": "https://wger.de/media/exercise-images/1962/74041371-1019-4f89-9ebe-cec792484a46.png"
+ },
+ {
+  "wger_id": 1963,
+  "name_en": "Slow Squat",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Quads"
+  ],
+  "muscles_secondary": [
+   "Hamstrings",
+   "Glutes",
+   "Abs"
+  ],
+  "image": "https://wger.de/media/exercise-images/1963/db285682-1ab3-4be0-ae00-5117ecce1ee6.png"
+ },
+ {
+  "wger_id": 1965,
+  "name_en": "Marching High Knees",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Quads"
+  ],
+  "muscles_secondary": [
+   "Calves",
+   "Glutes",
+   "Abs"
+  ],
+  "image": "https://wger.de/media/exercise-images/1965/03c08a42-dedb-4a46-8d15-acaf497a35a2.png"
+ },
+ {
+  "wger_id": 1968,
+  "name_en": "Single-arm dumbbell shoulder press",
+  "category": "Shoulders",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Shoulders"
+  ],
+  "muscles_secondary": [
+   "Abs",
+   "Serratus anterior",
+   "Trapezius",
+   "Triceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/1968/cd92e973-a0d9-4e5f-9011-5369012598d3.png"
+ },
+ {
+  "wger_id": 1022,
+  "name_en": "Single Arm Plank to Row",
+  "category": "Back",
+  "equipment": [
+   "Kettlebell"
+  ],
+  "muscles": [
+   "Shoulders",
+   "Biceps",
+   "Brachialis",
+   "Lats",
+   "Obliquus externus abdominis",
+   "Abs",
+   "Serratus anterior"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1022/f74644fa-f43e-46bd-8603-6e3a2ee8ee2d.jpg"
+ },
+ {
+  "wger_id": 960,
+  "name_en": "Kettlebell Swing",
+  "category": "Legs",
+  "equipment": [
+   "Kettlebell"
+  ],
+  "muscles": [
+   "Shoulders",
+   "Glutes"
+  ],
+  "muscles_secondary": [
+   "Quads",
+   "Abs",
+   "Trapezius"
+  ],
+  "image": "https://wger.de/media/exercise-images/960/da4d0560-da89-4bb5-b91f-746458fb04ad.png"
+ },
+ {
+  "wger_id": 977,
+  "name_en": "Box squat",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Glutes",
+   "Quads",
+   "Soleus"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/977/3124c091-6395-4377-96c5-56048b627ceb.png"
+ },
+ {
+  "wger_id": 828,
+  "name_en": "Incline Bench Reverse Fly",
+  "category": "Back",
+  "equipment": [
+   "Dumbbell",
+   "Incline bench"
+  ],
+  "muscles": [
+   "Shoulders",
+   "Trapezius"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/828/2e959dab-f39b-4c7c-9063-eb43064ab5eb.png"
+ },
+ {
+  "wger_id": 958,
+  "name_en": "Biceps with TRX",
+  "category": "Arms",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Biceps"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/958/947ac249-475d-44ed-bed3-8dc433374f59.png"
+ },
+ {
+  "wger_id": 959,
+  "name_en": "TRX Rows",
+  "category": "Back",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Shoulders",
+   "Biceps",
+   "Lats"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/959/53a5e008-bc31-4ee0-9463-69a858c2ec18.png"
+ },
+ {
+  "wger_id": 927,
+  "name_en": "Suspended crossess",
+  "category": "Cardio",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Chest"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/927/7b392101-9c47-4693-935e-a88b1887eec5.jpg"
+ },
+ {
+  "wger_id": 983,
+  "name_en": "High knees",
+  "category": "Cardio",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/983/16245344-9957-4a24-8d61-f9939ed5f964.png"
+ },
+ {
+  "wger_id": 981,
+  "name_en": "Step-ups",
+  "category": "Legs",
+  "equipment": [
+   "Bench"
+  ],
+  "muscles": [
+   "Glutes",
+   "Quads"
+  ],
+  "muscles_secondary": [
+   "Hamstrings",
+   "Calves"
+  ],
+  "image": "https://wger.de/media/exercise-images/981/f9377a7e-eb58-4cca-b805-2d36863aeb03.png"
+ },
+ {
+  "wger_id": 990,
+  "name_en": "Kneeling kickbacks",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Glutes"
+  ],
+  "muscles_secondary": [
+   "Hamstrings"
+  ],
+  "image": "https://wger.de/media/exercise-images/990/de20457c-914a-45c9-8cf9-0ad9739759a1.png"
+ },
+ {
+  "wger_id": 805,
+  "name_en": "Tricep Pushdown on Cable",
+  "category": "Arms",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Triceps"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/805/7a437824-e2cc-46e1-804a-674f0ea31d25.png"
+ },
+ {
+  "wger_id": 912,
+  "name_en": "Straight Bar Cable Curls",
+  "category": "Arms",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Biceps"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/912/e10a034f-6370-4dd6-b1c2-416b27844529.png"
+ },
+ {
+  "wger_id": 1971,
+  "name_en": "Mentzer Pulldown",
+  "category": "Arms",
+  "equipment": [
+   "Cable machine",
+   "Incline bench"
+  ],
+  "muscles": [
+   "Biceps"
+  ],
+  "muscles_secondary": [
+   "Lats"
+  ],
+  "image": "https://wger.de/media/exercise-images/1971/729af526-19a0-4d3d-a258-196c7575d139.jpg"
+ },
+ {
+  "wger_id": 31,
+  "name_en": "Axe Hold",
+  "category": "Arms",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/31/92f6451b-f89d-49d6-9531-8970ea420d97.png"
+ },
+ {
+  "wger_id": 975,
+  "name_en": "one-handed kettlebell curls",
+  "category": "Arms",
+  "equipment": [
+   "Kettlebell"
+  ],
+  "muscles": [
+   "Biceps"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/975/41d9267a-99bc-4e94-b1c4-0e39fe7a968f.png"
+ },
+ {
+  "wger_id": 976,
+  "name_en": "Medicine ball booklet crunch",
+  "category": "Abs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Abs"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/976/94649ea6-bf58-4fd9-90c1-b2ec96ee20cd.png"
+ },
+ {
+  "wger_id": 978,
+  "name_en": "Knee Raises",
+  "category": "Abs",
+  "equipment": [
+   "Pull-up bar"
+  ],
+  "muscles": [
+   "Abs"
+  ],
+  "muscles_secondary": [
+   "Obliquus externus abdominis"
+  ],
+  "image": "https://wger.de/media/exercise-images/978/d3ffe51f-7eb8-4cc9-9eae-105847af3005.png"
+ },
+ {
+  "wger_id": 804,
+  "name_en": "Sloper hanging",
+  "category": "Arms",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/804/6f4b8bd9-fa05-49de-870b-1f79b595ce89.png"
+ },
+ {
+  "wger_id": 41,
+  "name_en": "Barbell Ab Rollout",
+  "category": "Abs",
+  "equipment": [
+   "Barbell"
+  ],
+  "muscles": [
+   "Obliquus externus abdominis"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/41/34b37423-269f-43d4-9d29-d2a90eeaa6b4.png"
+ },
+ {
+  "wger_id": 979,
+  "name_en": "Leg raises pull up bar",
+  "category": "Abs",
+  "equipment": [
+   "Pull-up bar"
+  ],
+  "muscles": [
+   "Abs"
+  ],
+  "muscles_secondary": [
+   "Obliquus externus abdominis",
+   "Quads"
+  ],
+  "image": "https://wger.de/media/exercise-images/979/27097a3a-5749-428d-b94c-6082afe390f6.png"
+ },
+ {
+  "wger_id": 79,
+  "name_en": "Bent High Pulls",
+  "category": "Shoulders",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Trapezius"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/79/da58dfbf-748a-461b-891e-3d6bc9cc4be2.png"
+ },
+ {
+  "wger_id": 984,
+  "name_en": "Lunges",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Glutes",
+   "Quads"
+  ],
+  "muscles_secondary": [
+   "Hamstrings"
+  ],
+  "image": "https://wger.de/media/exercise-images/984/5c7ffe68-e7b2-47f3-a22a-f9cc28640432.png"
+ },
+ {
+  "wger_id": 297,
+  "name_en": "Hollow Hold",
+  "category": "Abs",
+  "equipment": [
+   "Gym mat"
+  ],
+  "muscles": [
+   "Obliquus externus abdominis",
+   "Abs"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/297/b10d3341-baa8-49ab-b462-5b3529389aac.png"
+ },
+ {
+  "wger_id": 152,
+  "name_en": "Chin Up",
+  "category": "Back",
+  "equipment": [
+   "Pull-up bar"
+  ],
+  "muscles": [
+   "Biceps",
+   "Lats"
+  ],
+  "muscles_secondary": [
+   "Brachialis",
+   "Trapezius"
+  ],
+  "image": "https://wger.de/media/exercise-images/152/6c1a7459-266d-491a-bd50-7cbaea2bc771.png"
+ },
+ {
+  "wger_id": 988,
+  "name_en": "Bulgarian split squats left",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Glutes",
+   "Quads"
+  ],
+  "muscles_secondary": [
+   "Hamstrings"
+  ],
+  "image": "https://wger.de/media/exercise-images/988/6283b258-a4d7-4833-84f7-a38987022d3d.png"
+ },
+ {
+  "wger_id": 999,
+  "name_en": "Reverse lunges",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Glutes",
+   "Quads"
+  ],
+  "muscles_secondary": [
+   "Hamstrings"
+  ],
+  "image": "https://wger.de/media/exercise-images/999/d0931eb3-8db0-4049-bb08-aa4036072056.jfif"
+ },
+ {
+  "wger_id": 1000,
+  "name_en": "Floor dips",
+  "category": "Arms",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Triceps"
+  ],
+  "muscles_secondary": [
+   "Shoulders",
+   "Chest"
+  ],
+  "image": "https://wger.de/media/exercise-images/1000/553266a8-a972-48c5-a014-b12afac66f65.png"
+ },
+ {
+  "wger_id": 1002,
+  "name_en": "Child's pose",
+  "category": "Back",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1002/ddf91765-8045-4087-bece-de17f33332ce.png"
+ },
+ {
+  "wger_id": 1007,
+  "name_en": "Head turns",
+  "category": "Shoulders",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1007/757846d3-78e4-4068-bbca-62e567372c94.png"
+ },
+ {
+  "wger_id": 1018,
+  "name_en": "Head tilts",
+  "category": "Back",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1018/5bbd3879-b6fc-4aaa-9e8e-33ae9a688112.png"
+ },
+ {
+  "wger_id": 1003,
+  "name_en": "Kettlebell deadlifts",
+  "category": "Back",
+  "equipment": [
+   "Kettlebell"
+  ],
+  "muscles": [
+   "Hamstrings",
+   "Glutes"
+  ],
+  "muscles_secondary": [
+   "Quads",
+   "Trapezius"
+  ],
+  "image": "https://wger.de/media/exercise-images/1003/772d6e47-3865-4944-9255-7435d0b06782.png"
+ },
+ {
+  "wger_id": 1012,
+  "name_en": "Alternating bicep curls",
+  "category": "Arms",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Biceps"
+  ],
+  "muscles_secondary": [
+   "Brachialis"
+  ],
+  "image": "https://wger.de/media/exercise-images/1012/8270fdb8-28f1-4eff-b410-af8642085b3f.png"
+ },
+ {
+  "wger_id": 161,
+  "name_en": "Cross-Bench Dumbbell Pullovers",
+  "category": "Chest",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Lats",
+   "Chest",
+   "Serratus anterior"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/161/b9b1803e-2817-40bf-8ac7-e398ca86d8b4.png"
+ },
+ {
+  "wger_id": 323,
+  "name_en": "Cable Cross-over",
+  "category": "Chest",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Chest"
+  ],
+  "muscles_secondary": [
+   "Shoulders"
+  ],
+  "image": "https://wger.de/media/exercise-images/71/Cable-crossover-2.png"
+ },
+ {
+  "wger_id": 394,
+  "name_en": "Long-Pulley (low Row)",
+  "category": "Back",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Lats"
+  ],
+  "muscles_secondary": [
+   "Biceps",
+   "Brachialis"
+  ],
+  "image": "https://wger.de/media/exercise-images/143/Cable-seated-rows-2.png"
+ },
+ {
+  "wger_id": 1634,
+  "name_en": "Rope Pullover/row",
+  "category": "Back",
+  "equipment": [
+   "Cable machine",
+   "Incline bench"
+  ],
+  "muscles": [
+   "Lats"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1634/9a4704d3-1b25-43e3-b244-3885f4d3db87.png"
+ },
+ {
+  "wger_id": 1637,
+  "name_en": "Single arm row",
+  "category": "Back",
+  "equipment": [
+   "Cable machine",
+   "Incline bench"
+  ],
+  "muscles": [
+   "Lats"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1637/a1fbe83a-a3e5-49f6-a2c2-5d5b533c2be8.png"
+ },
+ {
+  "wger_id": 1638,
+  "name_en": "Barbell Clean and press",
+  "category": "Shoulders",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Shoulders",
+   "Chest"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1638/046c09b0-c35d-48d0-a552-39dd49f956d2.webp"
+ },
+ {
+  "wger_id": 916,
+  "name_en": "Smith Press",
+  "category": "Shoulders",
+  "equipment": [
+   "Incline bench"
+  ],
+  "muscles": [
+   "Shoulders"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/916/9bf7555a-fec6-43a9-b343-aae496744e5e.png"
+ },
+ {
+  "wger_id": 957,
+  "name_en": "Quadriped Arm and Leg Raise",
+  "category": "Back",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Shoulders",
+   "Glutes",
+   "Serratus anterior",
+   "Trapezius"
+  ],
+  "muscles_secondary": [
+   "Lats"
+  ],
+  "image": "https://wger.de/media/exercise-images/957/0fd94587-6021-4763-856e-7227f5fcba2a.png"
+ },
+ {
+  "wger_id": 454,
+  "name_en": "Pike Push Ups",
+  "category": "Arms",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Chest"
+  ],
+  "muscles_secondary": [
+   "Triceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/454/447f3c17-405f-46e0-b138-65c2a8caaab0.png"
+ },
+ {
+  "wger_id": 1639,
+  "name_en": "Dumbbell Bent Over Face Pull",
+  "category": "Back",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Shoulders",
+   "Lats"
+  ],
+  "muscles_secondary": [
+   "Trapezius"
+  ],
+  "image": "https://wger.de/media/exercise-images/1639/8927346e-f5ca-4795-bdf1-5ac9309401e7.webp"
+ },
+ {
+  "wger_id": 1087,
+  "name_en": "Dumbbell Hang Power Cleans",
+  "category": "Back",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Hamstrings",
+   "Glutes"
+  ],
+  "muscles_secondary": [
+   "Calves",
+   "Quads",
+   "Trapezius"
+  ],
+  "image": "https://wger.de/media/exercise-images/1087/d85f4e02-b20c-457c-bdfb-0b00e2d14150.jpg"
+ },
+ {
+  "wger_id": 1088,
+  "name_en": "Dumbbell sumo deadlift",
+  "category": "Legs",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Hamstrings",
+   "Glutes"
+  ],
+  "muscles_secondary": [
+   "Quads",
+   "Trapezius"
+  ],
+  "image": "https://wger.de/media/exercise-images/1088/9f66b288-ce8f-4154-ba80-78fee267263c.jpg"
+ },
+ {
+  "wger_id": 1635,
+  "name_en": "Modified pulldown",
+  "category": "Back",
+  "equipment": [
+   "Cable machine",
+   "Incline bench"
+  ],
+  "muscles": [
+   "Lats"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1635/b8c34e3a-7474-41ea-99e3-8d7fdb1e12d6.png"
+ },
+ {
+  "wger_id": 1086,
+  "name_en": "Close-grip Press-ups",
+  "category": "Chest",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Brachialis",
+   "Lats",
+   "Chest",
+   "Trapezius"
+  ],
+  "muscles_secondary": [
+   "Shoulders",
+   "Biceps",
+   "Triceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/1086/b2ee8d9b-0480-4992-8494-c223b37c2696.jpg"
+ },
+ {
+  "wger_id": 1089,
+  "name_en": "Medicine ball twist",
+  "category": "Abs",
+  "equipment": [
+   "Swiss Ball"
+  ],
+  "muscles": [
+   "Obliquus externus abdominis",
+   "Abs"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1089/49f51716-535d-41dd-aeb5-cff5bb906bc1.jpeg"
+ },
+ {
+  "wger_id": 1091,
+  "name_en": "Plank Shoulder Taps",
+  "category": "Abs",
+  "equipment": [
+   "Gym mat"
+  ],
+  "muscles": [
+   "Shoulders",
+   "Glutes",
+   "Abs"
+  ],
+  "muscles_secondary": [
+   "Lats"
+  ],
+  "image": "https://wger.de/media/exercise-images/1091/50c8912d-54ef-46c9-99d1-633b6196aa1e.jpg"
+ },
+ {
+  "wger_id": 1640,
+  "name_en": "Dumbbell Front Squat",
+  "category": "Legs",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Glutes",
+   "Quads"
+  ],
+  "muscles_secondary": [
+   "Shoulders",
+   "Abs"
+  ],
+  "image": "https://wger.de/media/exercise-images/1640/bdea82f1-15ef-4649-8b5a-1303cfc178e7.webp"
+ },
+ {
+  "wger_id": 1641,
+  "name_en": "Kettlebell One Legged Deadlift",
+  "category": "Legs",
+  "equipment": [
+   "Dumbbell",
+   "Kettlebell"
+  ],
+  "muscles": [
+   "Glutes"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1641/68d9488d-2596-420f-be0f-52aa70732c83.webp"
+ },
+ {
+  "wger_id": 1642,
+  "name_en": "Dumbbell Hip Thrust",
+  "category": "Legs",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Glutes",
+   "Quads"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1642/a81ad922-caf5-47f8-99b4-640cb0717436.webp"
+ },
+ {
+  "wger_id": 1648,
+  "name_en": "Weighted Crunch",
+  "category": "Abs",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Obliquus externus abdominis"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1648/63ae02d6-6dd9-4e9e-84da-d4905e78a33c.jpg"
+ },
+ {
+  "wger_id": 1650,
+  "name_en": "Dumbbell Side Bend",
+  "category": "Abs",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Obliquus externus abdominis"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1650/1d7a5336-ec0b-4898-a474-78ba32789bf3.webp"
+ },
+ {
+  "wger_id": 1651,
+  "name_en": "Dumbbell Rear Lunge",
+  "category": "Legs",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Glutes",
+   "Quads"
+  ],
+  "muscles_secondary": [
+   "Soleus"
+  ],
+  "image": "https://wger.de/media/exercise-images/1651/04ab2679-a04d-4d05-9c85-0d36e898328c.webp"
+ },
+ {
+  "wger_id": 1654,
+  "name_en": "Machine Lateral Raise",
+  "category": "Shoulders",
+  "equipment": [
+   "Gym mat"
+  ],
+  "muscles": [
+   "Shoulders"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1654/aa724a58-b3b5-4522-b278-1155416236a5.jpg"
+ },
+ {
+  "wger_id": 1652,
+  "name_en": "Dumbbell Romanian Deadlift",
+  "category": "Legs",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Hamstrings",
+   "Glutes"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1652/0306c8c0-70cc-45d4-92de-6fa72ceaa834.webp"
+ },
+ {
+  "wger_id": 1109,
+  "name_en": "Cable Concentration Curl",
+  "category": "Arms",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Biceps",
+   "Brachialis"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1109/00b0a0bf-c14a-4f13-bb14-62c09030a1aa.png"
+ },
+ {
+  "wger_id": 1127,
+  "name_en": "Close-grip supinated lat pulldown",
+  "category": "Back",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Lats"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1127/4942b7c0-6bda-4983-88e5-86547c3d445e.png"
+ },
+ {
+  "wger_id": 1131,
+  "name_en": "Cable glute extension",
+  "category": "Legs",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Glutes"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1131/3bcf3024-2dcc-4995-9694-55aa2c2e4a9a.png"
+ },
+ {
+  "wger_id": 1136,
+  "name_en": "Neutral-grip chest pulldown",
+  "category": "Back",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Biceps",
+   "Lats",
+   "Serratus anterior"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1136/5778a8e9-c606-4843-89c8-9d9469eeb6e4.PNG"
+ },
+ {
+  "wger_id": 1137,
+  "name_en": "High-pulley pullover",
+  "category": "Back",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Lats",
+   "Serratus anterior"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1137/42f22229-c0a0-4bfc-aca6-66fe5e1ab10d.PNG"
+ },
+ {
+  "wger_id": 84,
+  "name_en": "Bent Over Rowing Reverse",
+  "category": "Back",
+  "equipment": [
+   "Barbell"
+  ],
+  "muscles": [
+   "Lats"
+  ],
+  "muscles_secondary": [
+   "Shoulders",
+   "Biceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/110/Reverse-grip-bent-over-rows-1.png"
+ },
+ {
+  "wger_id": 1138,
+  "name_en": "Incline bench pulldown",
+  "category": "Back",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Lats"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1138/6c35fd79-ef35-4cf3-abf5-9c969457b8d4.PNG"
+ },
+ {
+  "wger_id": 1098,
+  "name_en": "Seated rear delt rise",
+  "category": "Back",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Lats"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1098/fa5328a2-64cb-4afb-a283-b3d948ddaf3f.jpg"
+ },
+ {
+  "wger_id": 1100,
+  "name_en": "Wall balls",
+  "category": "Legs",
+  "equipment": [
+   "Swiss Ball"
+  ],
+  "muscles": [
+   "Shoulders",
+   "Glutes",
+   "Quads"
+  ],
+  "muscles_secondary": [
+   "Biceps",
+   "Chest",
+   "Abs",
+   "Trapezius"
+  ],
+  "image": "https://wger.de/media/exercise-images/1100/ab203e0c-8220-4537-987c-871eb259d687.jpg"
+ },
+ {
+  "wger_id": 1185,
+  "name_en": "Triceps Pushdown",
+  "category": "Arms",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Triceps"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1185/c5ca283d-8958-4fd8-9d59-a3f52a3ac66b.jpg"
+ },
+ {
+  "wger_id": 1186,
+  "name_en": "One Arm Bent Row",
+  "category": "Back",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Lats"
+  ],
+  "muscles_secondary": [
+   "Biceps",
+   "Trapezius"
+  ],
+  "image": "https://wger.de/media/exercise-images/1186/1987a039-cf35-437e-bbdc-40c53dd7d053.jpg"
+ },
+ {
+  "wger_id": 1105,
+  "name_en": "Seated Knee Tuck",
+  "category": "Abs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Abs"
+  ],
+  "muscles_secondary": [
+   "Obliquus externus abdominis"
+  ],
+  "image": "https://wger.de/media/exercise-images/1105/36776818-799a-40bf-9eca-aebb3aa5008f.png"
+ },
+ {
+  "wger_id": 1194,
+  "name_en": "Pallof Press",
+  "category": "Abs",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Shoulders",
+   "Glutes",
+   "Obliquus externus abdominis",
+   "Abs",
+   "Serratus anterior",
+   "Trapezius"
+  ],
+  "muscles_secondary": [
+   "Chest",
+   "Triceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/1194/074e1766-4208-4a67-a211-9721772d99b0.png"
+ },
+ {
+  "wger_id": 1141,
+  "name_en": "Arabesque",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Hamstrings",
+   "Glutes"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1141/c7be1cd1-46c5-4a86-a114-5f0fe861c3e0.jpg"
+ },
+ {
+  "wger_id": 1192,
+  "name_en": "Alternating Biceps Curls With Dumbbell",
+  "category": "Arms",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Biceps"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1192/651a4535-8210-4dbd-8f06-61d95fdd9963.png"
+ },
+ {
+  "wger_id": 1193,
+  "name_en": "Russian Twist",
+  "category": "Abs",
+  "equipment": [
+   "Dumbbell",
+   "Gym mat",
+   "Swiss Ball"
+  ],
+  "muscles": [
+   "Lats",
+   "Obliquus externus abdominis",
+   "Abs"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1193/70ca5d80-3847-4a8c-8882-c6e9e485e29e.png"
+ },
+ {
+  "wger_id": 1198,
+  "name_en": "Inverted Rows",
+  "category": "Chest",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Biceps",
+   "Lats"
+  ],
+  "muscles_secondary": [
+   "Chest",
+   "Abs",
+   "Trapezius"
+  ],
+  "image": "https://wger.de/media/exercise-images/1198/864906ac-4ac7-4e52-a886-c6bb97950a9f.jpg"
+ },
+ {
+  "wger_id": 1275,
+  "name_en": "Plantarflexion Stretch with Band",
+  "category": "Legs",
+  "equipment": [
+   "Resistance band"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1275/0652d306-93eb-42f0-b564-7c3261ea809a.png"
+ },
+ {
+  "wger_id": 1223,
+  "name_en": "Claps over the head",
+  "category": "Arms",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Shoulders"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1223/bf20836a-23b0-4f50-8b98-cfdd97684527.webp"
+ },
+ {
+  "wger_id": 1225,
+  "name_en": "Dumbbell wide bicep curls",
+  "category": "Arms",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Biceps"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1225/39a0b7e7-9780-425d-84f5-56d10d1690ac.gif"
+ },
+ {
+  "wger_id": 1226,
+  "name_en": "Dumbbell bicep curl to press",
+  "category": "Arms",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Biceps"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1226/a6154dbd-67a0-4a36-8748-0f5af3865e83.jpg"
+ },
+ {
+  "wger_id": 1227,
+  "name_en": "Dumbbell rear delt row",
+  "category": "Shoulders",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Shoulders",
+   "Brachialis",
+   "Trapezius"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1227/57415c3c-2963-4130-9f6f-79f6a96113b6.gif"
+ },
+ {
+  "wger_id": 1217,
+  "name_en": "Finger Pushup",
+  "category": "Arms",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Chest"
+  ],
+  "muscles_secondary": [
+   "Shoulders",
+   "Abs",
+   "Triceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/1217/590e65db-de60-4727-b7eb-55f80af56043.png"
+ },
+ {
+  "wger_id": 1233,
+  "name_en": "Standing biceps stretch right",
+  "category": "Arms",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Shoulders",
+   "Biceps",
+   "Chest"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1233/d7d6f9e1-7834-4cca-bd3b-f9def33ff44d.png"
+ },
+ {
+  "wger_id": 1230,
+  "name_en": "Triceps stretch left",
+  "category": "Arms",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Triceps"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1230/9fd1e2fd-f2c4-432d-b3ae-5e5f24085777.webp"
+ },
+ {
+  "wger_id": 1274,
+  "name_en": "Sitting Calf Stretch (Dorsiflexion)",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Calves",
+   "Soleus"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1274/bcffdf52-3c36-4b0c-b787-fb84f20bf82d.png"
+ },
+ {
+  "wger_id": 1231,
+  "name_en": "Triceps stretch right",
+  "category": "Arms",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Triceps"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1231/b10457ce-5fa5-4d20-a32f-3c7100c6a9d9.webp"
+ },
+ {
+  "wger_id": 1232,
+  "name_en": "Standing biceps stretch left",
+  "category": "Arms",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Shoulders",
+   "Biceps",
+   "Chest"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1232/2b6de046-5806-49e3-bf36-b6fae16af021.png"
+ },
+ {
+  "wger_id": 1117,
+  "name_en": "Seated Cable Row",
+  "category": "Back",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Lats"
+  ],
+  "muscles_secondary": [
+   "Biceps",
+   "Trapezius"
+  ],
+  "image": "https://wger.de/media/exercise-images/1117/2555c4c3-a84d-47db-b83b-cbf721f12e45.png"
+ },
+ {
+  "wger_id": 1239,
+  "name_en": "Standing Calf Stretch",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Calves"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1239/5026373a-a7b4-4e26-a0aa-c46634205196.jpg"
+ },
+ {
+  "wger_id": 1243,
+  "name_en": "Double Leg Calf Raise",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Calves",
+   "Soleus"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1243/53d4fabe-c994-4907-873f-8d82813a9832.png"
+ },
+ {
+  "wger_id": 1283,
+  "name_en": "Incline Chest-Supported Dumbbell Row",
+  "category": "Back",
+  "equipment": [
+   "Bench",
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Biceps",
+   "Lats",
+   "Trapezius"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1283/e7262f70-7512-408a-8d00-4c499ef632fc.jpg"
+ },
+ {
+  "wger_id": 1285,
+  "name_en": "Talons fesses",
+  "category": "Cardio",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Calves"
+  ],
+  "muscles_secondary": [
+   "Hamstrings"
+  ],
+  "image": "https://wger.de/media/exercise-images/1285/1ab8005d-41e4-4505-9a7d-5277d59bb3cd.jpg"
+ },
+ {
+  "wger_id": 1290,
+  "name_en": "Reverse Grip Barbell Curls",
+  "category": "Arms",
+  "equipment": [
+   "Barbell"
+  ],
+  "muscles": [
+   "Biceps"
+  ],
+  "muscles_secondary": [
+   "Brachialis"
+  ],
+  "image": "https://wger.de/media/exercise-images/1290/c05818bf-1c81-46df-9f24-42e354265388.png"
+ },
+ {
+  "wger_id": 1353,
+  "name_en": "Dumbbell Hex Press",
+  "category": "Chest",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Chest",
+   "Triceps"
+  ],
+  "muscles_secondary": [
+   "Shoulders"
+  ],
+  "image": "https://wger.de/media/exercise-images/1353/138cb483-7d4d-4519-b029-63e4269810a6.webp"
+ },
+ {
+  "wger_id": 1325,
+  "name_en": "Lateral Push Off",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Calves"
+  ],
+  "muscles_secondary": [
+   "Hamstrings"
+  ],
+  "image": "https://wger.de/media/exercise-images/1325/d8372291-6725-452a-9711-6321c061e354.jpg"
+ },
+ {
+  "wger_id": 1296,
+  "name_en": "Low-Cable Cross-Over - NB",
+  "category": "Chest",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Chest"
+  ],
+  "muscles_secondary": [
+   "Shoulders"
+  ],
+  "image": "https://wger.de/media/exercise-images/1296/c42782fe-337a-44f4-9079-7f6dedab4885.png"
+ },
+ {
+  "wger_id": 1298,
+  "name_en": "High-Cable Cross Tricep Extention - NB",
+  "category": "Arms",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Triceps"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1298/ec4b83ec-5a8f-4303-9050-99ec4389bc2a.png"
+ },
+ {
+  "wger_id": 1378,
+  "name_en": "Cable Lateral Raises (Single Arm)",
+  "category": "Shoulders",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Shoulders"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1378/7c1fcf34-fb7e-45e7-a0c1-51f296235315.jpg"
+ },
+ {
+  "wger_id": 1333,
+  "name_en": "Forearm Curls (underhand grip)",
+  "category": "Arms",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1333/89f43354-32e3-473a-9bcf-caca51f1a8e3.webp"
+ },
+ {
+  "wger_id": 1336,
+  "name_en": "Triceps Overhead (Dumbbell)",
+  "category": "Arms",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Triceps"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1336/ebf88217-df26-4ef7-94cb-f0c2220c6abe.webp"
+ },
+ {
+  "wger_id": 1338,
+  "name_en": "Shoulder Raise (Dumbbell)",
+  "category": "Shoulders",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Shoulders"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1338/9d157b4d-5af0-43c1-bd34-f52144ba1b54.webp"
+ },
+ {
+  "wger_id": 1377,
+  "name_en": "Torso Twist",
+  "category": "Abs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Abs"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1377/12e7a231-d36a-4992-bf57-ff7bfe0f3ae4.jpg"
+ },
+ {
+  "wger_id": 1387,
+  "name_en": "Hamstring Kicks",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Hamstrings"
+  ],
+  "muscles_secondary": [
+   "Glutes"
+  ],
+  "image": "https://wger.de/media/exercise-images/1387/a2cf7eda-5540-4105-b30e-1c2f2679a6c7.png"
+ },
+ {
+  "wger_id": 1392,
+  "name_en": "Good Morning",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Hamstrings"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1392/a02c9c7d-f42d-43e0-9946-1b99b014daee.png"
+ },
+ {
+  "wger_id": 1448,
+  "name_en": "Seated W Curl",
+  "category": "Arms",
+  "equipment": [
+   "Bench",
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Biceps",
+   "Brachialis"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1448/2184e68c-32b5-413f-a7c1-4a2d1bb98c35.png"
+ },
+ {
+  "wger_id": 1452,
+  "name_en": "Knee to Chest Stretch",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Glutes"
+  ],
+  "muscles_secondary": [
+   "Hamstrings"
+  ],
+  "image": "https://wger.de/media/exercise-images/1452/85a6b9de-4eec-445b-8ebb-f1950b076aba.png"
+ },
+ {
+  "wger_id": 1479,
+  "name_en": "Sit Up Elbow Thrust",
+  "category": "Abs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Obliquus externus abdominis",
+   "Abs"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1479/0305d98e-0887-4c0c-8992-7c220814efc2.webp"
+ },
+ {
+  "wger_id": 1519,
+  "name_en": "Overhead Triceps Extension",
+  "category": "Arms",
+  "equipment": [
+   "SZ-Bar"
+  ],
+  "muscles": [
+   "Trapezius"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1519/fab7f641-27d4-40b5-8edd-1a0a137bfd94.gif"
+ },
+ {
+  "wger_id": 1706,
+  "name_en": "Bulgarian Squat with Dumbbells",
+  "category": "Legs",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Glutes",
+   "Quads"
+  ],
+  "muscles_secondary": [
+   "Hamstrings"
+  ],
+  "image": "https://wger.de/media/exercise-images/1706/0c5243cc-2539-4005-aee0-d3a8c5d3a32c.jfif"
+ },
+ {
+  "wger_id": 1554,
+  "name_en": "Clap Push-UP",
+  "category": "Chest",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Chest"
+  ],
+  "muscles_secondary": [
+   "Shoulders",
+   "Abs",
+   "Triceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/1554/49207a62-8799-4b47-8c0b-7bde02926f3d.png"
+ },
+ {
+  "wger_id": 1572,
+  "name_en": "Bird Dog",
+  "category": "Abs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Abs"
+  ],
+  "muscles_secondary": [
+   "Shoulders",
+   "Glutes"
+  ],
+  "image": "https://wger.de/media/exercise-images/1572/3d14e761-a73d-49da-8804-f3016a7573ff.png"
+ },
+ {
+  "wger_id": 1573,
+  "name_en": "Ab wheel",
+  "category": "Abs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Abs"
+  ],
+  "muscles_secondary": [
+   "Obliquus externus abdominis",
+   "Serratus anterior"
+  ],
+  "image": "https://wger.de/media/exercise-images/1573/a9ab402b-61ef-4d60-b91a-df52bf7f41a9.jpg"
+ },
+ {
+  "wger_id": 1581,
+  "name_en": "Trap press",
+  "category": "Shoulders",
+  "equipment": [
+   "Barbell",
+   "Bench",
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Trapezius"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1581/b71a6710-5798-4639-ac5a-22a2cdae2036.jpg"
+ },
+ {
+  "wger_id": 1582,
+  "name_en": "Side-laying interior rotation",
+  "category": "Shoulders",
+  "equipment": [
+   "Barbell",
+   "Bench",
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Trapezius"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1582/5094fe30-eea2-4269-b0de-4b8a20558fd7.png"
+ },
+ {
+  "wger_id": 1593,
+  "name_en": "Smith Machine Split Squat",
+  "category": "Legs",
+  "equipment": [
+   "Barbell"
+  ],
+  "muscles": [
+   "Hamstrings",
+   "Quads"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1593/9815fcd6-cf40-4ddd-9b38-2eac25973de1.gif"
+ },
+ {
+  "wger_id": 1604,
+  "name_en": "Sliding Lateral Lunge",
+  "category": "Legs",
+  "equipment": [
+   "Barbell"
+  ],
+  "muscles": [
+   "Hamstrings",
+   "Glutes",
+   "Quads"
+  ],
+  "muscles_secondary": [
+   "Calves",
+   "Obliquus externus abdominis"
+  ],
+  "image": "https://wger.de/media/exercise-images/1604/7695428e-bfed-4021-b987-498d93153995.png"
+ },
+ {
+  "wger_id": 1612,
+  "name_en": "kettlebell sumo deadlift",
+  "category": "Legs",
+  "equipment": [
+   "Kettlebell"
+  ],
+  "muscles": [
+   "Hamstrings",
+   "Glutes",
+   "Quads"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1612/3dc33f57-2786-4305-8b91-e011d7055923.jpg"
+ },
+ {
+  "wger_id": 1613,
+  "name_en": "rubber band glute kickback",
+  "category": "Legs",
+  "equipment": [
+   "Resistance band"
+  ],
+  "muscles": [
+   "Glutes"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1613/a851fe9d-771f-44da-82f0-799e02ae3fd1.jpg"
+ },
+ {
+  "wger_id": 1615,
+  "name_en": "Treadmill Cardio",
+  "category": "Cardio",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1615/7792295c-83b6-4ea8-9353-ce02f0ad2559.jpg"
+ },
+ {
+  "wger_id": 1616,
+  "name_en": "Dumbbell donkey kick",
+  "category": "Legs",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Hamstrings",
+   "Glutes"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1616/97e6fd98-2ca6-486f-b9b2-f0499fe38044.jpg"
+ },
+ {
+  "wger_id": 1618,
+  "name_en": "Stationary bike cardio",
+  "category": "Cardio",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1618/c18baedc-ff98-4fb2-b4f5-38a05c12f637.png"
+ },
+ {
+  "wger_id": 1620,
+  "name_en": "Seated Dumbbell Calf Raise",
+  "category": "Calves",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Calves"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1620/edd40e39-e337-4460-a8dd-6127d40ddd16.jpeg"
+ },
+ {
+  "wger_id": 1732,
+  "name_en": "Face pulls with yellow/green band",
+  "category": "Back",
+  "equipment": [
+   "Resistance band"
+  ],
+  "muscles": [
+   "Lats"
+  ],
+  "muscles_secondary": [
+   "Trapezius"
+  ],
+  "image": "https://wger.de/media/exercise-images/1732/d13b9adb-968e-4f73-95e6-b16690bcf616.jpg"
+ },
+ {
+  "wger_id": 1733,
+  "name_en": "Isometric Squat to Failure",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Glutes",
+   "Quads"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1733/4ef77069-beb2-4504-a4f3-b181d5f35212.png"
+ },
+ {
+  "wger_id": 1735,
+  "name_en": "Single-leg side glute press",
+  "category": "Legs",
+  "equipment": [
+   "Incline bench"
+  ],
+  "muscles": [
+   "Calves",
+   "Glutes",
+   "Quads"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1735/43bca7d9-2333-43f3-8554-2d0b39fa2a07.png"
+ },
+ {
+  "wger_id": 1726,
+  "name_en": "Straight-Arm Pulldown (Cable)",
+  "category": "Back",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Lats"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1726/2e7e541b-5f55-405a-ae78-3e71b3f42db4.png"
+ },
+ {
+  "wger_id": 1738,
+  "name_en": "Neutral-grip pull-ups or TRX rows",
+  "category": "Arms",
+  "equipment": [
+   "Pull-up bar"
+  ],
+  "muscles": [
+   "Lats"
+  ],
+  "muscles_secondary": [
+   "Biceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/1738/0529acdf-ede8-42a2-a3e5-8d0c57b7a0e1.jpg"
+ },
+ {
+  "wger_id": 1621,
+  "name_en": "Unilateral Cable row",
+  "category": "Back",
+  "equipment": [
+   "Bench",
+   "Cable machine"
+  ],
+  "muscles": [
+   "Lats",
+   "Serratus anterior"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1621/ca1bc68d-9c36-4dd3-8ec4-496c57b5c564.jpg"
+ },
+ {
+  "wger_id": 1745,
+  "name_en": "Cable Front Raise with a small bar",
+  "category": "Shoulders",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Shoulders"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1745/9c92843a-6b90-428b-a868-9af4b11bad38.jpg"
+ },
+ {
+  "wger_id": 1736,
+  "name_en": "Single-Leg Deadlift with Dumbbell",
+  "category": "Legs",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Hamstrings",
+   "Glutes"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1736/aa724cc5-c485-4f3e-9d2a-0c6ae4baefbe.png"
+ },
+ {
+  "wger_id": 1861,
+  "name_en": "Side stretch",
+  "category": "Back",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1861/0ffe4e99-71ad-47fb-b98c-1f243faa0499.png"
+ },
+ {
+  "wger_id": 1867,
+  "name_en": "Hip Flexor Stretch",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1867/767631e5-10d2-46b8-b03f-cc298f96963b.png"
+ },
+ {
+  "wger_id": 1868,
+  "name_en": "Lunge with Twist Stretch",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1868/446e7065-215d-4a91-9da7-9416101442bb.png"
+ },
+ {
+  "wger_id": 1869,
+  "name_en": "Lying Figure Four Stretch",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1869/c49187bd-9f90-4a7a-b25e-1d50e857a104.png"
+ },
+ {
+  "wger_id": 1872,
+  "name_en": "Pigeon Stretch",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1872/df982df1-512a-4eb9-acd9-68cc1c265df6.png"
+ },
+ {
+  "wger_id": 1873,
+  "name_en": "Quad Stretch",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1873/c0ed299b-6d87-4d90-885d-bb3b5d85f1eb.png"
+ },
+ {
+  "wger_id": 1874,
+  "name_en": "Runners Lunge Stretch",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1874/66fca8a5-41e8-42d1-8776-5e46a4902650.png"
+ },
+ {
+  "wger_id": 1875,
+  "name_en": "Standing IT Band Stretch",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1875/e1128391-4b73-43a9-ab27-657d8bb43083.png"
+ },
+ {
+  "wger_id": 1876,
+  "name_en": "Supported Calf Stretch",
+  "category": "Calves",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1876/ca7b3fe7-5908-4ec2-9d85-7fa1b80bb105.png"
+ },
+ {
+  "wger_id": 1870,
+  "name_en": "Lying Hamstring Stretch with Band",
+  "category": "Legs",
+  "equipment": [
+   "Resistance band"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1870/7465bbcf-3b86-42a6-8d2f-12a3d1f60a15.png"
+ },
+ {
+  "wger_id": 1804,
+  "name_en": "ankle dorsiflexion rocks",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Calves",
+   "Soleus"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1804/691c69b8-c3db-4177-8435-dd3a97d88542.webp"
+ },
+ {
+  "wger_id": 1830,
+  "name_en": "Barbell Step Back Lunge",
+  "category": "Legs",
+  "equipment": [
+   "Barbell"
+  ],
+  "muscles": [
+   "Quads"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1830/3b6c547c-ab3d-4472-93cf-561710279eab.jpg"
+ },
+ {
+  "wger_id": 1835,
+  "name_en": "External Rotation Stretch",
+  "category": "Shoulders",
+  "equipment": [
+   "Barbell"
+  ],
+  "muscles": [
+   "Shoulders",
+   "Trapezius"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1835/ca4a0b7e-9fdd-4173-843a-f0392824abe1.jpg"
+ },
+ {
+  "wger_id": 1854,
+  "name_en": "Calves foam roller",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Calves"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1854/ccd3c18e-c864-426f-8176-15dce14305e3.webp"
+ },
+ {
+  "wger_id": 1855,
+  "name_en": "Hamstring Foam roller",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1855/a6597ed8-1613-4458-ba56-4b63bc946a35.webp"
+ },
+ {
+  "wger_id": 1856,
+  "name_en": "Foam Roller Anterior tibialis",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1856/19c31c63-4968-4887-b8e6-4127be27fdde.jpg"
+ },
+ {
+  "wger_id": 1857,
+  "name_en": "Foam Roller Iliotibial band",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Quads"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1857/92291128-cc7e-4f70-9663-80840c516fc9.jpg"
+ },
+ {
+  "wger_id": 1858,
+  "name_en": "Foam Roller quadriceps",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Quads"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1858/058b6fdb-8093-4b6d-a504-cbf869f3e3d3.jpg"
+ },
+ {
+  "wger_id": 1859,
+  "name_en": "Foam Roller Gluteus",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Glutes"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1859/2465d5eb-c249-454d-93eb-58aa13bdc080.webp"
+ },
+ {
+  "wger_id": 1860,
+  "name_en": "Foam Roller Adductors",
+  "category": "Legs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1860/f0410e66-28d5-455f-90f3-d078e0988460.avif"
+ },
+ {
+  "wger_id": 1947,
+  "name_en": "dumbbell snatch",
+  "category": "Legs",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Hamstrings",
+   "Glutes",
+   "Quads"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1947/4201a9c0-f9e4-48ca-80f1-b46c7ffe5640.webp"
+ },
+ {
+  "wger_id": 1893,
+  "name_en": "Overhead Barbell Press",
+  "category": "Shoulders",
+  "equipment": [
+   "Barbell"
+  ],
+  "muscles": [
+   "Shoulders"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1893/7dbad19e-0616-41fd-9d7d-3e21649c0eea.png"
+ },
+ {
+  "wger_id": 1901,
+  "name_en": "Clean and Press",
+  "category": "Shoulders",
+  "equipment": [
+   "Barbell"
+  ],
+  "muscles": [
+   "Shoulders"
+  ],
+  "muscles_secondary": [
+   "Quads"
+  ],
+  "image": "https://wger.de/media/exercise-images/1901/046f0f42-0ed5-48c5-a9ee-41de25e3b6a0.png"
+ },
+ {
+  "wger_id": 1902,
+  "name_en": "Weighted push-ups",
+  "category": "Chest",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Chest"
+  ],
+  "muscles_secondary": [
+   "Triceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/1902/d0c3f170-543c-4be4-bc70-5c6dc606406c.png"
+ },
+ {
+  "wger_id": 1916,
+  "name_en": "Tuck planche",
+  "category": "Shoulders",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Shoulders",
+   "Abs",
+   "Serratus anterior"
+  ],
+  "muscles_secondary": [
+   "Obliquus externus abdominis",
+   "Chest",
+   "Triceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/1916/e7d97b4b-9fe4-4378-aea3-5a9d93b6eb8d.png"
+ },
+ {
+  "wger_id": 1900,
+  "name_en": "Tricep Rope Pushdowns",
+  "category": "Arms",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Triceps"
+  ],
+  "muscles_secondary": [
+   "Lats"
+  ],
+  "image": "https://wger.de/media/exercise-images/1900/a8243245-8f8f-4e2b-93ca-694d416cb11d.png"
+ },
+ {
+  "wger_id": 50,
+  "name_en": "Barbell Triceps Extension",
+  "category": "Arms",
+  "equipment": [
+   "Barbell"
+  ],
+  "muscles": [
+   "Triceps"
+  ],
+  "muscles_secondary": [
+   "Shoulders",
+   "Chest"
+  ],
+  "image": "https://wger.de/media/exercise-images/50/695ced5c-9961-4076-add2-cb250d01089e.png"
+ },
+ {
+  "wger_id": 1922,
+  "name_en": "Seated Cable chest fly",
+  "category": "Chest",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Chest"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1922/eb750ee5-3220-4128-aef1-5e2f1ccff40a.webp"
+ },
+ {
+  "wger_id": 92,
+  "name_en": "Biceps Curls With Dumbbell",
+  "category": "Arms",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Biceps"
+  ],
+  "muscles_secondary": [
+   "Brachialis"
+  ],
+  "image": "https://wger.de/media/exercise-images/81/Biceps-curl-1.png"
+ },
+ {
+  "wger_id": 83,
+  "name_en": "Bent Over Rowing",
+  "category": "Back",
+  "equipment": [
+   "Barbell"
+  ],
+  "muscles": [
+   "Lats"
+  ],
+  "muscles_secondary": [
+   "Shoulders",
+   "Biceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/109/Barbell-rear-delt-row-1.png"
+ },
+ {
+  "wger_id": 81,
+  "name_en": "Bent Over Dumbbell Rows",
+  "category": "Back",
+  "equipment": [
+   "Bench",
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Lats"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/81/a751a438-ae2d-4751-8d61-cef0e9292174.png"
+ },
+ {
+  "wger_id": 94,
+  "name_en": "Biceps Curls With SZ-bar",
+  "category": "Arms",
+  "equipment": [
+   "SZ-Bar"
+  ],
+  "muscles": [
+   "Biceps"
+  ],
+  "muscles_secondary": [
+   "Brachialis"
+  ],
+  "image": "https://wger.de/media/exercise-images/94/6dee2f60-aea2-4f2d-9bf6-aef50c4f9483.png"
+ },
+ {
+  "wger_id": 75,
+  "name_en": "Benchpress Dumbbells",
+  "category": "Chest",
+  "equipment": [
+   "Bench",
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Chest"
+  ],
+  "muscles_secondary": [
+   "Shoulders",
+   "Triceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/97/Dumbbell-bench-press-1.png"
+ },
+ {
+  "wger_id": 91,
+  "name_en": "Biceps Curls With Barbell",
+  "category": "Arms",
+  "equipment": [
+   "Barbell"
+  ],
+  "muscles": [
+   "Biceps"
+  ],
+  "muscles_secondary": [
+   "Brachialis"
+  ],
+  "image": "https://wger.de/media/exercise-images/74/Bicep-curls-1.png"
+ },
+ {
+  "wger_id": 1889,
+  "name_en": "Decline Bench Leg Raise",
+  "category": "Abs",
+  "equipment": [
+   "Incline bench"
+  ],
+  "muscles": [
+   "Abs"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1889/bc51ef67-0c12-4340-a36c-42ef722778dd.png"
+ },
+ {
+  "wger_id": 73,
+  "name_en": "Bench Press",
+  "category": "Chest",
+  "equipment": [
+   "Barbell",
+   "Bench"
+  ],
+  "muscles": [
+   "Chest"
+  ],
+  "muscles_secondary": [
+   "Shoulders",
+   "Triceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/192/Bench-press-1.png"
+ },
+ {
+  "wger_id": 76,
+  "name_en": "Bench Press Narrow Grip",
+  "category": "Arms",
+  "equipment": [
+   "Barbell",
+   "Bench"
+  ],
+  "muscles": [
+   "Triceps"
+  ],
+  "muscles_secondary": [
+   "Shoulders",
+   "Chest"
+  ],
+  "image": "https://wger.de/media/exercise-images/88/Narrow-grip-bench-press-1.png"
+ },
+ {
+  "wger_id": 185,
+  "name_en": "Decline Bench Press Barbell",
+  "category": "Chest",
+  "equipment": [
+   "Barbell",
+   "Bench"
+  ],
+  "muscles": [
+   "Chest"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/100/Decline-bench-press-1.png"
+ },
+ {
+  "wger_id": 51,
+  "name_en": "Barbell Wrist Curl",
+  "category": "Arms",
+  "equipment": [
+   "Barbell",
+   "Bench"
+  ],
+  "muscles": [],
+  "muscles_secondary": [
+   "Biceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/51/f1730f56-7aca-4566-8338-3e42b1bee6e1.webp"
+ },
+ {
+  "wger_id": 282,
+  "name_en": "Handstand Pushup",
+  "category": "Shoulders",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Shoulders",
+   "Triceps"
+  ],
+  "muscles_secondary": [
+   "Trapezius"
+  ],
+  "image": "https://wger.de/media/exercise-images/282/f6121ac9-330e-4ed7-8219-91ce246bf871.png"
+ },
+ {
+  "wger_id": 194,
+  "name_en": "Dips",
+  "category": "Chest",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Chest",
+   "Triceps"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/194/34600351-8b0b-4cb0-8daa-583537be15b0.png"
+ },
+ {
+  "wger_id": 95,
+  "name_en": "Biceps Curl With Cable",
+  "category": "Arms",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Biceps"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/129/Standing-biceps-curl-1.png"
+ },
+ {
+  "wger_id": 237,
+  "name_en": "Fly With Cable",
+  "category": "Chest",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Chest"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/122/Incline-cable-flyes-1.png"
+ },
+ {
+  "wger_id": 275,
+  "name_en": "Hammercurls on Cable",
+  "category": "Arms",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Biceps"
+  ],
+  "muscles_secondary": [
+   "Brachialis"
+  ],
+  "image": "https://wger.de/media/exercise-images/138/Hammer-curls-with-rope-1.png"
+ },
+ {
+  "wger_id": 171,
+  "name_en": "Incline Crunches",
+  "category": "Abs",
+  "equipment": [
+   "Incline bench"
+  ],
+  "muscles": [
+   "Abs"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/56/Decline-crunch-1.png"
+ },
+ {
+  "wger_id": 167,
+  "name_en": "Crunches",
+  "category": "Abs",
+  "equipment": [
+   "Gym mat"
+  ],
+  "muscles": [
+   "Abs"
+  ],
+  "muscles_secondary": [
+   "Serratus anterior"
+  ],
+  "image": "https://wger.de/media/exercise-images/91/Crunches-1.png"
+ },
+ {
+  "wger_id": 184,
+  "name_en": "Deadlifts",
+  "category": "Back",
+  "equipment": [
+   "Barbell"
+  ],
+  "muscles": [
+   "Lats"
+  ],
+  "muscles_secondary": [
+   "Glutes"
+  ],
+  "image": "https://wger.de/media/exercise-images/184/1709c405-620a-4d07-9658-fade2b66a2df.jpeg"
+ },
+ {
+  "wger_id": 203,
+  "name_en": "Dumbbell Goblet Squat",
+  "category": "Legs",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Quads"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/203/1c052351-2af0-4227-aeb0-244008e4b0a8.jpeg"
+ },
+ {
+  "wger_id": 206,
+  "name_en": "Dumbbell Lunges Walking",
+  "category": "Legs",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Quads"
+  ],
+  "muscles_secondary": [
+   "Glutes"
+  ],
+  "image": "https://wger.de/media/exercise-images/113/Walking-lunges-1.png"
+ },
+ {
+  "wger_id": 238,
+  "name_en": "Fly With Dumbbells",
+  "category": "Chest",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Chest"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/238/2fc242d3-5bdd-4f97-99bd-678adb8c96fc.png"
+ },
+ {
+  "wger_id": 197,
+  "name_en": "Dips Between Two Benches",
+  "category": "Arms",
+  "equipment": [
+   "Bench"
+  ],
+  "muscles": [
+   "Triceps"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/83/Bench-dips-1.png"
+ },
+ {
+  "wger_id": 256,
+  "name_en": "Front Raises",
+  "category": "Shoulders",
+  "equipment": [
+   "Barbell",
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Shoulders"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/256/b7def5bc-2352-499b-b9e5-fff741003831.png"
+ },
+ {
+  "wger_id": 257,
+  "name_en": "Front Squats",
+  "category": "Legs",
+  "equipment": [
+   "Barbell"
+  ],
+  "muscles": [
+   "Glutes"
+  ],
+  "muscles_secondary": [
+   "Abs"
+  ],
+  "image": "https://wger.de/media/exercise-images/191/Front-squat-1-857x1024.png"
+ },
+ {
+  "wger_id": 272,
+  "name_en": "Hammer Curls",
+  "category": "Arms",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Biceps"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/86/Bicep-hammer-curl-1.png"
+ },
+ {
+  "wger_id": 246,
+  "name_en": "Skullcrusher SZ-bar",
+  "category": "Arms",
+  "equipment": [
+   "Bench",
+   "SZ-Bar"
+  ],
+  "muscles": [
+   "Triceps"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/84/Lying-close-grip-triceps-press-to-chin-1.png"
+ },
+ {
+  "wger_id": 348,
+  "name_en": "Lateral Raises",
+  "category": "Shoulders",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Shoulders"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/148/lateral-dumbbell-raises-large-2.png"
+ },
+ {
+  "wger_id": 822,
+  "name_en": "Cable Rear Delt Fly",
+  "category": "Shoulders",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Shoulders",
+   "Trapezius"
+  ],
+  "muscles_secondary": [
+   "Triceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/822/74affc0d-03b6-4f33-b5f4-a822a2615f68.png"
+ },
+ {
+  "wger_id": 487,
+  "name_en": "Rear Delt Raises",
+  "category": "Shoulders",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/487/ad724e5c-b1ed-49e8-9279-a17545b0dd0b.png"
+ },
+ {
+  "wger_id": 475,
+  "name_en": "Pull-ups",
+  "category": "Back",
+  "equipment": [
+   "Pull-up bar"
+  ],
+  "muscles": [
+   "Lats"
+  ],
+  "muscles_secondary": [
+   "Shoulders",
+   "Biceps",
+   "Trapezius"
+  ],
+  "image": "https://wger.de/media/exercise-images/475/b0554016-16fd-4dbe-be47-a2a17d16ae0e.jpg"
+ },
+ {
+  "wger_id": 458,
+  "name_en": "Plank",
+  "category": "Abs",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Obliquus externus abdominis",
+   "Abs"
+  ],
+  "muscles_secondary": [
+   "Biceps",
+   "Quads",
+   "Triceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/458/b7bd9c28-9f1d-4647-bd17-ab6a3adf5770.png"
+ },
+ {
+  "wger_id": 538,
+  "name_en": "Incline Bench Press - Barbell",
+  "category": "Chest",
+  "equipment": [
+   "Barbell",
+   "Incline bench"
+  ],
+  "muscles": [
+   "Chest"
+  ],
+  "muscles_secondary": [
+   "Shoulders",
+   "Triceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/41/Incline-bench-press-1.png"
+ },
+ {
+  "wger_id": 576,
+  "name_en": "Side Crunch",
+  "category": "Abs",
+  "equipment": [
+   "Gym mat"
+  ],
+  "muscles": [
+   "Obliquus externus abdominis"
+  ],
+  "muscles_secondary": [
+   "Abs"
+  ],
+  "image": "https://wger.de/media/exercise-images/176/Cross-body-crunch-1.png"
+ },
+ {
+  "wger_id": 570,
+  "name_en": "Shoulder Shrug",
+  "category": "Shoulders",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Trapezius"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/570/68b4a33f-40f1-4dda-b56c-a2e20ed13903.jpg"
+ },
+ {
+  "wger_id": 694,
+  "name_en": "Upright Row w/ Dumbbells",
+  "category": "Shoulders",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Shoulders",
+   "Trapezius"
+  ],
+  "muscles_secondary": [
+   "Biceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/694/119e6823-6960-4341-a9e1-aaf78d7fb57c.png"
+ },
+ {
+  "wger_id": 465,
+  "name_en": "Preacher Curls",
+  "category": "Arms",
+  "equipment": [
+   "SZ-Bar"
+  ],
+  "muscles": [
+   "Brachialis"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/193/Preacher-curl-3-1.png"
+ },
+ {
+  "wger_id": 418,
+  "name_en": "Military Press mit SZ-Bar",
+  "category": "Shoulders",
+  "equipment": [
+   "SZ-Bar"
+  ],
+  "muscles": [
+   "Shoulders"
+  ],
+  "muscles_secondary": [
+   "Trapezius",
+   "Triceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/418/fa2a2207-43cb-4dc0-bc2a-039e32544790.png"
+ },
+ {
+  "wger_id": 537,
+  "name_en": "Incline Bench Press - Dumbbell",
+  "category": "Chest",
+  "equipment": [
+   "Dumbbell",
+   "Incline bench"
+  ],
+  "muscles": [
+   "Chest"
+  ],
+  "muscles_secondary": [
+   "Shoulders",
+   "Triceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/16/Incline-press-1.png"
+ },
+ {
+  "wger_id": 1567,
+  "name_en": "Alternating dumbbell hammer curl",
+  "category": "Arms",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Biceps"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/1567/0a8c155c-a48e-47e8-9df3-e39f025c6cad.png"
+ },
+ {
+  "wger_id": 659,
+  "name_en": "Triceps Extensions on Cable",
+  "category": "Arms",
+  "equipment": [
+   "Cable machine"
+  ],
+  "muscles": [
+   "Triceps"
+  ],
+  "muscles_secondary": [],
+  "image": "https://wger.de/media/exercise-images/659/a60452f1-e2ea-43fe-baa6-c1a2208d060c.png"
+ },
+ {
+  "wger_id": 1084,
+  "name_en": "Dumbbell Floor Press",
+  "category": "Chest",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Chest"
+  ],
+  "muscles_secondary": [
+   "Shoulders",
+   "Biceps",
+   "Triceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/1084/91dd5a95-1c45-46f2-a074-de41b6ad599b.jpg"
+ },
+ {
+  "wger_id": 1188,
+  "name_en": "Side bend",
+  "category": "Abs",
+  "equipment": [
+   "Dumbbell"
+  ],
+  "muscles": [
+   "Obliquus externus abdominis"
+  ],
+  "muscles_secondary": [
+   "Abs"
+  ],
+  "image": "https://wger.de/media/exercise-images/1188/43e714e4-b736-4f3a-8ab4-97821fdff86a.jpg"
+ },
+ {
+  "wger_id": 1801,
+  "name_en": "Barbell Full Squat",
+  "category": "Legs",
+  "equipment": [
+   "Barbell"
+  ],
+  "muscles": [
+   "Hamstrings",
+   "Glutes",
+   "Quads"
+  ],
+  "muscles_secondary": [
+   "Calves",
+   "Abs"
+  ],
+  "image": "https://wger.de/media/exercise-images/1801/60043328-1cfb-4289-9865-aaf64d5aaa28.jpg"
+ },
+ {
+  "wger_id": 1551,
+  "name_en": "Push-Up",
+  "category": "Chest",
+  "equipment": [
+   "none (bodyweight exercise)"
+  ],
+  "muscles": [
+   "Chest"
+  ],
+  "muscles_secondary": [
+   "Shoulders",
+   "Abs",
+   "Triceps"
+  ],
+  "image": "https://wger.de/media/exercise-images/1551/a6a9e561-3965-45c6-9f2b-ee671e1a3a45.png"
+ }
+]

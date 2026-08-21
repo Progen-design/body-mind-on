@@ -1,0 +1,794 @@
+{
+  "A_aliasy": {
+    "parmazan": "parmezan",
+    "eggs": "vejce",
+    "milk": "mleko",
+    "jablecne pyre": "jablecna omacka",
+    "almonds": "mandle",
+    "banany": "banan",
+    "hladka mouka": "mouka",
+    "mlety muskatovy orisek": "muskatovy orisek",
+    "baby spinach": "spenat",
+    "bacon": "slanina",
+    "banana": "banan",
+    "cedar": "cheddar",
+    "egg whites": "bilek",
+    "greek yogurt": "recky jogurt",
+    "krystalovy cukr": "cukr",
+    "raspberries": "maliny",
+    "salmon": "losos",
+    "salmon fillets": "losos",
+    "tomato": "rajce",
+    "balzamikovy ocet": "balsamico ocet",
+    "basil leaves": "bazalka",
+    "bell pepper": "paprika",
+    "blueberries": "boruvky",
+    "bread crumbs": "strouhanka",
+    "cheddar cheese": "cheddar",
+    "cherry tomatoes": "rajce",
+    "coconut milk": "kokosove mleko",
+    "cooking oats": "ovesne vlocky",
+    "houb": "houby",
+    "juice of lemon": "citronova stava",
+    "kesu orechy": "kesu",
+    "led": "voda",
+    "lemon": "citron",
+    "mayonnaise": "majoneza",
+    "mlete lnene seminko": "lnena seminka",
+    "oats": "ovesne vlocky",
+    "onion": "cibule",
+    "ostry cedar": "cheddar",
+    "peanut butter": "arasidove maslo",
+    "pekanove orechy": "pekany",
+    "plocholista petrzel": "petrzel",
+    "rolled oats": "ovesne vlocky",
+    "skoricovy prasek": "skorice",
+    "soda na peceni": "jedla soda",
+    "spinach": "spenat",
+    "strawberries": "jahody",
+    "tomatoes": "rajce",
+    "walnuts": "vlasske orechy",
+    "white wine": "bile vino",
+    "6 roma tomatoes": "rajce",
+    "almond milk": "mandlove mleko",
+    "apple": "jablko",
+    "applesauce": "jablecna omacka",
+    "asparagus spears": "chrest",
+    "avocado": "avokado",
+    "baby portabella mushrooms": "houby",
+    "balsamic vinegar": "balsamico ocet",
+    "bazalka natrhana na kousky": "bazalka",
+    "bile vejce": "bilek",
+    "bilky": "bilek",
+    "broccoli": "brokolice",
+    "broccoli florets": "brokolice",
+    "brown sugar": "hnedy cukr",
+    "cajova lzicka jedle sody": "jedla soda",
+    "cajova lzicka prasku do peciva": "prasek do peciva",
+    "carrot": "mrkev",
+    "celery": "celer",
+    "cervena/zluta cibule": "cibule",
+    "chia seeds": "chia seminka",
+    "chili powder": "chili prasek",
+    "chilli prasek": "chili prasek",
+    "chives": "pazitka",
+    "cocoa": "kakaovy prasek",
+    "cocoa powder": "kakaovy prasek",
+    "cream cheese": "smetanovy syr",
+    "creamy peanut butter": "arasidove maslo",
+    "crunchy peanut butter": "arasidove maslo",
+    "dalsi mata": "mata",
+    "dill": "kopr",
+    "egg yolks": "zloutky",
+    "extra-firm tofu": "tofu",
+    "farfalle pasta by barilla": "testoviny",
+    "fennel": "fenykl",
+    "filety aljasskeho lososa": "losos",
+    "filety lososa": "losos",
+    "freeze strawberries": "jahody",
+    "full baby spinach": "spenat",
+    "ginger root": "zazvor",
+    "green onion": "jarni cibulka",
+    "green onions": "jarni cibulka",
+    "grilovana kureci prsa": "kureci prsa",
+    "horcice dijon": "dijonska horcice",
+    "horcice dijonska": "dijonska horcice",
+    "irske ovesne vlocky": "ovesne vlocky",
+    "jalapeno papricky": "jalapeno",
+    "jogurt z plnotucneho mleka": "bily jogurt",
+    "kanadska slanina": "slanina",
+    "kapka olivoveho oleje": "olivovy olej",
+    "klas kukurice": "kukurice",
+    "kokosove mleko plnotucne": "kokosove mleko",
+    "konzervovana rajcata": "rajce",
+    "kousky manga": "mango",
+    "kureci prsa bez kuze a kosti": "kureci prsa",
+    "ledova voda": "voda",
+    "ledove kostky": "voda",
+    "leek": "porek",
+    "lettuce": "salat (napr. ledovy)",
+    "limetkove klinky": "limetka",
+    "limety": "limetka",
+    "linguine": "testoviny",
+    "listy mangoldu": "svycarsky mangold",
+    "listy spenatu": "spenat",
+    "listy tymianu": "tymian",
+    "lneny olej": "olej",
+    "lump crab meat": "krabi maso",
+    "lzice vody": "voda",
+    "mandlove platky": "mandle",
+    "mazola olej": "olej",
+    "mild cheddar": "cheddar",
+    "mild cheddar syr": "cheddar",
+    "mint": "mata",
+    "mlady spenat": "spenat",
+    "mleta lnena seminka": "lnena seminka",
+    "nakrajeny mlady zazvor": "zazvor",
+    "natural yogurt": "bily jogurt",
+    "nove brambory": "brambory",
+    "old fashioned oats": "ovesne vlocky",
+    "old-fashioned oatmeal": "ovesne vlocky",
+    "olej z hroznovych jader": "olej",
+    "onion or": "cibule",
+    "orange juice": "pomerancova stava",
+    "panko breadcrumbs": "strouhanka",
+    "parmesan cheese": "parmezan",
+    "parsley leaves": "petrzel",
+    "pasta": "testoviny",
+    "pasta shells": "testoviny",
+    "pasteurized eggs": "vejce",
+    "pastry flour": "mouka",
+    "peach": "broskev",
+    "peaches": "broskev",
+    "pecans": "pekany",
+    "pine nuts": "pinove orisky",
+    "pineapple": "ananas",
+    "piniove orisky": "pinove orisky",
+    "platek limetky": "limetka",
+    "por": "porek",
+    "portobello zampiony": "houby",
+    "posirovany losos": "losos",
+    "potato": "brambory",
+    "praskovy cukr": "cukr",
+    "prirodni jogurt (neslazeny)": "bily jogurt",
+    "protein powder": "proteinovy prasek",
+    "psenicna mouka na peceni": "mouka",
+    "pulka bananu": "banan",
+    "quick-cooking oats": "ovesne vlocky",
+    "rajcata cherry": "rajce",
+    "rajcata roma": "rajce",
+    "rajcata z konzervy": "rajce",
+    "recky jogurt plnotucny": "recky jogurt",
+    "repkovy olej": "olej",
+    "rice vinegar": "ryzovy ocet",
+    "rozslehana vejce": "vejce",
+    "ruzicky brokolice": "brokolice",
+    "salmon steaks": "losos",
+    "salotky": "salotka",
+    "scallions": "jarni cibulka",
+    "shrimp": "krevety",
+    "slunecnicovy olej": "olej",
+    "sockeye lososove filety": "losos",
+    "spinach leaves": "spenat",
+    "staromodni ovesne vlocky": "ovesne vlocky",
+    "stavnata zrala rajcata": "rajce",
+    "stvoly chrestu": "chrest",
+    "suseny tymian": "tymian",
+    "svestkove rajcata": "rajce",
+    "sweet potato": "sladke brambory",
+    "syr mozzarella": "mozzarella",
+    "testoviny motylky": "testoviny",
+    "treska": "ryba (napr. treska)",
+    "turkey cutlets": "kruti prsa",
+    "tvarohovy syr": "smetanovy syr",
+    "univerzalni mouka": "mouka",
+    "vajecny bilek": "bilek",
+    "vejce z volneho chovu": "vejce",
+    "velka cibule": "cibule",
+    "vlazna voda": "voda",
+    "vlocky ovesne": "ovesne vlocky",
+    "volitelne vlasske orechy": "vlasske orechy",
+    "yogurt": "bily jogurt",
+    "zampiony crimini": "houby",
+    "zelena cibulka": "jarni cibulka",
+    "zelene cibule": "jarni cibulka",
+    "ziti": "testoviny",
+    "zrale avokado": "avokado"
+  },
+  "B_nove_suroviny": [
+    {
+      "cs": "feta",
+      "en": "feta cheese",
+      "usda": "cheese feta",
+      "pokryva": [
+        "feta",
+        "feta cheese"
+      ]
+    },
+    {
+      "cs": "nízkotučný řecký jogurt",
+      "en": "low fat greek yogurt",
+      "usda": "yogurt greek plain lowfat",
+      "pokryva": [
+        "nizkotucny recky jogurt",
+        "non fat yogurt",
+        "nonfat cottage cheese"
+      ]
+    },
+    {
+      "cs": "šlehačka",
+      "en": "whipping cream",
+      "usda": "cream heavy whipping",
+      "pokryva": [
+        "smetana ke slehani",
+        "whip cream"
+      ]
+    },
+    {
+      "cs": "rozinky",
+      "en": "raisins",
+      "usda": "raisins seedless",
+      "pokryva": [
+        "rozinky",
+        "zlate rozinky"
+      ]
+    },
+    {
+      "cs": "podmáslí",
+      "en": "buttermilk",
+      "usda": "buttermilk low fat",
+      "pokryva": [
+        "podmasli"
+      ]
+    },
+    {
+      "cs": "sušená rajčata",
+      "en": "sun-dried tomatoes",
+      "usda": "tomatoes sun-dried",
+      "pokryva": [
+        "susena rajcata",
+        "reconstituted sun-dried tomatoes"
+      ]
+    },
+    {
+      "cs": "pomerančová kůra",
+      "en": "orange peel",
+      "usda": "orange peel raw",
+      "pokryva": [
+        "pomerancova kura",
+        "kandovana pomerancova kura"
+      ]
+    },
+    {
+      "cs": "čokoládové kousky",
+      "en": "chocolate chips",
+      "usda": "chocolate semisweet",
+      "pokryva": [
+        "cokoladove kousky",
+        "cokoladove hoblinky",
+        "horka cokolada"
+      ]
+    },
+    {
+      "cs": "odtučněné mléko",
+      "en": "skim milk",
+      "usda": "milk nonfat fluid",
+      "pokryva": [
+        "odtucnene mleko",
+        "non-fat milk"
+      ]
+    },
+    {
+      "cs": "kozí sýr",
+      "en": "goat cheese",
+      "usda": "cheese goat soft",
+      "pokryva": [
+        "goat cheese",
+        "chavrie goat cheese",
+        "kozi syr chavrie"
+      ]
+    },
+    {
+      "cs": "mascarpone",
+      "en": "mascarpone",
+      "usda": "cheese mascarpone",
+      "pokryva": [
+        "mascarpone"
+      ]
+    },
+    {
+      "cs": "mandlové máslo",
+      "en": "almond butter",
+      "usda": "almond butter plain",
+      "pokryva": [
+        "mandlove maslo"
+      ]
+    },
+    {
+      "cs": "kokosová mouka",
+      "en": "coconut flour",
+      "usda": "coconut flour",
+      "pokryva": [
+        "kokosova mouka"
+      ]
+    },
+    {
+      "cs": "kokosové vločky",
+      "en": "shredded coconut",
+      "usda": "coconut meat dried shredded",
+      "pokryva": [
+        "kokosove vlocky"
+      ]
+    },
+    {
+      "cs": "krupice",
+      "en": "semolina",
+      "usda": "semolina enriched",
+      "pokryva": [
+        "krupice"
+      ]
+    },
+    {
+      "cs": "meruňky",
+      "en": "apricots",
+      "usda": "apricots raw",
+      "pokryva": [
+        "merunky"
+      ]
+    },
+    {
+      "cs": "melasa",
+      "en": "molasses",
+      "usda": "molasses",
+      "pokryva": [
+        "melasa"
+      ]
+    },
+    {
+      "cs": "olivy",
+      "en": "olives",
+      "usda": "olives ripe canned",
+      "pokryva": [
+        "olivy",
+        "olivy plnene pimentem"
+      ]
+    },
+    {
+      "cs": "ostružiny",
+      "en": "blackberries",
+      "usda": "blackberries raw",
+      "pokryva": [
+        "ostruziny"
+      ]
+    },
+    {
+      "cs": "pohanková mouka",
+      "en": "buckwheat flour",
+      "usda": "buckwheat flour whole groat",
+      "pokryva": [
+        "pohankova mouka"
+      ]
+    },
+    {
+      "cs": "pomeranč",
+      "en": "orange",
+      "usda": "oranges raw",
+      "pokryva": [
+        "pomeranc"
+      ]
+    },
+    {
+      "cs": "rozmarýn",
+      "en": "rosemary",
+      "usda": "rosemary fresh",
+      "pokryva": [
+        "rozmaryn"
+      ]
+    },
+    {
+      "cs": "dýňové pyré",
+      "en": "pumpkin puree",
+      "usda": "pumpkin canned without salt",
+      "pokryva": [
+        "dynove pyre",
+        "maslova dynova kase"
+      ]
+    },
+    {
+      "cs": "matcha prášek",
+      "en": "matcha powder",
+      "usda": "tea green powder matcha",
+      "pokryva": [
+        "matcha prasek"
+      ]
+    },
+    {
+      "cs": "sušené brusinky",
+      "en": "dried cranberries",
+      "usda": "cranberries dried sweetened",
+      "pokryva": [
+        "susene brusinky"
+      ]
+    },
+    {
+      "cs": "datle",
+      "en": "dates",
+      "usda": "dates medjool",
+      "pokryva": [
+        "datle",
+        "datle mejdool"
+      ]
+    },
+    {
+      "cs": "fíky",
+      "en": "figs",
+      "usda": "figs raw",
+      "pokryva": [
+        "figs",
+        "fiky mission"
+      ]
+    },
+    {
+      "cs": "hroznové víno",
+      "en": "grapes",
+      "usda": "grapes red or green raw",
+      "pokryva": [
+        "grapes"
+      ]
+    },
+    {
+      "cs": "pistácie",
+      "en": "pistachios",
+      "usda": "nuts pistachio nuts raw",
+      "pokryva": [
+        "pistachios"
+      ]
+    },
+    {
+      "cs": "kokos",
+      "en": "coconut",
+      "usda": "coconut meat raw",
+      "pokryva": [
+        "kokos"
+      ]
+    },
+    {
+      "cs": "vodní meloun",
+      "en": "watermelon",
+      "usda": "watermelon raw",
+      "pokryva": [
+        "vodni meloun"
+      ]
+    },
+    {
+      "cs": "ředkvičky",
+      "en": "radishes",
+      "usda": "radishes raw",
+      "pokryva": [
+        "redkvicky"
+      ]
+    },
+    {
+      "cs": "růžičková kapusta",
+      "en": "brussels sprouts",
+      "usda": "brussels sprouts raw",
+      "pokryva": [
+        "ruzickova kapusta"
+      ]
+    },
+    {
+      "cs": "sádlo",
+      "en": "lard",
+      "usda": "lard",
+      "pokryva": [
+        "sadlo"
+      ]
+    },
+    {
+      "cs": "želatina",
+      "en": "gelatin",
+      "usda": "gelatins dry powder unsweetened",
+      "pokryva": [
+        "zelatina"
+      ]
+    },
+    {
+      "cs": "hovězí vývar",
+      "en": "beef broth",
+      "usda": "beef broth bouillon canned",
+      "pokryva": [
+        "hovezi vyvar"
+      ]
+    },
+    {
+      "cs": "sušené mléko",
+      "en": "milk powder",
+      "usda": "milk dry nonfat",
+      "pokryva": [
+        "susene mleko",
+        "condensed milk",
+        "kondenzovane mleko"
+      ]
+    },
+    {
+      "cs": "granola",
+      "en": "granola",
+      "usda": "granola homemade",
+      "pokryva": [
+        "granola"
+      ]
+    },
+    {
+      "cs": "chilli vločky",
+      "en": "chili flakes",
+      "usda": "spices pepper red or cayenne",
+      "pokryva": [
+        "chilli vlocky",
+        "chilli flakes",
+        "pepper flakes",
+        "paliva chilli paprika"
+      ]
+    },
+    {
+      "cs": "semínka granátového jablka",
+      "en": "pomegranate seeds",
+      "usda": "pomegranates raw",
+      "pokryva": [
+        "seminka granatoveho jablka"
+      ]
+    },
+    {
+      "cs": "černý rybíz",
+      "en": "black currants",
+      "usda": "currants european black raw",
+      "pokryva": [
+        "cerny rybiz"
+      ]
+    },
+    {
+      "cs": "sušené třešně",
+      "en": "dried cherries",
+      "usda": "cherries sweet dried",
+      "pokryva": [
+        "susene tresne"
+      ]
+    },
+    {
+      "cs": "dýně",
+      "en": "pumpkin",
+      "usda": "pumpkin raw",
+      "pokryva": [
+        "dyne",
+        "butternut squash"
+      ]
+    }
+  ],
+  "C_nesahame": [
+    "smes smetany a mleka",
+    "vanilka",
+    "muffiny",
+    "potravinarske barvivo",
+    "salt & pepper",
+    "syr asiago",
+    "vanilla almond milk",
+    "vanilla yogurt",
+    "almond extract",
+    "alouette berries & cream spreadable cheese",
+    "alouette creme fraiche",
+    "amaretti",
+    "anyzova seminka",
+    "arenkha msc",
+    "arenkha msc caviar substitute",
+    "baby arugula",
+    "baby beets",
+    "barbecue omacka",
+    "barbecue sauce",
+    "barbecue seasoning",
+    "bel gioioso mozzarella",
+    "berries",
+    "berry cranberry sauce",
+    "bobs mill steel cut oats",
+    "bread",
+    "brusinkovo-pomerancova omacka",
+    "bylinkove koreni",
+    "cereal",
+    "cerna fazolova cesnekova omacka",
+    "challah chleb",
+    "chilli pasta",
+    "chobani yogurt",
+    "chorizo klobasa",
+    "cibulove vlocky",
+    "citronovy tymian",
+    "cizrna *1",
+    "coconut water",
+    "cokolada a extra kakaovy prasek",
+    "collard greens",
+    "corn tortillas",
+    "corned beef hash",
+    "cracked pepper",
+    "cranberry",
+    "creamed wildflower honey",
+    "crepes",
+    "croissant",
+    "croissanty",
+    "crust",
+    "cukrovy hrasek",
+    "dales seasoning",
+    "diestel breakfast sausage",
+    "drozdi",
+    "dynove koreni",
+    "dzem",
+    "farro",
+    "filet mignon steaks",
+    "filety z halibuta",
+    "freshly cracked pepper",
+    "fruit",
+    "grain bread",
+    "grape preserves",
+    "grilovane kure",
+    "guacamole",
+    "habanero omacka a chile",
+    "herbed butter",
+    "himalajska sul",
+    "hnizda spenatovych fettuccine",
+    "hoisin sauce",
+    "horcicny prasek",
+    "hot sauce",
+    "houbova polevka",
+    "hrasek a mrkev",
+    "hrnec. odlomte a odhodte tvrde konce z",
+    "jack cheese",
+    "jahodovy marshmallow",
+    "jedle kvety",
+    "kachni vejce",
+    "kaki",
+    "kardamom",
+    "klobasa",
+    "knorr hollandaise sauce mix",
+    "koncentrat limonady",
+    "konopny proteinovy prasek",
+    "koreni",
+    "koreni citron a pepr",
+    "koreni na dynovy kolac",
+    "koreni v kostce",
+    "koriandrova seminka",
+    "kost s uzeninou",
+    "krupavy chleb k podavani",
+    "kruti klobasa",
+    "krutonky",
+    "kure",
+    "kureci kousky",
+    "kureci palicky",
+    "kyselina vinna",
+    "lamanka",
+    "lasagne bez vareni",
+    "lehce oslazena slehacka nebo",
+    "lepkava ryzova mouka",
+    "lime juice",
+    "lime kura",
+    "lime stava",
+    "limonada",
+    "liquid egg substitute",
+    "lzice smetany",
+    "mahagonova ryze",
+    "makova napln",
+    "mangosteen",
+    "maraschino tresen",
+    "maslo country crock",
+    "maso na duseni",
+    "maso na gulas",
+    "masova omacka",
+    "mata peprna (extrakt)",
+    "mirin",
+    "miso paste",
+    "mlade listy cervene repy",
+    "mlady kapustovy salat",
+    "mleta horcice",
+    "mleta kukuricna krupice",
+    "mlete hrebicek",
+    "mlete klobasy",
+    "mlete veprove",
+    "mlety kardamom",
+    "monterey jack syr",
+    "muffins",
+    "multigrain bread",
+    "naan bread",
+    "nahrada vajec",
+    "nakladane hovezi",
+    "nefiltrovany med",
+    "nepecene testo na kolac",
+    "nepsenicna mouka",
+    "omacka hollandaise knorr",
+    "orange pepper",
+    "orechove ovesne vlocky",
+    "ostre americke syry",
+    "ovesna mouka",
+    "palacinkova smes",
+    "paprika (koreni)",
+    "parsnip",
+    "pasta omacka",
+    "pch salt",
+    "pecorino romano",
+    "pesto",
+    "pikantni marinara omacka",
+    "piknikova sunka",
+    "pita chleb z celozrnne mouky",
+    "pita pockets",
+    "poznamka: pouzil jsem pomerance",
+    "predpeceny korpus",
+    "privedte k varu nekolik hrnku vody",
+    "proteinovy prasek premier protein",
+    "pufovany ryzovy cerealie",
+    "rainbow chard",
+    "rajcatovy protlak",
+    "ramen",
+    "ranch dressing",
+    "raspberries and mint leaves",
+    "raspberry fruit spread",
+    "recky jogurt s vanilkou",
+    "reduced fat cheddar cheese",
+    "roast turkey",
+    "romano syr",
+    "rosemary and thyme",
+    "rostlinne mleko",
+    "rum",
+    "ruzova voda",
+    "rybi filety",
+    "rybi kolacek",
+    "safran",
+    "salsa",
+    "seafood seasoning",
+    "silna kava",
+    "smazeny cesnek",
+    "smes bobuloveho ovoce",
+    "smes na dresink hidden valley ranch",
+    "smetanova houbova polevka",
+    "smetanova kureci polevka",
+    "snizenotucna smetana",
+    "soja omacka s nizkym obsahem sodiku",
+    "sou cream",
+    "spring mix greens",
+    "stava z citronu meyer",
+    "stevie",
+    "susena cizrna",
+    "swiss cheese",
+    "syr brie",
+    "syr gouda prima donna",
+    "syr gruyere",
+    "syr havarti",
+    "t cream",
+    "tarragon leaves",
+    "tarragon stalks",
+    "tekuty kour",
+    "testo na kolac",
+    "testo na kolac o prumeru 23 cm",
+    "testo na quiche",
+    "thajska bazalka",
+    "to)",
+    "tortilla",
+    "trocha maku",
+    "tuna",
+    "tvrdy syr",
+    "tzatziki",
+    "udon s krevetami",
+    "ustricova omacka",
+    "vajecny nahrazka",
+    "vanilkova pasta",
+    "vanilkovy lusk",
+    "vanilkovy proteinovy prasek",
+    "vanilla almond granola",
+    "vanilla silk almond milk",
+    "vanilla sugar",
+    "veganske maslo",
+    "veprova plec",
+    "vino",
+    "voda *2",
+    "voda - prave tolik",
+    "voda minus 2 lzice & pridat 2",
+    "wasabi paste",
+    "watercress",
+    "zbytky kurete milanskeho stylu",
+    "zelena dyne",
+    "zlate maliny"
+  ]
+}

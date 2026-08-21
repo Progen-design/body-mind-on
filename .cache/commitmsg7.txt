@@ -1,0 +1,40 @@
+feat(katalog): generator doplnuje katalog sam, bez rucniho schvalovani
+
+Uzavira smycku, ktera dosud potrebovala cloveka:
+
+  skladac nenajde kandidata -> objednavka do recipe_generation_queue
+  -> denni cron -> novy recept -> aktivni v katalogu
+
+Fronta se plni sama z realne poptavky, tedy z toho, co pri skladani
+jidelnicku skutecne chybelo. Nic z toho uz nevyzaduje zasah.
+
+TRI ZMENY
+
+1. Vlastni generovane recepty neprochazeji filtrem pro START.
+   getFullContentStartBlockReason vraci null pro source = llm_generated.
+   Ten filtr je obrana proti importu ze Spoonacularu — food blog nazvy,
+   imperialni jednotky, dvacetipolozkove seznamy surovin. Recept, ktery
+   si vygenerujeme sami, tyhle vady mit nemuze: prompt ho stavi jen ze
+   surovin ve slovniku, s limitem na pocet surovin a na aktivni cas slotu.
+   Zmereno na produkci: filtr propoustel 19 ze 128 snidani, a proto se
+   v tydennim planu opakovala ctyrikrat tataz svacina.
+
+2. Kaloricke pasmo slotu jako tvrda kontrola pred zapisem.
+   Doted ho hlidal jen prompt, takze do katalogu proslo kari s 1009 kcal
+   do slotu s limitem 700 a svacina se 123 kcal do pasma 150-320.
+   Duvod mimo_kaloricke_pasmo jde do promptu pri dalsim pokusu.
+
+3. Konec rucniho schvalovani: pending_review = false, active = true.
+   Kontrolu prebiraji brany, ktere plati porad a na vsechno:
+     zapis    nutrice pocitana ze surovin, jinak se recept nezapise
+     zapis    kaloricke pasmo slotu
+     trigger  Atwater do 10 %, pocet hlavnich surovin, cesky nazev
+     trigger  dietni tagy vs. skutecne suroviny
+     sweeper  totez denne znovu, takze vada se projevi i zpetne
+
+   Rucni schvalovani je kontrola, ktera spolehlive funguje prvnich dvacet
+   receptu a pak prestane. Tohle funguje porad.
+
+Cron /api/cron/generate-recipes bezi ve 3:15 UTC, tedy po importu (3:00)
+a pred sweepem (3:30) a producentem planu (4:00). Strop na beh i na den
+drzi runRecipeGenerator, takze nemuze utect v nakladech ani pri plne fronte.

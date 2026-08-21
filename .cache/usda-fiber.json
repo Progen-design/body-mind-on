@@ -1,0 +1,298 @@
+{
+  "avokádo": {
+    "fdcId": 171706,
+    "popis": "Avocados, raw, California",
+    "dataType": "SR Legacy",
+    "fiber": 6.8,
+    "kcal": 167,
+    "carbs": 8.64
+  },
+  "banán": {
+    "fdcId": 173944,
+    "popis": "Bananas, raw",
+    "dataType": "SR Legacy",
+    "fiber": 2.6,
+    "kcal": 89,
+    "carbs": 22.8
+  },
+  "broskev": {
+    "fdcId": 325430,
+    "popis": "Peaches, yellow, raw",
+    "dataType": "Foundation",
+    "fiber": 1.5,
+    "kcal": 42,
+    "carbs": 10.1
+  },
+  "chia semínka": {
+    "fdcId": 170554,
+    "popis": "Seeds, chia seeds, dried",
+    "dataType": "SR Legacy",
+    "fiber": 34.4,
+    "kcal": 486,
+    "carbs": 42.1
+  },
+  "citronová šťáva": {
+    "fdcId": 167747,
+    "popis": "Lemon juice, raw",
+    "dataType": "SR Legacy",
+    "fiber": 0.3,
+    "kcal": 22,
+    "carbs": 6.9
+  },
+  "ovesné vločky": {
+    "fdcId": 172989,
+    "popis": "Cereals, QUAKER, Quick Oats, Dry",
+    "dataType": "SR Legacy",
+    "fiber": 9.4,
+    "kcal": 371,
+    "carbs": 68.2
+  },
+  "quinoa": {
+    "fdcId": 168874,
+    "popis": "Quinoa, uncooked",
+    "dataType": "SR Legacy",
+    "fiber": 7,
+    "kcal": 368,
+    "carbs": 64.2
+  },
+  "kuskus": {
+    "fdcId": 169699,
+    "popis": "Couscous, dry",
+    "dataType": "SR Legacy",
+    "fiber": 5,
+    "kcal": 376,
+    "carbs": 77.4
+  },
+  "těstoviny": {
+    "fdcId": 168927,
+    "popis": "Pasta, dry, unenriched",
+    "dataType": "SR Legacy",
+    "fiber": 3.2,
+    "kcal": 371,
+    "carbs": 74.7
+  },
+  "rýže": {
+    "fdcId": 2512381,
+    "popis": "Rice, white, long grain, unenriched, raw",
+    "dataType": "Foundation",
+    "fiber": 0.149,
+    "kcal": 359,
+    "carbs": 80.3
+  },
+  "mouka": {
+    "fdcId": 169761,
+    "popis": "Wheat flour, white, all-purpose, unenriched",
+    "dataType": "SR Legacy",
+    "fiber": 2.7,
+    "kcal": 364,
+    "carbs": 76.3
+  },
+  "čočka": {
+    "fdcId": 172420,
+    "popis": "Lentils, raw",
+    "dataType": "SR Legacy",
+    "fiber": 10.7,
+    "kcal": 352,
+    "carbs": 63.4
+  },
+  "fazole": {
+    "fdcId": 173734,
+    "popis": "Beans, black, mature seeds, raw",
+    "dataType": "SR Legacy",
+    "fiber": 15.5,
+    "kcal": 341,
+    "carbs": 62.4
+  },
+  "mandle": {
+    "fdcId": 2346393,
+    "popis": "Nuts, almonds, whole, raw",
+    "dataType": "Foundation",
+    "fiber": 10.8,
+    "kcal": 626,
+    "carbs": 20
+  },
+  "vlašské ořechy": {
+    "fdcId": 2346394,
+    "popis": "Nuts, walnuts, English, halves, raw",
+    "dataType": "Foundation",
+    "fiber": 5.21,
+    "kcal": 730,
+    "carbs": 10.9
+  },
+  "dýňová semínka": {
+    "fdcId": 170556,
+    "popis": "Seeds, pumpkin and squash seed kernels, dried",
+    "dataType": "SR Legacy",
+    "fiber": 6,
+    "kcal": 559,
+    "carbs": 10.7
+  },
+  "slunečnicová semínka": {
+    "fdcId": 170562,
+    "popis": "Seeds, sunflower seed kernels, dried",
+    "dataType": "SR Legacy",
+    "fiber": 8.6,
+    "kcal": 584,
+    "carbs": 20
+  },
+  "lněná semínka": {
+    "fdcId": 2262075,
+    "popis": "Flaxseed, ground",
+    "dataType": "Foundation",
+    "fiber": 23.1,
+    "kcal": 545,
+    "carbs": 34.4
+  },
+  "jahody": {
+    "fdcId": 167762,
+    "popis": "Strawberries, raw",
+    "dataType": "SR Legacy",
+    "fiber": 2,
+    "kcal": 32,
+    "carbs": 7.68
+  },
+  "jablko": {
+    "fdcId": 1750340,
+    "popis": "Apples, fuji, with skin, raw",
+    "dataType": "Foundation",
+    "fiber": 2.08,
+    "kcal": 64.7,
+    "carbs": 15.7
+  },
+  "hruška": {
+    "fdcId": 169118,
+    "popis": "Pears, raw",
+    "dataType": "SR Legacy",
+    "fiber": 3.1,
+    "kcal": 57,
+    "carbs": 15.2
+  },
+  "brambory": {
+    "fdcId": 170026,
+    "popis": "Potatoes, flesh and skin, raw",
+    "dataType": "SR Legacy",
+    "fiber": 2.1,
+    "kcal": 77,
+    "carbs": 17.5
+  },
+  "mrkev": {
+    "fdcId": 170393,
+    "popis": "Carrots, raw",
+    "dataType": "SR Legacy",
+    "fiber": 2.8,
+    "kcal": 41,
+    "carbs": 9.58
+  },
+  "cibule": {
+    "fdcId": 170000,
+    "popis": "Onions, raw",
+    "dataType": "SR Legacy",
+    "fiber": 1.7,
+    "kcal": 40,
+    "carbs": 9.34
+  },
+  "rajče": {
+    "fdcId": 170457,
+    "popis": "Tomatoes, red, ripe, raw, year round average",
+    "dataType": "SR Legacy",
+    "fiber": 1.2,
+    "kcal": 18,
+    "carbs": 3.89
+  },
+  "paprika": {
+    "fdcId": 170108,
+    "popis": "Peppers, sweet, red, raw",
+    "dataType": "SR Legacy",
+    "fiber": 2.1,
+    "kcal": 26,
+    "carbs": 6.03
+  },
+  "špenát": {
+    "fdcId": 168462,
+    "popis": "Spinach, raw",
+    "dataType": "SR Legacy",
+    "fiber": 2.2,
+    "kcal": 23,
+    "carbs": 3.63
+  },
+  "brokolice": {
+    "fdcId": 747447,
+    "popis": "Broccoli, raw",
+    "dataType": "Foundation",
+    "fiber": 2.4,
+    "kcal": 31,
+    "carbs": 6.27
+  },
+  "květák": {
+    "fdcId": 2685573,
+    "popis": "Cauliflower, raw",
+    "dataType": "Foundation",
+    "fiber": 1.95,
+    "kcal": 27.6,
+    "carbs": 4.72
+  },
+  "cuketa": {
+    "fdcId": 168565,
+    "popis": "Squash, zucchini, baby, raw",
+    "dataType": "SR Legacy",
+    "fiber": 1.1,
+    "kcal": 21,
+    "carbs": 3.11
+  },
+  "houby": {
+    "fdcId": 169251,
+    "popis": "Mushrooms, white, raw",
+    "dataType": "SR Legacy",
+    "fiber": 1,
+    "kcal": 22,
+    "carbs": 3.26
+  },
+  "česnek": {
+    "fdcId": 1104647,
+    "popis": "Garlic, raw",
+    "dataType": "Foundation",
+    "fiber": 2.7,
+    "kcal": 143,
+    "carbs": 28.2
+  },
+  "celer": {
+    "fdcId": 169988,
+    "popis": "Celery, raw",
+    "dataType": "SR Legacy",
+    "fiber": 1.6,
+    "kcal": 14,
+    "carbs": 2.97
+  },
+  "celozrnný chléb": {
+    "fdcId": 172688,
+    "popis": "Bread, whole-wheat, commercially prepared",
+    "dataType": "SR Legacy",
+    "fiber": 6,
+    "kcal": 252,
+    "carbs": 42.7
+  },
+  "arašídové máslo": {
+    "fdcId": 172470,
+    "popis": "Peanut butter, smooth style, without salt",
+    "dataType": "SR Legacy",
+    "fiber": 5,
+    "kcal": 598,
+    "carbs": 22.3
+  },
+  "borůvky": {
+    "fdcId": 171711,
+    "popis": "Blueberries, raw",
+    "dataType": "SR Legacy",
+    "fiber": 2.4,
+    "kcal": 57,
+    "carbs": 14.5
+  },
+  "maliny": {
+    "fdcId": 167755,
+    "popis": "Raspberries, raw",
+    "dataType": "SR Legacy",
+    "fiber": 6.5,
+    "kcal": 52,
+    "carbs": 11.9
+  }
+}

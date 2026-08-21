@@ -1,0 +1,192 @@
+31:cocoa powder~milk~rolled oats~vanilla sugar
+33:apple~banana~cranberry~milk~old-fashioned oatmeal~vanilla yogurt~walnuts
+34:chili powder~egg whites~old fashioned oats~reduced fat cheddar cheese~scallions
+37:cooking oats~cream cheese~non-fat milk~peaches
+39:orechove ovesne vlocky
+40:cocoa~cooking oats~crunchy peanut butter~non-fat milk
+41:applesauce~creamed wildflower honey~milk~pistachios~raspberries~rolled oats
+42:almonds~chia seeds~creamy peanut butter~grape preserves~grapes~quick-cooking oats~vanilla almond milk
+43:mild cheddar syr
+44:mlete klobasy~tortilla
+46:bell pepper~butternut squash~goat cheese~liquid egg substitute~non-fat milk
+47:broccoli~cheddar cheese~chives~eggs~orange pepper~t cream~tomato
+48:baby arugula~baby spinach~dill~egg yolks~eggs~lemon~multigrain bread~salmon
+49:pecorino romano
+50:bread crumbs~celery~eggs~hot sauce~knorr hollandaise sauce mix~lump crab meat~mayonnaise~muffins~onion~seafood seasoning
+51:chilli flakes~eggs~grain bread~spinach leaves~tomato
+52:baby portabella mushrooms~diestel breakfast sausage~eggs~green onion~rainbow chard~sweet potato
+53:eggs~nonfat cottage cheese~salmon~spinach~swiss cheese
+55:cereal~fruit~mint~non fat yogurt
+56:orange juice~strawberries~yogurt
+57:almonds~avocado~coconut milk~condensed milk~lime juice~mangosteen~natural yogurt
+59:alouette berries & cream spreadable cheese~raspberries~raspberries and mint leaves~vanilla almond granola~vanilla yogurt
+70:bobs mill steel cut oats~coconut milk~peach~walnuts
+76:bread crumbs~eggs~milk~pch salt
+77:broccoli florets~eggs~milk~oats
+78:almond extract~egg whites~freeze strawberries~greek yogurt~strawberries~whip cream
+79:portobello zampiony~syr asiago
+80:lehce oslazena slehacka nebo~melasa~staromodni ovesne vlocky~zlate rozinky
+82:eggs~jack cheese~milk
+83:podmasli~pomerancova kura~poznamka: pouzil jsem pomerance
+118:soja omacka s nizkym obsahem sodiku
+120:limety~salsa
+121:ostre americke syry~smetanova kureci polevka
+123:grilovana kureci prsa~houbova polevka~maslo country crock
+124:chilli prasek~koreni v kostce~kureci kousky~paliva chilli paprika~potravinarske barvivo
+130:kureci palicky~olivy plnene pimentem~pomeranc~stavnata zrala rajcata
+132:habanero omacka a chile~lime kura~lime stava~thajska bazalka~zelena cibulka
+133:carrot~cherry tomatoes~onion~parsnip~potato~rosemary and thyme~salmon
+136:posirovany losos
+137:arenkha msc caviar substitute~baby beets~fennel~salmon fillets~tarragon leaves~tarragon stalks~watercress~white wine
+138:barbecue sauce~barbecue seasoning~hoisin sauce~lemon~salmon fillets
+139:feta
+141:mahagonova ryze~tekuty kour
+142:koreni citron a pepr~limonada~sockeye lososove filety
+143:olivy~syr brie
+146:collard greens~freshly cracked pepper~pepper flakes~salmon steaks
+147:dales seasoning~hovezi vyvar~maso na duseni~nove brambory~smetanova houbova polevka
+149:maso na gulas~mlete hrebicek~smes na dresink hidden valley ranch
+169:kureci prsa bez kuze a kosti~vino~zelene cibule
+171:rozmaryn
+172:houb~romano syr
+174:grilovane kure~jalapeno papricky~klas kukurice
+175:piniove orisky
+177:svestkove rajcata
+178:houb~pasta omacka~syr mozzarella~zelena dyne
+179:chilli pasta~limetkove klinky~mlete veprove~ramen~ustricova omacka
+182:klobasa~lasagne bez vareni
+185:konzervovana rajcata~rajcatovy protlak
+187:koreni~pikantni marinara omacka
+190:feta~rybi filety
+192:pita chleb z celozrnne mouky~vodni meloun
+198:bell pepper~juice of lemon~parsley leaves~pasta shells~tuna
+199:filety z halibuta
+201:testoviny motylky
+204:cibulove vlocky~odtucnene mleko
+205:feta~masova omacka~ziti
+206:horcicny prasek
+207:mild cheddar
+209:dalsi mata~prirodni jogurt (neslazeny)
+250:susene brusinky
+251:almonds~berries~greek yogurt~oats
+252:praskovy cukr~vanilka
+253:jahodovy marshmallow
+254:nizkotucny recky jogurt
+255:amaretti~recky jogurt plnotucny~zelatina
+256:horka cokolada~jogurt z plnotucneho mleka~zrale avokado
+485:kousky manga~mandlove maslo~matcha prasek~mlady kapustovy salat
+486:drozdi~susene mleko~vlazna voda
+487:banany
+489:baby spinach~banana~greek yogurt~peanut butter~vanilla almond milk
+490:baby spinach~banana~chobani yogurt~peanut butter~vanilla silk almond milk
+491:almond milk~almonds~crust~extra-firm tofu~leek~miso paste~panko breadcrumbs~pastry flour~pine nuts~reconstituted sun-dried tomatoes
+493:blueberries~coconut water~pineapple~protein powder~spinach
+496:jablecne pyre~mleta kukuricna krupice~mlety muskatovy orisek~ovesna mouka
+497:dyne~led~mlety muskatovy orisek~vanilkovy proteinovy prasek
+498:nakrajeny mlady zazvor
+499:jablecne pyre~mlete lnene seminko~mlety muskatovy orisek
+501:citronovy tymian~filety aljasskeho lososa~horcice dijon~psenicna mouka na peceni~ruzicky brokolice~snizenotucna smetana~vajecny bilek
+502:dynove pyre~kaki~pomeranc
+503:asparagus spears~cherry tomatoes~egg whites~feta cheese~green onions~tzatziki
+505:parmazan
+507:mlete lnene seminko~nizkotucny recky jogurt~smes bobuloveho ovoce
+508:hrnec. odlomte a odhodte tvrde konce z~parmazan~privedte k varu nekolik hrnku vody
+509:muffiny~stvoly chrestu
+511:hladka mouka~krystalovy cukr~ostruziny~stava z citronu meyer
+512:mlade listy cervene repy~parmazan~por
+513:nizkotucny recky jogurt
+514:mlady spenat~parmazan
+515:nakladane hovezi~smetana ke slehani
+516:challah chleb~maslova dynova kase~vanilka
+518:feta~krupice~kruti klobasa
+519:kapka olivoveho oleje~rajcata cherry~rozslehana vejce
+521:banany~mazola olej~rozinky~volitelne vlasske orechy
+522:arenkha msc~kachni vejce~lzice smetany~lzice vody
+523:voda - prave tolik
+524:tvrdy syr
+525:ostry cedar~parmazan
+526:alouette creme fraiche~kozi syr chavrie~predpeceny korpus~smes smetany a mleka
+527:cerna fazolova cesnekova omacka~hrasek a mrkev~platek limetky~repkovy olej~smazeny cesnek
+528:barbecue omacka~krupice~ostry cedar
+529:krystalovy cukr~tvarohovy syr
+530:banany~bile vejce~rozinky
+531:parmazan
+532:pohankova mouka~voda minus 2 lzice & pridat 2
+533:listy tymianu~nahrada vajec~parmazan~smes smetany a mleka
+534:kokosove vlocky~maraschino tresen~recky jogurt s vanilkou
+535:hladka mouka~kyselina vinna~merunky~nepsenicna mouka~podmasli
+536:chorizo klobasa~feta~krupavy chleb k podavani~rajcata z konzervy
+537:smetana ke slehani~syr asiago
+538:listy mangoldu~smetana ke slehani~syr gouda prima donna~testo na quiche~vejce z volneho chovu~zampiony crimini
+540:kokosova mouka
+541:cokoladove kousky~matcha prasek
+542:croissanty~pomerancova kura
+543:cedar~olej z hroznovych jader
+544:palacinkova smes~sadlo
+546:podmasli
+547:cedar~ledova voda~piknikova sunka~smetana ke slehani
+548:banany~jablecne pyre~konopny proteinovy prasek~mandlove maslo~mleta lnena seminka
+549:potravinarske barvivo
+550:proteinovy prasek premier protein
+551:rybi kolacek~udon s krevetami
+553:smes smetany a mleka~syr gruyere~testo na kolac
+554:hnizda spenatovych fettuccine~parmazan~smetana ke slehani
+555:chilli vlocky~smes smetany a mleka~syr havarti~testo na kolac o prumeru 23 cm
+556:mascarpone~pekanove orechy
+557:corned beef hash~croissant
+560:zbytky kurete milanskeho stylu
+561:susena rajcata
+562:cedar~mleta horcice~monterey jack syr~nepecene testo na kolac~smes smetany a mleka
+563:pohankova mouka~soda na peceni
+564:kanadska slanina~muffiny~omacka hollandaise knorr
+565:dynove koreni~kardamom~kokosova mouka~kokosove mleko plnotucne~soda na peceni~stevie~vanilka
+567:led
+568:nizkotucny recky jogurt~ostruziny~zlate maliny
+569:seminka granatoveho jablka~skoricovy prasek
+570:bilky~irske ovesne vlocky~univerzalni mouka
+571:kokos~veganske maslo
+574:mlety muskatovy orisek~pulka bananu
+576:melasa
+577:dynove pyre~koreni na dynovy kolac~vanilka
+581:cerny rybiz~koncentrat limonady
+582:kondenzovane mleko~lepkava ryzova mouka~makova napln~rozinky~slunecnicovy olej~trocha maku
+583:skoricovy prasek
+584:brusinkovo-pomerancova omacka~dzem
+585:jablecne pyre~odtucnene mleko~pomerancova kura
+586:cokolada a extra kakaovy prasek~mascarpone~silna kava~vlocky ovesne
+589:blueberries~crepes~feta cheese~raspberries~raspberry fruit spread
+591:kesu orechy~pufovany ryzovy cerealie
+592:ledove kostky
+594:nizkotucny recky jogurt~zlate rozinky
+595:anyzova seminka~pekanove orechy~rozinky~rozmaryn~rum
+598:velka cibule
+601:cokoladove hoblinky~cokoladove kousky~rostlinne mleko
+602:jedle kvety~kandovana pomerancova kura~mandlove platky~mlety kardamom~ruzova voda~safran
+603:cajova lzicka jedle sody~cajova lzicka prasku do peciva~hladka mouka~krystalovy cukr~nizkotucny recky jogurt
+604:mata peprna (extrakt)
+605:cokoladove kousky~datle mejdool~lneny olej
+606:bazalka natrhana na kousky~granola
+609:fiky mission~himalajska sul~nefiltrovany med~vanilkovy lusk
+611:hladka mouka~jablecne pyre~kokosove vlocky~vajecny nahrazka~vanilkova pasta
+612:datle~lamanka
+614:parmazan~rajcata roma~to)~treska
+617:filety lososa~krutonky~olivy~paprika (koreni)
+618:bylinkove koreni~salotky~susena rajcata
+619:kesu orechy~susena cizrna~susena rajcata~susene tresne~suseny tymian
+621:koriandrova seminka~kost s uzeninou
+623:balzamikovy ocet~cervena/zluta cibule~chilli vlocky~farro~parmazan~plocholista petrzel~ruzickova kapusta
+628:cizrna *1~veprova plec~voda *2
+630:cukrovy hrasek~plocholista petrzel~redkvicky
+638:feta~merunky
+639:balzamikovy ocet~feta~horcice dijonska~kure~listy spenatu
+643:ginger root~mirin~rice vinegar~salmon fillets~wasabi paste
+644:bacon~full baby spinach~onion or~pasteurized eggs~salt & pepper
+646:bacon~bread~brown sugar~lettuce~mayonnaise~salt & pepper~tomato
+647:basil leaves~farfalle pasta by barilla~tomatoes
+648:cheddar cheese~corn tortillas~cracked pepper~filet mignon steaks~guacamole~sou cream
+649:bacon~pita pockets~ranch dressing~roast turkey~spring mix greens~tomatoes
+650:6 roma tomatoes~balsamic vinegar~basil leaves~bel gioioso mozzarella
+651:parmesan cheese~pasta
+652:berry cranberry sauce~chavrie goat cheese~pecans~turkey cutlets
+653:herbed butter~juice of lemon~linguine~shrimp~white wine
+654:figs~goat cheese~naan bread~pesto

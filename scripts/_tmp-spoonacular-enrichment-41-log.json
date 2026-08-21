@@ -1,0 +1,549 @@
+{
+  "started_at": "2026-07-15T22:34:50.639Z",
+  "selected": 41,
+  "ok": 41,
+  "failed": 0,
+  "skipped_404": 0,
+  "ingredient_nutrition_upserts": 120,
+  "quota_last": {
+    "request": "1.1",
+    "used": "46.2",
+    "left": "3.8"
+  },
+  "rows": [
+    {
+      "id": 244,
+      "source_id": "642129",
+      "status": "ok",
+      "kcal": 162,
+      "ingredients": 16,
+      "nutrition_100g_rows": 6,
+      "quota": {
+        "request": "1.1",
+        "used": "2.2",
+        "left": "47.8"
+      }
+    },
+    {
+      "id": 194,
+      "source_id": "659927",
+      "status": "ok",
+      "kcal": 639,
+      "ingredients": 18,
+      "nutrition_100g_rows": 0,
+      "quota": {
+        "request": "1.1",
+        "used": "3.3",
+        "left": "46.7"
+      }
+    },
+    {
+      "id": 129,
+      "source_id": "638252",
+      "status": "ok",
+      "kcal": 607,
+      "ingredients": 22,
+      "nutrition_100g_rows": 2,
+      "quota": {
+        "request": "1.1",
+        "used": "4.4",
+        "left": "45.6"
+      }
+    },
+    {
+      "id": 203,
+      "source_id": "1095743",
+      "status": "ok",
+      "kcal": 630,
+      "ingredients": 15,
+      "nutrition_100g_rows": 4,
+      "quota": {
+        "request": "1.1",
+        "used": "5.5",
+        "left": "44.5"
+      }
+    },
+    {
+      "id": 54,
+      "source_id": "653775",
+      "status": "ok",
+      "kcal": 654,
+      "ingredients": 20,
+      "nutrition_100g_rows": 3,
+      "quota": {
+        "request": "1.1",
+        "used": "6.6",
+        "left": "43.4"
+      }
+    },
+    {
+      "id": 122,
+      "source_id": "716361",
+      "status": "ok",
+      "kcal": 750,
+      "ingredients": 14,
+      "nutrition_100g_rows": 2,
+      "quota": {
+        "request": "1.1",
+        "used": "7.7",
+        "left": "42.3"
+      }
+    },
+    {
+      "id": 179,
+      "source_id": "1697543",
+      "status": "ok",
+      "kcal": 548,
+      "ingredients": 10,
+      "nutrition_100g_rows": 3,
+      "quota": {
+        "request": "1.1",
+        "used": "8.8",
+        "left": "41.2"
+      }
+    },
+    {
+      "id": 80,
+      "source_id": "636062",
+      "status": "ok",
+      "kcal": 310,
+      "ingredients": 15,
+      "nutrition_100g_rows": 5,
+      "quota": {
+        "request": "1.1",
+        "used": "9.9",
+        "left": "40.1"
+      }
+    },
+    {
+      "id": 175,
+      "source_id": "645673",
+      "status": "ok",
+      "kcal": 382,
+      "ingredients": 10,
+      "nutrition_100g_rows": 5,
+      "quota": {
+        "request": "1.1",
+        "used": "11.0",
+        "left": "39.0"
+      }
+    },
+    {
+      "id": 120,
+      "source_id": "1096017",
+      "status": "ok",
+      "kcal": 839,
+      "ingredients": 11,
+      "nutrition_100g_rows": 2,
+      "quota": {
+        "request": "1.1",
+        "used": "12.1",
+        "left": "37.9"
+      }
+    },
+    {
+      "id": 38,
+      "source_id": "644867",
+      "status": "ok",
+      "kcal": 178,
+      "ingredients": 13,
+      "nutrition_100g_rows": 4,
+      "quota": {
+        "request": "1.1",
+        "used": "13.2",
+        "left": "36.8"
+      }
+    },
+    {
+      "id": 137,
+      "source_id": "659143",
+      "status": "ok",
+      "kcal": 440,
+      "ingredients": 12,
+      "nutrition_100g_rows": 1,
+      "quota": {
+        "request": "1.1",
+        "used": "14.3",
+        "left": "35.7"
+      }
+    },
+    {
+      "id": 136,
+      "source_id": "659109",
+      "status": "ok",
+      "kcal": 405,
+      "ingredients": 9,
+      "nutrition_100g_rows": 3,
+      "quota": {
+        "request": "1.1",
+        "used": "15.4",
+        "left": "34.6"
+      }
+    },
+    {
+      "id": 181,
+      "source_id": "638236",
+      "status": "ok",
+      "kcal": 427,
+      "ingredients": 16,
+      "nutrition_100g_rows": 5,
+      "quota": {
+        "request": "1.1",
+        "used": "16.5",
+        "left": "33.5"
+      }
+    },
+    {
+      "id": 208,
+      "source_id": "652750",
+      "status": "ok",
+      "kcal": 115,
+      "ingredients": 7,
+      "nutrition_100g_rows": 0,
+      "quota": {
+        "request": "1.1",
+        "used": "17.6",
+        "left": "32.4"
+      }
+    },
+    {
+      "id": 245,
+      "source_id": "640062",
+      "status": "ok",
+      "kcal": 237,
+      "ingredients": 6,
+      "nutrition_100g_rows": 1,
+      "quota": {
+        "request": "1.1",
+        "used": "18.7",
+        "left": "31.3"
+      }
+    },
+    {
+      "id": 260,
+      "source_id": "658414",
+      "status": "ok",
+      "kcal": 189,
+      "ingredients": 11,
+      "nutrition_100g_rows": 3,
+      "quota": {
+        "request": "1.1",
+        "used": "19.8",
+        "left": "30.2"
+      }
+    },
+    {
+      "id": 249,
+      "source_id": "664547",
+      "status": "ok",
+      "kcal": 210,
+      "ingredients": 4,
+      "nutrition_100g_rows": 3,
+      "quota": {
+        "request": "1.1",
+        "used": "20.9",
+        "left": "29.1"
+      }
+    },
+    {
+      "id": 242,
+      "source_id": "716406",
+      "status": "ok",
+      "kcal": 217,
+      "ingredients": 6,
+      "nutrition_100g_rows": 1,
+      "quota": {
+        "request": "1.1",
+        "used": "22.0",
+        "left": "28.0"
+      }
+    },
+    {
+      "id": 169,
+      "source_id": "647311",
+      "status": "ok",
+      "kcal": 152,
+      "ingredients": 11,
+      "nutrition_100g_rows": 0,
+      "quota": {
+        "request": "1.1",
+        "used": "23.1",
+        "left": "26.9"
+      }
+    },
+    {
+      "id": 243,
+      "source_id": "716426",
+      "status": "ok",
+      "kcal": 248,
+      "ingredients": 13,
+      "nutrition_100g_rows": 3,
+      "quota": {
+        "request": "1.1",
+        "used": "24.2",
+        "left": "25.8"
+      }
+    },
+    {
+      "id": 178,
+      "source_id": "642095",
+      "status": "ok",
+      "kcal": 405,
+      "ingredients": 13,
+      "nutrition_100g_rows": 3,
+      "quota": {
+        "request": "1.1",
+        "used": "25.3",
+        "left": "24.7"
+      }
+    },
+    {
+      "id": 255,
+      "source_id": "665553",
+      "status": "ok",
+      "kcal": 638,
+      "ingredients": 8,
+      "nutrition_100g_rows": 4,
+      "quota": {
+        "request": "1.1",
+        "used": "26.4",
+        "left": "23.6"
+      }
+    },
+    {
+      "id": 50,
+      "source_id": "640275",
+      "status": "ok",
+      "kcal": 899,
+      "ingredients": 13,
+      "nutrition_100g_rows": 5,
+      "quota": {
+        "request": "1.1",
+        "used": "27.5",
+        "left": "22.5"
+      }
+    },
+    {
+      "id": 149,
+      "source_id": "639569",
+      "status": "ok",
+      "kcal": 285,
+      "ingredients": 19,
+      "nutrition_100g_rows": 3,
+      "quota": {
+        "request": "1.1",
+        "used": "28.6",
+        "left": "21.4"
+      }
+    },
+    {
+      "id": 247,
+      "source_id": "661925",
+      "status": "ok",
+      "kcal": 354,
+      "ingredients": 13,
+      "nutrition_100g_rows": 5,
+      "quota": {
+        "request": "1.1",
+        "used": "29.7",
+        "left": "20.3"
+      }
+    },
+    {
+      "id": 192,
+      "source_id": "640318",
+      "status": "ok",
+      "kcal": 418,
+      "ingredients": 8,
+      "nutrition_100g_rows": 2,
+      "quota": {
+        "request": "1.1",
+        "used": "30.8",
+        "left": "19.2"
+      }
+    },
+    {
+      "id": 190,
+      "source_id": "716408",
+      "status": "ok",
+      "kcal": 344,
+      "ingredients": 12,
+      "nutrition_100g_rows": 3,
+      "quota": {
+        "request": "1.1",
+        "used": "31.9",
+        "left": "18.1"
+      }
+    },
+    {
+      "id": 256,
+      "source_id": "633139",
+      "status": "ok",
+      "kcal": 701,
+      "ingredients": 9,
+      "nutrition_100g_rows": 5,
+      "quota": {
+        "request": "1.1",
+        "used": "33.0",
+        "left": "17.0"
+      }
+    },
+    {
+      "id": 45,
+      "source_id": "1095895",
+      "status": "ok",
+      "kcal": 208,
+      "ingredients": 9,
+      "nutrition_100g_rows": 2,
+      "quota": {
+        "request": "1.1",
+        "used": "34.1",
+        "left": "15.9"
+      }
+    },
+    {
+      "id": 79,
+      "source_id": "1096067",
+      "status": "ok",
+      "kcal": 305,
+      "ingredients": 8,
+      "nutrition_100g_rows": 1,
+      "quota": {
+        "request": "1.1",
+        "used": "35.2",
+        "left": "14.8"
+      }
+    },
+    {
+      "id": 142,
+      "source_id": "660490",
+      "status": "ok",
+      "kcal": 433,
+      "ingredients": 8,
+      "nutrition_100g_rows": 2,
+      "quota": {
+        "request": "1.1",
+        "used": "36.3",
+        "left": "13.7"
+      }
+    },
+    {
+      "id": 121,
+      "source_id": "1096293",
+      "status": "ok",
+      "kcal": 610,
+      "ingredients": 15,
+      "nutrition_100g_rows": 4,
+      "quota": {
+        "request": "1.1",
+        "used": "37.4",
+        "left": "12.6"
+      }
+    },
+    {
+      "id": 119,
+      "source_id": "1095990",
+      "status": "ok",
+      "kcal": 262,
+      "ingredients": 13,
+      "nutrition_100g_rows": 5,
+      "quota": {
+        "request": "1.1",
+        "used": "38.5",
+        "left": "11.5"
+      }
+    },
+    {
+      "id": 197,
+      "source_id": "640321",
+      "status": "ok",
+      "kcal": 730,
+      "ingredients": 13,
+      "nutrition_100g_rows": 3,
+      "quota": {
+        "request": "1.1",
+        "used": "39.6",
+        "left": "10.4"
+      }
+    },
+    {
+      "id": 139,
+      "source_id": "642619",
+      "status": "ok",
+      "kcal": 388,
+      "ingredients": 8,
+      "nutrition_100g_rows": 3,
+      "quota": {
+        "request": "1.1",
+        "used": "40.7",
+        "left": "9.3"
+      }
+    },
+    {
+      "id": 130,
+      "source_id": "653835",
+      "status": "ok",
+      "kcal": 897,
+      "ingredients": 12,
+      "nutrition_100g_rows": 5,
+      "quota": {
+        "request": "1.1",
+        "used": "41.8",
+        "left": "8.2"
+      }
+    },
+    {
+      "id": 201,
+      "source_id": "715595",
+      "status": "ok",
+      "kcal": 780,
+      "ingredients": 7,
+      "nutrition_100g_rows": 4,
+      "quota": {
+        "request": "1.1",
+        "used": "42.9",
+        "left": "7.1"
+      }
+    },
+    {
+      "id": 53,
+      "source_id": "659081",
+      "status": "ok",
+      "kcal": 625,
+      "ingredients": 7,
+      "nutrition_100g_rows": 2,
+      "quota": {
+        "request": "1.1",
+        "used": "44.0",
+        "left": "6.0"
+      }
+    },
+    {
+      "id": 44,
+      "source_id": "1096058",
+      "status": "ok",
+      "kcal": 714,
+      "ingredients": 12,
+      "nutrition_100g_rows": 2,
+      "quota": {
+        "request": "1.1",
+        "used": "45.1",
+        "left": "4.9"
+      }
+    },
+    {
+      "id": 132,
+      "source_id": "648320",
+      "status": "ok",
+      "kcal": 382,
+      "ingredients": 12,
+      "nutrition_100g_rows": 1,
+      "quota": {
+        "request": "1.1",
+        "used": "46.2",
+        "left": "3.8"
+      }
+    }
+  ],
+  "finished_at": "2026-07-15T22:35:19.719Z"
+}

@@ -1,0 +1,176 @@
+export interface WeightRecord {
+  date: string;
+  weight: number;
+  fatPercent: number;
+  muscleKg: number;
+  bmi: number;
+  note?: string;
+}
+
+export interface MacroItem {
+  name: string;
+  label: string;
+  current: number;
+  target: number;
+  percentage: number;
+  color: string;
+  textColor: string;
+}
+
+export interface RecipeDetail {
+  prepTimeMin: number;
+  cookTimeMin: number;
+  difficulty: 'Snadné' | 'Střední' | 'Pokročilé';
+  instructions: string[];
+  tips?: string;
+  replacements?: string[];
+}
+
+export interface MealItem {
+  id: string;
+  type: 'Snídaně' | 'Dopolední svačina' | 'Oběd' | 'Odpolední svačina' | 'Večeře';
+  time: string;
+  title: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  completed: boolean;
+  ingredients: string[];
+  recipe?: RecipeDetail;
+}
+
+export interface ExerciseItem {
+  id: string;
+  name: string;
+  sets: number;
+  reps: string;
+  weightKg?: number;
+  restSec: number;
+  targetMuscle: string;
+  completed?: boolean;
+}
+
+export interface WorkoutDay {
+  dayName: string;
+  dayShort: string;
+  title: string;
+  durationMin: number;
+  caloriesBurned: number;
+  isToday: boolean;
+  isCompleted: boolean;
+  focus: string;
+  exercises: ExerciseItem[];
+}
+
+export interface HabitItem {
+  id: string;
+  title: string;
+  subtitle?: string;
+  completed: boolean;
+  streakDays: number;
+  iconType: 'food' | 'sleep' | 'water' | 'steps' | 'mind';
+  value?: string;
+  target?: string;
+}
+
+export interface BadHabitItem {
+  id: string;
+  title: string;
+  description: string;
+  cleanDaysStreak: number;
+  status: 'clean' | 'relapsed';
+  lastResistedNote?: string;
+}
+
+export interface HabitDayRecord {
+  dayShort: string;
+  dateStr: string;
+  foodDone: boolean;
+  sleepDone: boolean;
+  waterDone: boolean;
+  stepsDone: boolean;
+  noJunkDone: boolean;
+}
+
+export interface AppleWatchWorkoutItem {
+  id: string;
+  type: string;
+  icon: string;
+  time: string;
+  durationMin: number;
+  caloriesBurned: number;
+  avgHr: number;
+  maxHr: number;
+}
+
+export interface MetricTrendPoint {
+  day: string;
+  value: number;
+}
+
+export interface AppleWatchBiometrics {
+  scaleConnected: boolean;
+  appleWatchConnected: boolean;
+  lastSyncTime: string;
+  recoveryScore: number;
+  recoveryStatus: 'Optimální' | 'Ubrat intenzitu' | 'Potřeba odpočinku' | 'Připraven na max';
+  recoveryAdvice: string;
+  hrvMs: number;
+  hrvBaselineMs: number;
+  restingHrBpm: number;
+  sleepDuration: string;
+  deepSleepDuration: string;
+  sleepEfficiencyPercent: number;
+  stepsToday: number;
+  stepsTarget: number;
+  activeEnergyKcal: number;
+  activeEnergyTargetKcal: number;
+  exerciseMinutes: number;
+  exerciseMinutesTarget: number;
+  bloodOxygenPercent: number;
+  recentWorkouts: AppleWatchWorkoutItem[];
+  hrvTrend: MetricTrendPoint[];
+  restingHrTrend: MetricTrendPoint[];
+  stepsTrend: MetricTrendPoint[];
+  energyTrend: MetricTrendPoint[];
+}
+
+export interface ShoppingItem {
+  id: string;
+  name: string;
+  amount: string;
+  category: 'Maso & Ryby' | 'Mléčné výrobky & Vejce' | 'Přílohy & Pečivo' | 'Zelenina & Ovoce' | 'Ořechy, Tuky & Ostatní';
+  checked: boolean;
+}
+
+export interface UserPreferences {
+  dailyCalorieTarget: number;
+  proteinRatioPercent: number;
+  carbsRatioPercent: number;
+  fatRatioPercent: number;
+  targetWeightKg: number;
+  currentHeightCm: number;
+  weeklyWorkoutsTarget: number;
+  withingsAutoSync: boolean;
+  appleHealthAutoSync: boolean;
+  tedAiProactiveTips: boolean;
+}
+
+export interface UserProfile {
+  name: string;
+  status: 'AKTIVNÍ' | 'PAUZOVÁNO' | 'VIP';
+  avatarUrl: string;
+  membershipPlan: string;
+  nextConsultationDate: string;
+  subtitle?: string;
+}
+
+export interface CoachTip {
+  id: string;
+  category: 'regenerace' | 'vyziva' | 'vykon' | 'kompozice';
+  headline: string;
+  content: string;
+  timestamp: string;
+}
+

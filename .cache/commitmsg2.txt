@@ -1,0 +1,27 @@
+feat(diety): dietni priznaky surovin a brana, ktera je vynuti
+
+PROBLEM: generator dostaval do promptu cely slovnik vcetne masa i pro
+polozky s diet_tags=['vegan'] a diet_tags se zapisovaly tak, jak je vratil
+model. Nic v DB ani v JS nekontrolovalo, ze recept oznaceny jako vegan
+opravdu vegan je. V produkci jsou tri takove recepty: "Ovesna kase pres noc"
+(smetana), "Pecena svestkova ovesna kase" (milk) a "Polevka z bilych fazoli
+a kapusty" (parmazanova kura) — posledni dva se navic tvari jako dairy_free.
+
+DB:
+- ingredients_nutrition + pantry_ingredients: is_vegan, is_vegetarian
+  (NOT NULL DEFAULT false, CHECK vegan => vegetarian)
+- 187 surovin rucne klasifikovano, hranicni pripady zduvodneny v migraci
+- recipe_diet_conflicts(jsonb, text) — paruje stejne jako
+  compute_nutrition_for_ingredients, neznama surovina = konflikt
+- enforce_recipe_catalog_rules: pravidlo f), navic doplnen search_path
+- sweep_recipe_catalog_activation: stejna podminka, jinak by sweeper
+  vratil do provozu presne to, co trigger vypnul
+- jednorazovy zpetny pruchod: vegan prisne, vegetarian jen prokazatelne
+  pripady (prisna varianta by vypnula 100+ receptu kvuli chybejicim
+  aliasum, ne kvuli diete)
+
+JS:
+- nactiPovoleneSuroviny vraci i priznaky
+- surovinyProDietu() filtruje slovnik podle diet_tags polozky fronty
+- povoleneSet je nove per-polozka, takze i predzapisova kontrola drzi dietu
+- diet_tags receptu = sjednoceni tagu fronty a tagu modelu

@@ -1,0 +1,17 @@
+fix(plan): stejny recept uz nemuze vyjit dvakrat v jednom dni
+
+Testovaci registrace vratila tyden, kde bylo "Vejce natvrdo s pecivem" 4x,
+z toho 9. 8. DVAKRAT V JEDNOM DNI jako obe svaciny.
+
+Pricina: resolveScaledCatalogSlot ma pet stupnu eskalace. Prvni tri respektuji
+usedCatalogIds (tydenni vylouceni), ale ctvrty a paty stupen i nouzovy vyber
+predavaly excludeIds: new Set() — tedy zadne vylouceni. Jakmile se pool slotu
+vycerpal (START rezim ma uzky vyber), spadl vyber do techto stupnu a mohl
+vratit i jidlo, ktere uz ten den bylo.
+
+Opakovani napric dny je produktove rozhodnuti (meal prep, jednoduchost pred
+pestrosti) a zustava. Opakovani v ramci jednoho dne nechtel nikdy nikdo.
+
+Reseni: usedTodayIds se resetuje kazdy den a plati jako podlaha ve VSECH
+stupnich vcetne nouzoveho vyberu. Kdyz tydenni vylouceni padne, loguje se to
+i s velikosti obou mnozin, aby bylo videt, ktere sloty maji maly katalog.

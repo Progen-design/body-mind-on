@@ -205,7 +205,7 @@ export default function ProfileTodayPanels({
       </section>
 
       <section id="profile-today-meals" className="profile-today-section" aria-labelledby="profile-today-meals-heading">
-        <h3 id="profile-today-meals-heading" className="m-0 mb-3 text-xs font-extrabold uppercase tracking-[0.06em] text-[#c4b5fd]">Dnešní jídla</h3>
+        <h3 id="profile-today-meals-heading" className="m-0 mb-3 text-xs font-extrabold uppercase tracking-[0.06em] text-[#7dd3fc]">Dnešní jídla</h3>
 
         {/* DENNÍ SOUČET NAD SEZNAMEM, NE JAKO SAMOSTATNÁ KARTA.
             Do 20. 8. 2026 nad tímhle seznamem stály souhrnné karty „Jídlo dnes“
@@ -270,7 +270,7 @@ export default function ProfileTodayPanels({
       </section>
 
       <section id="profile-today-workout" className="profile-today-section" aria-labelledby="profile-today-workout-heading">
-        <h3 id="profile-today-workout-heading" className="m-0 mb-3 text-xs font-extrabold uppercase tracking-[0.06em] text-[#c4b5fd]">Dnešní trénink</h3>
+        <h3 id="profile-today-workout-heading" className="m-0 mb-3 text-xs font-extrabold uppercase tracking-[0.06em] text-[#7dd3fc]">Dnešní trénink</h3>
         {hasWorkout ? (
           <>
             {/* Prostředí, počet cviků a odhad délky v jednom podtitulku.

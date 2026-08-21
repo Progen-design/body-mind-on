@@ -7,7 +7,10 @@ import {
   FiTrendingUp,
   FiUser,
 } from 'react-icons/fi';
-import { BM_ON_DESIGN } from '../../lib/designTokens';
+// Paleta v4. `BM_ON_DESIGN` v lib/designTokens.js sdili barvy s e-maily,
+// takze se prebarvuje tudy — stejny tvar, jine hodnoty. Viz
+// PALETA_PROFILU v lib/profile/designTokens.js.
+import { DESIGN_PROFILU as BM_ON_DESIGN } from '../../lib/profile/designTokens.js';
 import {
   groupLatestMetrics,
   METRIC_CATEGORY_LABELS,
@@ -156,6 +159,9 @@ export default function HealthMetricsGrid({ metricRows = [] }) {
           margin-top: 18px;
         }
         .health-metrics-expand-btn {
+          min-height: 44px;
+          display: inline-flex;
+          align-items: center;
           padding: 8px 14px;
           border-radius: 10px;
           border: 1px solid ${BM_ON_DESIGN.colors.border};

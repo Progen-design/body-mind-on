@@ -172,15 +172,16 @@ export default function ConnectDevicesSection({
           .connect-devices--top {
             margin: 0 0 14px;
             padding: 16px 18px;
-            border: 1px solid rgba(167, 139, 250, 0.32);
+            border: 1px solid rgba(0, 242, 254, 0.32);
             border-radius: 14px;
-            background: rgba(124, 58, 237, 0.10);
+            background: rgba(0, 242, 254, 0.10);
           }
           .connect-devices--top h2 { margin: 0 0 6px; font-size: 1.05rem; }
           .connect-devices-top-lead { margin: 0 0 12px; font-size: 0.92rem; color: #cbd5e1; }
           .connect-devices-top-cta {
             padding: 9px 18px; border: 0; border-radius: 8px;
-            background: #7c3aed; color: #fff; font-weight: 600; cursor: pointer;
+            background: linear-gradient(135deg, #00f2fe 0%, #38ef7d 100%);
+            color: #05070d; font-weight: 700; cursor: pointer;
           }
         `}</style>
       </section>
@@ -447,10 +448,14 @@ export default function ConnectDevicesSection({
           line-height: 1.35;
         }
         .connect-status-check {
-          color: #86efac;
+          /* Limetkova: v profilu je vyhrazena pro hotovo/pripojeno. */
+          color: #39ff14;
           font-weight: 700;
         }
         .connect-manage-link {
+          min-height: 44px;
+          display: inline-flex;
+          align-items: center;
           flex-shrink: 0;
           background: none;
           border: none;
@@ -526,8 +531,8 @@ export default function ConnectDevicesSection({
           padding: 10px 14px;
           border-radius: 10px;
           border: none;
-          background: #38bdf8;
-          color: #0f172a;
+          background: #00f2fe;
+          color: #05070d;
           font-weight: 600;
           font-size: 0.9rem;
           cursor: pointer;

@@ -208,7 +208,7 @@ export function WeightChartCard({ zaznamy = [] }) {
             onClick={() => setRozsah(r.id)}
             title={lze ? r.popis : `${r.popis} — zatím není dost měření`}
             aria-pressed={jeAktivni}
-            className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+            className={`rounded-lg px-2.5 py-1 min-h-[44px] min-w-[44px] text-xs font-semibold transition-all ${
               jeAktivni
                 ? PREPINAC_AKTIVNI
                 : lze

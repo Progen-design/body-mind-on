@@ -345,7 +345,7 @@ export default function WithingsBodyDevelopmentSection({ profile, onLatestWeight
           <div className="withings-history">
             <button
               type="button"
-              className="secondary"
+              className="secondary min-h-[44px]"
               onClick={openHistory}
               disabled={historyLoading || !session?.access_token}
             >

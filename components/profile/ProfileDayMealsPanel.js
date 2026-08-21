@@ -196,7 +196,7 @@ export default function ProfileDayMealsPanel({
       {showWorkout ? (
         exercises.length > 0 ? (
           <div className="mt-5">
-            <h4 className="m-0 mb-2.5 text-xs font-extrabold uppercase tracking-[0.06em] text-[#c4b5fd]">Trénink tento den</h4>
+            <h4 className="m-0 mb-2.5 text-xs font-extrabold uppercase tracking-[0.06em] text-[#7dd3fc]">Trénink tento den</h4>
             <ul className="m-0 grid list-none grid-cols-1 gap-2 p-0 min-[880px]:grid-cols-2">
               {exercises.map((ex, xi) => {
                 // JEDEN NÁZEV PRO CVIK V CELÉ APLIKACI.
@@ -229,7 +229,7 @@ export default function ProfileDayMealsPanel({
           </div>
         ) : (
           <div className="mt-5">
-            <h4 className="m-0 mb-2.5 text-xs font-extrabold uppercase tracking-[0.06em] text-[#c4b5fd]">Trénink tento den</h4>
+            <h4 className="m-0 mb-2.5 text-xs font-extrabold uppercase tracking-[0.06em] text-[#7dd3fc]">Trénink tento den</h4>
             <p className="m-0 text-sm text-neutral-300">Tento den je bez plánovaného tréninku — volno / regenerace.</p>
           </div>
         )

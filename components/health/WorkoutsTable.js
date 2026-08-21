@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { BM_ON_DESIGN } from '../../lib/designTokens';
+// Paleta v4. `BM_ON_DESIGN` v lib/designTokens.js sdili barvy s e-maily,
+// takze se prebarvuje tudy — stejny tvar, jine hodnoty. Viz
+// PALETA_PROFILU v lib/profile/designTokens.js.
+import { DESIGN_PROFILU as BM_ON_DESIGN } from '../../lib/profile/designTokens.js';
 import { formatDistanceKm, formatDurationMinutes } from '../../lib/health/formatters';
 
 const INITIAL_VISIBLE = 3;
@@ -78,6 +81,9 @@ export default function WorkoutsTable({ rows = [] }) {
 
       <style jsx>{`
         .health-workouts-toggle {
+          min-height: 44px;
+          display: inline-flex;
+          align-items: center;
           margin-top: 12px;
           padding: 8px 14px;
           border-radius: 10px;

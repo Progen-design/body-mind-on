@@ -83,7 +83,7 @@ import {
 const PlanViewer = dynamic(() => import('../components/PlanViewer'), {
   ssr: false,
   loading: () => (
-    <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+    <div className="plan-preparing-block">
       <p className="plan-preparing-text">Načítám plán…</p>
     </div>
   ),
@@ -2556,19 +2556,19 @@ export default function Profil() {
               </button>
               <div id="profile-bubble-body-muj-plan" role="region" aria-labelledby="profile-bubble-header-muj-plan" className="profile-bubble-body" data-open={profileOpenSections.has('muj-plan')}>
               {planState === 'loading' && (
-                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                <div className="plan-preparing-block">
                   <p className="plan-preparing-text">Načítám plán…</p>
                 </div>
               )}
               {planState === 'processing' && (
-                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                <div className="plan-preparing-block">
                   <p className="plan-preparing-text">Plán se dokončuje – automaticky se obnoví, jakmile bude hotový.</p>
                   <p className="plan-preparing-hint">{PLAN_GENERATION_DURATION_HINT}</p>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
                 </div>
               )}
               {planState === 'failed' && (
-                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                <div className="plan-preparing-block">
                   <p className="plan-preparing-text">Plán se nepodařilo dokončit.</p>
                   <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '12px' }}>
                     <button type="button" className="profile-quick-nav-btn" onClick={handleRetryPlan} disabled={retryingPlan}>
@@ -2579,7 +2579,7 @@ export default function Profil() {
                 </div>
               )}
               {planState === 'invalid' && (
-                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                <div className="plan-preparing-block">
                   <p className="plan-preparing-text">Plán byl vytvořen neúplně nebo neprošel validací.</p>
                   <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '12px' }}>
                     <button type="button" className="profile-quick-nav-btn" onClick={handleRetryPlan} disabled={retryingPlan}>
@@ -2590,7 +2590,7 @@ export default function Profil() {
                 </div>
               )}
               {planState === 'missing' && (
-                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                <div className="plan-preparing-block">
                   <p className="plan-preparing-text">Plán zatím nebyl vytvořen.</p>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRetryPlan} disabled={retryingPlan} style={{ marginTop: '12px' }}>
                     {retryingPlan ? 'Generuji…' : 'Vygenerovat plán'}
@@ -2602,7 +2602,7 @@ export default function Profil() {
                   stejné pravidlo jako brána scheduleru. Slíbit nový plán někomu, komu
                   ho brána nevygeneruje, by znamenalo nechat ho čekat na něco, co nepřijde. */}
               {planState === 'expired_renewing' && (
-                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                <div className="plan-preparing-block">
                   <p className="plan-preparing-text">Tvůj plán skončil.</p>
                   <p className="plan-preparing-hint">
                     {planExpiredUntil
@@ -2615,7 +2615,7 @@ export default function Profil() {
                 </div>
               )}
               {planState === 'expired_upgrade' && (
-                <div className="plan-preparing-block" style={{ padding: '1.5rem' }}>
+                <div className="plan-preparing-block">
                   <p className="plan-preparing-text" style={{ textAlign: 'center' }}>
                     {planTrialEnded ? 'Týden zdarma skončil.' : 'Plán na tenhle týden skončil.'}
                   </p>
@@ -2636,7 +2636,7 @@ export default function Profil() {
                 inert={planAccessLocked ? '' : undefined}
               >
               {!(currentPlan?.plan_html || currentPlan?.structured_plan_json) && !(nextPlan?.plan_html || nextPlan?.structured_plan_json) ? (
-                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                <div className="plan-preparing-block">
                   <p className="plan-preparing-text">Plán není kompletní. Obnov stránku za chvíli nebo kontaktuj podporu.</p>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>
                     {refreshing ? 'Obnovuji…' : 'Obnovit'}
@@ -2646,10 +2646,10 @@ export default function Profil() {
                 <>
                   <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                     <div className="inline-flex gap-1.5 rounded-xl border border-neutral-800 bg-[#0e111a]/80 p-1" role="tablist" aria-label="Týden plánu">
-                      <button type="button" role="tab" aria-selected={planTab === 'current'} className={`min-h-[38px] rounded-lg px-4 text-sm font-bold transition-all ${planTab === 'current' ? 'bg-[#00f2fe]/15 text-[#baf6ff] border border-[#00f2fe]/45' : 'text-neutral-400 hover:text-neutral-200'}`} onClick={() => setPlanTab('current')}>Tento týden</button>
-                      <button type="button" role="tab" aria-selected={planTab === 'next'} className={`min-h-[38px] rounded-lg px-4 text-sm font-bold transition-all ${planTab === 'next' ? 'bg-[#00f2fe]/15 text-[#baf6ff] border border-[#00f2fe]/45' : 'text-neutral-400 hover:text-neutral-200'}`} onClick={() => setPlanTab('next')}>Příští týden</button>
+                      <button type="button" role="tab" aria-selected={planTab === 'current'} className={`min-h-[44px] rounded-lg px-4 text-sm font-bold transition-all ${planTab === 'current' ? 'bg-[#00f2fe]/15 text-[#baf6ff] border border-[#00f2fe]/45' : 'text-neutral-400 hover:text-neutral-200'}`} onClick={() => setPlanTab('current')}>Tento týden</button>
+                      <button type="button" role="tab" aria-selected={planTab === 'next'} className={`min-h-[44px] rounded-lg px-4 text-sm font-bold transition-all ${planTab === 'next' ? 'bg-[#00f2fe]/15 text-[#baf6ff] border border-[#00f2fe]/45' : 'text-neutral-400 hover:text-neutral-200'}`} onClick={() => setPlanTab('next')}>Příští týden</button>
                     </div>
-                    <button type="button" className={`${TLACITKO} min-h-[38px] px-3.5`} onClick={handleSendPlanAgain} disabled={sendingPlan} style={{ marginLeft: 'auto' }}>
+                    <button type="button" className={`${TLACITKO} min-h-[44px] px-3.5`} onClick={handleSendPlanAgain} disabled={sendingPlan} style={{ marginLeft: 'auto' }}>
                       {sendingPlan ? 'Odesílám…' : 'Znovu poslat plán na e-mail'}
                     </button>
                   </div>
@@ -2679,7 +2679,7 @@ export default function Profil() {
                       trainingEnvironmentLabel={trainingEnvironmentLabelFromMetrics(profile?.body_metrics?.[0])}
                     />
                     ) : (
-                    <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                    <div className="plan-preparing-block">
                       <p className="plan-preparing-text">Plán není kompletní. Obnov stránku za chvíli nebo kontaktuj podporu.</p>
                       <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
                     </div>
@@ -2707,7 +2707,7 @@ export default function Profil() {
                       trainingEnvironmentLabel={trainingEnvironmentLabelFromMetrics(profile?.body_metrics?.[0])}
                     />
                   ) : (
-                    <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                    <div className="plan-preparing-block">
                       <p className="plan-preparing-text">Plán není kompletní. Obnov stránku za chvíli nebo kontaktuj podporu.</p>
                       <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
                     </div>
@@ -2746,7 +2746,7 @@ export default function Profil() {
                 />
                 </>
                 ) : (
-                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                <div className="plan-preparing-block">
                   <p className="plan-preparing-text">Plán není kompletní. Obnov stránku za chvíli nebo kontaktuj podporu.</p>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
                 </div>
@@ -2782,7 +2782,7 @@ export default function Profil() {
                 />
                 </>
                 ) : (
-                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                <div className="plan-preparing-block">
                   <p className="plan-preparing-text">Plán není kompletní. Obnov stránku za chvíli nebo kontaktuj podporu.</p>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRefresh} disabled={refreshing}>{refreshing ? 'Obnovuji…' : 'Obnovit'}</button>
                 </div>
@@ -2791,7 +2791,7 @@ export default function Profil() {
               </div>
               )}
               {(!currentPlan && !nextPlan) && !planStateSkryvaPlan && (
-                <div className="plan-preparing-block" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                <div className="plan-preparing-block">
                   <p className="plan-preparing-text">Plán zatím nebyl vytvořen.</p>
                   <button type="button" className="profile-quick-nav-btn" onClick={handleRetryPlan} disabled={retryingPlan} style={{ marginTop: '12px' }}>
                     {retryingPlan ? 'Generuji…' : 'Vygenerovat plán'}
@@ -3209,9 +3209,9 @@ export default function Profil() {
               </button>
               <div id="profile-bubble-body-statistiky" role="region" aria-labelledby="profile-bubble-header-statistiky" className="profile-bubble-body" data-open={profileOpenSections.has('statistiky')}>
               <div className="inline-flex gap-1.5 rounded-xl border border-neutral-800 bg-[#0e111a]/80 p-1" role="tablist" aria-label="Sekce statistik">
-                <button type="button" role="tab" aria-selected={statsTab === 'overview'} className={`min-h-[38px] rounded-lg px-4 text-sm font-bold transition-all ${statsTab === 'overview' ? 'bg-[#00f2fe]/15 text-[#baf6ff] border border-[#00f2fe]/45' : 'text-neutral-400 hover:text-neutral-200'}`} onClick={() => setStatsTab('overview')}>Přehled</button>
-                <button type="button" role="tab" aria-selected={statsTab === 'weight'} className={`min-h-[38px] rounded-lg px-4 text-sm font-bold transition-all ${statsTab === 'weight' ? 'bg-[#00f2fe]/15 text-[#baf6ff] border border-[#00f2fe]/45' : 'text-neutral-400 hover:text-neutral-200'}`} onClick={() => setStatsTab('weight')}>Vývoj váhy</button>
-                <button type="button" role="tab" aria-selected={statsTab === 'progress'} className={`min-h-[38px] rounded-lg px-4 text-sm font-bold transition-all ${statsTab === 'progress' ? 'bg-[#00f2fe]/15 text-[#baf6ff] border border-[#00f2fe]/45' : 'text-neutral-400 hover:text-neutral-200'}`} onClick={() => setStatsTab('progress')}>Progres</button>
+                <button type="button" role="tab" aria-selected={statsTab === 'overview'} className={`min-h-[44px] rounded-lg px-4 text-sm font-bold transition-all ${statsTab === 'overview' ? 'bg-[#00f2fe]/15 text-[#baf6ff] border border-[#00f2fe]/45' : 'text-neutral-400 hover:text-neutral-200'}`} onClick={() => setStatsTab('overview')}>Přehled</button>
+                <button type="button" role="tab" aria-selected={statsTab === 'weight'} className={`min-h-[44px] rounded-lg px-4 text-sm font-bold transition-all ${statsTab === 'weight' ? 'bg-[#00f2fe]/15 text-[#baf6ff] border border-[#00f2fe]/45' : 'text-neutral-400 hover:text-neutral-200'}`} onClick={() => setStatsTab('weight')}>Vývoj váhy</button>
+                <button type="button" role="tab" aria-selected={statsTab === 'progress'} className={`min-h-[44px] rounded-lg px-4 text-sm font-bold transition-all ${statsTab === 'progress' ? 'bg-[#00f2fe]/15 text-[#baf6ff] border border-[#00f2fe]/45' : 'text-neutral-400 hover:text-neutral-200'}`} onClick={() => setStatsTab('progress')}>Progres</button>
               </div>
               {statsTab === 'overview' && (
             <section className="kpi-section">
@@ -3303,7 +3303,7 @@ export default function Profil() {
                         <defs>
                           <linearGradient id="weightGrad" x1="0%" y1="0%" x2="0%" y2="100%">
                             <stop offset="0%" stopColor="#9b5cff" stopOpacity="0.35" />
-                            <stop offset="100%" stopColor="#7c3aed" stopOpacity="0" />
+                            <stop offset="100%" stopColor="#00f2fe" stopOpacity="0" />
                           </linearGradient>
                         </defs>
                         {(() => {
@@ -3328,10 +3328,10 @@ export default function Profil() {
                           return (
                             <>
                               {areaD && <path fill="url(#weightGrad)" d={areaD} />}
-                              <path fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" d={pathD} />
+                              <path fill="none" stroke="#00f2fe" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" d={pathD} />
                               {pts.map(([x, y, weight, date, source], i) => (
                                 <g key={`${date}-${i}`}>
-                                  <circle cx={x} cy={y} r="4" fill="#a78bfa" />
+                                  <circle cx={x} cy={y} r="4" fill="#00f2fe" />
                                   <title>{`${formatShortDate(date)}: ${weight} kg${source === 'withings' ? ' · Withings' : ''}`}</title>
                                 </g>
                               ))}
@@ -3530,7 +3530,7 @@ export default function Profil() {
           flex-wrap: wrap;
           padding: 18px 24px 20px;
           border-radius: 24px;
-          background: linear-gradient(135deg, rgba(14, 165, 233, 0.22) 0%, rgba(167, 139, 250, 0.18) 100%);
+          background: linear-gradient(135deg, rgba(14, 165, 233, 0.22) 0%, rgba(0, 242, 254, 0.18) 100%);
           border: 1px solid rgba(14, 165, 233, 0.35);
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
@@ -3586,7 +3586,7 @@ export default function Profil() {
           width: 88px;
           height: 88px;
           border-radius: 50%;
-          border: 3px solid rgba(167, 139, 250, 0.4);
+          border: 3px solid rgba(0, 242, 254, 0.4);
           padding: 0;
           overflow: hidden;
           background: rgba(0, 0, 0, 0.2);
@@ -3612,7 +3612,7 @@ export default function Profil() {
           align-items: center;
           justify-content: center;
           background: linear-gradient(135deg, #5b4d7a, #4a3b6c);
-          color: #c4b5fd;
+          color: #7dd3fc;
           font-size: 36px;
           font-weight: 700;
         }
@@ -3626,7 +3626,7 @@ export default function Profil() {
           text-underline-offset: 2px;
           padding: 0;
         }
-        .profile-hero-avatar-change:hover:not(:disabled) { color: #c4b5fd; }
+        .profile-hero-avatar-change:hover:not(:disabled) { color: #7dd3fc; }
         .profile-hero-avatar-change:disabled { opacity: 0.7; cursor: wait; }
         .profile-hero-avatar-error { margin: 0; font-size: 12px; color: #fca5a5; text-align: center; }
         .profile-hero-copy {
@@ -3638,14 +3638,14 @@ export default function Profil() {
           margin: 0 0 6px;
           font-size: 16px;
           font-weight: 600;
-          color: #c4b5fd;
+          color: #7dd3fc;
           letter-spacing: 0;
         }
         .profile-hero-program {
           margin: 0 0 8px;
           font-size: 13px;
           font-weight: 600;
-          color: #e9d5ff;
+          color: #d7f9ff;
           opacity: 0.9;
         }
         .profile-hero-title {
@@ -3657,7 +3657,7 @@ export default function Profil() {
           line-height: 1.08;
         }
         .profile-hero-title > span {
-          background: linear-gradient(135deg, #e0f2fe, #a78bfa);
+          background: linear-gradient(135deg, #e0f2fe, #00f2fe);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
@@ -3763,6 +3763,7 @@ export default function Profil() {
           overflow: hidden;
           text-overflow: ellipsis;
           transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+          min-height: 44px;
         }
         .pnav:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28); }
         .pnav:active { transform: translateY(0); }
@@ -3806,13 +3807,13 @@ export default function Profil() {
         }
         .pact:hover { border-color: rgba(148, 163, 184, 0.6); color: #f1f5f9; }
         .pact--primary {
-          border-color: rgba(167, 139, 250, 0.55);
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.5), rgba(56, 189, 248, 0.32));
-          color: #f5f3ff;
+          border-color: rgba(0, 242, 254, 0.55);
+          background: linear-gradient(135deg, rgba(0, 242, 254, 0.5), rgba(56, 189, 248, 0.32));
+          color: #ecfeff;
           font-weight: 700;
           font-size: 14px;
         }
-        .pact--primary:hover { border-color: rgba(196, 181, 253, 0.8); }
+        .pact--primary:hover { border-color: rgba(0, 242, 254, 0.8); }
         .pact--danger { border-color: rgba(248, 113, 113, 0.4); color: #fca5a5; }
         .pact--danger:hover { border-color: rgba(248, 113, 113, 0.75); color: #fecaca; }
 
@@ -3865,7 +3866,7 @@ export default function Profil() {
           min-height: 44px;
           border-radius: 12px;
           border: 1px solid rgba(14, 165, 233, 0.45);
-          background: linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%);
+          background: linear-gradient(135deg, #00f2fe 0%, #38ef7d 100%);
           color: #fff;
           font-size: 13px;
           font-weight: 700;
@@ -3991,7 +3992,7 @@ export default function Profil() {
         .plan-goal-badge {
           display: inline-block;
           background: rgba(255, 255, 255, 0.25);
-          color: #e9d5ff;
+          color: #d7f9ff;
           padding: 6px 14px;
           border-radius: 20px;
           font-size: 12px;
@@ -4028,7 +4029,7 @@ export default function Profil() {
           .profile-main-workout-btn {
             min-height: 52px; width: 100%; justify-content: center; font-size: 16px; font-weight: 700;
             padding: 14px 20px; order: 1;
-            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.35);
+            box-shadow: 0 4px 20px rgba(0, 242, 254, 0.35);
           }
           .profile-quick-nav { flex-wrap: wrap; gap: 8px; justify-content: flex-start; row-gap: 8px; }
           .profile-quick-nav-btn { min-height: 44px; padding: 10px 14px; font-size: 13px; touch-action: manipulation; min-width: 0; }
@@ -4120,7 +4121,7 @@ export default function Profil() {
         .profile-health-divider {
           height: 2px;
           margin: 4px 0;
-          background: linear-gradient(90deg, rgba(14, 165, 233, 0.5), rgba(167, 139, 250, 0.35), rgba(34, 211, 238, 0.2));
+          background: linear-gradient(90deg, rgba(14, 165, 233, 0.5), rgba(0, 242, 254, 0.35), rgba(34, 211, 238, 0.2));
           border-radius: 999px;
         }
         .profile-health-skeleton-header {
@@ -4241,7 +4242,7 @@ export default function Profil() {
           margin-top: 2px;
           font-size: 1.2rem;
         }
-        :global(.health-banner--ok .health-banner-icon) { color: #22c55e; }
+        :global(.health-banner--ok .health-banner-icon) { color: #39ff14; }
         :global(.health-banner--warning .health-banner-icon) { color: #fbbf24; }
         :global(.health-banner--none .health-banner-icon) { color: #94a3b8; }
         :global(.health-banner-title) {
@@ -4284,7 +4285,7 @@ export default function Profil() {
           margin: 8px 0 0;
           font-weight: 600;
         }
-        :global(.health-recovery-band--green) { color: #22c55e; }
+        :global(.health-recovery-band--green) { color: #39ff14; }
         :global(.health-recovery-band--orange) { color: #fbbf24; }
         :global(.health-recovery-band--red) { color: #fb7185; }
         :global(.health-recovery-incomplete-label) {
@@ -4357,10 +4358,24 @@ export default function Profil() {
           background: transparent;
           border-top: 2px dashed #64748b;
         }
+        /* ── PRÁZDNÉ STAVY ────────────────────────────────────────────────
+           Bylo to trojí: health-* mělo tlumený text bez odsazení,
+           profile-progress-empty teplou šeď z jiné palety a
+           health-recovery-empty nemělo pravidlo žádné. Uvnitř nastylované
+           karty vypadal holý řádek textu jako nedodělek, ne jako stav.
+           Teď mají všechny jeden tvar: přerušovaný rám a text na střed. */
         :global(.health-chart-empty),
-        :global(.health-empty-text) {
+        :global(.health-empty-text),
+        :global(.health-recovery-empty) {
           color: var(--bmon-text-muted);
           margin: 0;
+          padding: 18px 16px;
+          text-align: center;
+          font-size: 14px;
+          line-height: 1.5;
+          border: 1px dashed rgba(148, 163, 184, 0.28);
+          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.02);
         }
         :global(.health-subsection-title) {
           margin: 0 0 12px;
@@ -4582,8 +4597,8 @@ export default function Profil() {
           gap: 4px;
           padding: 14px 24px;
           border-radius: 14px;
-          border: 1px solid rgba(139, 92, 255, 0.35);
-          background: linear-gradient(135deg, rgba(109, 40, 217, 0.18), rgba(59, 130, 246, 0.08));
+          border: 1px solid rgba(0, 242, 254, 0.35);
+          background: linear-gradient(135deg, rgba(0, 242, 254, 0.18), rgba(59, 130, 246, 0.08));
           color: #e2e8f0;
           font-size: 15px;
           font-weight: 600;
@@ -4592,8 +4607,8 @@ export default function Profil() {
           transition: background 0.2s, border-color 0.2s, transform 0.2s;
         }
         .hero-prefs-btn:hover {
-          background: linear-gradient(135deg, rgba(109, 40, 217, 0.28), rgba(59, 130, 246, 0.12));
-          border-color: rgba(139, 92, 255, 0.5);
+          background: linear-gradient(135deg, rgba(0, 242, 254, 0.28), rgba(59, 130, 246, 0.12));
+          border-color: rgba(0, 242, 254, 0.5);
           transform: translateY(-1px);
         }
         .hero-prefs-emoji { font-size: 18px; }
@@ -4623,7 +4638,7 @@ export default function Profil() {
         .avatar-crop-actions { display: flex; gap: 12px; justify-content: flex-end; }
         .avatar-crop-btn-cancel { padding: 10px 20px; border-radius: 10px; border: 1px solid #475569; background: transparent; color: #94a3b8; font-size: 14px; cursor: pointer; }
         .avatar-crop-btn-cancel:hover { background: #1e293b; color: #e2e8f0; }
-        .avatar-crop-btn-confirm { padding: 10px 20px; border-radius: 10px; border: none; background: #0ea5e9; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .avatar-crop-btn-confirm { padding: 10px 20px; border-radius: 10px; border: none; background: #00f2fe; color: #05070d; font-weight: 700; cursor: pointer; }
         .avatar-crop-btn-confirm:hover:not(:disabled) { background: #0284c7; }
         .avatar-crop-btn-confirm:disabled { opacity: 0.6; cursor: not-allowed; }
         .hero-intro {
@@ -4656,8 +4671,8 @@ export default function Profil() {
           border-radius: 20px;
           font-size: 14px;
           font-weight: 600;
-          color: #c4b5fd;
-          -webkit-text-fill-color: #c4b5fd;
+          color: #7dd3fc;
+          -webkit-text-fill-color: #7dd3fc;
           vertical-align: middle;
         }
         .hero-sub {
@@ -4766,9 +4781,9 @@ export default function Profil() {
           gap: 24px 32px;
           margin-top: 28px;
           padding: 20px 24px;
-          background: rgba(139, 92, 255, 0.12);
+          background: rgba(0, 242, 254, 0.12);
           border-radius: 16px;
-          border: 1px solid rgba(139, 92, 255, 0.25);
+          border: 1px solid rgba(0, 242, 254, 0.25);
           max-width: 520px;
           margin-left: auto;
           margin-right: auto;
@@ -4782,7 +4797,7 @@ export default function Profil() {
         .hero-stat-value {
           font-size: 22px;
           font-weight: 700;
-          color: #e9d5ff;
+          color: #d7f9ff;
         }
         .hero-stat-value.trend-num { color: #fbbf24; }
         .hero-stat-label {
@@ -4792,7 +4807,7 @@ export default function Profil() {
         .first-action-banner {
           margin-bottom: 28px;
           padding: 20px 24px;
-          background: linear-gradient(135deg, rgba(14, 165, 233, 0.14) 0%, rgba(167, 139, 250, 0.12) 100%);
+          background: linear-gradient(135deg, rgba(14, 165, 233, 0.14) 0%, rgba(0, 242, 254, 0.12) 100%);
           border: 1px solid rgba(14, 165, 233, 0.28);
           border-radius: 16px;
           text-align: center;
@@ -4851,19 +4866,59 @@ export default function Profil() {
           color: #64748b;
           background: rgba(255,255,255,0.06);
         }
-        .milestone-item.done .milestone-icon { color: #22c55e; background: rgba(34, 197, 94, 0.2); }
+        .milestone-item.done .milestone-icon { color: #39ff14; background: rgba(57, 255, 20, 0.18); }
         .milestone-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         .milestone-detail { font-size: 11px; color: #64748b; line-height: 1.35; }
         .milestone-label { font-size: 14px; color: #94a3b8; }
-        .milestone-item.done .milestone-label { color: #e9d5ff; }
+        .milestone-item.done .milestone-label { color: #d7f9ff; }
+
+        /* Třída byla ve 13 místech, pravidlo k ní žádné — odsazení se
+           opakovalo inline u každého výskytu. */
+           opakovalo inline u kazdeho vyskytu. */
+        .plan-preparing-block {
+          padding: 1.5rem;
+          text-align: center;
+        }
+
+        /* ── ZPRÁVA OD KOUČE ──────────────────────────────────────────────
+           Značky coach-message-* byly v markupu od začátku, ale pravidlo
+           k nim nikdy neexistovalo — zpráva se vykreslovala v holém výchozím
+           stylu prohlížeče vedle nastylovaného Mindsetu hned nad ní.
+           Drží se stejného tvaru jako .mindset-*, aby dvě zprávy od stejného
+           odesílatele vypadaly jako dvě zprávy od stejného odesílatele. */
+        .coach-message-block {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .coach-message-title {
+          margin: 0;
+          font-size: 17px;
+          font-weight: 700;
+          color: #d7f9ff;
+          letter-spacing: -0.01em;
+        }
+        .coach-message-content {
+          margin: 0;
+          color: #cbd5e1;
+          line-height: 1.65;
+          font-size: 15px;
+          padding: 12px 16px;
+          background: rgba(255,255,255,0.04);
+          border-radius: 12px;
+          border-left: 3px solid rgba(0, 242, 254, 0.5);
+        }
+        .coach-message-content strong,
+        .coach-message-content b { color: #ecfeff; }
+        .coach-message-content a { color: #7dd3fc; }
 
         .mindset-block {
           margin-bottom: 28px;
           padding: 28px 28px 24px;
-          background: linear-gradient(135deg, rgba(109, 40, 217, 0.18) 0%, rgba(139, 92, 255, 0.10) 50%, rgba(59, 130, 246, 0.10) 100%);
+          background: linear-gradient(135deg, rgba(0, 242, 254, 0.18) 0%, rgba(0, 242, 254, 0.10) 50%, rgba(59, 130, 246, 0.10) 100%);
           border-radius: 20px;
-          border: 1px solid rgba(139, 92, 255, 0.35);
-          box-shadow: 0 8px 32px rgba(109, 40, 217, 0.15), inset 0 1px 0 rgba(255,255,255,0.06);
+          border: 1px solid rgba(0, 242, 254, 0.35);
+          box-shadow: 0 8px 32px rgba(0, 242, 254, 0.15), inset 0 1px 0 rgba(255,255,255,0.06);
           position: relative;
           overflow: hidden;
         }
@@ -4874,7 +4929,7 @@ export default function Profil() {
           right: -60px;
           width: 200px;
           height: 200px;
-          background: radial-gradient(circle, rgba(139, 92, 255, 0.12) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(0, 242, 254, 0.12) 0%, transparent 70%);
           pointer-events: none;
         }
         .mindset-header {
@@ -4886,13 +4941,13 @@ export default function Profil() {
         .mindset-icon {
           font-size: 26px;
           line-height: 1;
-          filter: drop-shadow(0 0 8px rgba(139, 92, 255, 0.6));
+          filter: drop-shadow(0 0 8px rgba(0, 242, 254, 0.6));
         }
         .mindset-block-title {
           margin: 0;
           font-size: 19px;
           font-weight: 700;
-          color: #e9d5ff;
+          color: #d7f9ff;
           letter-spacing: -0.01em;
         }
         .mindset-content {
@@ -4902,16 +4957,16 @@ export default function Profil() {
         }
         .mindset-content p {
           margin: 0;
-          color: #d8b4fe;
+          color: #a5eaf7;
           line-height: 1.65;
           font-size: 15px;
           padding: 12px 16px;
           background: rgba(255,255,255,0.04);
           border-radius: 12px;
-          border-left: 3px solid rgba(139, 92, 255, 0.5);
+          border-left: 3px solid rgba(0, 242, 254, 0.5);
         }
         .mindset-content p b {
-          color: #f3e8ff;
+          color: #ecfeff;
           display: block;
           margin-bottom: 4px;
           font-size: 13px;
@@ -4943,20 +4998,20 @@ export default function Profil() {
         .btn-refresh:hover:not(:disabled), .btn-send-plan:hover:not(:disabled) {
           background: rgba(255,255,255,0.1);
           border-color: rgba(255,255,255,0.2);
-          color: #c4b5fd;
+          color: #7dd3fc;
         }
         .btn-refresh:disabled, .btn-send-plan:disabled { opacity: 0.5; cursor: not-allowed; }
         .actions-block {
           margin-bottom: 32px;
           padding: 28px 32px;
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.25), rgba(155, 92, 255, 0.15));
+          background: linear-gradient(135deg, rgba(0, 242, 254, 0.25), rgba(155, 92, 255, 0.15));
           border-radius: 20px;
-          border: 1px solid rgba(139, 92, 255, 0.35);
+          border: 1px solid rgba(0, 242, 254, 0.35);
         }
         .actions-title {
           margin: 0 0 20px;
           font-size: 18px;
-          color: #e9d5ff;
+          color: #d7f9ff;
           font-weight: 600;
         }
         .action-buttons {
@@ -5129,7 +5184,7 @@ export default function Profil() {
         }
         .trainer-calendar-event-confirmed {
           background: rgba(34, 197, 94, 0.35);
-          border-left: 3px solid #22c55e;
+          border-left: 3px solid #39ff14;
         }
         .trainer-calendar-event-clickable {
           cursor: pointer;
@@ -5260,9 +5315,9 @@ export default function Profil() {
           gap: 28px 40px;
           margin-bottom: 24px;
           padding: 24px 20px;
-          background: rgba(139, 92, 255, 0.1);
+          background: rgba(0, 242, 254, 0.1);
           border-radius: 16px;
-          border: 1px solid rgba(139, 92, 255, 0.2);
+          border: 1px solid rgba(0, 242, 254, 0.2);
         }
         .progress-activity-main {
           display: flex;
@@ -5273,7 +5328,7 @@ export default function Profil() {
         .progress-big-num {
           font-size: 28px;
           font-weight: 700;
-          color: #e9d5ff;
+          color: #d7f9ff;
         }
         .progress-big-label {
           font-size: 13px;
@@ -5300,7 +5355,7 @@ export default function Profil() {
           color: #94a3b8;
         }
         .progress-calc-line:last-child { margin-bottom: 0; }
-        .progress-calc-line strong { color: #e9d5ff; }
+        .progress-calc-line strong { color: #d7f9ff; }
         .progress-habit-line { font-size: 13px; color: #94a3b8; }
         .progress-weight-note {
           font-size: 12px;
@@ -5325,21 +5380,21 @@ export default function Profil() {
         }
         .progress-summary .workout-badge {
           padding: 8px 16px;
-          background: rgba(139, 92, 255, 0.2);
+          background: rgba(0, 242, 254, 0.2);
           border-radius: 20px;
           font-size: 14px;
-          color: #c4b5fd;
+          color: #7dd3fc;
         }
         .progress-summary .weight-now {
           font-size: 20px;
           font-weight: 700;
-          color: #e9d5ff;
+          color: #d7f9ff;
         }
         .progress-summary .trend {
           font-size: 15px;
           color: #94a3b8;
         }
-        .progress-summary .trend strong { color: #e9d5ff; }
+        .progress-summary .trend strong { color: #d7f9ff; }
         .empty-progress {
           color: #64748b;
           font-size: 15px;
@@ -5417,7 +5472,7 @@ export default function Profil() {
         }
 
         .btn-primary {
-          background: linear-gradient(135deg, #7c3aed, #9b5cff);
+          background: linear-gradient(135deg, #00f2fe, #38ef7d);
           color: #fff;
           border: none;
           padding: 14px 24px;
@@ -5431,8 +5486,8 @@ export default function Profil() {
         .btn-primary:hover { opacity: 0.95; filter: brightness(1.05); }
         .btn-secondary {
           background: rgba(255,255,255,0.1);
-          color: #e9d5ff;
-          border: 1px solid rgba(139, 92, 255, 0.5);
+          color: #d7f9ff;
+          border: 1px solid rgba(0, 242, 254, 0.5);
           padding: 14px 24px;
           border-radius: 14px;
           font-weight: 600;
@@ -5484,7 +5539,7 @@ export default function Profil() {
         .kpis-bar .kpi-num {
           font-size: 18px;
           font-weight: 700;
-          color: #e9d5ff;
+          color: #d7f9ff;
         }
         .kpis-bar .kpi-label { font-size: 12px; color: #94a3b8; }
         .kpis-bar .kpi-sub { font-size: 11px; color: #64748b; }
@@ -5503,7 +5558,7 @@ export default function Profil() {
         .workload-title {
           margin: 0;
           font-size: 14px;
-          color: #e9d5ff;
+          color: #d7f9ff;
         }
         .workload-sub {
           margin: 6px 0 12px;
@@ -5540,7 +5595,7 @@ export default function Profil() {
           display: block;
           height: 100%;
           border-radius: inherit;
-          background: linear-gradient(90deg, #7c3aed, #a78bfa);
+          background: linear-gradient(90deg, #00f2fe, #39ff14);
         }
         .workload-fill--day {
           background: linear-gradient(90deg, #2563eb, #60a5fa);
@@ -5607,7 +5662,7 @@ export default function Profil() {
         .chart-value {
           font-weight: 700;
           font-size: 16px;
-          color: #e9d5ff;
+          color: #d7f9ff;
         }
         .chart-date {
           font-size: 12px;
@@ -5664,7 +5719,7 @@ export default function Profil() {
         .preferences-workout-days-hint { margin: 4px 0 10px; font-size: 13px; color: #64748b; }
         .preferences-workout-days { display: flex; flex-wrap: wrap; gap: 10px 16px; }
         .preferences-workout-day-check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; color: #e2e8f0; margin: 0; }
-        .preferences-workout-day-check input { width: 18px; height: 18px; accent-color: #7c3aed; }
+        .preferences-workout-day-check input { width: 28px; height: 28px; accent-color: #00f2fe; }
         .modal h3 { margin: 0 0 20px; }
         .modal label { display: block; margin: 12px 0 4px; color: #94a3b8; font-size: 14px; }
         .label-hint { font-weight: 400; color: #64748b; font-size: 12px; }
@@ -5697,14 +5752,14 @@ export default function Profil() {
           border-radius: 10px;
           border: 1px solid #444;
           background: #0f0f1a;
-          color: #c4b5fd;
+          color: #7dd3fc;
           font-size: 1.25rem;
           cursor: pointer;
           transition: background 0.2s, border-color 0.2s;
         }
         .modal-date-calendar-btn:hover {
-          background: rgba(139, 92, 255, 0.2);
-          border-color: rgba(139, 92, 255, 0.4);
+          background: rgba(0, 242, 254, 0.2);
+          border-color: rgba(0, 242, 254, 0.4);
         }
         .modal-hint { color: #64748b; font-size: 13px; margin: 12px 0; }
         .workout-difficulty-options {
@@ -5719,7 +5774,7 @@ export default function Profil() {
         }
         .workout-difficulty-option:hover { background: rgba(255,255,255,0.07); }
         .workout-difficulty-option input[type="radio"] {
-          width: 18px; height: 18px; margin: 0; accent-color: #7c3aed;
+          width: 28px; height: 28px; margin: 0; accent-color: #00f2fe;
         }
         .modal-error {
           color: #f87171;
@@ -5819,18 +5874,18 @@ export default function Profil() {
           width: 100%;
           margin-top: 12px;
           padding: 12px 16px;
-          background: rgba(139, 92, 255, 0.15);
-          border: 1px solid rgba(139, 92, 255, 0.3);
+          background: rgba(0, 242, 254, 0.15);
+          border: 1px solid rgba(0, 242, 254, 0.3);
           border-radius: 12px;
-          color: #a78bfa;
+          color: #7dd3fc;
           font-size: 14px;
           font-weight: 500;
           cursor: pointer;
           transition: background 0.2s, border-color 0.2s;
         }
         .workout-expand-btn:hover {
-          background: rgba(139, 92, 255, 0.25);
-          border-color: rgba(139, 92, 255, 0.5);
+          background: rgba(0, 242, 254, 0.25);
+          border-color: rgba(0, 242, 254, 0.5);
         }
         .modal-actions {
           display: flex;
@@ -5849,7 +5904,7 @@ export default function Profil() {
           color: #94a3b8;
         }
         .modal-actions button[type="submit"] {
-          background: linear-gradient(135deg, #7c3aed, #9b5cff);
+          background: linear-gradient(135deg, #00f2fe, #38ef7d);
           border: none;
           color: #fff;
           display: flex;
@@ -5873,7 +5928,7 @@ export default function Profil() {
           background: rgba(155, 92, 255, 0.1);
           border-radius: 10px;
           margin: 12px 0;
-          color: #a78bfa;
+          color: #7dd3fc;
           font-size: 14px;
         }
 

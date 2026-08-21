@@ -18,10 +18,10 @@ function read(rel) {
   return readFileSync(join(ROOT, rel), 'utf8');
 }
 
-const profil = read('pages/profil.js');
-const planViewer = read('components/PlanViewer.js');
-const todayPanels = read('components/profile/ProfileTodayPanels.js');
-const variants = read('components/ProgramVariantsSection.js');
+const profil = read('_legacy-next/pages/profil.js');
+const planViewer = read('_legacy-next/components/PlanViewer.js');
+const todayPanels = read('_legacy-next/components/profile/ProfileTodayPanels.js');
+const variants = read('_legacy-next/components/ProgramVariantsSection.js');
 
 const bannedProfileTexts = [
   'Vyber si další krok',
@@ -30,7 +30,7 @@ const bannedProfileTexts = [
   'ON CLUB 1 499 Kč',
 ];
 
-check('pages/profil.js neimportuje ProfileContinuationUpsell', !/import\s+ProfileContinuationUpsell/.test(profil));
+check('_legacy-next/pages/profil.js neimportuje ProfileContinuationUpsell', !/import\s+ProfileContinuationUpsell/.test(profil));
 check('profil nerenderuje ProfileContinuationUpsell', !/<ProfileContinuationUpsell/.test(profil));
 check('PlanViewer nescrolluje na profile-continuation-upsell', !/profile-continuation-upsell/.test(planViewer));
 check('ProfileTodayPanels nerenderuje sales CTA kartu', !/Jak pokračovat po STARTU|Možnosti programu|Další krok/.test(todayPanels));

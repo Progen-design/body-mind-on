@@ -25,22 +25,22 @@ const IGNORE_DIRS = new Set([
 const EXT = new Set(['.js', '.jsx', '.ts', '.tsx', '.html', '.md']);
 
 const WEB_WHITELIST_FILES = [
-  'components/autopilot.tsx',
-  'components/device-interest-panel.tsx',
-  'components/weight-chart.tsx',
+  '_legacy-next/components/autopilot.tsx',
+  '_legacy-next/components/device-interest-panel.tsx',
+  '_legacy-next/components/weight-chart.tsx',
   'app/faq/page.tsx',
 ];
 
 const APP_WHITELIST_FILES = [
-  'components/profile/WithingsBodyDevelopmentSection.js',
-  'components/profile/WithingsProfileCard.js',
-  'components/SmartScaleChoiceField.js',
-  'components/profile/PreferencesOverlay.jsx',
-  'pages/withings-connect.js',
+  '_legacy-next/components/profile/WithingsBodyDevelopmentSection.js',
+  '_legacy-next/components/profile/WithingsProfileCard.js',
+  '_legacy-next/components/SmartScaleChoiceField.js',
+  '_legacy-next/components/profile/PreferencesOverlay.jsx',
+  '_legacy-next/pages/withings-connect.js',
   'lib/smartScalePreference.js',
 ];
 
-const APP_WHITELIST_PREFIXES = ['lib/withings/', 'pages/api/withings/', 'pages/withings-connect.js'];
+const APP_WHITELIST_PREFIXES = ['lib/withings/', 'api/withings/', '_legacy-next/pages/withings-connect.js'];
 
 const PATTERNS = [
   { re: /Napojíš chytrou váhu/i, label: 'Napojíš chytrou váhu' },

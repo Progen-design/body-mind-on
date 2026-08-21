@@ -15,14 +15,14 @@ function fail(msg) { console.log(`FAIL ${msg}`); failed += 1; }
 function ok(msg) { console.log(`OK ${msg}`); }
 function check(label, cond) { if (cond) ok(label); else fail(label); }
 
-const profil = fs.readFileSync(path.join(root, 'pages/profil.js'), 'utf8');
-const planViewer = fs.readFileSync(path.join(root, 'components/PlanViewer.js'), 'utf8');
-const prefs = fs.readFileSync(path.join(root, 'components/profile/PreferencesOverlay.jsx'), 'utf8');
-const planReplaceApi = fs.readFileSync(path.join(root, 'pages/api/plan-replace-meal.js'), 'utf8');
+const profil = fs.readFileSync(path.join(root, '_legacy-next/pages/profil.js'), 'utf8');
+const planViewer = fs.readFileSync(path.join(root, '_legacy-next/components/PlanViewer.js'), 'utf8');
+const prefs = fs.readFileSync(path.join(root, '_legacy-next/components/profile/PreferencesOverlay.jsx'), 'utf8');
+const planReplaceApi = fs.readFileSync(path.join(root, 'api/plan-replace-meal.js'), 'utf8');
 const planReplaceLib = fs.readFileSync(path.join(root, 'lib/planMealReplace.js'), 'utf8');
 const exerciseInstructions = fs.readFileSync(path.join(root, 'lib/exerciseInstructions.js'), 'utf8');
 const bodyBirth = fs.readFileSync(path.join(root, 'lib/bodyMetricsBirthDate.js'), 'utf8');
-const profileBodyApi = fs.readFileSync(path.join(root, 'pages/api/profile-body-data.js'), 'utf8');
+const profileBodyApi = fs.readFileSync(path.join(root, 'api/profile-body-data.js'), 'utf8');
 const packageJson = fs.readFileSync(path.join(root, 'package.json'), 'utf8');
 
 console.log('--- A: profile navigation ---');

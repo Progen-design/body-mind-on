@@ -22,17 +22,17 @@ function read(relPath) {
   return readFileSync(resolve(process.cwd(), relPath), 'utf8');
 }
 
-const startPage = read('pages/start.js');
-const onClubPage = read('pages/on-club.js');
-const chciVipPage = read('pages/chci-vip.js');
-const bodyMetricsApi = read('pages/api/body-metrics.js');
+const startPage = read('_legacy-next/pages/start.js');
+const onClubPage = read('_legacy-next/pages/on-club.js');
+const chciVipPage = read('_legacy-next/pages/chci-vip.js');
+const bodyMetricsApi = read('api/body-metrics.js');
 const bodyMetricsRegistration = read('lib/registration/bodyMetricsRegistration.js');
 const bodyMetricsRegistrationChain = `${bodyMetricsApi}\n${bodyMetricsRegistration}`;
-const profileApi = read('pages/api/profile.js');
-const profileBodyDataApi = read('pages/api/profile-body-data.js');
-const quickWeightApi = read('pages/api/quick-weight.js');
-const profilPage = read('pages/profil.js');
-const prefsOverlay = read('components/profile/PreferencesOverlay.jsx');
+const profileApi = read('api/profile.js');
+const profileBodyDataApi = read('api/profile-body-data.js');
+const quickWeightApi = read('api/quick-weight.js');
+const profilPage = read('_legacy-next/pages/profil.js');
+const prefsOverlay = read('_legacy-next/components/profile/PreferencesOverlay.jsx');
 const birthLib = read('lib/bodyMetricsBirthDate.js');
 const packageJson = read('package.json');
 

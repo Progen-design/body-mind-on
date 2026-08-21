@@ -33,13 +33,13 @@ function read(rel) {
 }
 
 const visibilityLib = read('lib/withingsProfileVisibility.js');
-const profileApi = read('pages/api/profile.js');
-const profilPage = read('pages/profil.js');
-const withingsSection = read('components/profile/WithingsBodyDevelopmentSection.js');
-const startPage = read('pages/start.js');
-const bodyMetricsApi = read('pages/api/body-metrics.js');
-const profileSettingsApi = read('pages/api/profile-settings.js');
-const prefsOverlay = read('components/profile/PreferencesOverlay.jsx');
+const profileApi = read('api/profile.js');
+const profilPage = read('_legacy-next/pages/profil.js');
+const withingsSection = read('_legacy-next/components/profile/WithingsBodyDevelopmentSection.js');
+const startPage = read('_legacy-next/pages/start.js');
+const bodyMetricsApi = read('api/body-metrics.js');
+const profileSettingsApi = read('api/profile-settings.js');
+const prefsOverlay = read('_legacy-next/components/profile/PreferencesOverlay.jsx');
 
 check('withingsProfileVisibility existuje', visibilityLib.length > 0);
 check('shouldShowWithingsSection export', visibilityLib.includes('export function shouldShowWithingsSection'));

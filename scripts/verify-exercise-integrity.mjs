@@ -34,9 +34,9 @@ function check(label, ok, detail = '') {
   else { failed += 1; console.error(`FAIL ${label}${detail ? ` — ${detail}` : ''}`); }
 }
 
-const planViewer = fs.readFileSync(path.join(ROOT, 'components/PlanViewer.js'), 'utf8');
-const exerciseMediaApi = fs.readFileSync(path.join(ROOT, 'pages/api/exercise-media.js'), 'utf8');
-const confirmApi = fs.readFileSync(path.join(ROOT, 'pages/api/workout/confirm-replacement.js'), 'utf8');
+const planViewer = fs.readFileSync(path.join(ROOT, '_legacy-next/components/PlanViewer.js'), 'utf8');
+const exerciseMediaApi = fs.readFileSync(path.join(ROOT, 'api/exercise-media.js'), 'utf8');
+const confirmApi = fs.readFileSync(path.join(ROOT, 'api/workout/confirm-replacement.js'), 'utf8');
 const replaceLib = fs.readFileSync(path.join(ROOT, 'lib/workoutTodayReplace.js'), 'utf8');
 
 console.log('--- canonical ID as primary identity ---');

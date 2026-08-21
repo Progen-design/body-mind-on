@@ -178,7 +178,7 @@ check('používá "na každou nohu"', /na každou nohu/i.test(html));
 
 console.log('--- Source consistency checks ---');
 const mailJs = read('lib/mail.js');
-const resendApi = read('pages/api/send-plan-again.js');
+const resendApi = read('api/send-plan-again.js');
 const weeklyV8 = read('lib/weeklyPlanEmailV8.js');
 check('structured_plan_json used when exists', /!canUseStructuredPlan/.test(mailJs) && /structuredPlanJson/.test(mailJs));
 check('today email source aligned', /buildStructuredWeekSource/.test(weeklyV8) && /todayWeekIdx/.test(weeklyV8));

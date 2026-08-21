@@ -43,11 +43,11 @@ function check(label, ok, detail = '') {
   console.error(`FAIL ${label}${detail ? ` — ${detail}` : ''}`);
 }
 
-const bodyMetricsSrc = readFileSync(join(ROOT, 'pages/api/body-metrics.js'), 'utf8');
-const webhookSrc = readFileSync(join(ROOT, 'pages/api/webhooks/stripe.js'), 'utf8');
-const checkoutSrc = readFileSync(join(ROOT, 'pages/api/stripe/create-checkout-session.js'), 'utf8');
+const bodyMetricsSrc = readFileSync(join(ROOT, 'api/body-metrics.js'), 'utf8');
+const webhookSrc = readFileSync(join(ROOT, 'api/webhooks/stripe.js'), 'utf8');
+const checkoutSrc = readFileSync(join(ROOT, 'api/stripe/create-checkout-session.js'), 'utf8');
 const statusMigration = readFileSync(join(ROOT, 'supabase/migrations/20260712121000_membership_status_contract.sql'), 'utf8');
-const profilSrc = readFileSync(join(ROOT, 'pages/profil.js'), 'utf8');
+const profilSrc = readFileSync(join(ROOT, '_legacy-next/pages/profil.js'), 'utf8');
 const helpersSrc = readFileSync(join(ROOT, 'lib/membershipHelpers.js'), 'utf8');
 
 check('body-metrics uses membershipFromRegistration', bodyMetricsSrc.includes('membershipFromRegistration'));

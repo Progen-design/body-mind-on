@@ -20,8 +20,8 @@ function read(rel) {
   return readFileSync(join(ROOT, rel), 'utf8');
 }
 
-const todayPanels = read('components/profile/ProfileTodayPanels.js');
-const planViewer = read('components/PlanViewer.js');
+const todayPanels = read('_legacy-next/components/profile/ProfileTodayPanels.js');
+const planViewer = read('_legacy-next/components/PlanViewer.js');
 const instructionsSrc = read('lib/exerciseInstructions.js');
 
 const lungeDisplay = formatExerciseSetsRepsDisplay({ sets: 5, reps: '10 per leg' });

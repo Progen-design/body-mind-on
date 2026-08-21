@@ -12,8 +12,8 @@ function fail(msg) { console.log(`FAIL ${msg}`); failed += 1; }
 function ok(msg) { console.log(`OK ${msg}`); }
 
 console.log('--- meal replacement wiring ---');
-const planViewer = fs.readFileSync(path.join(root, 'components/PlanViewer.js'), 'utf8');
-const api = fs.readFileSync(path.join(root, 'pages/api/plan-replace-meal.js'), 'utf8');
+const planViewer = fs.readFileSync(path.join(root, '_legacy-next/components/PlanViewer.js'), 'utf8');
+const api = fs.readFileSync(path.join(root, 'api/plan-replace-meal.js'), 'utf8');
 if (!planViewer.includes("'/api/plan-replace-meal'")) fail('PlanViewer missing plan-replace-meal API call');
 if (!planViewer.includes('Nahradit jiným')) fail('PlanViewer missing Nahradit jiným button');
 if (!api.includes('replaceMealInStructuredPlan')) fail('API missing replaceMealInStructuredPlan');
@@ -63,7 +63,7 @@ if (!planReplace.includes('fillDayCaloriesByAddingLibraryMeals')) fail('planMeal
 else ok('planMealReplace module persists structured + rebalance logic');
 
 console.log('\n--- pin next week ---');
-const mealPins = fs.readFileSync(path.join(root, 'pages/api/meal-pins.js'), 'utf8');
+const mealPins = fs.readFileSync(path.join(root, 'api/meal-pins.js'), 'utf8');
 const agent = fs.readFileSync(path.join(root, 'lib/services/simpleMealPlannerAgent.js'), 'utf8');
 if (!mealPins.includes('user_meal_pins')) fail('meal-pins API missing table');
 if (!planViewer.includes('Uloženo. Tohle jídlo budeme preferovat v dalších plánech.')) fail('pin confirmation copy missing');

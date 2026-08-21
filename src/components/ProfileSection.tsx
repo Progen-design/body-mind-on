@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   User,
+  LogOut,
+  Repeat,
+  Check,
+  Mail,
   ShieldCheck,
   Activity,
   Scale,
@@ -22,6 +26,9 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { UserProfile, UserPreferences, WeightRecord, AppleWatchBiometrics } from '../types';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface ProfileSectionProps {
   profile: UserProfile;
@@ -46,6 +53,38 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   onAddWeight,
   isSyncing = false
 }) => {
+  const { account, accounts, logout, switchAccount, loggedInAt } = useAuth();
+  const { showToast } = useToast();
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+
+  const loggedInText = loggedInAt
+    ? new Date(loggedInAt).toLocaleString('cs-CZ', {
+        day: 'numeric',
+        month: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    : '—';
+
+  const handleConfirmLogout = () => {
+    setIsLogoutDialogOpen(false);
+    logout();
+    showToast({
+      title: 'Odhlášeno',
+      description: 'Tvoje data zůstala uložená na tomto zařízení.',
+      variant: 'info'
+    });
+  };
+
+  const handleSwitchAccount = (accountId: string, name: string) => {
+    switchAccount(accountId);
+    showToast({
+      title: 'Profil přepnut',
+      description: `Pracuješ jako ${name}.`,
+      variant: 'success'
+    });
+  };
+
   const personalRecords = [
     { exercise: 'Benchpress', weight: '135 kg', reps: '4 opakování', date: 'Před 2 týdny', icon: Dumbbell, color: 'text-cyan-400' },
     { exercise: 'Dřep s činkou', weight: '170 kg', reps: '5 opakování', date: 'Před měsícem', icon: Dumbbell, color: 'text-[#39ff14]' },
@@ -122,9 +161,100 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
               <Brain className="w-3.5 h-3.5 text-[#00f2fe]" />
               <span>AI Konzultace</span>
             </button>
+
+            <button
+              onClick={() => setIsLogoutDialogOpen(true)}
+              className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-red-950/60 hover:bg-red-900/70 text-red-300 hover:text-red-200 border border-red-500/45 hover:border-red-400 shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all active:scale-95"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Odhlásit se</span>
+            </button>
           </div>
         </div>
       </motion.div>
+
+      {/* 1b. Přihlášený účet & přepnutí profilu */}
+      {account && (
+        <div className="p-5 sm:p-6 rounded-3xl bg-[#0c1017]/90 border border-slate-800 shadow-xl space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-cyan-400">
+                <User className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Přihlášený účet</h3>
+                <p className="text-xs text-slate-400">
+                  Přihlášen {loggedInText} • data se ukládají do tohoto zařízení
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setIsLogoutDialogOpen(true)}
+              className="flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-red-300 bg-red-950/50 hover:bg-red-900/60 border border-red-500/40 hover:border-red-400 transition-all active:scale-95"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Odhlásit se</span>
+            </button>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-900/80 border border-cyan-500/25 flex items-center gap-3.5">
+            <img
+              src={account.avatarUrl}
+              alt={account.name}
+              referrerPolicy="no-referrer"
+              className="w-12 h-12 rounded-xl object-cover bg-slate-800 shrink-0"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-bold text-slate-100 truncate">{account.name}</div>
+              <div className="text-[11px] text-slate-400 flex items-center gap-1.5 truncate">
+                <Mail className="w-3 h-3 shrink-0 text-slate-500" />
+                <span className="truncate">{account.email}</span>
+              </div>
+              <div className="text-[10px] text-cyan-400 font-semibold mt-0.5">{account.role}</div>
+            </div>
+            <span className="hidden sm:inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold text-[#39ff14] bg-emerald-950/60 border border-emerald-500/30 shrink-0">
+              Aktivní relace
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+              <Repeat className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Přepnout profil</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {accounts.map(item => {
+                const isActive = item.id === account.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => (isActive ? undefined : handleSwitchAccount(item.id, item.name))}
+                    disabled={isActive}
+                    className={`p-3 rounded-2xl border flex items-center gap-2.5 text-left transition-all ${
+                      isActive
+                        ? 'bg-cyan-950/40 border-cyan-500/40 cursor-default'
+                        : 'bg-slate-900/60 border-slate-800 hover:border-cyan-500/40 hover:bg-slate-800/70 active:scale-[0.98]'
+                    }`}
+                  >
+                    <img
+                      src={item.avatarUrl}
+                      alt={item.name}
+                      referrerPolicy="no-referrer"
+                      className="w-9 h-9 rounded-lg object-cover bg-slate-800 shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[11px] font-bold text-slate-100 truncate">{item.name}</div>
+                      <div className="text-[10px] text-slate-400 truncate">{item.role}</div>
+                    </div>
+                    {isActive && <Check className="w-3.5 h-3.5 text-[#39ff14] shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2. Key Physical Parameters Bento Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -360,6 +490,18 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={isLogoutDialogOpen}
+        title="Opravdu se chceš odhlásit?"
+        description="Aplikace se zamkne a budeš se muset znovu přihlásit. Naměřená data, jídelníček i návyky zůstanou uložené na tomto zařízení."
+        confirmLabel="Odhlásit se"
+        cancelLabel="Zůstat přihlášen"
+        tone="danger"
+        icon={LogOut}
+        onConfirm={handleConfirmLogout}
+        onCancel={() => setIsLogoutDialogOpen(false)}
+      />
     </div>
   );
 };

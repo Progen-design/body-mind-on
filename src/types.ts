@@ -166,6 +166,44 @@ export interface UserProfile {
   subtitle?: string;
 }
 
+/** Účet, pod kterým je uživatel přihlášen (lze mezi nimi přepínat). */
+export interface AccountProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  avatarUrl: string;
+  membershipPlan: string;
+}
+
+/** Aktivní přihlášení uložené v localStorage. */
+export interface AuthSession {
+  accountId: string;
+  loggedInAt: string;
+}
+
+/**
+ * Stav propojení s Withings Cloud. Token zadává uživatel v modálu;
+ * do úložiště jde jen maskovaná podoba (poslední 4 znaky), samotné
+ * tajemství zůstává v paměti běžící relace.
+ */
+export interface WithingsConnection {
+  maskedToken: string;
+  isConnected: boolean;
+  lastAuthorizedAt: string | null;
+  autoSyncEnabled: boolean;
+}
+
+/** Souhrn toho, co poslední synchronizace stáhla — zobrazuje se v modálu i v toastu. */
+export interface SyncResult {
+  syncedAt: string;
+  weight: number;
+  restingHrBpm: number;
+  hrvMs: number;
+  steps: number;
+  activeEnergyKcal: number;
+}
+
 export interface CoachTip {
   id: string;
   category: 'regenerace' | 'vyziva' | 'vykon' | 'kompozice';

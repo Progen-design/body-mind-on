@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Header } from './components/Header';
 import { UserProfileCard } from './components/UserProfileCard';
 import { AICoachBanner } from './components/AICoachBanner';
@@ -23,6 +23,18 @@ import { WithingsSyncModal } from './components/WithingsSyncModal';
 import { AddMeasurementModal } from './components/AddMeasurementModal';
 import { PreferencesModal } from './components/PreferencesModal';
 import { CoachChatModal } from './components/CoachChatModal';
+import { LoginScreen } from './components/LoginScreen';
+
+// Kontexty, perzistence a synchronizace
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider, useToast } from './context/ToastContext';
+import { useLocalStorage } from './hooks/useLocalStorage';
+import {
+  applyWeightRecord,
+  buildSyncedBiometrics,
+  buildSyncedWeightRecord,
+  formatLastSynced
+} from './lib/syncEngine';
 
 // Initial Data
 import {
@@ -45,26 +57,90 @@ import {
   HabitItem,
   ShoppingItem,
   UserPreferences,
-  ExerciseItem
+  ExerciseItem,
+  AppleWatchBiometrics,
+  SyncResult,
+  UserProfile,
+  WithingsConnection
 } from './types';
 
+/** Doplní chybějící pole, když jsou uložená data starší než aktuální tvar objektu. */
+const mergeObject = <T extends object>(stored: T, initial: T): T => ({ ...initial, ...stored });
+
+const initialWithingsConnection: WithingsConnection = {
+  maskedToken: '',
+  isConnected: false,
+  lastAuthorizedAt: null,
+  autoSyncEnabled: true
+};
+
 export default function App() {
-  // Central State Management
+  return (
+    <ToastProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ToastProvider>
+  );
+}
+
+function AppContent() {
+  const { account, accounts, isAuthenticated, login } = useAuth();
+  const { showToast } = useToast();
+
+  // Data se ukládají zvlášť pro každý účet, ať se profily nemíchají.
+  const scope = account?.id ?? 'guest';
+
+  // Central State Management (trvale uložený v localStorage)
   const [activeTab, setActiveTab] = useState<ActiveTab>('dnes');
-  const [profile, setProfile] = useState(initialProfile);
-  const [weightRecords, setWeightRecords] = useState<Record<string, WeightRecord[]>>(initialWeightRecords);
-  const [meals, setMeals] = useState<MealItem[]>(initialMeals);
-  const [workouts, setWorkouts] = useState<WorkoutDay[]>(weeklyWorkouts);
-  const [habits, setHabits] = useState<HabitItem[]>(initialHabits);
-  const [badHabits, setBadHabits] = useState(initialBadHabits);
-  const [habitHistory, setHabitHistory] = useState(habitHistoryWeek);
-  const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>(initialShoppingList);
-  const [biometrics, setBiometrics] = useState(appleWatchBiometricsData);
-  const [preferences, setPreferences] = useState<UserPreferences>(initialPreferences);
+  const [profile] = useLocalStorage<UserProfile>(`${scope}:profile`, initialProfile, mergeObject);
+  const [weightRecords, setWeightRecords] = useLocalStorage<Record<string, WeightRecord[]>>(
+    `${scope}:weight-records`,
+    initialWeightRecords
+  );
+  const [meals, setMeals] = useLocalStorage<MealItem[]>(`${scope}:meals`, initialMeals);
+  const [workouts, setWorkouts] = useLocalStorage<WorkoutDay[]>(`${scope}:workouts`, weeklyWorkouts);
+  const [habits, setHabits] = useLocalStorage<HabitItem[]>(`${scope}:habits`, initialHabits);
+  const [badHabits] = useLocalStorage(`${scope}:bad-habits`, initialBadHabits);
+  const [habitHistory] = useLocalStorage(`${scope}:habit-history`, habitHistoryWeek);
+  const [shoppingItems, setShoppingItems] = useLocalStorage<ShoppingItem[]>(
+    `${scope}:shopping`,
+    initialShoppingList
+  );
+  const [biometrics, setBiometrics] = useLocalStorage<AppleWatchBiometrics>(
+    `${scope}:biometrics`,
+    appleWatchBiometricsData,
+    mergeObject
+  );
+  const [preferences, setPreferences] = useLocalStorage<UserPreferences>(
+    `${scope}:preferences`,
+    initialPreferences,
+    mergeObject
+  );
+  const [withingsConnection, setWithingsConnection] = useLocalStorage<WithingsConnection>(
+    `${scope}:withings-connection`,
+    initialWithingsConnection,
+    mergeObject
+  );
   const [coachTips] = useState(initialCoachTips);
 
-  // Latest Measurement Record
-  const latestRecord = weightRecords['1M'][weightRecords['1M'].length - 1];
+  // Latest Measurement Record (data jdou z úložiště, proto s pojistkou)
+  const monthRecords = weightRecords['1M']?.length ? weightRecords['1M'] : initialWeightRecords['1M'];
+  const latestRecord = monthRecords[monthRecords.length - 1];
+
+  // Zobrazený profil přebírá jméno a avatar z přihlášeného účtu.
+  const displayedProfile = useMemo<UserProfile>(
+    () =>
+      account
+        ? {
+            ...profile,
+            name: account.name,
+            avatarUrl: account.avatarUrl,
+            membershipPlan: account.membershipPlan
+          }
+        : profile,
+    [account, profile]
+  );
 
   // Modals & Popups State
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -80,8 +156,15 @@ export default function App() {
   const [selectedRecipeMeal, setSelectedRecipeMeal] = useState<MealItem | null>(null);
 
   // Sync Timestamp State
-  const [lastSyncedText, setLastSyncedText] = useState('dnes v 08:45');
+  const [lastSyncedText, setLastSyncedText] = useLocalStorage(`${scope}:last-synced`, 'dnes v 08:45');
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Aktuální hodnoty pro asynchronní synchronizaci (bez zastaralých closure).
+  const biometricsRef = useRef(biometrics);
+  biometricsRef.current = biometrics;
+  const latestRecordRef = useRef(latestRecord);
+  latestRecordRef.current = latestRecord;
+  const isSyncingRef = useRef(false);
 
   // Handlers: Nutrition & Meals
   const handleToggleMeal = (id: string) => {
@@ -162,28 +245,72 @@ export default function App() {
 
   // Handlers: Weight Measurement
   const handleSaveNewMeasurement = (record: WeightRecord) => {
-    setWeightRecords(prev => {
-      const updated1M = [...prev['1M'], record];
-      const updated3M = [...prev['3M'], record];
-      const updated6M = [...prev['6M'], record];
-      const updated1Y = [...prev['1R'], record];
-      return {
-        '1M': updated1M,
-        '3M': updated3M,
-        '6M': updated6M,
-        '1R': updated1Y
-      };
+    const now = new Date();
+    setWeightRecords(prev => applyWeightRecord(prev, record, now));
+    setLastSyncedText(formatLastSynced(now));
+    showToast({
+      title: 'Měření zapsáno',
+      description: `${record.weight.toString().replace('.', ',')} kg • ${record.fatPercent
+        .toString()
+        .replace('.', ',')} % tuku`,
+      variant: 'success'
     });
-    setLastSyncedText('právě teď');
   };
 
-  // Handlers: Withings & Sync
-  const handleManualWithingsSync = async () => {
+  /**
+   * Handlers: Withings & Sync
+   * Skutečně přepíše biometrii i váhový záznam novými hodnotami "z hodinek a váhy",
+   * posune čas poslední synchronizace a vrátí souhrn stažených dat.
+   */
+  const handleManualWithingsSync = useCallback(async (): Promise<SyncResult | null> => {
+    if (isSyncingRef.current) return null;
+    isSyncingRef.current = true;
     setIsSyncing(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setLastSyncedText('právě teď');
-    setIsSyncing(false);
-  };
+
+    try {
+      // Stažení dat z Withings Cloud / Apple HealthKit
+      await new Promise(resolve => setTimeout(resolve, 900));
+
+      const now = new Date();
+      const nextBiometrics = buildSyncedBiometrics(biometricsRef.current, now);
+      const newRecord = buildSyncedWeightRecord(latestRecordRef.current, now);
+
+      setBiometrics(nextBiometrics);
+      setWeightRecords(prev => applyWeightRecord(prev, newRecord, now));
+      setLastSyncedText(formatLastSynced(now));
+
+      const result: SyncResult = {
+        syncedAt: now.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }),
+        weight: newRecord.weight,
+        restingHrBpm: nextBiometrics.restingHrBpm,
+        hrvMs: nextBiometrics.hrvMs,
+        steps: nextBiometrics.stepsToday,
+        activeEnergyKcal: nextBiometrics.activeEnergyKcal
+      };
+
+      showToast({
+        title: `Synchronizováno v ${result.syncedAt}`,
+        description: `Váha ${result.weight.toString().replace('.', ',')} kg • tep ${Math.round(
+          result.restingHrBpm
+        )} bpm • HRV ${result.hrvMs.toString().replace('.', ',')} ms • ${result.steps.toLocaleString(
+          'cs-CZ'
+        )} kroků`,
+        variant: 'success'
+      });
+
+      return result;
+    } catch {
+      showToast({
+        title: 'Synchronizace selhala',
+        description: 'Data se nepodařilo stáhnout. Zkus to prosím znovu.',
+        variant: 'error'
+      });
+      return null;
+    } finally {
+      isSyncingRef.current = false;
+      setIsSyncing(false);
+    }
+  }, [setBiometrics, setWeightRecords, setLastSyncedText, showToast]);
 
   // Active workout
   const todayWorkout = workouts.find(w => w.isToday) || workouts[3];
@@ -193,6 +320,11 @@ export default function App() {
 
   // Pending habits
   const pendingHabitsCount = habits.filter(h => !h.completed).length;
+
+  // Odhlášený uživatel vidí výběr profilu místo aplikace.
+  if (!isAuthenticated) {
+    return <LoginScreen accounts={accounts} onLogin={login} />;
+  }
 
   return (
     <div className="min-h-screen bg-[#08090d] text-slate-100 relative overflow-x-hidden font-['Plus_Jakarta_Sans',sans-serif]">
@@ -213,7 +345,7 @@ export default function App() {
 
         {/* 2. User Profile Summary Bar (Jan Novák / Příkopa, AKTIVNÍ) */}
         <UserProfileCard
-          profile={profile}
+          profile={displayedProfile}
           latestWeightRecord={latestRecord}
           biometrics={biometrics}
           onEditProfile={() => setIsPreferencesModalOpen(true)}
@@ -268,7 +400,7 @@ export default function App() {
         {/* TAB B: MŮJ PROFIL & CÍLE */}
         {activeTab === 'profil' && (
           <ProfileSection
-            profile={profile}
+            profile={displayedProfile}
             preferences={preferences}
             latestWeightRecord={latestRecord}
             biometrics={biometrics}
@@ -433,7 +565,7 @@ export default function App() {
         isOpen={isExportPdfOpen}
         onClose={() => setIsExportPdfOpen(false)}
         meals={meals}
-        profile={profile}
+        profile={displayedProfile}
         totalCalories={totalCalories}
       />
 
@@ -455,7 +587,10 @@ export default function App() {
       <WithingsSyncModal
         isOpen={isWithingsModalOpen}
         onClose={() => setIsWithingsModalOpen(false)}
+        connection={withingsConnection}
+        onConnectionChange={setWithingsConnection}
         onManualSync={handleManualWithingsSync}
+        isSyncing={isSyncing}
       />
 
       <AddMeasurementModal
@@ -474,7 +609,7 @@ export default function App() {
       <CoachChatModal
         isOpen={isCoachChatOpen}
         onClose={() => setIsCoachChatOpen(false)}
-        profile={profile}
+        profile={displayedProfile}
         currentWeightRecord={latestRecord}
         latestWeight={latestRecord}
         todayWorkout={todayWorkout}

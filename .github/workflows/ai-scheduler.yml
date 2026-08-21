@@ -8,16 +8,18 @@
 #   APP_URL        – musí být stejné jako app_url z GET https://…/api/integrations-status
 #   CRON_SECRET    – shodně s CRON_SECRET na Vercelu (Bearer u /api/ai/run-scheduler)
 #
-# To disable: remove or rename this file, or set `enabled: false` on the
-# `schedule` trigger (not supported natively – just delete the schedule block).
+# STAV: automatický cron je vypnutý (viz zakomentovaný blok `schedule` níže).
+# Workflow jde spustit ručně přes Actions → Run workflow.
 
 name: AI Scheduler (every 5 min)
 
 on:
-  schedule:
-    # Runs every 5 minutes. GitHub Actions has ~1 min jitter; that is acceptable.
-    - cron: "*/5 * * * *"
-  # Allow manual trigger from GitHub Actions UI for debugging
+  # VYPNUTO 2026-08-21: cron každých 5 minut trvale padal a zaplavoval Actions
+  # červenými běhy. Až budou v repu nastavené secrets APP_URL a CRON_SECRET,
+  # stačí odkomentovat blok schedule níže.
+  # schedule:
+  #   - cron: "*/5 * * * *"
+  # Manuální spuštění z GitHub Actions UI zůstává funkční.
   workflow_dispatch:
 
 jobs:

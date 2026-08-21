@@ -8,7 +8,11 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "lint:copy": "node scripts/check-copy.mjs",
+    "test:unit": "node --experimental-strip-types --test src/lib/syncEngine.test.ts src/hooks/useLocalStorage.test.ts",
+    "test:health": "node --experimental-strip-types --test lib/health/__tests__/formatters.test.ts lib/health/__tests__/insights.test.ts lib/health/__tests__/appleHealthDailyReview.test.ts lib/health/__tests__/noDataNoVerdict.test.ts",
+    "test": "npm run test:unit && npm run test:health"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

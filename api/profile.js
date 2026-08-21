@@ -26,7 +26,16 @@ export default async function handler(req, res) {
     if (!token) return res.status(401).json({ error: 'Nejste přihlášen' });
 
     const { data: { user }, error: userErr } = await supabaseServer.auth.getUser(token);
-    if (userErr || !user) return res.status(401).json({ error: 'Neplatná session' });
+    if (userErr || !user) {
+      // Duvod odmitnuti se driv zahazoval, takze 401 nesla odladit.
+      // Loguje se jen zprava a kod, nikdy token ani klice.
+      console.error('[profile] getUser odmitl token:', {
+        message: userErr?.message ?? 'bez zpravy',
+        status: userErr?.status ?? null,
+        code: userErr?.code ?? null
+      });
+      return res.status(401).json({ error: 'Neplatná session' });
+    }
 
     const userId = user.id;
     const email = user.email?.toLowerCase();

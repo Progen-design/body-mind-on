@@ -5,6 +5,7 @@ import {
   getPersonalRhrCaption,
 } from '../../lib/health/insights';
 import MetricTile from './MetricTile';
+import { popisSeZkratkou } from '../../lib/health/zkratky.js';
 
 const HRV_HINT =
   'Variabilita tepové frekvence — rozptyl mezi údery srdce. Sleduje se trend oproti tvému průměru.';
@@ -34,7 +35,7 @@ export default function RecoveryVitalsTiles({ latestRecovery = null, metricRows 
     <div className="health-recovery-vitals">
       {hrvValue != null && (
         <MetricTile
-          label="HRV"
+          label={popisSeZkratkou('HRV')}
           value={hrvValue}
           unit="ms"
           localDate={hrvDate}

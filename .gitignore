@@ -22,3 +22,7 @@ tmp/
 apps/*/.next/
 apps/*/dist/
 apps/*/node_modules/
+
+# Plosne *.sql vyse by tise vyradilo kazdou novou migraci. Existujici jsou
+# v gitu jen proto, ze se kdysi pridaly silou. Vyjimka tomu zabrani.
+!supabase/migrations/*.sql

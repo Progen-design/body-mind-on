@@ -146,7 +146,12 @@ function AppContent() {
     setMeals(naJidla(plan));
     setWorkouts(naTreninky(plan));
     setHabits(naNavyky(profilData.user_habits));
-    setShoppingItems(naNakupniSeznam(plan));
+    // Seznam = polozky spocitane z jidelnicku + to, co si uzivatel dopsal sam.
+    const zPlanu = naNakupniSeznam(plan);
+    setShoppingItems(zPlanu);
+    apiFetch<{ items: ShoppingItem[] }>('/api/shopping-extras')
+      .then(({ items }) => setShoppingItems([...zPlanu, ...(items || [])]))
+      .catch(() => { /* vlastni polozky jsou doplnek, vypadek nesmi shodit seznam */ });
     setBadHabits(naZlozvyky(profilData.user_habits));
     setPreferences((p) => naPreference(profilData, p));
 
@@ -266,13 +271,38 @@ function AppContent() {
 
   // Handlers: Shopping List
   const handleToggleShoppingItem = (id: string) => {
+    let dalsiStav = false;
     setShoppingItems(prev =>
-      prev.map(item => (item.id === id ? { ...item, checked: !item.checked } : item))
+      prev.map(item => {
+        if (item.id !== id) return item;
+        dalsiStav = !item.checked;
+        return { ...item, checked: dalsiStav };
+      })
     );
+    // Odskrtnuti vlastni polozky se uklada; polozky odvozene z jidelnicku
+    // maji id "nakup-N" a zadny radek v DB nemaji.
+    if (!id.startsWith('nakup-')) {
+      apiFetch('/api/shopping-extras', {
+        method: 'PATCH',
+        body: JSON.stringify({ id, checked: dalsiStav })
+      }).catch(() => {});
+    }
   };
 
-  const handleAddShoppingItem = (item: ShoppingItem) => {
-    setShoppingItems(prev => [...prev, item]);
+  const handleAddShoppingItem = async (item: ShoppingItem) => {
+    try {
+      const { item: ulozena } = await apiFetch<{ item: ShoppingItem }>('/api/shopping-extras', {
+        method: 'POST',
+        body: JSON.stringify({ name: item.name, amount: item.amount, category: item.category })
+      });
+      setShoppingItems(prev => [...prev, { ...ulozena, checked: false }]);
+    } catch (err) {
+      showToast({
+        title: 'Položku se nepodařilo uložit',
+        description: (err as Error)?.message || 'Zkus to prosím znovu.',
+        variant: 'error'
+      });
+    }
   };
 
   // Handlers: Weight Measurement

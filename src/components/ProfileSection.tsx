@@ -53,7 +53,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   onAddWeight,
   isSyncing = false
 }) => {
-  const { account, accounts, logout, switchAccount, loggedInAt } = useAuth();
+  const { account, logout, loggedInAt } = useAuth();
   const { showToast } = useToast();
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
@@ -76,14 +76,6 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
     });
   };
 
-  const handleSwitchAccount = (accountId: string, name: string) => {
-    switchAccount(accountId);
-    showToast({
-      title: 'Profil přepnut',
-      description: `Pracuješ jako ${name}.`,
-      variant: 'success'
-    });
-  };
 
   const personalRecords = [
     { exercise: 'Benchpress', weight: '135 kg', reps: '4 opakování', date: 'Před 2 týdny', icon: Dumbbell, color: 'text-cyan-400' },
@@ -218,41 +210,6 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             </span>
           </div>
 
-          <div className="space-y-2">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <Repeat className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Přepnout profil</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-              {accounts.map(item => {
-                const isActive = item.id === account.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => (isActive ? undefined : handleSwitchAccount(item.id, item.name))}
-                    disabled={isActive}
-                    className={`p-3 rounded-2xl border flex items-center gap-2.5 text-left transition-all ${
-                      isActive
-                        ? 'bg-cyan-950/40 border-cyan-500/40 cursor-default'
-                        : 'bg-slate-900/60 border-slate-800 hover:border-cyan-500/40 hover:bg-slate-800/70 active:scale-[0.98]'
-                    }`}
-                  >
-                    <img
-                      src={item.avatarUrl}
-                      alt={item.name}
-                      referrerPolicy="no-referrer"
-                      className="w-9 h-9 rounded-lg object-cover bg-slate-800 shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[11px] font-bold text-slate-100 truncate">{item.name}</div>
-                      <div className="text-[10px] text-slate-400 truncate">{item.role}</div>
-                    </div>
-                    {isActive && <Check className="w-3.5 h-3.5 text-[#39ff14] shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </div>
       )}
 

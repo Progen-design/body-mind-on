@@ -20,12 +20,9 @@ export const Header: React.FC<HeaderProps> = ({
   onCloseMenu,
   onSelectTab
 }) => {
-  const { account, accounts, logout, switchAccount } = useAuth();
+  const { account, logout } = useAuth();
   const { showToast } = useToast();
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
-  const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
-
-  const otherAccounts = accounts.filter(a => a.id !== account?.id);
 
   const handleConfirmLogout = () => {
     setIsLogoutDialogOpen(false);
@@ -38,16 +35,7 @@ export const Header: React.FC<HeaderProps> = ({
     });
   };
 
-  const handleSwitchAccount = (accountId: string, name: string) => {
-    switchAccount(accountId);
-    setIsSwitcherOpen(false);
-    onCloseMenu();
-    showToast({
-      title: 'Profil přepnut',
-      description: `Pracuješ jako ${name}.`,
-      variant: 'success'
-    });
-  };
+
 
   return (
     <header className="relative z-30 flex items-center justify-between py-4 px-2 sm:px-4 mb-2">
@@ -162,66 +150,6 @@ export const Header: React.FC<HeaderProps> = ({
                       </div>
                     </div>
 
-                    {otherAccounts.length > 0 && (
-                      <>
-                        <button
-                          onClick={() => setIsSwitcherOpen(prev => !prev)}
-                          className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-300 hover:text-white bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800 text-xs font-semibold transition-all"
-                          aria-expanded={isSwitcherOpen}
-                        >
-                          <span className="flex items-center gap-2">
-                            <Repeat className="w-3.5 h-3.5 text-cyan-400" />
-                            <span>Přepnout profil</span>
-                          </span>
-                          <span className="text-[10px] text-slate-500">
-                            {otherAccounts.length} další
-                          </span>
-                        </button>
-
-                        <AnimatePresence initial={false}>
-                          {isSwitcherOpen && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              className="overflow-hidden space-y-1.5"
-                            >
-                              {accounts.map(item => {
-                                const isActive = item.id === account.id;
-                                return (
-                                  <button
-                                    key={item.id}
-                                    onClick={() =>
-                                      isActive ? undefined : handleSwitchAccount(item.id, item.name)
-                                    }
-                                    disabled={isActive}
-                                    className={`w-full p-2.5 rounded-xl border flex items-center gap-2.5 text-left transition-all ${
-                                      isActive
-                                        ? 'bg-cyan-950/40 border-cyan-500/40 cursor-default'
-                                        : 'bg-slate-900/50 border-slate-800 hover:border-cyan-500/40 hover:bg-slate-800/70 active:scale-[0.99]'
-                                    }`}
-                                  >
-                                    <img
-                                      src={item.avatarUrl}
-                                      alt={item.name}
-                                      referrerPolicy="no-referrer"
-                                      className="w-8 h-8 rounded-lg object-cover bg-slate-800 shrink-0"
-                                    />
-                                    <div className="min-w-0 flex-1">
-                                      <div className="text-[11px] font-bold text-slate-100 truncate">
-                                        {item.name}
-                                      </div>
-                                      <div className="text-[10px] text-slate-400 truncate">{item.role}</div>
-                                    </div>
-                                    {isActive && <Check className="w-3.5 h-3.5 text-[#39ff14] shrink-0" />}
-                                  </button>
-                                );
-                              })}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </>
-                    )}
                   </div>
                 )}
 

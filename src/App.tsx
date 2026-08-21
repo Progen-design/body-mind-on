@@ -27,6 +27,8 @@ import { LoginScreen } from './components/LoginScreen';
 
 // Kontexty, perzistence a synchronizace
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { StartRegistrace } from './components/registrace/StartRegistrace';
+import { naviguj, useCesta } from './routing';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import {
@@ -85,10 +87,12 @@ export default function App() {
 }
 
 function AppContent() {
-  const { account, accounts, isAuthenticated, login } = useAuth();
+  const { account, isAuthenticated, isLoading } = useAuth();
   const { showToast } = useToast();
+  const { cesta, parametry } = useCesta();
 
-  // Data se ukládají zvlášť pro každý účet, ať se profily nemíchají.
+  // Data se ukládají zvlášť pro každý účet (scope = user.id ze Supabase),
+  // ať se dva lidé na jednom zařízení nemíchají.
   const scope = account?.id ?? 'guest';
 
   // Central State Management (trvale uložený v localStorage)
@@ -322,8 +326,35 @@ function AppContent() {
   const pendingHabitsCount = habits.filter(h => !h.completed).length;
 
   // Odhlášený uživatel vidí výběr profilu místo aplikace.
+  // Registrace je verejna - bezi i bez prihlaseni.
+  if (cesta === '/start' || cesta === '/register' || cesta === '/signup') {
+    return (
+      <StartRegistrace
+        onHotovo={(kam) => naviguj(kam)}
+        onZpetNaPrihlaseni={() => naviguj('/login')}
+      />
+    );
+  }
+
+  // Dokud nevime, jestli je session platna, neposilame nikoho na prihlaseni.
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#08090d] flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-slate-800 border-t-[#39ff14] animate-spin" />
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
-    return <LoginScreen accounts={accounts} onLogin={login} />;
+    return (
+      <LoginScreen
+        redirectTo={parametry.get('redirect') || '/profil'}
+        predvyplnenyEmail={parametry.get('email') || ''}
+        poRegistraci={parametry.get('registered') === '1'}
+        onPrejitNaRegistraci={() => naviguj('/start')}
+        onPrihlasen={(kam) => naviguj(kam)}
+      />
+    );
   }
 
   return (
@@ -603,7 +634,7 @@ function AppContent() {
         isOpen={isPreferencesModalOpen}
         onClose={() => setIsPreferencesModalOpen(false)}
         preferences={preferences}
-        onSave={(newPref) => setPreferences(newPref)}
+        onSavePreferences={(newPref) => setPreferences(newPref)}
       />
 
       <CoachChatModal

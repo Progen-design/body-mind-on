@@ -11,18 +11,17 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
-export type ActiveTab = 'dnes' | 'profil' | 'vaha' | 'jidelnicek' | 'trenink' | 'regenerace' | 'nakup' | 'naviky';
+// 'naviky' odstraneno spolu se sekci Navyky & Streaky.
+export type ActiveTab = 'dnes' | 'profil' | 'vaha' | 'jidelnicek' | 'trenink' | 'regenerace' | 'nakup';
 
 interface NavigationTabsProps {
   activeTab: ActiveTab;
   onSelectTab: (tab: ActiveTab) => void;
-  pendingHabitsCount?: number;
 }
 
 export const NavigationTabs: React.FC<NavigationTabsProps> = ({
   activeTab,
-  onSelectTab,
-  pendingHabitsCount = 0
+  onSelectTab
 }) => {
   const tabs: {
     id: ActiveTab;
@@ -35,8 +34,9 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
     { id: 'vaha', label: 'Tělo & Váha', icon: Scale },
     { id: 'jidelnicek', label: 'Jídelníček & Makra', icon: Utensils },
     { id: 'trenink', label: 'Tréninkový plán', icon: Dumbbell },
-    { id: 'regenerace', label: 'Apple Watch & Regenerace', icon: Activity, badge: '70' },
-    { id: 'naviky', label: 'Návyky & Streaky', icon: CheckCircle2, badge: pendingHabitsCount > 0 ? `${pendingHabitsCount}` : undefined },
+    // Odznak u regenerace byl natvrdo '70'. Skóre regenerace často vůbec
+    // nemáme (backend hlásí „nedostatek dat"), takže tu žádné číslo nesvítí.
+    { id: 'regenerace', label: 'Apple Watch & Regenerace', icon: Activity },
     { id: 'nakup', label: 'Nákupní seznam', icon: ShoppingBag }
   ];
 

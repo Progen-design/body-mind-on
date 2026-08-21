@@ -164,7 +164,6 @@ export const Header: React.FC<HeaderProps> = ({
                     { id: 'jidelnicek', label: 'Jídelníček & Recepty' },
                     { id: 'trenink', label: 'Tréninkový plán & Stopky' },
                     { id: 'regenerace', label: 'Apple Watch & Regenerace' },
-                    { id: 'naviky', label: 'Denní návyky & Streaky' },
                     { id: 'nakup', label: 'Nákupní seznam' }
                   ].map(item => (
                     <button

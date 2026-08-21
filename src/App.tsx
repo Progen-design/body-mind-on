@@ -504,7 +504,22 @@ function AppContent() {
           onSelectTab={setActiveTab}
         />
 
-        {/* 2. User Profile Summary Bar (Jan Novák / Příkopa, AKTIVNÍ) */}
+        {/* 2. Navigace a rychlé akce — hned pod hlavičkou, ať jsou po ruce
+               bez scrollování. */}
+        <NavigationTabs
+          activeTab={activeTab}
+          onSelectTab={setActiveTab}
+        />
+
+        <QuickActionToolbar
+          onLogWorkout={() => setIsWorkoutLoggerOpen(true)}
+          onEditPreferences={() => setIsPreferencesModalOpen(true)}
+          onSyncAll={handleManualWithingsSync}
+          onAddWeight={() => setIsAddRecordModalOpen(true)}
+          isSyncing={isSyncing}
+        />
+
+        {/* 3. Karta uživatele */}
         <UserProfileCard
           profile={displayedProfile}
           latestWeightRecord={latestRecord}
@@ -513,26 +528,10 @@ function AppContent() {
           onViewFullProfile={() => setActiveTab('profil')}
         />
 
-        {/* 3. AI Trenér TED Recommendation Banner */}
+        {/* 4. AI Trenér TED Recommendation Banner */}
         <AICoachBanner
           tips={coachTips}
           onOpenChat={() => setIsCoachChatOpen(true)}
-        />
-
-        {/* 4. Quick Nav Tabs ('Přehled', 'Můj Profil', 'Tělo & Váha', 'Jídelníček', 'Trénink', 'Apple Watch', 'Návyky', 'Nákup') */}
-        <NavigationTabs
-          activeTab={activeTab}
-          onSelectTab={setActiveTab}
-          pendingHabitsCount={pendingHabitsCount}
-        />
-
-        {/* 5. Quick Action Toolbar ('Zapsat trénink', 'Upravit preference', 'Synchronizovat teď', 'Zapsat váhu') */}
-        <QuickActionToolbar
-          onLogWorkout={() => setIsWorkoutLoggerOpen(true)}
-          onEditPreferences={() => setIsPreferencesModalOpen(true)}
-          onSyncAll={handleManualWithingsSync}
-          onAddWeight={() => setIsAddRecordModalOpen(true)}
-          isSyncing={isSyncing}
         />
 
         {/* 6. Dynamic Content Based on Selected Tab */}
@@ -631,16 +630,9 @@ function AppContent() {
           </div>
         ))}
 
-        {/* TAB G: NÁVYKY & STREAKY */}
-        {activeTab === 'naviky' && (
-          <HabitsSection
-            habits={habits}
-            badHabits={badHabits}
-            habitHistory={habitHistory}
-            onToggleHabit={handleToggleHabit}
-            onCompleteAllToday={handleCompleteAllHabitsToday}
-          />
-        )}
+        {/* Sekce „Návyky & série" odstraněna. Série (streaky), efektivita
+            spánku ani komentáře typu „včera překonána chuť na čokoládu“
+            nemají v datech žádnou oporu — nesledujeme je. */}
 
         {/* TAB H: NÁKUPNÍ SEZNAM */}
         {activeTab === 'nakup' && (

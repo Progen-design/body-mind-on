@@ -4,7 +4,7 @@
 // i cistym Nodem (viz tools/overit-adaptery.ts), nejen pres Vite.
 import { POSITIVE_HABITS, NEGATIVE_HABITS } from '../../lib/habits.js';
 import type {
-  BadHabitItem, ExerciseItem, HabitItem, MealItem,
+  BadHabitItem, ExerciseItem, HabitItem, MealItem, ShoppingItem,
   UserPreferences, UserProfile, WeightRecord, WorkoutDay
 } from '../types';
 
@@ -241,4 +241,59 @@ export function naVazeni(odpoved: ProfilOdpoved): WeightRecord[] {
       bmi: cislo(m.bmi)
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/** Kategorie odhadujeme z nazvu suroviny - jen pro serazeni v seznamu. */
+function kategorieSuroviny(nazev: string): ShoppingItem['category'] {
+  const n = nazev.toLowerCase();
+  if (/kuř|krůt|hověz|vepř|losos|ryb|krevet|tuňák|šunk|klobás/.test(n)) return 'Maso & Ryby';
+  if (/mlék|jogurt|tvaroh|sýr|cottage|smetan|vejc|ricott|feta|skyr/.test(n)) return 'Mléčné výrobky & Vejce';
+  if (/chléb|pečiv|rýže|těstovin|brambor|batát|ovesn|vločk|quinoa|couscous|tortil/.test(n)) return 'Přílohy & Pečivo';
+  if (/zeleni|salát|rajč|okurk|paprik|cuket|brokol|špenát|ovoc|jablk|banán|bobul|boruvk|malin|kiwi|pomeranč|avokád|cibul|česnek|mrkev/.test(n)) return 'Zelenina & Ovoce';
+  return 'Ořechy, Tuky & Ostatní';
+}
+
+/**
+ * Nakupni seznam za cely tyden. Stejna surovina z vice jidel se slucuje
+ * podle nazvu; mnozstvi se scita jen kdyz sedi jednotka.
+ */
+export function naNakupniSeznam(plan: any): ShoppingItem[] {
+  const dny = strukturaPlanu(plan)?.days;
+  if (!Array.isArray(dny)) return [];
+
+  const soucet = new Map<string, { nazev: string; mnozstvi: number; jednotka: string; volny: string[] }>();
+
+  for (const den of dny) {
+    for (const jidlo of den?.meals || []) {
+      for (const radek of jidlo?.shopping_ingredient_lines || []) {
+        const text = String(radek).trim();
+        if (!text) continue;
+        const m = text.match(/^([\d.,]+)\s*(\S+)\s+(.+)$/);
+        const nazev = (m ? m[3] : text).toLowerCase();
+        const zaznam = soucet.get(nazev) || { nazev: m ? m[3] : text, mnozstvi: 0, jednotka: '', volny: [] };
+        if (m) {
+          const cislo = Number(String(m[1]).replace(',', '.'));
+          if (Number.isFinite(cislo) && (!zaznam.jednotka || zaznam.jednotka === m[2])) {
+            zaznam.jednotka = m[2];
+            zaznam.mnozstvi += cislo;
+          } else {
+            zaznam.volny.push(text);
+          }
+        } else {
+          zaznam.volny.push(text);
+        }
+        soucet.set(nazev, zaznam);
+      }
+    }
+  }
+
+  return Array.from(soucet.values()).map((z, i) => ({
+    id: `nakup-${i}`,
+    name: z.nazev,
+    amount: z.mnozstvi > 0
+      ? `${Math.round(z.mnozstvi * 10) / 10} ${z.jednotka}`.trim()
+      : z.volny.join(', '),
+    category: kategorieSuroviny(z.nazev),
+    checked: false
+  }));
 }

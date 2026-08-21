@@ -30,17 +30,19 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { StartRegistrace } from './components/registrace/StartRegistrace';
 import { naviguj, useCesta } from './routing';
 import { useProfilData } from './hooks/useProfilData';
+import { useZdravotniData } from './hooks/useZdravotniData';
+import { naBiometrii, maZdravotniData } from './data/adapteryZdravi';
 import {
-  naJidla, naNavyky, naPreference, naProfil, naTreninky, naVazeni, naZlozvyky, vyberPlan
+  naJidla, naNakupniSeznam, naNavyky, naPreference, naProfil,
+  naTreninky, naVazeni, naZlozvyky, vyberPlan
 } from './data/adaptery';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import {
-  applyWeightRecord,
-  buildSyncedBiometrics,
-  buildSyncedWeightRecord,
-  formatLastSynced
-} from './lib/syncEngine';
+// buildSyncedBiometrics a buildSyncedWeightRecord se uz nepouzivaji — hodnoty
+// si dopocitavaly v prohlizeci (mean-revert HRV k baseline), takze uzivatel
+// videl vymyslene zdravotni udaje. Data ted chodi z /api/health/recovery.
+import { applyWeightRecord, formatLastSynced } from './lib/syncEngine';
+import { apiFetch } from './lib/api';
 
 // Initial Data
 import {
@@ -113,15 +115,17 @@ function AppContent() {
   const [habits, setHabits] = useState<HabitItem[]>([]);
   const [badHabits, setBadHabits] = useState<BadHabitItem[]>([]);
   const [habitHistory] = useLocalStorage(`${scope}:habit-history`, habitHistoryWeek);
-  const [shoppingItems, setShoppingItems] = useLocalStorage<ShoppingItem[]>(
-    `${scope}:shopping`,
-    initialShoppingList
-  );
-  const [biometrics, setBiometrics] = useLocalStorage<AppleWatchBiometrics>(
-    `${scope}:biometrics`,
-    appleWatchBiometricsData,
-    mergeObject
-  );
+  const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
+  const zdravi = useZdravotniData(isAuthenticated);
+  const maBiometrii = maZdravotniData(zdravi.regenerace);
+  const [biometrics, setBiometrics] = useState<AppleWatchBiometrics>(appleWatchBiometricsData);
+
+  useEffect(() => {
+    if (zdravi.nacitam) return;
+    setBiometrics((p) =>
+      naBiometrii(zdravi.regenerace, zdravi.treninky, zdravi.pripojeno, zdravi.posledniSync, p)
+    );
+  }, [zdravi]);
   const [preferences, setPreferences] = useLocalStorage<UserPreferences>(
     `${scope}:preferences`,
     initialPreferences,
@@ -142,6 +146,7 @@ function AppContent() {
     setMeals(naJidla(plan));
     setWorkouts(naTreninky(plan));
     setHabits(naNavyky(profilData.user_habits));
+    setShoppingItems(naNakupniSeznam(plan));
     setBadHabits(naZlozvyky(profilData.user_habits));
     setPreferences((p) => naPreference(profilData, p));
 
@@ -295,20 +300,31 @@ function AppContent() {
     setIsSyncing(true);
 
     try {
-      // Stažení dat z Withings Cloud / Apple HealthKit
-      await new Promise(resolve => setTimeout(resolve, 900));
+      // Skutečné stažení z Withings Cloud. Dřív se tu čekalo 900 ms a hodnoty
+      // se dopočítaly v prohlížeči — uživatel viděl vymyšlené HRV a tep.
+      await apiFetch('/api/withings/sync', { method: 'POST' });
 
       const now = new Date();
-      const nextBiometrics = buildSyncedBiometrics(biometricsRef.current, now);
-      const newRecord = buildSyncedWeightRecord(latestRecordRef.current, now);
+      const [regenerace, vazeni] = await Promise.all([
+        apiFetch<{ rows: any[] }>('/api/health/recovery?days=30').catch(() => ({ rows: [] })),
+        apiFetch<any>('/api/withings/latest').catch(() => null)
+      ]);
 
+      const nextBiometrics = naBiometrii(
+        regenerace.rows || [], zdravi.treninky, true, now.toISOString(), biometricsRef.current
+      );
       setBiometrics(nextBiometrics);
-      setWeightRecords(prev => applyWeightRecord(prev, newRecord, now));
       setLastSyncedText(formatLastSynced(now));
+
+      const vaha = Number(vazeni?.latest_weight_kg);
+      if (Number.isFinite(vaha) && vaha > 0) {
+        const newRecord = { ...latestRecordRef.current, date: now.toISOString().slice(0, 10), weight: vaha };
+        setWeightRecords(prev => applyWeightRecord(prev, newRecord, now));
+      }
 
       const result: SyncResult = {
         syncedAt: now.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }),
-        weight: newRecord.weight,
+        weight: Number.isFinite(vaha) ? vaha : latestRecordRef.current.weight,
         restingHrBpm: nextBiometrics.restingHrBpm,
         hrvMs: nextBiometrics.hrvMs,
         steps: nextBiometrics.stepsToday,
@@ -534,12 +550,23 @@ function AppContent() {
         )}
 
         {/* TAB F: APPLE WATCH & REGENERACE */}
-        {activeTab === 'regenerace' && (
+        {/* Bez jediného měření z hodinek sekci neukazujeme — prázdné grafy
+            a nuly by vypadaly jako naměřené hodnoty. */}
+        {activeTab === 'regenerace' && (maBiometrii ? (
           <BiometricsSection
             biometrics={biometrics}
             onSync={handleManualWithingsSync}
           />
-        )}
+        ) : (
+          <div className="p-6 rounded-3xl bg-[#0c1017] border border-slate-800 text-center">
+            <p className="text-sm text-slate-300 mb-1">Zatím nemáme data z hodinek.</p>
+            <p className="text-xs text-slate-500">
+              {zdravi.pripojeno
+                ? 'Apple Watch jsou připojené, ale ještě nedorazilo první měření.'
+                : 'Připoj Apple Health a uvidíš tu regeneraci, tep a spánek.'}
+            </p>
+          </div>
+        ))}
 
         {/* TAB G: NÁVYKY & STREAKY */}
         {activeTab === 'naviky' && (

@@ -112,3 +112,32 @@ test('plán bez struktury nespadne a vrátí prázdno', () => {
   assert.deepEqual(naTreninky({ id: 'x' }), []);
   assert.deepEqual(naNavyky(undefined), []);
 });
+
+test('nákupní seznam sečte stejnou surovinu napříč jídly', async () => {
+  const { naNakupniSeznam } = await import('./adaptery.ts');
+  const plan = {
+    structured_plan_json: {
+      days: [
+        { date: DNES, meals: [
+          { shopping_ingredient_lines: ['75 g celozrnný chléb', '60 g avokádo'] },
+          { shopping_ingredient_lines: ['200 g kuřecí prsa'] }
+        ] },
+        { date: '2026-01-02', meals: [
+          { shopping_ingredient_lines: ['25 g celozrnný chléb', '1 ks banán'] }
+        ] }
+      ]
+    }
+  };
+  const s = naNakupniSeznam(plan);
+  const chleb = s.find((p) => p.name.includes('chléb'));
+  assert.equal(chleb?.amount, '100 g', '75 g + 25 g se sečte');
+  assert.equal(chleb?.category, 'Přílohy & Pečivo');
+  assert.equal(s.find((p) => p.name.includes('kuřecí'))?.category, 'Maso & Ryby');
+  assert.equal(s.find((p) => p.name.includes('banán'))?.category, 'Zelenina & Ovoce');
+  assert.equal(s.every((p) => p.checked === false), true);
+});
+
+test('nákupní seznam z prázdného plánu je prázdný', async () => {
+  const { naNakupniSeznam } = await import('./adaptery.ts');
+  assert.deepEqual(naNakupniSeznam(null), []);
+});

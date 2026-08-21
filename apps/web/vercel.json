@@ -1,0 +1,32 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://BMON_API_HOST/api/:path*" },
+    { "source": "/_next/:path*", "destination": "https://BMON_API_HOST/_next/:path*" },
+    { "source": "/login", "destination": "https://BMON_API_HOST/login" },
+    { "source": "/register", "destination": "https://BMON_API_HOST/register" },
+    { "source": "/signup", "destination": "https://BMON_API_HOST/signup" },
+    { "source": "/start", "destination": "https://BMON_API_HOST/start" },
+    { "source": "/onboarding", "destination": "https://BMON_API_HOST/onboarding" },
+    { "source": "/dashboard/:path*", "destination": "https://BMON_API_HOST/dashboard/:path*" },
+    { "source": "/dashboard", "destination": "https://BMON_API_HOST/dashboard" },
+    { "source": "/plan/:path*", "destination": "https://BMON_API_HOST/plan/:path*" },
+    { "source": "/komunita/:path*", "destination": "https://BMON_API_HOST/komunita/:path*" },
+    { "source": "/komunita", "destination": "https://BMON_API_HOST/komunita" },
+    { "source": "/pricing", "destination": "https://BMON_API_HOST/pricing" },
+    { "source": "/club", "destination": "https://BMON_API_HOST/club" },
+    { "source": "/on-club", "destination": "https://BMON_API_HOST/on-club" },
+    { "source": "/vip", "destination": "https://BMON_API_HOST/vip" },
+    { "source": "/chci-vip", "destination": "https://BMON_API_HOST/chci-vip" },
+    { "source": "/trener", "destination": "https://BMON_API_HOST/trener" },
+    { "source": "/training", "destination": "https://BMON_API_HOST/training" },
+    { "source": "/withings-connect", "destination": "https://BMON_API_HOST/withings-connect" },
+    { "source": "/admin/:path*", "destination": "https://BMON_API_HOST/admin/:path*" },
+    { "source": "/admin", "destination": "https://BMON_API_HOST/admin" },
+    { "source": "/beta/:path*", "destination": "https://BMON_API_HOST/beta/:path*" },
+    { "source": "/beta", "destination": "https://BMON_API_HOST/beta" },
+    { "source": "/gdpr", "destination": "https://BMON_API_HOST/gdpr" },
+    { "source": "/obchodni-podminky", "destination": "https://BMON_API_HOST/obchodni-podminky" },
+    { "source": "/((?!assets/).*)", "destination": "/index.html" }
+  ]
+}

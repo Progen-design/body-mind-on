@@ -1,0 +1,1065 @@
+// components/HabitTracker.js – Denní návyky (dnes + blízká budoucnost; minulé dny jen pokud existují logy)
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { POSITIVE_HABITS, NEGATIVE_HABITS, getHabitById } from '../lib/habits';
+import { getHabitDisplayLabel } from '../lib/habitLabels';
+import { hornMez, maSpodniPul, popiskyOsy } from '../lib/profile/osaNavyku.js';
+import {
+  HabitUiButton,
+  HabitUiGridCheckbox,
+  HabitUiProgressBar,
+} from './habit/HabitUiPrimitives';
+
+function toDateStr(date) {
+  return getLocalDateStr(date);
+}
+/** Vrací YYYY-MM-DD v lokálním čase (ne UTC), aby „dnes“ bylo správně i po půlnoci. */
+function getLocalDateStr(d = new Date()) {
+  const x = new Date(d);
+  const y = x.getFullYear();
+  const m = String(x.getMonth() + 1).padStart(2, '0');
+  const day = String(x.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function formatShortDate(d) {
+  if (!d) return '—';
+  const date = new Date(d + 'T12:00:00');
+  if (isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short' });
+}
+
+const DAYS_FORWARD = 2;
+const DAYS_BACK = 5;
+
+export default function HabitTracker({ session, userHabits, onToast, onHabitSaved }) {
+  const todayStr = getLocalDateStr(new Date());
+  const [positiveHabits, setPositiveHabits] = useState([]);
+  const [negativeHabits, setNegativeHabits] = useState([]);
+  const [allLogs, setAllLogs] = useState([]);
+  const [weekLogs, setWeekLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
+  /** Současně může běžet více požadavků (různé návyky / dny); stejná buňka se zablokuje jen proti dvojkliku. */
+  const [togglingKeys, setTogglingKeys] = useState(() => new Set());
+  const [viewingDateStr, setViewingDateStr] = useState(todayStr); // vždy aktivně zvolený den – defaultně dnes
+  const scrollContainerRef = useRef(null);
+  const todayColRef = useRef(null);
+  const didAutoCenterRef = useRef(false);
+  const didResetToTodayRef = useRef(false);
+  /** Po prvním dokončeném načtení logů už neukazujeme celosekční „Načítám…“ při opakovaném fetchi (např. polling profilu). */
+  const initialLogsLoadDoneRef = useRef(false);
+
+  const buildHabitsLists = useCallback((uh) => {
+    let list = [];
+    if (Array.isArray(uh) && uh.length > 0) {
+      list = uh.map((h) => getHabitById(h.habit_id)).filter(Boolean);
+    } else {
+      list = [...POSITIVE_HABITS, ...NEGATIVE_HABITS];
+    }
+    const pos = list.filter((h) => POSITIVE_HABITS.some((p) => p.id === h.id));
+    const neg = list.filter((h) => NEGATIVE_HABITS.some((n) => n.id === h.id));
+    return { pos, neg };
+  }, []);
+
+  /** Plné okno pro načtení logů z API (včetně minulosti). */
+  const baseDays = useMemo(() => {
+    const result = [];
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    const start = new Date(today);
+    start.setDate(today.getDate() - DAYS_BACK);
+    const total = DAYS_BACK + DAYS_FORWARD + 1;
+    for (let i = 0; i < total; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      result.push(getLocalDateStr(d));
+    }
+    return result;
+  }, [todayStr]);
+
+  /** Viditelné sloupce: dnes a budoucnost vždy; minulé jen když pro ten den existuje habit log. */
+  const days = useMemo(() => {
+    const logs = allLogs || [];
+    const hasLogOnDate = (dateStr) => logs.some((l) => l.log_date === dateStr);
+    return baseDays.filter((dateStr) => (dateStr >= todayStr ? true : hasLogOnDate(dateStr)));
+  }, [baseDays, todayStr, allLogs]);
+
+  useEffect(() => {
+    const { pos, neg } = buildHabitsLists(userHabits);
+    setPositiveHabits(pos);
+    setNegativeHabits(neg);
+  }, [userHabits, buildHabitsLists]);
+
+  const fetchLogs = useCallback(
+    async (from, to, habitIds) => {
+      if (!session?.access_token || habitIds.length === 0) return [];
+      const params = new URLSearchParams({ from, to, habit_ids: habitIds.join(',') });
+      const res = await fetch(`/api/habits?${params}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        cache: 'no-store',
+      });
+      const json = await res.json();
+      return res.ok && Array.isArray(json.logs) ? json.logs : [];
+    },
+    [session?.access_token]
+  );
+
+  const loadLogs = useCallback(() => {
+    const allHabits = [...positiveHabits, ...negativeHabits];
+    if (allHabits.length === 0) {
+      setLoading(false);
+      setFetchError(null);
+      return;
+    }
+    const habitIds = allHabits.map((h) => h.id);
+    const today = new Date();
+    const weekAgo = new Date(today);
+    weekAgo.setDate(today.getDate() - 6);
+    const fromStr = toDateStr(weekAgo);
+
+    const silent = initialLogsLoadDoneRef.current;
+    if (!silent) {
+      setLoading(true);
+    }
+    setFetchError(null);
+    Promise.all([
+      fetchLogs(baseDays[0], baseDays[baseDays.length - 1], habitIds),
+      fetchLogs(fromStr, todayStr, habitIds),
+    ])
+      .then(([rangeData, weekData]) => {
+        setAllLogs(rangeData);
+        setWeekLogs(weekData);
+        setFetchError(null);
+      })
+      .catch((err) => {
+        console.error('[HabitTracker] fetch error:', err);
+        setFetchError(err?.message || 'Nepodařilo se načíst návyky');
+        setAllLogs([]);
+        setWeekLogs([]);
+      })
+      .finally(() => {
+        initialLogsLoadDoneRef.current = true;
+        setLoading(false);
+      });
+  }, [positiveHabits, negativeHabits, baseDays, todayStr, fetchLogs]);
+
+  useEffect(() => {
+    loadLogs();
+  }, [loadLogs]);
+
+  useEffect(() => {
+    if (loading || fetchError) return;
+    if (didAutoCenterRef.current) return;
+    const el = todayColRef.current;
+    const container = scrollContainerRef.current;
+    if (!el || !container) return;
+    const isNarrowViewport = typeof window !== 'undefined' && window.innerWidth < 720;
+    // První sloupec je mimo scroll – posouváme jen oblast s dny.
+    const targetLeft = isNarrowViewport
+      ? Math.max(0, el.offsetLeft - 28)
+      : el.offsetLeft - (container.clientWidth / 2) + (el.clientWidth / 2);
+    const maxLeft = Math.max(0, container.scrollWidth - container.clientWidth);
+    const nextLeft = Math.max(0, Math.min(maxLeft, targetLeft));
+    container.scrollTo({ left: nextLeft, behavior: 'smooth' });
+    didAutoCenterRef.current = true;
+  }, [loading, fetchError]);
+
+  useEffect(() => {
+    if (!viewingDateStr || !days.includes(viewingDateStr)) {
+      setViewingDateStr(todayStr);
+    }
+  }, [viewingDateStr, days, todayStr]);
+
+  useEffect(() => {
+    if (didResetToTodayRef.current) return;
+    didResetToTodayRef.current = true;
+    setViewingDateStr(todayStr);
+  }, [todayStr]);
+
+  const getCompleted = (habitId, dateStr) => {
+    const log = (allLogs || []).find((l) => l.habit_id === habitId && l.log_date === dateStr);
+    return log?.completed ?? false;
+  };
+
+  const handleToggle = async (habitId, dateStr) => {
+    if (dateStr !== todayStr) return;
+    const key = `${habitId}-${dateStr}`;
+    if (!session?.access_token) return;
+    if (togglingKeys.has(key)) return;
+    const current = getCompleted(habitId, dateStr);
+    const nextCompleted = !current;
+
+    setAllLogs((prev) => {
+      const filtered = prev.filter((l) => !(l.habit_id === habitId && l.log_date === dateStr));
+      return [...filtered, { habit_id: habitId, log_date: dateStr, completed: nextCompleted }];
+    });
+
+    setTogglingKeys((prev) => new Set(prev).add(key));
+    try {
+      const res = await fetch('/api/habits', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          log_date: dateStr,
+          habit_id: habitId,
+          completed: nextCompleted,
+        }),
+      });
+      const json = await res.json();
+      if (res.ok && json.log) {
+        setAllLogs((prev) => {
+          const filtered = prev.filter((l) => !(l.habit_id === habitId && l.log_date === dateStr));
+          return [...filtered, json.log];
+        });
+        setWeekLogs((prev) => {
+          const filtered = prev.filter((l) => !(l.habit_id === habitId && l.log_date === dateStr));
+          return [...filtered, json.log];
+        });
+        if (onHabitSaved) onHabitSaved();
+      } else {
+        setAllLogs((prev) => {
+          const filtered = prev.filter((l) => !(l.habit_id === habitId && l.log_date === dateStr));
+          if (current) return [...filtered, { habit_id: habitId, log_date: dateStr, completed: current }];
+          return filtered;
+        });
+        if (onToast) onToast({ message: json.error || 'Chyba při ukládání', type: 'error' });
+      }
+    } catch (err) {
+      setAllLogs((prev) => {
+        const filtered = prev.filter((l) => !(l.habit_id === habitId && l.log_date === dateStr));
+        if (current) return [...filtered, { habit_id: habitId, log_date: dateStr, completed: current }];
+        return filtered;
+      });
+      if (onToast) onToast({ message: 'Chyba připojení', type: 'error' });
+    } finally {
+      setTogglingKeys((prev) => {
+        const n = new Set(prev);
+        n.delete(key);
+        return n;
+      });
+    }
+  };
+
+  const handleCompleteAllToday = async () => {
+    if (!session?.access_token) return;
+    const allH = [...positiveHabits, ...negativeHabits];
+    const todo = allH.filter((h) => !getCompleted(h.id, todayStr));
+    if (todo.length === 0) {
+      if (onToast) onToast({ message: 'Dnes už máš všechny návyky splněné.', type: 'success' });
+      return;
+    }
+    const batch = todo.map((h) => ({ habit_id: h.id, log_date: todayStr, completed: true }));
+    setAllLogs((prev) => {
+      let next = prev.filter((l) => l.log_date !== todayStr || !todo.some((h) => h.id === l.habit_id));
+      next = [...next, ...batch.map((b) => ({ habit_id: b.habit_id, log_date: b.log_date, completed: true }))];
+      return next;
+    });
+    try {
+      const res = await fetch('/api/habits', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ batch }),
+      });
+      const json = await res.json();
+      if (res.ok && Array.isArray(json.logs)) {
+        setAllLogs((prev) => {
+          let n = [...prev];
+          for (const log of json.logs) {
+            n = n.filter((l) => !(l.habit_id === log.habit_id && l.log_date === log.log_date));
+            n.push(log);
+          }
+          return n;
+        });
+        setWeekLogs((prev) => {
+          let n = [...prev];
+          for (const log of json.logs) {
+            n = n.filter((l) => !(l.habit_id === log.habit_id && l.log_date === log.log_date));
+            n.push(log);
+          }
+          return n;
+        });
+        if (onToast) onToast({ message: `Označeno ${json.logs.length} návyků na dnes.`, type: 'success' });
+        if (onHabitSaved) onHabitSaved();
+      } else {
+        loadLogs();
+        if (onToast) onToast({ message: json.error || 'Hromadné uložení se nepodařilo.', type: 'error' });
+      }
+    } catch (e) {
+      loadLogs();
+      if (onToast) onToast({ message: 'Chyba připojení.', type: 'error' });
+    }
+  };
+
+  const completedToday = (allLogs || []).filter((l) => l.log_date === todayStr && l.completed).length;
+  const totalHabits = (positiveHabits || []).length + (negativeHabits || []).length;
+  const weekCompletedByHabit = {};
+  (weekLogs || []).filter((l) => l.completed).forEach((l) => {
+    weekCompletedByHabit[l.habit_id] = (weekCompletedByHabit[l.habit_id] || 0) + 1;
+  });
+  const avgWeekCompletion =
+    totalHabits > 0
+      ? Object.values(weekCompletedByHabit).reduce((a, b) => a + b, 0) / totalHabits
+      : 0;
+
+  const getRecommendation = () => {
+    if (totalHabits === 0) return null;
+    const pctToday = Math.round((completedToday / totalHabits) * 100);
+    const avgWeek = Math.round(avgWeekCompletion);
+    if (completedToday === totalHabits) {
+      return 'Dnes máš všechny návyky splněné.';
+    }
+    if (pctToday >= 70) {
+      return `Dnes cca ${pctToday} % — doplníš zbytek?`;
+    }
+    if (avgWeek >= 4 && avgWeek < 7) {
+      return 'Poslední týden docela pravidelně — pokračuj.';
+    }
+    if (avgWeek >= 7) {
+      return 'Minulý týden velmi pravidelně.';
+    }
+    if (completedToday === 0) {
+      return 'Dnes ještě nic — odškrtni aspoň jeden návyk.';
+    }
+    return `Dnes ${completedToday} z ${totalHabits}.`;
+  };
+
+  const recommendation = getRecommendation();
+
+  const chartData = useMemo(() => {
+    const totalHabitsCount = positiveHabits.length + negativeHabits.length;
+    const maxCount = Math.max(1, totalHabitsCount);
+    return days.map((dateStr) => {
+      const posCount = (positiveHabits || []).filter((h) => getCompleted(h.id, dateStr)).length;
+      const negCount = (negativeHabits || []).filter((h) => getCompleted(h.id, dateStr)).length;
+      return {
+        dateStr,
+        posCount,
+        negCount,
+        count: posCount + negCount,
+        isToday: dateStr === todayStr,
+        pct: ((posCount + negCount) / maxCount) * 100,
+      };
+    });
+  }, [days, todayStr, positiveHabits, negativeHabits, allLogs]);
+
+  const chartMaxVal = useMemo(() => {
+    // Horní mez je nejvyšší naměřená hodnota, ne počet všech návyků — u patnácti
+    // sledovaných a třech splněných denně by osa do patnácti stlačila sloupce k nule.
+    return hornMez(chartData);
+  }, [chartData]);
+  const CHART_BAR_HEIGHT_PX = 360;
+  // 50 % / 50 % vůči dennímu plánu – horní (zdravé) a dolní (zlozvyky) polovina stejná výška i měřítko
+  const HALF_CHART_PX = Math.round(CHART_BAR_HEIGHT_PX / 2);
+
+  if (positiveHabits.length === 0 && negativeHabits.length === 0) {
+    return (
+      <section className="habit-tracker">
+        <header className="habit-tracker-head">
+          <h2 className="habit-tracker-title">Denní návyky</h2>
+          <p className="habit-tracker-empty">
+            Zatím nemáš vybrané žádné návyky. Vyber si je v průvodci nebo v nastavení.
+          </p>
+        </header>
+        <style jsx>{`
+          .habit-tracker { margin-bottom: 48px; padding: 0; }
+          .habit-tracker-head { margin-bottom: 0; }
+          .habit-tracker-title { margin: 0 0 6px; font-size: 1.25rem; font-weight: 600; letter-spacing: -0.02em; color: #f1f5f9; }
+          .habit-tracker-empty { margin: 0; color: #64748b; font-size: 0.8125rem; }
+        `}</style>
+      </section>
+    );
+  }
+
+  const displayDateStr = viewingDateStr || todayStr;
+  const displayDateFormatted = new Date(displayDateStr + 'T12:00:00').toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
+  const todayFormatted = new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
+  const CELL_W = 56;
+  const LABEL_W = 220;
+  const GAP = '8px';
+  const gridCols = `${LABEL_W}px repeat(${days.length}, ${CELL_W}px)`;
+
+  const renderHabitRowCellsOnly = (h, isNegative) =>
+    days.map((dateStr) => {
+      const completed = getCompleted(h.id, dateStr);
+      const isToday = dateStr === todayStr;
+      const isFuture = dateStr > todayStr;
+      const isPast = dateStr < todayStr;
+      const busy = togglingKeys.has(`${h.id}-${dateStr}`);
+      const label = getHabitDisplayLabel(h.id);
+      return (
+        <HabitUiGridCheckbox
+          key={`${h.id}-${dateStr}`}
+          completed={completed}
+          isToday={isToday}
+          isFuture={isFuture}
+          isPast={isPast}
+          busy={busy}
+          isNegative={isNegative}
+          onToggle={() => handleToggle(h.id, dateStr)}
+          ariaLabel={`${label}, ${formatShortDate(dateStr)}${completed ? ', splněno' : ', nesplněno'}${isPast ? ', jen zobrazení' : ''}`}
+          cellWidth={CELL_W}
+        />
+      );
+    });
+
+  return (
+    <section className="habit-tracker">
+      <div className="ht-top">
+        <div className="ht-top-text">
+          {/* Nadpis „Denní návyky“ tu NENÍ. Komponenta se vykresluje výhradně
+              uvnitř bubliny `#denni-navyky`, jejíž hlavička ho už nese —
+              stejná duplicita jako u „Tvé milníky“ a „Historie tréninků“
+              ve fázi 1. Prázdný stav níž si vlastní nadpis nechává, protože
+              se vykresluje bez zbytku hlavičky. */}
+          <p className="ht-date ht-date-active" aria-live="polite">
+            {displayDateStr === todayStr ? (
+              <>Aktivní den: <strong>{todayFormatted}</strong> (dnes)</>
+            ) : (
+              <>Zobrazený den: <strong>{displayDateFormatted}</strong>{displayDateStr > todayStr && ' (budoucí)'}{displayDateStr < todayStr && ' (minulost, jen zobrazení)'}</>
+            )}
+            {displayDateStr !== todayStr && (
+              <button type="button" className="ht-date-back" onClick={() => setViewingDateStr(todayStr)}>Zpět na dnes</button>
+            )}
+          </p>
+          <p className="ht-hint">Odškrtávat lze jen dnešní den. Minulost je jen pro přehled (sloupce jen u dnů se záznamem). Datum nahoře můžeš kliknout pro zvýraznění dne.</p>
+        </div>
+        <div className="ht-progress-inline">
+          <HabitUiProgressBar done={completedToday} total={totalHabits} />
+        </div>
+        <HabitUiButton className="ht-complete-all" onClick={handleCompleteAllToday}>
+          Splnit vše pro dnes
+        </HabitUiButton>
+      </div>
+
+      {loading ? (
+        <div className="ht-loading"><span className="ht-spin-lg" /><span>Načítám…</span></div>
+      ) : fetchError ? (
+        <div className="ht-error">
+          <p>{fetchError}</p>
+          <button type="button" className="ht-retry" onClick={loadLogs}>Zkusit znovu</button>
+        </div>
+      ) : (
+        <>
+          <div className="ht-content">
+            <div className="hg-table-wrap">
+              {/* První sloupec (návyky) – vždy vidět, mimo scroll */}
+              <div className="hg-fixed-col">
+                <div className="hg-corner" />
+                {positiveHabits.length > 0 && (
+                  <>
+                    <div className="hg-section-bar pos">
+                      <span className="hg-section-dot" />ZDRAVÉ NÁVYKY
+                    </div>
+                    {positiveHabits.map((h) => (
+                      <div key={`lbl-${h.id}`} className="hg-label">
+                        <span className="hg-emoji" aria-hidden="true">{h.emoji}</span>
+                        <div className="hg-name-wrap">
+                          <span className="hg-name">{getHabitDisplayLabel(h.id)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+                {negativeHabits.length > 0 && (
+                  <>
+                    <div className="hg-section-bar neg">
+                      <span className="hg-section-dot neg" />ZLOZVYKY
+                    </div>
+                    {negativeHabits.map((h) => (
+                      <div key={`lbl-${h.id}`} className="hg-label">
+                        <span className="hg-emoji" aria-hidden="true">{h.emoji}</span>
+                        <div className="hg-name-wrap">
+                          <span className="hg-name">{getHabitDisplayLabel(h.id)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+              {/* Posuvná část – jen dny (sloupce s daty) */}
+              <div className="hg-scroll" ref={scrollContainerRef}>
+                <div className="hg-days-grid" style={{ gridTemplateColumns: `repeat(${days.length}, ${CELL_W}px)`, columnGap: GAP, rowGap: '6px' }}>
+                  {days.map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      ref={d === todayStr ? todayColRef : undefined}
+                      className={`hg-hdr-cell ${d === todayStr ? 'today' : ''} ${displayDateStr === d ? 'hg-hdr-cell-selected' : ''}`}
+                      onClick={() => setViewingDateStr(d)}
+                      aria-pressed={displayDateStr === d}
+                      aria-label={`${new Date(d + 'T12:00:00').toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' })}${d === todayStr ? ', dnes' : ''}. Klikni pro zobrazení tohoto dne.`}
+                    >
+                      <span className="hg-hdr-day">{new Date(d + 'T12:00:00').toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' }).replace(' ', '')}</span>
+                      {d === todayStr && <span className="hg-hdr-today">Dnes</span>}
+                    </button>
+                  ))}
+                  {positiveHabits.length > 0 && (
+                    <>
+                      <div className="hg-section-bar pos" style={{ gridColumn: `1 / -1` }}>
+                        <span className="hg-section-dot" aria-hidden />
+                      </div>
+                      {positiveHabits.map((h) => renderHabitRowCellsOnly(h, false))}
+                    </>
+                  )}
+                  {negativeHabits.length > 0 && (
+                    <>
+                      <div className="hg-section-bar neg" style={{ gridColumn: `1 / -1` }}>
+                        <span className="hg-section-dot neg" aria-hidden />
+                      </div>
+                      {negativeHabits.map((h) => renderHabitRowCellsOnly(h, true))}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="ht-chart-wrap">
+              <p className="ht-chart-title">Přehled po dnech</p>
+              <p className="ht-chart-legend">
+                <span className="ht-legend-pos">▲ zdravé splněno</span>
+                {negativeHabits.length > 0 ? <span className="ht-legend-neg">▼ zlozvyky</span> : null}
+              </p>
+              <div className="ht-chart-inner">
+                {/* Popisky jsou v absolutní hodnotě. Dolů se počítají zlozvyky, ne
+                    záporné splněné návyky — „−2“ se četlo jako minus dva návyky.
+                    Směr nese legenda pod nadpisem. */}
+                <div className="ht-chart-y-axis">
+                  {popiskyOsy(chartMaxVal, maSpodniPul(negativeHabits.length)).map((t) => (
+                    <span key={t.hodnota} className="ht-chart-y-tick">{t.popisek}</span>
+                  ))}
+                </div>
+                <div className="ht-chart-bars" style={{ height: `${CHART_BAR_HEIGHT_PX}px` }}>
+                  {chartData.map(({ dateStr, posCount, negCount, isToday }) => {
+                    const posPx = Math.max(0, (posCount / chartMaxVal) * HALF_CHART_PX);
+                    const negPx = Math.max(0, (negCount / chartMaxVal) * HALF_CHART_PX);
+                    return (
+                      <div key={dateStr} className={`ht-chart-bar ${isToday ? 'today' : ''}`}>
+                        <div className="ht-chart-bar-diverging">
+                          <div className="ht-chart-bar-half ht-chart-bar-top">
+                            {posPx > 0 && (
+                              <div
+                                className="ht-chart-bar-fill pos"
+                                style={{ height: `${posPx}px` }}
+                                title={`${posCount} zdravé splněno`}
+                              />
+                            )}
+                          </div>
+                          <div className="ht-chart-bar-half ht-chart-bar-bottom">
+                            {negPx > 0 && (
+                              <div
+                                className="ht-chart-bar-fill neg"
+                                style={{ height: `${negPx}px` }}
+                                title={`${negCount} zlozvyků`}
+                              />
+                            )}
+                          </div>
+                        </div>
+                        <span className="ht-chart-bar-value">
+                          {posCount > 0 && <span className="ht-bar-pos">{posCount}</span>}
+                          {posCount > 0 && negCount > 0 && <span className="ht-bar-sep"> / </span>}
+                          {negCount > 0 && <span className="ht-bar-neg">{negCount}</span>}
+                          {posCount === 0 && negCount === 0 && '0'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="ht-chart-labels">
+                {chartData.map(({ dateStr, isToday }) => (
+                  <span key={dateStr} className={`ht-chart-label ${isToday ? 'today' : ''}`}>
+                    {new Date(dateStr + 'T12:00:00').toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' }).replace(' ', '')}
+                    {isToday && ' (dnes)'}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {recommendation && (
+            <div className="ht-tip">
+              <p className="ht-tip-text">{recommendation}</p>
+            </div>
+          )}
+        </>
+      )}
+
+      <style jsx>{`
+        .habit-tracker { margin-bottom: 48px; }
+
+        .ht-content {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          align-items: stretch;
+        }
+        .hg-table-wrap { width: 100%; min-width: 0; }
+
+        .ht-chart-wrap {
+          width: 100%;
+          padding: 32px;
+          border-radius: 20px;
+          background: linear-gradient(160deg, rgba(22,32,55,0.98) 0%, rgba(10,15,30,0.98) 100%);
+          border: 1px solid rgba(255,255,255,0.08);
+          box-shadow: 0 20px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.02) inset;
+        }
+        .ht-chart-title {
+          margin: 0 0 4px; font-size: 0.6875rem; font-weight: 700; color: #94a3b8;
+          letter-spacing: 0.02em; text-transform: uppercase;
+        }
+        /* Legenda nese směr, který dřív nesly minusy na ose. */
+        .ht-chart-legend {
+          margin: 0 0 10px; display: flex; gap: 12px; font-size: 0.6875rem; font-weight: 600;
+        }
+        .ht-legend-pos { color: #39ff14; }
+        .ht-legend-neg { color: #fb7185; }
+        .ht-chart-inner {
+          display: flex; align-items: stretch; gap: 6px; margin-bottom: 6px;
+        }
+        .ht-chart-y-axis {
+          display: flex; flex-direction: column; justify-content: space-between;
+          height: 360px; padding: 0 4px 0 0;
+          font-size: 0.5625rem; font-weight: 600; color: #64748b;
+          text-align: right; line-height: 1;
+        }
+        .ht-chart-y-tick { flex-shrink: 0; }
+        .ht-chart-bars {
+          display: flex; align-items: stretch; justify-content: space-between; gap: 10px;
+          flex: 1; min-height: 360px;
+        }
+        .ht-chart-bar {
+          flex: 1; min-width: 0; height: 100%;
+          display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px;
+        }
+        .ht-chart-bar-diverging {
+          display: flex; flex-direction: column; justify-content: center;
+          width: 100%; max-width: 52px; min-width: 12px; height: 100%;
+        }
+        .ht-chart-bar-half {
+          flex: 1; display: flex; flex-direction: column; min-height: 0;
+        }
+        .ht-chart-bar-top {
+          justify-content: flex-end;
+        }
+        .ht-chart-bar-bottom {
+          justify-content: flex-start;
+        }
+        .ht-chart-bar-fill {
+          width: 100%; min-height: 4px;
+          transition: height 0.4s ease-out;
+        }
+        .ht-chart-bar-fill.pos {
+          border-radius: 6px 6px 0 0;
+          background: linear-gradient(180deg, #39ff14, #22c55e);
+          box-shadow: 0 0 12px rgba(52,211,153,0.4);
+        }
+        .ht-chart-bar-fill.neg {
+          border-radius: 0 0 6px 6px;
+          background: linear-gradient(0deg, #f87171, #dc2626);
+          box-shadow: 0 0 10px rgba(248,113,113,0.35);
+        }
+        .ht-chart-bar.today .ht-chart-bar-fill.pos {
+          background: linear-gradient(180deg, #39ff14, #22c55e);
+          box-shadow: 0 0 14px rgba(52,211,153,0.6), 0 0 0 2px rgba(255,255,255,0.4);
+        }
+        .ht-chart-bar.today .ht-chart-bar-fill.neg {
+          background: linear-gradient(0deg, #f87171, #dc2626);
+          box-shadow: 0 0 14px rgba(248,113,113,0.6), 0 0 0 2px rgba(255,255,255,0.4);
+        }
+        .ht-chart-bar-value {
+          font-size: 0.625rem; font-weight: 600; color: #94a3b8;
+        }
+        .ht-chart-bar-value .ht-bar-pos { color: #39ff14; }
+        .ht-chart-bar-value .ht-bar-neg { color: #f87171; }
+        .ht-chart-bar-value .ht-bar-sep { color: #64748b; margin: 0 1px; font-weight: 400; }
+        .ht-chart-bar.today .ht-chart-bar-value .ht-bar-pos { color: #39ff14; }
+        .ht-chart-bar.today .ht-chart-bar-value .ht-bar-neg { color: #f87171; }
+        .ht-chart-labels {
+          display: flex; justify-content: space-between; gap: 6px;
+          font-size: 0.5625rem; color: #64748b; font-weight: 500;
+        }
+        .ht-chart-label { flex: 1; min-width: 0; text-align: center; font-size: 0.625rem; }
+        .ht-chart-label.today { color: #39ff14; font-weight: 700; }
+
+        @media (max-width: 720px) {
+          .ht-chart-wrap { padding: 20px 16px; }
+        }
+
+        @media (max-width: 768px) {
+          .ht-top { flex-wrap: wrap; gap: 12px; padding: 14px 10px 16px; }
+          .ht-top-text { min-width: 0; flex: 1; }
+          .ht-title { font-size: 1.35rem; margin-bottom: 6px; }
+          .ht-date { font-size: 0.875rem; line-height: 1.4; }
+          .ht-date-active strong { font-size: 0.95rem; }
+          .ht-hint { font-size: 0.7rem; max-width: none; margin-top: 6px; }
+          .ht-progress-inline { align-items: flex-start; width: 100%; }
+          .ht-prog-nums { font-size: 1.5rem; }
+          .ht-prog-bar-wrap { width: 100%; max-width: 200px; height: 6px; }
+          .ht-date-back {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+            padding: 12px 18px;
+            min-height: 48px;
+            border-radius: 12px;
+            border: 2px solid rgba(167, 139, 250, 0.6);
+            background: rgba(124, 58, 237, 0.3);
+            color: #e9d5ff;
+            font-size: 0.9375rem;
+            font-weight: 700;
+            text-decoration: none;
+            touch-action: manipulation;
+            cursor: pointer;
+          }
+          .ht-date-back:hover { background: rgba(124, 58, 237, 0.45); color: #fff; }
+          .hg-fixed-col { padding: 12px 8px 18px 12px; width: 180px !important; min-width: 180px !important; }
+          .hg-scroll { -webkit-overflow-scrolling: touch; }
+          .hg-days-grid { padding: 12px 16px 18px 12px; }
+          .ht-chart-wrap { padding: 20px 16px; }
+          /* 0.65rem = 10,4 px, pod hranicí čitelnosti na mobilu. */
+          .ht-chart-title { font-size: 0.7rem; }
+        }
+
+        /* ── Top header (sticky při vertikálním scrollu stránky) ── */
+        .ht-top {
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 20px; margin-bottom: 20px;
+          position: sticky; top: 0; z-index: 20;
+          background: rgb(14, 19, 33);
+          padding-bottom: 12px;
+          padding-right: 8px;
+          box-sizing: border-box;
+        }
+        .ht-title {
+          margin: 0 0 4px; font-size: 1.625rem; font-weight: 800;
+          letter-spacing: -0.025em; color: #f8fafc;
+        }
+        .ht-date { margin: 0; font-size: 0.8125rem; color: #475569; font-weight: 500; text-transform: capitalize; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .ht-date-back {
+          font-size: 0.75rem; color: #a78bfa; background: none; border: none; cursor: pointer;
+          text-decoration: underline; padding: 0; font-weight: 600;
+        }
+        .ht-date-back:hover { color: #c4b5fd; }
+        .ht-date-active strong { color: #c4b5fd; }
+        .ht-hint {
+          margin: 6px 0 0;
+          font-size: 0.75rem;
+          color: #64748b;
+          line-height: 1.4;
+          max-width: 420px;
+          position: sticky;
+          top: 2px;
+          z-index: 2;
+        }
+        .ht-progress-inline { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; flex-shrink: 0; }
+        .ht-prog-nums { font-size: 1.125rem; font-weight: 800; color: #f8fafc; letter-spacing: -0.02em; }
+        .ht-prog-sep { color: #334155; margin: 0 3px; font-weight: 400; }
+        .ht-prog-bar-wrap { width: 130px; height: 4px; background: rgba(255,255,255,0.06); border-radius: 999px; overflow: hidden; }
+        .ht-prog-bar {
+          height: 100%; border-radius: 999px;
+          background: linear-gradient(90deg, #39ff14, #22c55e, #15803d);
+          transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+          box-shadow: 0 0 10px rgba(52,211,153,0.55);
+        }
+        .ht-complete-all {
+          margin-top: 4px;
+          padding: 8px 14px;
+          font-size: 0.8125rem;
+          font-weight: 600;
+          color: #e9d5ff;
+          background: rgba(124, 58, 237, 0.28);
+          border: 1px solid rgba(167, 139, 250, 0.45);
+          border-radius: 10px;
+          cursor: pointer;
+          font-family: inherit;
+          white-space: nowrap;
+        }
+        .ht-complete-all:hover { background: rgba(124, 58, 237, 0.42); }
+        .hg-cell-empty {
+          width: 22px;
+          height: 22px;
+          border-radius: 6px;
+          border: 2px solid;
+          display: block;
+          box-sizing: border-box;
+        }
+
+        /* ── Tabulka: pevný první sloupec + posuvná oblast s dny ── */
+        .hg-table-wrap {
+          display: flex;
+          align-items: flex-start;
+          border-radius: 20px;
+          background: linear-gradient(160deg, rgba(22,32,55,0.98) 0%, rgba(10,15,30,0.98) 100%);
+          border: 1px solid rgba(255,255,255,0.08);
+          box-shadow: 0 20px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.02) inset;
+          overflow: hidden;
+        }
+        .hg-fixed-col {
+          flex-shrink: 0;
+          width: ${LABEL_W}px;
+          min-width: ${LABEL_W}px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          padding: 18px 0 24px 20px;
+          border-right: 1px solid rgba(255,255,255,0.08);
+          background: linear-gradient(90deg, rgba(14, 19, 33, 1) 0%, rgba(14, 19, 33, 0.98) 100%);
+        }
+        .hg-scroll {
+          flex: 1;
+          min-width: 0;
+          position: relative;
+          overflow-x: auto;
+          overflow-y: visible;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+        }
+        .hg-scroll::-webkit-scrollbar { height: 8px; }
+        .hg-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); border-radius: 4px; }
+        .hg-scroll::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.5); border-radius: 4px; }
+        .hg-scroll::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.7); }
+        .hg-days-grid {
+          display: grid;
+          padding: 18px 28px 24px 20px;
+          min-width: max-content;
+          box-sizing: border-box;
+        }
+        .hg-habit-cell--past:disabled {
+          opacity: 1 !important;
+          cursor: default !important;
+        }
+        .hg-habit-cell--future:disabled {
+          cursor: default !important;
+        }
+        .hg-corner {
+          height: 60px;
+          width: 100%;
+          min-width: ${LABEL_W}px;
+          flex-shrink: 0;
+          background: transparent;
+        }
+
+        /* ── Date headers (clickable) ── */
+        .hg-hdr-cell {
+          height: 60px;
+          display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+          border-radius: 12px;
+          background-color: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.06);
+          font-weight: 700; color: #475569; user-select: none;
+          transition: background-color 0.2s;
+          appearance: none; -webkit-appearance: none; -moz-appearance: none;
+          padding: 0; margin: 0; cursor: pointer; font-family: inherit; font-size: inherit;
+          outline: none;
+        }
+        .hg-hdr-cell:hover { background-color: rgba(255,255,255,0.08); }
+        .hg-hdr-cell.hg-hdr-cell-selected {
+          background-color: rgba(139,92,246,0.2);
+          border-color: rgba(167,139,250,0.5);
+          color: #c4b5fd;
+        }
+        .hg-hdr-cell.today {
+          background-color: transparent;
+          background-image: linear-gradient(145deg, rgba(124,58,237,0.4) 0%, rgba(99,47,210,0.3) 100%);
+          border-color: rgba(139,92,246,0.6);
+          color: #ddd6fe;
+          box-shadow: 0 0 24px rgba(124,58,237,0.25), 0 0 0 1px rgba(167,139,250,0.15) inset;
+        }
+        .hg-hdr-day { font-size: 0.8125rem; font-weight: 700; line-height: 1; }
+        .hg-hdr-today { font-size: 0.5625rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: #a78bfa; }
+
+        /* ── Section bars ── */
+        .hg-section-bar {
+          display: flex; align-items: center; gap: 8px;
+          font-size: 0.625rem; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase;
+          padding: 16px 2px 8px;
+        }
+        .hg-section-bar.pos { color: #39ff14; }
+        .hg-section-bar.neg { color: #f87171; }
+        .hg-section-dot {
+          width: 7px; height: 7px; border-radius: 50%;
+          background: #39ff14; box-shadow: 0 0 8px #39ff14; flex-shrink: 0;
+          animation: ht-pulse 2.5s ease-in-out infinite;
+        }
+        .hg-section-dot.neg { background: #f87171; box-shadow: 0 0 8px #f87171; }
+        @keyframes ht-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+
+        /* ── Habit label (v pevném sloupci vlevo – vždy vidět) ── */
+        .hg-label {
+          display: flex; align-items: flex-start; gap: 10px;
+          min-height: 56px;
+          width: 100%;
+          padding: 6px 16px 6px 0;
+          overflow: hidden;
+          box-sizing: border-box;
+        }
+        .hg-emoji { font-size: 1.3rem; flex-shrink: 0; line-height: 1; margin-top: 2px; }
+        .hg-name-wrap {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          min-width: 0;
+          line-height: 1.35;
+          font-size: 1rem;
+        }
+        .hg-name {
+          font-size: 1em;
+          font-weight: 600;
+          color: #f1f5f9;
+        }
+        .hg-hint {
+          font-size: 0.7em;
+          font-weight: 400;
+          color: #94a3b8;
+          font-family: inherit;
+        }
+
+        /* ── Habit cell – CRITICAL: reset button defaults ── */
+        .hg-cell {
+          appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          width: ${CELL_W}px;
+          height: 56px;
+          padding: 0; margin: 0;
+          display: flex; align-items: center; justify-content: center;
+          background-color: rgba(255,255,255,0.05);
+          border: 1.5px solid rgba(255,255,255,0.09);
+          border-radius: 14px;
+          color: #94a3b8;
+          cursor: pointer;
+          transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), background-color 0.18s, border-color 0.18s, box-shadow 0.18s;
+          touch-action: manipulation;
+          outline: none;
+          position: relative;
+          overflow: hidden;
+        }
+        .hg-cell::before {
+          content: '';
+          position: absolute; inset: 0; border-radius: 13px;
+          background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.08) 0%, transparent 70%);
+          opacity: 0; transition: opacity 0.2s;
+        }
+        .hg-cell:hover:not(:disabled):not(.future)::before { opacity: 1; }
+        .hg-cell:hover:not(:disabled):not(.future) {
+          background-color: rgba(255,255,255,0.1);
+          border-color: rgba(255,255,255,0.22);
+          transform: scale(1.1) translateY(-2px);
+          box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+        }
+        .hg-cell:active:not(:disabled):not(.future) {
+          transform: scale(0.9);
+          transition-duration: 0.08s;
+        }
+
+        /* Today column */
+        .hg-cell.today:not(.done) {
+          background-color: rgba(109,40,217,0.15);
+          border-color: rgba(139,92,246,0.4);
+        }
+        .hg-cell.today:not(.done):hover:not(:disabled) {
+          background-color: rgba(109,40,217,0.25);
+          border-color: rgba(139,92,246,0.65);
+        }
+
+        /* Completed */
+        .hg-cell.done {
+          background-color: transparent;
+          background-image: linear-gradient(145deg, #39ff14 0%, #15803d 100%);
+          border-color: transparent;
+          box-shadow: 0 4px 16px rgba(34,197,94,0.45), 0 0 0 1px rgba(74,222,128,0.25) inset;
+          color: #fff;
+        }
+        .hg-cell.done:hover:not(:disabled) {
+          background-image: linear-gradient(145deg, #16a34a 0%, #14532d 100%);
+          transform: scale(1.07) translateY(-1px);
+          box-shadow: 0 6px 20px rgba(34,197,94,0.55);
+        }
+
+        /* Future */
+        .hg-cell.future {
+          opacity: 0.18; cursor: default; pointer-events: none;
+          background-color: rgba(255,255,255,0.02);
+          border-color: rgba(255,255,255,0.05);
+        }
+        .hg-cell.busy { opacity: 0.55; cursor: wait; transform: none !important; }
+
+        /* Inner icons */
+        .hg-circle {
+          width: 22px; height: 22px; border-radius: 50%;
+          border: 2px solid rgba(255,255,255,0.28); display: block;
+          transition: border-color 0.18s, transform 0.18s;
+        }
+        .hg-cell.today:not(.done) .hg-circle { border-color: rgba(167,139,250,0.55); }
+        .hg-cell:hover:not(:disabled):not(.future) .hg-circle {
+          border-color: rgba(255,255,255,0.75);
+          transform: scale(1.1);
+        }
+        .hg-check { width: 24px; height: 24px; color: #fff; flex-shrink: 0; }
+        .hg-spin {
+          width: 20px; height: 20px; border-radius: 50%;
+          border: 2px solid rgba(255,255,255,0.12); border-top-color: #fff;
+          animation: hg-spin 0.7s linear infinite; display: block;
+        }
+        @keyframes hg-spin { to { transform: rotate(360deg); } }
+
+        /* Tip */
+        .ht-tip {
+          margin-top: 16px; padding: 14px 18px;
+          background: rgba(248,250,252,0.02); border: 1px solid rgba(248,250,252,0.05);
+          border-radius: 14px;
+        }
+        .ht-tip-text { margin: 0; font-size: 0.8125rem; line-height: 1.55; color: #475569; }
+
+        /* Loading / error */
+        .ht-loading {
+          display: flex; flex-direction: column; align-items: center;
+          gap: 14px; padding: 52px 24px; color: #475569; font-size: 0.875rem;
+        }
+        .ht-spin-lg {
+          width: 36px; height: 36px; border-radius: 50%;
+          border: 3px solid rgba(255,255,255,0.06); border-top-color: #00f2fe;
+          animation: hg-spin 0.9s linear infinite; display: block;
+        }
+        .ht-error {
+          text-align: center; padding: 28px;
+          background: rgba(248,250,252,0.02); border: 1px solid rgba(248,250,252,0.05);
+          border-radius: 14px; color: #64748b; font-size: 0.875rem;
+        }
+        .ht-retry {
+          margin-top: 12px; padding: 10px 22px;
+          background: rgba(248,250,252,0.07); border: 1px solid rgba(248,250,252,0.1);
+          border-radius: 8px; color: #e2e8f0; font-size: 0.8125rem;
+          font-weight: 500; cursor: pointer; transition: background 0.2s;
+        }
+        .ht-retry:hover { background: rgba(248,250,252,0.12); }
+
+        @media (max-width: 640px) {
+          .habit-tracker { margin-bottom: 32px; }
+          .ht-title { font-size: 1.2rem; }
+          .ht-top { flex-direction: column; align-items: flex-start; gap: 10px; padding: 12px 8px 14px; }
+          .ht-progress-inline { align-items: flex-start; width: 100%; }
+          .ht-prog-bar-wrap { width: 100%; max-width: 220px; height: 6px; }
+          .ht-prog-nums { font-size: 1.4rem; }
+          .hg-fixed-col { width: 160px !important; min-width: 160px !important; padding: 10px 6px 14px 10px; }
+          .hg-label { padding: 6px 10px 6px 0; min-height: 52px; }
+          .hg-name-wrap { font-size: 0.9rem; }
+          .hg-days-grid { padding: 10px 14px 14px 10px; }
+          .hg-hdr-cell { min-height: 52px; }
+        }
+      `}</style>
+    </section>
+  );
+}

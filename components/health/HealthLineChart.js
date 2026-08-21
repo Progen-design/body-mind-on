@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import { FiArrowDown, FiArrowUp, FiMinus } from 'react-icons/fi';
-import { BM_ON_DESIGN } from '../../lib/designTokens';
+// Paleta v4. `BM_ON_DESIGN` v lib/designTokens.js sdili barvy s e-maily,
+// takze se prebarvuje tudy — stejny tvar, jine hodnoty. Viz
+// PALETA_PROFILU v lib/profile/designTokens.js.
+import { DESIGN_PROFILU as BM_ON_DESIGN } from '../../lib/profile/designTokens.js';
 import { formatMetricUnitLabel, formatMetricValue } from '../../lib/health/formatters';
 
 function formatShortDate(value) {

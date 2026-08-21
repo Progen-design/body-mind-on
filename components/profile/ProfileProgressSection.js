@@ -489,16 +489,16 @@ export default function ProfileProgressSection({
           margin: 12px 0 8px;
         }
         .profile-progress-period {
-          border: 1px solid rgba(167, 139, 250, 0.35);
+          border: 1px solid rgba(0, 242, 254, 0.35);
           background: rgba(30, 20, 50, 0.5);
-          color: #e9d5ff;
+          color: #d7f9ff;
           border-radius: 999px;
           padding: 6px 14px;
           font-size: 0.85rem;
           cursor: pointer;
         }
         .profile-progress-period--active {
-          background: rgba(124, 58, 237, 0.45);
+          background: rgba(0, 242, 254, 0.45);
           border-color: #a78bfa;
         }
         .profile-progress-block {
@@ -507,12 +507,12 @@ export default function ProfileProgressSection({
           padding: 16px;
           border-radius: 12px;
           background: rgba(15, 10, 30, 0.35);
-          border: 1px solid rgba(167, 139, 250, 0.15);
+          border: 1px solid rgba(0, 242, 254, 0.15);
         }
         .profile-progress-subhead {
           margin: 0 0 12px;
           font-size: 1rem;
-          color: #ddd6fe;
+          color: #a5eaf7;
         }
         .profile-progress-kpis {
           display: grid;
@@ -527,34 +527,41 @@ export default function ProfileProgressSection({
         .profile-progress-kpi-num {
           font-size: 1.35rem;
           font-weight: 700;
-          color: #f5f3ff;
+          color: #ecfeff;
         }
         .profile-progress-kpi-label {
           font-size: 0.8rem;
-          color: #c4b5fd;
+          color: #7dd3fc;
         }
         .profile-progress-kcal-secondary {
           margin: 12px 0 0;
           font-size: 0.82rem;
-          color: #a8a29e;
+          color: #94a3b8;
           cursor: help;
         }
         .profile-progress-list {
           margin: 0;
           padding-left: 1.1rem;
-          color: #e7e5e4;
+          color: #e2e8f0;
           line-height: 1.6;
         }
         .profile-progress-empty, .profile-progress-neutral {
-          color: #d6d3d1;
+          color: #94a3b8;
           margin: 8px 0;
+          padding: 18px 16px;
+          text-align: center;
+          font-size: 14px;
+          line-height: 1.5;
+          border: 1px dashed rgba(148, 163, 184, 0.28);
+          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.02);
         }
         .profile-progress-measure-row {
           margin: 6px 0;
-          color: #f5f5f4;
+          color: #f1f5f9;
         }
         .profile-progress-meta {
-          color: #a8a29e;
+          color: #94a3b8;
           font-size: 0.85rem;
         }
         .profile-progress-circumferences {
@@ -563,7 +570,7 @@ export default function ProfileProgressSection({
           gap: 10px;
           margin: 10px 0;
           font-size: 0.9rem;
-          color: #d6d3d1;
+          color: #cbd5e1;
         }
         .profile-progress-cta {
           margin-top: 10px;
@@ -585,7 +592,7 @@ export default function ProfileProgressSection({
         }
         .profile-progress-next p {
           margin: 0;
-          color: #e7e5e4;
+          color: #e2e8f0;
         }
         @media (max-width: 640px) {
           .profile-progress-kpis {

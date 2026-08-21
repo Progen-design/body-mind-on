@@ -1971,7 +1971,7 @@ export default function PlanViewer({
                                           border: 'none',
                                           padding: 0,
                                           cursor: 'pointer',
-                                          color: '#a78bfa',
+                                          color: '#7dd3fc',
                                           textDecoration: 'underline',
                                           font: 'inherit',
                                           minHeight: 44,
@@ -2409,7 +2409,7 @@ const planSectionStyles = `
     left: 0;
     right: 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.5), transparent);
+    background: linear-gradient(90deg, transparent, rgba(0, 242, 254, 0.5), transparent);
   }
   .plan-hero-title {
     margin: 0 0 12px;
@@ -2420,7 +2420,7 @@ const planSectionStyles = `
   .plan-badge {
     display: inline-block;
     background: rgba(255,255,255,0.25);
-    color: #e9d5ff;
+    color: #d7f9ff;
     padding: 6px 14px;
     border-radius: 20px;
     font-size: 12px;
@@ -2438,17 +2438,17 @@ const planSectionStyles = `
     margin-bottom: 20px;
     background: rgba(30, 41, 59, 0.5);
     border-radius: 12px;
-    border: 1px solid rgba(139, 92, 255, 0.25);
+    border: 1px solid rgba(0, 242, 254, 0.25);
   }
   .plan-nav-item {
-    color: #c4b5fd;
+    color: #7dd3fc;
     font-weight: 600;
     font-size: 15px;
     text-decoration: none;
     transition: color 0.2s;
   }
   .plan-nav-item:hover {
-    color: #e9d5ff;
+    color: #d7f9ff;
   }
   .plan-nav-sep {
     color: rgba(148, 163, 184, 0.6);
@@ -2460,13 +2460,13 @@ const planSectionStyles = `
     padding: 14px 18px;
     border-radius: 12px;
     background: rgba(30, 41, 59, 0.45);
-    border: 1px solid rgba(139, 92, 255, 0.22);
+    border: 1px solid rgba(0, 242, 254, 0.22);
   }
   .plan-week-parts-title {
     margin: 0 0 8px;
     font-size: 12px;
     font-weight: 700;
-    color: #a78bfa;
+    color: #7dd3fc;
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
@@ -2483,7 +2483,7 @@ const planSectionStyles = `
     padding: 12px 14px;
     border-radius: 12px;
     background: rgba(30, 41, 59, 0.42);
-    border: 1px solid rgba(139, 92, 255, 0.22);
+    border: 1px solid rgba(0, 242, 254, 0.22);
   }
   .plan-week-parts-single {
     margin: 0;
@@ -2509,8 +2509,8 @@ const planSectionStyles = `
     margin: 0 0 16px;
     padding: 12px 14px;
     border-radius: 10px;
-    background: rgba(124, 58, 237, 0.12);
-    border: 1px solid rgba(167, 139, 250, 0.28);
+    background: rgba(0, 242, 254, 0.12);
+    border: 1px solid rgba(0, 242, 254, 0.28);
     color: #e2e8f0;
     font-size: 14px;
     line-height: 1.5;
@@ -2526,7 +2526,7 @@ const planSectionStyles = `
     margin: 0 0 10px;
     font-size: 15px;
     font-weight: 700;
-    color: #c4b5fd;
+    color: #7dd3fc;
   }
   .plan-day-training-html :global(ul) {
     margin: 8px 0;
@@ -2538,7 +2538,7 @@ const planSectionStyles = `
     padding: 18px 16px;
     border-radius: 14px;
     background: rgba(30, 41, 59, 0.6);
-    border: 1px solid rgba(124, 58, 237, 0.3);
+    border: 1px solid rgba(0, 242, 254, 0.3);
   }
   .plan-training-week-title { margin: 0 0 12px; }
   .plan-training-week-fallback {
@@ -2581,12 +2581,12 @@ const planSectionStyles = `
   .plan-day-kcal-under { color: #fbbf24; font-weight: 500; }
   .plan-expired p { margin: 0 0 8px; }
   .plan-expired p:last-child { margin-bottom: 0; }
-  .plan-expired a { color: #a78bfa; text-decoration: none; }
+  .plan-expired a { color: #7dd3fc; text-decoration: none; }
   .plan-expired a:hover { text-decoration: underline; }
   .plan-expired-btn,
   .plan-expires-soon-btn {
-    background: linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%);
-    color: #fff;
+    background: linear-gradient(135deg, #00f2fe 0%, #38ef7d 100%);
+    color: #05070d;
     border: none;
     border-radius: 8px;
     padding: 8px 16px;
@@ -2599,7 +2599,7 @@ const planSectionStyles = `
   .plan-expired-blocked { color: #fca5a5; font-size: 0.92rem; }
   .plan-expires-soon-btn {
     background: transparent;
-    color: #a78bfa;
+    color: #7dd3fc;
     /* Nulový padding dělal z odkazu 16px vysoký cíl — pod hranicí, kterou
        jde na dotyk trefit. Vzhled zůstává textový, jen se zvětšila plocha. */
     padding: 6px 4px;
@@ -2618,7 +2618,7 @@ const planSectionStyles = `
     font-size: 14px;
     line-height: 1.5;
   }
-  .plan-expires-soon a { color: #a78bfa; text-decoration: none; }
+  .plan-expires-soon a { color: #7dd3fc; text-decoration: none; }
   .plan-expires-soon a:hover { text-decoration: underline; }
 
   .plan-parse-fallback-block {
@@ -2635,16 +2635,16 @@ const planSectionStyles = `
   }
   .plan-btn-raw-fallback {
     padding: 10px 18px;
-    background: rgba(139, 92, 255, 0.3);
-    border: 1px solid rgba(139, 92, 255, 0.5);
-    color: #e9d5ff;
+    background: rgba(0, 242, 254, 0.3);
+    border: 1px solid rgba(0, 242, 254, 0.5);
+    color: #d7f9ff;
     border-radius: 10px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
   }
   .plan-btn-raw-fallback:hover {
-    background: rgba(139, 92, 255, 0.45);
+    background: rgba(0, 242, 254, 0.45);
   }
   .plan-raw-fallback-content {
     margin-top: 16px;
@@ -2657,8 +2657,8 @@ const planSectionStyles = `
     max-height: 70vh;
     overflow-y: auto;
   }
-  .plan-raw-fallback-content :global(h2) { font-size: 18px; margin: 16px 0 8px; color: #e9d5ff; }
-  .plan-raw-fallback-content :global(h3) { font-size: 16px; margin: 14px 0 6px; color: #c4b5fd; }
+  .plan-raw-fallback-content :global(h2) { font-size: 18px; margin: 16px 0 8px; color: #d7f9ff; }
+  .plan-raw-fallback-content :global(h3) { font-size: 16px; margin: 14px 0 6px; color: #7dd3fc; }
   .plan-raw-fallback-content :global(p) { margin: 8px 0; }
   .plan-raw-fallback-content :global(ul) { margin: 8px 0; padding-left: 20px; }
 
@@ -2675,10 +2675,10 @@ const planSectionStyles = `
   .plan-block-title {
     font-size: 18px;
     font-weight: 600;
-    color: #e9d5ff;
+    color: #d7f9ff;
     margin: 0 0 16px;
     padding-bottom: 8px;
-    border-bottom: 1px solid rgba(139, 92, 255, 0.3);
+    border-bottom: 1px solid rgba(0, 242, 254, 0.3);
   }
   .plan-block-subtitle {
     margin: -10px 0 18px;
@@ -2689,11 +2689,11 @@ const planSectionStyles = `
   .plan-block-training {
     background: rgba(30, 41, 59, 0.5);
     border: 1px solid rgba(71, 85, 105, 0.5);
-    border-left: 4px solid #7c3aed;
+    border-left: 4px solid #00f2fe;
     border-radius: 12px;
     padding: 20px;
   }
-  .plan-block-training .plan-block-title { border-bottom-color: rgba(124, 58, 237, 0.4); }
+  .plan-block-training .plan-block-title { border-bottom-color: rgba(0, 242, 254, 0.4); }
   .plan-training-content {
     color: #e2e8f0;
     font-size: 15px;
@@ -2701,7 +2701,7 @@ const planSectionStyles = `
   }
   .plan-training-content p { margin: 0 0 12px; }
   .plan-training-content p:last-child { margin-bottom: 0; }
-  .plan-training-content b { color: #c4b5fd; }
+  .plan-training-content b { color: #7dd3fc; }
   .plan-training-content img,
   .plan-training-content picture,
   .plan-training-content video { display: none; }
@@ -2724,14 +2724,14 @@ const planSectionStyles = `
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: rgba(124, 58, 237, 0.15);
-    border: 1px solid rgba(124, 58, 237, 0.3);
+    background: rgba(0, 242, 254, 0.15);
+    border: 1px solid rgba(0, 242, 254, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 13px;
     font-weight: 700;
-    color: #a78bfa;
+    color: #7dd3fc;
     flex-shrink: 0;
     box-sizing: border-box;
   }
@@ -2751,7 +2751,7 @@ const planSectionStyles = `
   }
   .plan-exercise-sets {
     font-size: 13px;
-    color: #7c3aed;
+    color: #00f2fe;
     font-weight: 600;
     margin-left: auto;
     flex-shrink: 0;
@@ -2781,15 +2781,15 @@ const planSectionStyles = `
     height: 6px;
   }
   .plan-week-day-nav::-webkit-scrollbar-thumb {
-    background: rgba(167, 139, 250, 0.35);
+    background: rgba(0, 242, 254, 0.35);
     border-radius: 999px;
   }
   .plan-week-day-pill {
     flex: 0 0 auto;
     scroll-snap-align: start;
-    border: 1px solid rgba(139, 92, 255, 0.35);
+    border: 1px solid rgba(0, 242, 254, 0.35);
     background: rgba(30, 41, 59, 0.65);
-    color: #c4b5fd;
+    color: #7dd3fc;
     border-radius: 999px;
     padding: 8px 14px;
     font-size: 13px;
@@ -2801,24 +2801,24 @@ const planSectionStyles = `
     transition: background 0.15s, border-color 0.15s, color 0.15s;
   }
   .plan-week-day-pill:hover {
-    background: rgba(124, 58, 237, 0.2);
-    border-color: rgba(167, 139, 250, 0.55);
-    color: #e9d5ff;
+    background: rgba(0, 242, 254, 0.2);
+    border-color: rgba(0, 242, 254, 0.55);
+    color: #d7f9ff;
   }
   .plan-week-day-pill--today {
-    background: rgba(124, 58, 237, 0.35);
-    border-color: #a78bfa;
+    background: rgba(0, 242, 254, 0.35);
+    border-color: #7dd3fc;
     color: #fff;
   }
   .plan-day-today {
-    border-left: 3px solid #c4b5fd;
-    background: rgba(124, 58, 237, 0.08);
+    border-left: 3px solid #7dd3fc;
+    background: rgba(0, 242, 254, 0.08);
   }
-  .plan-mindset-block { background: rgba(139, 92, 255, 0.08); border-radius: 12px; padding: 16px; }
-  .plan-mindset-text { margin: 0; color: #e9d5ff; line-height: 1.5; }
+  .plan-mindset-block { background: rgba(0, 242, 254, 0.08); border-radius: 12px; padding: 16px; }
+  .plan-mindset-text { margin: 0; color: #d7f9ff; line-height: 1.5; }
   .plan-shopping-block { margin-bottom: 32px; }
   .plan-shopping-details {
-    border: 1px solid rgba(139, 92, 255, 0.25);
+    border: 1px solid rgba(0, 242, 254, 0.25);
     border-radius: 12px;
     background: rgba(30, 41, 59, 0.4);
   }
@@ -2832,11 +2832,11 @@ const planSectionStyles = `
     gap: 10px;
     font-size: 18px;
     font-weight: 600;
-    color: #e9d5ff;
+    color: #d7f9ff;
     user-select: none;
   }
   .plan-shopping-summary::-webkit-details-marker { display: none; }
-  .plan-shopping-summary:hover { background: rgba(139, 92, 255, 0.1); border-radius: 12px; }
+  .plan-shopping-summary:hover { background: rgba(0, 242, 254, 0.1); border-radius: 12px; }
   .plan-shopping-chevron { font-size: 12px; opacity: 0.8; }
   .plan-shopping-inner { padding: 0 18px 18px; }
   .plan-shopping-filter-wrap {
@@ -2853,7 +2853,7 @@ const planSectionStyles = `
   .plan-shopping-filter {
     padding: 8px 12px;
     border-radius: 8px;
-    border: 1px solid rgba(139, 92, 255, 0.4);
+    border: 1px solid rgba(0, 242, 254, 0.4);
     background: rgba(15, 15, 26, 0.9);
     color: #e2e8f0;
     font-size: 14px;
@@ -2876,12 +2876,12 @@ const planSectionStyles = `
     padding: 6px 10px;
     background: rgba(255,255,255,0.06);
     border-radius: 8px;
-    color: #e9d5ff;
+    color: #d7f9ff;
   }
   .plan-order-ingredients {
     margin-top: 16px;
     padding-top: 16px;
-    border-top: 1px solid rgba(139, 92, 255, 0.25);
+    border-top: 1px solid rgba(0, 242, 254, 0.25);
   }
   .plan-day-shopping-actions {
     margin: 12px 16px 16px;
@@ -2906,8 +2906,8 @@ const planSectionStyles = `
     align-items: center;
     gap: 8px;
     padding: 12px 20px;
-    background: linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%);
-    color: #fff;
+    background: linear-gradient(135deg, #00f2fe 0%, #38ef7d 100%);
+    color: #05070d;
     border: none;
     border-radius: 12px;
     font-size: 15px;
@@ -2917,16 +2917,16 @@ const planSectionStyles = `
   }
   .plan-btn-order:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4);
+    box-shadow: 0 4px 16px rgba(0, 242, 254, 0.4);
   }
   .plan-btn-share {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 10px 16px;
-    background: rgba(139, 92, 255, 0.25);
-    color: #e9d5ff;
-    border: 1px solid rgba(139, 92, 255, 0.4);
+    background: rgba(0, 242, 254, 0.25);
+    color: #d7f9ff;
+    border: 1px solid rgba(0, 242, 254, 0.4);
     border-radius: 10px;
     font-size: 14px;
     font-weight: 500;
@@ -2934,7 +2934,7 @@ const planSectionStyles = `
     transition: background 0.15s, transform 0.15s;
   }
   .plan-btn-share:hover:not(:disabled) {
-    background: rgba(139, 92, 255, 0.35);
+    background: rgba(0, 242, 254, 0.35);
     transform: translateY(-1px);
   }
   .plan-btn-share:disabled {
@@ -2956,7 +2956,7 @@ const planSectionStyles = `
     line-height: 1.5;
   }
   .plan-order-links a {
-    color: #a78bfa;
+    color: #7dd3fc;
     text-decoration: none;
   }
   .plan-order-links a:hover {
@@ -2969,8 +2969,8 @@ const planSectionStyles = `
     gap: 12px;
   }
   .plan-card {
-    background: linear-gradient(145deg, rgba(139, 92, 255, 0.12), rgba(99, 102, 241, 0.08));
-    border: 1px solid rgba(139, 92, 255, 0.25);
+    background: linear-gradient(145deg, rgba(0, 242, 254, 0.12), rgba(57, 255, 20, 0.08));
+    border: 1px solid rgba(0, 242, 254, 0.25);
     border-radius: 14px;
     padding: 14px;
     display: flex;
@@ -2992,7 +2992,7 @@ const planSectionStyles = `
   .plan-card-value {
     font-size: 14px;
     font-weight: 600;
-    color: #e9d5ff;
+    color: #d7f9ff;
     text-align: center;
   }
 
@@ -3008,13 +3008,13 @@ const planSectionStyles = `
     border-radius: 999px;
     padding: 12px 18px;
     text-align: center;
-    border: 2px solid rgba(167, 139, 250, 0.35);
+    border: 2px solid rgba(0, 242, 254, 0.35);
   }
   .plan-macro-value {
     display: block;
     font-size: 20px;
     font-weight: 700;
-    color: #a78bfa;
+    color: #7dd3fc;
   }
   .plan-macro-label {
     font-size: 12px;
@@ -3093,21 +3093,21 @@ const planSectionStyles = `
     line-height: 1.5;
     color: #94a3b8;
   }
-  .plan-day-today-compact-msg strong { color: #c4b5fd; }
+  .plan-day-today-compact-msg strong { color: #7dd3fc; }
   .plan-day-today-compact-btn {
     min-height: 44px;
     padding: 10px 16px;
     border-radius: 10px;
-    border: 1px solid rgba(167, 139, 250, 0.45);
-    background: rgba(124, 58, 237, 0.2);
-    color: #e9d5ff;
+    border: 1px solid rgba(0, 242, 254, 0.45);
+    background: rgba(0, 242, 254, 0.2);
+    color: #d7f9ff;
     font-weight: 700;
     font-size: 14px;
     cursor: pointer;
     font-family: inherit;
     white-space: nowrap;
   }
-  .plan-day-today-compact-btn:hover { background: rgba(124, 58, 237, 0.32); }
+  .plan-day-today-compact-btn:hover { background: rgba(0, 242, 254, 0.32); }
   .plan-day-header-btn {
     display: flex;
     align-items: center;
@@ -3126,8 +3126,8 @@ const planSectionStyles = `
     padding: 14px 18px;
     font-size: 16px;
     font-weight: 600;
-    color: #c4b5fd;
-    background: rgba(139, 92, 255, 0.1);
+    color: #7dd3fc;
+    background: rgba(0, 242, 254, 0.1);
     border-bottom: 1px solid rgba(255,255,255,0.06);
     flex: 1;
   }
@@ -3136,7 +3136,7 @@ const planSectionStyles = `
     font-size: 12px;
     color: #94a3b8;
   }
-  .plan-day-expanded .plan-day-chevron { color: #c4b5fd; }
+  .plan-day-expanded .plan-day-chevron { color: #7dd3fc; }
   .plan-day-collapsed .plan-day-header-static {
     cursor: pointer;
   }
@@ -3162,9 +3162,9 @@ const planSectionStyles = `
     min-height: 44px;
     padding: 10px 16px;
     border-radius: 10px;
-    border: 1px solid rgba(167, 139, 250, 0.45);
-    background: rgba(124, 58, 237, 0.2);
-    color: #e9d5ff;
+    border: 1px solid rgba(0, 242, 254, 0.45);
+    background: rgba(0, 242, 254, 0.2);
+    color: #d7f9ff;
     font-weight: 700;
     font-size: 14px;
     cursor: pointer;
@@ -3195,11 +3195,11 @@ const planSectionStyles = `
     display: block;
   }
   .plan-day-peek-line-training {
-    color: #c4b5fd;
+    color: #7dd3fc;
     font-weight: 600;
   }
   .plan-day-peek-btn:hover {
-    background: rgba(124, 58, 237, 0.1);
+    background: rgba(0, 242, 254, 0.1);
     color: #e2e8f0;
   }
   .plan-day-nav {
@@ -3211,19 +3211,19 @@ const planSectionStyles = `
     flex-wrap: wrap;
   }
   .plan-day-nav-link {
-    color: #a78bfa;
+    color: #7dd3fc;
     text-decoration: none;
     font-size: 14px;
     font-weight: 500;
   }
-  .plan-day-nav-link:hover { color: #c4b5fd; text-decoration: underline; }
+  .plan-day-nav-link:hover { color: #7dd3fc; text-decoration: underline; }
   .plan-day-nav-sep { color: #64748b; font-size: 12px; }
   .plan-day-nav-static {
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: #a78bfa;
+    color: #7dd3fc;
   }
   .plan-meals {
     display: grid;
@@ -3264,7 +3264,7 @@ const planSectionStyles = `
     color: #f1f5f9;
     margin: 0 0 8px;
     padding-bottom: 8px;
-    border-bottom: 1px solid rgba(139, 92, 255, 0.3);
+    border-bottom: 1px solid rgba(0, 242, 254, 0.3);
     letter-spacing: -0.02em;
     line-height: 1.3;
   }
@@ -3274,7 +3274,7 @@ const planSectionStyles = `
     color: #94a3b8;
     line-height: 1.6;
   }
-  .plan-day-training-intro strong { color: #c4b5fd; }
+  .plan-day-training-intro strong { color: #7dd3fc; }
   .plan-day-training-list {
     margin: 0;
     padding-left: 0;
@@ -3321,9 +3321,9 @@ const planSectionStyles = `
     cursor: pointer;
   }
   .plan-day-training-header-btn:hover .plan-day-training-toggle-hint {
-    background: rgba(124, 58, 237, 0.35);
+    background: rgba(0, 242, 254, 0.35);
     border-color: rgba(167, 139, 253, 0.6);
-    color: #e9d5ff;
+    color: #d7f9ff;
   }
   .plan-day-training-text {
     display: block;
@@ -3338,9 +3338,9 @@ const planSectionStyles = `
     padding: 8px 14px;
     font-size: 14px;
     font-weight: 600;
-    color: #c4b5fd;
-    background: rgba(124, 58, 237, 0.25);
-    border: 1px solid rgba(139, 92, 255, 0.45);
+    color: #7dd3fc;
+    background: rgba(0, 242, 254, 0.25);
+    border: 1px solid rgba(0, 242, 254, 0.45);
     border-radius: 10px;
     transition: background 0.2s, border-color 0.2s, color 0.2s;
   }
@@ -3364,7 +3364,7 @@ const planSectionStyles = `
     line-height: 1.55;
   }
   .plan-day-training-detail-block:last-child { margin-bottom: 0; }
-  .plan-day-training-detail-block strong { display: block; margin-bottom: 4px; color: #a78bfa; font-size: 13px; }
+  .plan-day-training-detail-block strong { display: block; margin-bottom: 4px; color: #7dd3fc; font-size: 13px; }
   .plan-day-training-detail-block p { margin: 0; line-height: 1.6; }
   .plan-day-training-equipment {
     margin-top: 8px;
@@ -3375,7 +3375,7 @@ const planSectionStyles = `
   }
   .plan-day-equip-line { margin: 0 0 4px; line-height: 1.4; }
   .plan-day-equip-line:last-child { margin-bottom: 0; }
-  .plan-day-equip-line strong { color: #c4b5fd; font-weight: 600; }
+  .plan-day-equip-line strong { color: #7dd3fc; font-weight: 600; }
   .plan-day-training :global(p) { margin: 0 0 8px; }
   .plan-day-training :global(p:last-child) { margin-bottom: 0; }
   .plan-day-training :global(ul) { margin: 0; padding-left: 20px; }
@@ -3400,7 +3400,7 @@ const planSectionStyles = `
     width: 48px;
     height: 48px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%);
+    background: linear-gradient(135deg, #00f2fe 0%, #38ef7d 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3425,16 +3425,16 @@ const planSectionStyles = `
     font-weight: 600;
     letter-spacing: 1.5px;
     text-transform: uppercase;
-    color: #7c3aed;
+    color: #00f2fe;
     margin-bottom: 4px;
   }
   .plan-meal-recipe-btn {
     flex-shrink: 0;
     padding: 10px 18px;
     border-radius: 999px;
-    border: 1px solid rgba(124, 58, 237, 0.75);
-    background: linear-gradient(135deg, rgba(124, 58, 237, 0.92), rgba(99, 102, 241, 0.92));
-    color: #f8fafc;
+    border: 1px solid rgba(0, 242, 254, 0.5);
+    background: rgba(0, 242, 254, 0.14);
+    color: #d7f9ff;
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
@@ -3444,8 +3444,8 @@ const planSectionStyles = `
     width: 100%;
   }
   .plan-meal-recipe-btn:hover {
-    background: rgba(124, 58, 237, 0.4);
-    border-color: rgba(167, 139, 250, 0.65);
+    background: rgba(0, 242, 254, 0.4);
+    border-color: rgba(0, 242, 254, 0.65);
   }
   .plan-meal-secondary-btn {
     font-size: 11px;
@@ -3461,9 +3461,9 @@ const planSectionStyles = `
     justify-content: center;
   }
   .plan-meal-secondary-btn:hover {
-    border-color: rgba(167, 139, 250, 0.6);
-    color: #e9d5ff;
-    background: rgba(124, 58, 237, 0.12);
+    border-color: rgba(0, 242, 254, 0.6);
+    color: #d7f9ff;
+    background: rgba(0, 242, 254, 0.12);
   }
   .plan-recipe-modal-overlay {
     position: fixed;
@@ -3519,7 +3519,7 @@ const planSectionStyles = `
   .plan-recipe-modal-header h3 {
     margin: 0;
     font-size: 18px;
-    color: #e9d5ff;
+    color: #d7f9ff;
   }
   .plan-recipe-modal-close {
     background: rgba(255,255,255,0.1);
@@ -3544,7 +3544,7 @@ const planSectionStyles = `
     display: inline-block;
     width: 32px;
     height: 32px;
-    border: 3px solid rgba(139, 92, 255, 0.3);
+    border: 3px solid rgba(0, 242, 254, 0.3);
     border-top-color: #9b5cff;
     border-radius: 50%;
     animation: plan-spin 0.8s linear infinite;
@@ -3576,7 +3576,7 @@ const planSectionStyles = `
     margin: 0 0 16px;
   }
   .plan-recipe-modal-body :global(p) { margin: 10px 0; }
-  .plan-recipe-modal-body :global(b) { color: #e9d5ff; }
+  .plan-recipe-modal-body :global(b) { color: #d7f9ff; }
   .plan-recipe-modal-body :global(ul) { margin: 10px 0; padding-left: 20px; }
   .plan-recipe-modal-body :global(.plan-no-recipe-msg) {
     color: #fbbf24;
@@ -3612,7 +3612,7 @@ const planSectionStyles = `
     margin: 0 0 12px;
     font-size: 14px;
     font-weight: 600;
-    color: #e9d5ff;
+    color: #d7f9ff;
   }
   .plan-recipe-modal-body :global(.recipe-nutrients) {
     display: flex;
@@ -3734,7 +3734,7 @@ const planSectionStyles = `
     line-height: inherit;
   }
   .plan-meal-name-html :global(b) {
-    color: #e9d5ff;
+    color: #d7f9ff;
   }
   .plan-meal-macros {
     display: flex;
@@ -3773,7 +3773,7 @@ const planSectionStyles = `
     object-fit: contain;
     margin: 12px 0 0;
     border-radius: 14px;
-    border: 1px solid rgba(167, 139, 250, 0.25);
+    border: 1px solid rgba(0, 242, 254, 0.25);
     background: rgba(15, 23, 42, 0.45);
   }
   video.plan-exercise-media {
@@ -3786,7 +3786,7 @@ const planSectionStyles = `
     background: none;
     font: inherit;
     font-weight: 600;
-    color: #e9d5ff;
+    color: #d7f9ff;
     text-align: left;
     cursor: pointer;
     text-decoration: underline;
@@ -3827,7 +3827,7 @@ const planSectionStyles = `
     padding: 10px 12px;
     font-size: 12px;
     font-weight: 700;
-    color: #ddd6fe;
+    color: #a5eaf7;
     line-height: 1.35;
   }
   .plan-meal-ingredients-summary::-webkit-details-marker {
@@ -3866,7 +3866,7 @@ const planSectionStyles = `
     flex: 1 1 auto;
     min-width: 0;
   }
-  .plan-meal-swap:hover { color: #c4b5fd; border-color: rgba(139, 92, 255, 0.5); }
+  .plan-meal-swap:hover { color: #7dd3fc; border-color: rgba(0, 242, 254, 0.5); }
   .plan-meal-pin {
     font-size: 11px;
     color: #94a3b8;
@@ -3878,30 +3878,30 @@ const planSectionStyles = `
     flex: 1 1 auto;
     min-width: 0;
   }
-  .plan-meal-pin:hover { color: #22c55e; border-color: rgba(34, 197, 94, 0.5); }
+  .plan-meal-pin:hover { color: #39ff14; border-color: rgba(57, 255, 20, 0.5); }
   .plan-meal-pin-active {
-    color: #22c55e;
-    border-color: rgba(34, 197, 94, 0.5);
+    color: #39ff14;
+    border-color: rgba(57, 255, 20, 0.5);
   }
   .plan-pin-toast {
     display: block;
     margin-top: 6px;
     font-size: 12px;
-    color: #22c55e;
+    color: #39ff14;
   }
   .plan-pin-toast-error { color: #f87171; }
   .plan-export-row { padding-top: 0; }
   .plan-export-btn {
     padding: 10px 18px;
-    background: rgba(139, 92, 255, 0.2);
-    border: 1px solid rgba(139, 92, 255, 0.4);
+    background: rgba(0, 242, 254, 0.2);
+    border: 1px solid rgba(0, 242, 254, 0.4);
     border-radius: 12px;
-    color: #e9d5ff;
+    color: #d7f9ff;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
   }
-  .plan-export-btn:hover { background: rgba(139, 92, 255, 0.3); }
+  .plan-export-btn:hover { background: rgba(0, 242, 254, 0.3); }
   .plan-recipe-modal-actions { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08); }
   .plan-meal-ingredients-modal .plan-recipe-modal-actions {
     display: flex;
@@ -3947,10 +3947,10 @@ const planSectionStyles = `
   .plan-recipe-modal-replace-btn {
     width: 100%;
     padding: 12px 16px;
-    background: linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%);
+    background: linear-gradient(135deg, #00f2fe 0%, #38ef7d 100%);
     border: none;
     border-radius: 10px;
-    color: #fff;
+    color: #05070d;
     font-weight: 600;
     cursor: pointer;
   }
@@ -3965,7 +3965,7 @@ const planSectionStyles = `
   .plan-recipe-card summary {
     padding: 14px 18px;
     font-weight: 600;
-    color: #c4b5fd;
+    color: #7dd3fc;
     cursor: pointer;
     list-style: none;
   }
@@ -3983,7 +3983,7 @@ const planSectionStyles = `
     line-height: 1.6;
   }
   .plan-recipe-body :global(p) { margin: 8px 0; }
-  .plan-recipe-body :global(b) { color: #e9d5ff; }
+  .plan-recipe-body :global(b) { color: #d7f9ff; }
 
   .plan-expandable {
     margin-top: 24px;
@@ -3991,7 +3991,7 @@ const planSectionStyles = `
   .plan-toggle {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #a78bfa;
+    color: #7dd3fc;
     padding: 14px 20px;
     border-radius: 12px;
     cursor: pointer;
@@ -4014,15 +4014,15 @@ const planSectionStyles = `
     line-height: 1.7;
   }
   .plan-full-content :global(h2) { color: #fff; font-size: 22px; margin: 0 0 16px; }
-  .plan-full-content :global(h3) { color: #e9d5ff; font-size: 17px; margin: 20px 0 10px; }
-  .plan-full-content :global(h4) { color: #c4b5fd; font-size: 15px; margin: 14px 0 8px; }
+  .plan-full-content :global(h3) { color: #d7f9ff; font-size: 17px; margin: 20px 0 10px; }
+  .plan-full-content :global(h4) { color: #7dd3fc; font-size: 15px; margin: 14px 0 8px; }
   .plan-full-content :global(p) { margin: 8px 0; color: #cbd5e1; }
   .plan-full-content :global(ul), .plan-full-content :global(ol) { margin: 12px 0; padding-left: 24px; }
   .plan-full-content :global(li) { margin: 6px 0; color: #cbd5e1; }
-  .plan-full-content :global(b) { color: #e9d5ff; }
+  .plan-full-content :global(b) { color: #d7f9ff; }
 
   .plan-macros { margin-bottom: 24px; }
-  .plan-macros h3 { font-size: 18px; margin-bottom: 12px; color: #e9d5ff; }
+  .plan-macros h3 { font-size: 18px; margin-bottom: 12px; color: #d7f9ff; }
   .plan-macros-content {
     background: rgba(255, 255, 255, 0.03);
     padding: 16px;
@@ -4035,7 +4035,7 @@ const planSectionStyles = `
     padding: 20px;
   }
   .empty-plan a {
-    color: #a78bfa;
+    color: #7dd3fc;
     text-decoration: underline;
   }
 

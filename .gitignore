@@ -12,3 +12,13 @@ backups/
 zaloha*/
 .env.local
 .env
+
+# Build a cache artefakty - nepatri do gitu
+.next/
+.cache/
+tmp/
+.specstory/
+.vercel/
+
+# *.sql vyse ignoruje i DB migrace - ty sledovat musime
+!supabase/migrations/*.sql

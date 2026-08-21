@@ -6,3 +6,9 @@ coverage/
 *.log
 .env*
 !.env.example
+
+*.sql
+backups/
+zaloha*/
+.env.local
+.env

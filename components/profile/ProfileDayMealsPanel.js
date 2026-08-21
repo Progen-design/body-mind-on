@@ -16,6 +16,7 @@ import {
   STITEK,
   TLACITKO,
   TLACITKO_HLAVNI,
+  TLACITKO_IKONA,
   akcentJidla,
   podilyMaker,
 } from '../../lib/profile/designTokens.js';
@@ -214,7 +215,7 @@ export default function ProfileDayMealsPanel({
                     </div>
                     <button
                       type="button"
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#00f2fe]/45 bg-[#00f2fe]/15 text-[#e0f2fe] transition-colors hover:bg-[#00f2fe]/30"
+                      className={TLACITKO_IKONA}
                       onClick={() => onExerciseClick?.(xi)}
                       title="Jak cvik provést"
                       aria-label={`Jak provést cvik ${name}`}

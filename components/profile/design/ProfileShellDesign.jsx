@@ -254,7 +254,7 @@ export function ProfileUserCard({
               type="button"
               onClick={onZmenitFoto}
               disabled={nahravam}
-              className="mt-1 border-0 bg-transparent p-0 text-[11px] font-semibold text-neutral-400 underline-offset-2 transition-colors hover:text-[#00f2fe] hover:underline disabled:opacity-60"
+              className="-ml-1 mt-0.5 min-h-[28px] rounded-md border-0 bg-transparent px-1 py-1 text-[11px] font-semibold text-neutral-400 underline-offset-2 transition-colors hover:text-[#00f2fe] hover:underline disabled:opacity-60"
             >
               {nahravam ? 'Nahrávám…' : 'Změnit foto'}
             </button>

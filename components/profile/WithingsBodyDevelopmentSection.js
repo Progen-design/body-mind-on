@@ -330,6 +330,9 @@ export default function WithingsBodyDevelopmentSection({ profile, onLatestWeight
             pripojeno={connected}
             synchronizuje={syncing}
             poslednePřed={measuredAt ? formatDateTime(measuredAt) : null}
+            automatickyPred={latestData?.connection?.last_sync_at
+              ? formatDateTime(latestData.connection.last_sync_at)
+              : null}
             hlaska={message}
             onSync={() => runSync(session?.access_token)}
             onConnect={startConnect}

@@ -14,10 +14,12 @@
 name: AI Scheduler (every 5 min)
 
 on:
-  schedule:
-    # Runs every 5 minutes. GitHub Actions has ~1 min jitter; that is acceptable.
-    - cron: "*/5 * * * *"
-  # Allow manual trigger from GitHub Actions UI for debugging
+  # VYPNUTO 2026-08-21: cron každých 5 minut trvale padal a zaplavoval Actions
+  # červenými běhy, protože v repu nejsou secrets APP_URL a CRON_SECRET.
+  # Až budou nastavené, stačí odkomentovat blok schedule níže.
+  # schedule:
+  #   - cron: "*/5 * * * *"
+  # Manuální spuštění z GitHub Actions UI zůstává funkční.
   workflow_dispatch:
 
 jobs:

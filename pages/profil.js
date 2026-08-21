@@ -3464,7 +3464,12 @@ export default function Profil() {
       <style jsx>{`
         .page {
           min-height: 100vh;
-          padding: max(4px, env(safe-area-inset-top)) clamp(0.75rem, 4vw, 1.25rem) 56px;
+          /* Vodorovné odsazení je proměnná, ne opsané clamp(). Horní lišta
+             se o ně opírá zápornou marží, aby šla od kraje ke kraji; když
+             byly hodnoty na dvou místech, rozešly se a lišta přetekla
+             viewport o 7 px. */
+          --page-pad: clamp(0.75rem, 4vw, 1.25rem);
+          padding: max(4px, env(safe-area-inset-top)) var(--page-pad) 56px;
           margin: 0;
           background: transparent;
           color: #e2e8f0;
@@ -3473,12 +3478,31 @@ export default function Profil() {
           -moz-osx-font-smoothing: grayscale;
           text-rendering: optimizeLegibility;
           position: relative;
-          overflow-x: hidden;
+          /* clip, ne hidden — hidden zaklada scroll kontejner a sebral by
+             horni liste position: sticky. */
+          overflow-x: clip;
         }
+        /* Horní lišta je z pravidla vyjmutá. Deklarace position: relative má
+           vyšší specificitu než Tailwindová třída sticky a sebrala by liště
+           přilepení k hornímu okraji — při scrollu by odjela pryč.
+           (Bez zpětných apostrofů: jsme uvnitř styled-jsx šablony.) */
         .page-bg-decor::before,
-        .page > *:not(.page-bg-decor) {
+        .page > *:not(.page-bg-decor):not(.profile-topbar) {
           position: relative;
           z-index: 1;
+        }
+        .page > .profile-topbar { z-index: 30; }
+
+        /* Kotvy pod lepivou lištou. Bez tohohle by scrollIntoView z horní
+           navigace odscrolloval cíl přesně pod lištu a uživatel by viděl
+           začátek sekce schovaný za sklem. */
+        #profile-today-heading,
+        #profile-today-meals,
+        #profile-today-workout,
+        #profile-regenerace,
+        #plan-nakupni-seznam,
+        .profile-bubble {
+          scroll-margin-top: 84px;
         }
 
         /* ── TOP profil: jeden hero panel, profil úplně napravo ── */
@@ -3995,7 +4019,9 @@ export default function Profil() {
           .profile-hero-title { font-size: 22px; }
           .profile-hero-tagline { font-size: 13px; }
           .profile-hero-date { font-size: 12px; }
-          .profile-membership-plan-card { padding: 14px 16px 18px; margin-bottom: 16px; }
+          /* Mezera 10 px jako mezi ostatními bloky — mobil měl 16 a jako
+             jediný rozestup na stránce vybočoval. */
+          .profile-membership-plan-card { padding: 14px 16px 18px; margin-bottom: 10px; }
           .membership-card-row { flex-direction: column; align-items: stretch; gap: 14px; flex-wrap: wrap; }
           .membership-card-left { min-width: 0; order: 2; }
           .membership-card-right { order: 1; flex-direction: column; align-items: stretch; gap: 10px; flex-shrink: 0; }
@@ -4047,7 +4073,8 @@ export default function Profil() {
 
         @media (max-width: 480px) {
           .page {
-            padding-inline: clamp(0.75rem, 3vw, 1rem);
+            --page-pad: clamp(0.75rem, 3vw, 1rem);
+            padding-inline: var(--page-pad);
           }
           .profile-main-stack,
           .profile-bubbles--trainer {
@@ -5923,7 +5950,8 @@ export default function Profil() {
 
         @media (max-width: 640px) {
           .page {
-            padding: max(8px, env(safe-area-inset-top)) clamp(0.75rem, 4vw, 1rem) 80px;
+            --page-pad: clamp(0.75rem, 4vw, 1rem);
+            padding: max(8px, env(safe-area-inset-top)) var(--page-pad) 80px;
             width: 100%;
             box-sizing: border-box;
           }
@@ -6008,13 +6036,15 @@ export default function Profil() {
         }
         @media (max-width: 480px) {
           .page {
-            padding-inline: clamp(0.75rem, 3vw, 1rem);
+            --page-pad: clamp(0.75rem, 3vw, 1rem);
+            padding-inline: var(--page-pad);
             padding-block-end: 80px;
           }
         }
         @media (max-width: 380px) {
           .page {
-            padding-inline: clamp(0.5rem, 3vw, 0.75rem);
+            --page-pad: clamp(0.5rem, 3vw, 0.75rem);
+            padding-inline: var(--page-pad);
             padding-block-end: 80px;
           }
           .progress-big-num { font-size: 20px; }

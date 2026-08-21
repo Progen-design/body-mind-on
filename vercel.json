@@ -10,7 +10,7 @@
             },
             {
                   "path": "/api/cron/withings-sync",
-                  "schedule": "0 5 * * *"
+                  "schedule": "0 * * * *"
             },
             {
                   "path": "/api/cron/apple-health-daily-review",

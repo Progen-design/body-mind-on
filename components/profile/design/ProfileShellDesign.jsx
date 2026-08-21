@@ -28,6 +28,9 @@ import {
   ZALOZKA,
   ZALOZKA_AKTIVNI,
   ZALOZKY_LISTA,
+  LISTA_OBSAH,
+  LISTA_SKLO,
+  SIRKA_OBSAHU,
 } from '../../../lib/profile/designTokens.js';
 
 /** Barva odznaku podle stavu členství. Význam, ne vkus. */
@@ -58,7 +61,17 @@ export function ProfileTopBar({
   zarizeni = [],
 }) {
   return (
-    <header className="relative z-30 mb-1 flex items-center justify-between px-1 py-2 sm:px-2 sm:py-3">
+    /* LIŠTA JE PŘES CELOU ŠÍŘKU, JEJÍ OBSAH NE.
+       Pozadí a spodní linka jdou od kraje ke kraji, ale logo a menu sedí
+       v `LISTA_OBSAH` — tedy na stejné mřížce (max 1180 px) jako karty pod
+       lištou. Do 21. 8. 2026 byly obojí zarovnané k okraji okna a lišta
+       o 102 px na každou stranu nesedla s ničím pod sebou.
+
+       `profile-topbar` není jen kosmetika: pravidlo `.page > *:not(...)`
+       v profil.js nastavuje všem dětem `position: relative` a přebilo by
+       `sticky`. Třída je z toho pravidla vyjmutá. */
+    <header className={`profile-topbar sticky top-0 z-30 mb-1 -mx-[var(--page-pad)] px-[var(--page-pad)] py-2 sm:py-3 ${LISTA_SKLO}`}>
+      <div className={LISTA_OBSAH}>
       {/* Značka je zpátky: globální `Header.js` se na profilu už nevykresluje,
           takže tahle lišta je jediná. Krátce tu místo ní stál štítek „Profil“,
           který se na úzkých displejích ořezával na „ROFIL“. */}
@@ -78,6 +91,8 @@ export function ProfileTopBar({
       >
         {isMenuOpen ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
       </button>
+
+      </div>
 
       <AnimatePresence>
         {isMenuOpen ? (
@@ -191,7 +206,10 @@ export function ProfileUserCard({
   const iniciala = String(jmeno || '').trim().charAt(0).toUpperCase() || '?';
 
   return (
-    <div className={`${SKLO} relative mb-2.5 overflow-hidden p-3.5 sm:p-4`}>
+    /* SIRKA_OBSAHU, ne plná šířka. Karta stojí přímo v `.page`, takže bez
+       omezení roste na celou stránku — naměřeno 1400 px proti 1180 px
+       u sekcí pod ní a byla to nejnápadnější nezarovnaná věc na profilu. */
+    <div className={`${SKLO} ${SIRKA_OBSAHU} relative mb-2.5 overflow-hidden p-3.5 sm:p-4`}>
       <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[#00f2fe]/10 blur-2xl" aria-hidden />
       <div className="pointer-events-none absolute -bottom-12 -left-12 h-36 w-36 rounded-full bg-[#39ff14]/10 blur-2xl" aria-hidden />
 

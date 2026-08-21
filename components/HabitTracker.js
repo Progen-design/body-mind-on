@@ -412,7 +412,11 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
     <section className="habit-tracker">
       <div className="ht-top">
         <div className="ht-top-text">
-          <h2 className="ht-title">Denní návyky</h2>
+          {/* Nadpis „Denní návyky“ tu NENÍ. Komponenta se vykresluje výhradně
+              uvnitř bubliny `#denni-navyky`, jejíž hlavička ho už nese —
+              stejná duplicita jako u „Tvé milníky“ a „Historie tréninků“
+              ve fázi 1. Prázdný stav níž si vlastní nadpis nechává, protože
+              se vykresluje bez zbytku hlavičky. */}
           <p className="ht-date ht-date-active" aria-live="polite">
             {displayDateStr === todayStr ? (
               <>Aktivní den: <strong>{todayFormatted}</strong> (dnes)</>
@@ -652,7 +656,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         }
         .ht-chart-bar-fill.pos {
           border-radius: 6px 6px 0 0;
-          background: linear-gradient(180deg, #34d399, #10b981);
+          background: linear-gradient(180deg, #39ff14, #22c55e);
           box-shadow: 0 0 12px rgba(52,211,153,0.4);
         }
         .ht-chart-bar-fill.neg {
@@ -661,7 +665,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           box-shadow: 0 0 10px rgba(248,113,113,0.35);
         }
         .ht-chart-bar.today .ht-chart-bar-fill.pos {
-          background: linear-gradient(180deg, #34d399, #10b981);
+          background: linear-gradient(180deg, #39ff14, #22c55e);
           box-shadow: 0 0 14px rgba(52,211,153,0.6), 0 0 0 2px rgba(255,255,255,0.4);
         }
         .ht-chart-bar.today .ht-chart-bar-fill.neg {
@@ -671,17 +675,17 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         .ht-chart-bar-value {
           font-size: 0.625rem; font-weight: 600; color: #94a3b8;
         }
-        .ht-chart-bar-value .ht-bar-pos { color: #34d399; }
+        .ht-chart-bar-value .ht-bar-pos { color: #39ff14; }
         .ht-chart-bar-value .ht-bar-neg { color: #f87171; }
         .ht-chart-bar-value .ht-bar-sep { color: #64748b; margin: 0 1px; font-weight: 400; }
-        .ht-chart-bar.today .ht-chart-bar-value .ht-bar-pos { color: #34d399; }
+        .ht-chart-bar.today .ht-chart-bar-value .ht-bar-pos { color: #39ff14; }
         .ht-chart-bar.today .ht-chart-bar-value .ht-bar-neg { color: #f87171; }
         .ht-chart-labels {
           display: flex; justify-content: space-between; gap: 6px;
           font-size: 0.5625rem; color: #64748b; font-weight: 500;
         }
         .ht-chart-label { flex: 1; min-width: 0; text-align: center; font-size: 0.625rem; }
-        .ht-chart-label.today { color: #34d399; font-weight: 700; }
+        .ht-chart-label.today { color: #39ff14; font-weight: 700; }
 
         @media (max-width: 720px) {
           .ht-chart-wrap { padding: 20px 16px; }
@@ -759,7 +763,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         .ht-prog-bar-wrap { width: 130px; height: 4px; background: rgba(255,255,255,0.06); border-radius: 999px; overflow: hidden; }
         .ht-prog-bar {
           height: 100%; border-radius: 999px;
-          background: linear-gradient(90deg, #34d399, #10b981, #059669);
+          background: linear-gradient(90deg, #39ff14, #22c55e, #15803d);
           transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
           box-shadow: 0 0 10px rgba(52,211,153,0.55);
         }
@@ -877,11 +881,11 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
           font-size: 0.625rem; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase;
           padding: 16px 2px 8px;
         }
-        .hg-section-bar.pos { color: #34d399; }
+        .hg-section-bar.pos { color: #39ff14; }
         .hg-section-bar.neg { color: #f87171; }
         .hg-section-dot {
           width: 7px; height: 7px; border-radius: 50%;
-          background: #22c55e; box-shadow: 0 0 8px #22c55e; flex-shrink: 0;
+          background: #39ff14; box-shadow: 0 0 8px #39ff14; flex-shrink: 0;
           animation: ht-pulse 2.5s ease-in-out infinite;
         }
         .hg-section-dot.neg { background: #f87171; box-shadow: 0 0 8px #f87171; }
@@ -972,7 +976,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         /* Completed */
         .hg-cell.done {
           background-color: transparent;
-          background-image: linear-gradient(145deg, #22c55e 0%, #15803d 100%);
+          background-image: linear-gradient(145deg, #39ff14 0%, #15803d 100%);
           border-color: transparent;
           box-shadow: 0 4px 16px rgba(34,197,94,0.45), 0 0 0 1px rgba(74,222,128,0.25) inset;
           color: #fff;
@@ -1025,7 +1029,7 @@ export default function HabitTracker({ session, userHabits, onToast, onHabitSave
         }
         .ht-spin-lg {
           width: 36px; height: 36px; border-radius: 50%;
-          border: 3px solid rgba(255,255,255,0.06); border-top-color: #34d399;
+          border: 3px solid rgba(255,255,255,0.06); border-top-color: #00f2fe;
           animation: hg-spin 0.9s linear infinite; display: block;
         }
         .ht-error {

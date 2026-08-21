@@ -454,13 +454,15 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
                 <div className="text-xs font-bold text-slate-100">{todayWorkout.durationMin} min</div>
               </div>
             </div>
-            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center gap-2">
-              <Flame className="w-3.5 h-3.5 text-orange-400" />
-              <div>
-                <div className="text-[9px] text-slate-400 uppercase">Výdej</div>
-                <div className="text-xs font-bold text-slate-100">~{todayWorkout.caloriesBurned} kcal</div>
+            {todayWorkout.caloriesBurned > 0 && (
+              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center gap-2">
+                <Flame className="w-3.5 h-3.5 text-orange-400" />
+                <div>
+                  <div className="text-[9px] text-slate-400 uppercase">Výdej</div>
+                  <div className="text-xs font-bold text-slate-100">~{todayWorkout.caloriesBurned} kcal</div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Progress bar */}

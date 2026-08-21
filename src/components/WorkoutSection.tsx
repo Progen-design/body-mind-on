@@ -182,7 +182,10 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
                     {i + 1}. {ex.name}
                   </h5>
                   <p className="text-xs text-slate-400">
-                    Cíl: {ex.targetMuscle} • Pauza: {ex.restSec} s
+                    {/* Generátor nevrací cílový sval ani pauzu — radši nic než vymyšlené číslo. */}
+                    {ex.targetMuscle && <>Cíl: {ex.targetMuscle}</>}
+                    {ex.targetMuscle && ex.restSec > 0 && ' • '}
+                    {ex.restSec > 0 && <>Pauza: {ex.restSec} s</>}
                   </p>
                 </div>
               </div>

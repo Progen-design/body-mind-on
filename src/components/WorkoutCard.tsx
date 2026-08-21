@@ -57,13 +57,16 @@ export const WorkoutCard: React.FC<WorkoutCardProps> = ({
               <div className="text-xs font-bold text-slate-200">{todayWorkout.durationMin} min</div>
             </div>
           </div>
-          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center gap-2">
-            <Flame className="w-3.5 h-3.5 text-orange-400" />
-            <div>
-              <div className="text-[10px] text-slate-400 uppercase font-medium">Spáleno</div>
-              <div className="text-xs font-bold text-slate-200">~{todayWorkout.caloriesBurned} kcal</div>
+          {/* Výdej u plánovaného tréninku neměříme — dlaždice se skryje celá. */}
+          {todayWorkout.caloriesBurned > 0 && (
+            <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center gap-2">
+              <Flame className="w-3.5 h-3.5 text-orange-400" />
+              <div>
+                <div className="text-[10px] text-slate-400 uppercase font-medium">Spáleno</div>
+                <div className="text-xs font-bold text-slate-200">~{todayWorkout.caloriesBurned} kcal</div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Workout completion progress */}

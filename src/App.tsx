@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from './components/Header';
 import { UserProfileCard } from './components/UserProfileCard';
 import { AICoachBanner } from './components/AICoachBanner';
@@ -29,6 +29,10 @@ import { LoginScreen } from './components/LoginScreen';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { StartRegistrace } from './components/registrace/StartRegistrace';
 import { naviguj, useCesta } from './routing';
+import { useProfilData } from './hooks/useProfilData';
+import {
+  naJidla, naNavyky, naPreference, naProfil, naTreninky, naVazeni, naZlozvyky, vyberPlan
+} from './data/adaptery';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import {
@@ -57,6 +61,7 @@ import {
   MealItem,
   WorkoutDay,
   HabitItem,
+  BadHabitItem,
   ShoppingItem,
   UserPreferences,
   ExerciseItem,
@@ -95,17 +100,18 @@ function AppContent() {
   // ať se dva lidé na jednom zařízení nemíchají.
   const scope = account?.id ?? 'guest';
 
-  // Central State Management (trvale uložený v localStorage)
+  // Data vlastnena serverem. Nejdou do localStorage - jedina pravda je /api/profile.
+  const { data: profilData, nacitam: nacitamProfil, chyba: chybaProfilu } =
+    useProfilData(isAuthenticated);
+
   const [activeTab, setActiveTab] = useState<ActiveTab>('dnes');
-  const [profile] = useLocalStorage<UserProfile>(`${scope}:profile`, initialProfile, mergeObject);
-  const [weightRecords, setWeightRecords] = useLocalStorage<Record<string, WeightRecord[]>>(
-    `${scope}:weight-records`,
-    initialWeightRecords
-  );
-  const [meals, setMeals] = useLocalStorage<MealItem[]>(`${scope}:meals`, initialMeals);
-  const [workouts, setWorkouts] = useLocalStorage<WorkoutDay[]>(`${scope}:workouts`, weeklyWorkouts);
-  const [habits, setHabits] = useLocalStorage<HabitItem[]>(`${scope}:habits`, initialHabits);
-  const [badHabits] = useLocalStorage(`${scope}:bad-habits`, initialBadHabits);
+  const [profile, setProfile] = useState<UserProfile>(initialProfile);
+  const [weightRecords, setWeightRecords] =
+    useState<Record<string, WeightRecord[]>>(initialWeightRecords);
+  const [meals, setMeals] = useState<MealItem[]>([]);
+  const [workouts, setWorkouts] = useState<WorkoutDay[]>([]);
+  const [habits, setHabits] = useState<HabitItem[]>([]);
+  const [badHabits, setBadHabits] = useState<BadHabitItem[]>([]);
   const [habitHistory] = useLocalStorage(`${scope}:habit-history`, habitHistoryWeek);
   const [shoppingItems, setShoppingItems] = useLocalStorage<ShoppingItem[]>(
     `${scope}:shopping`,
@@ -127,6 +133,23 @@ function AppContent() {
     mergeObject
   );
   const [coachTips] = useState(initialCoachTips);
+
+  // Prevod odpovedi serveru na tvary, ktere ceka UI. Bezi jednou po nacteni.
+  useEffect(() => {
+    if (!profilData) return;
+    const plan = vyberPlan(profilData.plans);
+    setProfile(naProfil(profilData));
+    setMeals(naJidla(plan));
+    setWorkouts(naTreninky(plan));
+    setHabits(naNavyky(profilData.user_habits));
+    setBadHabits(naZlozvyky(profilData.user_habits));
+    setPreferences((p) => naPreference(profilData, p));
+
+    const vazeni = naVazeni(profilData);
+    if (vazeni.length > 0) {
+      setWeightRecords({ '1M': vazeni, '3M': vazeni, '6M': vazeni, '1R': vazeni });
+    }
+  }, [profilData, setPreferences]);
 
   // Latest Measurement Record (data jdou z úložiště, proto s pojistkou)
   const monthRecords = weightRecords['1M']?.length ? weightRecords['1M'] : initialWeightRecords['1M'];
@@ -354,6 +377,34 @@ function AppContent() {
         onPrejitNaRegistraci={() => naviguj('/start')}
         onPrihlasen={(kam) => naviguj(kam)}
       />
+    );
+  }
+
+  // Nez dorazi /api/profile, neukazujeme prazdny plan - vypadalo by to,
+  // ze uzivatel zadny nema.
+  if (nacitamProfil) {
+    return (
+      <div className="min-h-screen bg-[#08090d] flex flex-col items-center justify-center gap-3">
+        <div className="w-8 h-8 rounded-full border-2 border-slate-800 border-t-[#39ff14] animate-spin" />
+        <p className="text-xs text-slate-500">Načítám tvůj plán…</p>
+      </div>
+    );
+  }
+
+  if (chybaProfilu) {
+    return (
+      <div className="min-h-screen bg-[#08090d] flex items-center justify-center p-4">
+        <div className="max-w-sm w-full rounded-3xl bg-[#0c1017] border border-rose-500/30 p-6 text-center">
+          <p className="text-sm text-rose-300 mb-1">Profil se nepodařilo načíst.</p>
+          <p className="text-xs text-slate-500 mb-4">{chybaProfilu}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2.5 rounded-2xl bg-[#39ff14] text-[#08090d] font-bold text-sm"
+          >
+            Zkusit znovu
+          </button>
+        </div>
+      </div>
     );
   }
 

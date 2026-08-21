@@ -225,7 +225,9 @@ export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
                     {idx + 1}. {ex.name}
                   </h4>
                   <p className="text-xs text-slate-400">
-                    Cílový sval: {ex.targetMuscle} • Pauza {ex.restSec}s
+                    {ex.targetMuscle && <>Cílový sval: {ex.targetMuscle}</>}
+                    {ex.targetMuscle && ex.restSec > 0 && ' • '}
+                    {ex.restSec > 0 && <>Pauza {ex.restSec}s</>}
                   </p>
                 </div>
               </div>

@@ -112,10 +112,13 @@ export const WeeklyWorkoutModal: React.FC<WeeklyWorkoutModalProps> = ({
                 <Clock className="w-3.5 h-3.5 text-cyan-400" />
                 <span>{currentDay.durationMin} min</span>
               </div>
-              <div className="px-3 py-1.5 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs text-slate-300 flex items-center gap-1.5">
-                <Flame className="w-3.5 h-3.5 text-orange-400" />
-                <span>~{currentDay.caloriesBurned} kcal</span>
-              </div>
+              {/* Spálené kalorie u plánovaného tréninku neměříme — odznak se skryje celý. */}
+              {currentDay.caloriesBurned > 0 && (
+                <div className="px-3 py-1.5 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs text-slate-300 flex items-center gap-1.5">
+                  <Flame className="w-3.5 h-3.5 text-orange-400" />
+                  <span>~{currentDay.caloriesBurned} kcal</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -152,7 +155,11 @@ export const WeeklyWorkoutModal: React.FC<WeeklyWorkoutModalProps> = ({
                       {idx + 1}. {exercise.name}
                     </div>
                     <div className="text-xs text-slate-400 mt-0.5">
-                      Cíl: <span className="text-cyan-400">{exercise.targetMuscle}</span> • Pauza: {exercise.restSec} s
+                      {exercise.targetMuscle && (
+                        <>Cíl: <span className="text-cyan-400">{exercise.targetMuscle}</span></>
+                      )}
+                      {exercise.targetMuscle && exercise.restSec > 0 && ' • '}
+                      {exercise.restSec > 0 && <>Pauza: {exercise.restSec} s</>}
                     </div>
                   </div>
                 </div>

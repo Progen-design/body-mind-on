@@ -11,6 +11,11 @@ import { REGISTRATION_STEPS } from '@lib/registrationRules.js';
 import { POSITIVE_HABITS, NEGATIVE_HABITS, getSuggestedHabits } from '@lib/habits.js';
 import { TRAINING_ENVIRONMENT_OPTIONS, EQUIPMENT_OPTIONS } from '@lib/trainingEnvironment.js';
 import { supabase } from '@lib/supabaseClient.js';
+import {
+  fetchRegistrationEmailAvailable,
+  EMAIL_TAKEN_MESSAGE_CS,
+  EMAIL_CHECK_FAILED_MESSAGE_CS
+} from '@lib/registration/checkEmailAvailableClient.js';
 import { Krokovac, Pole, Vicenasobny, Vyber, Popisek, Chyba } from './prvky';
 import { AKTIVITA, CIL, CHYTRA_VAHA, DIETA, DNY, FREKVENCE, KROKY, POHLAVI, STRES, TYP_PRACE } from './volby';
 
@@ -46,6 +51,8 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
   const [chyby, setChyby] = useState<Record<string, string>>({});
   const [stav, setStav] = useState<{ typ: 'chyba' | 'ok'; text: string } | null>(null);
   const [odesilam, setOdesilam] = useState(false);
+  const [overuji, setOveruji] = useState(false);
+  const [uctExistuje, setUctExistuje] = useState(false);
 
   const zmen = <K extends keyof Formular>(klic: K, hodnota: Formular[K]) => {
     setData((d) => ({ ...d, [klic]: hodnota }));
@@ -95,12 +102,31 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
     return {};
   };
 
-  const dal = () => {
+  const dal = async () => {
     const e = chybyKroku(krok);
     if (Object.keys(e).length > 0) {
       setChyby((c) => ({ ...c, ...e }));
       return;
     }
+
+    // Obsazeny e-mail zjistime uz na kroku 1. Driv se to poznalo az po odeslani
+    // celeho dotazniku, takze uzivatel vyplnil pet kroku zbytecne.
+    if (krok === 1) {
+      setOveruji(true);
+      const vysledek = await fetchRegistrationEmailAvailable(data.email);
+      setOveruji(false);
+      if (!vysledek.available) {
+        if (vysledek.networkError || vysledek.rateLimited) {
+          setStav({ typ: 'chyba', text: EMAIL_CHECK_FAILED_MESSAGE_CS });
+          return;
+        }
+        setChyby((c) => ({ ...c, email: EMAIL_TAKEN_MESSAGE_CS }));
+        setUctExistuje(true);
+        return;
+      }
+      setUctExistuje(false);
+    }
+
     setStav(null);
     setKrok((k) => Math.min(k + 1, REGISTRATION_STEPS as number));
   };
@@ -116,8 +142,12 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
     if (/Výška musí být/i.test(zprava)) { setChyby({ height: zprava }); setKrok(2); return true; }
     if (/Váha musí být/i.test(zprava)) { setChyby({ weight: zprava }); setKrok(2); return true; }
     if (/Věk musí být|datum narození/i.test(zprava)) { setChyby({ birth_date: zprava }); setKrok(2); return true; }
-    if (/e-mail už|už je registrovaný|already/i.test(zprava)) {
-      setChyby({ email: 'Tenhle e-mail už je registrovaný. Přihlas se, nebo použij jiný.' });
+    // Shoda na vyznamu, ne na presnem zneni. Predchozi vzor hledal "e-mail už",
+    // jenze API pise "e-mailem už existuje" - uzivatel pak zustal na kroku 5
+    // s chybou o poli, ktere je o ctyri kroky zpatky.
+    if (/už existuje|už je registrovan|nelze opakovat|already (registered|exists)/i.test(zprava)) {
+      setChyby({ email: EMAIL_TAKEN_MESSAGE_CS });
+      setUctExistuje(true);
       setKrok(1);
       return true;
     }
@@ -206,6 +236,22 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
       <Pole id="passwordConfirm" popisek="Heslo znovu" type="password" value={data.passwordConfirm}
         chyba={chyby.passwordConfirm} autoComplete="new-password" placeholder="Pro kontrolu"
         onChange={(e) => zmen('passwordConfirm', e.target.value)} />
+
+      {/* Slepá ulička: účet existuje. Nabídneme rovnou cestu ven, ne jen chybu. */}
+      {uctExistuje && (
+        <div className="p-3.5 rounded-2xl bg-slate-900/70 border border-cyan-500/30">
+          <p className="text-xs text-slate-300 mb-2.5">
+            Na tenhle e-mail už účet máš. Registraci opakovat nejde — přihlas se.
+          </p>
+          <button
+            type="button"
+            onClick={onZpetNaPrihlaseni}
+            className="w-full py-2.5 rounded-xl bg-[#39ff14] text-[#08090d] font-bold text-xs"
+          >
+            Přejít na přihlášení
+          </button>
+        </div>
+      )}
     </div>
   );
 
@@ -393,12 +439,18 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
           <button
             type="button"
             onClick={posledni ? odeslat : dal}
-            disabled={odesilam}
+            disabled={odesilam || overuji}
             className="flex-1 py-3 rounded-2xl bg-[#39ff14] text-[#08090d] font-bold text-sm shadow-[0_0_24px_rgba(57,255,20,0.35)] transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {odesilam && <Loader2 className="w-4 h-4 animate-spin" />}
-            {odesilam ? 'Připravuji tvůj plán…' : posledni ? 'Vytvořit účet a plán' : 'Pokračovat'}
-            {!odesilam && !posledni && <ArrowRight className="w-4 h-4" />}
+            {(odesilam || overuji) && <Loader2 className="w-4 h-4 animate-spin" />}
+            {odesilam
+              ? 'Připravuji tvůj plán…'
+              : overuji
+                ? 'Ověřuji e-mail…'
+                : posledni
+                  ? 'Vytvořit účet a plán'
+                  : 'Pokračovat'}
+            {!odesilam && !overuji && !posledni && <ArrowRight className="w-4 h-4" />}
           </button>
         </div>
 

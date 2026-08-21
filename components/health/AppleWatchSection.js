@@ -68,7 +68,7 @@ export default function AppleWatchSection({
 
       <div className="health-charts-grid">
         <HealthLineChart
-          title="HRV — vývoj (30 dní)"
+          title="HRV (variabilita tepu) — vývoj (30 dní)"
           statusLine={hrvStatus}
           unit="ms"
           points={hrvPoints}

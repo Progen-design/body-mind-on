@@ -166,7 +166,8 @@ export function formatMetricUnitLabel(unit: string | null | undefined): string {
   const u = String(unit || '').trim();
   if (!u || u === 'count') return '';
   const map: Record<string, string> = {
-    'count/min': 'bpm',
+    // „bpm“ je anglická zkratka; v české aplikaci se píše „tepů/min“.
+    'count/min': 'tepů/min',
     kcal: 'kcal',
     min: 'min',
     km: 'km',

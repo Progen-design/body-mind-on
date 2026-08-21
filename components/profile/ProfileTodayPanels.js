@@ -3,6 +3,7 @@ import { resolveDayCalorieTarget, sumDayNutrition } from '../../lib/mealNutritio
 import MacroRatioChart from '../MacroRatioChart.js';
 import { formatExerciseSetsRepsDisplay } from '../../lib/planDataIntegrity.js';
 import ProfileDayMealsPanel from './ProfileDayMealsPanel.js';
+import { seskupCviky, stojiZaSeskupeni } from '../../lib/profile/cvikSkupiny.js';
 import DailyAdherenceStatus from './DailyAdherenceStatus.js';
 import WorkoutChangeModal from '../workout/WorkoutChangeModal.jsx';
 import { HabitUiProgressBar } from '../habit/HabitUiPrimitives';
@@ -333,8 +334,16 @@ export default function ProfileTodayPanels({
                 </span>
               </label>
             )}
-            <ul className="m-0 grid list-none grid-cols-1 gap-2 p-0 min-[880px]:grid-cols-2">
-              {exercises.map((ex, xi) => {
+            {/* CVIKY PO PARTIÍCH, NE JEDEN PLOCHÝ SEZNAM.
+                U osmi cviků za sebou nešlo poznat, co se vlastně trénuje.
+                Partie i nářadí jsou v kanonickém registru cviků — nic se
+                nedopočítává; cvik, který v registru není, spadne do „Ostatní“.
+                Při jediné skupině se nadpis nevykresluje, jen by přidal řádek
+                bez informace. */}
+            {(() => {
+              const skupiny = seskupCviky(exercises, getCanonicalExercise);
+              const delit = stojiZaSeskupeni(skupiny);
+              const dlazdice = ({ cvik: ex, ikona, index: xi }) => {
                 // Název z kanonického registru — stejný zdroj jako zápis
                 // tréninku. Plán si nesl vlastní „Bench press“, zápis ukazoval
                 // „Tlak na lavici“ a byl to týž cvik.
@@ -344,6 +353,7 @@ export default function ProfileTodayPanels({
                 return (
                   <li key={xi} className={`${PANEL} flex min-w-0 items-center justify-between gap-2.5 px-3 py-2.5`}>
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <span className="shrink-0 text-base" aria-hidden>{ikona}</span>
                       <strong className="min-w-0 text-[15px] font-bold text-white">{name}</strong>
                       {part ? <span className="shrink-0 rounded-full border border-[#00f2fe]/35 bg-[#00f2fe]/12 px-2.5 py-0.5 text-xs font-bold text-[#7dd3fc]">{part}</span> : null}
                     </div>
@@ -358,8 +368,35 @@ export default function ProfileTodayPanels({
                     </button>
                   </li>
                 );
-              })}
-            </ul>
+              };
+
+              if (!delit) {
+                return (
+                  <ul className="m-0 grid list-none grid-cols-1 gap-2 p-0 min-[880px]:grid-cols-2">
+                    {skupiny.flatMap((g) => g.cviky).map(dlazdice)}
+                  </ul>
+                );
+              }
+
+              return (
+                <div className="flex flex-col gap-3.5">
+                  {skupiny.map((g) => (
+                    <div key={g.klic}>
+                      <h4 className="m-0 mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-neutral-400">
+                        <span aria-hidden>{g.ikona}</span>
+                        <span>{g.popisek}</span>
+                        <span className="font-medium text-neutral-500">
+                          {g.cviky.length} {g.cviky.length === 1 ? 'cvik' : g.cviky.length <= 4 ? 'cviky' : 'cviků'}
+                        </span>
+                      </h4>
+                      <ul className="m-0 grid list-none grid-cols-1 gap-2 p-0 min-[880px]:grid-cols-2">
+                        {g.cviky.map(dlazdice)}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
             {/* ZÁPIS PATŘÍ POD CVIKY, KTERÉ POPISUJE — A AŽ NA VYŽÁDÁNÍ.
                 Do 18. 8. 2026 se vykresloval úplně nahoře v profilu, odtržený
                 od „Dnešního tréninku“ — uživatel viděl tytéž cviky dvakrát,

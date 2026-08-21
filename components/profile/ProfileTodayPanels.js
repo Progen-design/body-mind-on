@@ -4,6 +4,7 @@ import MacroRatioChart from '../MacroRatioChart.js';
 import { formatExerciseSetsRepsDisplay } from '../../lib/planDataIntegrity.js';
 import ProfileDayMealsPanel from './ProfileDayMealsPanel.js';
 import { seskupCviky, stojiZaSeskupeni } from '../../lib/profile/cvikSkupiny.js';
+import { klicCviku, popisProbehu } from '../../lib/profile/cvikDokonceni.js';
 import DailyAdherenceStatus from './DailyAdherenceStatus.js';
 import WorkoutChangeModal from '../workout/WorkoutChangeModal.jsx';
 import { HabitUiProgressBar } from '../habit/HabitUiPrimitives';
@@ -11,8 +12,8 @@ import { mealActivityKey } from '../../lib/dailyActivationClient.js';
 import { useDailyActivation } from '../../hooks/useDailyActivation.js';
 import WorkoutLogSection from './WorkoutLogSection';
 import { getCanonicalExercise } from '../../lib/exerciseCanonicalMap';
-import { HelpCircle } from 'lucide-react';
-import { MAKRO, PANEL, STITEK, TLACITKO, podilyMaker } from '../../lib/profile/designTokens.js';
+import { Check, HelpCircle } from 'lucide-react';
+import { HOTOVO_RAM, HOTOVO_TEXT, MAKRO, PANEL, STITEK, TLACITKO, podilyMaker } from '../../lib/profile/designTokens.js';
 import { supabase } from '../../lib/supabaseClient';
 
 function envLabelPlain(trainingEnvironmentLabel, structuredPlan) {
@@ -117,8 +118,15 @@ export default function ProfileTodayPanels({
   const structDayEarly = todayDay?.structDay || structuredPlan?.days?.[planDayIdx];
   const mealsEarly = Array.isArray(todayDay?.meals) ? todayDay.meals : [];
   const workoutEarly = structDayEarly?.workout;
-  const hasWorkoutEarly = Array.isArray(workoutEarly?.exercises)
-    && workoutEarly.exercises.some((ex) => String(ex?.canonical_key || '').toLowerCase() !== 'rest');
+  /* Seznam cviků se počítá UŽ TADY, protože ho potřebuje `useDailyActivation`
+     (kolik cviků má trénink) a hook stojí nad zbytkem komponenty. Dřív tu byl
+     jen `hasWorkoutEarly` a předání `exercises.length` do hooku spadlo na
+     temporal dead zone — build prošel, běh ne. Filtr existuje jen jednou,
+     aby se počet v hooku nemohl rozejít se seznamem na obrazovce. */
+  const cvikyEarly = Array.isArray(workoutEarly?.exercises)
+    ? workoutEarly.exercises.filter((ex) => String(ex?.canonical_key || '').toLowerCase() !== 'rest')
+    : [];
+  const hasWorkoutEarly = cvikyEarly.length > 0;
 
   const {
     errorMsg: activationError,
@@ -134,11 +142,15 @@ export default function ProfileTodayPanels({
     isPending,
     toggleMeal,
     toggleWorkout,
+    isExerciseCompleted,
+    toggleExercise,
+    hotovychCviku,
   } = useDailyActivation({
     planId,
     planDay: Number.isFinite(planDayIdx) ? planDayIdx : 0,
     meals: mealsEarly,
     hasWorkout: hasWorkoutEarly,
+    pocetCviku: cvikyEarly.length,
   });
 
   if (!todayDay) return null;
@@ -157,10 +169,7 @@ export default function ProfileTodayPanels({
   const envPlain = envLabelPlain(trainingEnvironmentLabel, structuredPlan);
 
   const workout = workoutEarly;
-  const exercises = Array.isArray(workout?.exercises) ? workout.exercises.filter((ex) => {
-    const key = String(ex?.canonical_key || '').toLowerCase();
-    return key !== 'rest';
-  }) : [];
+  const exercises = cvikyEarly;
   const hasWorkout = exercises.length > 0;
   const workoutMinutes = Number(workout?.duration_minutes) || (exercises.length ? exercises.length * 8 : 0);
   const hasReplacementBackup = !!workout?.original_workout_backup;
@@ -275,6 +284,15 @@ export default function ProfileTodayPanels({
               <span>{exercises.length} cviků</span>
               <span aria-hidden>·</span>
               <span>{workoutMinutes ? `~${workoutMinutes} min` : 'dle plánu'}</span>
+              {/* Průběh se objeví, až se něco odškrtne — „0 z 8“ nikomu nic neřekne.
+                  Spálené kalorie tu NEJSOU: u naplánovaného tréninku je neměříme.
+                  U zaznamenaného z Apple Watch ano, ty ukazuje Historie tréninků. */}
+              {popisProbehu(hotovychCviku, exercises.length) ? (
+                <>
+                  <span aria-hidden>·</span>
+                  <span className={HOTOVO_TEXT}>{popisProbehu(hotovychCviku, exercises.length)}</span>
+                </>
+              ) : null}
             </p>
             {planId ? (
               <div className="profile-today-workout-actions">
@@ -350,11 +368,37 @@ export default function ProfileTodayPanels({
                 const name = getCanonicalExercise(ex.canonical_key)?.display_name_cs
                   || ex.display_name_cs || ex.name_cs || ex.name || 'Cvik';
                 const part = formatExerciseSetsRepsDisplay(ex);
+                const cvikHotovy = isExerciseCompleted(xi);
+                const cvikCeka = isPending('workout', klicCviku(xi));
                 return (
-                  <li key={xi} className={`${PANEL} flex min-w-0 items-center justify-between gap-2.5 px-3 py-2.5`}>
+                  <li
+                    key={xi}
+                    className={`${PANEL} flex min-w-0 items-center justify-between gap-2.5 px-3 py-2.5${cvikHotovy ? ` ${HOTOVO_RAM}` : ''}`}
+                  >
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      {/* Odškrtnutí jednotlivého cviku. Poslední zaškrtnutý
+                          dopíše i „celý trénink hotov“ — ruční přepínání
+                          toho zaškrtávátka níž zůstává funkční. */}
+                      <label
+                        className={`relative flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-colors ${
+                          cvikHotovy
+                            ? 'border-[#39ff14]/70 bg-[#39ff14]/20 text-[#39ff14]'
+                            : 'border-neutral-700 bg-[#11141e] text-transparent hover:border-neutral-500'
+                        }`}
+                        title={cvikHotovy ? 'Označit cvik jako nehotový' : 'Označit cvik jako hotový'}
+                      >
+                        <input
+                          type="checkbox"
+                          className="absolute inset-0 cursor-pointer opacity-0"
+                          checked={cvikHotovy}
+                          disabled={cvikCeka}
+                          onChange={() => toggleExercise(xi)}
+                          aria-label={cvikHotovy ? `Označit cvik ${name} jako nehotový` : `Označit cvik ${name} jako hotový`}
+                        />
+                        {cvikCeka ? <span className="text-[10px] text-neutral-400" aria-hidden>…</span> : <Check className="h-3.5 w-3.5" aria-hidden />}
+                      </label>
                       <span className="shrink-0 text-base" aria-hidden>{ikona}</span>
-                      <strong className="min-w-0 text-[15px] font-bold text-white">{name}</strong>
+                      <strong className={`min-w-0 text-[15px] font-bold ${cvikHotovy ? 'text-neutral-400 line-through' : 'text-white'}`}>{name}</strong>
                       {part ? <span className="shrink-0 rounded-full border border-[#00f2fe]/35 bg-[#00f2fe]/12 px-2.5 py-0.5 text-xs font-bold text-[#7dd3fc]">{part}</span> : null}
                     </div>
                     <button

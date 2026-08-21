@@ -74,7 +74,7 @@ const PRIMITIVES_STYLE = `
   .habit-ui-progress-bar {
     height: 100%;
     border-radius: 999px;
-    background: linear-gradient(90deg, #34d399, #10b981, #059669);
+    background: linear-gradient(90deg, #39ff14, #22c55e, #15803d);
     transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 0 10px rgba(52, 211, 153, 0.55);
   }
@@ -159,7 +159,7 @@ const PRIMITIVES_STYLE = `
     font-size: 14px;
     font-weight: 700;
     color: #fff;
-    background: var(--bmon-btn-primary, linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%));
+    background: linear-gradient(135deg, #00f2fe 0%, #38ef7d 100%);
     border: 1px solid rgba(14, 165, 233, 0.45);
     box-shadow: 0 8px 20px rgba(14, 165, 233, 0.25);
   }
@@ -177,7 +177,7 @@ const PRIMITIVES_STYLE = `
     font-size: 0.85rem;
   }
   .habit-ui-btn--pill-active {
-    background: var(--bmon-btn-primary, linear-gradient(135deg, #0EA5E9 0%, #A78BFA 100%));
+    background: linear-gradient(135deg, #00f2fe 0%, #38ef7d 100%);
     border-color: rgba(14, 165, 233, 0.45);
     color: #fff;
     box-shadow: 0 6px 16px rgba(14, 165, 233, 0.22);

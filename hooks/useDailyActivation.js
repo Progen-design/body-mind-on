@@ -5,12 +5,19 @@ import {
   completionsToSet,
   mealActivityKey,
 } from '../lib/dailyActivationClient';
+import {
+  KLIC_CELEHO_TRENINKU,
+  jeCvikHotovy,
+  klicCviku,
+  maSeDopsatCelyTrenink,
+  pocetHotovychCviku,
+} from '../lib/profile/cvikDokonceni.js';
 
 /**
  * Load + toggle daily meal/workout completions via /api/daily-activation.
  * Workout completion is also derived from get_daily_adherence (Apple Watch / movement).
  */
-export function useDailyActivation({ planId, planDay, meals, hasWorkout }) {
+export function useDailyActivation({ planId, planDay, meals, hasWorkout, pocetCviku = 0 }) {
   const [completions, setCompletions] = useState([]);
   const [adherence, setAdherence] = useState(null);
   const [optimistic, setOptimistic] = useState(null);
@@ -166,8 +173,40 @@ export function useDailyActivation({ planId, planDay, meals, hasWorkout }) {
   }, [completedSet, toggleActivity]);
 
   const toggleWorkout = useCallback(() => {
-    return toggleActivity('workout', 'plan_day', manualWorkoutDone);
+    return toggleActivity('workout', KLIC_CELEHO_TRENINKU, manualWorkoutDone);
   }, [toggleActivity, manualWorkoutDone]);
+
+  const isExerciseCompleted = useCallback(
+    (index) => jeCvikHotovy(completedSet, index),
+    [completedSet],
+  );
+
+  const hotovychCviku = useMemo(
+    () => pocetHotovychCviku(completedSet, pocetCviku),
+    [completedSet, pocetCviku],
+  );
+
+  /*
+   * Odškrtnutí posledního cviku ZAPÍŠE i dokončení celého tréninku — ne
+   * dopočítá. Kdyby se „hotovo“ jen odvozovalo, uživatel by celý trénink
+   * nemohl ručně odškrtnout zpátky: dopočet by ho hned zaškrtl znovu.
+   * Opačným směrem se nic neruší; kdo si zpětně opraví jeden řádek,
+   * nemá kvůli tomu přijít o zapsaný trénink.
+   */
+  const toggleExercise = useCallback(async (index) => {
+    const klic = klicCviku(index);
+    if (!klic) return;
+    const hotovy = jeCvikHotovy(completedSet, index);
+    const dopsat = maSeDopsatCelyTrenink({
+      hotove: completedSet,
+      pocetCviku,
+      index,
+      zaskrtava: !hotovy,
+    });
+
+    await toggleActivity('workout', klic, hotovy);
+    if (dopsat) await toggleActivity('workout', KLIC_CELEHO_TRENINKU, false);
+  }, [completedSet, pocetCviku, toggleActivity]);
 
   return {
     loading: loading || adherenceLoading,
@@ -178,13 +217,15 @@ export function useDailyActivation({ planId, planDay, meals, hasWorkout }) {
     manualWorkoutDone,
     watchWorkoutDetected,
     workoutAutoFromMovement,
-    manualWorkoutDone,
     adherence,
     adherenceLoading,
     isMealCompleted,
     isPending,
     toggleMeal,
     toggleWorkout,
+    isExerciseCompleted,
+    toggleExercise,
+    hotovychCviku,
     refetchAdherence: loadAdherence,
   };
 }

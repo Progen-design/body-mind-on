@@ -320,7 +320,7 @@ const styly = `
                     border-radius: 8px; border: 1px solid rgba(148,163,184,0.3);
                     background: #0f172a; color: #e2e8f0; }
   .wl-ok { margin-left: auto; padding: 9px 18px; border: 0; border-radius: 8px;
-           background: #0ea5e9; color: #fff; font-weight: 600; font-size: 0.88rem;
+           background: #00f2fe; color: #05070d; font-weight: 700; font-size: 0.88rem;
            cursor: pointer; }
   .wl-ok:disabled { opacity: 0.55; cursor: default; }
   .wl-skip { margin-top: 8px; padding: 0; border: 0; background: none;

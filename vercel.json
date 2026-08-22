@@ -68,60 +68,50 @@
     }
   ],
   "functions": {
-    "api/**/*.js": {
-      "includeFiles": "lib/**"
-    },
     "api/ai/run-scheduler.js": {
-      "maxDuration": 300,
-      "includeFiles": "lib/**"
+      "maxDuration": 300
     },
     "api/ai/run-coach-scheduler.js": {
-      "maxDuration": 120,
-      "includeFiles": "lib/**"
+      "maxDuration": 120
     },
     "api/body-metrics.js": {
-      "maxDuration": 90,
-      "includeFiles": "lib/**"
+      "maxDuration": 90
     },
     "api/cron/withings-sync.js": {
-      "maxDuration": 300,
-      "includeFiles": "lib/**"
+      "maxDuration": 300
     },
     "api/cron/lifecycle-email.js": {
-      "maxDuration": 120,
-      "includeFiles": "lib/**"
+      "maxDuration": 120
     },
     "api/cron/apple-health-daily-review.js": {
       "maxDuration": 300,
-      "includeFiles": "lib/**"
+      "includeFiles": "lib/health/**"
     },
     "api/cron/system-health-alert.js": {
-      "maxDuration": 60,
-      "includeFiles": "lib/**"
+      "maxDuration": 60
     },
     "api/cron/daily-adherence-sync.js": {
-      "maxDuration": 120,
-      "includeFiles": "lib/**"
+      "maxDuration": 120
     },
     "api/cron/shopping-normalize-audit.js": {
-      "maxDuration": 120,
-      "includeFiles": "lib/**"
+      "maxDuration": 120
     },
     "api/cron/import-spoonacular.js": {
-      "maxDuration": 300,
-      "includeFiles": "lib/**"
+      "maxDuration": 300
     },
     "api/cron/translate-recipes.js": {
       "maxDuration": 120,
       "includeFiles": "prompts/**"
     },
     "api/admin/import-spoonacular.js": {
-      "maxDuration": 300,
-      "includeFiles": "lib/**"
+      "maxDuration": 300
     },
     "api/admin/translate-recipes.js": {
       "maxDuration": 120,
       "includeFiles": "prompts/**"
+    },
+    "api/health/**/*.js": {
+      "includeFiles": "lib/health/**"
     }
   }
 }

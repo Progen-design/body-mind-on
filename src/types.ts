@@ -84,7 +84,6 @@ export interface HabitItem {
   title: string;
   subtitle?: string;
   completed: boolean;
-  streakDays: number;
   iconType: 'food' | 'sleep' | 'water' | 'steps' | 'mind';
   value?: string;
   target?: string;
@@ -99,15 +98,6 @@ export interface BadHabitItem {
   lastResistedNote?: string;
 }
 
-export interface HabitDayRecord {
-  dayShort: string;
-  dateStr: string;
-  foodDone: boolean;
-  sleepDone: boolean;
-  waterDone: boolean;
-  stepsDone: boolean;
-  noJunkDone: boolean;
-}
 
 export interface AppleWatchWorkoutItem {
   id: string;

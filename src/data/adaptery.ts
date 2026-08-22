@@ -7,6 +7,10 @@ import { POSITIVE_HABITS, NEGATIVE_HABITS } from '../../lib/habits.js';
 // serverem. Format se nesmi menit, rozparoval by uz ulozene radky.
 import { mealActivityKey } from '../../lib/dailyActivationClient.js';
 import { klicCviku, KLIC_CELEHO_TRENINKU } from '../../lib/profile/cvikDokonceni.js';
+// Stejny vypocet "dneska" jako na serveru (api/habits.js i daily-activation).
+// Vlastni new Date().toISOString() by po pulnoci UTC poslalo jine datum, nez
+// jake server prijme — a ten cokoliv jineho nez dnesek v Praze odmita.
+import { calendarDateIsoInPrague } from '../../lib/czechCalendar.js';
 import type {
   BadHabitItem, ExerciseItem, HabitItem, MealItem, ShoppingItem,
   UserPreferences, UserProfile, WeightRecord, WorkoutDay
@@ -24,6 +28,14 @@ export interface ProfilOdpoved {
   plans?: any[];
   workouts?: any[];
   daily_activity_completions?: DokonceniAktivity[];
+  habit_logs_progress?: ZaznamNavyku[];
+}
+
+/** Řádek `habit_logs`, jak ho vrací /api/profile v `habit_logs_progress`. */
+export interface ZaznamNavyku {
+  log_date: string;
+  habit_id: string;
+  completed?: boolean;
 }
 
 /** Řádek `daily_activity_completions`, jak ho vrací /api/profile. */
@@ -262,7 +274,35 @@ const IKONY: Record<string, HabitItem['iconType']> = {
   digital_detox_evening: 'mind'
 };
 
-export function naNavyky(userHabits: ProfilOdpoved['user_habits'] = []): HabitItem[] {
+/** Dnešek v Europe/Prague — stejná hranice dne, jakou hlídá api/habits.js. */
+export function dnesekPraha(): string {
+  return calendarDateIsoInPrague();
+}
+
+/**
+ * Návyky splněné dnes. Server posílá `habit_logs_progress` od registrace,
+ * tady z toho zbyde jen dnešek — jen ten jde v UI měnit.
+ */
+export function dnesniNavyky(logy: ZaznamNavyku[] = [], dnes = dnesekPraha()): Set<string> {
+  const s = new Set<string>();
+  for (const l of logy || []) {
+    if (l?.completed !== true) continue;
+    if (String(l.log_date).slice(0, 10) !== dnes) continue;
+    s.add(String(l.habit_id));
+  }
+  return s;
+}
+
+/**
+ * SÉRIE (STREAKY) TU NEJSOU SCHVÁLNĚ. `habit_logs` nese jen `log_date`,
+ * `habit_id`, `completed` a `notes` — žádnou sérii. Dřív se `streakDays`
+ * dopočítávalo v prohlížeči z ničeho: každé odškrtnutí přičetlo den, každé
+ * zrušení odečetlo, takže číslo neodpovídalo žádnému měření.
+ */
+export function naNavyky(
+  userHabits: ProfilOdpoved['user_habits'] = [],
+  hotoveDnes: Set<string> = new Set()
+): HabitItem[] {
   return (userHabits || [])
     .filter((h) => h.is_positive)
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
@@ -272,8 +312,7 @@ export function naNavyky(userHabits: ProfilOdpoved['user_habits'] = []): HabitIt
         id: h.habit_id,
         title: def?.label || h.habit_id,
         subtitle: def?.description,
-        completed: false,
-        streakDays: 0,
+        completed: hotoveDnes.has(h.habit_id),
         iconType: IKONY[h.habit_id] || 'mind'
       } as HabitItem;
     });

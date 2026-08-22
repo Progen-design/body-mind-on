@@ -5,7 +5,6 @@ import type {
   WorkoutDay,
   HabitItem,
   BadHabitItem,
-  HabitDayRecord,
   CoachTip,
   AppleWatchBiometrics,
   ShoppingItem,
@@ -400,7 +399,6 @@ export const initialHabits: HabitItem[] = [
     title: 'Vyvážené stravování',
     subtitle: 'Makro cíle splněny (B 19%, S 54%, T 27%)',
     completed: true,
-    streakDays: 14,
     iconType: 'food',
     value: '2 030 / 2 164 kcal',
     target: '2 164 kcal'
@@ -410,7 +408,6 @@ export const initialHabits: HabitItem[] = [
     title: 'Kvalitní spánek',
     subtitle: 'Hluboký spánek 2h 15m (89% efektivita)',
     completed: true,
-    streakDays: 9,
     iconType: 'sleep',
     value: '7 h 48 m',
     target: '7 h 30 m+'
@@ -420,7 +417,6 @@ export const initialHabits: HabitItem[] = [
     title: 'Pitný režim',
     subtitle: 'Denní hydratace a elektrolyty',
     completed: true,
-    streakDays: 21,
     iconType: 'water',
     value: '3,4 L',
     target: '3,5 L'
@@ -430,7 +426,6 @@ export const initialHabits: HabitItem[] = [
     title: 'Denní aktivita',
     subtitle: 'Kroky & NEAT pohyb',
     completed: false,
-    streakDays: 12,
     iconType: 'steps',
     value: '9 546 kroků',
     target: '10 000 kroků'
@@ -456,15 +451,6 @@ export const initialBadHabits: BadHabitItem[] = [
   }
 ];
 
-export const habitHistoryWeek: HabitDayRecord[] = [
-  { dayShort: 'PO', dateStr: '17.8.', foodDone: true, sleepDone: true, waterDone: true, stepsDone: true, noJunkDone: true },
-  { dayShort: 'ÚT', dateStr: '18.8.', foodDone: true, sleepDone: true, waterDone: true, stepsDone: true, noJunkDone: true },
-  { dayShort: 'ST', dateStr: '19.8.', foodDone: true, sleepDone: false, waterDone: true, stepsDone: true, noJunkDone: true },
-  { dayShort: 'ČT', dateStr: '20.8.', foodDone: true, sleepDone: true, waterDone: true, stepsDone: false, noJunkDone: true },
-  { dayShort: 'PÁ', dateStr: '21.8.', foodDone: false, sleepDone: false, waterDone: false, stepsDone: false, noJunkDone: true },
-  { dayShort: 'SO', dateStr: '22.8.', foodDone: false, sleepDone: false, waterDone: false, stepsDone: false, noJunkDone: true },
-  { dayShort: 'NE', dateStr: '23.8.', foodDone: false, sleepDone: false, waterDone: false, stepsDone: false, noJunkDone: true }
-];
 
 export const initialCoachTips: CoachTip[] = [
   {

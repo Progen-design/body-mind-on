@@ -10,7 +10,6 @@ import { BodyCompositionSection } from './components/BodyCompositionSection';
 import { NutritionSection } from './components/NutritionSection';
 import { WorkoutSection } from './components/WorkoutSection';
 import { BiometricsSection } from './components/BiometricsSection';
-import { HabitsSection } from './components/HabitsSection';
 
 // Modals
 import { MealPlanModal } from './components/MealPlanModal';
@@ -33,9 +32,9 @@ import { useProfilData } from './hooks/useProfilData';
 import { useZdravotniData } from './hooks/useZdravotniData';
 import { naBiometrii, maZdravotniData } from './data/adapteryZdravi';
 import {
-  mnozinaDokonceni, naJidla, naNakupniSeznam, naNavyky, naPreference, naProfil,
-  naTreninky, naVazeni, naZlozvyky, pouzijDokonceni, pouzijDokonceniTreninku,
-  vyberPlan
+  dnesekPraha, dnesniNavyky, mnozinaDokonceni, naJidla, naNakupniSeznam, naNavyky,
+  naPreference, naProfil, naTreninky, naVazeni, naZlozvyky, pouzijDokonceni,
+  pouzijDokonceniTreninku, vyberPlan
 } from './data/adaptery';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -57,7 +56,6 @@ import {
   appleWatchBiometricsData,
   initialShoppingList,
   initialBadHabits,
-  habitHistoryWeek,
   initialPreferences
 } from './data/initialData';
 import {
@@ -105,8 +103,12 @@ function AppContent() {
   const scope = account?.id ?? 'guest';
 
   // Data vlastnena serverem. Nejdou do localStorage - jedina pravda je /api/profile.
-  const { data: profilData, nacitam: nacitamProfil, chyba: chybaProfilu } =
-    useProfilData(isAuthenticated);
+  const {
+    data: profilData,
+    nacitam: nacitamProfil,
+    chyba: chybaProfilu,
+    znovu: znovuNacistProfil
+  } = useProfilData(isAuthenticated);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('dnes');
   const [profile, setProfile] = useState<UserProfile>(initialProfile);
@@ -116,7 +118,6 @@ function AppContent() {
   const [workouts, setWorkouts] = useState<WorkoutDay[]>([]);
   const [habits, setHabits] = useState<HabitItem[]>([]);
   const [badHabits, setBadHabits] = useState<BadHabitItem[]>([]);
-  const [habitHistory] = useLocalStorage(`${scope}:habit-history`, habitHistoryWeek);
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
   const zdravi = useZdravotniData(isAuthenticated);
   const maBiometrii = maZdravotniData(zdravi.regenerace);
@@ -151,7 +152,7 @@ function AppContent() {
     const hotove = mnozinaDokonceni(profilData.daily_activity_completions);
     setMeals(pouzijDokonceni(naJidla(plan), 'meal', hotove));
     setWorkouts(pouzijDokonceniTreninku(naTreninky(plan), hotove));
-    setHabits(naNavyky(profilData.user_habits));
+    setHabits(naNavyky(profilData.user_habits, dnesniNavyky(profilData.habit_logs_progress)));
     // Seznam = polozky spocitane z jidelnicku + to, co si uzivatel dopsal sam.
     const zPlanu = naNakupniSeznam(plan);
     setShoppingItems(zPlanu);
@@ -223,6 +224,8 @@ function AppContent() {
   mealsRef.current = meals;
   const workoutsRef = useRef(workouts);
   workoutsRef.current = workouts;
+  const habitsRef = useRef(habits);
+  habitsRef.current = habits;
 
   /**
    * Zápis odškrtnutí na server. Vzor pro všechny zápisy v Etapě 2:
@@ -338,30 +341,79 @@ function AppContent() {
   // zahodi, co uzivatel napsal, je horsi nez ho nemit. Prislusna pole jsou
   // proto pryc i z MealPlanModal a WorkoutLoggerModal.
 
-  // Handlers: Habits
-  const handleToggleHabit = (id: string) => {
-    setHabits(prev =>
-      prev.map(h => {
-        if (h.id !== id) return h;
-        const nextCompleted = !h.completed;
-        return {
-          ...h,
-          completed: nextCompleted,
-          streakDays: nextCompleted ? h.streakDays + 1 : Math.max(0, h.streakDays - 1)
-        };
-      })
-    );
-  };
+  /**
+   * Handlers: Habits
+   *
+   * Datum je vzdy dnesek v Europe/Prague — stejnou hranici dne hlida
+   * api/habits.js a cokoli jineho odmita se 400. Minule dny se v UI menit
+   * nedaji: klikaci je pouze dnesni seznam navyku.
+   *
+   * Serie (streaky) tu nejsou. habit_logs zadnou nenese a driv se
+   * dopocitavaly v prohlizeci z niceho.
+   */
+  const zapisNavyk = useCallback(
+    async (telo: object): Promise<boolean> => {
+      try {
+        await apiFetch('/api/habits', { method: 'POST', body: JSON.stringify(telo) });
+        return true;
+      } catch (chyba) {
+        showToast({
+          title: jeNeaktivniClenstvi(chyba) ? 'Změnu jsme neuložili' : 'Nepodařilo se uložit návyk',
+          description:
+            chyba instanceof Error ? chyba.message : 'Zkus to prosím za chvíli znovu.',
+          variant: 'error'
+        });
+        return false;
+      }
+    },
+    [showToast]
+  );
 
-  const handleCompleteAllHabitsToday = () => {
-    setHabits(prev =>
-      prev.map(h => ({
-        ...h,
-        completed: true,
-        streakDays: h.completed ? h.streakDays : h.streakDays + 1
-      }))
-    );
-  };
+  const handleToggleHabit = useCallback(
+    async (id: string) => {
+      const navyk = habitsRef.current.find(h => h.id === id);
+      if (!navyk) return;
+
+      const hotovo = !navyk.completed;
+      setHabits(prev => prev.map(h => (h.id === id ? { ...h, completed: hotovo } : h)));
+
+      const ok = await zapisNavyk({
+        log_date: dnesekPraha(),
+        habit_id: id,
+        completed: hotovo
+      });
+      if (!ok) {
+        setHabits(prev => prev.map(h => (h.id === id ? { ...h, completed: !hotovo } : h)));
+      }
+    },
+    [zapisNavyk]
+  );
+
+  const handleCompleteAllHabitsToday = useCallback(async () => {
+    const zbyva = habitsRef.current.filter(h => !h.completed);
+    if (zbyva.length === 0) return;
+
+    setHabits(prev => prev.map(h => ({ ...h, completed: true })));
+
+    // Bez stropu. Server bere v davce nejvyse 24 polozek, ale POSITIVE_HABITS
+    // ma 10 a uzivatel si vybira z nich — pres limit se dostat neda. Kdyby
+    // seznam narostl nad 24, server prebytek tise zahodi; radsi at se to
+    // projevi jako rozpor proti /api/profile nez jako tiche ukrojeni tady.
+    const davka = zbyva.map(h => ({
+      log_date: dnesekPraha(),
+      habit_id: h.id,
+      completed: true
+    }));
+
+    const ok = await zapisNavyk({ batch: davka });
+    if (!ok) {
+      // ZADNY LOKALNI ROLLBACK. Server davku zpracovava v cyklu a pri chybe
+      // uprostred uz muze byt cast zapsana — navrat do stavu pred akci by
+      // ukazoval neco jineho, nez co je v databazi. Jediny spolehlivy stav
+      // je ten, ktery vrati server.
+      znovuNacistProfil();
+    }
+  }, [zapisNavyk, znovuNacistProfil]);
 
   // Handlers: Shopping List
   const handleToggleShoppingItem = (id: string) => {

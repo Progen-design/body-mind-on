@@ -7,15 +7,6 @@ export interface WeightRecord {
   note?: string;
 }
 
-export interface MacroItem {
-  name: string;
-  label: string;
-  current: number;
-  target: number;
-  percentage: number;
-  color: string;
-  textColor: string;
-}
 
 export interface RecipeDetail {
   prepTimeMin: number;

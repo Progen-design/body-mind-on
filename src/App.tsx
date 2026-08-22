@@ -44,6 +44,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { applyWeightRecord, formatLastSynced } from './lib/syncEngine';
 import { apiFetch, jeNeaktivniClenstvi } from './lib/api';
 import { dnesniTrenink } from './lib/trenink';
+import { sestavZapisTreninku } from './lib/zapisTreninku';
 
 // Initial Data
 import {
@@ -414,6 +415,62 @@ function AppContent() {
       znovuNacistProfil();
     }
   }, [zapisNavyk, znovuNacistProfil]);
+
+  /**
+   * Handlers: zapsany trenink
+   *
+   * Posila jen to, co uzivatel v modalu opravdu zadal — viz
+   * src/lib/zapisTreninku.ts. Modal dnes nema pole pro obtiznost ani pro typ
+   * treninku, takze se obe vynechavaji; nazev z planu ("Zada", "Hrudnik &
+   * Biceps") na vycet 13 hodnot nesedi a volny text by server ulozil jak
+   * prisel.
+   *
+   * Odskrtnute cviky se sem NEDUPLIKUJI — ty jdou pres /api/daily-activation
+   * cestou z 2.1.
+   */
+  const handleSaveWorkout = useCallback(
+    async (vstup: {
+      sekundyStopek: number;
+      obtiznost: string | null;
+      typ: string | null;
+    }): Promise<boolean> => {
+      // Typ ani obtiznost se neodvozuji z planu — nazev ("Zada") ani focus
+      // ("Varianta A") na vycet nesedi a odhadovat "silovy" by znamenalo
+      // vyplnit hodnotu, kterou uzivatel nezadal. Bud si vybere, nebo se pole
+      // neposle a server ulozi "Ostatni".
+      const telo = sestavZapisTreninku({
+        datum: dnesekPraha(),
+        sekundyStopek: vstup.sekundyStopek,
+        obtiznost: vstup.obtiznost,
+        typKandidat: vstup.typ
+      });
+
+      try {
+        await apiFetch('/api/workouts', { method: 'POST', body: JSON.stringify(telo) });
+        showToast({
+          title: 'Trénink zapsán',
+          description:
+            telo.duration_min !== undefined
+              ? `Zaznamenali jsme ${telo.duration_min} min.`
+              : 'Bez délky — stopky neběžely.',
+          variant: 'success'
+        });
+        // Historie treninku se pocita na serveru, takze si ji vyzvedneme znovu
+        // misto dopisovani do lokalniho stavu.
+        znovuNacistProfil();
+        return true;
+      } catch (chyba) {
+        showToast({
+          title: jeNeaktivniClenstvi(chyba) ? 'Trénink jsme neuložili' : 'Nepodařilo se uložit trénink',
+          description:
+            chyba instanceof Error ? chyba.message : 'Zkus to prosím za chvíli znovu.',
+          variant: 'error'
+        });
+        return false;
+      }
+    },
+    [showToast, znovuNacistProfil]
+  );
 
   // Handlers: Shopping List
   const handleToggleShoppingItem = (id: string) => {
@@ -886,6 +943,7 @@ function AppContent() {
         onClose={() => setIsWorkoutLoggerOpen(false)}
         todayWorkout={todayWorkout}
         onToggleExercise={handleToggleExercise}
+        onSaveWorkout={handleSaveWorkout}
       />
 
       <WithingsSyncModal

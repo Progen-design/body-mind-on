@@ -2,22 +2,10 @@
 import { supabaseServer } from '../lib/supabaseServer.js';
 import { createSupabaseUserClient } from '../lib/supabaseUserClient.js';
 import { requireActiveMembership } from '../lib/membershipHelpers.js';
+// Vycet je sdileny s SPA (src/lib/zapisTreninku.ts), aby klient posilal jen
+// hodnoty, ke kterym server umi doplnit popisek.
+import { WORKOUT_TYPE_LABELS } from '../lib/workoutTypes.js';
 
-const WORKOUT_TYPE_LABELS = {
-  silovy: 'Silový',
-  kardio: 'Kardio',
-  beh: 'Běh',
-  kolo: 'Kolo',
-  chuze: 'Chůze',
-  plavani: 'Plavání',
-  strečink: 'Strečink',
-  joga: 'Jóga',
-  nordic_walking: 'Nordic walking',
-  brusleni: 'Bruslení',
-  lyzovani: 'Lyžování',
-  sauna: 'Sauna',
-  ostatni: 'Ostatní',
-};
 
 function getAuthUser(req) {
   const auth = req.headers.authorization || '';

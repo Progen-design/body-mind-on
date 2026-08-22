@@ -14,24 +14,45 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { WorkoutDay, ExerciseItem } from '../types';
+import {
+  PERCEIVED_DIFFICULTIES,
+  PERCEIVED_DIFFICULTY_LABELS,
+  WORKOUT_TYPES,
+  WORKOUT_TYPE_LABELS
+} from '../../lib/workoutTypes.js';
 
 interface WorkoutLoggerModalProps {
   isOpen: boolean;
   onClose: () => void;
   todayWorkout: WorkoutDay;
   onToggleExercise: (dayName: string, exerciseId: string) => void;
+  /**
+   * Zapise trenink na server. Dostane jen to, co uzivatel zadal — modal nic
+   * neprepocitava ani nepredvyplnuje. Vraci true pri uspechu.
+   */
+  onSaveWorkout: (vstup: {
+    sekundyStopek: number;
+    obtiznost: string | null;
+    typ: string | null;
+  }) => Promise<boolean>;
 }
 
 export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
   isOpen,
   onClose,
   todayWorkout,
-  onToggleExercise
+  onToggleExercise,
+  onSaveWorkout
 }) => {
   // Timer state
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [restTimer, setRestTimer] = useState<number | null>(null);
+  const [uklada, setUklada] = useState(false);
+  // null = uzivatel nevybral. Nic neni predvolene: predvyplnena hodnota by
+  // byla odpoved, kterou nedal.
+  const [obtiznost, setObtiznost] = useState<string | null>(null);
+  const [typTreninku, setTypTreninku] = useState<string | null>(null);
 
   // New exercise form
 
@@ -67,6 +88,15 @@ export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
 
   const handleStartRest = (sec: number) => {
     setRestTimer(sec);
+  };
+
+  const handleSave = async () => {
+    if (uklada) return;
+    setUklada(true);
+    setIsTimerRunning(false);
+    const ok = await onSaveWorkout({ sekundyStopek: timerSeconds, obtiznost, typ: typTreninku });
+    setUklada(false);
+    if (ok) onClose();
   };
 
 
@@ -221,6 +251,62 @@ export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
           ))}
         </div>
 
+        {/* Jak to slo a co to bylo — obojí jde přeskočit */}
+        <div className="px-4 sm:px-5 pb-4 space-y-4 border-t border-slate-800 pt-4">
+          <div className="space-y-2">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Jak trénink šel?
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {PERCEIVED_DIFFICULTIES.map((klic: string) => {
+                const vybrano = obtiznost === klic;
+                return (
+                  <button
+                    key={klic}
+                    type="button"
+                    onClick={() => setObtiznost(vybrano ? null : klic)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all active:scale-95 ${
+                      vybrano
+                        ? 'bg-cyan-950/60 border-[#00f2fe]/60 text-[#00f2fe] shadow-[0_0_10px_rgba(0,242,254,0.2)]'
+                        : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                    }`}
+                  >
+                    {(PERCEIVED_DIFFICULTY_LABELS as Record<string, string>)[klic]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Typ tréninku
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {WORKOUT_TYPES.map((klic: string) => {
+                const vybrano = typTreninku === klic;
+                return (
+                  <button
+                    key={klic}
+                    type="button"
+                    onClick={() => setTypTreninku(vybrano ? null : klic)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all active:scale-95 ${
+                      vybrano
+                        ? 'bg-emerald-950/60 border-[#39ff14]/50 text-[#39ff14] shadow-[0_0_10px_rgba(57,255,20,0.18)]'
+                        : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                    }`}
+                  >
+                    {(WORKOUT_TYPE_LABELS as Record<string, string>)[klic]}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-slate-500">
+              Bez výběru se trénink uloží jako „Ostatní“. Vyplnit nemusíš.
+            </p>
+          </div>
+        </div>
+
         {/* Modal Footer */}
         <div className="p-4 sm:p-5 border-t border-slate-800 bg-slate-900/40 flex items-center justify-between">
           <button
@@ -231,11 +317,12 @@ export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
           </button>
 
           <button
-            onClick={onClose}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 text-white shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95"
+            onClick={handleSave}
+            disabled={uklada}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 text-white shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95 disabled:opacity-60"
           >
-            <Save className="w-4 h-4" />
-            <span>Uložit a dokončit trénink</span>
+            <Save className={`w-4 h-4 ${uklada ? 'animate-pulse' : ''}`} />
+            <span>{uklada ? 'Ukládám…' : 'Uložit a dokončit trénink'}</span>
           </button>
         </div>
       </motion.div>

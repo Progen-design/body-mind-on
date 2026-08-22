@@ -25,7 +25,8 @@ import {
   Dumbbell
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { UserProfile, UserPreferences, WeightRecord, AppleWatchBiometrics } from '../types';
+import { UserProfile, UserPreferences, WeightRecord, AppleWatchBiometrics, TelesneSlozeni } from '../types';
+import { hodnotaNeboPomlcka, kdyMereno, zmenaText } from '../data/adaptery';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -35,6 +36,8 @@ interface ProfileSectionProps {
   preferences: UserPreferences;
   latestWeightRecord: WeightRecord;
   biometrics: AppleWatchBiometrics;
+  /** Z chytre vahy. null = dlazdice slozeni se nezobrazi. */
+  slozeni?: TelesneSlozeni | null;
   onEditPreferences: () => void;
   onOpenCoachChat: () => void;
   onSyncAll: () => void;
@@ -47,6 +50,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   preferences,
   latestWeightRecord,
   biometrics,
+  slozeni = null,
   onEditPreferences,
   onOpenCoachChat,
   onSyncAll,
@@ -222,41 +226,45 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             <Scale className="w-4 h-4 text-cyan-400" />
           </div>
           <div className="text-2xl sm:text-3xl font-extrabold text-white">
-            {latestWeightRecord.weight.toString().replace('.', ',')} kg
-          </div>
-          <div className="flex items-center gap-1.5 text-xs text-[#39ff14] font-semibold mt-1">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>+2,7 kg (Svalový přírůstek)</span>
+            {hodnotaNeboPomlcka(latestWeightRecord?.weight, 'kg')}
           </div>
         </div>
 
-        {/* Tuk */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0e131d]/90 border border-cyan-500/25 shadow-lg">
-          <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-            <span>Tělesný tuk</span>
-            <Activity className="w-4 h-4 text-emerald-400" />
+        {/* Tuk — jen kdyz ho chytra vaha zmerila */}
+        {slozeni && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#0e131d]/90 border border-cyan-500/25 shadow-lg">
+            <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+              <span>Tělesný tuk</span>
+              <Activity className="w-4 h-4 text-emerald-400" />
+            </div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-white">
+              {hodnotaNeboPomlcka(slozeni.fat_percent, '%')}
+            </div>
+            {zmenaText(slozeni.zmena.fat_percent, '%') && (
+              <div className="text-xs text-slate-400 font-medium mt-1">
+                {zmenaText(slozeni.zmena.fat_percent, '%')} od minula
+              </div>
+            )}
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-white">
-            {latestWeightRecord.fatPercent.toString().replace('.', ',')} %
-          </div>
-          <div className="text-xs text-[#39ff14] font-semibold mt-1">
-            -0,3 % od posledního měření
-          </div>
-        </div>
+        )}
 
         {/* Svalová hmota */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0e131d]/90 border border-cyan-500/25 shadow-lg">
-          <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-            <span>Svalová hmota</span>
-            <Flame className="w-4 h-4 text-orange-400" />
+        {slozeni && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#0e131d]/90 border border-cyan-500/25 shadow-lg">
+            <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+              <span>Svalová hmota</span>
+              <Flame className="w-4 h-4 text-orange-400" />
+            </div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-white">
+              {hodnotaNeboPomlcka(slozeni.muscle_mass_kg, 'kg')}
+            </div>
+            {zmenaText(slozeni.zmena.muscle_mass_kg, 'kg') && (
+              <div className="text-xs text-slate-400 font-medium mt-1">
+                {zmenaText(slozeni.zmena.muscle_mass_kg, 'kg')} od minula
+              </div>
+            )}
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-white">
-            {latestWeightRecord.muscleKg.toString().replace('.', ',')} kg
-          </div>
-          <div className="text-xs text-slate-400 font-medium mt-1">
-            85 % z celkové hmotnosti
-          </div>
-        </div>
+        )}
 
         {/* Cílová váha */}
         <div className="p-4 sm:p-5 rounded-2xl bg-[#0e131d]/90 border border-cyan-500/25 shadow-lg">

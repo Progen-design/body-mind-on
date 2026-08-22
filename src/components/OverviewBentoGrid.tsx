@@ -28,9 +28,11 @@ import {
   HabitItem,
   BadHabitItem,
   CoachTip,
-  UserPreferences
+  UserPreferences,
+  TelesneSlozeni
 } from '../types';
 import { ActiveTab } from './NavigationTabs';
+import { hodnotaNeboPomlcka, kdyMereno, zmenaText } from '../data/adaptery';
 
 interface OverviewBentoGridProps {
   latestWeightRecord: WeightRecord;
@@ -41,6 +43,8 @@ interface OverviewBentoGridProps {
   badHabits: BadHabitItem[];
   coachTips: CoachTip[];
   preferences: UserPreferences;
+  /** Z chytre vahy. null = blok slozeni se nezobrazi. */
+  slozeni?: TelesneSlozeni | null;
   onSelectTab: (tab: ActiveTab) => void;
   onOpenWorkoutLogger: () => void;
   onOpenAddWeightModal: () => void;
@@ -60,6 +64,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
   badHabits,
   coachTips,
   preferences,
+  slozeni = null,
   onSelectTab,
   onOpenWorkoutLogger,
   onOpenAddWeightModal,
@@ -130,55 +135,51 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
                 Aktuální hmotnost
               </div>
               <div className="text-3xl sm:text-5xl font-black text-white tracking-tight flex items-baseline gap-2">
-                {latestWeightRecord.weight.toString().replace('.', ',')}
+                {hodnotaNeboPomlcka(latestWeightRecord?.weight)}
                 <span className="text-lg sm:text-xl font-bold text-cyan-400">kg</span>
               </div>
-              <div className="flex items-center gap-1.5 text-xs text-[#39ff14] font-bold mt-1">
-                <TrendingUp className="w-3.5 h-3.5" />
-                <span>+2,7 kg od zahájení (Svalový přírůstek)</span>
-              </div>
-            </div>
-
-            {/* Visual Sparkline Trend */}
-            <div className="flex sm:flex-col items-start sm:items-end justify-between sm:justify-center border-t sm:border-t-0 border-slate-800 pt-2 sm:pt-0">
-              <div className="text-xs text-slate-400 mb-1">Měsíční vývoj</div>
-              <div className="flex items-end gap-1.5 px-1 py-0.5">
-                <div className="w-2.5 bg-cyan-950 rounded-t h-4" />
-                <div className="w-2.5 bg-cyan-900 rounded-t h-5" />
-                <div className="w-2.5 bg-cyan-800 rounded-t h-6" />
-                <div className="w-2.5 bg-cyan-700 rounded-t h-5" />
-                <div className="w-2.5 bg-cyan-600 rounded-t h-7" />
-                <div className="w-2.5 bg-cyan-500 rounded-t h-6" />
-                <div className="w-2.5 bg-[#00f2fe] rounded-t h-9 shadow-[0_0_10px_#00f2fe]" />
-              </div>
-              <span className="text-[11px] font-bold text-cyan-300 mt-1">101,9 → 104,6 kg</span>
             </div>
           </div>
 
-          {/* Sub Metrics: Tuk, Svaly, BMI */}
-          <div className="grid grid-cols-3 gap-2.5 p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 mb-4">
-            <div>
-              <div className="text-[11px] text-slate-400 font-medium">Tělesný tuk</div>
-              <div className="text-base sm:text-xl font-black text-white mt-0.5">
-                {latestWeightRecord.fatPercent.toString().replace('.', ',')} %
+          {/* Slozeni tela z chytre vahy. Bez mereni se blok nezobrazuje —
+              driv tu svitily nuly a vymyslene delty. */}
+          {slozeni && (
+            <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 mb-4">
+              <div className="grid grid-cols-3 gap-2.5">
+                <div>
+                  <div className="text-[11px] text-slate-400 font-medium">Tělesný tuk</div>
+                  <div className="text-base sm:text-xl font-black text-white mt-0.5">
+                    {hodnotaNeboPomlcka(slozeni.fat_percent, '%')}
+                  </div>
+                  {zmenaText(slozeni.zmena.fat_percent, '%') && (
+                    <div className="text-[10px] text-slate-400 font-medium">
+                      {zmenaText(slozeni.zmena.fat_percent, '%')} od minula
+                    </div>
+                  )}
+                </div>
+                <div className="border-l border-slate-800 pl-3">
+                  <div className="text-[11px] text-slate-400 font-medium">Svalová hmota</div>
+                  <div className="text-base sm:text-xl font-black text-[#00f2fe] mt-0.5">
+                    {hodnotaNeboPomlcka(slozeni.muscle_mass_kg, 'kg')}
+                  </div>
+                  {zmenaText(slozeni.zmena.muscle_mass_kg, 'kg') && (
+                    <div className="text-[10px] text-slate-400 font-medium">
+                      {zmenaText(slozeni.zmena.muscle_mass_kg, 'kg')} od minula
+                    </div>
+                  )}
+                </div>
+                <div className="border-l border-slate-800 pl-3">
+                  <div className="text-[11px] text-slate-400 font-medium">BMI Index</div>
+                  <div className="text-base sm:text-xl font-black text-white mt-0.5">
+                    {hodnotaNeboPomlcka(slozeni.bmi)}
+                  </div>
+                </div>
               </div>
-              <div className="text-[10px] text-[#39ff14] font-semibold">-0,3 % (spalování)</div>
-            </div>
-            <div className="border-l border-slate-800 pl-3">
-              <div className="text-[11px] text-slate-400 font-medium">Svalová hmota</div>
-              <div className="text-base sm:text-xl font-black text-[#00f2fe] mt-0.5">
-                {latestWeightRecord.muscleKg.toString().replace('.', ',')} kg
+              <div className="text-[10px] text-slate-500 mt-2">
+                Změřeno {kdyMereno(slozeni.measured_at)}
               </div>
-              <div className="text-[10px] text-slate-400 font-medium">85 % z celku</div>
             </div>
-            <div className="border-l border-slate-800 pl-3">
-              <div className="text-[11px] text-slate-400 font-medium">BMI Index</div>
-              <div className="text-base sm:text-xl font-black text-white mt-0.5">
-                {latestWeightRecord.bmi.toString().replace('.', ',')}
-              </div>
-              <div className="text-[10px] text-emerald-400 font-medium">Atletická stavba</div>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Action to switch to Weight deep tab */}

@@ -18,6 +18,7 @@ import {
 import { motion } from 'motion/react';
 import { SyncResult, WithingsConnection } from '../types';
 import { useToast } from '../context/ToastContext';
+import { hodnotaNeboPomlcka } from '../data/adaptery';
 
 interface WithingsSyncModalProps {
   isOpen: boolean;
@@ -424,9 +425,9 @@ export const WithingsSyncModal: React.FC<WithingsSyncModalProps> = ({
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {[
-                    { label: 'Váha', value: `${lastResult.weight.toString().replace('.', ',')} kg` },
-                    { label: 'Klidový tep', value: `${Math.round(lastResult.restingHrBpm)} bpm` },
-                    { label: 'HRV', value: `${lastResult.hrvMs.toString().replace('.', ',')} ms` },
+                    { label: 'Váha', value: hodnotaNeboPomlcka(lastResult.weight, 'kg') },
+                    { label: 'Klidový tep', value: hodnotaNeboPomlcka(lastResult.restingHrBpm, 'bpm', 0) },
+                    { label: 'HRV', value: hodnotaNeboPomlcka(lastResult.hrvMs, 'ms') },
                     { label: 'Kroky', value: lastResult.steps.toLocaleString('cs-CZ') },
                     { label: 'Aktivní energie', value: `${lastResult.activeEnergyKcal} kcal` }
                   ].map(item => (

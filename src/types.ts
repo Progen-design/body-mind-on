@@ -133,6 +133,33 @@ export interface AppleWatchBiometrics {
   energyTrend: MetricTrendPoint[];
 }
 
+/**
+ * Tělesné složení z chytré váhy (withings_body_snapshots).
+ *
+ * `null` znamená „nenaměřeno" a UI to kreslí jako „—". Nikdy ne 0 — nula by
+ * tvrdila, že jsme naměřili nulu. hydration_percent tu schválně není:
+ * je null ve všech řádcích, takže by šlo o prázdný sloupec navíc.
+ */
+export interface TelesneSlozeni {
+  measured_at: string;
+  fat_percent: number | null;
+  muscle_mass_kg: number | null;
+  visceral_fat: number | null;
+  bmi: number | null;
+  basal_metabolic_rate: number | null;
+  bone_mass_kg: number | null;
+  /** Předchozí neprázdný snapshot; null = deltu nemáme z čeho spočítat. */
+  predchozi_measured_at: string | null;
+  zmena: {
+    fat_percent: number | null;
+    muscle_mass_kg: number | null;
+    visceral_fat: number | null;
+    bmi: number | null;
+    basal_metabolic_rate: number | null;
+    bone_mass_kg: number | null;
+  };
+}
+
 export interface ShoppingItem {
   id: string;
   name: string;

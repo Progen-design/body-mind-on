@@ -12,7 +12,7 @@ import { klicCviku, KLIC_CELEHO_TRENINKU } from '../../lib/profile/cvikDokonceni
 // jake server prijme — a ten cokoliv jineho nez dnesek v Praze odmita.
 import { calendarDateIsoInPrague } from '../../lib/czechCalendar.js';
 import type {
-  BadHabitItem, ExerciseItem, HabitItem, MealItem, ShoppingItem,
+  BadHabitItem, ExerciseItem, HabitItem, MealItem, ShoppingItem, TelesneSlozeni,
   UserPreferences, UserProfile, WeightRecord, WorkoutDay
 } from '../types';
 
@@ -29,6 +29,7 @@ export interface ProfilOdpoved {
   workouts?: any[];
   daily_activity_completions?: DokonceniAktivity[];
   habit_logs_progress?: ZaznamNavyku[];
+  body_composition?: TelesneSlozeni | null;
 }
 
 /** Řádek `habit_logs`, jak ho vrací /api/profile v `habit_logs_progress`. */
@@ -265,6 +266,56 @@ export function pouzijDokonceniTreninku(dny: WorkoutDay[], hotove: Set<string>):
     isCompleted: jeHotovo(den, 'workout', hotove),
     exercises: pouzijDokonceni(den.exercises, 'workout', hotove)
   }));
+}
+
+/**
+ * Tělesné složení z odpovědi serveru. Vrací null, když měření nemáme —
+ * karta se pak nezobrazuje vůbec, místo aby ukazovala nuly.
+ */
+export function naTelesneSlozeni(odpoved: ProfilOdpoved): TelesneSlozeni | null {
+  return odpoved?.body_composition ?? null;
+}
+
+/**
+ * Číslo pro UI. Chybějící hodnota je „—", nikdy 0.
+ *
+ * ZAOKROUHLUJE SE AŽ PŘI ZOBRAZENÍ. Apple Health i Withings posílají plnou
+ * přesnost (změřeno: 103.02100372314453 kg) a v databázi má zůstat — jen se
+ * nemá vypisovat. Váha, tuk, svaly a BMI na jedno desetinné místo, bazální
+ * metabolismus na celé.
+ *
+ * Koncová nula se NEUŘEZÁVÁ: „103,0 kg" vedle „14,7 %" drží stejnou šířku
+ * a odpovídá tomu, na kolik míst hodnotu opravdu známe.
+ */
+export function hodnotaNeboPomlcka(
+  hodnota: number | null | undefined,
+  jednotka = '',
+  desetinnych = 1
+): string {
+  if (hodnota === null || hodnota === undefined || !Number.isFinite(hodnota)) return '—';
+  const cislo = Number(hodnota).toFixed(desetinnych).replace('.', ',');
+  return jednotka ? `${cislo} ${jednotka}` : cislo;
+}
+
+/** Změna proti minulému měření se znaménkem. Bez druhého měření prázdno. */
+export function zmenaText(zmena: number | null | undefined, jednotka = '', desetinnych = 1): string | null {
+  if (zmena === null || zmena === undefined || !Number.isFinite(zmena)) return null;
+  const z = Number(zmena);
+  const znamenko = z > 0 ? '+' : '';
+  return `${znamenko}${z.toFixed(desetinnych).replace('.', ',')}${jednotka ? ' ' + jednotka : ''}`;
+}
+
+/** "21. 8. v 18:00" — u karty musí být vidět, kdy se měřilo. */
+export function kdyMereno(iso: string | null | undefined): string {
+  const t = Date.parse(String(iso || ''));
+  if (!Number.isFinite(t)) return '';
+  return new Date(t).toLocaleString('cs-CZ', {
+    timeZone: 'Europe/Prague',
+    day: 'numeric',
+    month: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
 
 const IKONY: Record<string, HabitItem['iconType']> = {

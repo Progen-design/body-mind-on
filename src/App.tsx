@@ -33,7 +33,8 @@ import { useZdravotniData } from './hooks/useZdravotniData';
 import { naBiometrii, maZdravotniData } from './data/adapteryZdravi';
 import {
   dnesekPraha, dnesniNavyky, mnozinaDokonceni, naJidla, naNakupniSeznam, naNavyky,
-  naPreference, naProfil, naTreninky, naVazeni, naZlozvyky, pouzijDokonceni,
+  hodnotaNeboPomlcka, naPreference, naProfil, naTelesneSlozeni, naTreninky, naVazeni,
+  naZlozvyky, pouzijDokonceni,
   pouzijDokonceniTreninku, vyberPlan
 } from './data/adaptery';
 import { ToastProvider, useToast } from './context/ToastContext';
@@ -71,6 +72,7 @@ import {
   AppleWatchBiometrics,
   SyncResult,
   UserProfile,
+  TelesneSlozeni,
   WithingsConnection
 } from './types';
 
@@ -141,6 +143,8 @@ function AppContent() {
     mergeObject
   );
   const [coachTips] = useState(initialCoachTips);
+  // Telesne slozeni z chytre vahy. null = zadne mereni, karty se skryji.
+  const [slozeni, setSlozeni] = useState<TelesneSlozeni | null>(null);
 
   // Prevod odpovedi serveru na tvary, ktere ceka UI. Bezi jednou po nacteni.
   useEffect(() => {
@@ -161,6 +165,7 @@ function AppContent() {
       .then(({ items }) => setShoppingItems([...zPlanu, ...(items || [])]))
       .catch(() => { /* vlastni polozky jsou doplnek, vypadek nesmi shodit seznam */ });
     setBadHabits(naZlozvyky(profilData.user_habits));
+    setSlozeni(naTelesneSlozeni(profilData));
     setPreferences((p) => naPreference(profilData, p));
 
     const vazeni = naVazeni(profilData);
@@ -529,7 +534,7 @@ function AppContent() {
         setLastSyncedText(formatLastSynced(new Date()));
         showToast({
           title: 'Váha zapsána',
-          description: `${String(vahaKg).replace('.', ',')} kg`,
+          description: hodnotaNeboPomlcka(vahaKg, 'kg'),
           variant: 'success'
         });
         znovuNacistProfil();
@@ -591,9 +596,9 @@ function AppContent() {
 
       showToast({
         title: `Synchronizováno v ${result.syncedAt}`,
-        description: `Váha ${result.weight.toString().replace('.', ',')} kg • tep ${Math.round(
-          result.restingHrBpm
-        )} bpm • HRV ${result.hrvMs.toString().replace('.', ',')} ms • ${result.steps.toLocaleString(
+        description: `Váha ${hodnotaNeboPomlcka(result.weight, 'kg')} • tep ${hodnotaNeboPomlcka(
+          result.restingHrBpm, 'bpm', 0
+        )} • HRV ${hodnotaNeboPomlcka(result.hrvMs, 'ms')} • ${result.steps.toLocaleString(
           'cs-CZ'
         )} kroků`,
         variant: 'success'
@@ -770,6 +775,7 @@ function AppContent() {
             badHabits={badHabits}
             coachTips={coachTips}
             preferences={preferences}
+            slozeni={slozeni}
             onSelectTab={setActiveTab}
             onOpenWorkoutLogger={() => setIsWorkoutLoggerOpen(true)}
             onOpenAddWeightModal={() => setIsAddRecordModalOpen(true)}
@@ -788,6 +794,7 @@ function AppContent() {
             preferences={preferences}
             latestWeightRecord={latestRecord}
             biometrics={biometrics}
+            slozeni={slozeni}
             onEditPreferences={() => setIsPreferencesModalOpen(true)}
             onOpenCoachChat={() => setIsCoachChatOpen(true)}
             onSyncAll={handleManualWithingsSync}
@@ -802,6 +809,7 @@ function AppContent() {
             currentRecord={latestRecord}
             recordsByFilter={weightRecords}
             lastSyncedText={lastSyncedText}
+            slozeni={slozeni}
             onAddMeasurement={() => setIsAddRecordModalOpen(true)}
             onSync={handleManualWithingsSync}
             onOpenWithingsSettings={() => setIsWithingsModalOpen(true)}

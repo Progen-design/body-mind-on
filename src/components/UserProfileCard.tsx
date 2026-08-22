@@ -2,6 +2,7 @@ import React from 'react';
 import { UserProfile, WeightRecord, AppleWatchBiometrics } from '../types';
 import { ShieldCheck, User, Scale, Activity, ChevronRight, Edit3 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { hodnotaNeboPomlcka } from '../data/adaptery';
 
 interface UserProfileCardProps {
   profile: UserProfile;
@@ -65,7 +66,7 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({
             <div className="hidden md:flex items-center gap-3 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
               <div className="flex items-center gap-1 text-slate-300">
                 <Scale className="w-3.5 h-3.5 text-cyan-400" />
-                <strong className="text-white">{latestWeightRecord.weight.toString().replace('.', ',')} kg</strong>
+                <strong className="text-white">{hodnotaNeboPomlcka(latestWeightRecord?.weight, 'kg')}</strong>
               </div>
               {/* Skóre regenerace ukazujeme jen když ho opravdu máme.
                   Bez dat z hodinek je nula, a "0/100" vypadá jako naměřená

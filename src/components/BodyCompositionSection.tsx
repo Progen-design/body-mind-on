@@ -2,7 +2,7 @@ import React from 'react';
 import { BodyStatsGrid } from './BodyStatsGrid';
 import { WeightChart } from './WeightChart';
 import { WithingsCard } from './WithingsCard';
-import { WeightRecord } from '../types';
+import { WeightRecord, TelesneSlozeni } from '../types';
 import { Plus, Scale, Sparkles, TrendingUp } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -10,6 +10,7 @@ interface BodyCompositionSectionProps {
   currentRecord: WeightRecord;
   recordsByFilter: Record<string, WeightRecord[]>;
   lastSyncedText: string;
+  slozeni?: TelesneSlozeni | null;
   onAddMeasurement: () => void;
   onSync: () => void;
   onOpenWithingsSettings: () => void;
@@ -19,6 +20,7 @@ export const BodyCompositionSection: React.FC<BodyCompositionSectionProps> = ({
   currentRecord,
   recordsByFilter,
   lastSyncedText,
+  slozeni = null,
   onAddMeasurement,
   onSync,
   onOpenWithingsSettings
@@ -51,6 +53,7 @@ export const BodyCompositionSection: React.FC<BodyCompositionSectionProps> = ({
       {/* 1. Body Stats Bento Grid: Váha, Tuk, Svalová hmota, BMI */}
       <BodyStatsGrid
         currentRecord={currentRecord}
+        slozeni={slozeni}
         onAddMeasurement={onAddMeasurement}
       />
 

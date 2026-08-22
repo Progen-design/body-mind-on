@@ -11,6 +11,7 @@ import { canRenewPlanForMembership } from '../lib/planGenerationGate.js';
 import { resolveProgramTier } from '../lib/programTier.js';
 import { zachytChybu, odesliChyby } from '../lib/sentryServer.js';
 import { sestavHistoriiVah } from '../lib/vahaHistorie.js';
+import { vyberTelesneSlozeni } from '../lib/telesneSlozeni.js';
 
 function toDateKey(value) {
   if (!value) return '';
@@ -54,7 +55,7 @@ export default async function handler(req, res) {
     const now = new Date();
     const { weekStartStr, weekEndStr } = getRegistrationAnchoredWeek(now, user.created_at);
 
-    const [metricsRes, plansRes, workoutsRes, userHabitsRes, membershipRes, habitLogsRes, profileRes, coachMessagesRes, initialPlanTaskRes, withingsConnRes, bodyMeasurementsRes, dailyCompletionsRes, dailyCheckinsRes, habitLogsProgressRes] = await Promise.allSettled([
+    const [metricsRes, plansRes, workoutsRes, userHabitsRes, membershipRes, habitLogsRes, profileRes, coachMessagesRes, initialPlanTaskRes, withingsConnRes, bodyMeasurementsRes, dailyCompletionsRes, dailyCheckinsRes, habitLogsProgressRes, bodySnapshotsRes] = await Promise.allSettled([
       supabaseServer
         .from('body_metrics')
         .select('*')
@@ -143,6 +144,16 @@ export default async function handler(req, res) {
         .gte('log_date', toDateKey(user.created_at || now.toISOString()))
         .order('log_date', { ascending: false })
         .limit(1000),
+      // Telesne slozeni z chytre vahy. Tuhle tabulku driv necetl nikdo, takze
+      // karta ukazovala 0 % misto namerenych hodnot. Bereme vic radku nez
+      // jeden: Withings posila i skupiny bez telesnych metrik (same null)
+      // a ty se preskakuji.
+      supabaseServer
+        .from('withings_body_snapshots')
+        .select('measured_at, fat_percent, muscle_mass_kg, visceral_fat, bmi, basal_metabolic_rate, bone_mass_kg')
+        .eq('user_id', userId)
+        .order('measured_at', { ascending: false })
+        .limit(20),
     ]);
 
     const bodyMetrics = (metricsRes.status === 'fulfilled' && metricsRes.value?.data) ? metricsRes.value.data : [];
@@ -386,6 +397,8 @@ export default async function handler(req, res) {
     const habitLogs = (habitLogsRes.status === 'fulfilled' && habitLogsRes.value?.data) ? habitLogsRes.value.data : [];
     const bodyMeasurements = (bodyMeasurementsRes.status === 'fulfilled' && bodyMeasurementsRes.value?.data) ? bodyMeasurementsRes.value.data : [];
     const weightHistory = sestavHistoriiVah(bodyMetrics, bodyMeasurements);
+    const bodySnapshots = (bodySnapshotsRes.status === 'fulfilled' && bodySnapshotsRes.value?.data) ? bodySnapshotsRes.value.data : [];
+    const bodyComposition = vyberTelesneSlozeni(bodySnapshots);
     const dailyActivityCompletions = (dailyCompletionsRes.status === 'fulfilled' && dailyCompletionsRes.value?.data) ? dailyCompletionsRes.value.data : [];
     const dailyCheckins = (dailyCheckinsRes.status === 'fulfilled' && dailyCheckinsRes.value?.data) ? dailyCheckinsRes.value.data : [];
     const habitLogsProgress = (habitLogsProgressRes.status === 'fulfilled' && habitLogsProgressRes.value?.data) ? habitLogsProgressRes.value.data : [];
@@ -575,6 +588,7 @@ export default async function handler(req, res) {
         byHabit,
       },
       body_measurements: bodyMeasurements,
+      body_composition: bodyComposition,
       daily_activity_completions: dailyActivityCompletions,
       daily_checkins: dailyCheckins,
       habit_logs_progress: habitLogsProgress,

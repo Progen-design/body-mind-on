@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { WeightRecord } from '../types';
+import { hodnotaNeboPomlcka } from '../data/adaptery';
 import { Calendar, Plus, Info } from 'lucide-react';
 
 interface WeightChartProps {
@@ -276,8 +277,8 @@ export const WeightChart: React.FC<WeightChartProps> = ({
         {hoveredPoint ? (
           <div className="flex items-center gap-3 text-slate-200">
             <span className="font-semibold text-[#00f2fe]">{hoveredPoint.date}</span>
-            <span>Váha: <strong className="text-white">{hoveredPoint.weight} kg</strong></span>
-            <span>Tuk: <strong className="text-[#39ff14]">{hoveredPoint.fatPercent} %</strong></span>
+            <span>Váha: <strong className="text-white">{hodnotaNeboPomlcka(hoveredPoint.weight, 'kg')}</strong></span>
+            <span>Tuk: <strong className="text-[#39ff14]">{hodnotaNeboPomlcka(hoveredPoint.fatPercent, '%')}</strong></span>
             {hoveredPoint.note && (
               <span className="hidden sm:inline text-slate-400 italic">({hoveredPoint.note})</span>
             )}

@@ -10,6 +10,7 @@ import { shouldShowWithingsSection } from '../lib/withingsProfileVisibility.js';
 import { canRenewPlanForMembership } from '../lib/planGenerationGate.js';
 import { resolveProgramTier } from '../lib/programTier.js';
 import { zachytChybu, odesliChyby } from '../lib/sentryServer.js';
+import { sestavHistoriiVah } from '../lib/vahaHistorie.js';
 
 function toDateKey(value) {
   if (!value) return '';
@@ -369,16 +370,11 @@ export default async function handler(req, res) {
       console.warn('[profile] workouts fetch failed (table may not exist):', workoutsRes.reason?.message);
     }
 
-    const weightByDate = {};
-    bodyMetrics
-      .filter(m => m.weight_kg != null && m.created_at)
-      .forEach(m => {
-        const d = m.created_at.split('T')[0];
-        if (!(d in weightByDate)) weightByDate[d] = m.weight_kg;
-      });
-    const weightHistory = Object.entries(weightByDate)
-      .map(([date, weight]) => ({ date, weight }))
-      .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    // Historie vah se stavi z OBOU tabulek. body_metrics je snapshot
+    // z registrace a rucnich zapisu, body_measurements je log mereni, kam
+    // zapisuje Withings cron i Apple Health. Driv se bralo jen body_metrics,
+    // takze uzivateli s funkcni vahou zustal v grafu jediny bod z registrace.
+    // Vypocet je v lib/vahaHistorie.js, at je testovatelny bez databaze.
 
     const wd = (w) => String(w.workout_date || '').slice(0, 10);
     const workoutsThisWeek = workouts.filter(
@@ -389,6 +385,7 @@ export default async function handler(req, res) {
     const negativeIds = new Set(NEGATIVE_HABITS.map((h) => h.id));
     const habitLogs = (habitLogsRes.status === 'fulfilled' && habitLogsRes.value?.data) ? habitLogsRes.value.data : [];
     const bodyMeasurements = (bodyMeasurementsRes.status === 'fulfilled' && bodyMeasurementsRes.value?.data) ? bodyMeasurementsRes.value.data : [];
+    const weightHistory = sestavHistoriiVah(bodyMetrics, bodyMeasurements);
     const dailyActivityCompletions = (dailyCompletionsRes.status === 'fulfilled' && dailyCompletionsRes.value?.data) ? dailyCompletionsRes.value.data : [];
     const dailyCheckins = (dailyCheckinsRes.status === 'fulfilled' && dailyCheckinsRes.value?.data) ? dailyCheckinsRes.value.data : [];
     const habitLogsProgress = (habitLogsProgressRes.status === 'fulfilled' && habitLogsProgressRes.value?.data) ? habitLogsProgressRes.value.data : [];

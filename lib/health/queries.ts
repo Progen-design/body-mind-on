@@ -1,11 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { supabaseServer as supabaseServerUntyped } from '../supabaseServer';
-import { buildConnectionBanner } from './formatters';
-import { clampDays, clampLimit, isUuid, pragueDateDaysAgo } from './guards';
+import { supabaseServer as supabaseServerUntyped } from '../supabaseServer.js';
+import { buildConnectionBanner } from './formatters.ts';
+import { clampDays, clampLimit, isUuid, pragueDateDaysAgo } from './guards.ts';
 import type {
   AppleHealthConnectionPublic,
   ConnectionStatusResult,
-} from './types';
+} from './types.ts';
 
 const supabaseServer = supabaseServerUntyped as SupabaseClient;
 

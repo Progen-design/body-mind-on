@@ -27,12 +27,12 @@ function read(rel) {
   return readFileSync(join(ROOT, rel), 'utf8');
 }
 
-const profil = read('pages/profil.js');
-const progressSection = read('components/profile/ProfileProgressSection.js');
+const profil = read('_legacy-next/pages/profil.js');
+const progressSection = read('_legacy-next/components/profile/ProfileProgressSection.js');
 const progressModel = read('lib/progressModel.js');
 const migration = read('supabase/migrations/20260713210000_body_measurements.sql');
-const bodyApi = read('pages/api/body-measurements.js');
-const profileApi = read('pages/api/profile.js');
+const bodyApi = read('api/body-measurements.js');
+const profileApi = read('api/profile.js');
 
 // 1–4 UI: no fat model, habit grams, modeled weight, silhouette
 check('1 no kcal→kg fat in progress UI', !progressSection.includes('kg tuku') && !profil.includes('estimatedKgLostTotal'));

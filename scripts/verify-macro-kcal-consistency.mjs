@@ -71,7 +71,7 @@ const gateFail = passesMacroKcalGate(1200, 42, 112, 35);
 if (gateFail) fail('1200 vs 931 must fail gate');
 else ok('passesMacroKcalGate rejects bad row');
 
-const macroChart = fs.readFileSync(path.join(root, 'components/MacroRatioChart.js'), 'utf8');
+const macroChart = fs.readFileSync(path.join(root, '_legacy-next/components/MacroRatioChart.js'), 'utf8');
 if (!macroChart.includes('getMacroCalorieDelta')) fail('MacroRatioChart missing delta integration');
 else ok('MacroRatioChart shows macro/kcal status');
 

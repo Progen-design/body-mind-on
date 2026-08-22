@@ -46,8 +46,8 @@ function read(rel) {
   return readFileSync(join(ROOT, rel), 'utf8');
 }
 
-const modal = read('components/workout/WorkoutChangeModal.jsx');
-const api = read('pages/api/workout/replace-today.js');
+const modal = read('_legacy-next/components/workout/WorkoutChangeModal.jsx');
+const api = read('api/workout/replace-today.js');
 const generator = read('lib/workoutTodayReplace.js');
 
 const setupLib = read('lib/workoutTrainingSetup.js');

@@ -1,0 +1,330 @@
+{
+  "profile_id": "02-muz-nabirani-gym",
+  "profile_label": "Muž, nabírání, gym",
+  "input_summary": {
+    "goal": "nabirani_svaly",
+    "training_environment": "gym",
+    "diet_type": "standard",
+    "freq_choice": "4-5",
+    "has_health_notes": false
+  },
+  "plan_summary": {
+    "targets": {
+      "calories_per_day": 2561,
+      "protein_g": 156,
+      "carbs_g": 304,
+      "fat_g": 80
+    },
+    "days": [
+      {
+        "day": "Pondělí",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Snídaňový burrito se slaninou a vejcem",
+            "kcal": 640,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Pomerančové kuře s hnědou rýží (bez lepku)",
+            "kcal": 896,
+            "source": "spoonacular"
+          },
+          {
+            "type": "snack",
+            "name": "Jogurt s lesním ovocem a mandlemi",
+            "kcal": 256,
+            "source": "spoonacular"
+          },
+          {
+            "type": "dinner",
+            "name": "Grilované kuře s arašídovou omáčkou",
+            "kcal": 768,
+            "source": "spoonacular"
+          }
+        ],
+        "workout_minutes": 60,
+        "exercises": [
+          {
+            "name": "Tlaky nohama",
+            "sets": 4,
+            "reps": "12",
+            "canonical_key": "leg_press"
+          },
+          {
+            "name": "Bench press",
+            "sets": 4,
+            "reps": "10",
+            "canonical_key": "bench_press"
+          },
+          {
+            "name": "Přítahy v předklonu",
+            "sets": 4,
+            "reps": "10",
+            "canonical_key": "bent_over_row"
+          },
+          {
+            "name": "Rumunský mrtvý tah",
+            "sets": 4,
+            "reps": "10",
+            "canonical_key": "romanian_deadlift"
+          },
+          {
+            "name": "Tlaky nad hlavu",
+            "sets": 4,
+            "reps": "10",
+            "canonical_key": "overhead_press"
+          }
+        ]
+      },
+      {
+        "day": "Úterý",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Jogurt s ovocem",
+            "kcal": 640,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Losos confit s omáčkou z citronové trávy",
+            "kcal": 896,
+            "source": "spoonacular"
+          },
+          {
+            "type": "snack",
+            "name": "Zeleninový dip",
+            "kcal": 256,
+            "source": "spoonacular"
+          },
+          {
+            "type": "dinner",
+            "name": "Jak udělat nejvíce sýrové mačkané těstoviny",
+            "kcal": 768,
+            "source": "spoonacular"
+          }
+        ],
+        "workout_minutes": 60,
+        "exercises": [
+          {
+            "name": "Stahování na kladce",
+            "sets": 3,
+            "reps": "10",
+            "canonical_key": "lat_pulldown"
+          },
+          {
+            "name": "Chest press",
+            "sets": 3,
+            "reps": "10",
+            "canonical_key": "chest_press"
+          },
+          {
+            "name": "Zakopávání vleže",
+            "sets": 3,
+            "reps": "12",
+            "canonical_key": "hamstring_curl"
+          },
+          {
+            "name": "Tricepsové tlaky",
+            "sets": 4,
+            "reps": "12",
+            "canonical_key": "tricep_extension"
+          },
+          {
+            "name": "Bicepsový zdvih",
+            "sets": 4,
+            "reps": "12",
+            "canonical_key": "bicep_curl"
+          }
+        ]
+      },
+      {
+        "day": "Středa",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Vejce s lososem a zeleninou",
+            "kcal": 640,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Kuře s rýží a zeleninou",
+            "kcal": 896,
+            "source": "spoonacular"
+          },
+          {
+            "type": "snack",
+            "name": "Jogurtový mousse s malinovou omáčkou",
+            "kcal": 319,
+            "source": "spoonacular"
+          },
+          {
+            "type": "dinner",
+            "name": "Salát s vejci a zeleninou",
+            "kcal": 768,
+            "source": "spoonacular"
+          }
+        ],
+        "exercises": []
+      },
+      {
+        "day": "Čtvrtek",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Předkrmy: Muffiny z frittaty",
+            "kcal": 640,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Sladký a kouřový losos s zázvorovou mahagonovou rýží",
+            "kcal": 896,
+            "source": "spoonacular"
+          },
+          {
+            "type": "snack",
+            "name": "Vanilkový jogurtový mousse s jahodovým marshmallow",
+            "kcal": 198,
+            "source": "spoonacular"
+          },
+          {
+            "type": "dinner",
+            "name": "Kuře s bramborami a zeleninou",
+            "kcal": 768,
+            "source": "spoonacular"
+          }
+        ],
+        "workout_minutes": 60,
+        "exercises": [
+          {
+            "name": "Farmer carry",
+            "sets": 3,
+            "reps": null,
+            "canonical_key": "farmer_carry"
+          },
+          {
+            "name": "Goblet dřep",
+            "sets": 3,
+            "reps": "12",
+            "canonical_key": "goblet_squat"
+          },
+          {
+            "name": "Rozpažky",
+            "sets": 3,
+            "reps": "12",
+            "canonical_key": "lateral_raise"
+          },
+          {
+            "name": "Dead bug",
+            "sets": 3,
+            "reps": "12",
+            "canonical_key": "dead_bug"
+          },
+          {
+            "name": "Hip thrust",
+            "sets": 3,
+            "reps": "12",
+            "canonical_key": "hip_thrust"
+          }
+        ]
+      },
+      {
+        "day": "Pátek",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Chlebová omeleta",
+            "kcal": 640,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Kuře Adobo s kokosovou zázvorovou rýží",
+            "kcal": 896,
+            "source": "spoonacular"
+          },
+          {
+            "type": "snack",
+            "name": "Smažený baby bok choy",
+            "kcal": 256,
+            "source": "spoonacular"
+          },
+          {
+            "type": "dinner",
+            "name": "Těstoviny se sýrem a masem",
+            "kcal": 768,
+            "source": "spoonacular"
+          }
+        ],
+        "exercises": []
+      },
+      {
+        "day": "Sobota",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Krabí koláčky s vejci Benedikt",
+            "kcal": 640,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Ryba s rýží a salátem",
+            "kcal": 896,
+            "source": "meal_cache"
+          },
+          {
+            "type": "snack",
+            "name": "Čerstvý salát z fazolek a rajčat s krémovým č…",
+            "kcal": 256,
+            "source": "spoonacular"
+          },
+          {
+            "type": "dinner",
+            "name": "Těstoviny se sýrem a masem",
+            "kcal": 768,
+            "source": "spoonacular"
+          }
+        ],
+        "exercises": []
+      },
+      {
+        "day": "Neděle",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Vejce se zeleninou",
+            "kcal": 640,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Kuře s rýží a zeleninou",
+            "kcal": 896,
+            "source": "spoonacular"
+          },
+          {
+            "type": "snack",
+            "name": "Salát z quinoy se jahodami a mangem",
+            "kcal": 256,
+            "source": "spoonacular"
+          },
+          {
+            "type": "dinner",
+            "name": "Těstoviny se sýrem a masem",
+            "kcal": 768,
+            "source": "spoonacular"
+          }
+        ],
+        "exercises": []
+      }
+    ]
+  },
+  "technical_hints": [
+    "Žádné automatické varování z heuristik."
+  ]
+}

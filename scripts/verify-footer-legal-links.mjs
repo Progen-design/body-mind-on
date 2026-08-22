@@ -32,7 +32,7 @@ function check(label, ok, detail = '') {
 }
 
 console.log('--- Static footer legal link checks ---');
-const footer = readFileSync(join(ROOT, 'components', 'Footer.js'), 'utf8');
+const footer = readFileSync(join(ROOT, '_legacy-next', 'components', 'Footer.js'), 'utf8');
 
 check('footer odkazuje na /obchodni-podminky', /href="\/obchodni-podminky"/.test(footer));
 check('footer odkazuje na /gdpr', /href="\/gdpr"/.test(footer));
@@ -40,11 +40,11 @@ check('footer bez odkazu na main-site obchodni-podminky', !/bodyandmindon\.cz\/o
 check('footer bez odkazu na main-site gdpr', !/bodyandmindon\.cz\/gdpr|\$\{main\}\/gdpr/.test(footer));
 check('footer má kontakt mailto', /mailto:info@bodyandmindon\.cz/.test(footer));
 
-check('stránka pages/obchodni-podminky.js existuje', existsSync(join(ROOT, 'pages', 'obchodni-podminky.js')));
-check('stránka pages/gdpr.js existuje', existsSync(join(ROOT, 'pages', 'gdpr.js')));
+check('stránka pages/obchodni-podminky.js existuje', existsSync(join(ROOT, '_legacy-next', 'pages', 'obchodni-podminky.js')));
+check('stránka pages/gdpr.js existuje', existsSync(join(ROOT, '_legacy-next', 'pages', 'gdpr.js')));
 
-const podminkyPage = readFileSync(join(ROOT, 'pages', 'obchodni-podminky.js'), 'utf8');
-const gdprPage = readFileSync(join(ROOT, 'pages', 'gdpr.js'), 'utf8');
+const podminkyPage = readFileSync(join(ROOT, '_legacy-next', 'pages', 'obchodni-podminky.js'), 'utf8');
+const gdprPage = readFileSync(join(ROOT, '_legacy-next', 'pages', 'gdpr.js'), 'utf8');
 check('obchodni-podminky má český obsah', /Obchodní podmínky/.test(podminkyPage));
 check('gdpr má český obsah', /osobních údajů/.test(gdprPage));
 

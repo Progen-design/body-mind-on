@@ -1,0 +1,13 @@
+{
+  "base": "https://app.bodyandmindon.cz",
+  "tag": "prod",
+  "habitsText": "0/4",
+  "habitsHtml": "0<span class=\"habit-ui-progress-sep\">/</span>4",
+  "habitsSep": {
+    "color": "rgb(51, 65, 85)",
+    "text": "/",
+    "opacity": "1"
+  },
+  "todayText": "0/4",
+  "todayHtml": "0<span class=\"habit-ui-progress-sep\">/</span>4"
+}

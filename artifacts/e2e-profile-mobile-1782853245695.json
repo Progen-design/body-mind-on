@@ -1,0 +1,27 @@
+{
+  "production": {
+    "deploymentId": "dpl_3hqKfKLZorprbjyxXZ45cvESLHVM",
+    "productionCommit": "9559f1d (expected)",
+    "state": "Ready",
+    "hasMacroBarBundle": true,
+    "hasExerciseHandlerBundle": false,
+    "commitDeployed": false
+  },
+  "testAccount": {
+    "email": "info+bm-release-final-1782343359790@bodyandmindon.cz"
+  },
+  "mobileE2E": {},
+  "recipe": {},
+  "mealReplacement": {},
+  "includeNextWeek": {},
+  "exerciseModal": {},
+  "accordion": {},
+  "settings": {},
+  "runtimeLogs": {
+    "errors": [],
+    "apiCalls": []
+  },
+  "tests": {},
+  "verdict": "FAIL",
+  "verdictReason": "Registration failed HTTP 400: Účet s tímto e-mailem už existuje. Přihlas se nebo si nech poslat odkaz k obnově hesla — registraci START se stejným e-mailem nelze opakovat."
+}

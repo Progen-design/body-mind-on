@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "allowJs": true,
+    "checkJs": false,
+    "strict": true,
+    "noUnusedLocals": false,
+    "jsx": "react-jsx",
+    // "types" zamerne nevypisujeme. S pevnym seznamem Vercel pri prekladu API
+    // funkci bezi z jine slozky, @types/node ani vite/client tam nenajde
+    // a chrli TS2688. Bez nej si TypeScript vezme vse z node_modules/@types sam.
+    // Typy pro import.meta.env resi src/vite-env.d.ts.
+    "paths": {
+      "@/*": ["./*"],
+      "@lib/*": ["./lib/*"]
+    },
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "include": ["src", "middleware.ts", "vite.config.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "_legacy-next",
+    "tools",
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ]
+}

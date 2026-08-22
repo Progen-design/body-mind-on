@@ -1,0 +1,58 @@
+{
+  "productionDeploy": {
+    "deploymentId": "dpl_GKVjtrdDsKKaHqimNShjuhJxW4ga",
+    "state": "Ready",
+    "productionUrl": "https://app.bodyandmindon.cz",
+    "gitSha": "unknown"
+  },
+  "envConfig": {
+    "WITHINGS_CLIENT_ID_exists": true,
+    "WITHINGS_CLIENT_SECRET_exists": true,
+    "WITHINGS_REDIRECT_URI_exists": true,
+    "WITHINGS_API_URL_exists": true,
+    "WITHINGS_SCOPES_exists": true,
+    "WITHINGS_TOKEN_ENCRYPTION_KEY_exists": true,
+    "configured": true,
+    "missing": [],
+    "redirectUri": "https://app.bodyandmindon.cz/api/withings/callback",
+    "apiUrl": "https://wbsapi.withings.net",
+    "scopes": "user.info,user.metrics,user.activity"
+  },
+  "callback": {
+    "redirectUri": "https://app.bodyandmindon.cz/api/withings/callback",
+    "matchesProductionCallback": true,
+    "localhostUsed": false,
+    "previewUrlUsed": false,
+    "trailingSlash": false
+  },
+  "apiEndpoints": {
+    "connect": "exists",
+    "callback": "exists",
+    "sync": "exists",
+    "latest": "exists",
+    "history": "exists",
+    "disconnect": "exists",
+    "auth": "exists",
+    "missingEndpoints": []
+  },
+  "uiState": {},
+  "connectTest": {
+    "responseStatus": 200,
+    "authorizeUrlGenerated": true,
+    "containsState": true,
+    "containsCorrectRedirectUri": true,
+    "containsScopeUserMetrics": true,
+    "containsResponseTypeCode": true,
+    "containsClientId": true,
+    "secretsExposed": false,
+    "redirectUriFromApi": "https://app.bodyandmindon.cz/api/withings/callback"
+  },
+  "verdict": "FAIL",
+  "verdictReason": "page.waitForSelector: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('.withings-floating-card') to be visible\n",
+  "historyTest": {
+    "statusWithAuth": 200,
+    "hasMeasurementsArray": true,
+    "aggregatedShape": true,
+    "secretsExposed": false
+  }
+}

@@ -129,7 +129,7 @@ for (const [userId, bm] of bmByUser) {
     //
     // Změřeno 14. 8. 2026: všechny čtyři vadné plány měly sýr i v HTML, takže
     // opravit jen `structured_plan_json` by uživateli dál ukazovalo fetu.
-    // Vynulovat HTML nejde — `pages/api/profile.js:274` plány bez něj z výpisu
+    // Vynulovat HTML nejde — `api/profile.js:274` plány bez něj z výpisu
     // vyhazuje. Nepoužívá se ani admin backfill endpoint: ten jede přes VŠECHNY
     // aktivní plány (39 k 14. 8.), což je na cílenou opravu čtyř řádků moc.
     const noveHtml = stripPlanMediaAttrsFromHtml(

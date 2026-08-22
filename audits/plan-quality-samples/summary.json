@@ -1,0 +1,65 @@
+{
+  "profiles": [
+    {
+      "id": "01-zena-redukce-doma",
+      "ok": true,
+      "days": 7,
+      "technical_warnings": 0
+    },
+    {
+      "id": "02-muz-nabirani-gym",
+      "ok": true,
+      "days": 7,
+      "technical_warnings": 0
+    },
+    {
+      "id": "03-zacatecnik-2x",
+      "ok": true,
+      "days": 7,
+      "technical_warnings": 0
+    },
+    {
+      "id": "04-pokrocily-4x",
+      "ok": true,
+      "days": 7,
+      "technical_warnings": 0
+    },
+    {
+      "id": "05-vegetarian",
+      "ok": false,
+      "error": "Pondělí: součet kalorií 2200 kcal přesahuje ~105 % denního cíle (1800 kcal)"
+    },
+    {
+      "id": "06-bez-laktozy",
+      "ok": true,
+      "days": 7,
+      "technical_warnings": 0
+    },
+    {
+      "id": "07-vysoky-stres",
+      "ok": true,
+      "days": 7,
+      "technical_warnings": 0
+    },
+    {
+      "id": "08-sedava-prace",
+      "ok": true,
+      "days": 7,
+      "technical_warnings": 0
+    },
+    {
+      "id": "09-starsi-50plus",
+      "ok": true,
+      "days": 7,
+      "technical_warnings": 0
+    },
+    {
+      "id": "10-koleno-bezpecnost",
+      "ok": true,
+      "days": 7,
+      "technical_warnings": 1
+    }
+  ],
+  "generated_at": "2026-07-12T22:16:11.678Z",
+  "note": "Syntetické profily, bez persist do DB, bez PII."
+}

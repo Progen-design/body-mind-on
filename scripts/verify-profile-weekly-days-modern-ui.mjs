@@ -22,9 +22,9 @@ function read(relPath) {
   return readFileSync(resolve(process.cwd(), relPath), 'utf8');
 }
 
-const planViewer = read('components/PlanViewer.js');
-const todayPanels = read('components/profile/ProfileTodayPanels.js');
-const dayPanel = read('components/profile/ProfileDayMealsPanel.js');
+const planViewer = read('_legacy-next/components/PlanViewer.js');
+const todayPanels = read('_legacy-next/components/profile/ProfileTodayPanels.js');
+const dayPanel = read('_legacy-next/components/profile/ProfileDayMealsPanel.js');
 const packageJson = read('package.json');
 
 // --- Sdílený renderer existuje a má moderní design ---

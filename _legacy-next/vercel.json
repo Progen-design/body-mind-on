@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/assets/:path*", "destination": "/assets/:path*" },
+    { "source": "/favicon.ico", "destination": "/favicon.ico" },
+    { "source": "/profil", "destination": "/index.html" },
+    { "source": "/profil/:path*", "destination": "/index.html" },
+    { "source": "/:path*", "destination": "https://BMON_API_HOST/:path*" }
+  ]
+}

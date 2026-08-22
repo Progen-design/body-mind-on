@@ -1,0 +1,44 @@
+[
+  {
+    "id": "7-habit-api-400",
+    "ok": true,
+    "detail": "status=400, error=Návyky se ukládají přes /api/habits (tabulka habit_logs). daily-activation nepodporuje activity_type=habit.",
+    "verified": true
+  },
+  {
+    "id": "1-meal-persist",
+    "ok": false,
+    "detail": "label=\"Snídaně\", před=true, po klik=false, po refresh=false",
+    "verified": true
+  },
+  {
+    "id": "4-progress-immediate",
+    "ok": true,
+    "detail": "progress po kliknutí jídla: \"0/4\"",
+    "verified": true
+  },
+  {
+    "id": "2-workout-persist",
+    "ok": false,
+    "detail": "Řádek tréninku v panelu Dnes nenalezen (možná dnes bez tréninku)",
+    "verified": true
+  },
+  {
+    "id": "3-checkin-persist",
+    "ok": true,
+    "detail": "rating \"Dobře\" aktivní po refresh=true",
+    "verified": true
+  },
+  {
+    "id": "5-habit-persist",
+    "ok": true,
+    "detail": "po klik=true, po refresh=true",
+    "verified": true
+  },
+  {
+    "id": "6-complete-all",
+    "ok": true,
+    "detail": "po klik=\"3/3\", po refresh=\"3/3\"",
+    "verified": true
+  }
+]

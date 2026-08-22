@@ -26,9 +26,9 @@ function read(relPath) {
   return readFileSync(resolve(process.cwd(), relPath), 'utf8');
 }
 
-const macroChart = read('components/MacroRatioChart.js');
-const todayPanels = read('components/profile/ProfileTodayPanels.js');
-const planViewer = read('components/PlanViewer.js');
+const macroChart = read('_legacy-next/components/MacroRatioChart.js');
+const todayPanels = read('_legacy-next/components/profile/ProfileTodayPanels.js');
+const planViewer = read('_legacy-next/components/PlanViewer.js');
 const mealRecipeDisplay = read('lib/mealRecipeDisplay.js');
 const recipeDetailHtml = read('lib/recipeDetailHtml.js');
 const macroNutrition = read('lib/macroNutrition.js');

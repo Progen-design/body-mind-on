@@ -1,0 +1,260 @@
+[
+  {
+    "sirka": 320,
+    "prescok": null,
+    "siroke": [
+      {
+        "sel": "span.jsx-ff32149b242b7e23.jsx-1099399074",
+        "left": -140,
+        "right": 460
+      },
+      {
+        "sel": "span.jsx-ff32149b242b7e23.jsx-1099399074",
+        "left": -160,
+        "right": 240
+      },
+      {
+        "sel": "span.jsx-ff32149b242b7e23.jsx-1099399074",
+        "left": 30,
+        "right": 480
+      },
+      {
+        "sel": "div.pointer-events-none.absolute",
+        "left": 213,
+        "right": 357
+      },
+      {
+        "sel": "div.pointer-events-none.absolute",
+        "left": -37,
+        "right": 107
+      },
+      {
+        "sel": "button.relative.flex",
+        "left": 246,
+        "right": 343
+      },
+      {
+        "sel": "span",
+        "left": 285,
+        "right": 328
+      },
+      {
+        "sel": "button.relative.flex",
+        "left": 351,
+        "right": 505
+      }
+    ],
+    "maleCile": [],
+    "svetlaTlacitka": [],
+    "lisla": {
+      "position": "sticky",
+      "bg": "oklab(0.140528 0.000505447 -0.00899907 / 0.82)",
+      "blur": "blur(24px)"
+    },
+    "listaPoScrollu": 0,
+    "chybyKonzole": [
+      "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    ]
+  },
+  {
+    "sirka": 390,
+    "prescok": null,
+    "siroke": [
+      {
+        "sel": "span.jsx-ff32149b242b7e23.jsx-1099399074",
+        "left": -105,
+        "right": 495
+      },
+      {
+        "sel": "span.jsx-ff32149b242b7e23.jsx-1099399074",
+        "left": -160,
+        "right": 240
+      },
+      {
+        "sel": "span.jsx-ff32149b242b7e23.jsx-1099399074",
+        "left": 100,
+        "right": 550
+      },
+      {
+        "sel": "div.pointer-events-none.absolute",
+        "left": 281,
+        "right": 425
+      },
+      {
+        "sel": "div.pointer-events-none.absolute",
+        "left": -35,
+        "right": 109
+      },
+      {
+        "sel": "button.relative.flex",
+        "left": 354,
+        "right": 507
+      },
+      {
+        "sel": "span",
+        "left": 393,
+        "right": 461
+      },
+      {
+        "sel": "span.rounded-full.px-1.5",
+        "left": 469,
+        "right": 492
+      }
+    ],
+    "maleCile": [],
+    "svetlaTlacitka": [],
+    "lisla": {
+      "position": "sticky",
+      "bg": "oklab(0.140528 0.000505447 -0.00899907 / 0.82)",
+      "blur": "blur(24px)"
+    },
+    "listaPoScrollu": 0,
+    "chybyKonzole": [
+      "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    ]
+  },
+  {
+    "sirka": 768,
+    "prescok": null,
+    "siroke": [
+      {
+        "sel": "span.jsx-ff32149b242b7e23.jsx-1099399074",
+        "left": -160,
+        "right": 240
+      },
+      {
+        "sel": "span.jsx-ff32149b242b7e23.jsx-1099399074",
+        "left": 478,
+        "right": 928
+      },
+      {
+        "sel": "div.pointer-events-none.absolute",
+        "left": 651,
+        "right": 795
+      },
+      {
+        "sel": "div.pointer-events-none.absolute",
+        "left": -27,
+        "right": 117
+      },
+      {
+        "sel": "button.relative.flex",
+        "left": 675,
+        "right": 823
+      },
+      {
+        "sel": "span",
+        "left": 717,
+        "right": 808
+      }
+    ],
+    "maleCile": [],
+    "svetlaTlacitka": [],
+    "lisla": {
+      "position": "sticky",
+      "bg": "oklab(0.140528 0.000505447 -0.00899907 / 0.82)",
+      "blur": "blur(24px)"
+    },
+    "listaPoScrollu": 0,
+    "chybyKonzole": [
+      "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    ]
+  },
+  {
+    "sirka": 1024,
+    "prescok": null,
+    "siroke": [
+      {
+        "sel": "span.jsx-ff32149b242b7e23.jsx-1099399074",
+        "left": -160,
+        "right": 240
+      },
+      {
+        "sel": "span.jsx-ff32149b242b7e23.jsx-1099399074",
+        "left": 734,
+        "right": 1184
+      },
+      {
+        "sel": "div.pointer-events-none.absolute",
+        "left": 907,
+        "right": 1051
+      },
+      {
+        "sel": "div.pointer-events-none.absolute",
+        "left": -27,
+        "right": 117
+      }
+    ],
+    "maleCile": [],
+    "svetlaTlacitka": [],
+    "lisla": {
+      "position": "sticky",
+      "bg": "oklab(0.140528 0.000505447 -0.00899907 / 0.82)",
+      "blur": "blur(24px)"
+    },
+    "listaPoScrollu": 0,
+    "chybyKonzole": [
+      "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    ]
+  },
+  {
+    "sirka": 1440,
+    "prescok": null,
+    "siroke": [
+      {
+        "sel": "span.jsx-ff32149b242b7e23.jsx-1099399074",
+        "left": -160,
+        "right": 240
+      },
+      {
+        "sel": "span.jsx-ff32149b242b7e23.jsx-1099399074",
+        "left": 1150,
+        "right": 1600
+      }
+    ],
+    "maleCile": [],
+    "svetlaTlacitka": [],
+    "lisla": {
+      "position": "sticky",
+      "bg": "oklab(0.140528 0.000505447 -0.00899907 / 0.82)",
+      "blur": "blur(24px)"
+    },
+    "listaPoScrollu": 0,
+    "chybyKonzole": [
+      "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    ]
+  },
+  {
+    "sirka": 1920,
+    "prescok": null,
+    "siroke": [
+      {
+        "sel": "span.jsx-ff32149b242b7e23.jsx-1099399074",
+        "left": -160,
+        "right": 240
+      },
+      {
+        "sel": "span.jsx-ff32149b242b7e23.jsx-1099399074",
+        "left": 1630,
+        "right": 2080
+      }
+    ],
+    "maleCile": [],
+    "svetlaTlacitka": [],
+    "lisla": {
+      "position": "sticky",
+      "bg": "oklab(0.140528 0.000505447 -0.00899907 / 0.82)",
+      "blur": "blur(24px)"
+    },
+    "listaPoScrollu": 0,
+    "chybyKonzole": [
+      "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    ]
+  }
+]

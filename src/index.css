@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@layer base {
+  * {
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* Custom glow and glassmorphism helpers */
+.glass-card {
+  background: rgba(14, 18, 25, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 242, 254, 0.18);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+.glass-card-lime {
+  background: rgba(14, 18, 25, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(57, 255, 20, 0.22);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+.glow-cyan-border {
+  border-color: rgba(0, 242, 254, 0.35);
+  box-shadow: 0 0 20px -3px rgba(0, 242, 254, 0.15);
+}
+
+.glow-lime-border {
+  border-color: rgba(57, 255, 20, 0.4);
+  box-shadow: 0 0 20px -3px rgba(57, 255, 20, 0.18);
+}
+
+.neon-btn-cyan {
+  background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+  box-shadow: 0 0 24px -2px rgba(0, 242, 254, 0.45);
+}
+
+.neon-btn-cyan:hover {
+  background: linear-gradient(135deg, #24f6ff 0%, #68b9ff 100%);
+  box-shadow: 0 0 30px 2px rgba(0, 242, 254, 0.6);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #08090d;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}

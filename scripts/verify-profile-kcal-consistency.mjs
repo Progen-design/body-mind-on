@@ -101,7 +101,7 @@ check(
   `got ${breakfastDisplay.calories}`,
 );
 
-const todayPanels = readFileSync(resolve(process.cwd(), 'components/profile/ProfileTodayPanels.js'), 'utf8');
+const todayPanels = readFileSync(resolve(process.cwd(), '_legacy-next/components/profile/ProfileTodayPanels.js'), 'utf8');
 const mealDisplayModel = readFileSync(resolve(process.cwd(), 'lib/mealDisplayModel.js'), 'utf8');
 check('ProfileTodayPanels uses resolveDayCalorieTarget', todayPanels.includes('resolveDayCalorieTarget'));
 check('ProfileTodayPanels uses shared sumDayNutrition', todayPanels.includes('sumDayNutrition'));

@@ -159,20 +159,20 @@ const detEquip = templatesSrc.split('export const HOME_EQUIPMENT_DUMBBELL_BENCH_
 if (!detEquip || !/dumbbell bench press/.test(detEquip)) fail('HOME_EQUIPMENT_DUMBBELL_BENCH_BLOCKS missing dumbbell exercises');
 else ok('deterministic home equipment blocks use dumbbells/bench');
 
-const startSrc = fs.readFileSync(path.join(root, 'pages/start.js'), 'utf8');
+const startSrc = fs.readFileSync(path.join(root, '_legacy-next/pages/start.js'), 'utf8');
 if (!startSrc.includes("name === 'training_environment'") || !startSrc.includes('available_equipment: []')) {
   fail('start.js should clear available_equipment when leaving home_equipment');
 } else ok('start form clears equipment on environment switch');
 
 for (const page of ['on-club.js', 'chci-vip.js']) {
-  const src = fs.readFileSync(path.join(root, 'pages', page), 'utf8');
+  const src = fs.readFileSync(path.join(root, '_legacy-next', 'pages', page), 'utf8');
   if (!src.includes('TrainingEnvironmentFields') || !src.includes('formData.training_environment')) {
     fail(`${page} missing training environment fields in step 3`);
   } else ok(`${page} has training environment in registration`);
 }
 
-const prefsOverlay = fs.readFileSync(path.join(root, 'components/profile/PreferencesOverlay.jsx'), 'utf8');
-const profilePrefsApi = fs.readFileSync(path.join(root, 'pages/api/profile-preferences.js'), 'utf8');
+const prefsOverlay = fs.readFileSync(path.join(root, '_legacy-next/components/profile/PreferencesOverlay.jsx'), 'utf8');
+const profilePrefsApi = fs.readFileSync(path.join(root, 'api/profile-preferences.js'), 'utf8');
 if (!prefsOverlay.includes('TrainingEnvironmentFields') || !prefsOverlay.includes("variant=\"preferences\"")) {
   fail('PreferencesOverlay missing training environment in Nastavení');
 } else ok('PreferencesOverlay has training environment settings');
@@ -180,7 +180,7 @@ if (!profilePrefsApi.includes('mergeTrainingEnvironmentIntoNotes')) {
   fail('profile-preferences API should persist training environment into notes');
 } else ok('profile-preferences API saves training environment');
 
-const bodyMetricsApi = fs.readFileSync(path.join(root, 'pages/api/body-metrics.js'), 'utf8');
+const bodyMetricsApi = fs.readFileSync(path.join(root, 'api/body-metrics.js'), 'utf8');
 const bodyMetricsRegistration = fs.readFileSync(path.join(root, 'lib/registration/bodyMetricsRegistration.js'), 'utf8');
 const bodyMetricsRegistrationChain = `${bodyMetricsApi}\n${bodyMetricsRegistration}`;
 if (!bodyMetricsRegistrationChain.includes("trainingEnvironment === 'home_equipment'")) {
@@ -188,8 +188,8 @@ if (!bodyMetricsRegistrationChain.includes("trainingEnvironment === 'home_equipm
 } else ok('body-metrics API ignores equipment outside home_equipment');
 
 console.log('\n--- profile / structured labels ---');
-const profil = fs.readFileSync(path.join(root, 'pages/profil.js'), 'utf8');
-const planViewer = fs.readFileSync(path.join(root, 'components/PlanViewer.js'), 'utf8');
+const profil = fs.readFileSync(path.join(root, '_legacy-next/pages/profil.js'), 'utf8');
+const planViewer = fs.readFileSync(path.join(root, '_legacy-next/components/PlanViewer.js'), 'utf8');
 const orchestrator = fs.readFileSync(path.join(root, 'lib/services/planOrchestrator.js'), 'utf8');
 if (!profil.includes('trainingEnvironmentDisplayFromMetrics')) fail('profil missing training environment display helper');
 if (!planViewer.includes('plan-badge-env')) fail('PlanViewer missing training environment badge');

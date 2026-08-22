@@ -4,7 +4,7 @@ import type {
   RecoveryBand,
   RecoveryBandInfo,
   RecoveryStatus,
-} from './types';
+} from './types.ts';
 
 const STALE_SYNC_MS = 24 * 60 * 60 * 1000;
 

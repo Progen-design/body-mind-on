@@ -88,7 +88,7 @@ const gymForbiddenPattern = /canonical_key:\s*'(squat|lunges|glute_bridge|mounta
 const templatesSrc = fs.readFileSync(path.join(root, 'lib/workoutTemplates.js'), 'utf8');
 const scalerSrc = fs.readFileSync(path.join(root, 'lib/workoutPlanScaler.js'), 'utf8');
 const fallbackSrc = fs.readFileSync(path.join(root, 'lib/services/deterministicFallback.js'), 'utf8');
-const replaceWorkoutSrc = fs.readFileSync(path.join(root, 'pages/api/onboarding/replace-workout.js'), 'utf8');
+const replaceWorkoutSrc = fs.readFileSync(path.join(root, 'api/onboarding/replace-workout.js'), 'utf8');
 
 if (!templatesSrc.includes('export const GYM_TEMPLATES')) fail('workoutTemplates missing GYM_TEMPLATES');
 if (!templatesSrc.includes('export const HOME_BODYWEIGHT_TEMPLATES')) fail('workoutTemplates missing HOME_BODYWEIGHT_TEMPLATES');
@@ -103,7 +103,7 @@ if (scalerSrc.includes('const GYM_SESSION_TEMPLATES')) fail('workoutPlanScaler m
 if (fallbackSrc.includes('const GYM_WORKOUT_BLOCKS')) fail('deterministicFallback must not define local GYM_WORKOUT_BLOCKS');
 if (!scalerSrc.includes("from './workoutTemplates.js'")) fail('workoutPlanScaler must import workoutTemplates');
 if (!fallbackSrc.includes("from '../workoutTemplates.js'")) fail('deterministicFallback must import workoutTemplates');
-if (!replaceWorkoutSrc.includes("from '../../../lib/workoutTemplates.js'")) fail('replace-workout must import workoutTemplates');
+if (!replaceWorkoutSrc.includes("from '../lib/workoutTemplates.js'")) fail('replace-workout must import workoutTemplates');
 ok('workout templates single source of truth wired');
 
 const gymBlock = templatesSrc.split('export const GYM_TEMPLATES = Object.freeze([')[1]?.split(']);')[0] || '';

@@ -1,0 +1,46 @@
+{
+  "production": {
+    "deploymentId": "dpl_7mtCYFf2GYJYL52GKRfVK9RiRLSp",
+    "productionCommit": "9559f1d (expected)",
+    "state": "Ready",
+    "hasMacroBarBundle": true,
+    "hasTodayExerciseBundle": false,
+    "commitDeployed": true
+  },
+  "testAccount": {
+    "email": "info+bm-mobile-e2e-1783009895158@bodyandmindon.cz",
+    "registrationStatus": 200,
+    "emailSent": true,
+    "planState": "ready",
+    "plan_id": "65175040-200b-408c-b05a-7018311adb16",
+    "user_id": "4e97b508-7920-4b54-8d6f-803158502018",
+    "email_sent": true
+  },
+  "mobileE2E": {
+    "profileOpened": true,
+    "horizontalScroll": false,
+    "duplicateNav": false,
+    "todayMealsVisible": true,
+    "todayWorkoutVisible": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-mobile-top.png"
+  },
+  "recipe": {},
+  "mealReplacement": {},
+  "includeNextWeek": {},
+  "exerciseModal": {},
+  "accordion": {},
+  "settings": {},
+  "workoutCopy": {},
+  "runtimeLogs": {
+    "errors": [],
+    "apiCalls": [
+      {
+        "url": "https://app.bodyandmindon.cz/api/meal-pins",
+        "status": 200
+      }
+    ]
+  },
+  "tests": {},
+  "verdict": "FAIL",
+  "verdictReason": "page.waitForSelector: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('.withings-floating-card') to be visible\n"
+}

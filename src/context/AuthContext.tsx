@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '@lib/supabaseClient.js';
+import { nastavUzivatele } from '../lib/sentry';
 import { AccountProfile } from '../types';
 
 interface AuthContextValue {
@@ -101,6 +102,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const account = useMemo(() => naUcet(session), [session]);
+
+  // Do Sentry jde jen id, at je chyba dohledatelna ke konkretnimu uctu.
+  // Zadny e-mail ani jmeno - zdravotni data se s identitou parovat nesmi.
+  useEffect(() => {
+    nastavUzivatele(session?.user?.id ?? null);
+  }, [session]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

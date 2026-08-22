@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Eye, EyeOff, Loader2, Lock, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Loader2, Lock, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface LoginScreenProps {
@@ -165,9 +165,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           </p>
         </div>
 
-        <div className="mt-5 pt-4 border-t border-slate-800 flex items-center gap-1.5 text-[11px] text-slate-500">
-          <ShieldCheck className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-          <span>Přihlášení běží přes Supabase Auth. Heslo se nikam neukládá.</span>
+        <div className="mt-5 pt-4 border-t border-slate-800 space-y-3">
+          <a
+            href="https://bodyandmindon.cz/"
+            className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-cyan-400 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
+            <span>Zpět na hlavní stránku</span>
+          </a>
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+            <ShieldCheck className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span>Přihlášení běží přes Supabase Auth. Heslo se nikam neukládá.</span>
+          </div>
         </div>
       </motion.div>
     </div>

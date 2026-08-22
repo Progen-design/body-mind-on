@@ -3,6 +3,7 @@
 // SYNC: Registrace musí doručit plán (katalog nebo last-resort) v rámci Vercel 60s limitu.
 // Viz docs/CORE_FLOW_REGISTRACE_AI_PLAN.md
 import { supabaseServer } from '../lib/supabaseServer.js';
+import { zachytChybu, odesliChyby } from '../lib/sentryServer.js';
 import { createInitialAITasks } from '../lib/createInitialAITasks.js';
 import { runAIScheduler, runRegistrationCoachInline } from '../lib/aiScheduler.js';
 import {
@@ -555,7 +556,8 @@ export default async function handler(req, res) {
     return res.status(200).json(response);
 
   } catch (e) {
-    console.error('[body-metrics] ERROR:', e);
+    zachytChybu(e, { route: 'api/body-metrics', faze: 'registrace' });
+    await odesliChyby();
     return res.status(500).json({
       error: e.message || 'Neočekávaná chyba při zpracování požadavku.'
     });

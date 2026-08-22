@@ -478,6 +478,16 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
             Generování plánu trvá zhruba půl minuty. Nezavírej prosím stránku.
           </p>
         )}
+
+        <div className="mt-5 pt-4 border-t border-slate-800">
+          <a
+            href="https://bodyandmindon.cz/"
+            className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-cyan-400 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
+            <span>Zpět na hlavní stránku</span>
+          </a>
+        </div>
       </motion.div>
     </div>
   );

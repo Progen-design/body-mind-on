@@ -9,6 +9,7 @@ import { reconcileUserDataByEmail } from '../lib/reconcileUserDataByEmail.js';
 import { shouldShowWithingsSection } from '../lib/withingsProfileVisibility.js';
 import { canRenewPlanForMembership } from '../lib/planGenerationGate.js';
 import { resolveProgramTier } from '../lib/programTier.js';
+import { zachytChybu, odesliChyby } from '../lib/sentryServer.js';
 
 function toDateKey(value) {
   if (!value) return '';
@@ -579,7 +580,8 @@ export default async function handler(req, res) {
 
     return res.status(200).json(profilePayload);
   } catch (err) {
-    console.error('[profile] ERROR:', err);
+    zachytChybu(err, { route: 'api/profile' });
+    await odesliChyby();
     return res.status(500).json({ error: 'Chyba serveru' });
   }
 }

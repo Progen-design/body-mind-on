@@ -509,18 +509,43 @@ function AppContent() {
   };
 
   // Handlers: Weight Measurement
-  const handleSaveNewMeasurement = (record: WeightRecord) => {
-    const now = new Date();
-    setWeightRecords(prev => applyWeightRecord(prev, record, now));
-    setLastSyncedText(formatLastSynced(now));
-    showToast({
-      title: 'Měření zapsáno',
-      description: `${record.weight.toString().replace('.', ',')} kg • ${record.fatPercent
-        .toString()
-        .replace('.', ',')} % tuku`,
-      variant: 'success'
-    });
-  };
+  /**
+   * Zápis váhy. Bez optimistického updatu — /api/quick-weight bezi synchronne
+   * pres rozhodovaci vrstvu, takze odpoved muze trvat sekundy a modal drzi
+   * spinner. Historii vah pocita server (weight_history), proto se po ulozeni
+   * znovu nacte profil misto dopisovani do lokalniho stavu.
+   *
+   * Zadne varovani o pregenerovani planu: zmereno v produkci, ze
+   * ai_trigger_rules ma zapnute jen user_registered -> initial_plan, takze
+   * vazeni nespusti ani plan, ani e-mail.
+   */
+  const handleSaveNewMeasurement = useCallback(
+    async (vahaKg: number): Promise<boolean> => {
+      try {
+        await apiFetch('/api/quick-weight', {
+          method: 'POST',
+          body: JSON.stringify({ weight_kg: vahaKg })
+        });
+        setLastSyncedText(formatLastSynced(new Date()));
+        showToast({
+          title: 'Váha zapsána',
+          description: `${String(vahaKg).replace('.', ',')} kg`,
+          variant: 'success'
+        });
+        znovuNacistProfil();
+        return true;
+      } catch (chyba) {
+        showToast({
+          title: jeNeaktivniClenstvi(chyba) ? 'Váhu jsme neuložili' : 'Nepodařilo se uložit váhu',
+          description:
+            chyba instanceof Error ? chyba.message : 'Zkus to prosím za chvíli znovu.',
+          variant: 'error'
+        });
+        return false;
+      }
+    },
+    [setLastSyncedText, showToast, znovuNacistProfil]
+  );
 
   /**
    * Handlers: Withings & Sync
@@ -959,6 +984,7 @@ function AppContent() {
         isOpen={isAddRecordModalOpen}
         onClose={() => setIsAddRecordModalOpen(false)}
         onSave={handleSaveNewMeasurement}
+        latestWeight={latestRecord?.weight ?? null}
       />
 
       <PreferencesModal

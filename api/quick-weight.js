@@ -1,6 +1,8 @@
 // POST /api/quick-weight – přihlášený uživatel přidá jen váhu (a volitelně datum)
 import { supabaseServer } from '../lib/supabaseServer.js';
 import { enqueueAIEvent, triggerImmediateDecision } from '../lib/aiEvents.js';
+// Meze sdilene s SPA, at klient i server rikaji totez.
+import { CHYBA_VAHY, MAX_VAHA_KG, MIN_VAHA_KG } from '../lib/vahaMeze.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -16,8 +18,8 @@ export default async function handler(req, res) {
     if (userErr || !user) return res.status(401).json({ error: 'Neplatná session' });
 
     const weight_kg = req.body?.weight_kg != null ? Number(req.body.weight_kg) : null;
-    if (weight_kg == null || weight_kg < 30 || weight_kg > 300) {
-      return res.status(400).json({ error: 'Váha musí být mezi 30 a 300 kg.' });
+    if (weight_kg == null || !Number.isFinite(weight_kg) || weight_kg < MIN_VAHA_KG || weight_kg > MAX_VAHA_KG) {
+      return res.status(400).json({ error: CHYBA_VAHY });
     }
 
     const dateStr = req.body?.date?.trim?.();

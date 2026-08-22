@@ -1,49 +1,59 @@
 import React, { useState } from 'react';
-import { X, Scale, Sparkles } from 'lucide-react';
+import { X, Scale, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { WeightRecord } from '../types';
+import { CHYBA_VAHY, overVahu } from '../../lib/vahaMeze.js';
 
 interface AddMeasurementModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (record: WeightRecord) => void;
-  latestWeight?: number;
+  /** Uloží váhu na server. Vrací true při úspěchu. */
+  onSave: (vahaKg: number) => Promise<boolean>;
+  /** Poslední naměřená váha — jen jako nápověda v poli, nepředvyplňuje se. */
+  latestWeight?: number | null;
 }
 
+/**
+ * TUK A SVALOVÁ HMOTA TU NEJSOU SCHVÁLNĚ.
+ *
+ * Modál je ptal a nikam je neukládal: /api/quick-weight bere jen `weight_kg`
+ * a /api/body-measurements zná obvody, ne podíl tuku. Uživatel je vyplňoval
+ * s tím, že se zapíšou, a ony zmizely. Poznámka je pryč ze stejného důvodu —
+ * quick-weight žádné pole pro ni nemá.
+ *
+ * Zmizelo i dopočítané BMI: počítalo se z výšky natvrdo zadané jako 1,82 m
+ * bez ohledu na to, kdo měření zadává.
+ */
 export const AddMeasurementModal: React.FC<AddMeasurementModalProps> = ({
   isOpen,
   onClose,
   onSave,
-  latestWeight = 104.6
+  latestWeight = null
 }) => {
-  const [weight, setWeight] = useState(latestWeight.toString().replace(',', '.'));
-  const [fat, setFat] = useState('11.6');
-  const [muscle, setMuscle] = useState('88.9');
-  const [note, setNote] = useState('Manuální zápis po ranním vážení');
+  const [weight, setWeight] = useState('');
+  const [chyba, setChyba] = useState<string | null>(null);
+  const [uklada, setUklada] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const w = parseFloat(weight.replace(',', '.')) || latestWeight;
-    const f = parseFloat(fat.replace(',', '.')) || 11.6;
-    const m = parseFloat(muscle.replace(',', '.')) || 88.9;
-    // Estimated BMI (height ~1.82 m)
-    const bmi = Math.round((w / (1.82 * 1.82)) * 10) / 10;
+    if (uklada) return;
 
-    const today = new Date();
-    const formattedDate = `${String(today.getDate()).padStart(2, '0')}.${String(today.getMonth() + 1).padStart(2, '0')}.`;
+    const overeno = overVahu(weight);
+    if (!overeno.ok) {
+      setChyba(overeno.chyba || CHYBA_VAHY);
+      return;
+    }
 
-    onSave({
-      date: formattedDate,
-      weight: w,
-      fatPercent: f,
-      muscleKg: m,
-      bmi: bmi,
-      note: note.trim()
-    });
+    setChyba(null);
+    setUklada(true);
+    const ok = await onSave(overeno.kg);
+    setUklada(false);
 
-    onClose();
+    if (ok) {
+      setWeight('');
+      onClose();
+    }
   };
 
   return (
@@ -53,7 +63,7 @@ export const AddMeasurementModal: React.FC<AddMeasurementModalProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        onClick={onClose}
+        onClick={uklada ? undefined : onClose}
         className="fixed inset-0 bg-black/80 backdrop-blur-md"
       />
 
@@ -71,18 +81,15 @@ export const AddMeasurementModal: React.FC<AddMeasurementModalProps> = ({
               <Scale className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white tracking-tight">
-                Zadat nové tělesné měření
-              </h3>
-              <p className="text-xs text-slate-400">
-                Data se promítnou do grafu a analýzy AI Trenéra
-              </p>
+              <h3 className="text-lg font-bold text-white tracking-tight">Zapsat váhu</h3>
+              <p className="text-xs text-slate-400">Promítne se do grafu tělesného vývoje</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 transition-all"
+            disabled={uklada}
+            className="p-2 rounded-xl text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 transition-all disabled:opacity-50"
           >
             <X className="w-5 h-5" />
           </button>
@@ -90,76 +97,47 @@ export const AddMeasurementModal: React.FC<AddMeasurementModalProps> = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                Váha (kg)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                required
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                className="w-full bg-slate-900/90 border border-slate-700 focus:border-[#00f2fe] focus:outline-none rounded-xl px-3 py-2.5 text-sm font-bold text-white shadow-inner"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                Tuk (%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                required
-                value={fat}
-                onChange={(e) => setFat(e.target.value)}
-                className="w-full bg-slate-900/90 border border-slate-700 focus:border-[#39ff14] focus:outline-none rounded-xl px-3 py-2.5 text-sm font-bold text-white shadow-inner"
-              />
-            </div>
-          </div>
-
           <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-              Svalová hmota (kg)
+            <label htmlFor="vaha-kg" className="text-xs font-semibold text-slate-300 block mb-1.5">
+              Váha (kg)
             </label>
             <input
+              id="vaha-kg"
               type="number"
               step="0.1"
+              inputMode="decimal"
+              autoFocus
               required
-              value={muscle}
-              onChange={(e) => setMuscle(e.target.value)}
-              className="w-full bg-slate-900/90 border border-slate-700 focus:border-[#00f2fe] focus:outline-none rounded-xl px-3 py-2.5 text-sm font-bold text-white shadow-inner"
+              disabled={uklada}
+              value={weight}
+              onChange={(e) => {
+                setWeight(e.target.value);
+                if (chyba) setChyba(null);
+              }}
+              placeholder={latestWeight ? `Naposledy ${String(latestWeight).replace('.', ',')}` : ''}
+              className={`w-full bg-slate-900/90 border focus:outline-none rounded-xl px-3 py-2.5 text-sm font-bold text-white shadow-inner disabled:opacity-60 ${
+                chyba ? 'border-red-500/60' : 'border-slate-700 focus:border-[#00f2fe]'
+              }`}
             />
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-              Poznámka
-            </label>
-            <input
-              type="text"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="např. Měřeno nalačno, dobrý spánek"
-              className="w-full bg-slate-900/90 border border-slate-700 focus:border-slate-500 focus:outline-none rounded-xl px-3 py-2.5 text-xs text-white"
-            />
+            {chyba && <p className="text-[11px] text-red-400 mt-1.5">{chyba}</p>}
           </div>
 
           <div className="pt-2 flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-900 border border-slate-800"
+              disabled={uklada}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-900 border border-slate-800 disabled:opacity-50"
             >
               Zrušit
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-[#00f2fe] to-[#39ff14] hover:opacity-95 shadow-[0_0_15px_rgba(0,242,254,0.3)] cursor-pointer"
+              disabled={uklada}
+              className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-[#00f2fe] to-[#39ff14] hover:opacity-95 shadow-[0_0_15px_rgba(0,242,254,0.3)] cursor-pointer disabled:opacity-60"
             >
-              Uložit měření
+              {uklada && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>{uklada ? 'Ukládám…' : 'Uložit váhu'}</span>
             </button>
           </div>
         </form>

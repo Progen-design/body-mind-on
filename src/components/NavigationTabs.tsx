@@ -5,14 +5,15 @@ import {
   Scale,
   Utensils,
   Dumbbell,
-  Activity,
-  ShoppingBag,
-  CheckCircle2
+  Activity
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
 // 'naviky' odstraneno spolu se sekci Navyky & Streaky.
-export type ActiveTab = 'dnes' | 'profil' | 'vaha' | 'jidelnicek' | 'trenink' | 'regenerace' | 'nakup';
+// 'nakup' odstraneno — nakupni seznam ted zije v zalozce jidelnicku, pod jidly,
+// ze kterych vznika. Jako vlastni zalozka sedel hned pod kartou TED a vypadal
+// jako doporuceni trenera.
+export type ActiveTab = 'dnes' | 'profil' | 'vaha' | 'jidelnicek' | 'trenink' | 'regenerace';
 
 interface NavigationTabsProps {
   activeTab: ActiveTab;
@@ -36,8 +37,7 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
     { id: 'trenink', label: 'Tréninkový plán', icon: Dumbbell },
     // Odznak u regenerace byl natvrdo '70'. Skóre regenerace často vůbec
     // nemáme (backend hlásí „nedostatek dat"), takže tu žádné číslo nesvítí.
-    { id: 'regenerace', label: 'Apple Watch & Regenerace', icon: Activity },
-    { id: 'nakup', label: 'Nákupní seznam', icon: ShoppingBag }
+    { id: 'regenerace', label: 'Apple Watch & Regenerace', icon: Activity }
   ];
 
   return (

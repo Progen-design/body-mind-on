@@ -30,6 +30,7 @@ import { hodnotaNeboPomlcka, kdyMereno, zmenaText } from '../data/adaptery';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { ConfirmDialog } from './ConfirmDialog';
+import { NadpisSekce } from './NadpisSekce';
 
 interface ProfileSectionProps {
   profile: UserProfile;
@@ -102,6 +103,12 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      <NadpisSekce
+        titulek="Můj profil & cíle"
+        podtitulek="Účet, tělesné údaje, cíle a připojená zařízení"
+        ikona={<User className="w-5 h-5 text-[#00f2fe]" />}
+      />
+
       {/* 1. Main Profile Hero Header Card */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}

@@ -562,7 +562,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
 
           {/* Shopping List Quick Pill */}
           <div
-            onClick={() => onSelectTab('nakup')}
+            onClick={() => onSelectTab('jidelnicek')}
             className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/30 flex items-center justify-between cursor-pointer transition-all mb-2"
           >
             <div className="flex items-center gap-2">

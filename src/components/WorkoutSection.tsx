@@ -5,6 +5,7 @@ import {
   Flame,
   CheckCircle2,
   Calendar,
+  CalendarDays,
   Play,
   TrendingUp,
   Award,
@@ -15,6 +16,7 @@ import { motion } from 'motion/react';
 import { WorkoutDay } from '../types';
 import { dnesniTrenink, jeNaplanovany, vybranyTrenink } from '../lib/trenink';
 import { Vysvetlivka } from './Vysvetlivka';
+import { NadpisSekce } from './NadpisSekce';
 
 interface WorkoutSectionProps {
   workouts: WorkoutDay[];
@@ -42,6 +44,12 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
 
   return (
     <div className="space-y-6">
+      <NadpisSekce
+        titulek="Tréninkový plán"
+        podtitulek="Dnešní jednotka, týdenní rozpis a záznam odcvičeného"
+        ikona={<Dumbbell className="w-5 h-5 text-[#39ff14]" />}
+      />
+
       {/* Top Banner: Today's Active Workout Hero */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
@@ -100,15 +108,14 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
 
       {/* Week Split Navigator (PO - NE) */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">
-            Týdenní tréninkový split
-          </h3>
-          <span className="text-xs text-slate-400 font-semibold">
-            Splněno {totalCompletedWorkouts} z {workouts.length} jednotek
-            {totalWeeklyCalories > 0 && ` (${totalWeeklyCalories} kcal)`}
-          </span>
-        </div>
+        <NadpisSekce
+          uroven="podsekce"
+          titulek="Týdenní rozpis"
+          podtitulek={`Splněno ${totalCompletedWorkouts} z ${workouts.length} jednotek${
+            totalWeeklyCalories > 0 ? ` (${totalWeeklyCalories} kcal)` : ''
+          }`}
+          ikona={<CalendarDays className="w-4 h-4 text-[#00f2fe]" />}
+        />
 
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
           {workouts.map(w => {

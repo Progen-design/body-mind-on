@@ -150,10 +150,9 @@ export const Header: React.FC<HeaderProps> = ({
                     { id: 'dnes', label: 'Hlavní přehled (Bento Grid)' },
                     { id: 'profil', label: 'Můj Profil & Cíle' },
                     { id: 'vaha', label: 'Tělesné složení & Váha' },
-                    { id: 'jidelnicek', label: 'Jídelníček & Recepty' },
+                    { id: 'jidelnicek', label: 'Jídelníček, recepty & nákup' },
                     { id: 'trenink', label: 'Tréninkový plán & Stopky' },
-                    { id: 'regenerace', label: 'Apple Watch & Regenerace' },
-                    { id: 'nakup', label: 'Nákupní seznam' }
+                    { id: 'regenerace', label: 'Apple Watch & Regenerace' }
                   ].map(item => (
                     <button
                       key={item.id}

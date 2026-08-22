@@ -909,6 +909,8 @@ function AppContent() {
         {activeTab === 'jidelnicek' && (
           <NutritionSection
             meals={meals}
+            shoppingItems={shoppingItems}
+            onToggleShoppingItem={handleToggleShoppingItem}
             currentCalories={totalCalories}
             targetCalories={preferences.dailyCalorieTarget}
             proteinPct={preferences.proteinRatioPercent}
@@ -955,61 +957,8 @@ function AppContent() {
             spánku ani komentáře typu „včera překonána chuť na čokoládu“
             nemají v datech žádnou oporu — nesledujeme je. */}
 
-        {/* TAB H: NÁKUPNÍ SEZNAM */}
-        {activeTab === 'nakup' && (
-          <div className="space-y-4">
-            <div className="rounded-3xl p-5 sm:p-6 bg-[#0e131d]/90 border border-cyan-500/30 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-xl font-bold text-white">Nákupní seznam na týden</h3>
-                <p className="text-xs text-slate-400">
-                  Přehledný seznam surovin generovaný podle vašeho jídelníčku
-                </p>
-              </div>
-              <button
-                onClick={() => setIsShoppingModalOpen(true)}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-[#00f2fe] text-slate-950 hover:bg-[#00f2fe]/90 shadow-[0_0_12px_rgba(0,242,254,0.3)] transition-all"
-              >
-                Otevřít celoobrazovkový seznam
-              </button>
-            </div>
-
-            {/* In-tab shopping checklist */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {shoppingItems.map(item => (
-                <div
-                  key={item.id}
-                  onClick={() => handleToggleShoppingItem(item.id)}
-                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                    item.checked
-                      ? 'bg-slate-900/40 border-slate-800 opacity-60'
-                      : 'bg-[#0e131d]/90 border-slate-800 hover:border-cyan-500/30'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-5 h-5 rounded-lg border flex items-center justify-center ${
-                        item.checked
-                          ? 'bg-[#39ff14] border-[#39ff14] text-slate-950 font-bold'
-                          : 'border-slate-700 bg-slate-900'
-                      }`}
-                    >
-                      {item.checked && '✓'}
-                    </div>
-                    <div>
-                      <span className={`text-xs font-bold block ${item.checked ? 'line-through text-slate-500' : 'text-slate-100'}`}>
-                        {item.name}
-                      </span>
-                      <span className="text-[10px] text-cyan-400/80">{item.category}</span>
-                    </div>
-                  </div>
-                  <span className="text-xs font-semibold text-slate-300 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">
-                    {item.amount}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Zalozka „Nakupni seznam" zrusena — seznam je ted podsekce
+            jidelnicku, pod jidly, ze kterych vznikl. */}
 
         {/* Footer */}
         <footer className="pt-6 pb-8 text-center text-xs text-slate-600 space-y-1 select-none">

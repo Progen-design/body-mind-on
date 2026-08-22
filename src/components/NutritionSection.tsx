@@ -12,10 +12,14 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Vysvetlivka } from './Vysvetlivka';
-import { MealItem } from '../types';
+import { NadpisSekce } from './NadpisSekce';
+import { MealItem, ShoppingItem } from '../types';
 
 interface NutritionSectionProps {
   meals: MealItem[];
+  /** Nákupní seznam patří k jídelníčku — vychází z něj. Dřív měl vlastní záložku. */
+  shoppingItems: ShoppingItem[];
+  onToggleShoppingItem: (id: string) => void;
   currentCalories: number;
   targetCalories: number;
   proteinPct: number;
@@ -31,6 +35,8 @@ interface NutritionSectionProps {
 
 export const NutritionSection: React.FC<NutritionSectionProps> = ({
   meals,
+  shoppingItems,
+  onToggleShoppingItem,
   currentCalories,
   targetCalories,
   proteinPct,
@@ -47,8 +53,16 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
   const totalCarbsGrams = meals.reduce((acc, m) => acc + (m.completed ? m.carbs : 0), 0);
   const totalFatGrams = meals.reduce((acc, m) => acc + (m.completed ? m.fat : 0), 0);
 
+  const kNakupu = shoppingItems.filter(i => !i.checked).length;
+
   return (
     <div className="space-y-6">
+      <NadpisSekce
+        titulek="Jídelníček & makra"
+        podtitulek="Dnešní jídla, poměr živin a suroviny k nákupu"
+        ikona={<Utensils className="w-5 h-5 text-[#00f2fe]" />}
+      />
+
       {/* Top Banner: Macros & Calorie Tracker Overview */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
@@ -148,14 +162,12 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
 
       {/* Detailed Meal Cards List (Snídaně, Dopolední svačina, Oběd, Odpolední svačina, Večeře) */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">
-            Dnešní naplánovaná jídla &amp; Recepty
-          </h3>
-          <span className="text-xs text-slate-400">
-            Klikněte na „Recept“ pro postup vaření
-          </span>
-        </div>
+        <NadpisSekce
+          uroven="podsekce"
+          titulek="Dnešní jídla"
+          podtitulek="Postup přípravy najdeš pod tlačítkem Recept"
+          ikona={<Flame className="w-4 h-4 text-amber-400" />}
+        />
 
         <div className="grid grid-cols-1 gap-3.5">
           {meals.map(meal => (
@@ -227,6 +239,75 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
             </div>
           ))}
         </div>
+      </div>
+
+      {/* NÁKUPNÍ SEZNAM.
+          Dřív měl vlastní záložku a v ní seděl hned pod kartou TED, takže
+          vypadal jako doporučení trenéra. Seznam se ale skládá z jídelníčku —
+          patří sem, pod jídla, ze kterých vznikl. */}
+      <div className="space-y-4">
+        <NadpisSekce
+          uroven="podsekce"
+          titulek="Nákupní seznam na týden"
+          podtitulek={
+            shoppingItems.length === 0
+              ? 'Seznam se sestaví, jakmile budeš mít jídelníček na týden.'
+              : `Suroviny z tvého jídelníčku • zbývá ${kNakupu} z ${shoppingItems.length}`
+          }
+          ikona={<ShoppingBag className="w-4 h-4 text-[#39ff14]" />}
+          akce={
+            shoppingItems.length > 0 ? (
+              <button
+                onClick={onOpenShoppingList}
+                className="px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-300 bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-500/40 transition-all active:scale-95"
+              >
+                Otevřít přes celou obrazovku
+              </button>
+            ) : undefined
+          }
+        />
+
+        {shoppingItems.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {shoppingItems.map(item => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onToggleShoppingItem(item.id)}
+                className={`p-3.5 rounded-2xl border transition-all text-left w-full flex items-center justify-between ${
+                  item.checked
+                    ? 'bg-slate-900/40 border-slate-800 opacity-60'
+                    : 'bg-[#0e131d]/90 border-slate-800 hover:border-emerald-500/40'
+                }`}
+              >
+                <span className="flex items-center gap-3 min-w-0">
+                  <span
+                    className={`w-5 h-5 rounded-lg border flex items-center justify-center shrink-0 ${
+                      item.checked
+                        ? 'bg-[#39ff14] border-[#39ff14] text-slate-950 font-bold'
+                        : 'border-slate-700 bg-slate-900'
+                    }`}
+                  >
+                    {item.checked && '✓'}
+                  </span>
+                  <span className="min-w-0">
+                    <span
+                      className={`text-xs font-bold block truncate ${
+                        item.checked ? 'line-through text-slate-500' : 'text-slate-100'
+                      }`}
+                    >
+                      {item.name}
+                    </span>
+                    <span className="text-[10px] text-slate-500">{item.category}</span>
+                  </span>
+                </span>
+                <span className="text-xs font-semibold text-slate-300 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800 shrink-0">
+                  {item.amount}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

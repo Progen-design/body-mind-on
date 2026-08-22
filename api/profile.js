@@ -504,7 +504,8 @@ export default async function handler(req, res) {
         profile_plan_returned: hasValidPlan ? true : (initialPlanTask?.status === 'completed' ? false : undefined),
         root_failure_stage: initialPlanResult?.root_failure_stage ?? undefined,
         plan_state,
-        plan_state_reason,
+        // plan_state_reason je nize jako `plan_state_reason || undefined` —
+        // pozdejsi klic prepisoval tenhle, takze tady byl mrtvy zapis.
         plan_expired: planExpiredInfo ?? undefined,
         last_task_status: last_task_status ?? undefined,
         last_task_reason: last_task_reason ?? undefined,

@@ -121,7 +121,11 @@ export default async function handler(req, res) {
         .limit(200),
       supabaseServer
         .from('daily_activity_completions')
-        .select('id, activity_type, completed_at, activity_key')
+        // plan_id a plan_day musi byt v odpovedi: bez nich UI nepozna, ke
+        // kteremu dni plánu odškrtnutí patří, a vcerejsi zaznam by se
+        // namapoval na dnesek. Parovaci klic je (plan_id, plan_day,
+        // activity_type, activity_key).
+        .select('id, activity_type, activity_key, completed_at, plan_id, plan_day')
         .eq('user_id', userId)
         .order('completed_at', { ascending: false })
         .limit(500),

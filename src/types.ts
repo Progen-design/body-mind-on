@@ -26,7 +26,23 @@ export interface RecipeDetail {
   replacements?: string[];
 }
 
-export interface MealItem {
+/**
+ * Souřadnice zápisu do `daily_activity_completions`.
+ *
+ * Volitelné schválně: seed data v `initialData.ts` je nemají a mít je nemůžou —
+ * nepocházejí z plánu. UI podle jejich přítomnosti pozná, jestli jde odškrtnutí
+ * poslat na server, nebo je to jen ukázka.
+ */
+export interface AktivitaPlanu {
+  /** id řádku v ai_generated_plans; null = plán bez id (párování přes plan_id IS NULL). */
+  planId?: string | null;
+  /** Index dne v plánu, 0–6. Server jiný rozsah odmítne. */
+  planDay?: number;
+  /** Staví lib/dailyActivationClient.js (jídla) a lib/profile/cvikDokonceni.js (cviky). */
+  activityKey?: string;
+}
+
+export interface MealItem extends AktivitaPlanu {
   id: string;
   type: 'Snídaně' | 'Dopolední svačina' | 'Oběd' | 'Odpolední svačina' | 'Večeře';
   time: string;
@@ -40,7 +56,7 @@ export interface MealItem {
   recipe?: RecipeDetail;
 }
 
-export interface ExerciseItem {
+export interface ExerciseItem extends AktivitaPlanu {
   id: string;
   name: string;
   sets: number;
@@ -51,7 +67,7 @@ export interface ExerciseItem {
   completed?: boolean;
 }
 
-export interface WorkoutDay {
+export interface WorkoutDay extends AktivitaPlanu {
   dayName: string;
   dayShort: string;
   title: string;

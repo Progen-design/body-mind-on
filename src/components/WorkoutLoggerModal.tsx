@@ -20,15 +20,13 @@ interface WorkoutLoggerModalProps {
   onClose: () => void;
   todayWorkout: WorkoutDay;
   onToggleExercise: (dayName: string, exerciseId: string) => void;
-  onAddExercise?: (dayName: string, exercise: ExerciseItem) => void;
 }
 
 export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
   isOpen,
   onClose,
   todayWorkout,
-  onToggleExercise,
-  onAddExercise
+  onToggleExercise
 }) => {
   // Timer state
   const [timerSeconds, setTimerSeconds] = useState(0);
@@ -36,11 +34,6 @@ export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
   const [restTimer, setRestTimer] = useState<number | null>(null);
 
   // New exercise form
-  const [showAddEx, setShowAddEx] = useState(false);
-  const [newExName, setNewExName] = useState('');
-  const [newExSets, setNewExSets] = useState('4');
-  const [newExReps, setNewExReps] = useState('8-10');
-  const [newExWeight, setNewExWeight] = useState('50');
 
   useEffect(() => {
     let interval: any = null;
@@ -76,24 +69,6 @@ export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
     setRestTimer(sec);
   };
 
-  const handleAddSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newExName.trim() || !onAddExercise) return;
-
-    onAddExercise(todayWorkout.dayName, {
-      id: `ex-${Date.now()}`,
-      name: newExName.trim(),
-      sets: parseInt(newExSets) || 3,
-      reps: newExReps.trim() || '10',
-      weightKg: parseFloat(newExWeight) || 0,
-      restSec: 90,
-      targetMuscle: todayWorkout.title,
-      completed: true
-    });
-
-    setNewExName('');
-    setShowAddEx(false);
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

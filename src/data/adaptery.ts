@@ -3,6 +3,10 @@
 // Relativni cesta zamerne misto aliasu @lib - soubor pak jde spustit
 // i cistym Nodem (viz tools/overit-adaptery.ts), nejen pres Vite.
 import { POSITIVE_HABITS, NEGATIVE_HABITS } from '../../lib/habits.js';
+// Klice odskrtnutych aktivit maji jediny zdroj pravdy v lib/ — sdileny se
+// serverem. Format se nesmi menit, rozparoval by uz ulozene radky.
+import { mealActivityKey } from '../../lib/dailyActivationClient.js';
+import { klicCviku, KLIC_CELEHO_TRENINKU } from '../../lib/profile/cvikDokonceni.js';
 import type {
   BadHabitItem, ExerciseItem, HabitItem, MealItem, ShoppingItem,
   UserPreferences, UserProfile, WeightRecord, WorkoutDay
@@ -19,6 +23,16 @@ export interface ProfilOdpoved {
   user_habits?: { habit_id: string; is_positive: boolean; sort_order: number }[];
   plans?: any[];
   workouts?: any[];
+  daily_activity_completions?: DokonceniAktivity[];
+}
+
+/** Řádek `daily_activity_completions`, jak ho vrací /api/profile. */
+export interface DokonceniAktivity {
+  activity_type: string;
+  activity_key: string;
+  completed_at?: string;
+  plan_id?: string | null;
+  plan_day?: number | null;
 }
 
 const NAZVY_PROGRAMU: Record<string, string> = {
@@ -79,9 +93,29 @@ function dnesniDen(struktura: any): any | null {
   return dny.find((d: any) => String(d?.date) === dnes) || dny[0];
 }
 
+/**
+ * Index dne v plánu (0–6) — to je `plan_day`, které čeká /api/daily-activation.
+ * Pozor: NENÍ to index v poli, které vrací `naTreninky` — to je předfiltrované
+ * na dny s tréninkem, takže by čísla nesedela.
+ */
+function indexDne(struktura: any, den: any): number | undefined {
+  const dny = struktura?.days;
+  if (!Array.isArray(dny) || !den) return undefined;
+  const i = dny.indexOf(den);
+  return i >= 0 && i <= 6 ? i : undefined;
+}
+
+function idPlanu(plan: any): string | null {
+  return plan?.id != null ? String(plan.id) : null;
+}
+
 export function naJidla(plan: any): MealItem[] {
-  const den = dnesniDen(strukturaPlanu(plan));
+  const struktura = strukturaPlanu(plan);
+  const den = dnesniDen(struktura);
   if (!den || !Array.isArray(den.meals)) return [];
+
+  const planDay = indexDne(struktura, den);
+  const planId = idPlanu(plan);
 
   let svaciny = 0;
   return den.meals.map((m: any, i: number) => {
@@ -98,6 +132,9 @@ export function naJidla(plan: any): MealItem[] {
       carbs: cislo(m?.carbs_g),
       fat: cislo(m?.fat_g),
       completed: false,
+      planId,
+      planDay,
+      activityKey: mealActivityKey(m, i),
       ingredients: Array.isArray(m?.shopping_ingredient_lines)
         ? m.shopping_ingredient_lines.map(String)
         : (Array.isArray(recept.ingredients)
@@ -123,11 +160,15 @@ export function naTreninky(plan: any): WorkoutDay[] {
   if (!Array.isArray(dny)) return [];
 
   const dnes = new Date().toISOString().slice(0, 10);
+  const planId = idPlanu(plan);
 
   return dny
     .filter((d: any) => d?.workout && Array.isArray(d.workout.exercises))
     .map((d: any) => {
       const w = d.workout;
+      // Index se bere z puvodniho pole dnu, ne z tohohle predfiltrovaneho.
+      const planDay = indexDne(struktura, d);
+
       const cviky: ExerciseItem[] = w.exercises.map((e: any, i: number) => ({
         id: String(e?.canonical_key || `${d.date}-cvik-${i}`),
         name: e?.display_name_cs || e?.name_cs || e?.name || 'Cvik',
@@ -135,10 +176,17 @@ export function naTreninky(plan: any): WorkoutDay[] {
         reps: String(e?.reps ?? ''),
         restSec: 0,
         targetMuscle: '',
-        completed: false
+        completed: false,
+        planId,
+        planDay,
+        activityKey: klicCviku(i)
       }));
 
       return {
+        planId,
+        planDay,
+        // Cely trenink ma vlastni klic vedle jednotlivych cviku (cvik#0, cvik#1…).
+        activityKey: KLIC_CELEHO_TRENINKU,
         dayName: String(d?.day_name || ''),
         dayShort: ZKRATKY[String(d?.day_name)] || String(d?.day_name || '').slice(0, 2),
         title: w?.workout_name || 'Trénink',
@@ -150,6 +198,61 @@ export function naTreninky(plan: any): WorkoutDay[] {
         exercises: cviky
       } as WorkoutDay;
     });
+}
+
+/**
+ * Klíč pro porovnání odškrtnutí. Musí obsahovat i den a plán — jinak by se
+ * včerejší odškrtnutí namapovalo na dnešek, protože `activity_key` je
+ * u každého dne stejný (`snack#2`, `cvik#0`…).
+ */
+function klicDokonceni(
+  planId: string | null | undefined,
+  planDay: number | null | undefined,
+  typ: string,
+  klic: string
+): string {
+  return `${planId ?? ''}|${planDay ?? ''}|${typ}|${klic}`;
+}
+
+/** Množina odškrtnutých aktivit z odpovědi serveru. */
+export function mnozinaDokonceni(radky: DokonceniAktivity[] = []): Set<string> {
+  const s = new Set<string>();
+  for (const r of radky || []) {
+    if (!r?.activity_type || !r?.activity_key) continue;
+    s.add(klicDokonceni(r.plan_id, r.plan_day, r.activity_type, r.activity_key));
+  }
+  return s;
+}
+
+/** Je tahle položka odškrtnutá podle serveru? */
+export function jeHotovo(
+  polozka: { planId?: string | null; planDay?: number; activityKey?: string },
+  typ: 'meal' | 'workout',
+  hotove: Set<string>
+): boolean {
+  if (!polozka?.activityKey || polozka.planDay === undefined) return false;
+  return hotove.has(klicDokonceni(polozka.planId, polozka.planDay, typ, polozka.activityKey));
+}
+
+/**
+ * Výchozí stav odškrtnutí ze serveru. Bez tohohle začínalo UI vždy na
+ * nule a po refreshi zmizelo, co uživatel odklikal.
+ */
+export function pouzijDokonceni<T extends { planId?: string | null; planDay?: number; activityKey?: string; completed?: boolean }>(
+  polozky: T[],
+  typ: 'meal' | 'workout',
+  hotove: Set<string>
+): T[] {
+  return polozky.map((p) => ({ ...p, completed: jeHotovo(p, typ, hotove) }));
+}
+
+/** Trénink: cviky i příznak celého dne. */
+export function pouzijDokonceniTreninku(dny: WorkoutDay[], hotove: Set<string>): WorkoutDay[] {
+  return dny.map((den) => ({
+    ...den,
+    isCompleted: jeHotovo(den, 'workout', hotove),
+    exercises: pouzijDokonceni(den.exercises, 'workout', hotove)
+  }));
 }
 
 const IKONY: Record<string, HabitItem['iconType']> = {

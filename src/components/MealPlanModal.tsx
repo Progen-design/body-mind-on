@@ -8,7 +8,6 @@ interface MealPlanModalProps {
   onClose: () => void;
   meals: MealItem[];
   onToggleMeal: (id: string) => void;
-  onAddMeal: (newMeal: MealItem) => void;
 }
 
 export const MealPlanModal: React.FC<MealPlanModalProps> = ({
@@ -16,15 +15,7 @@ export const MealPlanModal: React.FC<MealPlanModalProps> = ({
   onClose,
   meals,
   onToggleMeal,
-  onAddMeal
 }) => {
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newType, setNewType] = useState<MealItem['type']>('Dopolední svačina');
-  const [newCalories, setNewCalories] = useState('250');
-  const [newProtein, setNewProtein] = useState('20');
-  const [newCarbs, setNewCarbs] = useState('25');
-  const [newFat, setNewFat] = useState('8');
 
   if (!isOpen) return null;
 
@@ -34,27 +25,6 @@ export const MealPlanModal: React.FC<MealPlanModalProps> = ({
   const totalCarbs = meals.reduce((acc, m) => acc + (m.completed ? m.carbs : 0), 0);
   const totalFat = meals.reduce((acc, m) => acc + (m.completed ? m.fat : 0), 0);
 
-  const handleAddSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim()) return;
-
-    const item: MealItem = {
-      id: `meal-${Date.now()}`,
-      type: newType,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      title: newTitle.trim(),
-      calories: parseInt(newCalories) || 0,
-      protein: parseInt(newProtein) || 0,
-      carbs: parseInt(newCarbs) || 0,
-      fat: parseInt(newFat) || 0,
-      completed: true,
-      ingredients: []
-    };
-
-    onAddMeal(item);
-    setNewTitle('');
-    setShowAddForm(false);
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -175,102 +145,6 @@ export const MealPlanModal: React.FC<MealPlanModalProps> = ({
             </div>
           ))}
 
-          {/* Add meal form toggle */}
-          {showAddForm ? (
-            <form onSubmit={handleAddSubmit} className="p-4 rounded-2xl bg-[#0e1624] border border-cyan-500/40 space-y-3">
-              <div className="font-semibold text-sm text-cyan-300">Přidat položku do jídelníčku</div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-slate-400 block mb-1">Druh jídla</label>
-                  <select
-                    value={newType}
-                    onChange={(e) => setNewType(e.target.value as MealItem['type'])}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
-                  >
-                    <option value="Snídaně">Snídaně</option>
-                    <option value="Dopolední svačina">Dopolední svačina</option>
-                    <option value="Oběd">Oběd</option>
-                    <option value="Odpolední svačina">Odpolední svačina</option>
-                    <option value="Večeře">Večeře</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-slate-400 block mb-1">Název jídla</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="např. Proteinový shake s oříšky"
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-4 gap-2">
-                <div>
-                  <label className="text-[10px] text-slate-400 block mb-0.5">Kcal</label>
-                  <input
-                    type="number"
-                    value={newCalories}
-                    onChange={(e) => setNewCalories(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-slate-400 block mb-0.5">Bílkoviny (g)</label>
-                  <input
-                    type="number"
-                    value={newProtein}
-                    onChange={(e) => setNewProtein(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-slate-400 block mb-0.5">Sacharidy (g)</label>
-                  <input
-                    type="number"
-                    value={newCarbs}
-                    onChange={(e) => setNewCarbs(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-slate-400 block mb-0.5">Tuky (g)</label>
-                  <input
-                    type="number"
-                    value={newFat}
-                    onChange={(e) => setNewFat(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddForm(false)}
-                  className="px-3 py-1.5 rounded-xl text-xs text-slate-400 hover:text-white bg-slate-800"
-                >
-                  Zrušit
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded-xl text-xs font-bold text-slate-950 bg-[#00f2fe] hover:bg-cyan-300"
-                >
-                  Uložit jídlo
-                </button>
-              </div>
-            </form>
-          ) : (
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="w-full py-3 rounded-2xl border border-dashed border-slate-800 hover:border-cyan-500/40 text-xs font-medium text-slate-400 hover:text-cyan-300 transition-all flex items-center justify-center gap-1.5"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Přidat vlastní jídlo / svačinu</span>
-            </button>
-          )}
         </div>
 
         {/* Footer */}

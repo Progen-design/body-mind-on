@@ -33,8 +33,9 @@ import { useProfilData } from './hooks/useProfilData';
 import { useZdravotniData } from './hooks/useZdravotniData';
 import { naBiometrii, maZdravotniData } from './data/adapteryZdravi';
 import {
-  naJidla, naNakupniSeznam, naNavyky, naPreference, naProfil,
-  naTreninky, naVazeni, naZlozvyky, vyberPlan
+  mnozinaDokonceni, naJidla, naNakupniSeznam, naNavyky, naPreference, naProfil,
+  naTreninky, naVazeni, naZlozvyky, pouzijDokonceni, pouzijDokonceniTreninku,
+  vyberPlan
 } from './data/adaptery';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -42,7 +43,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 // si dopocitavaly v prohlizeci (mean-revert HRV k baseline), takze uzivatel
 // videl vymyslene zdravotni udaje. Data ted chodi z /api/health/recovery.
 import { applyWeightRecord, formatLastSynced } from './lib/syncEngine';
-import { apiFetch } from './lib/api';
+import { apiFetch, jeNeaktivniClenstvi } from './lib/api';
 import { dnesniTrenink } from './lib/trenink';
 
 // Initial Data
@@ -144,8 +145,12 @@ function AppContent() {
     if (!profilData) return;
     const plan = vyberPlan(profilData.plans);
     setProfile(naProfil(profilData));
-    setMeals(naJidla(plan));
-    setWorkouts(naTreninky(plan));
+
+    // Vychozi stav odskrtnuti jde ze serveru, ne z prazdna — jinak by se po
+    // kazdem nacteni tvarilo, ze uzivatel dnes nic nesplnil.
+    const hotove = mnozinaDokonceni(profilData.daily_activity_completions);
+    setMeals(pouzijDokonceni(naJidla(plan), 'meal', hotove));
+    setWorkouts(pouzijDokonceniTreninku(naTreninky(plan), hotove));
     setHabits(naNavyky(profilData.user_habits));
     // Seznam = polozky spocitane z jidelnicku + to, co si uzivatel dopsal sam.
     const zPlanu = naNakupniSeznam(plan);
@@ -212,46 +217,126 @@ function AppContent() {
   latestRecordRef.current = latestRecord;
   const isSyncingRef = useRef(false);
 
-  // Handlers: Nutrition & Meals
-  const handleToggleMeal = (id: string) => {
-    setMeals(prev =>
-      prev.map(m => (m.id === id ? { ...m, completed: !m.completed } : m))
-    );
-  };
+  // Aktualni jidla a treninky pro asynchronni zapisy — bez toho by handler
+  // po awaitu pracoval se stavem z render, ve kterem vznikl.
+  const mealsRef = useRef(meals);
+  mealsRef.current = meals;
+  const workoutsRef = useRef(workouts);
+  workoutsRef.current = workouts;
 
-  const handleAddMeal = (newMeal: MealItem) => {
-    setMeals(prev => [...prev, newMeal]);
-  };
+  /**
+   * Zápis odškrtnutí na server. Vzor pro všechny zápisy v Etapě 2:
+   * optimistický update proběhl u volajícího, tady se jen potvrdí, a když
+   * server odmítne, volající vrátí stav zpátky a ukáže se toast.
+   */
+  const zapisDokonceni = useCallback(
+    async (
+      polozka: { planId?: string | null; planDay?: number; activityKey?: string },
+      typ: 'meal' | 'workout',
+      hotovo: boolean
+    ): Promise<boolean> => {
+      // Seed data a polozky mimo plan nemaji kam zapsat — UI je nechá být.
+      if (!polozka?.activityKey || polozka.planDay === undefined) return true;
+
+      try {
+        await apiFetch('/api/daily-activation', {
+          method: 'POST',
+          body: JSON.stringify({
+            action: hotovo ? 'complete' : 'uncomplete',
+            activity_type: typ,
+            activity_key: polozka.activityKey,
+            plan_id: polozka.planId ?? null,
+            plan_day: polozka.planDay,
+            source_component: 'bento_profil'
+          })
+        });
+        return true;
+      } catch (chyba) {
+        showToast({
+          title: jeNeaktivniClenstvi(chyba) ? 'Změnu jsme neuložili' : 'Nepodařilo se uložit',
+          description:
+            chyba instanceof Error ? chyba.message : 'Zkus to prosím za chvíli znovu.',
+          variant: 'error'
+        });
+        return false;
+      }
+    },
+    [showToast]
+  );
+
+  // Handlers: Nutrition & Meals
+  const handleToggleMeal = useCallback(
+    async (id: string) => {
+      const jidlo = mealsRef.current.find(m => m.id === id);
+      if (!jidlo) return;
+
+      const hotovo = !jidlo.completed;
+      setMeals(prev => prev.map(m => (m.id === id ? { ...m, completed: hotovo } : m)));
+
+      const ok = await zapisDokonceni(jidlo, 'meal', hotovo);
+      if (!ok) {
+        setMeals(prev => prev.map(m => (m.id === id ? { ...m, completed: !hotovo } : m)));
+      }
+    },
+    [zapisDokonceni]
+  );
 
   // Handlers: Workouts & Exercises
-  const handleToggleExercise = (dayName: string, exerciseId: string) => {
-    setWorkouts(prev =>
-      prev.map(day => {
-        if (day.dayName !== dayName) return day;
-        const updatedEx = day.exercises.map(ex =>
-          ex.id === exerciseId ? { ...ex, completed: !ex.completed } : ex
-        );
-        const allDone = updatedEx.every(e => e.completed);
-        return {
-          ...day,
-          exercises: updatedEx,
-          isCompleted: allDone
-        };
-      })
-    );
-  };
+  const handleToggleExercise = useCallback(
+    async (dayName: string, exerciseId: string) => {
+      const den = workoutsRef.current.find(d => d.dayName === dayName);
+      const cvik = den?.exercises.find(e => e.id === exerciseId);
+      if (!den || !cvik) return;
 
-  const handleAddExercise = (dayName: string, newEx: ExerciseItem) => {
-    setWorkouts(prev =>
-      prev.map(day => {
-        if (day.dayName !== dayName) return day;
-        return {
-          ...day,
-          exercises: [...day.exercises, newEx]
-        };
-      })
-    );
-  };
+      const hotovo = !cvik.completed;
+      const nastav = (stav: boolean) =>
+        setWorkouts(prev =>
+          prev.map(d =>
+            d.dayName === dayName
+              ? {
+                  ...d,
+                  exercises: d.exercises.map(e =>
+                    e.id === exerciseId ? { ...e, completed: stav } : e
+                  )
+                }
+              : d
+          )
+        );
+
+      nastav(hotovo);
+
+      const ok = await zapisDokonceni(cvik, 'workout', hotovo);
+      if (!ok) {
+        nastav(!hotovo);
+        return;
+      }
+
+      // Odškrtnutí posledního cviku zapíše i celý trénink — jako skutečný
+      // záznam, ne dopočet, jinak by ho uživatel nemohl ručně vrátit zpět.
+      // Opačným směrem se nic neruší (viz lib/profile/cvikDokonceni.js).
+      if (!hotovo) return;
+      const vsechnyHotove = den.exercises.every(e =>
+        e.id === exerciseId ? true : e.completed
+      );
+      if (!vsechnyHotove || den.isCompleted) return;
+
+      setWorkouts(prev =>
+        prev.map(d => (d.dayName === dayName ? { ...d, isCompleted: true } : d))
+      );
+      const okDen = await zapisDokonceni(den, 'workout', true);
+      if (!okDen) {
+        setWorkouts(prev =>
+          prev.map(d => (d.dayName === dayName ? { ...d, isCompleted: false } : d))
+        );
+      }
+    },
+    [zapisDokonceni]
+  );
+
+  // Vlastni jidlo a vlastni cvik nemaji endpoint — tabulky pridaval zruseny
+  // PR #97 a z produkce se odstranily. Drzet tlacitko, ktere po refreshi
+  // zahodi, co uzivatel napsal, je horsi nez ho nemit. Prislusna pole jsou
+  // proto pryc i z MealPlanModal a WorkoutLoggerModal.
 
   // Handlers: Habits
   const handleToggleHabit = (id: string) => {
@@ -712,7 +797,6 @@ function AppContent() {
         onClose={() => setIsMealModalOpen(false)}
         meals={meals}
         onToggleMeal={handleToggleMeal}
-        onAddMeal={handleAddMeal}
       />
 
       <RecipeModal
@@ -750,7 +834,6 @@ function AppContent() {
         onClose={() => setIsWorkoutLoggerOpen(false)}
         todayWorkout={todayWorkout}
         onToggleExercise={handleToggleExercise}
-        onAddExercise={handleAddExercise}
       />
 
       <WithingsSyncModal

@@ -14,6 +14,7 @@ import {
 import { motion } from 'motion/react';
 import { WorkoutDay } from '../types';
 import { dnesniTrenink, jeNaplanovany, vybranyTrenink } from '../lib/trenink';
+import { Vysvetlivka } from './Vysvetlivka';
 
 interface WorkoutSectionProps {
   workouts: WorkoutDay[];
@@ -162,8 +163,10 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
           </div>
 
           <div className="flex items-center gap-3 text-xs">
-            <span className="text-slate-400 font-semibold">
+            <span className="text-slate-400 font-semibold inline-flex items-center gap-1">
               {selectedWorkout.exercises.length} cviků
+              {/* Otazník k zápisu „3 × 8–10" je jednou u seznamu, ne u každého cviku. */}
+              <Vysvetlivka pojem="zapis_serii" />
             </span>
             {selectedWorkout.caloriesBurned > 0 && (
               <span className="px-2.5 py-1 rounded-lg bg-emerald-950/60 text-[#39ff14] font-bold border border-emerald-500/30">

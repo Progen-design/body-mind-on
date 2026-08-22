@@ -11,6 +11,7 @@ import {
   Plus
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { Vysvetlivka } from './Vysvetlivka';
 import { MealItem } from '../types';
 
 interface NutritionSectionProps {
@@ -59,7 +60,8 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Denní příjem &amp; Makronutrienty
+                Denní příjem &amp; Makronutrienty{' '}
+                <Vysvetlivka pojem="makroziviny" />
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-[#39ff14] border border-emerald-500/30">
                 Fáze: Čistá hypertrofie

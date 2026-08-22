@@ -3,6 +3,7 @@ import { TrendingUp, TrendingDown, Plus, Scale } from 'lucide-react';
 import { motion } from 'motion/react';
 import { WeightRecord, TelesneSlozeni } from '../types';
 import { hodnotaNeboPomlcka, kdyMereno, zmenaText } from '../data/adaptery';
+import { Vysvetlivka } from './Vysvetlivka';
 
 interface BodyStatsGridProps {
   currentRecord: WeightRecord | null;
@@ -47,10 +48,11 @@ const Zmena: React.FC<{ text: string | null; kladneJeDobre: boolean }> = ({ text
   );
 };
 
-const Dlazdice: React.FC<{ popisek: string; hodnota: string; delay: number }> = ({
+const Dlazdice: React.FC<{ popisek: string; hodnota: string; delay: number; pojem?: string }> = ({
   popisek,
   hodnota,
-  delay
+  delay,
+  pojem
 }) => (
   <motion.div
     initial={{ opacity: 0, scale: 0.98 }}
@@ -58,7 +60,10 @@ const Dlazdice: React.FC<{ popisek: string; hodnota: string; delay: number }> = 
     transition={{ duration: 0.4, delay }}
     className="relative overflow-hidden rounded-3xl p-4 sm:p-5 bg-[#0e131d]/85 backdrop-blur-xl border border-cyan-500/25 shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
   >
-    <span className="text-xs sm:text-sm font-medium text-slate-400 block truncate">{popisek}</span>
+    <span className="text-xs sm:text-sm font-medium text-slate-400 inline-flex items-center gap-1">
+      {popisek}
+      {pojem && <Vysvetlivka pojem={pojem} />}
+    </span>
     <div className="text-xl sm:text-2xl font-extrabold text-white tracking-tight mt-1">{hodnota}</div>
   </motion.div>
 );
@@ -123,16 +128,18 @@ export const BodyStatsGrid: React.FC<BodyStatsGridProps> = ({
                 hodnota={hodnotaNeboPomlcka(slozeni.muscle_mass_kg, 'kg')}
                 delay={0.2}
               />
-              <Dlazdice popisek="BMI:" hodnota={hodnotaNeboPomlcka(slozeni.bmi)} delay={0.25} />
+              <Dlazdice popisek="BMI:" hodnota={hodnotaNeboPomlcka(slozeni.bmi)} delay={0.25} pojem="bmi" />
               <Dlazdice
                 popisek="Viscerální tuk:"
                 hodnota={hodnotaNeboPomlcka(slozeni.visceral_fat)}
                 delay={0.3}
+                pojem="visceralni_tuk"
               />
               <Dlazdice
                 popisek="Bazální metabolismus:"
                 hodnota={hodnotaNeboPomlcka(slozeni.basal_metabolic_rate, 'kcal', 0)}
                 delay={0.35}
+                pojem="bazalni_metabolismus"
               />
             </div>
           </div>

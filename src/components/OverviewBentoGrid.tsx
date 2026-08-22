@@ -33,6 +33,7 @@ import {
 } from '../types';
 import { ActiveTab } from './NavigationTabs';
 import { hodnotaNeboPomlcka, kdyMereno, zmenaText } from '../data/adaptery';
+import { Vysvetlivka } from './Vysvetlivka';
 
 interface OverviewBentoGridProps {
   latestWeightRecord: WeightRecord | null;
@@ -254,7 +255,10 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
           {/* Sub Biometrics: HRV, Klidový tep, Spánek */}
           <div className="grid grid-cols-3 gap-2 p-3 rounded-2xl bg-slate-900/80 border border-slate-800 mb-4">
             <div>
-              <div className="text-[10px] text-slate-400 font-medium">HRV</div>
+              <div className="text-[10px] text-slate-400 font-medium inline-flex items-center gap-1">
+                HRV
+                <Vysvetlivka pojem="hrv" />
+              </div>
               <div className="text-sm sm:text-base font-bold text-amber-400 mt-0.5">
                 {hodnotaNeboPomlcka(biometrics.hrvMs > 0 ? biometrics.hrvMs : null, 'ms')}
               </div>
@@ -267,7 +271,10 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
               )}
             </div>
             <div className="border-l border-slate-800 pl-2">
-              <div className="text-[10px] text-slate-400 font-medium">Klid. tep</div>
+              <div className="text-[10px] text-slate-400 font-medium inline-flex items-center gap-1">
+                Klid. tep
+                <Vysvetlivka pojem="klidovy_tep" />
+              </div>
               <div className="text-sm sm:text-base font-bold text-white mt-0.5">
                 {hodnotaNeboPomlcka(biometrics.restingHrBpm > 0 ? biometrics.restingHrBpm : null, 'bpm', 0)}
               </div>

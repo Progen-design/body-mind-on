@@ -22,6 +22,7 @@ import {
 import { motion } from 'motion/react';
 import { AppleWatchBiometrics } from '../types';
 import { hodnotaNeboPomlcka, zmenaText } from '../data/adaptery';
+import { Vysvetlivka } from './Vysvetlivka';
 
 interface BiometricsSectionProps {
   biometrics: AppleWatchBiometrics;
@@ -60,7 +61,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
     steps: {
       data: biometrics.stepsTrend,
       unit: 'kroků',
-      label: 'Denní kroky & NEAT',
+      label: 'Denní kroky',
       color: '#39ff14',
       baseline: biometrics.stepsTarget,
       baselineLabel: biometrics.stepsTarget > 0 ? `Denní cíl (${biometrics.stepsTarget.toLocaleString('cs-CZ')})` : ''
@@ -166,8 +167,9 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
 
           <div>
             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Skóre Regenerace (CNS)
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 inline-flex items-center gap-1">
+                Skóre regenerace
+                <Vysvetlivka pojem="skore_regenerace" />
               </span>
               <div className="px-3 py-1 rounded-full text-xs font-bold bg-amber-950/60 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 shadow-[0_0_10px_rgba(245,158,11,0.25)]">
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
@@ -210,7 +212,10 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
             <div className="absolute -top-6 -right-6 w-20 h-20 bg-cyan-500/10 rounded-full blur-xl pointer-events-none" />
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-400">HRV (Variabilita)</span>
+                <span className="text-xs font-semibold text-slate-400 inline-flex items-center gap-1">
+                  HRV
+                  <Vysvetlivka pojem="hrv" />
+                </span>
                 <Activity className="w-4 h-4 text-[#00f2fe]" />
               </div>
               <div className="flex items-baseline gap-2">
@@ -235,6 +240,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
                   <span>
                     {zmenaText(biometrics.hrvMs - biometrics.hrvBaselineMs, 'ms')} oproti základně
                     ({hodnotaNeboPomlcka(biometrics.hrvBaselineMs, 'ms')})
+                    <Vysvetlivka pojem="zakladna_hrv" />
                   </span>
                 </div>
               )}
@@ -246,7 +252,10 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
             <div className="absolute -top-6 -right-6 w-20 h-20 bg-rose-500/10 rounded-full blur-xl pointer-events-none" />
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-400">Klidový tep (RHR)</span>
+                <span className="text-xs font-semibold text-slate-400 inline-flex items-center gap-1">
+                  Klidový tep
+                  <Vysvetlivka pojem="klidovy_tep" />
+                </span>
                 <Heart className="w-4 h-4 text-rose-400" />
               </div>
               <div className="flex items-baseline gap-2">
@@ -488,7 +497,10 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
           {/* Aktivní energie */}
           <div className="p-4 rounded-2xl bg-[#0e131d]/90 border border-slate-800 flex items-center justify-between">
             <div>
-              <span className="text-xs text-slate-400">Aktivní energie</span>
+              <span className="text-xs text-slate-400 inline-flex items-center gap-1">
+                Aktivní energie
+                <Vysvetlivka pojem="aktivni_energie" />
+              </span>
               <div className="text-xl sm:text-2xl font-extrabold text-white mt-0.5">
                 {biometrics.activeEnergyKcal.toLocaleString('cs-CZ')}
               </div>
@@ -516,7 +528,10 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
           {/* Okysličení krve */}
           <div className="p-4 rounded-2xl bg-[#0e131d]/90 border border-slate-800 flex items-center justify-between">
             <div>
-              <span className="text-xs text-slate-400">Okysličení krve</span>
+              <span className="text-xs text-slate-400 inline-flex items-center gap-1">
+                Okysličení krve
+                <Vysvetlivka pojem="spo2" />
+              </span>
               <div className="text-xl sm:text-2xl font-extrabold text-white mt-0.5">
                 {hodnotaNeboPomlcka(biometrics.bloodOxygenPercent > 0 ? biometrics.bloodOxygenPercent : null, '%')}
               </div>

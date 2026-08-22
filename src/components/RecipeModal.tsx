@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Clock, ChefHat, Sparkles, CheckCircle2, RefreshCw, Flame, ArrowRight } from 'lucide-react';
+import { X, Clock, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { MealItem } from '../types';
 
@@ -18,19 +18,11 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
 }) => {
   if (!isOpen || !meal) return null;
 
-  const recipe = meal.recipe || {
-    prepTimeMin: 10,
-    cookTimeMin: 15,
-    difficulty: 'Snadné' as const,
-    instructions: [
-      'Připravte si všechny čerstvé suroviny podle gramáže.',
-      'Suroviny zpracujte tepelně na mírném ohni s minimem přepáleného tuku.',
-      'Dochuťte čerstvými bylinkami, mořskou solí a kvalitním pepřem.',
-      'Servírujte čerstvé pro maximální nutriční zachování mikroživin.'
-    ],
-    tips: 'Konzumujte v klidu a dostatečně žvýkejte pro podporu optimální enzymatické aktivity v žaludku.',
-    replacements: ['Lze zaměnit za odpovídající zdroj bílkovin či komplexních sacharidů dle preferencí.']
-  };
+  // Žádný náhradní recept. Dřív tu stály čtyři věty („Připravte si všechny
+  // čerstvé suroviny podle gramáže." …), které se ukázaly u každého jídla bez
+  // rozdílu, plus vymyšlená náročnost, tip a seznam záměn. Když postup není,
+  // sekce se nevykreslí — prázdná sekce ani „—" u receptu nedávají smysl.
+  const recipe = meal.recipe ?? null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -56,9 +48,6 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
             <div className="flex items-center gap-2 mb-1.5">
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase bg-cyan-950 text-[#00f2fe] border border-cyan-500/40">
                 {meal.type} • {meal.time}
-              </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-900 text-slate-300 border border-slate-700">
-                {recipe.difficulty}
               </span>
             </div>
             <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
@@ -96,21 +85,15 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
             </div>
           </div>
 
-          {/* Time & Prep info */}
-          <div className="flex items-center gap-4 text-xs text-slate-300">
-            <div className="flex items-center gap-1.5">
+          {/* Doba pripravy. Jen odhad z prep_minutes_estimated — ready_in_minutes
+              je v katalogu prazdny u vsech receptu, ktere se v planech objevuji,
+              takze "Vareni/peceni: 15 min" nemelo z ceho vzniknout. */}
+          {recipe?.prepTimeMin != null && (
+            <div className="flex items-center gap-1.5 text-xs text-slate-300">
               <Clock className="w-4 h-4 text-cyan-400" />
-              <span>Příprava: <strong>{recipe.prepTimeMin} min</strong></span>
+              <span>Příprava: <strong>zhruba {recipe.prepTimeMin} min</strong></span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Flame className="w-4 h-4 text-amber-400" />
-              <span>Vaření/pečení: <strong>{recipe.cookTimeMin} min</strong></span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <ChefHat className="w-4 h-4 text-[#39ff14]" />
-              <span>Náročnost: <strong>{recipe.difficulty}</strong></span>
-            </div>
-          </div>
+          )}
 
           {/* Ingredients list */}
           <div>
@@ -130,7 +113,8 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
             </div>
           </div>
 
-          {/* Step-by-Step Instructions */}
+          {/* Postup. Bez skutecnych kroku se sekce nezobrazi vubec. */}
+          {recipe && recipe.instructions.length > 0 && (
           <div>
             <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-3">
               Postup přípravy krok za krokem
@@ -146,32 +130,12 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
               ))}
             </div>
           </div>
-
-          {/* Chef Tip & Nutrition Note */}
-          {recipe.tips && (
-            <div className="p-4 rounded-2xl bg-cyan-950/30 border border-cyan-500/30 flex items-start gap-3">
-              <Sparkles className="w-4 h-4 text-[#00f2fe] shrink-0 mt-0.5" />
-              <div className="text-xs">
-                <span className="font-bold text-[#00f2fe] block mb-0.5">Nutriční tip AI Trenéra:</span>
-                <p className="text-slate-300">{recipe.tips}</p>
-              </div>
-            </div>
           )}
 
-          {/* Alternative Replacements */}
-          {recipe.replacements && recipe.replacements.length > 0 && (
-            <div className="p-4 rounded-2xl bg-slate-900/70 border border-slate-800 text-xs space-y-1">
-              <span className="font-bold text-slate-300 flex items-center gap-1.5">
-                <RefreshCw className="w-3.5 h-3.5 text-[#39ff14]" />
-                Možné alternativy a záměny:
-              </span>
-              <ul className="list-disc list-inside text-slate-400 space-y-0.5">
-                {recipe.replacements.map((rep, rIdx) => (
-                  <li key={rIdx}>{rep}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {/* Pryc "Nutricni tip AI Trenera" a "Mozne alternativy a zameny".
+              Obojí bylo jednou vetou natvrdo pro vsechna jidla a v databazi pro
+              ne neni zadne pole. Zameny jidel resi api/plan-replace-meal.js,
+              az na nej UI napojime (Etapa 4). */}
         </div>
 
         {/* Modal Footer */}

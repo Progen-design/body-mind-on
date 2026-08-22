@@ -195,10 +195,9 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
                       {meal.title}
                     </h4>
 
-                    {/* Ingredients summary */}
-                    <p className="text-xs text-slate-400 line-clamp-1">
-                      {meal.ingredients.join(' • ')}
-                    </p>
+                    {/* Výpis surovin tu byl duplicitně — totéž je v receptu,
+                        a tam s gramáží. Navíc se ořezával na jeden řádek, takže
+                        z něj stejně nešlo nic vyčíst. */}
                   </div>
                 </div>
 

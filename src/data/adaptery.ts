@@ -11,6 +11,8 @@ import { klicCviku, KLIC_CELEHO_TRENINKU } from '../../lib/profile/cvikDokonceni
 // Vlastni new Date().toISOString() by po pulnoci UTC poslalo jine datum, nez
 // jake server prijme — a ten cokoliv jineho nez dnesek v Praze odmita.
 import { calendarDateIsoInPrague } from '../../lib/czechCalendar.js';
+// Stejny filtr pouzitelnych kroku, jaky pouziva server pri doplnovani postupu.
+import { pouzitelneKroky } from '../../lib/profile/postupReceptu.js';
 // Prostredi treninku je zakodovane v body_metrics.notes; cist ho musi tentyz
 // parser, ktery ho tam zapisuje.
 import {
@@ -19,8 +21,8 @@ import {
   parseTrainingEnvironmentDetail
 } from '../../lib/trainingEnvironment.js';
 import type {
-  BadHabitItem, CoachTip, ExerciseItem, HabitItem, MealItem, ShoppingItem, TelesneSlozeni,
-  UserPreferences, UserProfile, WeightRecord, WorkoutDay
+  BadHabitItem, CoachTip, ExerciseItem, HabitItem, MealItem, RecipeDetail, ShoppingItem,
+  TelesneSlozeni, UserPreferences, UserProfile, WeightRecord, WorkoutDay
 } from '../types';
 
 export interface ProfilOdpoved {
@@ -139,6 +141,25 @@ function idPlanu(plan: any): string | null {
   return plan?.id != null ? String(plan.id) : null;
 }
 
+/**
+ * Postup přípravy, nebo `undefined`.
+ *
+ * `instructions_cs` doplňuje /api/profile z `recipes_catalog` — v uloženém
+ * plánu postup není. Když ho recept nemá, vrací se `undefined` a modal sekci
+ * vůbec nevykreslí. Žádný náhradní text: „Připravte si všechny čerstvé
+ * suroviny podle gramáže" není recept.
+ */
+function naRecept(recept: any): RecipeDetail | undefined {
+  const kroky = pouzitelneKroky(recept?.instructions_cs);
+  if (kroky.length === 0) return undefined;
+
+  const minuty = Number(recept?.prep_minutes);
+  return {
+    instructions: kroky,
+    prepTimeMin: Number.isFinite(minuty) && minuty > 0 ? Math.round(minuty) : null
+  };
+}
+
 export function naJidla(plan: any): MealItem[] {
   const struktura = strukturaPlanu(plan);
   const den = dnesniDen(struktura);
@@ -169,7 +190,8 @@ export function naJidla(plan: any): MealItem[] {
         ? m.shopping_ingredient_lines.map(String)
         : (Array.isArray(recept.ingredients)
             ? recept.ingredients.map((s: any) => String(s?.original || s?.name || ''))
-            : [])
+            : []),
+      recipe: naRecept(recept)
     } as MealItem;
   });
 }

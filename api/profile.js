@@ -12,6 +12,11 @@ import { resolveProgramTier } from '../lib/programTier.js';
 import { zachytChybu, odesliChyby } from '../lib/sentryServer.js';
 import { sestavHistoriiVah } from '../lib/vahaHistorie.js';
 import { vyberTelesneSlozeni } from '../lib/telesneSlozeni.js';
+import {
+  catalogIdyZPlanu,
+  postupZKatalogu,
+  pridejPostupyDoPlanu,
+} from '../lib/profile/postupyDoPlanu.js';
 
 function toDateKey(value) {
   if (!value) return '';
@@ -210,6 +215,30 @@ export default async function handler(req, res) {
         }
       }
     }
+    // Postup přípravy do jídel. `structured_plan_json` nese catalog_id, ale
+    // postup ne — bez tohohle kroku ukazoval RecipeModal u každého jídla čtyři
+    // natvrdo psané věty. Doplňuje se při čtení, ne v generátoru, aby recept
+    // dostaly i dříve vygenerované plány. Selhání dotazu plán nezabije: jídla
+    // zůstanou bez postupu a UI sekci skryje.
+    const catalogIdy = catalogIdyZPlanu(plansData);
+    if (catalogIdy.length > 0) {
+      const { data: receptyProPostup, error: chybaPostupu } = await supabaseServer
+        .from('recipes_catalog')
+        .select('id, instructions_cs, prep_minutes_estimated')
+        .in('id', catalogIdy);
+
+      if (chybaPostupu) {
+        console.error('[api/profile] postupy receptu:', chybaPostupu.message);
+      } else {
+        const postupy = new Map();
+        for (const radek of receptyProPostup ?? []) {
+          const postup = postupZKatalogu(radek);
+          if (postup) postupy.set(String(radek.id), postup);
+        }
+        pridejPostupyDoPlanu(plansData, postupy);
+      }
+    }
+
     const activePlan = plansData.find((p) => p.is_active === true);
     const hasActivePlan = !!activePlan;
     const currentPlanForDiagnostics = activePlan || plansData.find((p) => p.plan_html && typeof p.plan_html === 'string' && p.plan_html.length > 0);

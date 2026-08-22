@@ -113,6 +113,57 @@ test('plán bez struktury nespadne a vrátí prázdno', () => {
   assert.deepEqual(naNavyky(undefined), []);
 });
 
+// ------------------------------------------------------------ postup receptu
+
+/** Plán s jedním jídlem; `recipe` odpovídá tvaru z /api/profile. */
+function planSReceptem(recipe: unknown) {
+  return {
+    id: 'p1',
+    structured_plan_json: {
+      days: [{
+        date: new Date().toISOString().slice(0, 10),
+        meals: [{ type: 'breakfast', catalog_id: 1, display_name_cs: 'Ovesná kaše', recipe }]
+      }]
+    }
+  };
+}
+
+test('postup z katalogu se propíše do jídla', () => {
+  const kroky = [
+    'V hrnci přiveďte mléko k mírnému varu a vsypte ovesné vločky.',
+    'Vařte 5 minut a průběžně míchejte.',
+    'Kaši přendejte do misky a ozdobte banánem.'
+  ];
+  const [jidlo] = naJidla(planSReceptem({ instructions_cs: kroky, prep_minutes: 12 }));
+
+  assert.deepEqual(jidlo.recipe?.instructions, kroky);
+  assert.equal(jidlo.recipe?.prepTimeMin, 12);
+});
+
+test('jídlo bez postupu nedostane recept, ani prázdný', () => {
+  // RecipeModal se ridi pritomnosti `recipe` — kdyz je undefined, sekci
+  // vubec nevykresli. Driv tu byly ctyri natvrdo psane vety pro kazde jidlo.
+  for (const bezPostupu of [undefined, null, {}, { instructions_cs: [] }, { instructions_cs: ['', ' '] }]) {
+    const [jidlo] = naJidla(planSReceptem(bezPostupu));
+    assert.equal(jidlo.recipe, undefined, `${JSON.stringify(bezPostupu)} nesmi dat recept`);
+  }
+});
+
+test('chybějící doba přípravy je null, ne vymyšlených 10 minut', () => {
+  const [jidlo] = naJidla(planSReceptem({ instructions_cs: ['Uvař vejce natvrdo.'] }));
+
+  assert.equal(jidlo.recipe?.prepTimeMin, null);
+  assert.equal(jidlo.recipe?.instructions.length, 1);
+});
+
+test('v postupu nezůstanou prázdné kroky', () => {
+  const [jidlo] = naJidla(
+    planSReceptem({ instructions_cs: ['Uvař vejce natvrdo.', '', '  ', 'Oloupej je.'] })
+  );
+
+  assert.deepEqual(jidlo.recipe?.instructions, ['Uvař vejce natvrdo.', 'Oloupej je.']);
+});
+
 test('nákupní seznam sečte stejnou surovinu napříč jídly', async () => {
   const { naNakupniSeznam } = await import('./adaptery.ts');
   const plan = {

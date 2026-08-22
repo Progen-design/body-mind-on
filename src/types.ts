@@ -8,13 +8,21 @@ export interface WeightRecord {
 }
 
 
+/**
+ * Postup přípravy z `recipes_catalog.instructions_cs`.
+ *
+ * `recipe` na jídle je nepovinný a je tu jen tehdy, když recept opravdu má
+ * použitelné kroky — proto v tomhle typu není nic volitelného kromě odhadu
+ * doby. Dřív tu byly i `difficulty`, `tips` a `replacements`; žádné z nich
+ * v databázi nemá zdroj a UI je vyplňovalo natvrdo stejnou větou pro všechny.
+ *
+ * `cookTimeMin` taky zmizel: `recipes_catalog.ready_in_minutes` je prázdný
+ * u všech 69 receptů, které se v plánech objevují.
+ */
 export interface RecipeDetail {
-  prepTimeMin: number;
-  cookTimeMin: number;
-  difficulty: 'Snadné' | 'Střední' | 'Pokročilé';
   instructions: string[];
-  tips?: string;
-  replacements?: string[];
+  /** Odhad z `prep_minutes_estimated`. null = neodhadnuto, řádek se skryje. */
+  prepTimeMin: number | null;
 }
 
 /**

@@ -12,7 +12,6 @@ import {
   Watch,
   Scale,
   Brain,
-  Sparkles,
   Waves,
   Dumbbell,
   CheckCircle2,
@@ -21,7 +20,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { AppleWatchBiometrics } from '../types';
-import { hodnotaNeboPomlcka, zmenaText } from '../data/adaptery';
+import { hodnotaNeboPomlcka, popisekCile, zmenaText } from '../data/adaptery';
 import { Vysvetlivka } from './Vysvetlivka';
 
 interface BiometricsSectionProps {
@@ -260,17 +259,20 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-extrabold text-white tracking-tight">
-                  {biometrics.restingHrBpm.toLocaleString('cs-CZ')}
+                  {hodnotaNeboPomlcka(
+                    biometrics.restingHrBpm > 0 ? biometrics.restingHrBpm : null,
+                    '',
+                    0
+                  )}
                 </span>
                 <span className="text-xs font-semibold text-slate-400">bpm</span>
               </div>
-              <div className="flex items-center gap-1 text-xs text-amber-400 font-medium mt-1">
-                <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
-                <span>+10 bpm (zvýšený metabolický výdej)</span>
-              </div>
-            </div>
-            <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400">
-              Noční klidové minimum: 54 bpm
+              {/* Odchylku od základny tu spočítat nejde — na rozdíl od HRV pro
+                  klidový tep žádnou základnu z /api/health nedostáváme. Dřív tu
+                  svítilo „+10 bpm (zvýšený metabolický výdej)" bez ohledu na
+                  naměřenou hodnotu, a to druhé je navíc závěr, ne údaj. Pod tím
+                  ještě „Noční klidové minimum: 54 bpm", které taky nikdo neměřil.
+                  Vývoj v čase ukazuje graf výš, přepnutý na klidový tep. */}
             </div>
           </div>
 
@@ -284,7 +286,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                  {biometrics.sleepDuration}
+                  {biometrics.sleepDuration || '—'}
                 </span>
               </div>
               {/* Bez dat se radek nezobrazuje. "Hluboky spanek — (0 %)" tvrdilo
@@ -296,9 +298,8 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
                 </div>
               )}
             </div>
-            <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400">
-              {''}
-            </div>
+            {/* Zbytek po smazaném „REM fáze 1h 42m" — prázdný `{''}` kreslil
+                dělicí linku pod ničím. */}
           </div>
         </div>
       </div>
@@ -485,9 +486,11 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
             <div>
               <span className="text-xs text-slate-400">Kroky</span>
               <div className="text-xl sm:text-2xl font-extrabold text-white mt-0.5">
-                {biometrics.stepsToday.toLocaleString('cs-CZ')}
+                {hodnotaNeboPomlcka(biometrics.stepsToday > 0 ? biometrics.stepsToday : null, '', 0)}
               </div>
-              <span className="text-[10px] text-slate-500 font-medium">cíl {biometrics.stepsTarget.toLocaleString('cs-CZ')}</span>
+              <span className="text-[10px] text-slate-500 font-medium">
+                {popisekCile('', biometrics.stepsTarget)}
+              </span>
             </div>
             <div className="w-10 h-10 rounded-xl bg-emerald-950/60 border border-emerald-500/30 flex items-center justify-center text-[#39ff14]">
               <Footprints className="w-5 h-5" />
@@ -502,9 +505,15 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
                 <Vysvetlivka pojem="aktivni_energie" />
               </span>
               <div className="text-xl sm:text-2xl font-extrabold text-white mt-0.5">
-                {biometrics.activeEnergyKcal.toLocaleString('cs-CZ')}
+                {hodnotaNeboPomlcka(
+                  biometrics.activeEnergyKcal > 0 ? biometrics.activeEnergyKcal : null,
+                  '',
+                  0
+                )}
               </div>
-              <span className="text-[10px] text-slate-500 font-medium">kcal (cíl 1 500)</span>
+              <span className="text-[10px] text-slate-500 font-medium">
+                {popisekCile('kcal', biometrics.activeEnergyTargetKcal)}
+              </span>
             </div>
             <div className="w-10 h-10 rounded-xl bg-amber-950/60 border border-amber-500/30 flex items-center justify-center text-amber-400">
               <Zap className="w-5 h-5" />
@@ -516,9 +525,15 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
             <div>
               <span className="text-xs text-slate-400">Čas cvičení</span>
               <div className="text-xl sm:text-2xl font-extrabold text-white mt-0.5">
-                {biometrics.exerciseMinutes.toLocaleString('cs-CZ', { minimumFractionDigits: 1 })}
+                {hodnotaNeboPomlcka(
+                  biometrics.exerciseMinutes > 0 ? biometrics.exerciseMinutes : null,
+                  '',
+                  0
+                )}
               </div>
-              <span className="text-[10px] text-slate-500 font-medium">min (cíl 60,0)</span>
+              <span className="text-[10px] text-slate-500 font-medium">
+                {popisekCile('min', biometrics.exerciseMinutesTarget)}
+              </span>
             </div>
             <div className="w-10 h-10 rounded-xl bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-[#00f2fe]">
               <Clock className="w-5 h-5" />

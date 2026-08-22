@@ -314,6 +314,22 @@ export function hodnotaNeboPomlcka(
   return jednotka ? `${cislo} ${jednotka}` : cislo;
 }
 
+/**
+ * Popisek pod dlaždicí: jednotka a k ní cíl, pokud nějaký opravdu máme.
+ *
+ * Cíle chodí z /api/health. Když tam nejsou, dlaždice ukáže jen jednotku —
+ * cíl se nevymýšlí a nula se nevydává za cíl. Před Etapou 3.7 tu byly
+ * natvrdo psané „cíl 1 500" a „cíl 60,0" vedle polí, která ve stejném
+ * souboru o pár řádků výš správně krmila graf.
+ */
+export function popisekCile(jednotka: string, cil: number | null | undefined): string {
+  const maCil = cil !== null && cil !== undefined && Number.isFinite(cil) && cil > 0;
+  if (!maCil) return jednotka;
+
+  const cislo = Number(cil).toLocaleString('cs-CZ', { maximumFractionDigits: 0 });
+  return jednotka ? `${jednotka} (cíl ${cislo})` : `cíl ${cislo}`;
+}
+
 /** Změna proti minulému měření se znaménkem. Bez druhého měření prázdno. */
 export function zmenaText(zmena: number | null | undefined, jednotka = '', desetinnych = 1): string | null {
   if (zmena === null || zmena === undefined || !Number.isFinite(zmena)) return null;
@@ -426,6 +442,21 @@ const IKONY: Record<string, HabitItem['iconType']> = {
 /** Dnešek v Europe/Prague — stejná hranice dne, jakou hlídá api/habits.js. */
 export function dnesekPraha(): string {
   return calendarDateIsoInPrague();
+}
+
+/**
+ * ISO datum na český tvar „20. 8. 2026". Prázdný vstup dá „—".
+ *
+ * Skládá se ze složek ISO řetězce, ne přes `new Date(iso)` — ten by řetězec
+ * vzal jako půlnoc UTC a v Praze z něj udělal předchozí den.
+ */
+export function datumCesky(iso: string | null | undefined): string {
+  if (!iso) return '—';
+
+  const [rok, mesic, den] = iso.slice(0, 10).split('-');
+  if (!rok || !mesic || !den) return '—';
+
+  return `${Number(den)}. ${Number(mesic)}. ${rok}`;
 }
 
 /**

@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 import { naVazeni, naTelesneSlozeni, naProfil, naNastaveniProfilu } from './adaptery.ts';
 import { maZdravotniData, naBiometrii } from './adapteryZdravi.ts';
 import { PRAZDNA_BIOMETRIE, PRAZDNY_PROFIL } from './initialData.ts';
-import { hodnotaNeboPomlcka } from './adaptery.ts';
+import { datumCesky, dnesekPraha, hodnotaNeboPomlcka, popisekCile } from './adaptery.ts';
 
 /** Totez, co dela App.tsx — posledni vazeni, nebo null. */
 function posledniVazeni(vazeni: ReturnType<typeof naVazeni>) {
@@ -145,4 +145,54 @@ test('formátovač na chybějící hodnoty vrací "—" pro všechny metriky', (
     assert.equal(hodnotaNeboPomlcka(null, jednotka), '—');
     assert.equal(hodnotaNeboPomlcka(undefined, jednotka), '—');
   }
+});
+
+// ------------------------------------------------------------------ cíle
+
+test('bez cíle zůstane pod dlaždicí jen jednotka, žádné vymyšlené číslo', () => {
+  // Driv tu bylo natvrdo "kcal (cil 1 500)" a "min (cil 60,0)" vedle poli
+  // activeEnergyTargetKcal a exerciseMinutesTarget, ktera se o par radku vys
+  // ve stejnem souboru spravne pouzivala pro graf.
+  assert.equal(popisekCile('kcal', null), 'kcal');
+  assert.equal(popisekCile('kcal', undefined), 'kcal');
+  assert.equal(popisekCile('min', 0), 'min');
+  assert.equal(popisekCile('', 0), '');
+});
+
+test('cíl se vypíše, jen když ho server opravdu pošle', () => {
+  // Tisice deli cs-CZ pevnou mezerou (U+00A0), ne obycejnou — proto  .
+  assert.equal(popisekCile('kcal', 1500), 'kcal (cíl 1 500)');
+  assert.equal(popisekCile('min', 60), 'min (cíl 60)');
+  assert.equal(popisekCile('', 10000), 'cíl 10 000');
+});
+
+test('nula se nevydává za cíl a záporný cíl neprojde', () => {
+  // Nula znamena "cil nemame", ne "cil je nula".
+  assert.equal(popisekCile('kcal', 0), 'kcal');
+  assert.equal(popisekCile('kcal', -100), 'kcal');
+  assert.equal(popisekCile('kcal', Number.NaN), 'kcal');
+});
+
+// ------------------------------------------------------------------ datum
+
+test('datum exportu se bere z dneška, ne z natvrdo psaného řetězce', () => {
+  // V hlavicce PDF svitilo "Datum: 20. 8. 2026" bez ohledu na to, kdy
+  // uzivatel export otevrel.
+  assert.equal(datumCesky('2026-08-20'), '20. 8. 2026');
+  assert.equal(datumCesky('2026-01-05'), '5. 1. 2026');
+  assert.equal(datumCesky('2026-12-31T23:00:00Z'), '31. 12. 2026');
+});
+
+test('chybějící datum je "—", ne dnešek a ne prázdno', () => {
+  assert.equal(datumCesky(null), '—');
+  assert.equal(datumCesky(undefined), '—');
+  assert.equal(datumCesky(''), '—');
+  assert.equal(datumCesky('nesmysl'), '—');
+});
+
+test('dnešek pro export je pražský den, ne UTC', () => {
+  // new Date(iso) by ISO retezec vzal jako pulnoc UTC a v Praze z nej udelal
+  // predchozi den — proto se datumCesky sklada ze slozek retezce.
+  assert.match(dnesekPraha(), /^\d{4}-\d{2}-\d{2}$/);
+  assert.equal(datumCesky(dnesekPraha()), datumCesky(dnesekPraha()));
 });

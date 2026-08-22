@@ -63,9 +63,8 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
                 Denní příjem &amp; Makronutrienty{' '}
                 <Vysvetlivka pojem="makroziviny" />
               </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-[#39ff14] border border-emerald-500/30">
-                Fáze: Čistá hypertrofie
-              </span>
+              {/* „Fáze: Čistá hypertrofie" byla natvrdo pro každého bez ohledu
+                  na cíl. Žádné pole s fází jídelníčku neexistuje. */}
             </div>
 
             <div className="flex items-baseline gap-3">

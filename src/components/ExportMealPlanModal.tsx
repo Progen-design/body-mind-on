@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Download, Printer, Check, FileText, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
 import { MealItem, UserProfile } from '../types';
+import { datumCesky, dnesekPraha } from '../data/adaptery';
 
 interface ExportMealPlanModalProps {
   isOpen: boolean;
@@ -88,13 +89,12 @@ export const ExportMealPlanModal: React.FC<ExportMealPlanModalProps> = ({
                   <span>BODY &amp; MIND</span>
                   <span className="text-emerald-600">ON</span>
                 </div>
-                <div className="text-[11px] text-slate-500">
-                  Protokol: Hypertrofická fáze &amp; Optimalizace kompozice
-                </div>
+                {/* „Protokol: Hypertrofická faze & Optimalizace kompozice" bylo
+                    natvrdo pro kazdeho — zadne pole s nazvem protokolu nemame. */}
               </div>
               <div className="text-right text-[11px] text-slate-600">
                 <div className="font-bold text-slate-900">{profile.name}</div>
-                <div>Datum: 20. 8. 2026</div>
+                <div>Datum: {datumCesky(dnesekPraha())}</div>
                 <div>Celkem: {totalCalories} kcal</div>
               </div>
             </div>
@@ -116,7 +116,7 @@ export const ExportMealPlanModal: React.FC<ExportMealPlanModalProps> = ({
 
             {/* Document Footer */}
             <div className="pt-2 border-t border-slate-200 text-[10px] text-slate-400 flex justify-between">
-              <span>Vygenerováno certifikovaným koučem AI TED</span>
+              <span>Vygenerováno v Body &amp; Mind ON</span>
               <span>Body &amp; Mind ON © 2026</span>
             </div>
           </div>

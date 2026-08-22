@@ -444,12 +444,19 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
                 <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">
                   Dnešní trénink
                 </h3>
-                <span className="text-[10px] text-emerald-400 font-semibold">Hypertrofický split</span>
+                {/* Zamereni chodi z planu. Natvrdo tu bylo "Hypertroficky split"
+                    i ve dnech, kdy se trenoval uplne jiny okruh. */}
+                {todayWorkout.focus && (
+                  <span className="text-[10px] text-emerald-400 font-semibold">{todayWorkout.focus}</span>
+                )}
               </div>
             </div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-[#39ff14] bg-emerald-950/60 border border-emerald-500/30">
-              Čtvrtek
-            </span>
+            {/* Den z planu, ne natvrdo "Ctvrtek" sedm dni v tydnu. */}
+            {todayWorkout.dayName && (
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-[#39ff14] bg-emerald-950/60 border border-emerald-500/30">
+                {todayWorkout.dayName}
+              </span>
+            )}
           </div>
 
           {/* Title & Focus */}

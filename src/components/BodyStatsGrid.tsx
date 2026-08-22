@@ -83,7 +83,10 @@ export const BodyStatsGrid: React.FC<BodyStatsGridProps> = ({
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, delay: 0.1 }}
-          className="md:col-span-5 relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-[#0e131d]/85 backdrop-blur-xl border border-cyan-500/25 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col justify-between min-h-[170px]"
+          /* `self-start` schválně: bez něj se karta v gridu roztáhne na výšku
+             sousedního sloupce a od 3.10, kdy dlaždic složení přibylo, z ní
+             byla vysoká poloprázdná plocha. */
+          className="md:col-span-5 self-start relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-[#0e131d]/85 backdrop-blur-xl border border-cyan-500/25 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col justify-between min-h-[170px]"
         >
           <div className="absolute -top-10 -left-10 w-28 h-28 bg-cyan-500/15 rounded-full blur-2xl pointer-events-none" />
 
@@ -127,8 +130,10 @@ export const BodyStatsGrid: React.FC<BodyStatsGridProps> = ({
                 v databázi u 36 ze 40 měření a nikdo je nečetl. Dlaždice bez
                 naměřené hodnoty ukáže „—", nikdy nulu. */}
             <div className="grid grid-cols-2 gap-3.5 sm:gap-4">
+              {/* „Tuk v kg", ne „Tuk" — nad tím je tuk v procentech a dvě
+                  dlaždice se stejným popiskem vedle sebe nedávají smysl. */}
               <Dlazdice
-                popisek="Tuk:"
+                popisek="Tuk v kg:"
                 hodnota={hodnotaNeboPomlcka(slozeni.fat_mass_kg, 'kg')}
                 delay={0.2}
                 pojem="tuk_kg"

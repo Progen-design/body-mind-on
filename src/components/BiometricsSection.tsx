@@ -328,9 +328,15 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
 
               {spanek ? (
                 <div className="mt-1.5 space-y-0.5 text-xs text-slate-400">
-                  {spanek.usnutiCas && spanek.probuzeniCas && (
-                    <div>{spanek.usnutiCas} – {spanek.probuzeniCas}</div>
-                  )}
+                  {/* Datum je nutné: poslední naměřená noc často není ta dnešní
+                      (změřeno: 2 noci za 10 dní). Bez data by starší měření
+                      vypadalo jako včerejšek. */}
+                  <div className="text-slate-500">
+                    {datumCesky(spanek.datum)}
+                    {spanek.usnutiCas && spanek.probuzeniCas && (
+                      <> • {spanek.usnutiCas} – {spanek.probuzeniCas}</>
+                    )}
+                  </div>
                   {spanek.probuzeni && (
                     <div className="inline-flex items-center gap-1">
                       Vzhůru během noci {spanek.probuzeni}

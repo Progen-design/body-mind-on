@@ -13,6 +13,14 @@ zaloha*/
 .env.local
 .env
 
+# Ulozene AI transkripty - nikdy necommitovat.
+# .specstory melo 127 MB a 149 sledovanych souboru ve verejnem repozitari,
+# vcetne realne vypadajicich Supabase credentials v textu konverzaci.
+.specstory/
+.aider*
+.claude/history/
+.cursor/chat/
+
 # build a nastroje - nikdy necommitovat
 .next/
 .vercel/

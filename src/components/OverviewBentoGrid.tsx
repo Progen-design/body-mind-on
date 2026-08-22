@@ -221,12 +221,18 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
                 <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight">
                   Regenerace &amp; Watch
                 </h3>
-                <span className="text-[10px] text-emerald-400 font-semibold">Živý biometrický stream</span>
+                {/* „Živý biometrický stream" nic neznamenalo — data chodí
+                    dávkově při synchronizaci, ne živě. */}
+                <span className="text-[10px] text-slate-400 font-semibold">Z Apple Health a chytré váhy</span>
               </div>
             </div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-amber-300 bg-amber-950/60 border border-amber-500/40">
-              Ubrat intenzitu
-            </span>
+            {/* Odznak byl natvrdo „Ubrat intenzitu" pro každého a bez ohledu
+                na skóre. Stav ukazujeme jen tehdy, když ho server spočítal. */}
+            {biometrics.recoveryScore > 0 && biometrics.recoveryStatus && (
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-amber-300 bg-amber-950/60 border border-amber-500/40">
+                {biometrics.recoveryStatus}
+              </span>
+            )}
           </div>
 
           {/* Main Score 70/100 */}
@@ -235,12 +241,21 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
               <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
                 Denní připravenost
               </div>
+              {/* Bez skore se nekresli ani "/ 100" — "0 / 100" tvrdi nulovou
+                  pripravenost, coz je neco jineho nez "nemame dost dat". */}
               <div className="flex items-baseline gap-1.5">
                 <span className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-                  {biometrics.recoveryScore}
+                  {biometrics.recoveryScore > 0 ? biometrics.recoveryScore : '—'}
                 </span>
-                <span className="text-base font-bold text-slate-500">/ 100</span>
+                {biometrics.recoveryScore > 0 && (
+                  <span className="text-base font-bold text-slate-500">/ 100</span>
+                )}
               </div>
+              {biometrics.recoveryScore <= 0 && (
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  Zatím málo dat na výpočet.
+                </div>
+              )}
               {/* Stav ze serveru. Driv tu bylo natvrdo "Parasympaticka unava"
                   a vedle odznak "70 % READY" — tri tvrzeni o temz skore,
                   z toho dve vymyslena. */}

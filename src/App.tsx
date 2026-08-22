@@ -30,7 +30,7 @@ import { StartRegistrace } from './components/registrace/StartRegistrace';
 import { naviguj, useCesta } from './routing';
 import { useProfilData } from './hooks/useProfilData';
 import { useZdravotniData } from './hooks/useZdravotniData';
-import { naBiometrii, maZdravotniData } from './data/adapteryZdravi';
+import { naBiometrii, maZdravotniData, naSkupinyMetrik, naSpanek } from './data/adapteryZdravi';
 import type { NastaveniProfilu } from './data/adaptery';
 import {
   dnesekPraha, dnesniNavyky, mnozinaDokonceni, naJidla, naNakupniSeznam, naNavyky,
@@ -118,6 +118,11 @@ function AppContent() {
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
   const zdravi = useZdravotniData(isAuthenticated);
   const maBiometrii = maZdravotniData(zdravi.regenerace);
+  // Vsech 31 metrik z hodinek, seskupenych podle oblasti, a posledni namerena
+  // noc. Driv profil ukazoval sedm metrik a u spanku faze, ktere zdroj vubec
+  // neposila.
+  const skupinyMetrik = useMemo(() => naSkupinyMetrik(zdravi.metriky), [zdravi.metriky]);
+  const spanekNoc = useMemo(() => naSpanek(zdravi.spanek), [zdravi.spanek]);
   const [biometrics, setBiometrics] = useState<AppleWatchBiometrics>(PRAZDNA_BIOMETRIE);
 
   useEffect(() => {
@@ -940,6 +945,8 @@ function AppContent() {
         {activeTab === 'regenerace' && (maBiometrii ? (
           <BiometricsSection
             biometrics={biometrics}
+            skupiny={skupinyMetrik}
+            spanek={spanekNoc}
             onSync={handleManualWithingsSync}
           />
         ) : (

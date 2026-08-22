@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabaseServer as supabaseServerUntyped } from '../supabaseServer.js';
 import { buildConnectionBanner } from './formatters.ts';
 import { clampDays, clampLimit, isUuid, pragueDateDaysAgo } from './guards.ts';
+import { SLOUPCE_SPANKU } from './spanek.js';
 import type {
   AppleHealthConnectionPublic,
   ConnectionStatusResult,
@@ -100,6 +101,29 @@ export async function getAllMetrics(userId: string, days = 30) {
     .order('local_date', { ascending: false });
 
   if (error) throw new Error(error.message || 'Nepodařilo se načíst metriky Apple Watch.');
+  return data ?? [];
+}
+
+/**
+ * Spánek za posledních N dní.
+ *
+ * Fáze spánku (`rem_min`, `core_min`, `deep_min`) se schválně nečtou —
+ * zdroj je posílá jako nulu, import je nulluje a UI je nezobrazuje.
+ * Podrobné měření viz `lib/health/spanek.js`.
+ */
+export async function getSleep(userId: string, days = 30) {
+  assertUserId(userId);
+  const safeDays = clampDays(days, 30);
+  const sinceDate = pragueDateDaysAgo(safeDays);
+
+  const { data, error } = await supabaseServer
+    .from('apple_health_sleep')
+    .select(SLOUPCE_SPANKU)
+    .eq('user_id', userId)
+    .gte('local_date', sinceDate)
+    .order('local_date', { ascending: false });
+
+  if (error) throw new Error(error.message || 'Nepodařilo se načíst data o spánku.');
   return data ?? [];
 }
 

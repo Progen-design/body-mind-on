@@ -11,7 +11,7 @@ import { canRenewPlanForMembership } from '../lib/planGenerationGate.js';
 import { resolveProgramTier } from '../lib/programTier.js';
 import { zachytChybu, odesliChyby } from '../lib/sentryServer.js';
 import { sestavHistoriiVah } from '../lib/vahaHistorie.js';
-import { vyberTelesneSlozeni } from '../lib/telesneSlozeni.js';
+import { SLOUPCE_SNAPSHOTU, vyberTelesneSlozeni } from '../lib/telesneSlozeni.js';
 import {
   catalogIdyZPlanu,
   postupZKatalogu,
@@ -156,7 +156,7 @@ export default async function handler(req, res) {
       // a ty se preskakuji.
       supabaseServer
         .from('withings_body_snapshots')
-        .select('measured_at, fat_percent, muscle_mass_kg, visceral_fat, bmi, basal_metabolic_rate, bone_mass_kg')
+        .select(SLOUPCE_SNAPSHOTU)
         .eq('user_id', userId)
         .order('measured_at', { ascending: false })
         .limit(20),

@@ -3,10 +3,6 @@ import {
   Activity,
   Heart,
   Moon,
-  Zap,
-  Footprints,
-  Clock,
-  Droplets,
   TrendingDown,
   TrendingUp,
   Watch,
@@ -14,26 +10,37 @@ import {
   Brain,
   Waves,
   Dumbbell,
-  CheckCircle2,
   RefreshCw,
   AlertTriangle
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { AppleWatchBiometrics } from '../types';
-import { hodnotaNeboPomlcka, popisekCile, zmenaText } from '../data/adaptery';
+import { AppleWatchBiometrics, SkupinaMetrik, SpanekNoc } from '../types';
+import { datumCesky, hodnotaNeboPomlcka, zmenaText } from '../data/adaptery';
 import { Vysvetlivka } from './Vysvetlivka';
+import { NadpisSekce } from './NadpisSekce';
+import { POJEM_PRO_METRIKU } from '../../lib/glosarMetrik.js';
+
+const POJMY_METRIK: Record<string, string> = POJEM_PRO_METRIKU;
 
 interface BiometricsSectionProps {
   biometrics: AppleWatchBiometrics;
+  /** Klíčové metriky z hodinek, seskupené podle oblasti. Zdroj: /api/health/metrics. */
+  skupiny: SkupinaMetrik[];
+  /** Poslední naměřená noc, nebo null. Fáze spánku zdroj neposílá. */
+  spanek: SpanekNoc | null;
   onSync: () => void;
   isSyncing?: boolean;
 }
 
 export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
   biometrics,
+  skupiny,
+  spanek,
   onSync,
   isSyncing = false
 }) => {
+  // Skóre 0 znamená „server ho nespočítal", ne „nulová regenerace".
+  const maSkore = biometrics.recoveryScore > 0;
   const [activeMetricTab, setActiveMetricTab] = useState<'hrv' | 'restingHr' | 'steps' | 'energy'>('hrv');
   const [hoveredPoint, setHoveredPoint] = useState<{ day: string; value: number } | null>(null);
 
@@ -111,6 +118,12 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
 
   return (
     <div className="space-y-6">
+      <NadpisSekce
+        titulek="Apple Watch & regenerace"
+        podtitulek="Co hodinky a chytrá váha naměřily — bez dopočtů, které vypadají jako měření"
+        ikona={<Watch className="w-5 h-5 text-[#39ff14]" />}
+      />
+
       {/* Top Banner: Device Connection Statuses & Sync */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Withings Scale Status */}
@@ -170,24 +183,37 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
                 Skóre regenerace
                 <Vysvetlivka pojem="skore_regenerace" />
               </span>
-              <div className="px-3 py-1 rounded-full text-xs font-bold bg-amber-950/60 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 shadow-[0_0_10px_rgba(245,158,11,0.25)]">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                <span>{biometrics.recoveryStatus}</span>
-              </div>
+              {/* Stav jen se skóre. Bez něj se odznak nekreslí — jinak by
+                  „Optimální" svítilo i tehdy, když server hlásí nedostatek
+                  dat, a to je tvrzení o zdraví bez měření. */}
+              {maSkore && (
+                <div className="px-3 py-1 rounded-full text-xs font-bold bg-amber-950/60 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 shadow-[0_0_10px_rgba(245,158,11,0.25)]">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{biometrics.recoveryStatus}</span>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-4 my-3">
               <div className="relative w-24 h-24 rounded-full flex items-center justify-center bg-slate-900 border-4 border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
                 <div className="text-center">
                   <span className="text-3xl font-black text-white tracking-tight">
-                    {biometrics.recoveryScore}
+                    {maSkore ? biometrics.recoveryScore : '—'}
                   </span>
-                  <span className="text-[11px] block text-slate-400 font-bold -mt-1">
-                    / 100
-                  </span>
+                  {maSkore && (
+                    <span className="text-[11px] block text-slate-400 font-bold -mt-1">
+                      / 100
+                    </span>
+                  )}
                 </div>
               </div>
 
+              {!maSkore && (
+                <p className="text-xs text-slate-400 max-w-[15rem] leading-relaxed">
+                  Zatím málo dat na výpočet. Skóre se počítá z HRV a klidového
+                  tepu proti tvému sedmidennímu průměru.
+                </p>
+              )}
             </div>
           </div>
 
@@ -276,30 +302,48 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
             </div>
           </div>
 
-          {/* Spánek info Tile */}
+          {/* SPÁNEK.
+              Fáze spánku (REM, jádrový, hluboký) tu byly a ukazovaly „—(0 %)".
+              Změřeno v apple_health_raw_payloads: zdroj je posílá jako
+              literální nulu, takže je nikdy nikdo nenaměřil. Import je správně
+              nulluje. Pryč jsou i „čas v posteli" a „efektivita" — vznikaly
+              dopočtem z časů, které nesedí (15. 8.: konec pobytu v posteli
+              16:20 odpoledne → 705 min v posteli proti 254 min spánku).
+              Zůstává jen to, co je naměřené. Viz lib/health/spanek.js. */}
           <div className="rounded-3xl p-5 bg-[#0e131d]/90 border border-emerald-500/30 flex flex-col justify-between shadow-lg relative overflow-hidden group hover:border-emerald-400/60 transition-all">
             <div className="absolute -top-6 -right-6 w-20 h-20 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-400">Délka spánku</span>
+                <span className="text-xs font-semibold text-slate-400 inline-flex items-center gap-1">
+                  Spánek
+                  <Vysvetlivka pojem="spanek_celkem" />
+                </span>
                 <Moon className="w-4 h-4 text-[#39ff14]" />
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                  {biometrics.sleepDuration || '—'}
+                  {spanek ? spanek.spanek : '—'}
                 </span>
               </div>
-              {/* Bez dat se radek nezobrazuje. "Hluboky spanek — (0 %)" tvrdilo
-                  nulovou efektivitu, coz je neco jineho nez "nemerime". */}
-              {biometrics.deepSleepDuration && biometrics.sleepEfficiencyPercent > 0 && (
-                <div className="flex items-center gap-1 text-xs text-[#39ff14] font-medium mt-1">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#39ff14]" />
-                  <span>Hluboký spánek {biometrics.deepSleepDuration} ({biometrics.sleepEfficiencyPercent} %)</span>
+
+              {spanek ? (
+                <div className="mt-1.5 space-y-0.5 text-xs text-slate-400">
+                  {spanek.usnutiCas && spanek.probuzeniCas && (
+                    <div>{spanek.usnutiCas} – {spanek.probuzeniCas}</div>
+                  )}
+                  {spanek.probuzeni && (
+                    <div className="inline-flex items-center gap-1">
+                      Vzhůru během noci {spanek.probuzeni}
+                      <Vysvetlivka pojem="probuzeni_v_noci" />
+                    </div>
+                  )}
                 </div>
+              ) : (
+                <p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
+                  Poslední noc jsme z hodinek nedostali.
+                </p>
               )}
             </div>
-            {/* Zbytek po smazaném „REM fáze 1h 42m" — prázdný `{''}` kreslil
-                dělicí linku pod ničím. */}
           </div>
         </div>
       </div>
@@ -475,91 +519,48 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
         </div>
       </div>
 
-      {/* Dnešní přehled (Daily 4-Card Biometric Summary) */}
-      <div>
-        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3">
-          Dnešní přehled aktivity z Apple Watch
-        </h3>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-          {/* Kroky */}
-          <div className="p-4 rounded-2xl bg-[#0e131d]/90 border border-slate-800 flex items-center justify-between">
-            <div>
-              <span className="text-xs text-slate-400">Kroky</span>
-              <div className="text-xl sm:text-2xl font-extrabold text-white mt-0.5">
-                {hodnotaNeboPomlcka(biometrics.stepsToday > 0 ? biometrics.stepsToday : null, '', 0)}
-              </div>
-              <span className="text-[10px] text-slate-500 font-medium">
-                {popisekCile('', biometrics.stepsTarget)}
-              </span>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-950/60 border border-emerald-500/30 flex items-center justify-center text-[#39ff14]">
-              <Footprints className="w-5 h-5" />
-            </div>
-          </div>
+      {/* VŠECHNY KLÍČOVÉ METRIKY Z HODINEK, SESKUPENÉ PODLE OBLASTI.
+          Dřív tu byly čtyři natvrdo vybrané dlaždice (kroky, aktivní energie,
+          čas cvičení, okysličení) — z 31 metrik, které hodinky posílají, jich
+          profil ukazoval sedm. Okysličení navíc svítilo „—", protože adaptér
+          posílal natvrdo nulu, přestože hodnota v databázi byla.
 
-          {/* Aktivní energie */}
-          <div className="p-4 rounded-2xl bg-[#0e131d]/90 border border-slate-800 flex items-center justify-between">
-            <div>
-              <span className="text-xs text-slate-400 inline-flex items-center gap-1">
-                Aktivní energie
-                <Vysvetlivka pojem="aktivni_energie" />
-              </span>
-              <div className="text-xl sm:text-2xl font-extrabold text-white mt-0.5">
-                {hodnotaNeboPomlcka(
-                  biometrics.activeEnergyKcal > 0 ? biometrics.activeEnergyKcal : null,
-                  '',
-                  0
-                )}
+          Co se zobrazí, řídí databáze, ne tenhle soubor: bereme metriky
+          s `is_key = true` a jen ty, které mají naměřenou hodnotu. Metrika
+          bez hodnoty se nevykreslí vůbec — ani jako „—". České názvy
+          a zařazení nese `apple_health_metrics_daily.label_cs` a `category`. */}
+      {skupiny.length > 0 && (
+        <div className="space-y-5">
+          {skupiny.map(skupina => (
+            <div key={skupina.klic} className="space-y-3">
+              <NadpisSekce uroven="podsekce" titulek={skupina.nazev} />
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+                {skupina.metriky.map(m => (
+                  <div
+                    key={m.klic}
+                    className="p-4 rounded-2xl bg-[#0e131d]/90 border border-slate-800"
+                  >
+                    <span className="text-xs text-slate-400 inline-flex items-center gap-1">
+                      {m.nazev}
+                      {POJMY_METRIK[m.klic] && <Vysvetlivka pojem={POJMY_METRIK[m.klic]} />}
+                    </span>
+                    <div className="text-xl sm:text-2xl font-extrabold text-white mt-0.5">
+                      {m.hodnota}
+                      {m.jednotka && (
+                        <span className="text-xs font-semibold text-slate-400 ml-1">{m.jednotka}</span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-slate-500 font-medium">
+                      {datumCesky(m.datum)}
+                    </span>
+                  </div>
+                ))}
               </div>
-              <span className="text-[10px] text-slate-500 font-medium">
-                {popisekCile('kcal', biometrics.activeEnergyTargetKcal)}
-              </span>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-amber-950/60 border border-amber-500/30 flex items-center justify-center text-amber-400">
-              <Zap className="w-5 h-5" />
-            </div>
-          </div>
-
-          {/* Čas cvičení */}
-          <div className="p-4 rounded-2xl bg-[#0e131d]/90 border border-slate-800 flex items-center justify-between">
-            <div>
-              <span className="text-xs text-slate-400">Čas cvičení</span>
-              <div className="text-xl sm:text-2xl font-extrabold text-white mt-0.5">
-                {hodnotaNeboPomlcka(
-                  biometrics.exerciseMinutes > 0 ? biometrics.exerciseMinutes : null,
-                  '',
-                  0
-                )}
-              </div>
-              <span className="text-[10px] text-slate-500 font-medium">
-                {popisekCile('min', biometrics.exerciseMinutesTarget)}
-              </span>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-[#00f2fe]">
-              <Clock className="w-5 h-5" />
-            </div>
-          </div>
-
-          {/* Okysličení krve */}
-          <div className="p-4 rounded-2xl bg-[#0e131d]/90 border border-slate-800 flex items-center justify-between">
-            <div>
-              <span className="text-xs text-slate-400 inline-flex items-center gap-1">
-                Okysličení krve
-                <Vysvetlivka pojem="spo2" />
-              </span>
-              <div className="text-xl sm:text-2xl font-extrabold text-white mt-0.5">
-                {hodnotaNeboPomlcka(biometrics.bloodOxygenPercent > 0 ? biometrics.bloodOxygenPercent : null, '%')}
-              </div>
-              {/* "(optimalni)" je hodnoceni, ne udaj — a u chybejici hodnoty
-                  by hodnotilo prazdno. */}
-              <span className="text-[10px] text-slate-500 font-medium">SpO2</span>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-sky-950/60 border border-sky-500/30 flex items-center justify-center text-sky-400">
-              <Droplets className="w-5 h-5" />
-            </div>
-          </div>
+          ))}
         </div>
-      </div>
+      )}
+
 
       {/* Tréninky z Apple Watch Table */}
       <div className="rounded-3xl p-5 sm:p-6 bg-[#0e131d]/90 border border-slate-800 shadow-xl">

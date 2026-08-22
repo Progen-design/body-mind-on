@@ -4,7 +4,14 @@
 // "namerena nula" (0) - viz lib/health/__tests__/noDataNoVerdict.test.ts.
 // Adapter to nesmi rozmazat tim, ze by null prevedl na nulu a UI z toho
 // udelalo tvrzeni o zdravi.
-import type { AppleWatchBiometrics, AppleWatchWorkoutItem, MetricTrendPoint } from '../types';
+import type {
+  AppleWatchBiometrics, AppleWatchWorkoutItem, MetricTrendPoint,
+  SkupinaMetrik, SpanekNoc
+} from '../types';
+import {
+  jednotkaProUzivatele, nazevKategorie, poradiKategorie
+} from '../../lib/health/kategorieMetrik.js';
+import { posledniNoc } from '../../lib/health/spanek.js';
 
 /** Radek pohledu apple_health_recovery. */
 export interface RadekRegenerace {
@@ -19,6 +26,29 @@ export interface RadekRegenerace {
   hrv_baseline7: number | null;
   recovery_score: number | null;
   recovery_status: string | null;
+}
+
+/** Radek apple_health_metrics_daily. Popisky a kategorie uz nese databaze. */
+export interface RadekMetriky {
+  local_date: string;
+  metric_name: string;
+  label_cs: string | null;
+  category: string | null;
+  unit: string | null;
+  agg: string | null;
+  is_key: boolean | null;
+  value: number | null;
+  last_measured_at?: string | null;
+}
+
+/** Radek apple_health_sleep. Faze spanku se nectou — zdroj je neposila. */
+export interface RadekSpanku {
+  local_date: string;
+  sleep_start: string | null;
+  sleep_end: string | null;
+  asleep_min: number | null;
+  awake_min: number | null;
+  source?: string | null;
 }
 
 export interface RadekTreninku {
@@ -131,5 +161,103 @@ export function naBiometrii(
     restingHrTrend: trend(serazene, 'resting_hr'),
     stepsTrend: trend(serazene, 'steps'),
     energyTrend: trend(serazene, 'active_kcal')
+  };
+}
+
+
+// ---------------------------------------------------------- metriky a spanek
+
+/**
+ * Cislo pro cloveka. Velka cisla bez desetinnych mist, mala s jednim.
+ * Kroky 15 625, HRV 33,5 — ne 15 625,43 a ne 33.
+ */
+function cisloCesky(hodnota: number): string {
+  const desetiny = Math.abs(hodnota) >= 100 || Number.isInteger(hodnota) ? 0 : 1;
+  return hodnota.toLocaleString('cs-CZ', {
+    minimumFractionDigits: desetiny,
+    maximumFractionDigits: desetiny
+  });
+}
+
+/**
+ * Metriky z hodinek seskupene do sekci podle `category`.
+ *
+ * PRAVIDLA (schvalne datove rizena, ne natvrdo psany seznam):
+ *  1. Bereme jen `is_key = true`. Ktera metrika je klicova, rozhoduje import,
+ *     ne UI — natvrdo psany seznam by se rozesel pri prvni nove metrice.
+ *  2. Metrika bez jedine namerene hodnoty se nevykresli VUBEC. Ne "—",
+ *     ne prazdna karta. Dlazdice tam proste neni.
+ *  3. Hodnota je posledni den, ktery ji ma. Denni radek uz je agregovany
+ *     podle `agg` (sum/avg/last), takze se tu nic neprepocitava.
+ */
+export function naSkupinyMetrik(radky: RadekMetriky[] = []): SkupinaMetrik[] {
+  const nejnovejsi = new Map<string, RadekMetriky>();
+
+  for (const r of radky || []) {
+    if (!r?.is_key) continue;
+    if (jenCislo(r.value) === null) continue;
+
+    const stavajici = nejnovejsi.get(r.metric_name);
+    if (!stavajici || String(r.local_date) > String(stavajici.local_date)) {
+      nejnovejsi.set(r.metric_name, r);
+    }
+  }
+
+  const skupiny = new Map<string, SkupinaMetrik>();
+
+  for (const r of nejnovejsi.values()) {
+    const kategorie = String(r.category || 'ostatni');
+    if (!skupiny.has(kategorie)) {
+      skupiny.set(kategorie, {
+        klic: kategorie,
+        nazev: nazevKategorie(kategorie),
+        metriky: []
+      });
+    }
+
+    const hodnota = jenCislo(r.value) as number;
+    skupiny.get(kategorie)!.metriky.push({
+      klic: r.metric_name,
+      nazev: r.label_cs || r.metric_name,
+      hodnota: cisloCesky(hodnota),
+      jednotka: jednotkaProUzivatele(r.metric_name, r.unit || ''),
+      datum: String(r.local_date || '')
+    });
+  }
+
+  const razene = [...skupiny.values()].sort(
+    (a, b) => poradiKategorie(a.klic) - poradiKategorie(b.klic)
+  );
+  for (const s of razene) s.metriky.sort((a, b) => a.nazev.localeCompare(b.nazev, 'cs'));
+
+  return razene;
+}
+
+/**
+ * Posledni namerena noc, nebo `null`.
+ *
+ * Faze spanku (REM, jadrovy, hluboky), cas v posteli ani efektivita se
+ * nevraceji — zdroj je neposila, resp. jsou to dopocty z nesmyslneho udaje.
+ * Duvod je zmereny a popsany v `lib/health/spanek.js`.
+ */
+export function naSpanek(radky: RadekSpanku[] = []): SpanekNoc | null {
+  const noc = posledniNoc(radky);
+  if (!noc) return null;
+
+  const cas = (iso: string | null): string | null => {
+    if (!iso) return null;
+    const t = Date.parse(iso);
+    if (!Number.isFinite(t)) return null;
+    return new Date(t).toLocaleTimeString('cs-CZ', {
+      hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Prague'
+    });
+  };
+
+  return {
+    datum: noc.datum,
+    spanek: noc.spanek,
+    probuzeni: noc.probuzeni,
+    usnutiCas: cas(noc.usnuti),
+    probuzeniCas: cas(noc.probuzeniCas)
   };
 }

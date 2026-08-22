@@ -122,23 +122,45 @@ export const BodyStatsGrid: React.FC<BodyStatsGridProps> = ({
               <Zmena text={zmenaText(slozeni.zmena.fat_percent, '%')} kladneJeDobre={false} />
             </motion.div>
 
+            {/* Chytrá váha posílá osm hodnot najednou, profil do 3.10 ukazoval
+                pět. Tuk v kilogramech, kostní hmota a hydratace ležely
+                v databázi u 36 ze 40 měření a nikdo je nečetl. Dlaždice bez
+                naměřené hodnoty ukáže „—", nikdy nulu. */}
             <div className="grid grid-cols-2 gap-3.5 sm:gap-4">
+              <Dlazdice
+                popisek="Tuk:"
+                hodnota={hodnotaNeboPomlcka(slozeni.fat_mass_kg, 'kg')}
+                delay={0.2}
+                pojem="tuk_kg"
+              />
               <Dlazdice
                 popisek="Svalová hmota:"
                 hodnota={hodnotaNeboPomlcka(slozeni.muscle_mass_kg, 'kg')}
-                delay={0.2}
+                delay={0.22}
               />
               <Dlazdice popisek="BMI:" hodnota={hodnotaNeboPomlcka(slozeni.bmi)} delay={0.25} pojem="bmi" />
               <Dlazdice
                 popisek="Viscerální tuk:"
                 hodnota={hodnotaNeboPomlcka(slozeni.visceral_fat)}
-                delay={0.3}
+                delay={0.28}
                 pojem="visceralni_tuk"
+              />
+              <Dlazdice
+                popisek="Kostní hmota:"
+                hodnota={hodnotaNeboPomlcka(slozeni.bone_mass_kg, 'kg')}
+                delay={0.31}
+                pojem="kostni_hmota"
+              />
+              <Dlazdice
+                popisek="Hydratace:"
+                hodnota={hodnotaNeboPomlcka(slozeni.hydration_kg, 'kg')}
+                delay={0.34}
+                pojem="hydratace_kg"
               />
               <Dlazdice
                 popisek="Bazální metabolismus:"
                 hodnota={hodnotaNeboPomlcka(slozeni.basal_metabolic_rate, 'kcal', 0)}
-                delay={0.35}
+                delay={0.37}
                 pojem="bazalni_metabolismus"
               />
             </div>

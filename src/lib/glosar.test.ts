@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 import { GLOSAR, POJMY, najdiPojem } from '../../lib/glosar.js';
+import { POJEM_PRO_METRIKU } from '../../lib/glosarMetrik.js';
 
 test('každý pojem má id, název i vysvětlení', () => {
   for (const [klic, z] of Object.entries(GLOSAR)) {
@@ -88,8 +89,20 @@ function pojmyVUi(): string[] {
     for (const shoda of obsah.matchAll(/pojem="([a-z0-9_]+)"/g)) nalezene.push(shoda[1]);
   }
 
+  // Dlazdice metrik z hodinek se vykresluji ve smycce podle toho, co posle
+  // databaze — otaznik se u nich pripojuje pres mapu, ne natvrdo v JSX.
+  // Bez tohohle by obousmerna kontrola nize hlasila, ze pojmy typu
+  // "dechova_frekvence" v UI nejsou, prestoze tam jsou.
+  nalezene.push(...Object.values(POJEM_PRO_METRIKU));
+
   return nalezene;
 }
+
+test('mapa metrik ukazuje jen na pojmy, které v glosáři existují', () => {
+  for (const [metrika, pojem] of Object.entries(POJEM_PRO_METRIKU)) {
+    assert.ok(najdiPojem(pojem), `metrika ${metrika} ukazuje na neexistujici pojem "${pojem}"`);
+  }
+});
 
 test('každý pojem použitý v UI existuje v glosáři', () => {
   // Preklep v `<Vysvetlivka pojem="…">` by otaznik tise schoval.

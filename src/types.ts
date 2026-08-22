@@ -120,6 +120,41 @@ export interface MetricTrendPoint {
   value: number;
 }
 
+/**
+ * Jedna dlaždice metriky z hodinek. Název i zařazení nese databáze
+ * (`apple_health_metrics_daily.label_cs` / `category`), UI si je nevymýšlí.
+ */
+export interface DlazdiceMetriky {
+  klic: string;
+  nazev: string;
+  /** Už naformátované číslo. Metrika bez hodnoty se nevykresluje vůbec. */
+  hodnota: string;
+  jednotka: string;
+  datum: string;
+}
+
+export interface SkupinaMetrik {
+  klic: string;
+  nazev: string;
+  metriky: DlazdiceMetriky[];
+}
+
+/**
+ * Poslední naměřená noc.
+ *
+ * Fáze spánku tu schválně nejsou — Health Auto Export je posílá jako nulu,
+ * takže je nikdy nikdo nenaměřil. Stejně tak čas v posteli a efektivita:
+ * vznikaly dopočtem z časů, které nesedí (viz `lib/health/spanek.js`).
+ */
+export interface SpanekNoc {
+  datum: string;
+  /** „6 h 12 min". Nikdy null — bez délky spánku se noc nevrací. */
+  spanek: string;
+  probuzeni: string | null;
+  usnutiCas: string | null;
+  probuzeniCas: string | null;
+}
+
 export interface AppleWatchBiometrics {
   scaleConnected: boolean;
   appleWatchConnected: boolean;
@@ -157,20 +192,24 @@ export interface AppleWatchBiometrics {
 export interface TelesneSlozeni {
   measured_at: string;
   fat_percent: number | null;
+  fat_mass_kg: number | null;
   muscle_mass_kg: number | null;
   visceral_fat: number | null;
   bmi: number | null;
   basal_metabolic_rate: number | null;
   bone_mass_kg: number | null;
+  hydration_kg: number | null;
   /** Předchozí neprázdný snapshot; null = deltu nemáme z čeho spočítat. */
   predchozi_measured_at: string | null;
   zmena: {
     fat_percent: number | null;
+    fat_mass_kg: number | null;
     muscle_mass_kg: number | null;
     visceral_fat: number | null;
     bmi: number | null;
     basal_metabolic_rate: number | null;
     bone_mass_kg: number | null;
+    hydration_kg: number | null;
   };
 }
 

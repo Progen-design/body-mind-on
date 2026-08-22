@@ -200,7 +200,7 @@ export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
               Cviky a série ({completedCount} z {todayWorkout.exercises.length} hotovo)
             </span>
             <span className="text-xs text-[#39ff14] font-semibold">
-              Cíl: {todayWorkout.caloriesBurned} kcal
+              {todayWorkout.caloriesBurned > 0 ? `Cíl: ${todayWorkout.caloriesBurned} kcal` : ''}
             </span>
           </div>
 

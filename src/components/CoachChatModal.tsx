@@ -6,8 +6,8 @@ import { WeightRecord, WorkoutDay, MealItem, AppleWatchBiometrics, UserProfile }
 interface CoachChatModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentWeightRecord?: WeightRecord;
-  latestWeight?: WeightRecord;
+  currentWeightRecord?: WeightRecord | null;
+  latestWeight?: WeightRecord | null;
   todayWorkout?: WorkoutDay;
   meals?: MealItem[];
   biometrics?: AppleWatchBiometrics;

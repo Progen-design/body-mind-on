@@ -49,18 +49,25 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
       >
         <div className="space-y-2">
           <div className="flex items-center gap-2">
+            {/* ETAPA 3.6. Fallback na prvni treninkovy den je spravny, ale
+                nadpis "Dnesni naplanovany trenink (PATEK)" se ukazoval
+                i v sobotu, kdy naplanovany neni. Kdyz dnes trenink neni,
+                nadpis to rekne. */}
             <span className="text-xs font-bold uppercase tracking-wider text-cyan-400">
-              {todayWorkout.dayName
-                ? `Dnešní naplánovaný trénink (${todayWorkout.dayName})`
-                : 'Dnešní naplánovaný trénink'}
+              {!maDnesTrenink
+                ? 'Dnes trénink naplánovaný nemáš'
+                : todayWorkout.isToday
+                  ? `Dnešní naplánovaný trénink (${todayWorkout.dayName})`
+                  : `Nejbližší trénink v plánu (${todayWorkout.dayName})`}
             </span>
           </div>
 
           <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
             <span>{todayWorkout.title}</span>
-            {maDnesTrenink && (
+            {maDnesTrenink && todayWorkout.durationMin > 0 && (
               <span className="text-sm font-semibold text-slate-400">
-                ({todayWorkout.durationMin} min • {todayWorkout.caloriesBurned} kcal)
+                ({todayWorkout.durationMin} min
+                {todayWorkout.caloriesBurned > 0 && ` • ${todayWorkout.caloriesBurned} kcal`})
               </span>
             )}
           </h3>
@@ -97,7 +104,8 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
             Týdenní tréninkový split
           </h3>
           <span className="text-xs text-slate-400 font-semibold">
-            Splněno {totalCompletedWorkouts} z {workouts.length} jednotek ({totalWeeklyCalories} kcal)
+            Splněno {totalCompletedWorkouts} z {workouts.length} jednotek
+            {totalWeeklyCalories > 0 && ` (${totalWeeklyCalories} kcal)`}
           </span>
         </div>
 
@@ -130,9 +138,11 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
                 <div className="text-xs font-bold text-white truncate mt-1">
                   {w.title}
                 </div>
-                <div className="text-[10px] text-slate-400 truncate mt-0.5">
-                  {w.caloriesBurned} kcal
-                </div>
+                {w.caloriesBurned > 0 && (
+                  <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                    {w.caloriesBurned} kcal
+                  </div>
+                )}
               </button>
             );
           })}
@@ -155,9 +165,11 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
             <span className="text-slate-400 font-semibold">
               {selectedWorkout.exercises.length} cviků
             </span>
-            <span className="px-2.5 py-1 rounded-lg bg-emerald-950/60 text-[#39ff14] font-bold border border-emerald-500/30">
-              {selectedWorkout.caloriesBurned} kcal
-            </span>
+            {selectedWorkout.caloriesBurned > 0 && (
+              <span className="px-2.5 py-1 rounded-lg bg-emerald-950/60 text-[#39ff14] font-bold border border-emerald-500/30">
+                {selectedWorkout.caloriesBurned} kcal
+              </span>
+            )}
           </div>
         </div>
 

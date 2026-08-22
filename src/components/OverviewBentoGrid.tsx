@@ -35,7 +35,7 @@ import { ActiveTab } from './NavigationTabs';
 import { hodnotaNeboPomlcka, kdyMereno, zmenaText } from '../data/adaptery';
 
 interface OverviewBentoGridProps {
-  latestWeightRecord: WeightRecord;
+  latestWeightRecord: WeightRecord | null;
   biometrics: AppleWatchBiometrics;
   meals: MealItem[];
   todayWorkout: WorkoutDay;

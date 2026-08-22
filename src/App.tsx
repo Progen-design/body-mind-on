@@ -50,12 +50,7 @@ import { sestavZapisTreninku } from './lib/zapisTreninku';
 import { rozdelZmenyNastaveni, PRAZDNE_NASTAVENI } from './lib/nastaveniProfilu';
 
 // Initial Data
-import {
-  initialProfile,
-  initialWeightRecords,
-  appleWatchBiometricsData,
-  initialPreferences
-} from './data/initialData';
+import { PRAZDNA_BIOMETRIE, PRAZDNY_PROFIL, initialPreferences } from './data/initialData';
 import {
   WeightRecord,
   MealItem,
@@ -111,9 +106,11 @@ function AppContent() {
   } = useProfilData(isAuthenticated);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('dnes');
-  const [profile, setProfile] = useState<UserProfile>(initialProfile);
+  const [profile, setProfile] = useState<UserProfile>(PRAZDNY_PROFIL);
+  // Prazdno, dokud nedorazi server. Driv tu byl seed se sedmi vymyslenymi
+  // vazenimi a graf tak ukazoval cizi hodnoty, nez se profil nacetl.
   const [weightRecords, setWeightRecords] =
-    useState<Record<string, WeightRecord[]>>(initialWeightRecords);
+    useState<Record<string, WeightRecord[]>>({});
   const [meals, setMeals] = useState<MealItem[]>([]);
   const [workouts, setWorkouts] = useState<WorkoutDay[]>([]);
   const [habits, setHabits] = useState<HabitItem[]>([]);
@@ -121,7 +118,7 @@ function AppContent() {
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
   const zdravi = useZdravotniData(isAuthenticated);
   const maBiometrii = maZdravotniData(zdravi.regenerace);
-  const [biometrics, setBiometrics] = useState<AppleWatchBiometrics>(appleWatchBiometricsData);
+  const [biometrics, setBiometrics] = useState<AppleWatchBiometrics>(PRAZDNA_BIOMETRIE);
 
   useEffect(() => {
     if (zdravi.nacitam) return;
@@ -177,17 +174,21 @@ function AppContent() {
     }
   }, [profilData, setPreferences]);
 
-  // Latest Measurement Record (data jdou z úložiště, proto s pojistkou)
-  //
-  // POZOR — LATENTNI PAD, SPLATIT V ETAPE 3.3/3.4.
-  // Tenhle radek nespadne jen proto, ze initialWeightRecords['1M'] ma 7
-  // seedovanych zaznamu. Jakmile Etapa 3.3 odstrani vymyslena data (sparkline
-  // "101,9 -> 104,6 kg"), bude seed prazdny, monthRecords taky a
-  // monthRecords[-1] vrati undefined -> latestRecord.weight shodi stranku.
-  // Spravne reseni patri do Etapy 3.4: latestRecord ma byt WeightRecord | null
-  // a komponenty maji chybejici hodnoty kreslit jako "—", ne jako 0.
-  const monthRecords = weightRecords['1M']?.length ? weightRecords['1M'] : initialWeightRecords['1M'];
-  const latestRecord = monthRecords[monthRecords.length - 1];
+  /**
+   * Posledni vazeni, nebo null.
+   *
+   * SPLACENO V ETAPE 3.4. Driv tenhle radek drzel jen diky sedmi seedovanym
+   * zaznamum v initialWeightRecords — jakmile se vymyslena data odstranila,
+   * vratil by monthRecords[-1] undefined a latestRecord.weight by shodil
+   * stranku. Ted je typ WeightRecord | null a komponenty kresli "—".
+   *
+   * Uzivatel bez jedineho vazeni je bezny stav: novy ucet, cizi vaha,
+   * odpojeny Withings.
+   */
+  const monthRecords = weightRecords['1M'] ?? [];
+  const latestRecord: WeightRecord | null = monthRecords.length > 0
+    ? monthRecords[monthRecords.length - 1]
+    : null;
 
   // Zobrazený profil přebírá jméno a avatar z přihlášeného účtu.
   const displayedProfile = useMemo<UserProfile>(
@@ -229,7 +230,7 @@ function AppContent() {
   // Aktuální hodnoty pro asynchronní synchronizaci (bez zastaralých closure).
   const biometricsRef = useRef(biometrics);
   biometricsRef.current = biometrics;
-  const latestRecordRef = useRef(latestRecord);
+  const latestRecordRef = useRef<WeightRecord | null>(latestRecord);
   latestRecordRef.current = latestRecord;
   const isSyncingRef = useRef(false);
 
@@ -661,13 +662,23 @@ function AppContent() {
 
       const vaha = Number(vazeni?.latest_weight_kg);
       if (Number.isFinite(vaha) && vaha > 0) {
-        const newRecord = { ...latestRecordRef.current, date: now.toISOString().slice(0, 10), weight: vaha };
+        // Bez predchoziho zaznamu neni z ceho slozit zbytek poli — dopocitat
+        // tuk, svaly a BMI by znamenalo vymyslet si je. Prvni vazeni tedy
+        // nese jen vahu a zbytek zustava nulovy, dokud nedorazi ze serveru.
+        const predchozi = latestRecordRef.current;
+        const newRecord: WeightRecord = {
+          date: now.toISOString().slice(0, 10),
+          weight: vaha,
+          fatPercent: predchozi?.fatPercent ?? 0,
+          muscleKg: predchozi?.muscleKg ?? 0,
+          bmi: predchozi?.bmi ?? 0
+        };
         setWeightRecords(prev => applyWeightRecord(prev, newRecord, now));
       }
 
       const result: SyncResult = {
         syncedAt: now.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }),
-        weight: Number.isFinite(vaha) ? vaha : latestRecordRef.current.weight,
+        weight: Number.isFinite(vaha) ? vaha : (latestRecordRef.current?.weight ?? 0),
         restingHrBpm: nextBiometrics.restingHrBpm,
         hrvMs: nextBiometrics.hrvMs,
         steps: nextBiometrics.stepsToday,

@@ -6,7 +6,7 @@ import { hodnotaNeboPomlcka } from '../data/adaptery';
 
 interface UserProfileCardProps {
   profile: UserProfile;
-  latestWeightRecord?: WeightRecord;
+  latestWeightRecord?: WeightRecord | null;
   biometrics?: AppleWatchBiometrics;
   onEditProfile?: () => void;
   onViewFullProfile?: () => void;

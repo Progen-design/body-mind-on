@@ -7,7 +7,7 @@ import { Plus, Scale, Sparkles, TrendingUp } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface BodyCompositionSectionProps {
-  currentRecord: WeightRecord;
+  currentRecord: WeightRecord | null;
   recordsByFilter: Record<string, WeightRecord[]>;
   lastSyncedText: string;
   slozeni?: TelesneSlozeni | null;

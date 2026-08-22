@@ -5,7 +5,7 @@ import { WeightRecord, TelesneSlozeni } from '../types';
 import { hodnotaNeboPomlcka, kdyMereno, zmenaText } from '../data/adaptery';
 
 interface BodyStatsGridProps {
-  currentRecord: WeightRecord;
+  currentRecord: WeightRecord | null;
   /** Z chytré váhy. null = žádné měření složení, karty se nezobrazí. */
   slozeni: TelesneSlozeni | null;
   onAddMeasurement: () => void;

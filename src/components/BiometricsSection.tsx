@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { AppleWatchBiometrics } from '../types';
+import { hodnotaNeboPomlcka } from '../data/adaptery';
 
 interface BiometricsSectionProps {
   biometrics: AppleWatchBiometrics;
@@ -261,13 +262,17 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
                   {biometrics.sleepDuration}
                 </span>
               </div>
-              <div className="flex items-center gap-1 text-xs text-[#39ff14] font-medium mt-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#39ff14]" />
-                <span>Hluboký spánek {biometrics.deepSleepDuration} ({biometrics.sleepEfficiencyPercent}%)</span>
-              </div>
+              {/* Bez dat se radek nezobrazuje. "Hluboky spanek — (0 %)" tvrdilo
+                  nulovou efektivitu, coz je neco jineho nez "nemerime". */}
+              {biometrics.deepSleepDuration && biometrics.sleepEfficiencyPercent > 0 && (
+                <div className="flex items-center gap-1 text-xs text-[#39ff14] font-medium mt-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#39ff14]" />
+                  <span>Hluboký spánek {biometrics.deepSleepDuration} ({biometrics.sleepEfficiencyPercent} %)</span>
+                </div>
+              )}
             </div>
             <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400">
-              Usnutí: 23:14 • Procitnutí: 07:02
+              {''}
             </div>
           </div>
         </div>
@@ -497,9 +502,11 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
             <div>
               <span className="text-xs text-slate-400">Okysličení krve</span>
               <div className="text-xl sm:text-2xl font-extrabold text-white mt-0.5">
-                {biometrics.bloodOxygenPercent.toLocaleString('cs-CZ', { minimumFractionDigits: 1 })} %
+                {hodnotaNeboPomlcka(biometrics.bloodOxygenPercent > 0 ? biometrics.bloodOxygenPercent : null, '%')}
               </div>
-              <span className="text-[10px] text-slate-500 font-medium">SpO2 (optimální)</span>
+              {/* "(optimalni)" je hodnoceni, ne udaj — a u chybejici hodnoty
+                  by hodnotilo prazdno. */}
+              <span className="text-[10px] text-slate-500 font-medium">SpO2</span>
             </div>
             <div className="w-10 h-10 rounded-xl bg-sky-950/60 border border-sky-500/30 flex items-center justify-center text-sky-400">
               <Droplets className="w-5 h-5" />
@@ -542,7 +549,9 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
               <div className="flex items-center gap-4 text-xs font-semibold">
                 <div className="text-right">
                   <span className="text-slate-400 block text-[11px]">Spáleno</span>
-                  <span className="text-amber-400 font-bold">{wo.caloriesBurned} kcal</span>
+                  {wo.caloriesBurned > 0 && (
+                    <span className="text-amber-400 font-bold">{wo.caloriesBurned} kcal</span>
+                  )}
                 </div>
                 <div className="text-right">
                   <span className="text-slate-400 block text-[11px]">Průměrný tep</span>

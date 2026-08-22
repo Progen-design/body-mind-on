@@ -34,7 +34,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 interface ProfileSectionProps {
   profile: UserProfile;
   preferences: UserPreferences;
-  latestWeightRecord: WeightRecord;
+  latestWeightRecord: WeightRecord | null;
   biometrics: AppleWatchBiometrics;
   /** Z chytre vahy. null = dlazdice slozeni se nezobrazi. */
   slozeni?: TelesneSlozeni | null;

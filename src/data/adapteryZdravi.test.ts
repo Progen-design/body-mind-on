@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { naBiometrii, maZdravotniData, naTreninkyZHodinek } from './adapteryZdravi.ts';
-import { appleWatchBiometricsData } from './initialData.ts';
+import { PRAZDNA_BIOMETRIE } from './initialData.ts';
 
 const BEZ_VERDIKTU = {
   local_date: '2026-08-13', hrv_ms: 43.4, resting_hr: 69, steps: 9351,
@@ -14,20 +14,20 @@ const BEZ_VERDIKTU = {
 const SVERDIKTEM = { ...BEZ_VERDIKTU, local_date: '2026-08-14', recovery_score: 82, recovery_status: 'ok' };
 
 test('bez skóre a se stavem nedostatek_dat se nevyrobí verdikt o regeneraci', () => {
-  const b = naBiometrii([BEZ_VERDIKTU] as any, [], true, null, appleWatchBiometricsData);
+  const b = naBiometrii([BEZ_VERDIKTU] as any, [], true, null, PRAZDNA_BIOMETRIE);
   assert.equal(b.recoveryScore, 0, 'nula znamená "nevíme", UI ji skryje');
   assert.equal(b.recoveryAdvice, '', 'žádná rada bez podkladu');
 });
 
 test('se skóre a stavem ok verdikt vznikne', () => {
-  const b = naBiometrii([SVERDIKTEM] as any, [], true, null, appleWatchBiometricsData);
+  const b = naBiometrii([SVERDIKTEM] as any, [], true, null, PRAZDNA_BIOMETRIE);
   assert.equal(b.recoveryScore, 82);
   assert.equal(b.recoveryStatus, 'Připraven na max');
   assert.ok(b.recoveryAdvice.length > 0);
 });
 
 test('naměřené hodnoty projdou, chybějící spánek se neodhaduje', () => {
-  const b = naBiometrii([BEZ_VERDIKTU] as any, [], true, null, appleWatchBiometricsData);
+  const b = naBiometrii([BEZ_VERDIKTU] as any, [], true, null, PRAZDNA_BIOMETRIE);
   assert.equal(b.hrvMs, 43.4);
   assert.equal(b.restingHrBpm, 69);
   assert.equal(b.stepsToday, 9351);
@@ -41,7 +41,7 @@ test('trendy berou jen dny, kde hodnota opravdu je', () => {
     { ...BEZ_VERDIKTU, local_date: '2026-08-12', hrv_ms: 40 },
     { ...BEZ_VERDIKTU, local_date: '2026-08-13', hrv_ms: 43.4 }
   ];
-  const b = naBiometrii(radky as any, [], true, null, appleWatchBiometricsData);
+  const b = naBiometrii(radky as any, [], true, null, PRAZDNA_BIOMETRIE);
   assert.equal(b.hrvTrend.length, 2);
   assert.deepEqual(b.hrvTrend.map((t) => t.value), [40, 43.4]);
 });

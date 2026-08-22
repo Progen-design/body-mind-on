@@ -67,7 +67,10 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({
                 <Scale className="w-3.5 h-3.5 text-cyan-400" />
                 <strong className="text-white">{latestWeightRecord.weight.toString().replace('.', ',')} kg</strong>
               </div>
-              {biometrics && (
+              {/* Skóre regenerace ukazujeme jen když ho opravdu máme.
+                  Bez dat z hodinek je nula, a "0/100" vypadá jako naměřená
+                  hodnota, ne jako chybějící údaj. */}
+              {biometrics && biometrics.recoveryScore > 0 && (
                 <div className="flex items-center gap-1 text-slate-300 border-l border-slate-800 pl-3">
                   <Activity className="w-3.5 h-3.5 text-[#39ff14]" />
                   <strong className="text-[#39ff14]">{biometrics.recoveryScore}/100</strong>

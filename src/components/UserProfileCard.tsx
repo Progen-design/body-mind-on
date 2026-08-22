@@ -55,7 +55,6 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({
             <p className="text-xs text-slate-400 font-medium mt-0.5 flex items-center gap-1.5">
               <span>{profile.membershipPlan}</span>
               <span className="text-slate-600">•</span>
-              <span className="text-cyan-400 font-semibold">Hypertrofie</span>
             </p>
           </div>
         </div>

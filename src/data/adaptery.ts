@@ -476,7 +476,6 @@ export function naZlozvyky(userHabits: ProfilOdpoved['user_habits'] = []): BadHa
         id: h.habit_id,
         title: def?.label || h.habit_id,
         description: def?.description || '',
-        cleanDaysStreak: 0,
         status: 'clean'
       } as BadHabitItem;
     });

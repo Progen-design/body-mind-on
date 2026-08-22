@@ -20,9 +20,17 @@ export const WeightChart: React.FC<WeightChartProps> = ({
   const currentRecords = recordsByFilter[activeFilter] || recordsByFilter['1M'];
 
   // Calculate scales
-  const weights = currentRecords.map(r => r.weight);
-  const minWeight = Math.floor(Math.min(...weights, 101));
-  const maxWeight = Math.ceil(Math.max(...weights, 105));
+  // Osa se ridi namerenymi hodnotami. Driv tu bylo Math.min(..., 101)
+  // a Math.max(..., 105), takze se graf vzdy roztahl na 101-105 kg bez
+  // ohledu na to, co uzivatel vazi.
+  const weights = currentRecords.map(r => r.weight).filter((w) => Number.isFinite(w));
+  const rozsah = weights.length > 0
+    ? { min: Math.min(...weights), max: Math.max(...weights) }
+    : { min: 0, max: 1 };
+  // Aspon 2 kg vysky, at rovna cara nesplyne s okrajem.
+  const stred = (rozsah.min + rozsah.max) / 2;
+  const minWeight = Math.floor(Math.min(rozsah.min, stred - 1));
+  const maxWeight = Math.ceil(Math.max(rozsah.max, stred + 1));
   
   // Y-axis grid values (e.g. 105, 104, 103, 102, 101)
   const yLabels = [];

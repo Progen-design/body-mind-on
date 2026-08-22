@@ -43,6 +43,8 @@ interface OverviewBentoGridProps {
   badHabits: BadHabitItem[];
   coachTips: CoachTip[];
   preferences: UserPreferences;
+  /** Pocet polozek nakupniho seznamu. */
+  pocetNakupu?: number;
   /** Z chytre vahy. null = blok slozeni se nezobrazi. */
   slozeni?: TelesneSlozeni | null;
   onSelectTab: (tab: ActiveTab) => void;
@@ -63,6 +65,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
   badHabits,
   coachTips,
   preferences,
+  pocetNakupu = 0,
   slozeni = null,
   onSelectTab,
   onOpenWorkoutLogger,
@@ -521,7 +524,6 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
               </div>
               <div>
                 <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">AI Trenér TED</h3>
-                <span className="text-[10px] text-cyan-400 font-semibold">Biohacking &amp; Hypertrofie</span>
               </div>
             </div>
           </div>
@@ -545,9 +547,12 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
               <ShoppingBag className="w-4 h-4 text-cyan-400" />
               <span className="text-xs font-bold text-slate-200">Nákupní seznam</span>
             </div>
-            <span className="text-[10px] font-semibold text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded-full">
-              12 položek
-            </span>
+            {/* Skutecny pocet, ne natvrdo 12 — seznam jich ma pres sto. */}
+            {pocetNakupu > 0 && (
+              <span className="text-[10px] font-semibold text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded-full">
+                {pocetNakupu} {pocetNakupu === 1 ? 'položka' : pocetNakupu < 5 ? 'položky' : 'položek'}
+              </span>
+            )}
           </div>
         </div>
 

@@ -80,11 +80,17 @@ export interface HabitItem {
   target?: string;
 }
 
+/**
+ * Zlozvyk, ktery uzivatel sleduje.
+ *
+ * `cleanDaysStreak` tu neni: serie u zlozvyku nikde nemerime, adapter tam
+ * davala natvrdo 0 a UI z toho delalo "0 dni bez prohresku" — coz neni
+ * namerena nula, ale "nevime".
+ */
 export interface BadHabitItem {
   id: string;
   title: string;
   description: string;
-  cleanDaysStreak: number;
   status: 'clean' | 'relapsed';
   lastResistedNote?: string;
 }

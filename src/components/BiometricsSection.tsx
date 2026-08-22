@@ -136,7 +136,9 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
             <div>
               <div className="text-xs text-slate-400 font-medium">Chytré hodinky</div>
               <div className="text-sm font-bold text-white flex items-center gap-2">
-                <span>Apple Watch Ultra 2</span>
+                {/* Model zarizeni nikde nemame — z /api/health je jen boolean
+                    "pripojeno". "Ultra 2" tu bylo natvrdo, jinde "Series 9". */}
+                <span>Apple Health</span>
                 <span className="w-2 h-2 rounded-full bg-[#39ff14] shadow-[0_0_8px_#39ff14]" />
               </div>
             </div>
@@ -180,17 +182,6 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
                 </div>
               </div>
 
-              <div className="space-y-1 text-xs">
-                <div className="text-slate-300 font-medium">
-                  Stav: <span className="text-amber-300 font-bold">Mírné přetížení CNS</span>
-                </div>
-                <div className="text-slate-400">
-                  Včera náročný silový trénink nohou (dřepy 175 kg).
-                </div>
-                <div className="text-[11px] text-cyan-400 font-semibold">
-                  Dnes snížit RPE o 1–2 stupně.
-                </div>
-              </div>
             </div>
           </div>
 
@@ -300,20 +291,6 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
             <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
               {biometrics.recoveryAdvice}
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
-                <span className="text-slate-400 block text-[11px]">Tréninkový protokol</span>
-                <span className="text-white font-semibold">Zachovat plán, RIR 1-2</span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
-                <span className="text-slate-400 block text-[11px]">Suplementace</span>
-                <span className="text-[#00f2fe] font-semibold">500mg Hořčík Bisglycinát</span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
-                <span className="text-slate-400 block text-[11px]">Hydratace</span>
-                <span className="text-[#39ff14] font-semibold">3,5L vody + sodík</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>

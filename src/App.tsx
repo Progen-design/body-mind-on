@@ -53,12 +53,7 @@ import { rozdelZmenyNastaveni, PRAZDNE_NASTAVENI } from './lib/nastaveniProfilu'
 import {
   initialProfile,
   initialWeightRecords,
-  initialMeals,
-  weeklyWorkouts,
-  initialHabits,
   appleWatchBiometricsData,
-  initialShoppingList,
-  initialBadHabits,
   initialPreferences
 } from './data/initialData';
 import {
@@ -858,6 +853,7 @@ function AppContent() {
             badHabits={badHabits}
             coachTips={coachTips}
             preferences={preferences}
+            pocetNakupu={shoppingItems.length}
             slozeni={slozeni}
             onSelectTab={setActiveTab}
             onOpenWorkoutLogger={() => setIsWorkoutLoggerOpen(true)}

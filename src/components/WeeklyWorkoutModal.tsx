@@ -55,7 +55,7 @@ export const WeeklyWorkoutModal: React.FC<WeeklyWorkoutModalProps> = ({
                 Týdenní tréninkový rozpis &amp; Cviky
               </h3>
               <p className="text-xs text-slate-400">
-                Fáze: Progresivní přetížení (Hypertrofie) • Trenér: AI TED &amp; Body &amp; Mind ON
+                Týdenní rozpis podle tvého plánu
               </p>
             </div>
           </div>

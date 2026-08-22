@@ -20,7 +20,7 @@ import { WeeklyWorkoutModal } from './components/WeeklyWorkoutModal';
 import { WorkoutLoggerModal } from './components/WorkoutLoggerModal';
 import { WithingsSyncModal } from './components/WithingsSyncModal';
 import { AddMeasurementModal } from './components/AddMeasurementModal';
-import { PreferencesModal } from './components/PreferencesModal';
+import { PreferencesModal, VysledekUlozeni } from './components/PreferencesModal';
 import { CoachChatModal } from './components/CoachChatModal';
 import { LoginScreen } from './components/LoginScreen';
 
@@ -31,9 +31,10 @@ import { naviguj, useCesta } from './routing';
 import { useProfilData } from './hooks/useProfilData';
 import { useZdravotniData } from './hooks/useZdravotniData';
 import { naBiometrii, maZdravotniData } from './data/adapteryZdravi';
+import type { NastaveniProfilu } from './data/adaptery';
 import {
   dnesekPraha, dnesniNavyky, mnozinaDokonceni, naJidla, naNakupniSeznam, naNavyky,
-  hodnotaNeboPomlcka, naPreference, naProfil, naTelesneSlozeni, naTreninky, naVazeni,
+  hodnotaNeboPomlcka, naNastaveniProfilu, naPreference, naProfil, naTelesneSlozeni, naTreninky, naVazeni,
   naZlozvyky, pouzijDokonceni,
   pouzijDokonceniTreninku, vyberPlan
 } from './data/adaptery';
@@ -46,6 +47,7 @@ import { applyWeightRecord, formatLastSynced } from './lib/syncEngine';
 import { apiFetch, jeNeaktivniClenstvi } from './lib/api';
 import { dnesniTrenink } from './lib/trenink';
 import { sestavZapisTreninku } from './lib/zapisTreninku';
+import { rozdelZmenyNastaveni, PRAZDNE_NASTAVENI } from './lib/nastaveniProfilu';
 
 // Initial Data
 import {
@@ -145,6 +147,8 @@ function AppContent() {
   const [coachTips] = useState(initialCoachTips);
   // Telesne slozeni z chytre vahy. null = zadne mereni, karty se skryji.
   const [slozeni, setSlozeni] = useState<TelesneSlozeni | null>(null);
+  // Soucasne nastaveni pro predvyplneni modalu. Jde ze serveru, ne z localStorage.
+  const [nastaveni, setNastaveni] = useState<NastaveniProfilu>(PRAZDNE_NASTAVENI);
 
   // Prevod odpovedi serveru na tvary, ktere ceka UI. Bezi jednou po nacteni.
   useEffect(() => {
@@ -166,6 +170,7 @@ function AppContent() {
       .catch(() => { /* vlastni polozky jsou doplnek, vypadek nesmi shodit seznam */ });
     setBadHabits(naZlozvyky(profilData.user_habits));
     setSlozeni(naTelesneSlozeni(profilData));
+    setNastaveni(naNastaveniProfilu(profilData));
     setPreferences((p) => naPreference(profilData, p));
 
     const vazeni = naVazeni(profilData);
@@ -473,6 +478,77 @@ function AppContent() {
         });
         return false;
       }
+    },
+    [showToast, znovuNacistProfil]
+  );
+
+  /**
+   * Handlers: nastaveni profilu
+   *
+   * Dve volani, protoze pole patri dvema endpointum. Zadny optimisticky
+   * update — /api/profile-preferences pregeneruje plan a posle e-mail, takze
+   * dokud nedobehne, nevime, co je pravda.
+   *
+   * USPECH SE CTE Z TELA, ne ze statusu: pri selhani regenerace endpoint vraci
+   * 200 s planRegenerated: false.
+   */
+  const handleSavePreferences = useCallback(
+    async (zmeny: Partial<NastaveniProfilu>): Promise<VysledekUlozeni> => {
+      const { preference, nastaveni: kNastaveni } = rozdelZmenyNastaveni(zmeny);
+
+      const ulozeno: string[] = [];
+      const neulozeno: string[] = [];
+      let chyba: string | null = null;
+      let planRegenerated: boolean | undefined;
+
+      if (kNastaveni) {
+        try {
+          await apiFetch('/api/profile-settings', {
+            method: 'PATCH',
+            body: JSON.stringify(kNastaveni)
+          });
+          ulozeno.push('cílová váha a výška');
+        } catch (e) {
+          neulozeno.push('cílová váha a výška');
+          chyba = e instanceof Error ? e.message : null;
+        }
+      }
+
+      if (preference) {
+        try {
+          const odpoved = await apiFetch<{ ok?: boolean; planRegenerated?: boolean; message?: string }>(
+            '/api/profile-preferences',
+            { method: 'PATCH', body: JSON.stringify(preference) }
+          );
+          planRegenerated = odpoved?.planRegenerated === true;
+          ulozeno.push('nastavení plánu');
+          if (!planRegenerated) {
+            // Preference se ulozily, ale plan se nepregeneroval — 200 to nepozna.
+            chyba = odpoved?.message || 'Plán se nepodařilo přegenerovat, zkus to prosím znovu.';
+          }
+        } catch (e) {
+          neulozeno.push('nastavení plánu');
+          chyba = e instanceof Error ? e.message : null;
+        }
+      }
+
+      // At uz to dopadlo jakkoli, pravdu ma server.
+      znovuNacistProfil();
+
+      const vseProslo = neulozeno.length === 0;
+      if (vseProslo) {
+        showToast({
+          title: 'Nastavení uloženo',
+          description: planRegenerated
+            ? 'Plán se přegeneroval a poslali jsme ti ho e-mailem.'
+            : planRegenerated === false
+              ? 'Změny jsme uložili, ale plán se nepřegeneroval.'
+              : undefined,
+          variant: planRegenerated === false ? 'error' : 'success'
+        });
+      }
+
+      return { ok: vseProslo, ulozeno, neulozeno, chyba, planRegenerated };
     },
     [showToast, znovuNacistProfil]
   );
@@ -999,8 +1075,8 @@ function AppContent() {
       <PreferencesModal
         isOpen={isPreferencesModalOpen}
         onClose={() => setIsPreferencesModalOpen(false)}
-        preferences={preferences}
-        onSavePreferences={(newPref) => setPreferences(newPref)}
+        soucasne={nastaveni}
+        onSave={handleSavePreferences}
       />
 
       <CoachChatModal

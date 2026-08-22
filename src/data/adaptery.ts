@@ -11,6 +11,13 @@ import { klicCviku, KLIC_CELEHO_TRENINKU } from '../../lib/profile/cvikDokonceni
 // Vlastni new Date().toISOString() by po pulnoci UTC poslalo jine datum, nez
 // jake server prijme — a ten cokoliv jineho nez dnesek v Praze odmita.
 import { calendarDateIsoInPrague } from '../../lib/czechCalendar.js';
+// Prostredi treninku je zakodovane v body_metrics.notes; cist ho musi tentyz
+// parser, ktery ho tam zapisuje.
+import {
+  parseAvailableEquipment,
+  parseTrainingEnvironment,
+  parseTrainingEnvironmentDetail
+} from '../../lib/trainingEnvironment.js';
 import type {
   BadHabitItem, ExerciseItem, HabitItem, MealItem, ShoppingItem, TelesneSlozeni,
   UserPreferences, UserProfile, WeightRecord, WorkoutDay
@@ -316,6 +323,68 @@ export function kdyMereno(iso: string | null | undefined): string {
     hour: '2-digit',
     minute: '2-digit'
   });
+}
+
+/** Hodnoty, ktere umi prijmout /api/profile-preferences a /api/profile-settings. */
+export interface NastaveniProfilu {
+  goal: string;
+  activity: string;
+  stress_level: string;
+  occupation: string;
+  frequency: string;
+  workout_days: number[];
+  diet_type: string;
+  dietary_restrictions: string;
+  foods_to_avoid: string;
+  training_environment: string;
+  available_equipment: string[];
+  training_environment_detail: string;
+  selected_habits: string[];
+  goal_weight_kg: string;
+  height_cm: string;
+}
+
+function text(v: unknown): string {
+  return v === null || v === undefined ? '' : String(v);
+}
+
+/** Tréninkové dny umí přijít jako pole i jako "1,3,5". */
+function naDny(v: unknown): number[] {
+  const zdroj = Array.isArray(v)
+    ? v
+    : typeof v === 'string' && v
+      ? v.split(',')
+      : [];
+  return zdroj
+    .map((d) => Number(String(d).trim()))
+    .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6)
+    .sort((a, b) => a - b);
+}
+
+/**
+ * Současné nastavení pro předvyplnění formuláře. Bere se z posledního
+ * body_metrics (to je zdroj, který /api/profile-preferences mění) a z profilu.
+ */
+export function naNastaveniProfilu(odpoved: ProfilOdpoved): NastaveniProfilu {
+  const bm: any = odpoved?.body_metrics?.[0] || {};
+
+  return {
+    goal: text(bm.goal),
+    activity: text(bm.activity),
+    stress_level: text(bm.stress_level),
+    occupation: text(bm.occupation),
+    frequency: text(bm.freq_choice),
+    workout_days: naDny(bm.workout_days),
+    diet_type: text(bm.diet_type),
+    dietary_restrictions: text(bm.dietary_restrictions),
+    foods_to_avoid: text(bm.foods_to_avoid),
+    training_environment: text(parseTrainingEnvironment(bm)),
+    available_equipment: parseAvailableEquipment(bm) || [],
+    training_environment_detail: text(parseTrainingEnvironmentDetail(bm)),
+    selected_habits: (odpoved?.user_habits || []).map((h) => h.habit_id),
+    goal_weight_kg: text(odpoved?.user?.goal_weight_kg),
+    height_cm: text(odpoved?.user?.height_cm ?? bm.height_cm)
+  };
 }
 
 const IKONY: Record<string, HabitItem['iconType']> = {

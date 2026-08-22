@@ -16,6 +16,7 @@ import {
   catalogIdyZPlanu,
   postupZKatalogu,
   pridejPostupyDoPlanu,
+  SLOUPCE_KATALOGU_PRO_POSTUP,
 } from '../lib/profile/postupyDoPlanu.js';
 
 function toDateKey(value) {
@@ -224,7 +225,7 @@ export default async function handler(req, res) {
     if (catalogIdy.length > 0) {
       const { data: receptyProPostup, error: chybaPostupu } = await supabaseServer
         .from('recipes_catalog')
-        .select('id, instructions_cs, prep_minutes_estimated')
+        .select(SLOUPCE_KATALOGU_PRO_POSTUP)
         .in('id', catalogIdy);
 
       if (chybaPostupu) {

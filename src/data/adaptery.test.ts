@@ -164,6 +164,50 @@ test('v postupu nezůstanou prázdné kroky', () => {
   assert.deepEqual(jidlo.recipe?.instructions, ['Uvař vejce natvrdo.', 'Oloupej je.']);
 });
 
+/**
+ * Kontrakt server ↔ UI. Server čte `prep_minutes_estimated`, zapisuje do plánu
+ * `recipe.prep_minutes` a adaptér čte `prep_minutes`. Tři různé názvy v jedné
+ * cestě. Testy jednotlivých stran to nezachytí — každá si podstrčí vlastní
+ * tvar. Tenhle test jede přes celý řetěz včetně názvu sloupce v `.select()`.
+ */
+test('doba přípravy projde celým řetězem katalog → plán → UI', async () => {
+  const { postupZKatalogu, pridejPostupyDoPlanu, SLOUPCE_KATALOGU_PRO_POSTUP } =
+    await import('../../lib/profile/postupyDoPlanu.js');
+
+  // Řádek přesně v tom tvaru, jaký vrací `.select()` v api/profile.js.
+  const radekKatalogu = {
+    id: 1023,
+    instructions_cs: ['Pitu nakrájej na klínky.', 'Avokádo rozmačkej s citronem.'],
+    prep_minutes_estimated: 12
+  };
+
+  // Sloupce, ze kterých server čte, musí `.select()` opravdu vozit.
+  for (const sloupec of ['id', 'instructions_cs', 'prep_minutes_estimated']) {
+    assert.ok(
+      SLOUPCE_KATALOGU_PRO_POSTUP.includes(sloupec),
+      `${sloupec} chybi v SLOUPCE_KATALOGU_PRO_POSTUP`
+    );
+  }
+
+  const postup = postupZKatalogu(radekKatalogu);
+  assert.ok(postup, 'radek s kroky musi dat postup');
+
+  const plany = [{
+    id: 'p1',
+    structured_plan_json: {
+      days: [{
+        date: DNES,
+        meals: [{ type: 'breakfast', catalog_id: 1023, display_name_cs: 'Pita s avokádem' }]
+      }]
+    }
+  }];
+  assert.equal(pridejPostupyDoPlanu(plany, new Map([['1023', postup]])), 1);
+
+  const [jidlo] = naJidla(plany[0]);
+  assert.equal(jidlo.recipe?.prepTimeMin, 12, 'doba pripravy se ztratila po ceste');
+  assert.deepEqual(jidlo.recipe?.instructions, radekKatalogu.instructions_cs);
+});
+
 test('nákupní seznam sečte stejnou surovinu napříč jídly', async () => {
   const { naNakupniSeznam } = await import('./adaptery.ts');
   const plan = {

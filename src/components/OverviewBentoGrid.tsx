@@ -48,7 +48,6 @@ interface OverviewBentoGridProps {
   onSelectTab: (tab: ActiveTab) => void;
   onOpenWorkoutLogger: () => void;
   onOpenAddWeightModal: () => void;
-  onOpenCoachChat: () => void;
   onToggleMeal: (id: string) => void;
   onToggleHabit: (id: string) => void;
   onCompleteAllHabits: () => void;
@@ -68,7 +67,6 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
   onSelectTab,
   onOpenWorkoutLogger,
   onOpenAddWeightModal,
-  onOpenCoachChat,
   onToggleMeal,
   onToggleHabit,
   onCompleteAllHabits,
@@ -526,13 +524,6 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
                 <span className="text-[10px] text-cyan-400 font-semibold">Biohacking &amp; Hypertrofie</span>
               </div>
             </div>
-            <button
-              onClick={onOpenCoachChat}
-              className="p-1.5 rounded-lg text-cyan-400 hover:bg-cyan-950/50"
-              title="Konzultovat"
-            >
-              <Sparkles className="w-4 h-4" />
-            </button>
           </div>
 
           {/* Tip Preview — bez zpravy trenera se blok nezobrazuje */}
@@ -560,13 +551,6 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
           </div>
         </div>
 
-        <button
-          onClick={onOpenCoachChat}
-          className="w-full py-2.5 px-3 rounded-xl text-xs font-bold text-[#00f2fe] bg-cyan-950/50 hover:bg-cyan-900/60 border border-cyan-500/40 flex items-center justify-center gap-1.5 transition-all active:scale-95"
-        >
-          <Brain className="w-3.5 h-3.5" />
-          <span>Spustit konzultaci s TEDem</span>
-        </button>
       </motion.div>
     </div>
   );

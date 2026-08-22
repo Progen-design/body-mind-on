@@ -41,7 +41,6 @@ interface ProfileSectionProps {
   /** ISO datum narozeni z profilu. null = vek se nezobrazi. */
   birthDate?: string | null;
   onEditPreferences: () => void;
-  onOpenCoachChat: () => void;
   onSyncAll: () => void;
   onAddWeight: () => void;
   isSyncing?: boolean;
@@ -55,7 +54,6 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   slozeni = null,
   birthDate = null,
   onEditPreferences,
-  onOpenCoachChat,
   onSyncAll,
   onAddWeight,
   isSyncing = false
@@ -183,14 +181,6 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             >
               <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
               <span>Upravit cíle</span>
-            </button>
-
-            <button
-              onClick={onOpenCoachChat}
-              className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-cyan-950/70 hover:bg-cyan-900/70 text-[#00f2fe] border border-cyan-500/50 hover:border-cyan-400 shadow-[0_0_15px_rgba(0,242,254,0.25)] transition-all active:scale-95"
-            >
-              <Brain className="w-3.5 h-3.5 text-[#00f2fe]" />
-              <span>AI Konzultace</span>
             </button>
 
             <button

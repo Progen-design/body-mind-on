@@ -5,12 +5,10 @@ import { CoachTip } from '../types';
 
 interface AICoachBannerProps {
   tips: CoachTip[];
-  onOpenChat: () => void;
 }
 
 export const AICoachBanner: React.FC<AICoachBannerProps> = ({
-  tips,
-  onOpenChat
+  tips
 }) => {
   const [activeTipIndex, setActiveTipIndex] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -55,14 +53,6 @@ export const AICoachBanner: React.FC<AICoachBannerProps> = ({
             </div>
           </div>
 
-          {/* Action button */}
-          <button
-            onClick={onOpenChat}
-            className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold text-cyan-300 bg-cyan-950/40 border border-cyan-500/30 hover:border-cyan-400 hover:bg-cyan-900/40 transition-all active:scale-95"
-          >
-            <span>Konzultovat</span>
-            <ArrowUpRight className="w-3.5 h-3.5 text-cyan-400" />
-          </button>
         </div>
 
         {/* Tip content */}

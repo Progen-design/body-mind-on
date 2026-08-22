@@ -216,6 +216,12 @@ function AppContent() {
   const [isWithingsModalOpen, setIsWithingsModalOpen] = useState(false);
   const [isAddRecordModalOpen, setIsAddRecordModalOpen] = useState(false);
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false);
+  // CHAT S TEDEM JE SKRYTY, NE SMAZANY (Etapa 3.2).
+  // CoachChatModal neni AI — je to setTimeout a if/else nad klicovymi slovy
+  // s natvrdo psanymi hodnotami (waterPercent 62.4, visceralFat 3,
+  // metabolicAge 27, "Military Press 82,5 kg"). Vsech sest tlacitek, ktera
+  // ho otviraly, je pryc; modal zustava namontovany, aby ho Etapa 5 mohla
+  // ozivit jednim radkem. Nic ho zatim neotevre.
   const [isCoachChatOpen, setIsCoachChatOpen] = useState(false);
   const [isShoppingModalOpen, setIsShoppingModalOpen] = useState(false);
   const [isExportPdfOpen, setIsExportPdfOpen] = useState(false);
@@ -808,7 +814,6 @@ function AppContent() {
           isMenuOpen={isMenuOpen}
           onOpenMenu={() => setIsMenuOpen(true)}
           onCloseMenu={() => setIsMenuOpen(false)}
-          onOpenCoach={() => setIsCoachChatOpen(true)}
           onSelectTab={setActiveTab}
         />
 
@@ -839,7 +844,6 @@ function AppContent() {
         {/* 4. AI Trenér TED Recommendation Banner */}
         <AICoachBanner
           tips={coachTips}
-          onOpenChat={() => setIsCoachChatOpen(true)}
         />
 
         {/* 6. Dynamic Content Based on Selected Tab */}
@@ -858,7 +862,6 @@ function AppContent() {
             onSelectTab={setActiveTab}
             onOpenWorkoutLogger={() => setIsWorkoutLoggerOpen(true)}
             onOpenAddWeightModal={() => setIsAddRecordModalOpen(true)}
-            onOpenCoachChat={() => setIsCoachChatOpen(true)}
             onToggleMeal={handleToggleMeal}
             onToggleHabit={handleToggleHabit}
             onCompleteAllHabits={handleCompleteAllHabitsToday}
@@ -876,7 +879,6 @@ function AppContent() {
             slozeni={slozeni}
             birthDate={profilData?.user?.birth_date ?? null}
             onEditPreferences={() => setIsPreferencesModalOpen(true)}
-            onOpenCoachChat={() => setIsCoachChatOpen(true)}
             onSyncAll={handleManualWithingsSync}
             onAddWeight={() => setIsAddRecordModalOpen(true)}
             isSyncing={isSyncing}

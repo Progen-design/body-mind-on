@@ -7,7 +7,6 @@ import { ConfirmDialog } from './ConfirmDialog';
 
 interface HeaderProps {
   onOpenMenu: () => void;
-  onOpenCoach: () => void;
   isMenuOpen: boolean;
   onCloseMenu: () => void;
   onSelectTab?: (tab: any) => void;
@@ -15,7 +14,6 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenMenu,
-  onOpenCoach,
   isMenuOpen,
   onCloseMenu,
   onSelectTab
@@ -54,15 +52,6 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Action buttons */}
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Quick AI Coach trigger */}
-        <button
-          onClick={onOpenCoach}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#111927]/90 text-[#00f2fe] border border-[#00f2fe]/40 hover:border-[#00f2fe] hover:bg-[#00f2fe]/10 transition-all shadow-[0_0_12px_rgba(0,242,254,0.2)] active:scale-95"
-          title="AI Trenér Ted"
-        >
-          <Sparkles className="w-3.5 h-3.5 text-[#00f2fe] animate-pulse" />
-          <span className="hidden xs:inline">AI Trenér</span>
-        </button>
 
         {/* Přihlášený uživatel — klikem otevře menu s přepnutím profilu */}
         {account && (
@@ -177,16 +166,6 @@ export const Header: React.FC<HeaderProps> = ({
                       <span>{item.label}</span>
                     </button>
                   ))}
-                  <button
-                    onClick={() => {
-                      onCloseMenu();
-                      onOpenCoach();
-                    }}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-cyan-300 hover:text-white bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-500/30 text-xs font-semibold transition-all mt-2"
-                  >
-                    <span>AI Trenér TED (Konzultace)</span>
-                    <Sparkles className="w-4 h-4 text-[#00f2fe]" />
-                  </button>
                 </div>
 
                 <div className="mt-8 space-y-2">

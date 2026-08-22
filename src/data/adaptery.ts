@@ -19,7 +19,7 @@ import {
   parseTrainingEnvironmentDetail
 } from '../../lib/trainingEnvironment.js';
 import type {
-  BadHabitItem, ExerciseItem, HabitItem, MealItem, ShoppingItem, TelesneSlozeni,
+  BadHabitItem, CoachTip, ExerciseItem, HabitItem, MealItem, ShoppingItem, TelesneSlozeni,
   UserPreferences, UserProfile, WeightRecord, WorkoutDay
 } from '../types';
 
@@ -37,6 +37,16 @@ export interface ProfilOdpoved {
   daily_activity_completions?: DokonceniAktivity[];
   habit_logs_progress?: ZaznamNavyku[];
   body_composition?: TelesneSlozeni | null;
+  coach_messages?: ZpravaTrenera[];
+}
+
+/** Radek `ai_messages` (agent_slug = 'coach'), jak ho vraci /api/profile. */
+export interface ZpravaTrenera {
+  id: string | number;
+  title?: string | null;
+  content?: string | null;
+  created_at?: string | null;
+  task_type?: string | null;
 }
 
 /** Řádek `habit_logs`, jak ho vrací /api/profile v `habit_logs_progress`. */
@@ -385,6 +395,25 @@ export function naNastaveniProfilu(odpoved: ProfilOdpoved): NastaveniProfilu {
     goal_weight_kg: text(odpoved?.user?.goal_weight_kg),
     height_cm: text(odpoved?.user?.height_cm ?? bm.height_cm)
   };
+}
+
+/**
+ * Zprávy trenéra ze serveru. Prázdné pole = žádná zpráva a banner se
+ * nezobrazí — to je platný stav, ne chyba napojení.
+ *
+ * Změřeno v produkci: `ai_trigger_rules` má enabled=true jen
+ * `user_registered -> initial_plan`, takže nové coach zprávy zatím
+ * nevznikají a u většiny lidí bude prázdno.
+ */
+export function naZpravyTrenera(odpoved: ProfilOdpoved): CoachTip[] {
+  return (odpoved?.coach_messages || [])
+    .filter((z) => String(z?.content || '').trim())
+    .map((z) => ({
+      id: String(z.id),
+      headline: String(z.title || '').trim() || 'Zpráva od trenéra',
+      content: String(z.content).trim(),
+      timestamp: kdyMereno(z.created_at)
+    }));
 }
 
 const IKONY: Record<string, HabitItem['iconType']> = {

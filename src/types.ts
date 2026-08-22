@@ -228,11 +228,19 @@ export interface SyncResult {
   activeEnergyKcal: number;
 }
 
+/**
+ * Zpráva trenéra z tabulky `ai_messages` (agent_slug = 'coach').
+ *
+ * `category` tu schválně není: server posílá `task_type`
+ * (motivation_message, recovery_message…) a mapovat ho na výmyslové
+ * kategorie „regenerace / výživa / výkon / kompozice" by znamenalo tvrdit
+ * něco, co v datech není. Nikde se stejně nevykreslovala.
+ */
 export interface CoachTip {
   id: string;
-  category: 'regenerace' | 'vyziva' | 'vykon' | 'kompozice';
   headline: string;
   content: string;
+  /** Kdy zpráva vznikla. Prázdné, když to server neposlal. */
   timestamp: string;
 }
 

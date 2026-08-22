@@ -5,7 +5,6 @@ import type {
   WorkoutDay,
   HabitItem,
   BadHabitItem,
-  CoachTip,
   AppleWatchBiometrics,
   ShoppingItem,
   UserPreferences
@@ -452,29 +451,6 @@ export const initialBadHabits: BadHabitItem[] = [
 ];
 
 
-export const initialCoachTips: CoachTip[] = [
-  {
-    id: 'tip-1',
-    category: 'kompozice',
-    headline: 'Vynikající nárůst čisté svalové hmoty',
-    content: 'Při váze 104,6 kg klesl podíl tělesného tuku na 11,6 %, což znamená čistý přírůstek svalů +2,7 kg od minulého měření. Váš tréninkový objem a timing živin fungují perfektně.',
-    timestamp: 'Dnes 08:30'
-  },
-  {
-    id: 'tip-2',
-    category: 'vykon',
-    headline: 'Doporučení pro dnešní trénink ramen & tricepsu',
-    content: 'Zaměřte se dnes na kontrolovanou negativní fázi u Military Pressu. Vzhledem k HRV 20,6 ms nechoďte do úplného selhání na posledních sériích. Po skončení zkonzumujte 35g syrovátkového proteinu.',
-    timestamp: 'Dnes 07:15'
-  },
-  {
-    id: 'tip-3',
-    category: 'vyziva',
-    headline: 'Optimalizace večeře & noční anabolismus',
-    content: 'K večeři zbývá lehký příjem. Krůtí prsa s pečeným bramborem a zeleninou dodají optimální aminokyselinové spektrum pro regeneraci během spánku.',
-    timestamp: 'Před 2 hodinami'
-  }
-];
 
 export const initialShoppingList: ShoppingItem[] = [
   // Maso & Ryby

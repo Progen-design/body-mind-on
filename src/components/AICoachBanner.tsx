@@ -43,10 +43,15 @@ export const AICoachBanner: React.FC<AICoachBannerProps> = ({
               <span className="text-xs sm:text-sm font-bold tracking-wider uppercase text-white">
                 AI Trenér Ted
               </span>
+              {/* "Doporuceni dne" lhalo: uvitaci zprava z onboardingu je porad
+                  platna, ale dnesni neni. Datum vzniku rozhoduje. */}
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-950/60 text-cyan-300 border border-cyan-500/30">
                 <Sparkles className="w-2.5 h-2.5 text-[#00f2fe]" />
-                Doporučení dne
+                Zpráva od trenéra
               </span>
+              {currentTip.timestamp && (
+                <span className="text-[10px] text-slate-500">{currentTip.timestamp}</span>
+              )}
             </div>
           </div>
 

@@ -35,7 +35,7 @@ import type { NastaveniProfilu } from './data/adaptery';
 import {
   dnesekPraha, dnesniNavyky, mnozinaDokonceni, naJidla, naNakupniSeznam, naNavyky,
   hodnotaNeboPomlcka, naNastaveniProfilu, naPreference, naProfil, naTelesneSlozeni, naTreninky, naVazeni,
-  naZlozvyky, pouzijDokonceni,
+  naZlozvyky, naZpravyTrenera, pouzijDokonceni,
   pouzijDokonceniTreninku, vyberPlan
 } from './data/adaptery';
 import { ToastProvider, useToast } from './context/ToastContext';
@@ -56,7 +56,6 @@ import {
   initialMeals,
   weeklyWorkouts,
   initialHabits,
-  initialCoachTips,
   appleWatchBiometricsData,
   initialShoppingList,
   initialBadHabits,
@@ -74,6 +73,7 @@ import {
   AppleWatchBiometrics,
   SyncResult,
   UserProfile,
+  CoachTip,
   TelesneSlozeni,
   WithingsConnection
 } from './types';
@@ -144,7 +144,9 @@ function AppContent() {
     initialWithingsConnection,
     mergeObject
   );
-  const [coachTips] = useState(initialCoachTips);
+  // Zpravy trenera ze serveru. Prazdno = banner se nezobrazi; to je platny
+  // stav, ne chyba napojeni (ai_trigger_rules coach zpravy zatim negeneruje).
+  const [coachTips, setCoachTips] = useState<CoachTip[]>([]);
   // Telesne slozeni z chytre vahy. null = zadne mereni, karty se skryji.
   const [slozeni, setSlozeni] = useState<TelesneSlozeni | null>(null);
   // Soucasne nastaveni pro predvyplneni modalu. Jde ze serveru, ne z localStorage.
@@ -171,6 +173,7 @@ function AppContent() {
     setBadHabits(naZlozvyky(profilData.user_habits));
     setSlozeni(naTelesneSlozeni(profilData));
     setNastaveni(naNastaveniProfilu(profilData));
+    setCoachTips(naZpravyTrenera(profilData));
     setPreferences((p) => naPreference(profilData, p));
 
     const vazeni = naVazeni(profilData);

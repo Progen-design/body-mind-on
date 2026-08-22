@@ -795,6 +795,7 @@ function AppContent() {
             latestWeightRecord={latestRecord}
             biometrics={biometrics}
             slozeni={slozeni}
+            birthDate={profilData?.user?.birth_date ?? null}
             onEditPreferences={() => setIsPreferencesModalOpen(true)}
             onOpenCoachChat={() => setIsCoachChatOpen(true)}
             onSyncAll={handleManualWithingsSync}

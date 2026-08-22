@@ -30,7 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
     logout();
     showToast({
       title: 'Odhlášeno',
-      description: 'Tvoje data zůstala uložená na tomto zařízení.',
+      description: 'Tvoje data zůstávají uložená na účtu.',
       variant: 'info'
     });
   };
@@ -232,7 +232,7 @@ export const Header: React.FC<HeaderProps> = ({
       <ConfirmDialog
         isOpen={isLogoutDialogOpen}
         title="Opravdu se chceš odhlásit?"
-        description="Aplikace se zamkne a budeš se muset znovu přihlásit. Naměřená data, jídelníček i návyky zůstanou uložené na tomto zařízení."
+        description="Aplikace se zamkne a budeš se muset znovu přihlásit. Naměřená data, jídelníček i návyky zůstanou uložené na tvém účtu."
         confirmLabel="Odhlásit se"
         cancelLabel="Zůstat přihlášen"
         tone="danger"

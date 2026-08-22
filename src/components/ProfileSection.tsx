@@ -38,6 +38,8 @@ interface ProfileSectionProps {
   biometrics: AppleWatchBiometrics;
   /** Z chytre vahy. null = dlazdice slozeni se nezobrazi. */
   slozeni?: TelesneSlozeni | null;
+  /** ISO datum narozeni z profilu. null = vek se nezobrazi. */
+  birthDate?: string | null;
   onEditPreferences: () => void;
   onOpenCoachChat: () => void;
   onSyncAll: () => void;
@@ -51,6 +53,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   latestWeightRecord,
   biometrics,
   slozeni = null,
+  birthDate = null,
   onEditPreferences,
   onOpenCoachChat,
   onSyncAll,
@@ -60,6 +63,19 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   const { account, logout, loggedInAt } = useAuth();
   const { showToast } = useToast();
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+
+  // Vek z data narozeni. Driv tu bylo natvrdo "34 let" bez ohledu na to,
+  // kdo je prihlaseny.
+  const vekLet = React.useMemo(() => {
+    const t = Date.parse(String(birthDate || ''));
+    if (!Number.isFinite(t)) return null;
+    const nar = new Date(t);
+    const dnes = new Date();
+    let vek = dnes.getFullYear() - nar.getFullYear();
+    const m = dnes.getMonth() - nar.getMonth();
+    if (m < 0 || (m === 0 && dnes.getDate() < nar.getDate())) vek--;
+    return vek >= 0 && vek < 130 ? vek : null;
+  }, [birthDate]);
 
   const loggedInText = loggedInAt
     ? new Date(loggedInAt).toLocaleString('cs-CZ', {
@@ -75,19 +91,16 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
     logout();
     showToast({
       title: 'Odhlášeno',
-      description: 'Tvoje data zůstala uložená na tomto zařízení.',
+      description: 'Tvoje data zůstávají uložená na účtu.',
       variant: 'info'
     });
   };
 
 
-  const personalRecords = [
-    { exercise: 'Benchpress', weight: '135 kg', reps: '4 opakování', date: 'Před 2 týdny', icon: Dumbbell, color: 'text-cyan-400' },
-    { exercise: 'Dřep s činkou', weight: '170 kg', reps: '5 opakování', date: 'Před měsícem', icon: Dumbbell, color: 'text-[#39ff14]' },
-    { exercise: 'Mrtvý tah', weight: '210 kg', reps: '3 opakování', date: 'Před 3 týdny', icon: Dumbbell, color: 'text-orange-400' },
-    { exercise: 'Tlak na ramena s JČ', weight: '42 kg', reps: '6 opakování', date: 'Tento týden', icon: Dumbbell, color: 'text-purple-400' },
-    { exercise: 'Shyby s přidanou vahou', weight: '+30 kg', reps: '5 opakování', date: 'Před 2 týdny', icon: Dumbbell, color: 'text-emerald-400' }
-  ];
+  // Osobni silove rekordy odstraneny: pet vymyslenych hodnot (bench 135 kg,
+  // drep 170 kg, mrtvy tah 210 kg…) vcetne "Pred 2 tydny" a "5 zapsanych PR".
+  // Overeno v produkci — tabulka pro rekordy v databazi neexistuje ani pod
+  // jinym nazvem, ani jako sloupec. Napojit nebylo na co.
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -102,13 +115,13 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
         <div className="absolute bottom-0 left-0 w-72 h-72 bg-lime-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-          {/* Avatar & Ident */}
-          <div className="flex items-center gap-4 sm:gap-5">
-            <div className="relative">
+          {/* Avatar & identita */}
+          <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+            <div className="relative shrink-0">
               <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden p-1 bg-gradient-to-tr from-[#00f2fe] via-cyan-600 to-[#39ff14] shadow-[0_0_20px_rgba(0,242,254,0.3)]">
                 <img
-                  src={profile.avatarUrl}
-                  alt={profile.name}
+                  src={account?.avatarUrl || profile.avatarUrl}
+                  alt={account?.name || profile.name}
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover rounded-xl bg-slate-900"
                 />
@@ -116,31 +129,53 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
               <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#39ff14] border-2 border-[#0c1017] shadow-[0_0_10px_#39ff14]" />
             </div>
 
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                  {profile.name}
+                  {account?.name || profile.name}
                 </h2>
                 <div className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-[#39ff14] bg-emerald-950/60 border border-[#39ff14]/50 shadow-[0_0_12px_rgba(57,255,20,0.25)] flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#39ff14] animate-ping" />
                   <span>{profile.status}</span>
                 </div>
               </div>
+
+              {account?.email && (
+                <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5 min-w-0">
+                  <Mail className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                  <span className="truncate">{account.email}</span>
+                </p>
+              )}
+
               <p className="text-xs sm:text-sm text-cyan-400 font-semibold mt-1 flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-cyan-400" />
                 {profile.membershipPlan}
               </p>
-              <div className="flex items-center gap-3 text-xs text-slate-400 mt-2">
-                <span>Věk: <strong className="text-slate-200">34 let</strong></span>
-                <span>•</span>
-                <span>Výška: <strong className="text-slate-200">{preferences.currentHeightCm} cm</strong></span>
-                <span>•</span>
-                <span>Fáze: <strong className="text-emerald-300">Hypertrofie 6/12</strong></span>
+
+              {/* Vek i vyska jdou z dat. Chybejici hodnota se nezobrazi —
+                  driv tu svitilo natvrdo "34 let" a "Faze: Hypertrofie 6/12",
+                  ktera nemela zdroj nikde. */}
+              <div className="flex items-center gap-3 text-xs text-slate-400 mt-2 flex-wrap">
+                {vekLet !== null && (
+                  <span>Věk: <strong className="text-slate-200">{vekLet} let</strong></span>
+                )}
+                {preferences.currentHeightCm > 0 && (
+                  <>
+                    {vekLet !== null && <span>•</span>}
+                    <span>Výška: <strong className="text-slate-200">{preferences.currentHeightCm} cm</strong></span>
+                  </>
+                )}
+                {loggedInText !== '—' && (
+                  <>
+                    {(vekLet !== null || preferences.currentHeightCm > 0) && <span>•</span>}
+                    <span>Přihlášen: <strong className="text-slate-200">{loggedInText}</strong></span>
+                  </>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Quick Profile Actions */}
+          {/* Akce. Jedno Odhlasit se, ne dve. */}
           <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
             <button
               onClick={onEditPreferences}
@@ -168,54 +203,6 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           </div>
         </div>
       </motion.div>
-
-      {/* 1b. Přihlášený účet & přepnutí profilu */}
-      {account && (
-        <div className="p-5 sm:p-6 rounded-3xl bg-[#0c1017]/90 border border-slate-800 shadow-xl space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-cyan-400">
-                <User className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-white">Přihlášený účet</h3>
-                <p className="text-xs text-slate-400">
-                  Přihlášen {loggedInText} • data se ukládají do tohoto zařízení
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setIsLogoutDialogOpen(true)}
-              className="flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-red-300 bg-red-950/50 hover:bg-red-900/60 border border-red-500/40 hover:border-red-400 transition-all active:scale-95"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Odhlásit se</span>
-            </button>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-slate-900/80 border border-cyan-500/25 flex items-center gap-3.5">
-            <img
-              src={account.avatarUrl}
-              alt={account.name}
-              referrerPolicy="no-referrer"
-              className="w-12 h-12 rounded-xl object-cover bg-slate-800 shrink-0"
-            />
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-bold text-slate-100 truncate">{account.name}</div>
-              <div className="text-[11px] text-slate-400 flex items-center gap-1.5 truncate">
-                <Mail className="w-3 h-3 shrink-0 text-slate-500" />
-                <span className="truncate">{account.email}</span>
-              </div>
-              <div className="text-[10px] text-cyan-400 font-semibold mt-0.5">{account.role}</div>
-            </div>
-            <span className="hidden sm:inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold text-[#39ff14] bg-emerald-950/60 border border-emerald-500/30 shrink-0">
-              Aktivní relace
-            </span>
-          </div>
-
-        </div>
-      )}
 
       {/* 2. Key Physical Parameters Bento Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -354,48 +341,6 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
         </div>
       </div>
 
-      {/* 4. Osobní rekordy (PRs) */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-[#0c1017]/90 border border-cyan-500/25 shadow-xl space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-amber-950/60 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.2)]">
-              <Trophy className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-white">Osobní silové rekordy (PR)</h3>
-              <p className="text-xs text-slate-400">Sledování maximálních výkonů v základních cvicích</p>
-            </div>
-          </div>
-          <span className="text-xs font-semibold text-slate-400">5 zapsaných PR</span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {personalRecords.map((pr, idx) => {
-            const Icon = pr.icon;
-            return (
-              <div
-                key={idx}
-                className="p-4 rounded-2xl bg-slate-900/70 border border-slate-800/80 hover:border-cyan-500/30 transition-all flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-center">
-                    <Icon className={`w-4 h-4 ${pr.color}`} />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-slate-100">{pr.exercise}</div>
-                    <div className="text-[11px] text-slate-400">{pr.reps} • {pr.date}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-sm font-extrabold text-white block">{pr.weight}</span>
-                  <span className="text-[10px] text-[#39ff14] font-semibold">Max PR</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
       {/* 5. Cíle stravování, Maker & Životosprávy */}
       <div className="p-5 sm:p-6 rounded-3xl bg-[#0c1017]/90 border border-slate-800 shadow-xl space-y-4">
         <div className="flex items-center justify-between">
@@ -459,7 +404,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
       <ConfirmDialog
         isOpen={isLogoutDialogOpen}
         title="Opravdu se chceš odhlásit?"
-        description="Aplikace se zamkne a budeš se muset znovu přihlásit. Naměřená data, jídelníček i návyky zůstanou uložené na tomto zařízení."
+        description="Aplikace se zamkne a budeš se muset znovu přihlásit. Naměřená data, jídelníček i návyky zůstanou uložené na tvém účtu."
         confirmLabel="Odhlásit se"
         cancelLabel="Zůstat přihlášen"
         tone="danger"

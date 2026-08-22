@@ -240,16 +240,14 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
                 </span>
                 <span className="text-base font-bold text-slate-500">/ 100</span>
               </div>
-              <div className="text-xs text-amber-300 font-semibold mt-0.5">
-                Parasympatická únava
-              </div>
-            </div>
-
-            {/* Visual Dial Ring */}
-            <div className="w-16 h-16 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col items-center justify-center relative shadow-inner">
-              <span className="text-sm font-black text-[#39ff14]">70 %</span>
-              <span className="text-[9px] text-slate-400 font-medium">READY</span>
-              <div className="absolute inset-0 rounded-2xl border-2 border-amber-500/40" />
+              {/* Stav ze serveru. Driv tu bylo natvrdo "Parasympaticka unava"
+                  a vedle odznak "70 % READY" — tri tvrzeni o temz skore,
+                  z toho dve vymyslena. */}
+              {biometrics.recoveryStatus && biometrics.recoveryScore > 0 && (
+                <div className="text-xs text-amber-300 font-semibold mt-0.5">
+                  {biometrics.recoveryStatus}
+                </div>
+              )}
             </div>
           </div>
 
@@ -258,23 +256,33 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
             <div>
               <div className="text-[10px] text-slate-400 font-medium">HRV</div>
               <div className="text-sm sm:text-base font-bold text-amber-400 mt-0.5">
-                {biometrics.hrvMs.toString().replace('.', ',')} ms
+                {hodnotaNeboPomlcka(biometrics.hrvMs > 0 ? biometrics.hrvMs : null, 'ms')}
               </div>
-              <div className="text-[10px] text-slate-500">B: 28 ms</div>
+              {/* Baseline ze stejneho zdroje jako hodnota. Driv tu bylo
+                  natvrdo "B: 28 ms", na zalozce Regenerace "42,0 ms". */}
+              {biometrics.hrvBaselineMs > 0 && (
+                <div className="text-[10px] text-slate-500">
+                  Základna {hodnotaNeboPomlcka(biometrics.hrvBaselineMs, 'ms')}
+                </div>
+              )}
             </div>
             <div className="border-l border-slate-800 pl-2">
               <div className="text-[10px] text-slate-400 font-medium">Klid. tep</div>
               <div className="text-sm sm:text-base font-bold text-white mt-0.5">
-                {biometrics.restingHrBpm} bpm
+                {hodnotaNeboPomlcka(biometrics.restingHrBpm > 0 ? biometrics.restingHrBpm : null, 'bpm', 0)}
               </div>
-              <div className="text-[10px] text-slate-500">Normál 62</div>
             </div>
             <div className="border-l border-slate-800 pl-2">
               <div className="text-[10px] text-slate-400 font-medium">Spánek</div>
               <div className="text-sm sm:text-base font-bold text-[#00f2fe] mt-0.5">
-                {biometrics.sleepDuration}
+                {biometrics.sleepDuration || '—'}
               </div>
-              <div className="text-[10px] text-[#39ff14]">92 % ef.</div>
+              {/* Efektivita jen kdyz ji opravdu mame; "92 %" tu bylo natvrdo. */}
+              {biometrics.sleepEfficiencyPercent > 0 && (
+                <div className="text-[10px] text-[#39ff14]">
+                  {biometrics.sleepEfficiencyPercent} % ef.
+                </div>
+              )}
             </div>
           </div>
         </div>

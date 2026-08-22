@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { AppleWatchBiometrics } from '../types';
-import { hodnotaNeboPomlcka } from '../data/adaptery';
+import { hodnotaNeboPomlcka, zmenaText } from '../data/adaptery';
 
 interface BiometricsSectionProps {
   biometrics: AppleWatchBiometrics;
@@ -45,15 +45,17 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
       label: 'Variabilita srdečního tepu (HRV)',
       color: '#00f2fe',
       baseline: biometrics.hrvBaselineMs,
-      baselineLabel: 'Průměrná základna (42,0 ms)'
+      baselineLabel: biometrics.hrvBaselineMs > 0
+        ? `Průměrná základna (${hodnotaNeboPomlcka(biometrics.hrvBaselineMs, 'ms')})`
+        : ''
     },
     restingHr: {
       data: biometrics.restingHrTrend,
       unit: 'bpm',
       label: 'Klidový tep (Resting Heart Rate)',
       color: '#f43f5e',
-      baseline: 58,
-      baselineLabel: 'Optimální základna (58 bpm)'
+      baseline: 0,
+      baselineLabel: ''
     },
     steps: {
       data: biometrics.stepsTrend,
@@ -61,7 +63,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
       label: 'Denní kroky & NEAT',
       color: '#39ff14',
       baseline: biometrics.stepsTarget,
-      baselineLabel: 'Denní cíl (10 000)'
+      baselineLabel: biometrics.stepsTarget > 0 ? `Denní cíl (${biometrics.stepsTarget.toLocaleString('cs-CZ')})` : ''
     },
     energy: {
       data: biometrics.energyTrend,
@@ -69,7 +71,9 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
       label: 'Aktivní energie (Active Burn)',
       color: '#fbbf24',
       baseline: biometrics.activeEnergyTargetKcal,
-      baselineLabel: 'Denní cíl (1 500 kcal)'
+      baselineLabel: biometrics.activeEnergyTargetKcal > 0
+        ? `Denní cíl (${biometrics.activeEnergyTargetKcal.toLocaleString('cs-CZ')} kcal)`
+        : ''
     }
   }[activeMetricTab];
 
@@ -211,17 +215,29 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-extrabold text-white tracking-tight">
-                  {biometrics.hrvMs.toLocaleString('cs-CZ')}
+                  {hodnotaNeboPomlcka(biometrics.hrvMs > 0 ? biometrics.hrvMs : null)}
                 </span>
                 <span className="text-xs font-semibold text-slate-400">ms</span>
               </div>
-              <div className="flex items-center gap-1 text-xs text-rose-400 font-medium mt-1">
-                <TrendingDown className="w-3.5 h-3.5 text-rose-400" />
-                <span>-21,4 ms oproti normě ({biometrics.hrvBaselineMs} ms)</span>
-              </div>
-            </div>
-            <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400">
-              Měření: Ranní SDNN přes HealthKit
+              {/* Odchylka se počítá z hodnoty a základny, ne natvrdo. Dřív tu
+                  svítilo „-21,4 ms oproti normě" bez ohledu na obě čísla. */}
+              {biometrics.hrvMs > 0 && biometrics.hrvBaselineMs > 0 && (
+                <div
+                  className={`flex items-center gap-1 text-xs font-medium mt-1 ${
+                    biometrics.hrvMs < biometrics.hrvBaselineMs ? 'text-rose-400' : 'text-[#39ff14]'
+                  }`}
+                >
+                  {biometrics.hrvMs < biometrics.hrvBaselineMs ? (
+                    <TrendingDown className="w-3.5 h-3.5" />
+                  ) : (
+                    <TrendingUp className="w-3.5 h-3.5" />
+                  )}
+                  <span>
+                    {zmenaText(biometrics.hrvMs - biometrics.hrvBaselineMs, 'ms')} oproti základně
+                    ({hodnotaNeboPomlcka(biometrics.hrvBaselineMs, 'ms')})
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

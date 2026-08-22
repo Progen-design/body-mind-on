@@ -43,6 +43,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 // videl vymyslene zdravotni udaje. Data ted chodi z /api/health/recovery.
 import { applyWeightRecord, formatLastSynced } from './lib/syncEngine';
 import { apiFetch } from './lib/api';
+import { dnesniTrenink } from './lib/trenink';
 
 // Initial Data
 import {
@@ -162,6 +163,14 @@ function AppContent() {
   }, [profilData, setPreferences]);
 
   // Latest Measurement Record (data jdou z úložiště, proto s pojistkou)
+  //
+  // POZOR — LATENTNI PAD, SPLATIT V ETAPE 3.3/3.4.
+  // Tenhle radek nespadne jen proto, ze initialWeightRecords['1M'] ma 7
+  // seedovanych zaznamu. Jakmile Etapa 3.3 odstrani vymyslena data (sparkline
+  // "101,9 -> 104,6 kg"), bude seed prazdny, monthRecords taky a
+  // monthRecords[-1] vrati undefined -> latestRecord.weight shodi stranku.
+  // Spravne reseni patri do Etapy 3.4: latestRecord ma byt WeightRecord | null
+  // a komponenty maji chybejici hodnoty kreslit jako "—", ne jako 0.
   const monthRecords = weightRecords['1M']?.length ? weightRecords['1M'] : initialWeightRecords['1M'];
   const latestRecord = monthRecords[monthRecords.length - 1];
 
@@ -390,11 +399,7 @@ function AppContent() {
   // todayWorkout.title -> bila obrazovka. Prazdny plan je bezny stav (novy
   // uzivatel, plan se prave generuje), takze musi projit bez padu.
   const maPlan = meals.length > 0 || workouts.length > 0;
-  const todayWorkout: WorkoutDay = workouts.find(w => w.isToday) || workouts[0] || {
-    // Den bez tréninku je platný stav plánu, ne chybějící data.
-    dayName: '', dayShort: '', title: 'Dnes bez tréninku', durationMin: 0,
-    caloriesBurned: 0, isToday: true, isCompleted: false, focus: '', exercises: []
-  };
+  const todayWorkout: WorkoutDay = dnesniTrenink(workouts);
 
   // Calculated macros
   const totalCalories = meals.reduce((acc, m) => acc + (m.completed ? m.calories : 0), 0);

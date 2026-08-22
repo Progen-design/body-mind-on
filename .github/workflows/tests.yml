@@ -18,3 +18,5 @@ jobs:
       - run: npm ci --legacy-peer-deps
       - run: npm run test:unit
       - run: npm run test:health
+      # Testy SPA vrstvy (src/) driv v CI nebezely vubec.
+      - run: npm run test:src

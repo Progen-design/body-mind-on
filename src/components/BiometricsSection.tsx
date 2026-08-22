@@ -73,19 +73,25 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
   }[activeMetricTab];
 
   // SVG mini-chart coordinate calculations
+  // Krivka potrebuje aspon dva body: pri jednom deli (length - 1) nulou a
+  // souradnice vyjdou NaN, pri nule spadne points[points.length - 1] na undefined.
+  const maKrivku = trendData.data.length >= 2;
+
   const values = trendData.data.map(d => d.value);
-  const minVal = Math.min(...values) * 0.9;
-  const maxVal = Math.max(...values) * 1.1 || 1;
+  const minVal = maKrivku ? Math.min(...values) * 0.9 : 0;
+  const maxVal = maKrivku ? Math.max(...values) * 1.1 || 1 : 1;
   const width = 600;
   const height = 160;
   const paddingX = 40;
   const paddingY = 25;
 
-  const points = trendData.data.map((d, i) => {
-    const x = paddingX + (i / (trendData.data.length - 1)) * (width - paddingX * 2);
-    const y = height - paddingY - ((d.value - minVal) / (maxVal - minVal)) * (height - paddingY * 2);
-    return { x, y, ...d };
-  });
+  const points = maKrivku
+    ? trendData.data.map((d, i) => {
+        const x = paddingX + (i / (trendData.data.length - 1)) * (width - paddingX * 2);
+        const y = height - paddingY - ((d.value - minVal) / (maxVal - minVal)) * (height - paddingY * 2);
+        return { x, y, ...d };
+      })
+    : [];
 
   const pathD = points.reduce((acc, p, i) => {
     if (i === 0) return `M ${p.x} ${p.y}`;
@@ -94,7 +100,9 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
     return `${acc} C ${cx} ${prev.y}, ${cx} ${p.y}, ${p.x} ${p.y}`;
   }, '');
 
-  const areaD = `${pathD} L ${points[points.length - 1].x} ${height} L ${points[0].x} ${height} Z`;
+  const areaD = maKrivku
+    ? `${pathD} L ${points[points.length - 1].x} ${height} L ${points[0].x} ${height} Z`
+    : '';
 
   return (
     <div className="space-y-6">
@@ -375,6 +383,16 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
           </div>
 
           <div className="w-full h-44 bg-slate-950/80 rounded-2xl border border-slate-800/80 p-2 relative overflow-hidden">
+            {!maKrivku ? (
+              <div className="w-full h-full flex flex-col items-center justify-center text-center gap-1 px-4">
+                <span className="text-2xl text-slate-600 font-bold leading-none">—</span>
+                <span className="text-[11px] text-slate-500">
+                  {trendData.data.length === 0
+                    ? 'Zatím nemáme naměřená data pro tento graf.'
+                    : 'Pro vykreslení trendu potřebujeme aspoň dvě měření.'}
+                </span>
+              </div>
+            ) : (
             <svg
               viewBox={`0 0 ${width} ${height}`}
               className="w-full h-full overflow-visible"
@@ -434,9 +452,10 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
                 </g>
               ))}
             </svg>
+            )}
 
             {/* Hover Tooltip display */}
-            {hoveredPoint && (
+            {maKrivku && hoveredPoint && (
               <div className="absolute top-4 right-4 bg-slate-900/95 border border-cyan-500/50 px-3 py-1.5 rounded-xl text-xs shadow-xl backdrop-blur-md">
                 <span className="text-slate-400">{hoveredPoint.day}: </span>
                 <span className="font-bold text-white">

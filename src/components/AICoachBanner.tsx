@@ -15,7 +15,11 @@ export const AICoachBanner: React.FC<AICoachBannerProps> = ({
   const [activeTipIndex, setActiveTipIndex] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const currentTip = tips[activeTipIndex] || tips[0];
+  // tips[activeTipIndex] || tips[0] bylo na prazdnem poli porad undefined
+  // a nasledny currentTip.headline shodil stranku. Bez zpravy trenera
+  // se banner nezobrazuje — prazdno je platny stav, ne chyba.
+  const currentTip = tips[activeTipIndex] ?? tips[0];
+  if (!currentTip) return null;
 
   return (
     <motion.div

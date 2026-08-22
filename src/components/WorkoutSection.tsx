@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { WorkoutDay } from '../types';
+import { dnesniTrenink, jeNaplanovany, vybranyTrenink } from '../lib/trenink';
 
 interface WorkoutSectionProps {
   workouts: WorkoutDay[];
@@ -27,10 +28,13 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
   onOpenWorkoutLogger,
   onOpenWeeklyModal
 }) => {
-  const [selectedDayName, setSelectedDayName] = useState<string>('Čtvrtek');
+  // null = uzivatel zatim nic nevybral, vybrany den se odvodi z dat.
+  // Ulozeny nazev dne by po pregenerovani planu ukazoval na neexistujici den.
+  const [selectedDayName, setSelectedDayName] = useState<string | null>(null);
 
-  const selectedWorkout = workouts.find(w => w.dayName === selectedDayName) || workouts[3];
-  const todayWorkout = workouts.find(w => w.isToday) || workouts[3];
+  const selectedWorkout = vybranyTrenink(workouts, selectedDayName);
+  const todayWorkout = dnesniTrenink(workouts);
+  const maDnesTrenink = jeNaplanovany(todayWorkout);
 
   const totalWeeklyCalories = workouts.reduce((acc, w) => acc + (w.isCompleted ? w.caloriesBurned : 0), 0);
   const totalCompletedWorkouts = workouts.filter(w => w.isCompleted).length;
@@ -46,23 +50,26 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold uppercase tracking-wider text-cyan-400">
-              Dnešní naplánovaný trénink (Čtvrtek)
-            </span>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-[#39ff14] border border-emerald-500/30">
-              Hypertrofie
+              {todayWorkout.dayName
+                ? `Dnešní naplánovaný trénink (${todayWorkout.dayName})`
+                : 'Dnešní naplánovaný trénink'}
             </span>
           </div>
 
           <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
             <span>{todayWorkout.title}</span>
-            <span className="text-sm font-semibold text-slate-400">
-              ({todayWorkout.durationMin} min • {todayWorkout.caloriesBurned} kcal)
-            </span>
+            {maDnesTrenink && (
+              <span className="text-sm font-semibold text-slate-400">
+                ({todayWorkout.durationMin} min • {todayWorkout.caloriesBurned} kcal)
+              </span>
+            )}
           </h3>
 
-          <p className="text-xs sm:text-sm text-slate-300">
-            Fokus: <strong className="text-slate-100">{todayWorkout.focus}</strong>
-          </p>
+          {todayWorkout.focus && (
+            <p className="text-xs sm:text-sm text-slate-300">
+              Fokus: <strong className="text-slate-100">{todayWorkout.focus}</strong>
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
@@ -137,7 +144,7 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
         <div className="flex items-center justify-between pb-2 border-b border-slate-800">
           <div>
             <div className="text-xs font-bold uppercase tracking-wider text-[#39ff14]">
-              {selectedWorkout.dayName} • {selectedWorkout.focus}
+              {[selectedWorkout.dayName, selectedWorkout.focus].filter(Boolean).join(' • ')}
             </div>
             <h4 className="text-lg font-bold text-white tracking-tight mt-0.5">
               {selectedWorkout.title}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Check, Dumbbell, Clock, Flame, Shield, ChevronRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import { WorkoutDay, ExerciseItem } from '../types';
+import { vybranyTrenink } from '../lib/trenink';
 
 interface WeeklyWorkoutModalProps {
   isOpen: boolean;
@@ -16,11 +17,14 @@ export const WeeklyWorkoutModal: React.FC<WeeklyWorkoutModalProps> = ({
   workouts,
   onToggleExercise
 }) => {
-  const [selectedDayName, setSelectedDayName] = useState<string>('Čtvrtek');
+  // null = uzivatel zatim nic nevybral, den se odvodi z dat.
+  const [selectedDayName, setSelectedDayName] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const currentDay = workouts.find(w => w.dayName === selectedDayName) || workouts[3] || workouts[0];
+  // Uzivatel s jidelnickem, ale bez treninkovych dnu se sem dostane (maPlan
+  // ho pusti dal) a driv tu dostal undefined -> pad na currentDay.dayName.
+  const currentDay = vybranyTrenink(workouts, selectedDayName);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

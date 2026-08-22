@@ -534,13 +534,15 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
             </button>
           </div>
 
-          {/* Tip Preview */}
-          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 mb-3">
-            <div className="text-xs font-bold text-slate-100 mb-1">{topCoachTip.headline}</div>
-            <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
-              {topCoachTip.content}
-            </p>
-          </div>
+          {/* Tip Preview — bez zpravy trenera se blok nezobrazuje */}
+          {topCoachTip && (
+            <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 mb-3">
+              <div className="text-xs font-bold text-slate-100 mb-1">{topCoachTip.headline}</div>
+              <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+                {topCoachTip.content}
+              </p>
+            </div>
+          )}
 
           {/* Shopping List Quick Pill */}
           <div

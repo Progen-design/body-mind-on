@@ -14,7 +14,10 @@
     "strict": true,
     "noUnusedLocals": false,
     "jsx": "react-jsx",
-    "types": ["node", "vite/client"],
+    // "types" zamerne nevypisujeme. S pevnym seznamem Vercel pri prekladu API
+    // funkci bezi z jine slozky, @types/node ani vite/client tam nenajde
+    // a chrli TS2688. Bez nej si TypeScript vezme vse z node_modules/@types sam.
+    // Typy pro import.meta.env resi src/vite-env.d.ts.
     "paths": {
       "@/*": ["./*"],
       "@lib/*": ["./lib/*"]

@@ -52,8 +52,32 @@ test('u Apple Health je vidět stáří dat, ne jen „Připojeno"', () => {
   // Export v telefonu se muze zastavit a aplikace to sama nepozna.
   // Zmereno 23. 8. 2026: posledni data 22. 8., mezitim probehl trenink.
   assert.ok(PROFIL.includes('zdraviZastarale'), 'chybí kontrola stáří dat z hodinek');
-  assert.ok(PROFIL.includes('posledniZdravotniData'), 'profil nedostává datum posledních dat');
-  assert.ok(APP.includes('posledniZdravotniData'), 'App datum posledních dat nepředává');
+  assert.ok(PROFIL.includes('posledniSynchronizace'), 'profil nedostává čas poslední synchronizace');
+  assert.ok(APP.includes('posledniSynchronizace'), 'App čas poslední synchronizace nepředává');
+});
+
+test('stáří se počítá z času doručení, ne z data měření', () => {
+  // Puvodne se predaval posledni `local_date` z regenerace. To je datum bez
+  // casu: „2026-08-23" se naparsovalo jako pulnoc UTC a v UI z toho vzniklo
+  // „23. 8. 02:00", zatimco davka dorazila ve 20:57.
+  assert.ok(
+    APP.includes('zdravi.posledniSync'),
+    'čas synchronizace musí jít z last_sync_at, ne z local_date'
+  );
+  assert.ok(
+    !/posledniSynchronizace[\s\S]{0,400}local_date/.test(APP),
+    'do stáří synchronizace se zase dostal local_date'
+  );
+});
+
+test('práh zastarání odpovídá hodinovému odesílání', () => {
+  // Auto Export posila po hodine. Puvodnich 36 h byla mez pro denni
+  // odesilani a pri hodinove frekvenci by schovala dva dny vypadku.
+  const shoda = /HODIN_DO_ZASTARANI = (\d+)/.exec(PROFIL);
+  assert.ok(shoda, 'práh zastarání se nedá přečíst');
+  const hodin = Number(shoda[1]);
+  assert.ok(hodin <= 12, `práh ${hodin} h je při hodinovém odesílání příliš benevolentní`);
+  assert.ok(hodin >= 6, `práh ${hodin} h by hlásil poplach přes noc`);
 });
 
 test('rozdíl mezi zdroji je v UI vidět', () => {

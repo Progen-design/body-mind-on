@@ -130,21 +130,15 @@ function AppContent() {
   const spanekNoc = useMemo(() => naSpanek(zdravi.spanek), [zdravi.spanek]);
 
   /**
-   * POSLEDNÍ DEN, ZE KTERÉHO MÁME DATA Z HODINEK.
+   * KDY NAPOSLED DORAZILA DÁVKA Z TELEFONU.
    *
-   * Apple Health se nedá stáhnout ze serveru — payload posílá iPhone. Když se
-   * export v telefonu zastaví, aplikace to sama nepozná. Profil proto ukazuje
-   * stáří posledních dat a upozorní, když jsou starší než den a půl.
-   * Změřeno 23. 8. 2026: poslední payload z 22. 8. 17:58, mezitím trénink,
-   * o kterém aplikace neví.
+   * `zdravi.posledniSync` je `last_sync_at` z `apple_health_connections` —
+   * skutečný čas, kdy ingest přijal payload. Původně se sem posílal poslední
+   * `local_date` z regenerace, jenže to je datum bez času: „2026-08-23" se
+   * naparsovalo jako půlnoc UTC a v UI z toho vzniklo „23. 8. 02:00", což
+   * neodpovídalo ničemu — dávka dorazila ve 20:57.
    */
-  const posledniZdravotniData = useMemo(() => {
-    const dny = (zdravi.regenerace || [])
-      .map((r: any) => String(r?.local_date || ''))
-      .filter(Boolean)
-      .sort();
-    return dny.length ? dny[dny.length - 1] : null;
-  }, [zdravi.regenerace]);
+  const posledniSynchronizaceHodinek = zdravi.posledniSync;
   const [biometrics, setBiometrics] = useState<AppleWatchBiometrics>(PRAZDNA_BIOMETRIE);
 
   useEffect(() => {
@@ -912,7 +906,7 @@ function AppContent() {
               slozeni={slozeni}
               birthDate={profilData?.user?.birth_date ?? null}
               registrovanOd={profilData?.user?.created_at ?? null}
-              posledniZdravotniData={posledniZdravotniData}
+              posledniSynchronizace={posledniSynchronizaceHodinek}
               onEditPreferences={() => setIsPreferencesModalOpen(true)}
               onSyncAll={handleManualWithingsSync}
               onAddWeight={() => setIsAddRecordModalOpen(true)}

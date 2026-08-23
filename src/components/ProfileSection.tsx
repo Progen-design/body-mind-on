@@ -34,8 +34,8 @@ interface ProfileSectionProps {
   birthDate?: string | null;
   /** ISO datum registrace. null = řádek „Člen od" se nezobrazí. */
   registrovanOd?: string | null;
-  /** ISO datum posledního dne s daty z Apple Health. null = zatím nic nedorazilo. */
-  posledniZdravotniData?: string | null;
+  /** ISO čas posledního přijatého payloadu z Apple Health. null = zatím nic nedorazilo. */
+  posledniSynchronizace?: string | null;
   onEditPreferences: () => void;
   onSyncAll: () => void;
   onAddWeight: () => void;
@@ -52,7 +52,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   slozeni = null,
   birthDate = null,
   registrovanOd = null,
-  posledniZdravotniData = null,
+  posledniSynchronizace = null,
   onEditPreferences,
   onSyncAll,
   onAddWeight,
@@ -76,24 +76,30 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   }, [birthDate]);
 
   /**
-   * KDY NAPOSLED DORAZILA DATA Z HODINEK A JESTLI UŽ JSOU STARÁ.
+   * KDY NAPOSLED DORAZILA DÁVKA Z TELEFONU A JESTLI UŽ JE STARÁ.
    *
    * Apple Health se nedá stáhnout ze serveru — payload posílá iPhone. Když
-   * se export v telefonu zastaví, aplikace to nepozná sama od sebe a tváří
-   * se, že je všechno v pořádku. Změřeno 23. 8. 2026: poslední data z 22. 8.
-   * v 17:58, mezitím proběhl trénink, o kterém aplikace neví.
+   * se odesílání v telefonu zastaví, aplikace to sama nepozná a tváří se,
+   * že je všechno v pořádku.
    *
-   * Za zastaralé se považuje, když poslední den s daty není dnešek ani
-   * včerejšek — jeden vynechaný den je běžný, dva už znamenají zaseknutý
-   * export.
+   * PROČ PRÁVĚ DVANÁCT HODIN. Auto Export v telefonu odesílá po hodině,
+   * takže dvanáct hodin ticha znamená dvanáct zmeškaných pokusů v řadě —
+   * to už není výpadek Wi-Fi, ale zaseknuté odesílání. Kratší práh by
+   * hlásil poplach přes noc, kdy iOS aplikaci na pozadí běžně uspí.
+   *
+   * Změřeno 23. 8. 2026, než se frekvence zvedla: dávky chodily jednou
+   * denně v 17:58 a mezi 22. a 23. 8. byla mezera 27 hodin — mezitím
+   * proběhl trénink, o kterém aplikace nevěděla.
    */
+  const HODIN_DO_ZASTARANI = 12;
+
   const { zdraviPosledni, zdraviZastarale } = React.useMemo(() => {
-    const iso = posledniZdravotniData || null;
+    const iso = posledniSynchronizace || null;
     const t = Date.parse(String(iso || ''));
     if (!Number.isFinite(t)) return { zdraviPosledni: null, zdraviZastarale: false };
     const stariHodin = (Date.now() - t) / 36e5;
-    return { zdraviPosledni: iso, zdraviZastarale: stariHodin > 36 };
-  }, [posledniZdravotniData]);
+    return { zdraviPosledni: iso, zdraviZastarale: stariHodin > HODIN_DO_ZASTARANI };
+  }, [posledniSynchronizace]);
 
   /** „2. 8. 2026" — datum registrace. Bez data se řádek nekreslí. */
   const clenOd = React.useMemo(() => {
@@ -413,7 +419,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                   <div className="text-xs font-bold text-slate-200">Apple Health</div>
                   <div className="text-[11px] text-slate-400">
                     {zdraviPosledni
-                      ? `Poslední data ${kdyMereno(zdraviPosledni)}`
+                      ? `Poslední odeslání ${kdyMereno(zdraviPosledni)}`
                       : 'Zatím žádná data z hodinek'}
                   </div>
                 </div>
@@ -435,8 +441,8 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                 : <RefreshCw className="w-3 h-3 shrink-0 mt-0.5" />}
               <span>
                 {zdraviZastarale
-                  ? 'Hodinky data neposlaly. Odesílá je iPhone, ne server — zkontroluj export v telefonu.'
-                  : 'Data posílá tvůj iPhone, server si je stáhnout nemůže'}
+                  ? `Přes ${HODIN_DO_ZASTARANI} hodin nepřišlo nic. Odesílá iPhone, ne server — zkontroluj Auto Export v telefonu.`
+                  : 'Odesílá tvůj iPhone každou hodinu, server si data stáhnout nemůže'}
               </span>
             </div>
           </div>

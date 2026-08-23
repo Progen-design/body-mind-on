@@ -31,6 +31,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { ConfirmDialog } from './ConfirmDialog';
 import { NadpisSekce } from './NadpisSekce';
+import { useTed } from '../context/TedContext';
 
 interface ProfileSectionProps {
   profile: UserProfile;
@@ -61,6 +62,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
 }) => {
   const { account, logout, loggedInAt } = useAuth();
   const { showToast } = useToast();
+  const ted = useTed();
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
   // Vek z data narozeni. Driv tu bylo natvrdo "34 let" bez ohledu na to,
@@ -250,18 +252,31 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           </div>
         )}
 
-        {/* Cílová váha */}
+        {/* CÍLOVÁ VÁHA.
+            Bez vyplněného cíle tu svítilo „0 kg" — a pod tím „Při <10 %
+            tělesného tuku", což je natvrdo psaná podmínka, kterou nikdo
+            nezadal ani nespočítal. Nula není cíl, je to prázdné pole.
+            Když cíl není, karta nabídne, kde si ho nastavit. */}
         <div className="p-4 sm:p-5 rounded-2xl bg-[#0e131d]/90 border border-cyan-500/25 shadow-lg">
           <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
             <span>Cílová hmotnost</span>
             <Trophy className="w-4 h-4 text-amber-400" />
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-white">
-            {preferences.targetWeightKg.toString().replace('.', ',')} kg
-          </div>
-          <div className="text-xs text-cyan-300 font-semibold mt-1">
-            Při &lt;10 % tělesného tuku
-          </div>
+          {preferences.targetWeightKg > 0 ? (
+            <div className="text-2xl sm:text-3xl font-extrabold text-white">
+              {preferences.targetWeightKg.toString().replace('.', ',')} kg
+            </div>
+          ) : (
+            <>
+              <div className="text-2xl sm:text-3xl font-extrabold text-slate-500">—</div>
+              <button
+                onClick={onEditPreferences}
+                className="text-xs text-cyan-300 font-semibold mt-1 hover:text-cyan-200 transition-colors"
+              >
+                Nastavit cíl
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -320,21 +335,30 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             </span>
           </div>
 
-          {/* AI Coach Engine */}
-          <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80 flex items-center justify-between">
+          {/* AI TRENÉR TED.
+              Dřív tu stálo „Verze 2.4 Hypertrophy Pro" — název ani číslo verze
+              nikde neexistuje, bylo to vymyšlené. Místo toho karta říká, co
+              TED umí, a otevře chat. */}
+          <button
+            onClick={ted.zeptejSe ? () => ted.zeptejSe() : undefined}
+            disabled={!ted.dostupny}
+            className="w-full p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-cyan-500/40 flex items-center justify-between transition-all disabled:cursor-default text-left"
+          >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-purple-950/50 border border-purple-500/30 flex items-center justify-center text-purple-400">
                 <Brain className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-xs font-bold text-slate-200">AI Trenér TED Engine</div>
-                <div className="text-[11px] text-slate-400">Verze 2.4 Hypertrophy Pro</div>
+                <div className="text-xs font-bold text-slate-200">AI trenér TED</div>
+                <div className="text-[11px] text-slate-400">Odpovídá podle tvého profilu a měření</div>
               </div>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-500/30">
-              Aktivní
-            </span>
-          </div>
+            {ted.dostupny && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-500/30">
+                Zeptat se
+              </span>
+            )}
+          </button>
         </div>
       </div>
 

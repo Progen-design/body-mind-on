@@ -853,14 +853,21 @@ function AppContent() {
           isSyncing={isSyncing}
         />
 
-        {/* 3. Karta uživatele */}
-        <UserProfileCard
-          profile={displayedProfile}
-          latestWeightRecord={latestRecord}
-          biometrics={biometrics}
-          onEditProfile={() => setIsPreferencesModalOpen(true)}
-          onViewFullProfile={() => setActiveTab('profil')}
-        />
+        {/* 3. Karta uživatele.
+            Na záložce „Můj profil" se nekreslí — ProfileSection tam má vlastní
+            hlavičku se stejným jménem, fotkou i stavem členství, jen podrobnější
+            (e-mail, věk, výška, odhlášení). Dvě karty téhož člověka nad sebou
+            vypadaly jako chyba a odkaz „zobrazit celý profil" tam vedl na
+            stránku, na které uživatel právě byl. */}
+        {activeTab !== 'profil' && (
+          <UserProfileCard
+            profile={displayedProfile}
+            latestWeightRecord={latestRecord}
+            biometrics={biometrics}
+            onEditProfile={() => setIsPreferencesModalOpen(true)}
+            onViewFullProfile={() => setActiveTab('profil')}
+          />
+        )}
 
         {/* 4. AI Trenér TED Recommendation Banner */}
         <AICoachBanner

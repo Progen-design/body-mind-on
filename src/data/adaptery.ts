@@ -446,9 +446,26 @@ export function naNastaveniProfilu(odpoved: ProfilOdpoved): NastaveniProfilu {
  * `user_registered -> initial_plan`, takže nové coach zprávy zatím
  * nevznikají a u většiny lidí bude prázdno.
  */
+/** Po kolika dnech přestává být zpráva od trenéra aktuální. */
+export const PLATNOST_ZPRAVY_DNI = 7;
+
 export function naZpravyTrenera(odpoved: ProfilOdpoved): CoachTip[] {
+  const hranice = Date.now() - PLATNOST_ZPRAVY_DNI * 24 * 60 * 60 * 1000;
+
   return (odpoved?.coach_messages || [])
     .filter((z) => String(z?.content || '').trim())
+    // ZASTARALÉ ZPRÁVY SE NEUKAZUJÍ. Uvítací zpráva z registrace říká „Dnes
+    // začni tím, že si připravíš první jídlo z plánu" — po třech týdnech to
+    // pořád svítilo nahoře v profilu jako dnešní pokyn. Datum u ní bylo, ale
+    // karta ho svým umístěním přebíjela. Nové zprávy zatím nevznikají
+    // (`ai_trigger_rules` má enabled jen `user_registered -> initial_plan`),
+    // takže po týdnu je banner prázdný — a to je poctivější než tři týdny
+    // starý pokyn tvářící se jako aktuální.
+    .filter((z) => {
+      const t = Date.parse(String(z?.created_at || ''));
+      // Zpráva bez použitelného data je podezřelá — radši ji neukazujeme.
+      return Number.isFinite(t) && t >= hranice;
+    })
     .map((z) => ({
       id: String(z.id),
       headline: String(z.title || '').trim() || 'Zpráva od trenéra',
@@ -574,10 +591,45 @@ export function naPreference(odpoved: ProfilOdpoved, puvodni: UserPreferences): 
   };
 }
 
-/** Vazeni z registrace a z merani. Bez dat prazdne pole - graf se skryje. */
+/**
+ * Vážení pro graf vývoje váhy.
+ *
+ * ČTE SE `weight_history` ZE SERVERU, ne `body_metrics`.
+ *
+ * `body_metrics` je snapshot z registrace a z ručních zápisů — u uživatele
+ * s chytrou váhou je tam jediný řádek. Změřeno 23. 8. 2026: 1 vážení
+ * v `body_metrics` proti 46 v `body_measurements`, kam zapisuje Withings
+ * cron i Apple Health. Graf proto ukazoval jeden bod a tvářil se, že víc
+ * měření není.
+ *
+ * Server obě tabulky slučuje v `sestavHistoriiVah` (jeden bod na den, při
+ * více měřeních vyhrává pozdější čas, den se počítá v Europe/Prague) a vrací
+ * je jako `weight_history`. Do 23. 8. to pole nečetl nikdo — stejný případ
+ * jako `withings_body_snapshots` a `apple_health_metrics_daily`.
+ *
+ * Bez dat prázdné pole — graf se skryje.
+ */
 export function naVazeni(odpoved: ProfilOdpoved): WeightRecord[] {
-  const metriky = odpoved.body_metrics || [];
-  return metriky
+  const historie = (odpoved as { weight_history?: { date?: string; weight?: number }[] })
+    ?.weight_history;
+
+  if (Array.isArray(historie) && historie.length > 0) {
+    return historie
+      .filter((z) => z?.date && z?.weight != null)
+      .map((z) => ({
+        date: String(z.date).slice(0, 10),
+        weight: cislo(z.weight),
+        // Tuk a svaly do grafu váhy nepatří a `weight_history` je nenese —
+        // složení těla má vlastní kartu z withings_body_snapshots.
+        fatPercent: 0,
+        muscleKg: 0,
+        bmi: 0
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  // Záloha pro starší odpověď serveru, která `weight_history` ještě neposílá.
+  return (odpoved.body_metrics || [])
     .filter((m) => m?.weight_kg != null)
     .map((m) => ({
       date: String(m.created_at || '').slice(0, 10),

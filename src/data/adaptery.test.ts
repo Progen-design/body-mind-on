@@ -371,3 +371,49 @@ test('lžíce a lžička zůstávají oddělené — je to jiná jednotka', asyn
   const [polozka] = naNakupniSeznam(plan);
   assert.equal(polozka.amount, '1 lžíce + 1 lžička');
 });
+
+
+// ------------------------------------------------------- graf vývoje váhy
+//
+// Zmereno 23. 8. 2026: uzivatel mel 1 vazeni v `body_metrics` a 46
+// v `body_measurements`. Graf cetl `body_metrics` a ukazoval jediny bod,
+// takze to vypadalo, ze vic mereni neni.
+
+test('graf váhy čte weight_history ze serveru, ne body_metrics', async () => {
+  const { naVazeni } = await import('./adaptery.ts');
+
+  const odpoved = {
+    weight_history: [
+      { date: '2026-08-20', weight: 103.4 },
+      { date: '2026-08-21', weight: 103.1 },
+      { date: '2026-08-22', weight: 103.0 }
+    ],
+    // Snapshot z registrace. Driv to byl jediny zdroj grafu.
+    body_metrics: [{ weight_kg: 104.6, created_at: '2026-08-02T10:00:00Z', bmi: 31.6 }]
+  };
+
+  const body = naVazeni(odpoved as never);
+  assert.equal(body.length, 3, 'graf ma vzit vsechna vazeni, ne jen snapshot');
+  assert.deepEqual(body.map((z) => z.date), ['2026-08-20', '2026-08-21', '2026-08-22']);
+  assert.equal(body[2].weight, 103);
+});
+
+test('bez weight_history se spadne na body_metrics, ne na prázdno', async () => {
+  const { naVazeni } = await import('./adaptery.ts');
+
+  const body = naVazeni({
+    body_metrics: [{ weight_kg: 104.6, created_at: '2026-08-02T10:00:00Z' }]
+  } as never);
+
+  assert.equal(body.length, 1);
+  assert.equal(body[0].weight, 104.6);
+});
+
+test('prázdný vstup nedá graf, ne nulový bod', async () => {
+  const { naVazeni } = await import('./adaptery.ts');
+
+  assert.deepEqual(naVazeni({} as never), []);
+  assert.deepEqual(naVazeni({ weight_history: [] } as never), []);
+  // Radek bez vahy neni mereni.
+  assert.deepEqual(naVazeni({ weight_history: [{ date: '2026-08-22' }] } as never), []);
+});

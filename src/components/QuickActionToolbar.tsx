@@ -7,6 +7,8 @@ interface QuickActionToolbarProps {
   onEditPreferences: () => void;
   onSyncAll: () => void;
   onAddWeight: () => void;
+  /** Otevře chat s TEDem. Bez kotvy — obecný dotaz. */
+  onAskTed: () => void;
   isSyncing?: boolean;
 }
 
@@ -15,6 +17,7 @@ export const QuickActionToolbar: React.FC<QuickActionToolbarProps> = ({
   onEditPreferences,
   onSyncAll,
   onAddWeight,
+  onAskTed,
   isSyncing = false
 }) => {
   return (
@@ -26,6 +29,16 @@ export const QuickActionToolbar: React.FC<QuickActionToolbarProps> = ({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
+        {/* Zeptat se TEDa — první, protože je to nejrychlejší cesta k odpovědi
+            na „proč mám v plánu tohle" a „co to číslo znamená u mě". */}
+        <button
+          onClick={onAskTed}
+          className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-cyan-950/70 hover:bg-cyan-900/70 text-[#00f2fe] border border-cyan-500/40 hover:border-cyan-400 shadow-[0_0_12px_rgba(0,242,254,0.25)] transition-all active:scale-95"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-[#00f2fe]" />
+          <span>Zeptat se TEDa</span>
+        </button>
+
         {/* Zapsat trénink */}
         <button
           onClick={onLogWorkout}

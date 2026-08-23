@@ -22,6 +22,7 @@ import { WithingsSyncModal } from './components/WithingsSyncModal';
 import { AddMeasurementModal } from './components/AddMeasurementModal';
 import { PreferencesModal, VysledekUlozeni } from './components/PreferencesModal';
 import { CoachChatModal } from './components/CoachChatModal';
+import type { KotvaChatu } from './components/CoachChatModal';
 import { LoginScreen } from './components/LoginScreen';
 
 // Kontexty, perzistence a synchronizace
@@ -39,6 +40,9 @@ import {
   pouzijDokonceniTreninku, vyberPlan
 } from './data/adaptery';
 import { ToastProvider, useToast } from './context/ToastContext';
+// Otaznik u kterekoli metriky umi otevrit TEDa s kontextem te polozky.
+// Kontext, ne prop — otazniky sedi hluboko v kartach a modalech.
+import { TedProvider } from './context/TedContext';
 import { useLocalStorage } from './hooks/useLocalStorage';
 // buildSyncedBiometrics a buildSyncedWeightRecord se uz nepouzivaji — hodnoty
 // si dopocitavaly v prohlizeci (mean-revert HRV k baseline), takze uzivatel
@@ -217,13 +221,17 @@ function AppContent() {
   const [isWithingsModalOpen, setIsWithingsModalOpen] = useState(false);
   const [isAddRecordModalOpen, setIsAddRecordModalOpen] = useState(false);
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false);
-  // CHAT S TEDEM JE SKRYTY, NE SMAZANY (Etapa 3.2).
-  // CoachChatModal neni AI — je to setTimeout a if/else nad klicovymi slovy
-  // s natvrdo psanymi hodnotami (waterPercent 62.4, visceralFat 3,
-  // metabolicAge 27, "Military Press 82,5 kg"). Vsech sest tlacitek, ktera
-  // ho otviraly, je pryc; modal zustava namontovany, aby ho Etapa 5 mohla
-  // ozivit jednim radkem. Nic ho zatim neotevre.
+  // CHAT S TEDEM (Etapa 5). Do 23. 8. 2026 to byla atrapa — setTimeout
+  // a if/else nad klicovymi slovy s natvrdo psanymi hodnotami — a byl proto
+  // schovany. Ted jde otazka na /api/coach-chat a odtud do OpenAI
+  // s kontextem z profilu uzivatele.
   const [isCoachChatOpen, setIsCoachChatOpen] = useState(false);
+  // U ktere polozky se uzivatel zeptal. Chat se otevre rovnou u toho cisla.
+  const [kotvaChatu, setKotvaChatu] = useState<KotvaChatu | null>(null);
+  const zeptejSeTeda = useCallback((kotva: KotvaChatu | null = null) => {
+    setKotvaChatu(kotva);
+    setIsCoachChatOpen(true);
+  }, []);
   const [isShoppingModalOpen, setIsShoppingModalOpen] = useState(false);
   const [isExportPdfOpen, setIsExportPdfOpen] = useState(false);
   const [selectedRecipeMeal, setSelectedRecipeMeal] = useState<MealItem | null>(null);
@@ -813,6 +821,7 @@ function AppContent() {
   }
 
   return (
+    <TedProvider zeptejSe={zeptejSeTeda}>
     <div className="min-h-screen bg-[#08090d] text-slate-100 relative overflow-x-hidden font-['Plus_Jakarta_Sans',sans-serif]">
       {/* Ambient Cyber Neon Background Glows */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] bg-gradient-to-b from-cyan-500/10 via-emerald-500/5 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
@@ -839,6 +848,7 @@ function AppContent() {
           onLogWorkout={() => setIsWorkoutLoggerOpen(true)}
           onEditPreferences={() => setIsPreferencesModalOpen(true)}
           onSyncAll={handleManualWithingsSync}
+          onAskTed={() => zeptejSeTeda()}
           onAddWeight={() => setIsAddRecordModalOpen(true)}
           isSyncing={isSyncing}
         />
@@ -1047,16 +1057,15 @@ function AppContent() {
         onSave={handleSavePreferences}
       />
 
+      {/* TED. Data si bere sám ze serveru — komponenta žádná nedostává,
+          protože kontext pro odpověď skládá /api/coach-chat z profilu
+          uživatele, ne z toho, co má zrovna otevřená obrazovka. */}
       <CoachChatModal
         isOpen={isCoachChatOpen}
-        onClose={() => setIsCoachChatOpen(false)}
-        profile={displayedProfile}
-        currentWeightRecord={latestRecord}
-        latestWeight={latestRecord}
-        todayWorkout={todayWorkout}
-        meals={meals}
-        biometrics={biometrics}
+        onClose={() => { setIsCoachChatOpen(false); setKotvaChatu(null); }}
+        kotva={kotvaChatu}
       />
     </div>
+    </TedProvider>
   );
 }

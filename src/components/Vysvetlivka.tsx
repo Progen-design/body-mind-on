@@ -1,22 +1,29 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { HelpCircle, X } from 'lucide-react';
+import { HelpCircle, X, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { najdiPojem } from '../../lib/glosar.js';
+import { useTed } from '../context/TedContext';
 
 interface VysvetlivkaProps {
   /** id pojmu z lib/glosar.js. Neznámé id otazník nezobrazí. */
   pojem: string;
+  /** Naměřená hodnota u toho pojmu, pokud ji karta zná. Jde do dotazu TEDovi. */
+  hodnota?: string;
 }
 
 /**
  * Otazník u pojmu. Po kliknutí ukáže krátké vysvětlení z lib/glosar.js.
  *
- * Žádné AI, žádné volání na server — statický text, okamžitá odpověď.
- * Nahrazuje to, co měl obstarat předstíraný chat s TEDem.
+ * DVĚ ÚROVNĚ, ZÁMĚRNĚ. Text z glosáře je statický, okamžitý a stejný pro
+ * všechny — odpovídá na „co ten údaj je". Pod ním je odkaz na TEDa, který
+ * odpovídá na „co to znamená u MĚ", a k tomu potřebuje profil a chvíli času.
+ * Kdyby se hned otevíral chat, platil by uživatel čekáním a tokeny i za
+ * otázku, na kterou umí odpovědět jedna věta.
  */
-export const Vysvetlivka: React.FC<VysvetlivkaProps> = ({ pojem }) => {
+export const Vysvetlivka: React.FC<VysvetlivkaProps> = ({ pojem, hodnota }) => {
   const [otevreno, setOtevreno] = useState(false);
   const obal = useRef<HTMLSpanElement>(null);
+  const ted = useTed();
 
   const zaznam = najdiPojem(pojem);
 
@@ -82,6 +89,22 @@ export const Vysvetlivka: React.FC<VysvetlivkaProps> = ({ pojem }) => {
             <span className="block text-[11px] text-slate-300 leading-relaxed normal-case tracking-normal font-normal">
               {zaznam.vysvetleni}
             </span>
+
+            {/* Druhá úroveň: co to znamená u mě. Glosář to říct nemůže —
+                nezná uživatelova data. */}
+            {ted.dostupny && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOtevreno(false);
+                  ted.zeptejSe({ typ: 'pojem', klic: pojem, popis: zaznam.pojem, hodnota });
+                }}
+                className="mt-2.5 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold text-[#00f2fe] bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-500/30 hover:border-cyan-400/60 transition-all normal-case tracking-normal"
+              >
+                <Sparkles className="w-3 h-3" />
+                <span>Co to znamená u mě?</span>
+              </button>
+            )}
           </motion.span>
         )}
       </AnimatePresence>

@@ -1,200 +1,245 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { X, Brain, Sparkles, Send, Bot, User, CheckCircle2 } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { X, Brain, Send, User, Trash2, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { WeightRecord, WorkoutDay, MealItem, AppleWatchBiometrics, UserProfile } from '../types';
+import { apiFetch } from '../lib/api';
+
+/**
+ * CHAT S TEDEM.
+ *
+ * Do 23. 8. 2026 to byla atrapa: odpovědi byly natvrdo psané v tomhle souboru
+ * (čtyři varianty podle klíčových slov), váha 104,6 kg a trénink „Ramena &
+ * Triceps" tu stály jako výchozí hodnoty pro každého. Nic se nikam neposílalo.
+ *
+ * Teď jde otázka na `POST /api/coach-chat`, odtud do OpenAI přes `runAgent`
+ * s kontextem složeným z profilu uživatele — jeho metriky, jeho plán, jeho
+ * naměřená data. Historie žije v databázi, takže přežije refresh i přechod
+ * na jiné zařízení.
+ *
+ * ŽÁDNÉ VÝCHOZÍ HODNOTY. Když data nejsou, TED to řekne. Vymyšlené číslo
+ * v odpovědi trenéra je horší než přiznané „tohle u tebe nevidím".
+ */
+
+/** U čeho se uživatel ptá. Chat se pak otevře rovnou u toho čísla. */
+export interface KotvaChatu {
+  typ: 'metrika' | 'jidlo' | 'cvik' | 'pojem';
+  klic: string;
+  popis?: string;
+  hodnota?: string;
+}
+
+interface Zprava {
+  id: string;
+  role: 'user' | 'ted';
+  obsah: string;
+  created_at: string;
+}
 
 interface CoachChatModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentWeightRecord?: WeightRecord | null;
-  latestWeight?: WeightRecord | null;
-  todayWorkout?: WorkoutDay;
-  meals?: MealItem[];
-  biometrics?: AppleWatchBiometrics;
-  profile?: UserProfile;
+  /** Předvyplněná otázka a ukotvení, když se chat otevřel od otazníku. */
+  kotva?: KotvaChatu | null;
 }
 
-interface ChatMessage {
-  id: string;
-  sender: 'ted' | 'user';
-  text: string;
-  timestamp: string;
+const NAVRHY = [
+  'Co mi říkají moje data za poslední týden?',
+  'Proč mám dnes v plánu zrovna tenhle trénink?',
+  'Čím můžu nahradit jídlo, které mi nesedí?',
+  'Na čem mám tenhle týden zapracovat?'
+];
+
+function cas(iso: string): string {
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return '';
+  return new Date(t).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
 }
 
-export const CoachChatModal: React.FC<CoachChatModalProps> = ({
-  isOpen,
-  onClose,
-  currentWeightRecord,
-  latestWeight,
-  todayWorkout,
-  meals = [],
-  biometrics,
-  profile
-}) => {
-  const activeRecord = currentWeightRecord || latestWeight || {
-    date: 'Dnes',
-    weight: 104.6,
-    fatPercent: 11.6,
-    muscleKg: 88.9,
-    boneKg: 4.1,
-    waterPercent: 62.4,
-    visceralFat: 3,
-    metabolicAge: 27,
-    bmi: 31.6
-  };
+export const CoachChatModal: React.FC<CoachChatModalProps> = ({ isOpen, onClose, kotva = null }) => {
+  const [zpravy, setZpravy] = useState<Zprava[]>([]);
+  const [text, setText] = useState('');
+  const [odesilam, setOdesilam] = useState(false);
+  const [nacitam, setNacitam] = useState(false);
+  const [chyba, setChyba] = useState<string | null>(null);
+  const konec = useRef<HTMLDivElement>(null);
+  const vstup = useRef<HTMLInputElement>(null);
 
-  const activeWorkoutTitle = todayWorkout?.title || 'Ramena & Triceps';
-  const userName = profile?.name?.split(' ')[0] || 'Jane';
+  // Historie se načítá při otevření, ne při každém překreslení.
+  useEffect(() => {
+    if (!isOpen) return;
+    let zive = true;
+    setNacitam(true);
+    setChyba(null);
 
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'm-1',
-      sender: 'ted',
-      text: `Ahoj ${userName}! Vidím, že tvá aktuální váha je ${activeRecord.weight.toString().replace('.', ',')} kg s výborným podílem tuku ${activeRecord.fatPercent.toString().replace('.', ',')} % a svalovou hmotou ${activeRecord.muscleKg.toString().replace('.', ',')} kg. Dnes tě čeká trénink ${activeWorkoutTitle}. S čím ti mohu pomoci?`,
-      timestamp: '08:45'
-    }
-  ]);
-  const [inputText, setInputText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+    apiFetch<{ zpravy: Zprava[] }>('/api/coach-chat')
+      .then((o) => { if (zive) setZpravy(o.zpravy ?? []); })
+      .catch(() => { if (zive) setChyba('Historii se nepodařilo načíst. Psát můžeš dál.'); })
+      .finally(() => { if (zive) setNacitam(false); });
+
+    return () => { zive = false; };
+  }, [isOpen]);
+
+  // Otevření od otazníku předvyplní otázku k dané položce.
+  useEffect(() => {
+    if (!isOpen || !kotva) return;
+    const popis = kotva.popis || kotva.klic;
+    setText(kotva.hodnota ? `Co pro mě znamená ${popis} ${kotva.hodnota}?` : `Co pro mě znamená ${popis}?`);
+    setTimeout(() => vstup.current?.focus(), 80);
+  }, [isOpen, kotva]);
 
   useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+    if (isOpen) setTimeout(() => konec.current?.scrollIntoView({ behavior: 'smooth' }), 60);
+  }, [isOpen, zpravy, odesilam]);
+
+  const odesli = useCallback(async (predvyplneno?: string) => {
+    const otazka = (predvyplneno ?? text).trim();
+    if (!otazka || odesilam) return;
+
+    setChyba(null);
+    setText('');
+    setOdesilam(true);
+
+    // Otázka se ukáže hned; server ji uloží až spolu s odpovědí.
+    const docasne: Zprava = {
+      id: `docasna-${Date.now()}`,
+      role: 'user',
+      obsah: otazka,
+      created_at: new Date().toISOString()
+    };
+    setZpravy((p) => [...p, docasne]);
+
+    try {
+      const odpoved = await apiFetch<{ odpoved: string; zpravy?: Zprava[] }>('/api/coach-chat', {
+        method: 'POST',
+        body: JSON.stringify({ otazka, kontext: kotva ?? undefined })
+      });
+
+      setZpravy((p) => {
+        const bezDocasne = p.filter((z) => z.id !== docasne.id);
+        if (odpoved.zpravy?.length) return [...bezDocasne, ...odpoved.zpravy];
+        return [
+          ...bezDocasne,
+          docasne,
+          { id: `ted-${Date.now()}`, role: 'ted', obsah: odpoved.odpoved, created_at: new Date().toISOString() }
+        ];
+      });
+    } catch (e) {
+      // Otázka zpátky do pole, ať ji uživatel nemusí psát znovu.
+      setZpravy((p) => p.filter((z) => z.id !== docasne.id));
+      setText(otazka);
+      setChyba(e instanceof Error ? e.message : 'Odeslání se nepovedlo.');
+    } finally {
+      setOdesilam(false);
     }
-  }, [isOpen, messages]);
+  }, [text, odesilam, kotva]);
+
+  const smaz = useCallback(async () => {
+    try {
+      await apiFetch('/api/coach-chat', { method: 'DELETE' });
+      setZpravy([]);
+      setChyba(null);
+    } catch {
+      setChyba('Konverzaci se nepodařilo smazat.');
+    }
+  }, []);
 
   if (!isOpen) return null;
 
-  const quickPrompts = [
-    'Jak optimalizovat dnešní trénink ramen?',
-    'Mám navýšit sacharidy před tréninkem?',
-    'Proč je pokles tuku -0,3 % ideální?',
-    'Doporuč regenerační protokol po tréninku'
-  ];
-
-  const handleSend = (textToSend?: string) => {
-    const text = (textToSend || inputText).trim();
-    if (!text) return;
-
-    const userMsg: ChatMessage = {
-      id: `u-${Date.now()}`,
-      sender: 'user',
-      text: text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    setMessages(prev => [...prev, userMsg]);
-    setInputText('');
-    setIsTyping(true);
-
-    // AI Coach response generation
-    setTimeout(() => {
-      let reply = '';
-      const lower = text.toLowerCase();
-
-      if (lower.includes('ramen') || lower.includes('trénink') || lower.includes('triceps')) {
-        reply = `Pro dnešní trénink ${activeWorkoutTitle} se soustřeď na striktní dráhu pohybu u Military Pressu (${todayWorkout?.exercises[0]?.weightKg || 82.5} kg). Neprohýbej se v bedrech. U upažování vol raději vyšší počet opakování (12-15) s dokonalou kontrakcí bočního deltu.`;
-      } else if (lower.includes('sacharid') || lower.includes('jídlo') || lower.includes('makra')) {
-        const calSum = meals.reduce((a, m) => a + (m.completed ? m.calories : 0), 0);
-        reply = `Dnes máš zaznamenáno ${calSum} kcal. Sacharidy tvoří hlavní zdroj energie pro dnešní silový výkon. Před tréninkem ti banánový rýžový puding dodá rychlý glykogen bez zatížení žaludku.`;
-      } else if (lower.includes('tuk') || lower.includes('kompozic') || lower.includes('váh')) {
-        reply = `Tělesný tuk ${activeRecord.fatPercent.toString().replace('.', ',')} % při ${activeRecord.weight.toString().replace('.', ',')} kg značí vynikající čistou hypertrofii. Přírůstek tvoří z 85 % čistá svalová tkáň a intracelulární voda, nikoli tukové zásoby. Pokračuj v nastaveném kalorickém mírném nadbytku.`;
-      } else {
-        reply = `Rozumím tvému dotazu, ${userName}. Z hlediska dlouhodobého plánu Body & Mind ON doporučuji udržet konzistentní spánek (min. 7,5 hodiny) a hydrataci na 3,5 litru denně. Po dnešním tréninku nezapomeň na 35g bílkovin a večerní lehký strečink deltoidů.`;
-      }
-
-      const tedMsg: ChatMessage = {
-        id: `t-${Date.now()}`,
-        sender: 'ted',
-        text: reply,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-
-      setMessages(prev => [...prev, tedMsg]);
-      setIsTyping(false);
-    }, 900);
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
         onClick={onClose}
         className="fixed inset-0 bg-black/80 backdrop-blur-md"
       />
 
-      {/* Modal Card */}
       <motion.div
-        initial={{ scale: 0.95, opacity: 0, y: 20 }}
+        initial={{ scale: 0.96, opacity: 0, y: 16 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.95, opacity: 0, y: 20 }}
         className="relative z-10 w-full max-w-2xl h-[620px] max-h-[90vh] bg-[#0c1017] rounded-3xl border border-cyan-500/40 shadow-[0_0_50px_rgba(0,242,254,0.2)] flex flex-col overflow-hidden"
       >
-        {/* Header */}
+        {/* Hlavička */}
         <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/40">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-950/80 border border-cyan-500/50 flex items-center justify-center text-[#00f2fe] shadow-[0_0_15px_rgba(0,242,254,0.3)]">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-2xl bg-cyan-950/80 border border-cyan-500/50 flex items-center justify-center text-[#00f2fe] shrink-0">
               <Brain className="w-5 h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
-                  AI Trenér Ted
-                </h3>
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/60 text-[#39ff14] border border-emerald-500/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#39ff14] animate-pulse" />
-                  Online
-                </span>
-              </div>
-              <p className="text-xs text-slate-400">
-                Osobní neuro-fitness asistent a trenér Jana Nováka
+            <div className="min-w-0">
+              <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">AI trenér TED</h3>
+              {/* Žádné „Online" ani jméno cizího uživatele — obojí tu dřív bylo
+                  natvrdo. Popisek říká, odkud TED bere data. */}
+              <p className="text-xs text-slate-400 truncate">
+                Odpovídá podle tvého profilu a naměřených dat
               </p>
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 transition-all"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {zpravy.length > 0 && (
+              <button
+                onClick={smaz}
+                title="Smazat konverzaci"
+                className="p-2 rounded-xl text-slate-500 hover:text-rose-300 bg-slate-900 hover:bg-slate-800 border border-slate-800 transition-all"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              aria-label="Zavřít"
+              className="p-2 rounded-xl text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        {/* Message Log */}
+        {/* Konverzace */}
         <div className="p-4 sm:p-5 overflow-y-auto space-y-3.5 flex-1 bg-[#090c12]/70">
-          {messages.map((msg) => {
-            const isTed = msg.sender === 'ted';
+          {nacitam && (
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>Načítám konverzaci…</span>
+            </div>
+          )}
+
+          {!nacitam && zpravy.length === 0 && (
+            <div className="text-center py-8 px-4">
+              <div className="w-12 h-12 mx-auto rounded-2xl bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-[#00f2fe] mb-3">
+                <Brain className="w-6 h-6" />
+              </div>
+              <p className="text-sm text-slate-300 mb-1">Zeptej se na cokoli ze svého plánu nebo měření.</p>
+              <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
+                TED vidí tvůj jídelníček, trénink, návyky a data z hodinek a váhy.
+                Co v profilu nemáš, o tom ti neřekne — místo odhadu ti to napíše.
+              </p>
+            </div>
+          )}
+
+          {zpravy.map((z) => {
+            const jeTed = z.role === 'ted';
             return (
-              <div
-                key={msg.id}
-                className={`flex items-start gap-2.5 ${isTed ? 'justify-start' : 'justify-end'}`}
-              >
-                {isTed && (
+              <div key={z.id} className={`flex items-start gap-2.5 ${jeTed ? 'justify-start' : 'justify-end'}`}>
+                {jeTed && (
                   <div className="w-7 h-7 rounded-lg bg-cyan-950 border border-cyan-500/40 flex items-center justify-center text-[#00f2fe] shrink-0 mt-0.5">
                     <Brain className="w-3.5 h-3.5" />
                   </div>
                 )}
 
                 <div
-                  className={`max-w-[82%] p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed ${
-                    isTed
+                  className={`max-w-[82%] p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed whitespace-pre-wrap ${
+                    jeTed
                       ? 'bg-slate-900/90 text-slate-200 border border-slate-800 shadow-md'
-                      : 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-slate-950 font-medium shadow-[0_0_12px_rgba(0,242,254,0.25)]'
+                      : 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-slate-950 font-medium'
                   }`}
                 >
-                  <p>{msg.text}</p>
-                  <div className={`text-[10px] mt-1.5 text-right ${isTed ? 'text-slate-500' : 'text-cyan-950/70'}`}>
-                    {msg.timestamp}
+                  <p>{z.obsah}</p>
+                  <div className={`text-[10px] mt-1.5 text-right ${jeTed ? 'text-slate-500' : 'text-cyan-950/70'}`}>
+                    {cas(z.created_at)}
                   </div>
                 </div>
 
-                {!isTed && (
+                {!jeTed && (
                   <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 shrink-0 mt-0.5">
                     <User className="w-3.5 h-3.5" />
                   </div>
@@ -203,43 +248,56 @@ export const CoachChatModal: React.FC<CoachChatModalProps> = ({
             );
           })}
 
-          {isTyping && (
+          {odesilam && (
             <div className="flex items-center gap-2 text-xs text-cyan-400 pl-9">
-              <Sparkles className="w-3.5 h-3.5 animate-spin" />
-              <span>AI Trenér píše odpověď...</span>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>TED přemýšlí…</span>
             </div>
           )}
 
-          <div ref={messagesEndRef} />
+          {chyba && (
+            <div className="text-xs text-rose-300 bg-rose-950/40 border border-rose-500/30 rounded-xl p-3">
+              {chyba}
+            </div>
+          )}
+
+          <div ref={konec} />
         </div>
 
-        {/* Quick Prompts */}
-        <div className="p-3 bg-slate-950 border-t border-slate-800/80 overflow-x-auto flex gap-1.5 scrollbar-none">
-          {quickPrompts.map((prompt, i) => (
-            <button
-              key={i}
-              onClick={() => handleSend(prompt)}
-              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/40 text-[11px] text-slate-300 hover:text-cyan-300 whitespace-nowrap transition-all"
-            >
-              {prompt}
-            </button>
-          ))}
-        </div>
+        {/* Návrhy jen do prázdné konverzace — jinak zabírají místo. */}
+        {zpravy.length === 0 && !nacitam && (
+          <div className="p-3 bg-slate-950 border-t border-slate-800/80 overflow-x-auto flex gap-1.5">
+            {NAVRHY.map((n) => (
+              <button
+                key={n}
+                onClick={() => odesli(n)}
+                disabled={odesilam}
+                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/40 text-[11px] text-slate-300 hover:text-cyan-300 whitespace-nowrap transition-all disabled:opacity-50"
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        )}
 
-        {/* Input bar */}
+        {/* Vstup */}
         <div className="p-3.5 sm:p-4 bg-slate-900/60 border-t border-slate-800 flex items-center gap-2">
           <input
+            ref={vstup}
             type="text"
-            placeholder="Zeptejte se trenéra Teda na cokoliv ohledně tréninku nebo stravy..."
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            className="flex-1 bg-slate-950 border border-slate-700 focus:border-[#00f2fe] focus:outline-none rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder:text-slate-500"
+            maxLength={1000}
+            placeholder="Zeptej se TEDa na svůj plán, trénink nebo měření…"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') odesli(); }}
+            disabled={odesilam}
+            className="flex-1 bg-slate-950 border border-slate-700 focus:border-[#00f2fe] focus:outline-none rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder:text-slate-500 disabled:opacity-60"
           />
           <button
-            onClick={() => handleSend()}
-            disabled={!inputText.trim()}
-            className="p-2.5 rounded-2xl bg-gradient-to-r from-[#00f2fe] to-[#39ff14] text-slate-950 hover:opacity-90 disabled:opacity-40 transition-all cursor-pointer shadow-[0_0_12px_rgba(0,242,254,0.3)]"
+            onClick={() => odesli()}
+            disabled={!text.trim() || odesilam}
+            aria-label="Odeslat"
+            className="p-2.5 rounded-2xl bg-gradient-to-r from-[#00f2fe] to-[#39ff14] text-slate-950 hover:opacity-90 disabled:opacity-40 transition-all"
           >
             <Send className="w-4 h-4 stroke-[2.5]" />
           </button>

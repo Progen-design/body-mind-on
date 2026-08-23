@@ -50,6 +50,8 @@ interface OverviewBentoGridProps {
   slozeni?: TelesneSlozeni | null;
   onSelectTab: (tab: ActiveTab) => void;
   onOpenWorkoutLogger: () => void;
+  /** Otevře chat s TEDem. Karta trenéra ho nabídne, když nemá co ukázat. */
+  onAskTed: () => void;
   onOpenAddWeightModal: () => void;
   onToggleMeal: (id: string) => void;
   onToggleHabit: (id: string) => void;
@@ -70,6 +72,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
   slozeni = null,
   onSelectTab,
   onOpenWorkoutLogger,
+  onAskTed,
   onOpenAddWeightModal,
   onToggleMeal,
   onToggleHabit,
@@ -565,14 +568,30 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
             </div>
           </div>
 
-          {/* Tip Preview — bez zpravy trenera se blok nezobrazuje */}
-          {topCoachTip && (
+          {/* Zpráva od trenéra, nebo pozvánka do chatu.
+              Zprávy zatím vznikají jen při registraci a po týdnu se skrývají
+              jako zastaralé, takže tenhle blok byl většinu času prázdný —
+              karta se jménem TEDa, ve které nebyl TED. */}
+          {topCoachTip ? (
             <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 mb-3">
               <div className="text-xs font-bold text-slate-100 mb-1">{topCoachTip.headline}</div>
               <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
                 {topCoachTip.content}
               </p>
             </div>
+          ) : (
+            <button
+              onClick={onAskTed}
+              className="w-full text-left p-3.5 rounded-2xl bg-slate-900/80 hover:bg-slate-900 border border-slate-800 hover:border-cyan-500/40 mb-3 transition-all"
+            >
+              <div className="text-xs font-bold text-slate-100 mb-1 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#00f2fe]" />
+                <span>Zeptej se TEDa</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Odpoví na tvůj plán, trénink i naměřená data. Vidí jen tvůj profil.
+              </p>
+            </button>
           )}
 
           {/* Shopping List Quick Pill */}

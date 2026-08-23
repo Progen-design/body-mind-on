@@ -883,6 +883,7 @@ function AppContent() {
             slozeni={slozeni}
             onSelectTab={setActiveTab}
             onOpenWorkoutLogger={() => setIsWorkoutLoggerOpen(true)}
+            onAskTed={() => zeptejSeTeda()}
             onOpenAddWeightModal={() => setIsAddRecordModalOpen(true)}
             onToggleMeal={handleToggleMeal}
             onToggleHabit={handleToggleHabit}

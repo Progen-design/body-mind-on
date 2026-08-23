@@ -645,10 +645,17 @@ export function naPreference(odpoved: ProfilOdpoved, puvodni: UserPreferences): 
   const plan = strukturaPlanu(vyberPlan(odpoved.plans));
   const t = plan?.targets || {};
 
-  const kcal = cislo(t.calories_per_day ?? bm.calories_target, puvodni.dailyCalorieTarget);
-  const bilkoviny = cislo(t.protein_g);
-  const sacharidy = cislo(t.carbs_g);
-  const tuky = cislo(t.fat_g);
+  // POŘADÍ ZDROJŮ: uložený cíl z `body_metrics` je zdroj pravdy, plán je záloha.
+  //
+  // Dřív se bralo `t.*` (cíl zamrzlý v jídelníčku) a `body_metrics` až potom.
+  // Plán je ale otisk cíle v okamžiku generování — jakmile se cíl změní,
+  // profil dál ukazoval staré číslo z plánu. Měřeno 23. 8. 2026:
+  // uložený cíl B 185 g, plán z 20. 8. B 158 g, profil ukazoval 158 g.
+  // Makra se určují jednou při registraci a odsud je bere celá aplikace.
+  const kcal = cislo(bm.calories_target ?? t.calories_per_day, puvodni.dailyCalorieTarget);
+  const bilkoviny = cislo(bm.protein_target_g ?? t.protein_g);
+  const sacharidy = cislo(bm.carbs_target_g ?? t.carbs_g);
+  const tuky = cislo(bm.fat_target_g ?? t.fat_g);
   const zKcal = (g: number, koef: number) => (kcal > 0 ? Math.round((g * koef * 100) / kcal) : 0);
 
   return {

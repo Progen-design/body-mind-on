@@ -34,8 +34,8 @@ function check(label, ok, detail = '') {
   console.error(`FAIL ${label}${detail ? ` — ${detail}` : ''}`);
 }
 
-const webhookSrc = readFileSync(join(ROOT, 'pages/api/webhooks/stripe.js'), 'utf8');
-const checkoutSrc = readFileSync(join(ROOT, 'pages/api/stripe/create-checkout-session.js'), 'utf8');
+const webhookSrc = readFileSync(join(ROOT, 'api/webhooks/stripe.js'), 'utf8');
+const checkoutSrc = readFileSync(join(ROOT, 'api/stripe/create-checkout-session.js'), 'utf8');
 // Původní migrace 20260712120000_stripe_events_idempotency a
 // 20260712121000_membership_status_contract spolkl re-baseline squash 30. 7.
 // 2026 (commit bc60a3d). Skript na ně sahal dál a od té doby padal na ENOENT

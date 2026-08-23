@@ -1,0 +1,191 @@
+{
+  "frames": [
+    {
+      "url": "https://checkout.stripe.com/c/pay/cs_test_a1SyTdMg59t8OmHh1Iyjl4duam9GD8YcjCUDHsyB8o4KLPeRWDLOOOEYpA#fidnandhYHdWcXxpYCc%2FJ2FgY2RwaXEnKSd2cGd2ZndsdXFsamtQa2x0cGBrYHZ2QGtkZ2lgYSc%2FY2RpdmApJ2JwZGZkaGppYFNkd2xka3EnPydmamtxd2ppJyknZHVsTmB8Jz8ndW5acWB2cVowNFEyVX1cVVFwMHVpRkk8VTFOQVdQTHx3fHxNSzFKTmk8MjNkVzdxSkFBdUNMNXN0b08wa3NHUGxNU1M2YlB9aF91M0Fod0x0VzxCa3ZzSGdWT3ZxZF1DdDU1cX9EQExUMXInKSdjd2poVmB3c2B3Jz9xd3BgKSdnZGZuYndqcGthRmppancnPycmY2NjY2NjJyknaWR8anBxUXx1YCc%2FJ3Zsa2JpYFpscWBoJyknYGtkZ2lgVWlkZmBtamlhYHd2Jz9xd3BgeCUl",
+      "name": ""
+    },
+    {
+      "url": "https://js.stripe.com/v3/link-login-inner-c8693a17e7e6df1beda94791695c394f.html#debugMode=false&publishableApiKey=pk_test_51T7PxYPTu5plCL9P4KDRUIyryyHN4OKl976aR2tODDpFI0vqjJ5nvBUiHVV3gUxmZp6DmrIqR9GnsvMbSJstaXFq00tzAEIQ4w&useCookies=false&parentOrigin=https%3A%2F%2Fcheckout.stripe.com",
+      "name": "link-login"
+    },
+    {
+      "url": "https://js.stripe.com/v3/checkout-inner-origin-frame-1ec533498a8ae64bf61478f8e2d9e372.html#debugMode=false&prefetchOriginsHint=false&publishableApiKey=pk_test_51T7PxYPTu5plCL9P4KDRUIyryyHN4OKl976aR2tODDpFI0vqjJ5nvBUiHVV3gUxmZp6DmrIqR9GnsvMbSJstaXFq00tzAEIQ4w&paymentPageOrCheckoutSessionId=cs_test_a1SyTdMg59t8OmHh1Iyjl4duam9GD8YcjCUDHsyB8o4KLPeRWDLOOOEYpA",
+      "name": "stripe-origin-frame"
+    },
+    {
+      "url": "https://js.stripe.com/v3/controller-c270a4057af7a3e975bc6dcfc1b99379.html#__shared_params__[version]=v3&__shared_params__[light_experiment_assignments]=%7B%22token%22%3A%22305e5917-b976-46ef-8e07-e17e5817e4ac%22%2C%22assignments%22%3A%7B%7D%7D&apiKey=pk_test_51T7PxYPTu5plCL9P4KDRUIyryyHN4OKl976aR2tODDpFI0vqjJ5nvBUiHVV3gUxmZp6DmrIqR9GnsvMbSJstaXFq00tzAEIQ4w&stripeJsId=305e5917-b976-46ef-8e07-e17e5817e4ac&stripeObjId=sobj-44531d8b-ae7b-4149-bbb6-c4ea7732aec2&firstStripeInstanceCreatedLatency=17&controllerCount=1&isCheckout=true&betas[0]=google_pay_beta_1&betas[1]=disable_deferred_intent_client_validation_beta_1&betas[2]=blocked_card_brands_beta_2&stripeJsLoadTime=1783896894982&manualBrowserDeprecationRollout=false&mids[guid]=NA&mids[muid]=NA&mids[sid]=NA&referrer=https%3A%2F%2Fcheckout.stripe.com%2Fc%2Fpay%2Fcs_test_a1SyTdMg59t8OmHh1Iyjl4duam9GD8YcjCUDHsyB8o4KLPeRWDLOOOEYpA%23fidnandhYHdWcXxpYCc%252FJ2FgY2RwaXEnKSd2cGd2ZndsdXFsamtQa2x0cGBrYHZ2QGtkZ2lgYSc%252FY2RpdmApJ2JwZGZkaGppYFNkd2xka3EnPydmamtxd2ppJyknZHVsTmB8Jz8ndW5acWB2cVowNFEyVX1cVVFwMHVpRkk8VTFOQVdQTHx3fHxNSzFKTmk8MjNkVzdxSkFBdUNMNXN0b08wa3NHUGxNU1M2YlB9aF91M0Fod0x0VzxCa3ZzSGdWT3ZxZF1DdDU1cX9EQExUMXInKSdjd2poVmB3c2B3Jz9xd3BgKSdnZGZuYndqcGthRmppancnPycmY2NjY2NjJyknaWR8anBxUXx1YCc%252FJ3Zsa2JpYFpscWBoJyknYGtkZ2lgVWlkZmBtamlhYHd2Jz9xd3BgeCUl&controllerId=__privateStripeController5281",
+      "name": "__privateStripeController5281"
+    },
+    {
+      "url": "https://js.stripe.com/v3/elements-inner-express-checkout-284ec4a26087410f27c48a8129a79654.html#__shared_params__[version]=v3&__shared_params__[light_experiment_assignments]=%7B%22token%22%3A%22305e5917-b976-46ef-8e07-e17e5817e4ac%22%2C%22assignments%22%3A%7B%7D%7D&wait=false&rtl=false&publicOptions[buttonHeight]=55&publicOptions[layout][maxColumns]=4&publicOptions[layout][maxRows]=1&publicOptions[layout][overflow]=auto&publicOptions[wallets][applePay]=always&publicOptions[wallets][googlePay]=never&publicOptions[wallets][paypal]=auto&publicOptions[wallets][link]=auto&publicOptions[wallets][klarna]=auto&publicOptions[wallets][naverPay]=never&publicOptions[wallets][kakaoPay]=never&publicOptions[wallets][amazonPay]=auto&publicOptions[__checkout][__linkPurchaseProtectionsData][isEligible]=false&publicOptions[__checkout][__linkPurchaseProtectionsData][type]=shopping&publicOptions[__checkout][__linkProtectionsEligibleAndRolledOut]=false&publicOptions[__checkout][__linkUnrecognizedProtectionsHoldback]=false&publicOptions[__checkout][__automaticTaxEnabled]=false&publicOptions[__checkout][minApplePayVersion]=2&publicOptions[__checkout][minGooglePayVersion][major]=2&publicOptions[__checkout][minGooglePayVersion][minor]=0&publicOptions[__checkout][applePayIdentifierAccount]=acct_1T7PxYPTu5plCL9P&publicOptions[__checkout][progressiveRendering]=false&publicOptions[__checkout][skeletonTheme]=light&publicOptions[paymentMethods][applePay]=always&publicOptions[paymentMethods][googlePay]=never&publicOptions[paymentMethods][paypal]=auto&publicOptions[paymentMethods][link]=auto&publicOptions[paymentMethods][klarna]=auto&publicOptions[paymentMethods][naverPay]=never&publicOptions[paymentMethods][kakaoPay]=never&publicOptions[paymentMethods][amazonPay]=auto&elementsInitSource=checkout&elementId=expressCheckout-1670ca32-c275-4740-b050-41eeaca86c22&componentName=expressCheckout&keyMode=test&apiKey=pk_test_51T7PxYPTu5plCL9P4KDRUIyryyHN4OKl976aR2tODDpFI0vqjJ5nvBUiHVV3gUxmZp6DmrIqR9GnsvMbSJstaXFq00tzAEIQ4w&frameMessagingStrategy=direct&referrer=https%3A%2F%2Fcheckout.stripe.com%2Fc%2Fpay%2Fcs_test_a1SyTdMg59t8OmHh1Iyjl4duam9GD8YcjCUDHsyB8o4KLPeRWDLOOOEYpA%23fidnandhYHdWcXxpYCc%252FJ2FgY2RwaXEnKSd2cGd2ZndsdXFsamtQa2x0cGBrYHZ2QGtkZ2lgYSc%252FY2RpdmApJ2JwZGZkaGppYFNkd2xka3EnPydmamtxd2ppJyknZHVsTmB8Jz8ndW5acWB2cVowNFEyVX1cVVFwMHVpRkk8VTFOQVdQTHx3fHxNSzFKTmk8MjNkVzdxSkFBdUNMNXN0b08wa3NHUGxNU1M2YlB9aF91M0Fod0x0VzxCa3ZzSGdWT3ZxZF1DdDU1cX9EQExUMXInKSdjd2poVmB3c2B3Jz9xd3BgKSdnZGZuYndqcGthRmppancnPycmY2NjY2NjJyknaWR8anBxUXx1YCc%252FJ3Zsa2JpYFpscWBoJyknYGtkZ2lgVWlkZmBtamlhYHd2Jz9xd3BgeCUl&controllerId=__privateStripeController5281",
+      "name": "__privateStripeFrame5284"
+    },
+    {
+      "url": "https://js.stripe.com/v3/hcaptcha-invisible-084c29a0af29561165a26a9433c80910.html#debugMode=false&parentOrigin=https%3A%2F%2Fcheckout.stripe.com",
+      "name": "hcaptcha-invisible"
+    },
+    {
+      "url": "https://js.stripe.com/v3/elements-inner-express-checkout-284ec4a26087410f27c48a8129a79654.html#__shared_params__[version]=v3&__shared_params__[light_experiment_assignments]=%7B%22token%22%3A%22305e5917-b976-46ef-8e07-e17e5817e4ac%22%2C%22assignments%22%3A%7B%7D%7D&wait=false&rtl=false&publicOptions[buttonHeight]=55&publicOptions[layout][maxColumns]=4&publicOptions[layout][maxRows]=1&publicOptions[layout][overflow]=auto&publicOptions[wallets][applePay]=never&publicOptions[wallets][googlePay]=auto&publicOptions[wallets][paypal]=never&publicOptions[wallets][link]=never&publicOptions[wallets][klarna]=never&publicOptions[wallets][naverPay]=never&publicOptions[wallets][kakaoPay]=never&publicOptions[wallets][amazonPay]=never&publicOptions[__checkout][__automaticTaxEnabled]=false&publicOptions[__checkout][minApplePayVersion]=2&publicOptions[__checkout][minGooglePayVersion][major]=2&publicOptions[__checkout][minGooglePayVersion][minor]=0&publicOptions[__checkout][applePayIdentifierAccount]=acct_1T7PxYPTu5plCL9P&publicOptions[__checkout][isCarouselWallet]=true&publicOptions[paymentMethods][applePay]=never&publicOptions[paymentMethods][googlePay]=auto&publicOptions[paymentMethods][paypal]=never&publicOptions[paymentMethods][link]=never&publicOptions[paymentMethods][klarna]=never&publicOptions[paymentMethods][naverPay]=never&publicOptions[paymentMethods][kakaoPay]=never&publicOptions[paymentMethods][amazonPay]=never&elementsInitSource=checkout&elementId=expressCheckout-43c43a19-2190-495c-90f3-6dfdfb57af1c&componentName=expressCheckout&keyMode=test&apiKey=pk_test_51T7PxYPTu5plCL9P4KDRUIyryyHN4OKl976aR2tODDpFI0vqjJ5nvBUiHVV3gUxmZp6DmrIqR9GnsvMbSJstaXFq00tzAEIQ4w&frameMessagingStrategy=direct&referrer=https%3A%2F%2Fcheckout.stripe.com%2Fc%2Fpay%2Fcs_test_a1SyTdMg59t8OmHh1Iyjl4duam9GD8YcjCUDHsyB8o4KLPeRWDLOOOEYpA%23fidnandhYHdWcXxpYCc%252FJ2FgY2RwaXEnKSd2cGd2ZndsdXFsamtQa2x0cGBrYHZ2QGtkZ2lgYSc%252FY2RpdmApJ2JwZGZkaGppYFNkd2xka3EnPydmamtxd2ppJyknZHVsTmB8Jz8ndW5acWB2cVowNFEyVX1cVVFwMHVpRkk8VTFOQVdQTHx3fHxNSzFKTmk8MjNkVzdxSkFBdUNMNXN0b08wa3NHUGxNU1M2YlB9aF91M0Fod0x0VzxCa3ZzSGdWT3ZxZF1DdDU1cX9EQExUMXInKSdjd2poVmB3c2B3Jz9xd3BgKSdnZGZuYndqcGthRmppancnPycmY2NjY2NjJyknaWR8anBxUXx1YCc%252FJ3Zsa2JpYFpscWBoJyknYGtkZ2lgVWlkZmBtamlhYHd2Jz9xd3BgeCUl&controllerId=__privateStripeController5281",
+      "name": "__privateStripeFrame5286"
+    },
+    {
+      "url": "https://b.stripecdn.com/stripethirdparty-srv/assets/v32.18/HCaptchaInvisible.html?id=7da4f778-ed80-4d00-abd2-49a37744a69b&origin=https%3A%2F%2Fjs.stripe.com",
+      "name": ""
+    },
+    {
+      "url": "https://newassets.hcaptcha.com/captcha/v1/3b41d1e018b8baa766b54a5eecc0b1570ce45cec/static/hcaptcha.html#frame=challenge&id=074i9kgs2lgx&host=b.stripecdn.com&sentry=true&reportapi=https%3A%2F%2Faccounts.hcaptcha.com&recaptchacompat=true&custom=false&hl=cs&tplinks=on&andint=off&pstissuer=https%3A%2F%2Fpst-issuer.hcaptcha.com&sitekey=20000000-ffff-ffff-ffff-000000000002&size=invisible&theme=light&origin=https%3A%2F%2Fb.stripecdn.com&clientOptions=%7B%22sentry%22%3Atrue%2C%22reportapi%22%3A%22https%3A%2F%2Faccounts.hcaptcha.com%22%2C%22recaptchacompat%22%3A%22true%22%2C%22custom%22%3Afalse%2C%22hl%22%3A%22cs%22%2C%22tplinks%22%3A%22on%22%2C%22andint%22%3A%22off%22%2C%22pat%22%3A%22on%22%2C%22pstissuer%22%3A%22https%3A%2F%2Fpst-issuer.hcaptcha.com%22%2C%22endpoint%22%3A%22https%3A%2F%2Fapi.hcaptcha.com%22%2C%22theme%22%3A%22light%22%2C%22size%22%3A%22normal%22%2C%22confirm-nav%22%3Afalse%7D",
+      "name": ""
+    },
+    {
+      "url": "https://newassets.hcaptcha.com/captcha/v1/3b41d1e018b8baa766b54a5eecc0b1570ce45cec/static/hcaptcha.html#frame=checkbox-invisible",
+      "name": ""
+    },
+    {
+      "url": "https://newassets.hcaptcha.com/captcha/v1/3b41d1e018b8baa766b54a5eecc0b1570ce45cec/static/hcaptcha.html#frame=challenge&id=1lbkw5zwps1k&host=b.stripecdn.com&sentry=true&reportapi=https%3A%2F%2Faccounts.hcaptcha.com&recaptchacompat=true&custom=false&hl=cs&tplinks=on&andint=off&pstissuer=https%3A%2F%2Fpst-issuer.hcaptcha.com&sitekey=24ed0064-62cf-4d42-9960-5dd1a41d4e29&size=invisible&theme=light&origin=https%3A%2F%2Fb.stripecdn.com&clientOptions=%7B%22sentry%22%3Atrue%2C%22reportapi%22%3A%22https%3A%2F%2Faccounts.hcaptcha.com%22%2C%22recaptchacompat%22%3A%22true%22%2C%22custom%22%3Afalse%2C%22hl%22%3A%22cs%22%2C%22tplinks%22%3A%22on%22%2C%22andint%22%3A%22off%22%2C%22pat%22%3A%22on%22%2C%22pstissuer%22%3A%22https%3A%2F%2Fpst-issuer.hcaptcha.com%22%2C%22endpoint%22%3A%22https%3A%2F%2Fapi.hcaptcha.com%22%2C%22theme%22%3A%22light%22%2C%22size%22%3A%22normal%22%2C%22confirm-nav%22%3Afalse%7D",
+      "name": ""
+    },
+    {
+      "url": "https://newassets.hcaptcha.com/captcha/v1/3b41d1e018b8baa766b54a5eecc0b1570ce45cec/static/hcaptcha.html#frame=checkbox-invisible",
+      "name": ""
+    },
+    {
+      "url": "https://js.stripe.com/v3/m-outer-3437aaddcdf6922d623e172c2d6f9278.html#url=https%3A%2F%2Fcheckout.stripe.com%2Fc%2Fpay%2Fcs_test_a1SyTdMg59t8OmHh1Iyjl4duam9GD8YcjCUDHsyB8o4KLPeRWDLOOOEYpA%23fidnandhYHdWcXxpYCc%252FJ2FgY2RwaXEnKSd2cGd2ZndsdXFsamtQa2x0cGBrYHZ2QGtkZ2lgYSc%252FY2RpdmApJ2JwZGZkaGppYFNkd2xka3EnPydmamtxd2ppJyknZHVsTmB8Jz8ndW5acWB2cVowNFEyVX1cVVFwMHVpRkk8VTFOQVdQTHx3fHxNSzFKTmk8MjNkVzdxSkFBdUNMNXN0b08wa3NHUGxNU1M2YlB9aF91M0Fod0x0VzxCa3ZzSGdWT3ZxZF1DdDU1cX9EQExUMXInKSdjd2poVmB3c2B3Jz9xd3BgKSdnZGZuYndqcGthRmppancnPycmY2NjY2NjJyknaWR8anBxUXx1YCc%252FJ3Zsa2JpYFpscWBoJyknYGtkZ2lgVWlkZmBtamlhYHd2Jz9xd3BgeCUl&title=Body%20%26%20Mind%20ON%20sandbox&referrer=&muid=NA&sid=NA&version=6&preview=true&__shared_params__[version]=v3",
+      "name": "__privateStripeMetricsController5280"
+    },
+    {
+      "url": "https://m.stripe.network/inner-preview.html#url=https%3A%2F%2Fcheckout.stripe.com%2Fc%2Fpay%2Fcs_test_a1SyTdMg59t8OmHh1Iyjl4duam9GD8YcjCUDHsyB8o4KLPeRWDLOOOEYpA%23fidnandhYHdWcXxpYCc%252FJ2FgY2RwaXEnKSd2cGd2ZndsdXFsamtQa2x0cGBrYHZ2QGtkZ2lgYSc%252FY2RpdmApJ2JwZGZkaGppYFNkd2xka3EnPydmamtxd2ppJyknZHVsTmB8Jz8ndW5acWB2cVowNFEyVX1cVVFwMHVpRkk8VTFOQVdQTHx3fHxNSzFKTmk8MjNkVzdxSkFBdUNMNXN0b08wa3NHUGxNU1M2YlB9aF91M0Fod0x0VzxCa3ZzSGdWT3ZxZF1DdDU1cX9EQExUMXInKSdjd2poVmB3c2B3Jz9xd3BgKSdnZGZuYndqcGthRmppancnPycmY2NjY2NjJyknaWR8anBxUXx1YCc%252FJ3Zsa2JpYFpscWBoJyknYGtkZ2lgVWlkZmBtamlhYHd2Jz9xd3BgeCUl&title=Body%20%26%20Mind%20ON%20sandbox&referrer=&muid=NA&sid=NA&version=6&preview=true&__shared_params__[version]=v3",
+      "name": ""
+    },
+    {
+      "url": "https://b.stripecdn.com/stripethirdparty-srv/assets/v32.18/ApplePay.html?id=5667d052-5b37-4d48-bb64-86e33a87299b&origin=https%3A%2F%2Fjs.stripe.com",
+      "name": ""
+    }
+  ],
+  "inputs": [
+    {
+      "name": "email",
+      "type": "text",
+      "placeholder": "email@příklad.com",
+      "autocomplete": "email",
+      "id": "email",
+      "ariaLabel": null
+    },
+    {
+      "name": "payment-method-accordion-item-title",
+      "type": "radio",
+      "placeholder": null,
+      "autocomplete": null,
+      "id": "payment-method-accordion-item-title-card",
+      "ariaLabel": null
+    },
+    {
+      "name": "payment-method-accordion-item-title",
+      "type": "radio",
+      "placeholder": null,
+      "autocomplete": null,
+      "id": "payment-method-accordion-item-title-klarna",
+      "ariaLabel": null
+    },
+    {
+      "name": "enableStripePass",
+      "type": "checkbox",
+      "placeholder": null,
+      "autocomplete": null,
+      "id": "enableStripePass",
+      "ariaLabel": null
+    },
+    {
+      "name": null,
+      "type": "checkbox",
+      "placeholder": null,
+      "autocomplete": null,
+      "id": "",
+      "ariaLabel": null
+    }
+  ],
+  "frameInputs": [
+    {
+      "frameUrl": "https://checkout.stripe.com/c/pay/cs_test_a1SyTdMg59t8OmHh1Iyjl4duam9GD8YcjCUDHs",
+      "inputs": [
+        {
+          "name": "email",
+          "placeholder": "email@příklad.com",
+          "autocomplete": "email"
+        },
+        {
+          "name": "payment-method-accordion-item-title",
+          "placeholder": null,
+          "autocomplete": null
+        },
+        {
+          "name": "payment-method-accordion-item-title",
+          "placeholder": null,
+          "autocomplete": null
+        },
+        {
+          "name": "enableStripePass",
+          "placeholder": null,
+          "autocomplete": null
+        },
+        {
+          "name": null,
+          "placeholder": null,
+          "autocomplete": null
+        }
+      ]
+    }
+  ],
+  "frameInputsAfter": [
+    {
+      "frameName": "",
+      "frameUrl": "https://checkout.stripe.com/c/pay/cs_test_a1SyTdMg59t8OmHh1Iyjl4duam9GD8YcjCUDHsyB8o4KLPeRWDLOOOEYpA",
+      "inputs": [
+        {
+          "name": "email",
+          "placeholder": "email@příklad.com",
+          "autocomplete": "email",
+          "id": "email"
+        },
+        {
+          "name": "payment-method-accordion-item-title",
+          "placeholder": null,
+          "autocomplete": null,
+          "id": "payment-method-accordion-item-title-card"
+        },
+        {
+          "name": "payment-method-accordion-item-title",
+          "placeholder": null,
+          "autocomplete": null,
+          "id": "payment-method-accordion-item-title-klarna"
+        },
+        {
+          "name": "enableStripePass",
+          "placeholder": null,
+          "autocomplete": null,
+          "id": "enableStripePass"
+        },
+        {
+          "name": null,
+          "placeholder": null,
+          "autocomplete": null,
+          "id": ""
+        }
+      ]
+    }
+  ],
+  "cardFrameName": null,
+  "buttons": [
+    {
+      "text": "",
+      "type": "button"
+    },
+    {
+      "text": "",
+      "type": "button"
+    },
+    {
+      "text": "Zaplatit a předplatitZpracovávání…",
+      "type": "submit"
+    }
+  ]
+}

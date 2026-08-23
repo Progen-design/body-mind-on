@@ -1,0 +1,2428 @@
+{
+  "generated_at": "2026-07-08T23:14:05.358Z",
+  "mode": "DRY_RUN",
+  "keep_auth_emails": [
+    "prikopa@pro-security.cz"
+  ],
+  "before_counts": [
+    {
+      "table": "habit_logs",
+      "count": 4
+    },
+    {
+      "table": "workouts",
+      "count": 2
+    },
+    {
+      "table": "user_meal_pins",
+      "count": 33
+    },
+    {
+      "table": "user_habits",
+      "count": 39
+    },
+    {
+      "table": "user_checkins",
+      "count": 0
+    },
+    {
+      "table": "user_ai_memory",
+      "count": 286
+    },
+    {
+      "table": "ai_messages",
+      "count": 279
+    },
+    {
+      "table": "ai_content_drafts",
+      "count": 0
+    },
+    {
+      "table": "ai_logs",
+      "count": 1723
+    },
+    {
+      "table": "ai_tasks",
+      "count": 584
+    },
+    {
+      "table": "ai_events",
+      "count": 309
+    },
+    {
+      "table": "withings_measurements",
+      "count": 55
+    },
+    {
+      "table": "withings_body_snapshots",
+      "count": 7
+    },
+    {
+      "table": "withings_oauth_states",
+      "count": 22
+    },
+    {
+      "table": "withings_connections",
+      "count": 1
+    },
+    {
+      "table": "ai_generated_plans",
+      "count": 291
+    },
+    {
+      "table": "body_metrics",
+      "count": 290
+    },
+    {
+      "table": "memberships",
+      "count": 289
+    },
+    {
+      "table": "community_replies",
+      "count": 0
+    },
+    {
+      "table": "community_posts",
+      "count": 0
+    },
+    {
+      "table": "nutrition_logs",
+      "count": 0
+    },
+    {
+      "table": "fitness_goals",
+      "count": 0
+    },
+    {
+      "table": "progress_tracking",
+      "count": 0
+    },
+    {
+      "table": "subscriptions",
+      "count": 0
+    },
+    {
+      "table": "ai_agents_logs",
+      "count": 0
+    },
+    {
+      "table": "trainer_calendar_tokens",
+      "count": 0
+    },
+    {
+      "table": "openai_response_cache",
+      "count": 17
+    },
+    {
+      "table": "openai_daily_usage",
+      "count": 20
+    },
+    {
+      "table": "meal_metadata_cache",
+      "count": 30
+    },
+    {
+      "table": "exercise_metadata_cache",
+      "count": 23
+    },
+    {
+      "table": "_backup_2026_06_02_ai_agents",
+      "count": 6
+    },
+    {
+      "table": "_backup_2026_06_02_body_metrics",
+      "count": 1
+    },
+    {
+      "table": "_backup_2026_06_02_exercise_cache",
+      "count": 23
+    },
+    {
+      "table": "_backup_2026_06_02_meal_cache",
+      "count": 30
+    },
+    {
+      "table": "_backup_2026_06_02_memberships",
+      "count": 1
+    },
+    {
+      "table": "_backup_2026_06_02_plans",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_profiles",
+      "count": 1
+    },
+    {
+      "table": "_backup_2026_06_02_user_habits",
+      "count": 6
+    },
+    {
+      "table": "_backup_2026_06_02_users",
+      "count": 1
+    },
+    {
+      "table": "recipes_catalog",
+      "count": 161
+    },
+    {
+      "table": "exercise_asset_registry",
+      "count": 41
+    },
+    {
+      "table": "ai_agents",
+      "count": 6
+    },
+    {
+      "table": "ai_agent_settings",
+      "count": 2
+    },
+    {
+      "table": "ai_agent_tools",
+      "count": 0
+    },
+    {
+      "table": "ai_agent_versions",
+      "count": 0
+    },
+    {
+      "table": "ai_trigger_rules",
+      "count": 7
+    },
+    {
+      "table": "ai_task_types",
+      "count": 12
+    },
+    {
+      "table": "ai_executor_bindings",
+      "count": 6
+    },
+    {
+      "table": "ai_context_profiles",
+      "count": 4
+    },
+    {
+      "table": "ai_supporting_documents",
+      "count": 0
+    },
+    {
+      "table": "ai_config",
+      "count": 1
+    },
+    {
+      "table": "community_categories",
+      "count": 4
+    },
+    {
+      "table": "trainer_alert_state",
+      "count": 1
+    },
+    {
+      "table": "registrations",
+      "count": 0
+    },
+    {
+      "table": "users",
+      "count": 0
+    },
+    {
+      "table": "profiles",
+      "count": 289
+    }
+  ],
+  "after_counts": [
+    {
+      "table": "habit_logs",
+      "count": 4
+    },
+    {
+      "table": "workouts",
+      "count": 2
+    },
+    {
+      "table": "user_meal_pins",
+      "count": 33
+    },
+    {
+      "table": "user_habits",
+      "count": 39
+    },
+    {
+      "table": "user_checkins",
+      "count": 0
+    },
+    {
+      "table": "user_ai_memory",
+      "count": 286
+    },
+    {
+      "table": "ai_messages",
+      "count": 279
+    },
+    {
+      "table": "ai_content_drafts",
+      "count": 0
+    },
+    {
+      "table": "ai_logs",
+      "count": 1723
+    },
+    {
+      "table": "ai_tasks",
+      "count": 584
+    },
+    {
+      "table": "ai_events",
+      "count": 309
+    },
+    {
+      "table": "withings_measurements",
+      "count": 55
+    },
+    {
+      "table": "withings_body_snapshots",
+      "count": 7
+    },
+    {
+      "table": "withings_oauth_states",
+      "count": 22
+    },
+    {
+      "table": "withings_connections",
+      "count": 1
+    },
+    {
+      "table": "ai_generated_plans",
+      "count": 291
+    },
+    {
+      "table": "body_metrics",
+      "count": 290
+    },
+    {
+      "table": "memberships",
+      "count": 289
+    },
+    {
+      "table": "community_replies",
+      "count": 0
+    },
+    {
+      "table": "community_posts",
+      "count": 0
+    },
+    {
+      "table": "nutrition_logs",
+      "count": 0
+    },
+    {
+      "table": "fitness_goals",
+      "count": 0
+    },
+    {
+      "table": "progress_tracking",
+      "count": 0
+    },
+    {
+      "table": "subscriptions",
+      "count": 0
+    },
+    {
+      "table": "ai_agents_logs",
+      "count": 0
+    },
+    {
+      "table": "trainer_calendar_tokens",
+      "count": 0
+    },
+    {
+      "table": "openai_response_cache",
+      "count": 17
+    },
+    {
+      "table": "openai_daily_usage",
+      "count": 20
+    },
+    {
+      "table": "meal_metadata_cache",
+      "count": 30
+    },
+    {
+      "table": "exercise_metadata_cache",
+      "count": 23
+    },
+    {
+      "table": "_backup_2026_06_02_ai_agents",
+      "count": 6
+    },
+    {
+      "table": "_backup_2026_06_02_body_metrics",
+      "count": 1
+    },
+    {
+      "table": "_backup_2026_06_02_exercise_cache",
+      "count": 23
+    },
+    {
+      "table": "_backup_2026_06_02_meal_cache",
+      "count": 30
+    },
+    {
+      "table": "_backup_2026_06_02_memberships",
+      "count": 1
+    },
+    {
+      "table": "_backup_2026_06_02_plans",
+      "count": 0
+    },
+    {
+      "table": "_backup_2026_06_02_profiles",
+      "count": 1
+    },
+    {
+      "table": "_backup_2026_06_02_user_habits",
+      "count": 6
+    },
+    {
+      "table": "_backup_2026_06_02_users",
+      "count": 1
+    },
+    {
+      "table": "recipes_catalog",
+      "count": 161
+    },
+    {
+      "table": "exercise_asset_registry",
+      "count": 41
+    },
+    {
+      "table": "ai_agents",
+      "count": 6
+    },
+    {
+      "table": "ai_agent_settings",
+      "count": 2
+    },
+    {
+      "table": "ai_agent_tools",
+      "count": 0
+    },
+    {
+      "table": "ai_agent_versions",
+      "count": 0
+    },
+    {
+      "table": "ai_trigger_rules",
+      "count": 7
+    },
+    {
+      "table": "ai_task_types",
+      "count": 12
+    },
+    {
+      "table": "ai_executor_bindings",
+      "count": 6
+    },
+    {
+      "table": "ai_context_profiles",
+      "count": 4
+    },
+    {
+      "table": "ai_supporting_documents",
+      "count": 0
+    },
+    {
+      "table": "ai_config",
+      "count": 1
+    },
+    {
+      "table": "community_categories",
+      "count": 4
+    },
+    {
+      "table": "trainer_alert_state",
+      "count": 1
+    },
+    {
+      "table": "registrations",
+      "count": 0
+    },
+    {
+      "table": "users",
+      "count": 0
+    },
+    {
+      "table": "profiles",
+      "count": 289
+    }
+  ],
+  "auth": {
+    "total": 289,
+    "delete": 288,
+    "keep": 1
+  },
+  "actions": [
+    {
+      "phase": "truncate_runtime",
+      "table": "habit_logs",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "workouts",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "user_meal_pins",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "user_habits",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "user_checkins",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "user_ai_memory",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "ai_messages",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "ai_content_drafts",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "ai_logs",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "ai_tasks",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "ai_events",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "withings_measurements",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "withings_body_snapshots",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "withings_oauth_states",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "withings_connections",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "ai_generated_plans",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "body_metrics",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "memberships",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "community_replies",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "community_posts",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "nutrition_logs",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "fitness_goals",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "progress_tracking",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "subscriptions",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "ai_agents_logs",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "trainer_calendar_tokens",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "openai_response_cache",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "openai_daily_usage",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "meal_metadata_cache",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "exercise_metadata_cache",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "_backup_2026_06_02_ai_agents",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "_backup_2026_06_02_body_metrics",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "_backup_2026_06_02_exercise_cache",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "_backup_2026_06_02_meal_cache",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "_backup_2026_06_02_memberships",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "_backup_2026_06_02_plans",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "_backup_2026_06_02_profiles",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "_backup_2026_06_02_user_habits",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "truncate_runtime",
+      "table": "_backup_2026_06_02_users",
+      "deleted": 0,
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "bb26d6e0-78fb-4f8a-abdf-a8dbfeb1a894",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "dd24f3ea-d77f-47e4-8c86-bbda703e943c",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "31b0dc23-15ef-48f2-81a3-0bf0bbb5786a",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "a62add6c-1231-414f-9ea6-edcf667f605e",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "61677b5f-bd98-483c-a834-63d0cb1c067e",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "966182e0-b422-42d2-a6ee-63d623eab69c",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "cbaf06ac-70f5-4000-ac33-3bb05ac761a9",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf**********************************@bodyandmindon.cz",
+      "userId": "9e8f6936-4b5c-4c49-af9a-438877d74c54",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "997da780-b4ff-49dd-a2fb-cceff05ed719",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "bbe88c42-c930-4881-8169-4f003dbc5c5d",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "ce838a77-51ce-48f4-b8f6-77b60b418ccd",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "140d652a-cc1d-487f-bb38-1bca9b8b8dd6",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "302581d5-1cf5-4fd0-90bc-c42c8b6777aa",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "f2f2189c-2411-4f2e-874b-f32da2f2ffdb",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "51bd8242-7887-44b1-9892-9ad9c02b056c",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf**********************************@bodyandmindon.cz",
+      "userId": "8658bdc2-a38e-4596-a5b8-0a88e0f3aca3",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf**********************************@bodyandmindon.cz",
+      "userId": "17b43695-0bae-4bcc-9193-d1b78588e151",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf**********************************@bodyandmindon.cz",
+      "userId": "06d263c8-4bc1-456c-904d-c6efe6a5a88e",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf**********************************@bodyandmindon.cz",
+      "userId": "ff4fe18c-32ae-445b-a89c-73aad15b700a",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf**********************************@bodyandmindon.cz",
+      "userId": "572facac-f948-47e3-a427-121dfbeee0d0",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf**********************************@bodyandmindon.cz",
+      "userId": "edd377b7-c8d6-45f4-bd2e-1be6de5aa73d",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "9373569c-3bb3-4420-b1c0-9817b5b83e8c",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "0076cc1f-712a-43be-97a3-993cc000261b",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "33b66525-40a2-4c68-bfa7-95a6cc0d896a",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "dab36ce5-f8db-4008-8725-6a3cc1a17934",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "3eb735ea-b4c0-423e-979c-5d5633207a13",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "a7d1c0cd-9acb-493c-8c1c-a25a24315983",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "b1dfcf71-3278-4b76-82ec-150bc0f2fed4",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "99009d4e-1747-41fa-90e8-eeddbdef5881",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf****************************@bodyandmindon.cz",
+      "userId": "5b2ea5c0-88c9-4f33-a8fc-84f5de82d147",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "8494a9ed-407c-4745-950f-f06b1609f68d",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "6687c7b3-146e-4b61-88c3-84cc88f92125",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "0fe4239d-9d8d-426f-99a0-291dd85ca790",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "dbaa9788-8e2b-4832-9df9-1c65e57d01a2",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "bcd24333-f77a-4bfb-9e35-3d8e4c9a6ab0",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "fc1759b3-40c4-49c4-ab7c-4bd9b9a486f1",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "3f34886d-7ba8-4b42-be02-2a4628de6ca1",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "5fa9a5f9-f74f-4c41-8e07-d9c56eaa95c8",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "ab697520-8eac-4a7c-a92f-86cd1586b629",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "bc8ed68a-7111-44a9-b8b0-4bd0d8a40c72",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "5e6659ef-230a-4eb0-b7d5-7e1bfc1bb07f",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*********************************@bodyandmindon.cz",
+      "userId": "70a27cb0-a8fc-4571-8955-5a3afe75acae",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "cf078392-70ab-460b-aea4-d14ed1ddcca8",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "4e97b508-7920-4b54-8d6f-803158502018",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "tom************@gmail.com",
+      "userId": "355d97ac-935c-47a3-8f58-b1f761bb2451",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "40e54857-c4ab-4eba-8958-ff9699684bf3",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "01acd12c-a8de-4040-9322-1f4a1dd6bc50",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "f73ad33a-629c-4891-b343-a8f2785ee6ea",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "c8a24367-ace7-4694-88be-510af10c385e",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "6e8aa3bc-a76e-4b09-80f7-9d14953e563e",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "4455ad22-ccaf-4443-abad-df3b2da211ec",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "ff9e37df-a13c-478a-8208-9655fd21a55e",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "08cb33e3-777d-46ec-8d42-91cabb71db97",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "80408356-a9a1-4fb7-bb99-5fc559654cea",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "d4e6cb2c-bb65-4515-ba3f-841e39504e7a",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "11b98f29-e256-44e6-9553-c1bb0cf5de03",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "ee67dd46-4ea3-4bd3-80b9-e800e9f046bc",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "b8c8d545-af64-4c5d-aff2-271e3790bf03",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "61d76d47-5a80-4dce-8182-39e597f1be5c",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "c0fc208f-b21f-4949-8641-deda952fcf3d",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "4b8cb893-f28b-44c7-835f-45d68ad83194",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "bm-*******************@example.com",
+      "userId": "ae887ca1-44a2-4564-8398-9619a48997a7",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "a6a56759-e45c-46da-9ca9-665f7ad4f773",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "d25bc7ee-5d7b-4e6e-84c0-f9a275512c69",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "05ba6927-ad46-43aa-97cf-991d4ba670d6",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "7043db37-4975-4e77-9ea7-79488747a514",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "6a28ca20-67ec-422c-bb09-cef80da4348c",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "8860a91d-113e-4f06-8916-35b1c91c5ef8",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "bcd7f172-6cc4-4f0b-8ea3-808b3eb618f4",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "e00f49a4-da95-493a-b5ed-387ff85a976f",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "77323ff2-74d2-4f2f-8371-00999cfd350e",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "ee082608-b8db-4a0b-b4de-edfe1487add0",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "85d66a15-e2a6-466e-a730-4a28032f1d11",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "fa82d22d-8bef-4ce5-a7e9-fd0a935b58f3",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "83216727-9a32-4807-872f-8cdfd331a84c",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "6057e8b7-a983-4c1b-8cbb-7001d2502278",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "6fde54ed-81cc-4ef3-a3f2-2420fdfe6f3b",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "bebcb384-98e0-427a-a358-45746c398ddd",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "c33c91a0-b65c-4de1-bc61-3072638e7bf9",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "4928c953-4fad-41ff-8d90-037a961672b3",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "fede8b12-a203-4d41-b26c-7c5eb88e94cb",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "9bc7d363-2b5e-404b-8616-af34247a9fe7",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf********************************@bodyandmindon.cz",
+      "userId": "3cb98446-77dc-4e5b-8ce2-1c08d5f29441",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "3085fc2e-3ff4-4b0a-83a0-a1336ef08be5",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "c984c6cd-e386-4804-b067-b9753458a38b",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf****************************@bodyandmindon.cz",
+      "userId": "f2fdc03e-6e3d-4251-aef3-9dbc5d856e28",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "60e88c21-3677-441a-8089-ba9a28f06b02",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf**************************@bodyandmindon.cz",
+      "userId": "c38d179e-c110-4ff4-9394-40ed181a1964",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf**************************@bodyandmindon.cz",
+      "userId": "5db9a5cd-7cb6-4afe-8bec-756ac20d8e0c",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf**************************@bodyandmindon.cz",
+      "userId": "b8ca3271-89f4-42ea-808b-dcc831b99757",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "367539f2-61f1-4b58-b0c0-b91a1ef76dac",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "9874e582-a708-4e67-b439-b7f2ef37e508",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "0ca849a0-98b7-4406-afa9-99dac3156564",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "a1f9cac1-e9dd-4716-bf3e-e6adc849a570",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "968c2c75-c888-4c20-ab2a-9139f816d525",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf****************************@bodyandmindon.cz",
+      "userId": "e8df095f-b582-4325-83f1-64144b4fac44",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf********************************@bodyandmindon.cz",
+      "userId": "c7210b27-cce0-4742-90b7-c41965f3aa7b",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf********************************@bodyandmindon.cz",
+      "userId": "fc0dc133-76e3-40e0-8be3-77b013822b1b",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "64d3f8c8-db03-4fcf-b3dc-11e8f05c8c72",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "c2cb0cfc-705c-4bbc-aa27-581406513faf",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "bf3c79f9-ba83-4f3e-84dd-340afc8d2526",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "f78fa9f2-424e-4d68-9f9d-44ee10347c9f",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf****************************@bodyandmindon.cz",
+      "userId": "721d18bf-b426-4d30-9561-8ebff848840f",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "21a918c6-656a-4c5f-816c-19caf52ed585",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "9457b266-486b-4e8c-bd38-55664ce8597f",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf****************************@bodyandmindon.cz",
+      "userId": "858c6b9f-68d3-4fef-a490-e113a77806e3",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf****************************@bodyandmindon.cz",
+      "userId": "e8342e65-7b2b-4f6a-9644-c06c33f86677",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "9771056a-3461-4b5f-b206-6b86323bab1b",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "63040ffe-dbf6-46b7-ba82-14b4b2fc6d4b",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "a204669b-392b-41a5-af58-13748d3d08b7",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "b8294bd6-3256-48b8-ab6e-13d4725112b2",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "485494c0-b0e6-4664-a158-287e5f04ef09",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "e8d0d080-1ca2-4477-9e20-a986d64c8f45",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "a5fdd25f-f18e-472d-981a-4fcb30be6ec0",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "fdd94acf-b1a1-40f3-83cf-d179c16100ac",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "7a163c76-6f7a-42b0-a760-ec665a43a8be",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "1c6e6899-bb07-42ff-8b5c-2a37b6444189",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "74ce6649-d18a-4090-beb7-413c6e226a7a",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "166a354a-a595-4adf-9007-d1373a4b6a16",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "bb5a0537-6469-4231-b22a-ebf6db1f3b95",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "fda28b84-32ee-43b5-a59a-d0a72133676b",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "71ab4e79-a4d4-4637-b1a1-d0a326cfb931",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "9191148f-ad42-4b8a-a1f4-dbf337854e6d",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "6343d311-3e93-4127-b5a4-a9ae2ffced24",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "e3c197e6-9555-4838-a968-8bde41b46e6a",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "c3420e56-ed4e-4550-93f0-81a0b4d53d35",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "7a368434-159c-4cd6-904e-a12e61d7ebb4",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "b2b38bf4-ca6f-43eb-858c-8f7dbe88cb81",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "c02d6ca4-4e8f-4b02-8d18-4178ec61158b",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "515cba74-dc2f-44f0-84db-c4432ac5b8f8",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "aa0071a0-8084-418c-b952-98fced0100ec",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "f0b63017-405a-460d-8710-ea3c8e34aecb",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "dfdc1532-90b7-4cc9-a59f-32600317fc58",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "1252db70-88ee-4785-b3f3-8fa1e5026a36",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "cac3df72-553a-4314-be4c-3bed14b7503c",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "57f8b4e5-8f51-4078-884e-7353d1a8fdf3",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "a9a834fb-fbdc-452f-a633-c5a91cc5c884",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "c3542a9e-abe5-4023-b8d9-6d9fba67e66d",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "808b12b2-3f0d-495b-86aa-d72923602ef2",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "fbbdc7c4-e535-42fc-88fc-7603ee4bfa88",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "4e550d0f-8471-42a9-ac57-e0b0c8b22c1f",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "01cebc3f-d879-4a53-b37d-2734b63e269e",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "0c542ef3-ebed-4366-bef8-adc1a45df149",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "46b1f7c3-3d55-45ff-ad7f-8d93afce66dd",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "edfd3dfd-1b20-450c-808e-c3a0c3b01251",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "e84a4935-5b05-4cbe-9a4b-be2a0497be74",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "19810fb5-74cd-4bec-a15d-288621a3d211",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "0145b032-72ad-4fda-9337-cbb417a69d34",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "e825f845-1156-4400-b034-60d06ecc34f8",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "3d3ee0f3-2ede-4ef9-883d-5f0a455c9bd3",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "bm-*******************@example.com",
+      "userId": "f59d2f80-6b0d-4f49-963d-2871b82fd771",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "2f1dda9a-ac84-42be-8388-8207f74bf579",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "f46202e1-7f73-42f7-83b2-888650817e2c",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "73980650-1b97-410f-a032-ee8e1a80a2ed",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "0c7bbe46-8870-4b09-97ca-3e8b8ce6c31e",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "71224e4b-9589-4066-a0b8-7cbfea7045dd",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "624e436e-5eed-4431-bc0d-3cb94c5cc53a",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "e4882fcc-3461-45b2-8396-aada7cfc8cb8",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "c499e653-1c8c-432f-8c19-f39c1b4e98cf",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "96b7ceea-dc3f-43cd-83c3-eb84a1a19bd4",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "102bf25a-9309-4b16-96eb-ba5f6e83e85c",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "bd151632-69bc-4685-b075-ec7f80e79963",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "ace6c669-0020-483c-9388-a0bac2eeb520",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "2372bcae-7abf-4e3a-9517-1d0b55431a48",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "78cdc5ed-2b9b-4cbb-b99f-8895bf5c0e34",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "8893fdd2-fa1a-40e3-a1a2-88e80618cdb8",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "b970a183-d5d1-4b28-971f-c206fbc37515",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "2bf88620-246b-4ca3-8cd9-6dbaff665b6c",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "c44b122a-852f-4b3f-9034-6c3c6c5d631c",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "c8447e25-5349-497d-9af9-9cd742fa4474",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "defa3ab2-55ca-4851-8dbc-3093792b24fe",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "8abdbc2e-4e9e-4fd2-8ad2-edb6786a5830",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "7241bc92-7e5c-47df-bc61-080442c9d35c",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "27671b3f-cc04-4f2d-a400-d4f9d6c91725",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "75207093-f3d0-48d0-a26c-18af9a6d3800",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "78ade846-7c3f-4f74-8be3-e17c1a9a0eb1",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "20ac8615-3af4-4d7a-aebc-76aff73e3511",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "cc6e75c8-be40-4587-bc67-2bb62d1e048d",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "2f54d3eb-5fe8-475d-8285-10522aa28490",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "a7e8171b-1999-490c-993b-579bc41dda1f",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "15429d1f-8b1f-4019-af77-b3e8e69396e7",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "12ffd1f0-ea14-4164-b4c6-99d33c3c16ac",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "7af53ca8-9aac-49df-98db-0423e269072e",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "eac6e80d-c84f-40f8-ac0b-2042cadd14ca",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "d609dc8b-b609-4250-bb19-7cce60e4399f",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "4b85b8c2-2792-43d4-bf2d-88045de00152",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "5ed61761-a5dd-45fc-961d-2a3c7e1b990a",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "28bd0c98-7a26-4d83-a76f-547bcf156290",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "c614ce40-e931-48ae-b86f-ff8e45f65057",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "7511b110-c6ce-4c31-930b-71797e11fef8",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "a9b4d71d-1a0c-44ae-8e95-a0ee31f106c6",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "8647d5d3-f404-4be0-a436-5d9e46b8a092",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "64ae3626-b3dc-403d-97ee-c81494f98115",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "25811172-007b-4061-8471-c1f486f5ac4a",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "4e2c65fc-9995-467e-95ba-301ae4b053ad",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "3757ea5f-80bc-4fae-9619-ff0d760352fd",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "dfecd42b-194f-4bfe-9257-f591dd4553ac",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "64231286-ef7c-49a3-85e8-75bf493d3eb5",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "5077f331-3e36-49d4-9c79-4218913d9b4b",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "6761186a-2215-4e2a-aa4c-08981150325d",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "2559bb8b-f69e-4e82-8126-49f0e794f332",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "6da25a6b-d071-42f6-b657-8dfa76ccf8a1",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf***********************************@bodyandmindon.cz",
+      "userId": "26da938e-931b-434e-bc1b-58428af78b1c",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf**********************************@bodyandmindon.cz",
+      "userId": "8bc43c22-d01b-487a-bfa7-1a8ed27121f9",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf***************************@bodyandmindon.cz",
+      "userId": "d0cfd8fa-c080-4e10-9cb3-9f633b188cbc",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf***********************************@bodyandmindon.cz",
+      "userId": "edaeb518-880d-4304-89aa-182a70319b09",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf**********************************@bodyandmindon.cz",
+      "userId": "a9c6df7c-27be-489f-a8d4-aab4b6c29fa5",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf***************************@bodyandmindon.cz",
+      "userId": "0162aaab-bdd7-4b44-96d1-3e4f137f038d",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "fb119979-0d99-4799-8da6-3991ed3894c1",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "dabdc2cb-bb1c-4c95-a789-d5c21698a6e0",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "c5d4568b-d507-4a93-a52e-2364fd6d8919",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "defea261-321d-4885-aa35-b4387e3d7893",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "fec32c8a-5d33-4ce4-8078-5cd90c3eccd4",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "ond**********@gmail.com",
+      "userId": "c5645739-ac8a-4304-bcb6-5592eabd3dea",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf****************************@bodyandmindon.cz",
+      "userId": "415f9080-0079-4544-87cd-07c3e446cfdf",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "85770768-9b4f-47d0-bdc2-baf56ebbf64d",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "7e28e075-5ec9-4608-a9ee-8d272d2878e7",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************@bodyandmindon.cz",
+      "userId": "1678bb21-5f2a-41fe-8153-92806d99b7dd",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "68cf05df-140a-4767-8e84-9042818465d7",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************@bodyandmindon.cz",
+      "userId": "7ac6990d-ac49-42c8-b84c-827d06433917",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "986be28a-d97c-45dc-8982-0c65d69942bd",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "478bc215-c8d4-4cc4-8ff0-6e1f2ce638ec",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "efe990a1-15ac-48e3-b148-7f8135dc321e",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "b9780c5f-91b5-44d6-bc68-72bf38ad865b",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "d0c63e6a-5699-4d9e-9c93-8ed9215e5b53",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "2038c465-cffa-432e-8f39-92c46c5b4258",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "021aba86-0034-49c1-8280-038951b7c401",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf***************************************@bodyandmindon.cz",
+      "userId": "192bb414-a08b-459f-a442-07565a0836bf",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf***************************************@bodyandmindon.cz",
+      "userId": "472dd14a-2cb5-4e99-bb90-91cf2b943411",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "df0fb284-6dac-45ef-a79c-7309bca7bf61",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "cb0e1024-38c4-417d-8f73-031d78f0e214",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "a69921fc-fade-4455-ba90-4d5cb2b8baf2",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "2f010354-e216-4fc1-bf32-418b2170d86b",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "7dda2f97-7ce1-489a-a9a8-7f8f3ca9e168",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf***************************************@bodyandmindon.cz",
+      "userId": "e8c285f0-92ff-4fcb-a125-86a1f4015597",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "868168a0-bc09-469d-9b2a-e5e822f7ca3b",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "67514a2c-2821-488b-9ca7-b2b5261d0cb0",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf***********************************@bodyandmindon.cz",
+      "userId": "c14ed904-358c-4c09-9274-c1c19c545f76",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "4a93bd7d-9309-434c-a652-38e780c5efa8",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf********************************@bodyandmindon.cz",
+      "userId": "21780ed1-cd43-4fc7-adb6-4d1f05cab04c",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "02a24142-7ae8-4064-adbf-6675754c2591",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf**********************************@bodyandmindon.cz",
+      "userId": "adf71ef4-eaf4-40a3-a762-0f74d2b315a4",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf**********************************@bodyandmindon.cz",
+      "userId": "22436c6f-b06a-4000-9b75-6be13bdfdc17",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "3242338a-e7a7-461b-9df9-050f52e83710",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************************@bodyandmindon.cz",
+      "userId": "9db9d23c-9a77-4bea-9ac7-fd95dc7d4e36",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*****************************************@bodyandmindon.cz",
+      "userId": "9c332dc0-de8e-4a53-8c07-30e1f4a8a929",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "f4b8bef5-0135-4165-8099-8b87a4e91cf2",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf***********************************@bodyandmindon.cz",
+      "userId": "07bf8298-9786-4199-9044-323d08bc0b4f",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "767f7d6e-8dc8-4ed8-aef2-259fd31c5b0e",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "86d18284-cef0-4eba-8a36-3109cf72369c",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************************@bodyandmindon.cz",
+      "userId": "e1613cfc-aa72-438b-84c0-442878914d0e",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "9f93923c-5db5-46ad-b694-d06e779c8c32",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf******************************************@bodyandmindon.cz",
+      "userId": "feea16f2-4bc6-4b55-94d7-e33cf6b419c4",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "c84e8c7b-cd04-4677-b33c-50b1f41aa2d3",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf**************************************@bodyandmindon.cz",
+      "userId": "e731b3ab-52fe-4fb8-ae2b-66ab521d7e79",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "868f74e2-036f-4896-bcdd-20c6db517bde",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf********************************@bodyandmindon.cz",
+      "userId": "64c0a481-32ad-4c82-889c-68aea8d79e63",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf********************************@bodyandmindon.cz",
+      "userId": "b7959f5c-0e17-45a7-96d6-35ce0fcddaab",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "ac452dd1-485a-4048-a656-1f930ad22859",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "892f36f2-addd-4d55-9cd2-8d8e13dbb720",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*************************************@bodyandmindon.cz",
+      "userId": "702d796d-0a90-496c-959b-01c267e28b3d",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "ad6fec9a-91dc-4fda-810b-6230bdcc9de1",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "0739b58b-9593-4eea-a1d4-847116b79283",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "9b6df506-b8cd-4750-95b3-09a1d134d9f6",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "33c0b09b-d569-4954-8cf3-c01274c20e70",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf*******************************@bodyandmindon.cz",
+      "userId": "7134cbe1-5547-4da1-941c-da153205c7fe",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "8c0aa6c0-0130-4dd6-9ab8-1612d32dd3b9",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf****************************@bodyandmindon.cz",
+      "userId": "2702a8b6-08b2-4655-ab03-693fa59521cc",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf****************************@bodyandmindon.cz",
+      "userId": "803f984f-fab8-442b-87a5-3a55a24cc9e8",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "be487ba5-63c9-4240-8976-0e6881e82d4a",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "9883c11e-bb21-4230-bd31-279467ed5094",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "600b967c-06fa-4392-ab2a-75f49ddc80f6",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "2ed32dd5-da12-40ea-b0d8-f75a78e391a4",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "7632d6ae-ee51-496c-8719-a32704012c64",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "d7976e93-49aa-4577-95c7-ea511e55e9ff",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "feadc2f3-505c-4378-aaeb-669b2ea2f787",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "jan*****************************@gmail.com",
+      "userId": "0feb441f-ade1-4448-98c5-2b139580d3a2",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "jan*****************************@gmail.com",
+      "userId": "87232ae4-e428-4e93-8bd1-a2fc86459546",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "jan*****************************@gmail.com",
+      "userId": "898707d2-c52e-4e37-a844-fb16d683ee00",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "jan*****************************@gmail.com",
+      "userId": "4938340f-73a8-44ed-ad77-0fa6a41fc16c",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "jan*****************************@gmail.com",
+      "userId": "54197f8a-3741-48fb-9b2c-5e7fd268f805",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "jan*****************************@gmail.com",
+      "userId": "2a877ce0-96de-4277-8335-5c3941a281dc",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "inf************************@bodyandmindon.cz",
+      "userId": "c1d722af-6cc6-4933-a70b-44878a8f065f",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "jan******************************@gmail.com",
+      "userId": "45677349-3b57-49be-b975-ee3762918a41",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "jan******************************@gmail.com",
+      "userId": "58332527-d2e2-4931-a5e0-fdf344c5d905",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "jan****************@gmail.com",
+      "userId": "190d9d6b-4e56-4cd7-acf2-3e79031f2893",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "jan****************@gmail.com",
+      "userId": "c2232aa3-782e-4e2c-a241-eb363627bb8d",
+      "dryRun": true
+    },
+    {
+      "phase": "auth_delete",
+      "email": "jan*******************@gmail.com",
+      "userId": "3e0040ba-0e0d-40c4-aa25-3d1fad8133a7",
+      "dryRun": true
+    }
+  ]
+}

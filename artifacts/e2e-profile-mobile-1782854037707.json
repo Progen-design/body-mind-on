@@ -1,0 +1,117 @@
+{
+  "production": {
+    "deploymentId": "dpl_DBbA1TC2s9tnnbmRFGFZ7kd2fUBZ",
+    "productionCommit": "9559f1d (expected)",
+    "state": "Ready",
+    "hasMacroBarBundle": true,
+    "hasTodayExerciseBundle": false,
+    "commitDeployed": false
+  },
+  "testAccount": {
+    "email": "info+bm-mobile-e2e-1782854037707@bodyandmindon.cz",
+    "registrationStatus": 200,
+    "emailSent": true,
+    "planState": "ready",
+    "plan_id": "df6af412-bfd3-41dd-a091-6694d3fc7751",
+    "user_id": "64ae3626-b3dc-403d-97ee-c81494f98115",
+    "email_sent": true
+  },
+  "mobileE2E": {
+    "profileOpened": true,
+    "horizontalScroll": false,
+    "duplicateNav": false,
+    "todayMealsVisible": true,
+    "todayWorkoutVisible": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-mobile-top.png"
+  },
+  "recipe": {
+    "recipeOpened": true,
+    "ingredientsVisible": true,
+    "instructionsVisible": true,
+    "nutritionVisible": true,
+    "macroPercentagesAllZero": false,
+    "macroBarVisible": true,
+    "horizontalScroll": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-recipe-modal.png"
+  },
+  "mealReplacement": {
+    "oldMeal": "Cottage s pečivem",
+    "clicked": true,
+    "rateLimitShown": false,
+    "newMeal": "Ovesná kaše s proteinem",
+    "mealChanged": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-meal-replaced.png"
+  },
+  "includeNextWeek": {
+    "clicked": true,
+    "feedbackVisible": true,
+    "rateLimitShown": false,
+    "planChangedImmediately": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-meal-pin-feedback.png"
+  },
+  "exerciseModal": {
+    "clicked": true,
+    "correctExercise": true,
+    "jakNaToVisible": true,
+    "dýcháníVisible": true,
+    "tempoVisible": true,
+    "pozorVisible": true,
+    "lehčíVariantaVisible": true,
+    "wrongMediaShown": false,
+    "bigEmptyBox": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-exercise-modal.png"
+  },
+  "accordion": {
+    "onlyOneDayOpen": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-week-accordion.png"
+  },
+  "settings": {
+    "bodyDataSectionVisible": true,
+    "weightEditable": true,
+    "heightEditable": true,
+    "birthDateEditable": true,
+    "ageCalculated": true,
+    "duplicateSaveButtons": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-settings-body-data.png"
+  },
+  "runtimeLogs": {
+    "errors": [],
+    "apiCalls": [
+      {
+        "url": "https://app.bodyandmindon.cz/api/meal-pins",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/plan-replace-meal",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/meal-pins",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/exercise-media?canonical_key=leg_press&wger_id=154&name=Tlaky+nohama",
+        "status": 200
+      }
+    ],
+    "errors500": 0,
+    "errors429": 0,
+    "authErrors": 0
+  },
+  "tests": {
+    "build": "PASS",
+    "verify:profile-real-user-bugfixes": "PASS",
+    "verify:profile-today-ux": "PASS",
+    "verify:profile-macro-chart": "PASS",
+    "verify:macro-kcal-consistency": "PASS",
+    "verify:meal-replacement-actions": "PASS",
+    "verify:exercise-assets": "PASS",
+    "verify:training-environment-strictness": "PASS",
+    "verify:email-cta-profile-access": "PASS",
+    "verify:product-consistency": "PASS",
+    "smoke-test:prod": "PASS",
+    "e2e:profile-mobile": "FAIL"
+  },
+  "verdict": "PARTIAL",
+  "verdictReason": "production bundle missing expected markers"
+}

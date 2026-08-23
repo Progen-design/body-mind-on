@@ -21,10 +21,10 @@ function read(relPath) {
   return readFileSync(resolve(process.cwd(), relPath), 'utf8');
 }
 
-const profil = read('pages/profil.js');
-const planViewer = read('components/PlanViewer.js');
-const todayPanels = read('components/profile/ProfileTodayPanels.js');
-const dayMealsPanel = read('components/profile/ProfileDayMealsPanel.js');
+const profil = read('_legacy-next/pages/profil.js');
+const planViewer = read('_legacy-next/components/PlanViewer.js');
+const todayPanels = read('_legacy-next/components/profile/ProfileTodayPanels.js');
+const dayMealsPanel = read('_legacy-next/components/profile/ProfileDayMealsPanel.js');
 const packageJson = read('package.json');
 
 check('profil importuje ProfileTodayPanels přes PlanViewer', planViewer.includes("import ProfileTodayPanels from './profile/ProfileTodayPanels'"));
@@ -48,7 +48,7 @@ check('workout fallback checkbox', todayPanels.includes('Dokončil/a jsem dnešn
 check('workout auto from watch', todayPanels.includes('Trénink splněn (Apple Watch)'));
 check('daily activation hook', todayPanels.includes('useDailyActivation'));
 check('auto daily adherence status', todayPanels.includes('DailyAdherenceStatus') && !todayPanels.includes('Jak se ti dnes plán dařil'));
-check('daily adherence component', read('components/profile/DailyAdherenceStatus.js').includes('Dnešek:'));
+check('daily adherence component', read('_legacy-next/components/profile/DailyAdherenceStatus.js').includes('Dnešek:'));
 check('progress bar dne', todayPanels.includes('HabitUiProgressBar'));
 check('habit tracker restored in profil', profil.includes("import HabitTracker") && profil.includes('denni-navyky'));
 check('MacroRatioChart v dnešních jídlech', dayMealsPanel.includes('MacroRatioChart'));

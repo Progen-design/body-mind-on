@@ -87,3 +87,24 @@ Z toho plyne, jak metriku čítat a jak ne:
 - Na větší úkoly použij plan mode (Shift+Tab) — nejdřív návrh, pak implementace.
 - Pro DB změny vždy zkontroluj aktuální schéma přes Supabase MCP (`list_tables`, `list_edge_functions`) než navrhneš migraci — schéma je rozsáhlé a snadno se něco duplikuje.
 - Pro release/deploy použij `bmon-release` skill (checklist) než zavoláš `mcp__Vercel__deploy_to_vercel` nebo pushneš do main.
+
+## Testy v `src/` — `tsc` je neuvidí rozbité
+
+`npx tsc --noEmit` **neodhalí rozbitý import v testech pod `src/`**. Testy
+importují s příponou (`from './initialData.ts'`) a běží přes
+`node --experimental-strip-types`, tedy mimo TS resolver. Přejmenovaný nebo
+odstraněný export projde typecheckem a spadne až za běhu.
+
+Stalo se to při Etapě 3.4: přejmenování `appleWatchBiometricsData` na
+`PRAZDNA_BIOMETRIE` shodilo `src/data/adapteryZdravi.test.ts`, přestože `tsc`
+byl čistý.
+
+**Po každé změně v `src/data/` nebo `src/lib/` spusť celou sadu:**
+
+```
+npm run test:src
+```
+
+Ne jen nově psaný soubor — jinak se rozbitý import najde až v CI. Nové testy
+je taky potřeba dopsat do `test:src` v `package.json`, seznam souborů je tam
+vypsaný ručně.

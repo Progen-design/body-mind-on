@@ -1,0 +1,31 @@
+{
+  "production": {
+    "deploymentId": "dpl_3hqKfKLZorprbjyxXZ45cvESLHVM",
+    "productionCommit": "9559f1d (expected)",
+    "state": "Ready",
+    "hasMacroBarBundle": true,
+    "hasExerciseHandlerBundle": false,
+    "commitDeployed": false
+  },
+  "testAccount": {
+    "email": "info+bm-mobile-e2e-1782853261992@bodyandmindon.cz",
+    "registrationStatus": 200,
+    "emailSent": true,
+    "planState": "ready",
+    "user_id": "64231286-ef7c-49a3-85e8-75bf493d3eb5"
+  },
+  "mobileE2E": {},
+  "recipe": {},
+  "mealReplacement": {},
+  "includeNextWeek": {},
+  "exerciseModal": {},
+  "accordion": {},
+  "settings": {},
+  "runtimeLogs": {
+    "errors": [],
+    "apiCalls": []
+  },
+  "tests": {},
+  "verdict": "FAIL",
+  "verdictReason": "Plan not ready within 120s"
+}

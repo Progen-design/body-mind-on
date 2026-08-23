@@ -112,7 +112,7 @@ await admin.from('product_events').delete().eq('anonymous_id', 'anon-test-1');
 await admin.auth.admin.deleteUser(testUserId);
 check('cleanup', true);
 
-const src = readFileSync(join(ROOT, 'pages/api/events.js'), 'utf8');
+const src = readFileSync(join(ROOT, 'api/events.js'), 'utf8');
 check('PII guard in source', src.includes('event_properties_rejected'));
 check('allowlist in source', src.includes('unknown_event'));
 

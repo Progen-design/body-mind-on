@@ -75,20 +75,20 @@ const planCta = getPlanEmailCtaUrl();
 check('getPlanEmailCtaUrl obsahuje login?redirect=/profil', /\/login\?redirect=.*profil/i.test(planCta), planCta);
 check('getDefaultLoginUrl === login redirect profil', getDefaultLoginUrl() === getLoginRedirectToProfileUrl());
 
-const loginJs = read('pages/login.js');
+const loginJs = read('_legacy-next/pages/login.js');
 check('login default redirect /profil', loginJs.includes(": '/profil'"));
 check('login plan access headline', loginJs.includes('Přihlas se a otevři svůj plán'));
 check('login plan access text', loginJs.includes('Tvůj plán už je připravený'));
 
-const profilJs = read('pages/profil.js');
+const profilJs = read('_legacy-next/pages/profil.js');
 check('profil auth redirect s query', profilJs.includes("router.replace('/login?redirect=/profil')"));
 
-const startJs = read('pages/start.js');
+const startJs = read('_legacy-next/pages/start.js');
 check('start session guard → profil', startJs.includes("router.replace('/profil')") && startJs.includes('getSession'));
 check('start login hint', startJs.includes('Přihlas se a otevři svůj plán'));
 check('start login link redirect', startJs.includes('/login?redirect=/profil'));
 
-const registerJs = read('pages/register.js');
+const registerJs = read('_legacy-next/pages/register.js');
 check('register session guard → profil', registerJs.includes("router.replace('/profil')"));
 check('register bez plan → login', registerJs.includes("router.replace('/login?redirect=/profil')"));
 

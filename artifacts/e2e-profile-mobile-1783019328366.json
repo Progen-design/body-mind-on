@@ -1,0 +1,157 @@
+{
+  "production": {
+    "deploymentId": "dpl_GKVjtrdDsKKaHqimNShjuhJxW4ga",
+    "productionCommit": "9559f1d (expected)",
+    "state": "Ready",
+    "hasMacroBarBundle": true,
+    "hasTodayExerciseBundle": false,
+    "commitDeployed": true
+  },
+  "testAccount": {
+    "email": "info+bm-full-audit-1783019327639@bodyandmindon.cz",
+    "registrationStatus": 200,
+    "emailSent": true,
+    "planState": "ready",
+    "plan_id": "eb70a6c3-56ec-4602-b355-cb2a8c4ef349",
+    "user_id": "dbaa9788-8e2b-4832-9df9-1c65e57d01a2",
+    "email_sent": true
+  },
+  "mobileE2E": {
+    "profileOpened": true,
+    "horizontalScroll": false,
+    "duplicateNav": false,
+    "todayMealsVisible": true,
+    "todayWorkoutVisible": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-mobile-top.png"
+  },
+  "recipe": {
+    "recipeOpened": true,
+    "ingredientsVisible": true,
+    "instructionsVisible": true,
+    "nutritionVisible": true,
+    "macroPercentagesAllZero": false,
+    "macroBarVisible": true,
+    "horizontalScroll": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-recipe-modal.png"
+  },
+  "mealReplacement": {
+    "oldMeal": "Vejce s pečivem a zeleninou",
+    "clicked": true,
+    "rateLimitShown": false,
+    "newMeal": "Ovesná kaše s proteinem",
+    "mealChanged": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-meal-replaced.png"
+  },
+  "includeNextWeek": {
+    "clicked": true,
+    "feedbackVisible": true,
+    "rateLimitShown": false,
+    "planChangedImmediately": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-meal-pin-feedback.png"
+  },
+  "exerciseModal": {
+    "clicked": true,
+    "correctExercise": true,
+    "jakNaToVisible": true,
+    "dýcháníVisible": true,
+    "tempoVisible": true,
+    "pozorVisible": true,
+    "lehčíVariantaVisible": true,
+    "wrongMediaShown": false,
+    "bigEmptyBox": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-exercise-modal.png"
+  },
+  "accordion": {
+    "onlyOneDayOpen": true,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-week-accordion.png"
+  },
+  "settings": {
+    "bodyDataSectionVisible": true,
+    "weightEditable": true,
+    "heightEditable": true,
+    "birthDateEditable": true,
+    "ageCalculated": true,
+    "duplicateSaveButtons": false,
+    "screenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-settings-body-data.png"
+  },
+  "workoutCopy": {
+    "todayWorkoutText": "Dnešní trénink\n\nTyp: Doma s vybavením · Pomůcky: Jednoručky, Lavice\n\n5 cviků · ~60 min\n\nDřepy · 5×10\nJak cvik provést\nVýpady · 5×10 na každou nohu\nJak cvik provést\nBench press · 5×10\nJak cvik provést\nBicepsový zdvih · 5×12\nJak cvik provést\nTricepsové tlaky · 5×12\nJak cvik provést",
+    "hasPerLegEnglish": false,
+    "hasLunges": true,
+    "lungesUseCzech": true,
+    "squatsNoPerLeg": true,
+    "noSalesBlockAfterWorkout": true,
+    "noSalesScreenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-mobile-no-sales-upsell.png",
+    "workoutCopyScreenshot": "C:\\Users\\prikopa\\Documents\\GitHub\\body-mind-on\\artifacts\\profile-mobile-workout-copy.png",
+    "squatModalFound": true,
+    "lungeModalFound": true,
+    "squatVsLungeModalDifferent": true
+  },
+  "runtimeLogs": {
+    "errors": [],
+    "apiCalls": [
+      {
+        "url": "https://app.bodyandmindon.cz/api/meal-pins",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/plan-replace-meal",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/meal-pins",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/exercise-media?canonical_key=squat&wger_id=111&name=D%C5%99epy",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/exercise-media?canonical_key=squat&wger_id=111&name=D%C5%99epy",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/exercise-media?canonical_key=squat&wger_id=111&name=D%C5%99epy",
+        "status": 200
+      },
+      {
+        "url": "https://app.bodyandmindon.cz/api/exercise-media?canonical_key=squat&wger_id=111&name=D%C5%99epy",
+        "status": 200
+      }
+    ],
+    "errors500": 0,
+    "errors429": 0,
+    "authErrors": 0
+  },
+  "tests": {
+    "build": "PASS",
+    "verify:withings-widget-ux": "FAIL",
+    "verify:withings-widget-ux_output": "s configured\nOK npm script verify:withings-widget-ux\nOK mobile CSS bez fixed width >100vw\nStarting local server at http://127.0.0.1:3022…\nLocal server ready\n\n--- Visual Withings widget checks ---\n\n9 CHECK(S) FAILED\n\nFAIL default collapsed state\nFAIL launcher button exists\nFAIL Skrýt collapses widget\nFAIL not_configured friendly copy\nFAIL Připravujeme disabled button\nFAIL sanitize technical OAuth messages\nFAIL mobile max height 80vh\nFAIL desktop max width ~400px\n(node:66508) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.\n(Use `node --trace-deprecation ...` to show where the warning was created)\nFAIL visual checks — page.waitForFunction: Timeout 120000ms exceeded.\n",
+    "verify:profile-layout-focus": "PASS",
+    "verify:profile-real-user-bugfixes": "PASS",
+    "verify:profile-today-ux": "PASS",
+    "verify:profile-macro-chart": "PASS",
+    "verify:macro-kcal-consistency": "PASS",
+    "verify:meal-replacement-actions": "PASS",
+    "verify:exercise-assets": "PASS",
+    "verify:training-environment-strictness": "PASS",
+    "verify:email-cta-profile-access": "PASS",
+    "verify:product-consistency": "PASS",
+    "smoke-test:prod": "PASS",
+    "e2e:profile-mobile": "PASS"
+  },
+  "verdict": "READY",
+  "verdictReason": "all critical checks passed",
+  "withingsMobile": {
+    "available": false,
+    "skipped": "withings widget not present",
+    "defaultCollapsed": true,
+    "launcherVisible": true,
+    "expandedOnLauncherClick": true,
+    "hideReturnsCollapsed": true,
+    "technicalOAuthText": false,
+    "overlapsTodayCta": false,
+    "horizontalScroll": false,
+    "todayCtaStillVisible": true
+  }
+}

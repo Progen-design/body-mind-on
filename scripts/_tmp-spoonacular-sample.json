@@ -1,0 +1,138 @@
+{
+  "quota_headers": {
+    "x-api-quota-request": "1.1",
+    "x-api-quota-used": "1.1",
+    "x-api-quota-left": "48.9"
+  },
+  "http_status": 200,
+  "recipe_id": 639120,
+  "title": "Chocolate Oatmeal",
+  "servings": 4,
+  "extendedIngredients_sample": [
+    {
+      "name": "rolled oats",
+      "amount": 1.5,
+      "unit": "cups",
+      "measures_metric": {
+        "amount": 121.622,
+        "unitShort": "g",
+        "unitLong": "grams"
+      },
+      "measures_us": {
+        "amount": 1.5,
+        "unitShort": "cups"
+      },
+      "original": "1 1/2 cups Rolled Oats"
+    },
+    {
+      "name": "vanilla sugar",
+      "amount": 0.25,
+      "unit": "cup",
+      "measures_metric": {
+        "amount": 50,
+        "unitShort": "g",
+        "unitLong": "grams"
+      },
+      "measures_us": {
+        "amount": 0.25,
+        "unitShort": "cups"
+      },
+      "original": "1/4 cup Vanilla Sugar"
+    },
+    {
+      "name": "cocoa powder",
+      "amount": 0.25,
+      "unit": "cup",
+      "measures_metric": {
+        "amount": 21.5,
+        "unitShort": "g",
+        "unitLong": "grams"
+      },
+      "measures_us": {
+        "amount": 0.25,
+        "unitShort": "cups"
+      },
+      "original": "1/4 cup Cocoa Powder"
+    }
+  ],
+  "nutrition_nutrients_key": {
+    "Calories": {
+      "name": "Calories",
+      "amount": 193.94,
+      "unit": "kcal"
+    },
+    "Protein": {
+      "name": "Protein",
+      "amount": 6.07,
+      "unit": "g"
+    },
+    "Carbohydrates": {
+      "name": "Carbohydrates",
+      "amount": 37.58,
+      "unit": "g"
+    },
+    "Fat": {
+      "name": "Fat",
+      "amount": 3.74,
+      "unit": "g"
+    }
+  },
+  "nutrition_ingredients_sample": [
+    {
+      "id": 8120,
+      "name": "rolled oats",
+      "amount": 0.38,
+      "unit": "cups",
+      "nutrients": [
+        {
+          "name": "Carbohydrates",
+          "amount": 20.58,
+          "unit": "g"
+        },
+        {
+          "name": "Calories",
+          "amount": 115.24,
+          "unit": "kcal"
+        },
+        {
+          "name": "Protein",
+          "amount": 4.01,
+          "unit": "g"
+        },
+        {
+          "name": "Fat",
+          "amount": 1.98,
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "id": 10319335,
+      "name": "vanilla sugar",
+      "amount": 0.06,
+      "unit": "cup",
+      "nutrients": [
+        {
+          "name": "Carbohydrates",
+          "amount": 12.45,
+          "unit": "g"
+        },
+        {
+          "name": "Calories",
+          "amount": 48.13,
+          "unit": "kcal"
+        },
+        {
+          "name": "Protein",
+          "amount": 0,
+          "unit": "g"
+        },
+        {
+          "name": "Fat",
+          "amount": 0.04,
+          "unit": "g"
+        }
+      ]
+    }
+  ]
+}

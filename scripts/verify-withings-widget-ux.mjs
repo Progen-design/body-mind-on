@@ -100,9 +100,9 @@ async function ensureLocalServer() {
 }
 
 console.log('--- Static Withings section checks ---');
-const withingsSection = read('components/profile/WithingsBodyDevelopmentSection.js');
-const withingsCard = read('components/profile/WithingsProfileCard.js');
-const latestApi = read('pages/api/withings/latest.js');
+const withingsSection = read('_legacy-next/components/profile/WithingsBodyDevelopmentSection.js');
+const withingsCard = read('_legacy-next/components/profile/WithingsProfileCard.js');
+const latestApi = read('api/withings/latest.js');
 const packageJson = read('package.json');
 
 check('WithingsProfileCard re-export', withingsCard.includes('WithingsBodyDevelopmentSection'));

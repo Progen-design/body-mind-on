@@ -484,8 +484,8 @@ check(
 
 const idempotencyFiles = [
   '../lib/taskExecutors.js',
-  '../pages/api/body-metrics.js',
-  '../pages/api/send-plan-again.js',
+  '../api/body-metrics.js',
+  '../api/send-plan-again.js',
 ];
 const idempotencyText = idempotencyFiles.map((p) => readFileSync(new URL(p, import.meta.url), 'utf8')).join('\n');
 check(

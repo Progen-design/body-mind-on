@@ -1,0 +1,6 @@
+{
+  "name": "Body & Mind ON",
+  "description": "Prémiová aplikace pro sledování tělesné kompozice, výživy, tréninků a návyků s AI Trenérem.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

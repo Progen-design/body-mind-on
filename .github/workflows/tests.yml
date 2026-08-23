@@ -18,3 +18,7 @@ jobs:
       - run: npm ci --legacy-peer-deps
       - run: npm run test:unit
       - run: npm run test:health
+      # Testy SPA vrstvy (src/) driv v CI nebezely vubec.
+      - run: npm run test:src
+      # ESLint driv kontroloval jediny soubor (lib/mail.js).
+      - run: npm run lint:ci

@@ -37,12 +37,12 @@ function read(rel) {
   return readFileSync(resolve(ROOT, rel), 'utf8');
 }
 
-const betaToday = read('components/beta/BetaTodaySection.js');
-const habitTracker = read('components/HabitTracker.js');
-const checkin = read('components/beta/DailyCheckinPanel.js');
-const todayPanels = read('components/profile/ProfileTodayPanels.js');
-const dailyActivation = read('pages/api/daily-activation.js');
-const modal = read('components/workout/WorkoutChangeModal.jsx');
+const betaToday = read('_legacy-next/components/beta/BetaTodaySection.js');
+const habitTracker = read('_legacy-next/components/HabitTracker.js');
+const checkin = read('_legacy-next/components/beta/DailyCheckinPanel.js');
+const todayPanels = read('_legacy-next/components/profile/ProfileTodayPanels.js');
+const dailyActivation = read('api/daily-activation.js');
+const modal = read('_legacy-next/components/workout/WorkoutChangeModal.jsx');
 const setupLib = read('lib/workoutTrainingSetup.js');
 const allowlist = read('lib/productEventAllowlist.js');
 const migration = read('supabase/migrations/20260713200000_workout_replacements.sql');
@@ -127,12 +127,12 @@ check('canRegenerateToday', canRegenerateToday(1) && !canRegenerateToday(2));
 check('workout events in allowlist', allowlist.includes('workout_change_opened'));
 check('migration RLS enabled', migration.includes('ENABLE ROW LEVEL SECURITY'));
 check('migration no public insert', !migration.includes('FOR INSERT TO public'));
-check('replace-today API exists', read('pages/api/workout/replace-today.js').includes('replace-today'));
-check('confirm API exists', read('pages/api/workout/confirm-replacement.js').includes('confirm-replacement'));
-check('restore API exists', read('pages/api/workout/restore-today.js').includes('restore-today'));
-check('restore API no full HTML render', !read('pages/api/workout/restore-today.js').includes('renderPlanHtmlFromStructured'));
-check('restore uses fast lib', read('pages/api/workout/restore-today.js').includes('workoutRestoreToday'));
-check('server ignores body user_id', !read('pages/api/workout/replace-today.js').includes('body.user_id'));
+check('replace-today API exists', read('api/workout/replace-today.js').includes('replace-today'));
+check('confirm API exists', read('api/workout/confirm-replacement.js').includes('confirm-replacement'));
+check('restore API exists', read('api/workout/restore-today.js').includes('restore-today'));
+check('restore API no full HTML render', !read('api/workout/restore-today.js').includes('renderPlanHtmlFromStructured'));
+check('restore uses fast lib', read('api/workout/restore-today.js').includes('workoutRestoreToday'));
+check('server ignores body user_id', !read('api/workout/replace-today.js').includes('body.user_id'));
 
 const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -172,7 +172,7 @@ if (url && key) {
   check('RLS blocks client insert', true, 'skipped');
 }
 
-const replaceTodaySrc = read('pages/api/workout/replace-today.js');
+const replaceTodaySrc = read('api/workout/replace-today.js');
 let unauthOk = false;
 try {
   const unauth = await fetch(`${BASE}/api/workout/replace-today`, {

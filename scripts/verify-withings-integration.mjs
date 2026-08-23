@@ -344,7 +344,7 @@ async function runStaticUnitChecks() {
   check('coach context helper file exists', existsSync(join(ROOT, 'lib/withings/buildWithingsCoachContext.js')));
   check('body snapshots migration exists', existsSync(join(ROOT, 'supabase/migrations/20260701090000_withings_body_snapshots.sql')));
 
-  const widget = readFileSync(join(ROOT, 'components/profile/WithingsBodyDevelopmentSection.js'), 'utf8');
+  const widget = readFileSync(join(ROOT, '_legacy-next/components/profile/WithingsBodyDevelopmentSection.js'), 'utf8');
   check('UI shows trend section', widget.includes('withings-trends'));
   check('UI shows body development section', widget.includes('Tělesný vývoj'));
   check('UI renders null values as dash', widget.includes("return '—'") || widget.includes('return \'—\''));
@@ -399,13 +399,13 @@ async function runProductionChecks() {
 
   console.log('\n--- ÚKOL 4: API endpoints ---');
   const endpointFiles = {
-    connect: 'pages/api/withings/connect.js',
-    callback: 'pages/api/withings/callback.js',
-    sync: 'pages/api/withings/sync.js',
-    latest: 'pages/api/withings/latest.js',
-    history: 'pages/api/withings/history.js',
-    disconnect: 'pages/api/withings/disconnect.js',
-    auth: 'pages/api/withings/auth.js',
+    connect: 'api/withings/connect.js',
+    callback: 'api/withings/callback.js',
+    sync: 'api/withings/sync.js',
+    latest: 'api/withings/latest.js',
+    history: 'api/withings/history.js',
+    disconnect: 'api/withings/disconnect.js',
+    auth: 'api/withings/auth.js',
   };
   const missingEndpoints = [];
   for (const [name, file] of Object.entries(endpointFiles)) {

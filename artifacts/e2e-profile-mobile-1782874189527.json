@@ -1,0 +1,34 @@
+{
+  "production": {
+    "deploymentId": "unknown",
+    "productionCommit": "9559f1d (expected)",
+    "state": "Ready",
+    "hasMacroBarBundle": true,
+    "hasTodayExerciseBundle": false,
+    "commitDeployed": true
+  },
+  "testAccount": {
+    "email": "info+bm-mobile-e2e-1782874189527@bodyandmindon.cz",
+    "registrationStatus": 200,
+    "emailSent": true,
+    "planState": "ready",
+    "plan_id": "a055202e-718c-45a2-89f8-f5b9942c2b2c",
+    "user_id": "a6a56759-e45c-46da-9ca9-665f7ad4f773",
+    "email_sent": true
+  },
+  "mobileE2E": {},
+  "recipe": {},
+  "mealReplacement": {},
+  "includeNextWeek": {},
+  "exerciseModal": {},
+  "accordion": {},
+  "settings": {},
+  "workoutCopy": {},
+  "runtimeLogs": {
+    "errors": [],
+    "apiCalls": []
+  },
+  "tests": {},
+  "verdict": "FAIL",
+  "verdictReason": "page.waitForSelector: Timeout 120000ms exceeded.\nCall log:\n  - waiting for locator('#profile-today-heading, .profile-today-heading, #plan-overview') to be visible\n"
+}

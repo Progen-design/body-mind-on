@@ -23,12 +23,12 @@ function read(relPath) {
 const vipPricePattern = /3\s*999\s*Kč|priceCzk:\s*3999|"3999"/;
 
 const filesToScan = [
-  'pages/index.js',
-  'components/TrialExpiredPaywall.js',
+  '_legacy-next/pages/index.js',
+  '_legacy-next/components/TrialExpiredPaywall.js',
   'lib/pricing.ts',
-  'components/ProgramVariantsSection.js',
-  'pages/register.js',
-  'pages/start.js',
+  '_legacy-next/components/ProgramVariantsSection.js',
+  '_legacy-next/pages/register.js',
+  '_legacy-next/pages/start.js',
 ];
 
 for (const file of filesToScan) {
@@ -40,21 +40,21 @@ const pricing = read('lib/pricing.ts');
 check('pricing VIP label 5 990–6 990', /5\s*990.*6\s*990/.test(pricing));
 check('pricing VIP_PRICE_LABEL export', pricing.includes('VIP_PRICE_LABEL'));
 
-const index = read('pages/index.js');
+const index = read('_legacy-next/pages/index.js');
 check('index ON CLUB CTA → /on-club', index.includes('`${APP_URL}/on-club`'));
 check('index VIP CTA → /chci-vip', index.includes('`${APP_URL}/chci-vip`'));
 check('index nemá start?plan=club', !index.includes('start?plan=club'));
 check('index nemá start?plan=vip', !index.includes('start?plan=vip'));
 
-const register = read('pages/register.js');
+const register = read('_legacy-next/pages/register.js');
 check('register redirect club → /on-club', register.includes("plan === 'club'") && register.includes("router.replace('/on-club')"));
 check('register redirect vip → /chci-vip', register.includes("plan === 'vip'") && register.includes("router.replace('/chci-vip')"));
 
-const start = read('pages/start.js');
+const start = read('_legacy-next/pages/start.js');
 check('start redirect club → /on-club', start.includes("plan === 'club'") && start.includes("router.replace('/on-club')"));
 check('start redirect vip → /chci-vip', start.includes("plan === 'vip'") && start.includes("router.replace('/chci-vip')"));
 
-const variants = read('components/ProgramVariantsSection.js');
+const variants = read('_legacy-next/components/ProgramVariantsSection.js');
 check('ProgramVariants VIP cena', variants.includes('5 990 – 6 990 Kč / měsíc'));
 check('ProgramVariants ON CLUB featured', variants.includes('featured: true'));
 

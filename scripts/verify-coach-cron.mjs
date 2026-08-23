@@ -45,11 +45,11 @@ const crons = Array.isArray(vercelJson.crons) ? vercelJson.crons : [];
 const coachCron = crons.find((c) => c.path === '/api/ai/run-coach-scheduler');
 check('coach cron path /api/ai/run-coach-scheduler', Boolean(coachCron));
 check('coach cron schedule 0 6 * * * (Hobby-safe daily fallback)', coachCron?.schedule === '0 6 * * *');
-const maxDuration = vercelJson.functions?.['pages/api/ai/run-coach-scheduler.js']?.maxDuration;
+const maxDuration = vercelJson.functions?.['api/ai/run-coach-scheduler.js']?.maxDuration;
 check('coach scheduler maxDuration 120s', maxDuration === 120);
 
 // --- Static: endpoint security ---
-const routePath = resolve(process.cwd(), 'pages/api/ai/run-coach-scheduler.js');
+const routePath = resolve(process.cwd(), 'api/ai/run-coach-scheduler.js');
 const routeSrc = existsSync(routePath) ? readFileSync(routePath, 'utf8') : '';
 check('endpoint existuje', routeSrc.length > 0);
 check('endpoint vyžaduje CRON_SECRET', /CRON_SECRET|AI_SCHEDULER_SECRET/.test(routeSrc));
@@ -62,7 +62,7 @@ const schedulerPath = resolve(process.cwd(), 'lib/aiScheduler.js');
 const schedulerSrc = existsSync(schedulerPath) ? readFileSync(schedulerPath, 'utf8') : '';
 check('runAICoachScheduler má task limit cap', schedulerSrc.includes('if (n > 3) n = 3'));
 
-const bodyMetricsPath = resolve(process.cwd(), 'pages/api/body-metrics.js');
+const bodyMetricsPath = resolve(process.cwd(), 'api/body-metrics.js');
 const bodyMetricsSrc = existsSync(bodyMetricsPath) ? readFileSync(bodyMetricsPath, 'utf8') : '';
 check('registrace volá runRegistrationCoachInline', bodyMetricsSrc.includes('runRegistrationCoachInline'));
 check('registrace nevolá runAICoachScheduler', !bodyMetricsSrc.includes('runAICoachScheduler'));

@@ -16,8 +16,8 @@ function fail(msg) { console.log(`FAIL ${msg}`); failed += 1; }
 function ok(msg) { console.log(`OK ${msg}`); }
 
 console.log('--- workout replacement wiring ---');
-const planViewer = fs.readFileSync(path.join(root, 'components/PlanViewer.js'), 'utf8');
-const api = fs.readFileSync(path.join(root, 'pages/api/plan-replace-workout-exercise.js'), 'utf8');
+const planViewer = fs.readFileSync(path.join(root, '_legacy-next/components/PlanViewer.js'), 'utf8');
+const api = fs.readFileSync(path.join(root, 'api/plan-replace-workout-exercise.js'), 'utf8');
 if (!planViewer.includes("'/api/plan-replace-workout-exercise'")) fail('PlanViewer missing plan-replace-workout-exercise API call');
 if (!planViewer.includes('performExerciseSwap')) fail('PlanViewer missing performExerciseSwap');
 if (!planViewer.includes('Nahradit jiným')) fail('PlanViewer missing Nahradit jiným for exercises');

@@ -334,7 +334,7 @@ async function runReview() {
   await browser.close();
 
   // Brand consistency heuristic
-  const profilSrc = readFileSync(join(ROOT, 'pages/profil.js'), 'utf8');
+  const profilSrc = readFileSync(join(ROOT, '_legacy-next/pages/profil.js'), 'utf8');
   check('brand consistency profil gradient', profilSrc.includes('#0EA5E9') && profilSrc.includes('#A78BFA'));
   check('brand consistency email + profil dark bg',
     emailHtml.includes('#0A1018') || emailHtml.includes(BM_ON_DESIGN.colors.bg));

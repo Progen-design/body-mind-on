@@ -11,7 +11,7 @@ import {
   START_VARIANT_PRICE_LABEL,
   ON_CLUB_VARIANT_PRICE_LABEL,
   TRIAL_DAYS,
-} from './pricingConstants';
+} from './pricingConstants.js';
 
 export {
   START_PRICE_CZK,

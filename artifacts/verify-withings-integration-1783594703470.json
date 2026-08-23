@@ -1,0 +1,65 @@
+{
+  "productionDeploy": {
+    "deploymentId": "dpl_7LPjzjT3xtWY2aCzoYPWsSLd1sQ2",
+    "state": "Ready",
+    "productionUrl": "https://app.bodyandmindon.cz",
+    "gitSha": "unknown"
+  },
+  "envConfig": {
+    "WITHINGS_CLIENT_ID_exists": true,
+    "WITHINGS_CLIENT_SECRET_exists": true,
+    "WITHINGS_REDIRECT_URI_exists": true,
+    "WITHINGS_API_URL_exists": true,
+    "WITHINGS_SCOPES_exists": true,
+    "WITHINGS_TOKEN_ENCRYPTION_KEY_exists": true,
+    "configured": true,
+    "missing": [],
+    "redirectUri": "https://app.bodyandmindon.cz/api/withings/callback",
+    "apiUrl": "https://wbsapi.withings.net",
+    "scopes": "user.info,user.metrics,user.activity"
+  },
+  "callback": {
+    "redirectUri": "https://app.bodyandmindon.cz/api/withings/callback",
+    "matchesProductionCallback": true,
+    "localhostUsed": false,
+    "previewUrlUsed": false,
+    "trailingSlash": false
+  },
+  "apiEndpoints": {
+    "connect": "exists",
+    "callback": "exists",
+    "sync": "exists",
+    "latest": "exists",
+    "history": "exists",
+    "disconnect": "exists",
+    "auth": "exists",
+    "missingEndpoints": []
+  },
+  "uiState": {
+    "sectionVisible": true,
+    "notConnectedShown": true,
+    "connectCtaShown": false,
+    "technicalOAuthErrorShown": false,
+    "zeroKgWithoutData": false,
+    "notConfiguredShown": false
+  },
+  "connectTest": {
+    "responseStatus": 200,
+    "authorizeUrlGenerated": true,
+    "containsState": true,
+    "containsCorrectRedirectUri": true,
+    "containsScopeUserMetrics": true,
+    "containsResponseTypeCode": true,
+    "containsClientId": true,
+    "secretsExposed": false,
+    "redirectUriFromApi": "https://app.bodyandmindon.cz/api/withings/callback"
+  },
+  "verdict": "READY",
+  "verdictReason": "connect alias, history endpoint, auth/sync/callback OK, no token leaks",
+  "historyTest": {
+    "statusWithAuth": 200,
+    "hasMeasurementsArray": true,
+    "aggregatedShape": true,
+    "secretsExposed": false
+  }
+}

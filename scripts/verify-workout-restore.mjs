@@ -25,9 +25,9 @@ function read(rel) {
   return readFileSync(join(ROOT, rel), 'utf8');
 }
 
-const restoreApi = read('pages/api/workout/restore-today.js');
+const restoreApi = read('api/workout/restore-today.js');
 const restoreLib = read('lib/workoutRestoreToday.js');
-const todayPanels = read('components/profile/ProfileTodayPanels.js');
+const todayPanels = read('_legacy-next/components/profile/ProfileTodayPanels.js');
 
 check('restore API uses workoutRestoreToday lib', restoreApi.includes('workoutRestoreToday'));
 check('restore API no renderPlanHtmlFromStructured', !restoreApi.includes('renderPlanHtmlFromStructured'));

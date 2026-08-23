@@ -137,10 +137,10 @@ async function registerIfNeeded(supabase, baseUrl) {
 
 console.log('--- Static UI visual checks ---');
 const designTokens = read('lib/designTokens.js');
-const planViewer = read('components/PlanViewer.js');
-const profil = read('pages/profil.js');
-const withings = read('components/profile/WithingsBodyDevelopmentSection.js');
-const globals = read('styles/globals.css');
+const planViewer = read('_legacy-next/components/PlanViewer.js');
+const profil = read('_legacy-next/pages/profil.js');
+const withings = read('_legacy-next/components/profile/WithingsBodyDevelopmentSection.js');
+const globals = read('_legacy-next/styles/globals.css');
 const pkg = read('package.json');
 
 check('designTokens BM_ON_DESIGN', designTokens.includes('BM_ON_DESIGN'));

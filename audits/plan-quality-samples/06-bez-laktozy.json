@@ -1,0 +1,288 @@
+{
+  "profile_id": "06-bez-laktozy",
+  "profile_label": "Bez laktózy",
+  "input_summary": {
+    "goal": "redukce",
+    "training_environment": "gym",
+    "diet_type": "standard",
+    "freq_choice": "3-4",
+    "has_health_notes": false
+  },
+  "plan_summary": {
+    "targets": {
+      "calories_per_day": 1520,
+      "protein_g": 117,
+      "carbs_g": 157,
+      "fat_g": 47
+    },
+    "days": [
+      {
+        "day": "Pondělí",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Ovesná kaše s banánem a vejci",
+            "kcal": 456,
+            "source": "meal_cache"
+          },
+          {
+            "type": "lunch",
+            "name": "Hovězí maso s quinoou",
+            "kcal": 608,
+            "source": "meal_cache"
+          },
+          {
+            "type": "dinner",
+            "name": "Losos s pečenou zeleninou",
+            "kcal": 456,
+            "source": "spoonacular"
+          }
+        ],
+        "workout_minutes": 60,
+        "exercises": [
+          {
+            "name": "Tlaky nohama",
+            "sets": 4,
+            "reps": "12",
+            "canonical_key": "leg_press"
+          },
+          {
+            "name": "Bench press",
+            "sets": 4,
+            "reps": "10",
+            "canonical_key": "bench_press"
+          },
+          {
+            "name": "Přítahy v předklonu",
+            "sets": 4,
+            "reps": "10",
+            "canonical_key": "bent_over_row"
+          },
+          {
+            "name": "Rumunský mrtvý tah",
+            "sets": 4,
+            "reps": "10",
+            "canonical_key": "romanian_deadlift"
+          },
+          {
+            "name": "Tlaky nad hlavu",
+            "sets": 4,
+            "reps": "10",
+            "canonical_key": "overhead_press"
+          }
+        ]
+      },
+      {
+        "day": "Úterý",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Ovesná kaše PB a J přes noc",
+            "kcal": 456,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Hovězí guláš",
+            "kcal": 608,
+            "source": "meal_cache"
+          },
+          {
+            "type": "dinner",
+            "name": "Italské těstoviny s tuňákem",
+            "kcal": 456,
+            "source": "spoonacular"
+          }
+        ],
+        "exercises": []
+      },
+      {
+        "day": "Středa",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Ovesná kaše s skořicovými šneky",
+            "kcal": 456,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Jarní salát s vlašským ořechovým vinaigretterem",
+            "kcal": 608,
+            "source": "spoonacular"
+          },
+          {
+            "type": "dinner",
+            "name": "Omeleta se zeleninou",
+            "kcal": 480,
+            "source": "simple_start_library"
+          }
+        ],
+        "workout_minutes": 60,
+        "exercises": [
+          {
+            "name": "Chest press",
+            "sets": 3,
+            "reps": "10",
+            "canonical_key": "chest_press"
+          },
+          {
+            "name": "Stahování na kladce",
+            "sets": 3,
+            "reps": "10",
+            "canonical_key": "lat_pulldown"
+          },
+          {
+            "name": "Dead bug",
+            "sets": 3,
+            "reps": "12",
+            "canonical_key": "dead_bug"
+          },
+          {
+            "name": "Tricepsové tlaky",
+            "sets": 4,
+            "reps": "12",
+            "canonical_key": "tricep_extension"
+          },
+          {
+            "name": "Bicepsový zdvih",
+            "sets": 4,
+            "reps": "12",
+            "canonical_key": "bicep_curl"
+          }
+        ]
+      },
+      {
+        "day": "Čtvrtek",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Zdravá jihozápadní ovesná kaše",
+            "kcal": 456,
+            "source": "spoonacular"
+          },
+          {
+            "type": "lunch",
+            "name": "Těstoviny s tuňákem",
+            "kcal": 600,
+            "source": "simple_start_library"
+          },
+          {
+            "type": "dinner",
+            "name": "Krabí salát plněné pita kapsy",
+            "kcal": 456,
+            "source": "spoonacular"
+          }
+        ],
+        "exercises": []
+      },
+      {
+        "day": "Pátek",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Proteinové smoothie s toastem",
+            "kcal": 456,
+            "source": "meal_cache"
+          },
+          {
+            "type": "lunch",
+            "name": "Kuře s rýží a zeleninou",
+            "kcal": 620,
+            "source": "simple_start_library"
+          },
+          {
+            "type": "dinner",
+            "name": "Kuře se zeleninou",
+            "kcal": 500,
+            "source": "simple_start_fallback"
+          }
+        ],
+        "workout_minutes": 60,
+        "exercises": [
+          {
+            "name": "Zakopávání vleže",
+            "sets": 3,
+            "reps": "12",
+            "canonical_key": "hamstring_curl"
+          },
+          {
+            "name": "Prkno",
+            "sets": 3,
+            "reps": null,
+            "canonical_key": "plank"
+          },
+          {
+            "name": "Farmer carry",
+            "sets": 3,
+            "reps": null,
+            "canonical_key": "farmer_carry"
+          },
+          {
+            "name": "Rozpažky",
+            "sets": 4,
+            "reps": "12",
+            "canonical_key": "lateral_raise"
+          },
+          {
+            "name": "Goblet dřep",
+            "sets": 3,
+            "reps": "12",
+            "canonical_key": "goblet_squat"
+          }
+        ]
+      },
+      {
+        "day": "Sobota",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Vejce s pečivem a zeleninou",
+            "kcal": 450,
+            "source": "simple_start_library"
+          },
+          {
+            "type": "lunch",
+            "name": "Grilovaný losos s třešňovou, ananasovou a man…",
+            "kcal": 608,
+            "source": "spoonacular"
+          },
+          {
+            "type": "dinner",
+            "name": "Lososový quinoa risotto",
+            "kcal": 456,
+            "source": "spoonacular"
+          }
+        ],
+        "exercises": []
+      },
+      {
+        "day": "Neděle",
+        "meals": [
+          {
+            "type": "breakfast",
+            "name": "Šunka, pečivo a zelenina",
+            "kcal": 400,
+            "source": "simple_start_library"
+          },
+          {
+            "type": "lunch",
+            "name": "Kuřecí maso s rýží",
+            "kcal": 608,
+            "source": "meal_cache"
+          },
+          {
+            "type": "dinner",
+            "name": "Brambory s vejcem",
+            "kcal": 500,
+            "source": "simple_start_library"
+          }
+        ],
+        "exercises": []
+      }
+    ]
+  },
+  "technical_hints": [
+    "Žádné automatické varování z heuristik."
+  ]
+}

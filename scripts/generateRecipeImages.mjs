@@ -309,7 +309,7 @@ function printSpoonacularRuntimeAudit() {
   console.log('\n=== AUDIT: živá Spoonacular volání za běhu appky ===');
   console.log('(Seed/enrichment skripty vynechány. SPOONACULAR_MODE default=off.)');
   console.log(`
-1) pages/api/spoonacular-recipe.js
+1) api/spoonacular-recipe.js
    GET /api/spoonacular-recipe?id={numeric}
    → fetch api.spoonacular.com/recipes/{id}/information
    Volá se z: PlanViewer (tlačítko Recept), e-maily (odkaz na detail)
@@ -317,12 +317,12 @@ function printSpoonacularRuntimeAudit() {
    ⚠️ Při zrušení subscription: modal Recept + e-mailové odkazy na detail selžou,
       pokud neimplementujeme fallback z recipes_catalog (ingredients/instructions).
 
-2) pages/api/onboarding/replace-meal.js
+2) api/onboarding/replace-meal.js
    getMealData → complexSearch (lib/mealEnrichment.js)
    Stav: SPOONACULAR_REPLACE_MEAL_LIVE=false → API nevolá Spoonacular, vrací neověřené jídlo
    ⚠️ Zapnutí flagu by znovu spotřebovalo kvótu.
 
-3) pages/api/verify-media-apis.js
+3) api/verify-media-apis.js
    Diagnostika: recipes/{id}/information (+ volitelně complexSearch ?deep=1)
    Brána: přeskočeno když MODE≠live
    ⚠️ Admin smoke test, ne user flow.
@@ -350,7 +350,7 @@ function printSpoonacularRuntimeAudit() {
    Odkazy /api/spoonacular-recipe?id=… v HTML plánu
    ⚠️ Stejné riziko jako bod 1.
 
-9) pages/api/body-metrics.js (registrace)
+9) api/body-metrics.js (registrace)
    createInitialAITasks({ spoonacularRegistrationOnly: true })
    Plán jde přes katalog; payload flag je legacy (MODE=off ignoruje live Spoonacular).
 

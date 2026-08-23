@@ -92,8 +92,8 @@ async function ensureLocalServer() {
 }
 
 console.log('--- Static layout checks ---');
-const profil = read('pages/profil.js');
-const planViewer = read('components/PlanViewer.js');
+const profil = read('_legacy-next/pages/profil.js');
+const planViewer = read('_legacy-next/components/PlanViewer.js');
 const packageJson = read('package.json');
 
 const programVariantsIdx = profil.indexOf('<ProgramVariantsSection');

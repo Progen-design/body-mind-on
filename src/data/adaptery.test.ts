@@ -322,7 +322,7 @@ test('surovina bez množství nemá v množství svoje jméno', async () => {
   assert.equal(polozka.amount, '');
 });
 
-test('nesečitatelné jednotky se vypíšou vedle sebe, ale jen jednou', async () => {
+test('nesečitatelné jednotky se vypíšou vedle sebe, každá jednou', async () => {
   const { naNakupniSeznam } = await import('./adaptery.ts');
 
   const plan = {
@@ -334,5 +334,40 @@ test('nesečitatelné jednotky se vypíšou vedle sebe, ale jen jednou', async (
   };
 
   const [polozka] = naNakupniSeznam(plan);
-  assert.equal(polozka.amount, '150 g + 2 ks');
+  // Gramy s kusy secist nejde, ale kusy mezi sebou ano.
+  assert.equal(polozka.amount, '150 g + 4 kusy');
+});
+
+test('různé tvary téže jednotky se sečtou do jednoho čísla', async () => {
+  const { naNakupniSeznam } = await import('./adaptery.ts');
+
+  // Zmereno na produkci 23. 8.: „5 plátků + 2 plátky + 2 ks + 1 plátek"
+  // u celozrnneho chleba. Je to jedna a ta sama jednotka, jen sklonovana.
+  const plan = {
+    structured_plan_json: {
+      days: [{ date: DNES, meals: [{
+        shopping_ingredient_lines: [
+          '5 plátků celozrnný chléb', '2 plátky celozrnný chléb', '1 plátek celozrnný chléb'
+        ]
+      }] }]
+    }
+  };
+
+  const [polozka] = naNakupniSeznam(plan);
+  assert.equal(polozka.amount, '8 plátků');
+});
+
+test('lžíce a lžička zůstávají oddělené — je to jiná jednotka', async () => {
+  const { naNakupniSeznam } = await import('./adaptery.ts');
+
+  const plan = {
+    structured_plan_json: {
+      days: [{ date: DNES, meals: [{
+        shopping_ingredient_lines: ['1 lžíce olivový olej', '1 lžička olivový olej']
+      }] }]
+    }
+  };
+
+  const [polozka] = naNakupniSeznam(plan);
+  assert.equal(polozka.amount, '1 lžíce + 1 lžička');
 });

@@ -13,6 +13,9 @@ import { klicCviku, KLIC_CELEHO_TRENINKU } from '../../lib/profile/cvikDokonceni
 import { calendarDateIsoInPrague } from '../../lib/czechCalendar.js';
 // Stejny filtr pouzitelnych kroku, jaky pouziva server pri doplnovani postupu.
 import { pouzitelneKroky } from '../../lib/profile/postupReceptu.js';
+// Jednotky normalizuje a sklonuje tentyz modul, ktery radky suroviny sklada.
+// Bez toho se „5 plátků", „2 plátky" a „1 plátek" nesectou.
+import { normalizujJednotku, tvarJednotky } from '../../lib/profile/surovinaRadek.js';
 // Prostredi treninku je zakodovane v body_metrics.notes; cist ho musi tentyz
 // parser, ktery ho tam zapisuje.
 import {
@@ -604,9 +607,11 @@ export function naNakupniSeznam(plan: any): ShoppingItem[] {
   const dny = strukturaPlanu(plan)?.days;
   if (!Array.isArray(dny)) return [];
 
+  // Klíč je název + KANONICKÁ jednotka, ne její zapsaný tvar. „5 plátků",
+  // „2 plátky" a „1 plátek" je totéž a musí se sečíst; „g" a „lžíce" ne.
   const soucet = new Map<
     string,
-    { nazev: string; mnozstvi: number; jednotka: string; volny: Set<string> }
+    { nazev: string; mnozstvi: Map<string, number>; bezMnozstvi: boolean }
   >();
 
   for (const den of dny) {
@@ -617,18 +622,17 @@ export function naNakupniSeznam(plan: any): ShoppingItem[] {
 
         const klic = rozbor.nazev.toLowerCase();
         const zaznam = soucet.get(klic)
-          || { nazev: rozbor.nazev, mnozstvi: 0, jednotka: '', volny: new Set<string>() };
+          || { nazev: rozbor.nazev, mnozstvi: new Map<string, number>(), bezMnozstvi: false };
 
-        if (rozbor.mnozstvi !== null && (!zaznam.jednotka || zaznam.jednotka === rozbor.jednotka)) {
-          zaznam.jednotka = rozbor.jednotka;
-          zaznam.mnozstvi += rozbor.mnozstvi;
-        } else if (rozbor.mnozstvi !== null) {
-          // Stejná surovina ve dvou různých jednotkách (150 g a 2 lžíce).
-          // Sečíst to nejde, tak se to vypíše vedle sebe — ale jen jednou.
-          zaznam.volny.add(`${formatujMnozstvi(rozbor.mnozstvi)} ${rozbor.jednotka}`.trim());
+        if (rozbor.mnozstvi === null) {
+          // Řádek bez množství se nikam nesčítá a hlavně se nevypisuje jako
+          // množství — dřív tu svítilo „mandle, mandle, mandle".
+          zaznam.bezMnozstvi = true;
+        } else {
+          const { typ, klic: jednotka } = normalizujJednotku(rozbor.jednotka);
+          const kanon = typ === 'zadna' ? 'ks' : jednotka;
+          zaznam.mnozstvi.set(kanon, (zaznam.mnozstvi.get(kanon) ?? 0) + rozbor.mnozstvi);
         }
-        // Řádek bez množství do `volny` nepatří: dřív se tam ukládal celý text
-        // a ve sloupci pro množství pak svítilo „mandle, mandle, mandle".
 
         soucet.set(klic, zaznam);
       }
@@ -638,7 +642,7 @@ export function naNakupniSeznam(plan: any): ShoppingItem[] {
   return Array.from(soucet.values()).map((z, i) => ({
     id: `nakup-${i}`,
     name: z.nazev,
-    amount: mnozstviDoTextu(z),
+    amount: mnozstviDoTextu(z.mnozstvi),
     category: kategorieSuroviny(z.nazev),
     checked: false
   }));
@@ -652,10 +656,20 @@ function formatujMnozstvi(n: number): string {
     : zaokrouhlene.toFixed(1).replace('.', ',');
 }
 
-function mnozstviDoTextu(z: { mnozstvi: number; jednotka: string; volny: Set<string> }): string {
+/**
+ * Součty do textu. Jedna jednotka = jedno číslo, víc jednotek se spojí
+ * plusem — sečíst gramy s lžícemi nejde a odhadovat převod by znamenalo
+ * vymyslet si číslo.
+ */
+function mnozstviDoTextu(mnozstvi: Map<string, number>): string {
   const casti: string[] = [];
-  if (z.mnozstvi > 0) casti.push(`${formatujMnozstvi(z.mnozstvi)} ${z.jednotka}`.trim());
-  casti.push(...z.volny);
+  for (const [jednotka, hodnota] of mnozstvi) {
+    if (!(hodnota > 0)) continue;
+    const cislo = formatujMnozstvi(hodnota);
+    const zaokrouhlene = Math.round(hodnota * 10) / 10;
+    const slovo = tvarJednotky(jednotka, zaokrouhlene);
+    casti.push(slovo ? `${cislo} ${slovo}` : `${cislo} ${jednotka}`);
+  }
   // Prázdný řetězec, ne název suroviny. Množství, které neznáme, se nevypisuje.
   return casti.join(' + ');
 }

@@ -23,6 +23,7 @@ import {
   parseTrainingEnvironment,
   parseTrainingEnvironmentDetail
 } from '../../lib/trainingEnvironment.js';
+import { naradiTreninku, svalCesky, zamereniTreninku } from '../../lib/profile/treninkPopis.js';
 import type {
   BadHabitItem, CoachTip, ExerciseItem, HabitItem, MealItem, RecipeDetail, ShoppingItem,
   TelesneSlozeni, UserPreferences, UserProfile, WeightRecord, WorkoutDay
@@ -78,14 +79,69 @@ const NAZVY_PROGRAMU: Record<string, string> = {
   VIP: 'VIP'
 };
 
-/** Aktivni plan = ten, ktery pokryva dnesek; jinak nejnovejsi. */
+/**
+ * PLÁN, KTERÝ PLATÍ DNES — NE TEN, KTERÝ TEPRVE ZAČNE.
+ *
+ * Chyba, kterou to opravuje: podmínka se ptala jen na `valid_until >= dnes`
+ * a na `valid_from` se neptala vůbec. Plán vygenerovaný dopředu na příští
+ * týden tím prošel jako „aktivní", protože jeho konec je v budoucnu.
+ *
+ * Změřeno na produkci 23. 8. 2026 (neděle): jako aktivní byl označený plán
+ * s platností 27. 8. – 2. 9., zatímco plán na probíhající týden
+ * (20. – 26. 8.) měl `is_active = false`. Uživateli se proto v neděli
+ * ukazoval „nejbližší trénink (pátek)" z týdne, který ještě nezačal.
+ *
+ * `is_active` z databáze se bere jen jako slabá nápověda při shodě —
+ * rozhoduje datum, protože právě to se rozešlo se skutečností.
+ *
+ * Pořadí voleb:
+ *   1. plán, jehož rozsah pokrývá dnešek,
+ *   2. nejčerstvější už skončený (uživatel aspoň vidí, co dělal),
+ *   3. nejbližší budoucí (nový uživatel čekající na první plán).
+ */
 export function vyberPlan(plans: any[] = []): any | null {
   if (!Array.isArray(plans) || plans.length === 0) return null;
   const dnes = new Date().toISOString().slice(0, 10);
-  const aktivni = plans.find(
-    (p) => p?.is_active && (!p.valid_until || String(p.valid_until) >= dnes)
-  );
-  return aktivni || plans[0] || null;
+
+  const zacatek = (p: any) => String(p?.valid_from || '');
+  const konec = (p: any) => String(p?.valid_until || '');
+
+  const pokryvaDnesek = plans.filter((p) => {
+    const od = zacatek(p);
+    const do_ = konec(p);
+    return (!od || od <= dnes) && (!do_ || do_ >= dnes);
+  });
+  if (pokryvaDnesek.length) {
+    // Při víc překryvech vyhrává ten, který server označil za aktivní,
+    // jinak ten s pozdějším začátkem.
+    return pokryvaDnesek.find((p) => p?.is_active)
+      || [...pokryvaDnesek].sort((a, b) => zacatek(b).localeCompare(zacatek(a)))[0];
+  }
+
+  const skoncene = plans
+    .filter((p) => konec(p) && konec(p) < dnes)
+    .sort((a, b) => konec(b).localeCompare(konec(a)));
+  if (skoncene.length) return skoncene[0];
+
+  const budouci = plans
+    .filter((p) => zacatek(p) && zacatek(p) > dnes)
+    .sort((a, b) => zacatek(a).localeCompare(zacatek(b)));
+  return budouci[0] || plans[0] || null;
+}
+
+/**
+ * Platí vybraný plán dnes, nebo je z jiného období?
+ *
+ * UI to potřebuje, aby nevydávalo trénink z příštího týdne za dnešní.
+ */
+export function platnostPlanu(plan: any): 'aktualni' | 'budouci' | 'skoncil' | 'neznama' {
+  const od = String(plan?.valid_from || '');
+  const do_ = String(plan?.valid_until || '');
+  if (!od && !do_) return 'neznama';
+  const dnes = new Date().toISOString().slice(0, 10);
+  if (od && od > dnes) return 'budouci';
+  if (do_ && do_ < dnes) return 'skoncil';
+  return 'aktualni';
 }
 
 function strukturaPlanu(plan: any): any | null {
@@ -232,7 +288,10 @@ export function naTreninky(plan: any): WorkoutDay[] {
         sets: cislo(e?.sets),
         reps: String(e?.reps ?? ''),
         restSec: 0,
-        targetMuscle: '',
+        // Svalovou skupinu doplňuje /api/profile z `exercise_asset_registry`
+        // (viz lib/profile/svalyDoPlanu.js). Dřív tu byl prázdný řetězec,
+        // takže UI nemělo u cviku co zobrazit.
+        targetMuscle: svalCesky(e?.primary_muscle) ?? '',
         completed: false,
         planId,
         planDay,
@@ -251,7 +310,14 @@ export function naTreninky(plan: any): WorkoutDay[] {
         caloriesBurned: 0,
         isToday: String(d?.date) === dnes,
         isCompleted: false,
-        focus: w?.start_program_variant ? `Varianta ${w.start_program_variant}` : '',
+        // ZAMĚŘENÍ SE SKLÁDÁ ZE CVIKŮ, NEOPISUJE NÁZEV.
+        // Dřív tu bylo `Varianta ${start_program_variant}`, takže pod
+        // nadpisem „Trénink B" stálo „Fokus: Varianta B" — tatáž informace
+        // podruhé. Teď se vypíšou svalové skupiny, které ten den přijdou
+        // na řadu, a když pokrývají horní i dolní půlku, řekne se rovnou,
+        // že je to celotělový trénink.
+        focus: zamereniTreninku(w.exercises) ?? '',
+        naradi: naradiTreninku(w.exercises),
         exercises: cviky
       } as WorkoutDay;
     });

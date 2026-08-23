@@ -230,7 +230,10 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
         </div>
       </motion.div>
 
-      {/* 2. Key Physical Parameters Bento Grid */}
+      {/* 2. Key Physical Parameters Bento Grid.
+          U KAŽDÉ HODNOTY JE VIDĚT, KDY VZNIKLA. Bez data se čtvrt roku
+          stará váha tváří stejně jako ranní vážení — a člověk podle ní
+          rozhoduje. Datum měření chodí z `withings_body_snapshots`. */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Váha */}
         <div className="p-4 sm:p-5 rounded-2xl bg-[#0e131d]/90 border border-cyan-500/25 shadow-lg">
@@ -241,6 +244,11 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           <div className="text-2xl sm:text-3xl font-extrabold text-white">
             {hodnotaNeboPomlcka(latestWeightRecord?.weight, 'kg')}
           </div>
+          {slozeni && (
+            <div className="text-[11px] text-slate-500 mt-1">
+              Zváženo {kdyMereno(slozeni.measured_at)}
+            </div>
+          )}
         </div>
 
         {/* Tuk — jen kdyz ho chytra vaha zmerila */}
@@ -258,6 +266,9 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                 {zmenaText(slozeni.zmena.fat_percent, '%')} od minula
               </div>
             )}
+            <div className="text-[11px] text-slate-500 mt-1">
+              Změřeno {kdyMereno(slozeni.measured_at)}
+            </div>
           </div>
         )}
 
@@ -276,6 +287,9 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                 {zmenaText(slozeni.zmena.muscle_mass_kg, 'kg')} od minula
               </div>
             )}
+            <div className="text-[11px] text-slate-500 mt-1">
+              Změřeno {kdyMereno(slozeni.measured_at)}
+            </div>
           </div>
         )}
 
@@ -458,7 +472,12 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-white">Nastavené denní cíle &amp; Makroživiny</h3>
-              <p className="text-xs text-slate-400">Hodnoty, ze kterých se počítá tvůj jídelníček</p>
+              {/* Odkud se hodnoty berou. „Makroživiny" samo o sobě nikomu
+                  neřekne, že jde o rozdělení denních kalorií mezi bílkoviny,
+                  sacharidy a tuky, ani že podle toho vzniká jídelníček. */}
+              <p className="text-xs text-slate-400">
+                Denní příjem rozdělený mezi bílkoviny, sacharidy a tuky — podle toho se skládá tvůj jídelníček
+              </p>
             </div>
           </div>
           <button

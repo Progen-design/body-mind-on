@@ -74,7 +74,13 @@ export interface WorkoutDay extends AktivitaPlanu {
   caloriesBurned: number;
   isToday: boolean;
   isCompleted: boolean;
+  /**
+   * Co trénink zabírá — složeno ze svalových skupin skutečných cviků.
+   * Dřív tu stálo „Varianta B", tedy název tréninku opsaný jinými slovy.
+   */
   focus: string;
+  /** Nářadí, které si má člověk připravit. Prázdné = neznáme. */
+  naradi?: string[];
   exercises: ExerciseItem[];
 }
 

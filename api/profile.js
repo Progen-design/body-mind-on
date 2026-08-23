@@ -22,6 +22,11 @@ import {
   pridejNakupniRadkyDoPlanu,
   SLOUPCE_KATALOGU_PRO_SUROVINY,
 } from '../lib/profile/nakupniRadkyDoPlanu.js';
+import {
+  kliceCviku,
+  doplnSvalyDoPlanu,
+  SLOUPCE_REGISTRU_PRO_SVALY,
+} from '../lib/profile/svalyDoPlanu.js';
 
 function toDateKey(value) {
   if (!value) return '';
@@ -250,6 +255,25 @@ export default async function handler(req, res) {
         // generovala, vcetne nepreloxenych anglickych nazvu a rozseknutych
         // zlomku („1 /"). Viz lib/profile/nakupniRadkyDoPlanu.js.
         pridejNakupniRadkyDoPlanu(plansData, suroviny);
+      }
+    }
+
+    // Svalové skupiny a nářadí do cviků. Plán nese `canonical_key`, ale nic
+    // o tom, co ten cvik zabírá — UI proto ukazovalo „Trénink B" a pod tím
+    // „Fokus: Varianta B", tedy název opsaný jinými slovy. Registr cviků to
+    // ví; doplňuje se při čtení, aby popis dostaly i starší plány.
+    // Selhání dotazu plán nezabije: cviky zůstanou bez popisu.
+    const kliceCvikuVPlanu = kliceCviku(plansData);
+    if (kliceCvikuVPlanu.length > 0) {
+      const { data: radkyRegistru, error: chybaRegistru } = await supabaseServer
+        .from('exercise_asset_registry')
+        .select(SLOUPCE_REGISTRU_PRO_SVALY)
+        .in('canonical_key', kliceCvikuVPlanu);
+
+      if (chybaRegistru) {
+        console.error('[api/profile] svaly cviku:', chybaRegistru.message);
+      } else {
+        plansData = doplnSvalyDoPlanu(plansData, radkyRegistru ?? []);
       }
     }
 

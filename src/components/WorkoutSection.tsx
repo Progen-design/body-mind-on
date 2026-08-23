@@ -15,6 +15,7 @@ import {
 import { motion } from 'motion/react';
 import { WorkoutDay } from '../types';
 import { dnesniTrenink, jeNaplanovany, vybranyTrenink } from '../lib/trenink';
+import { serieOpakovaniSlovy } from '../../lib/profile/treninkPopis.js';
 import { Vysvetlivka } from './Vysvetlivka';
 import { NadpisSekce } from './NadpisSekce';
 
@@ -41,6 +42,32 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
 
   const totalWeeklyCalories = workouts.reduce((acc, w) => acc + (w.isCompleted ? w.caloriesBurned : 0), 0);
   const totalCompletedWorkouts = workouts.filter(w => w.isCompleted).length;
+
+  /**
+   * Věta o tom, proč jsou v týdnu různé tréninky a co která jmenovka znamená.
+   *
+   * „Trénink A" a „Trénink B" nikomu nic neřeknou — je to jen označení
+   * v plánu. Vysvětlení se proto skládá z toho, co ty jednotky doopravdy
+   * obsahují: název, kolikrát v týdnu je, a jaké svalové skupiny zabírá.
+   */
+  const vysvetleniStridani = React.useMemo(() => {
+    const podleNazvu = new Map<string, { pocet: number; zamereni: string }>();
+    for (const w of workouts) {
+      const nazev = String(w.title || '').trim();
+      if (!nazev) continue;
+      const zaznam = podleNazvu.get(nazev);
+      if (zaznam) zaznam.pocet += 1;
+      else podleNazvu.set(nazev, { pocet: 1, zamereni: String(w.focus || '') });
+    }
+    if (podleNazvu.size < 2) return null;
+
+    const casti = [...podleNazvu].map(([nazev, { pocet, zamereni }]) => {
+      const kolikrat = pocet === 1 ? '1× týdně' : `${pocet}× týdně`;
+      return zamereni ? `${nazev} (${kolikrat}) — ${zamereni}` : `${nazev} — ${kolikrat}`;
+    });
+
+    return `V týdnu se střídají ${podleNazvu.size} různé jednotky, aby každá partie dostala víc typů zátěže a mezi stejnými cviky byl odstup na zotavení. ${casti.join('. ')}.`;
+  }, [workouts]);
 
   return (
     <div className="space-y-6">
@@ -81,9 +108,21 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
             )}
           </h3>
 
+          {/* ZAMĚŘENÍ MÍSTO „FOKUS: VARIANTA B".
+              Pod nadpisem „Trénink B" stálo „Fokus: Varianta B" — tentýž
+              údaj podruhé. Teď se vypíšou svalové skupiny složené ze cviků
+              toho dne (viz lib/profile/treninkPopis.js). */}
           {todayWorkout.focus && (
             <p className="text-xs sm:text-sm text-slate-300">
-              Fokus: <strong className="text-slate-100">{todayWorkout.focus}</strong>
+              Zaměření: <strong className="text-slate-100">{todayWorkout.focus}</strong>
+            </p>
+          )}
+
+          {/* Co si připravit. Bez toho člověk zjistí až u stroje, že cvik
+              potřebuje velkou činku, kterou doma nemá. */}
+          {todayWorkout.naradi && todayWorkout.naradi.length > 0 && (
+            <p className="text-xs text-slate-400">
+              Nářadí: <span className="text-slate-300">{todayWorkout.naradi.join(', ')}</span>
             </p>
           )}
         </div>
@@ -155,6 +194,16 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
             );
           })}
         </div>
+
+        {/* PROČ SE TRÉNINKY STŘÍDAJÍ.
+            „Trénink A" a „Trénink B" jsou jen jmenovky a nikomu nic neřeknou.
+            Věta se skládá ze skutečných jednotek v plánu, takže sedí i tehdy,
+            když jich je jiný počet nebo se jmenují jinak. */}
+        {vysvetleniStridani && (
+          <p className="text-xs text-slate-400 leading-relaxed bg-slate-900/50 border border-slate-800 rounded-2xl p-3.5">
+            {vysvetleniStridani}
+          </p>
+        )}
       </div>
 
       {/* Selected Day Exercise Matrix */}
@@ -210,11 +259,16 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
                   <h5 className={`text-sm font-bold ${ex.completed ? 'text-emerald-300 line-through' : 'text-slate-100'}`}>
                     {i + 1}. {ex.name}
                   </h5>
+                  {/* ZÁPIS ROZEPSANÝ SLOVY.
+                      „3 × 8–10" je jasné tomu, kdo posilovnu zná. Kdo v ní
+                      stojí poprvé, potřebuje větu. Svalovou skupinu doplňuje
+                      /api/profile z registru cviků; když u cviku chybí,
+                      nekreslí se — radši nic než vymyšlený sval. */}
                   <p className="text-xs text-slate-400">
-                    {/* Generátor nevrací cílový sval ani pauzu — radši nic než vymyšlené číslo. */}
-                    {ex.targetMuscle && <>Cíl: {ex.targetMuscle}</>}
-                    {ex.targetMuscle && ex.restSec > 0 && ' • '}
-                    {ex.restSec > 0 && <>Pauza: {ex.restSec} s</>}
+                    {serieOpakovaniSlovy(ex.sets, ex.reps) || null}
+                    {serieOpakovaniSlovy(ex.sets, ex.reps) && ex.targetMuscle && ' • '}
+                    {ex.targetMuscle && <>zabírá {ex.targetMuscle}</>}
+                    {ex.restSec > 0 && <> • pauza {ex.restSec} s</>}
                   </p>
                 </div>
               </div>

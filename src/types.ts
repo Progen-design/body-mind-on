@@ -63,6 +63,11 @@ export interface ExerciseItem extends AktivitaPlanu {
   weightKg?: number;
   restSec: number;
   targetMuscle: string;
+  /**
+   * Animace nebo obrázek provedení cviku. Plán ji nese jako `gif_url`
+   * z ExerciseDB; když u cviku chybí, náhled se nekreslí.
+   */
+  ukazkaUrl?: string;
   completed?: boolean;
 }
 

@@ -292,6 +292,10 @@ export function naTreninky(plan: any): WorkoutDay[] {
         // (viz lib/profile/svalyDoPlanu.js). Dřív tu byl prázdný řetězec,
         // takže UI nemělo u cviku co zobrazit.
         targetMuscle: svalCesky(e?.primary_muscle) ?? '',
+        // UKÁZKA PROVEDENÍ. Plán ji nese u každého cviku jako `gif_url`
+        // z ExerciseDB, ale UI ji nikde nezobrazovalo — člověk viděl jen
+        // název a musel si domýšlet, jak se cvik dělá.
+        ukazkaUrl: String(e?.gif_url || e?.image_url || '') || undefined,
         completed: false,
         planId,
         planDay,

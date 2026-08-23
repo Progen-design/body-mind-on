@@ -10,7 +10,8 @@ import {
   TrendingUp,
   Award,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  PlayCircle
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { WorkoutDay } from '../types';
@@ -35,6 +36,9 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
   // null = uzivatel zatim nic nevybral, vybrany den se odvodi z dat.
   // Ulozeny nazev dne by po pregenerovani planu ukazoval na neexistujici den.
   const [selectedDayName, setSelectedDayName] = useState<string | null>(null);
+  // Otevřená ukázka provedení. Jedna naráz — animace z ExerciseDB mají
+  // stovky kB a načítat je všechny zbytečně zdrží i vypadá to nepřehledně.
+  const [otevrenaUkazka, setOtevrenaUkazka] = useState<string | null>(null);
 
   const selectedWorkout = vybranyTrenink(workouts, selectedDayName);
   const todayWorkout = dnesniTrenink(workouts);
@@ -237,12 +241,15 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
           {selectedWorkout.exercises.map((ex, i) => (
             <div
               key={ex.id}
-              onClick={() => onToggleExercise(selectedWorkout.dayName, ex.id)}
-              className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+              className={`rounded-2xl border transition-all ${
                 ex.completed
                   ? 'bg-emerald-950/20 border-emerald-500/30'
                   : 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700'
               }`}
+            >
+            <div
+              onClick={() => onToggleExercise(selectedWorkout.dayName, ex.id)}
+              className="p-4 cursor-pointer flex items-center justify-between gap-3"
             >
               <div className="flex items-center gap-3.5">
                 <div
@@ -282,7 +289,48 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
                     {ex.weightKg} kg
                   </span>
                 )}
+
+                {/* JAK SE TO CVIČÍ. Ukázku plán nese u každého cviku jako
+                    `gif_url`, ale nikde se nezobrazovala — člověk viděl jen
+                    název a musel si provedení domýšlet. Otevírá se na klik,
+                    aby seznam zůstal přehledný a animace se nenačítaly
+                    všechny naráz. */}
+                {ex.ukazkaUrl && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOtevrenaUkazka(otevrenaUkazka === ex.id ? null : ex.id);
+                    }}
+                    className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold inline-flex items-center gap-1 transition-all ${
+                      otevrenaUkazka === ex.id
+                        ? 'bg-cyan-950/70 border-cyan-500/50 text-[#00f2fe]'
+                        : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-cyan-500/40'
+                    }`}
+                    title="Ukázat provedení cviku"
+                  >
+                    <PlayCircle className="w-3.5 h-3.5" />
+                    <span>Jak na to</span>
+                  </button>
+                )}
               </div>
+            </div>
+
+            {ex.ukazkaUrl && otevrenaUkazka === ex.id && (
+              <div className="px-4 pb-4">
+                <div className="rounded-xl overflow-hidden bg-slate-950 border border-slate-800">
+                  <img
+                    src={ex.ukazkaUrl}
+                    alt={`Provedení cviku ${ex.name}`}
+                    loading="lazy"
+                    className="w-full max-h-72 object-contain bg-white"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-500 mt-2">
+                  {serieOpakovaniSlovy(ex.sets, ex.reps)}
+                  {ex.targetMuscle && ` • zabírá ${ex.targetMuscle}`}
+                </p>
+              </div>
+            )}
             </div>
           ))}
         </div>

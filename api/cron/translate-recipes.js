@@ -17,7 +17,12 @@ export default async function handler(req, res) {
   const startedAt = new Date().toISOString();
 
   try {
-    const result = await runCatalogRecipeTranslation({ batch: 20 });
+    // ŽÁDNÁ VELIKOST DÁVKY TADY. Bylo tu natvrdo `{ batch: 20 }`, které
+    // přebilo výchozí hodnotu v `runCatalogRecipeTranslation` — dvacet
+    // receptů i s postupy je jeden request na 8000 tokenů a do maxDuration
+    // 120 s se nevejde spolehlivě (23. 8. skončily na 504 dva z šesti běhů).
+    // Dávka patří k překladači, ne ke cronu; ať je na jednom místě.
+    const result = await runCatalogRecipeTranslation();
 
     if (result.remaining <= 0) {
       console.log('[cron/translate-recipes] nothing remaining', startedAt);

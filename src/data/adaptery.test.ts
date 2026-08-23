@@ -236,3 +236,103 @@ test('nákupní seznam z prázdného plánu je prázdný', async () => {
   const { naNakupniSeznam } = await import('./adaptery.ts');
   assert.deepEqual(naNakupniSeznam(null), []);
 });
+
+
+// ------------------------------------------------- nákupní seznam (Etapa 4.1)
+//
+// Vzorky jsou doslovné řádky z produkčního nákupního seznamu 23. 8. 2026,
+// včetně vad, které v uložených plánech zůstaly zmražené.
+
+test('rozbor řádku zvládne všechny tvary, které v uložených plánech jsou', async () => {
+  const { rozeberRadekSuroviny } = await import('./adaptery.ts');
+
+  // Dnešní tvar.
+  assert.deepEqual(rozeberRadekSuroviny('150 g ananas'),
+    { nazev: 'ananas', mnozstvi: 150, jednotka: 'g' });
+
+  // Starší plány psaly množství až za název.
+  assert.deepEqual(rozeberRadekSuroviny('olivový olej 0.9 lžíce'),
+    { nazev: 'olivový olej', mnozstvi: 0.9, jednotka: 'lžíce' });
+
+  // Bez jednotky.
+  assert.deepEqual(rozeberRadekSuroviny('3× vejce'),
+    { nazev: 'vejce', mnozstvi: 3, jednotka: 'ks' });
+
+  // Zlomek znakem.
+  const pul = rozeberRadekSuroviny('½ lžičky cukru');
+  assert.equal(pul?.mnozstvi, 0.5);
+  assert.equal(pul?.nazev, 'cukru');
+
+  // Bez množství — a to je v pořádku, není to chyba.
+  assert.deepEqual(rozeberRadekSuroviny('sůl dle chuti'),
+    { nazev: 'sůl dle chuti', mnozstvi: null, jednotka: '' });
+});
+
+test('rozseknutý zlomek se nepoužije jako množství', async () => {
+  const { rozeberRadekSuroviny } = await import('./adaptery.ts');
+
+  // Pozustatek po stare cistici regularce nad anglickym `original`.
+  assert.equal(rozeberRadekSuroviny('1 /'), null);
+  assert.equal(rozeberRadekSuroviny('1 /2 lžičky cukru')?.mnozstvi, null);
+  assert.equal(rozeberRadekSuroviny('1 /2 lžičky cukru')?.nazev, 'lžičky cukru');
+});
+
+test('stejná surovina se sečte, nespojí do řetězce', async () => {
+  const { naNakupniSeznam } = await import('./adaptery.ts');
+
+  const plan = {
+    structured_plan_json: {
+      days: [
+        { date: DNES, meals: [
+          { shopping_ingredient_lines: ['olivový olej 0.9 lžíce', '150 g ananas'] },
+          { shopping_ingredient_lines: ['olivový olej 0.9 lžíce'] }
+        ] },
+        { date: '2026-01-02', meals: [
+          { shopping_ingredient_lines: ['olivový olej 0.9 lžíce', '50 g ananas'] }
+        ] }
+      ]
+    }
+  };
+
+  const seznam = naNakupniSeznam(plan);
+  const olej = seznam.find((p) => p.name === 'olivový olej');
+  const ananas = seznam.find((p) => p.name === 'ananas');
+
+  // Driv tu bylo „olivový olej 0.9 lžíce, olivový olej 0.9 lžíce, olivový olej 0.9 lžíce".
+  assert.equal(olej?.amount, '2,7 lžíce');
+  assert.equal(ananas?.amount, '200 g');
+  assert.equal(seznam.length, 2, 'stejna surovina se nesmi rozpadnout na vic polozek');
+});
+
+test('surovina bez množství nemá v množství svoje jméno', async () => {
+  const { naNakupniSeznam } = await import('./adaptery.ts');
+
+  const plan = {
+    structured_plan_json: {
+      days: [
+        { date: DNES, meals: [{ shopping_ingredient_lines: ['mandle', 'mandle'] }] },
+        { date: '2026-01-02', meals: [{ shopping_ingredient_lines: ['mandle'] }] }
+      ]
+    }
+  };
+
+  const [polozka] = naNakupniSeznam(plan);
+  // Driv: „mandle, mandle, mandle" ve sloupci pro mnozstvi.
+  assert.equal(polozka.name, 'mandle');
+  assert.equal(polozka.amount, '');
+});
+
+test('nesečitatelné jednotky se vypíšou vedle sebe, ale jen jednou', async () => {
+  const { naNakupniSeznam } = await import('./adaptery.ts');
+
+  const plan = {
+    structured_plan_json: {
+      days: [{ date: DNES, meals: [
+        { shopping_ingredient_lines: ['150 g rajčata', '2 ks rajčata', '2 ks rajčata'] }
+      ] }]
+    }
+  };
+
+  const [polozka] = naNakupniSeznam(plan);
+  assert.equal(polozka.amount, '150 g + 2 ks');
+});

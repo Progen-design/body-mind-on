@@ -18,6 +18,10 @@ import {
   pridejPostupyDoPlanu,
   SLOUPCE_KATALOGU_PRO_POSTUP,
 } from '../lib/profile/postupyDoPlanu.js';
+import {
+  pridejNakupniRadkyDoPlanu,
+  SLOUPCE_KATALOGU_PRO_SUROVINY,
+} from '../lib/profile/nakupniRadkyDoPlanu.js';
 
 function toDateKey(value) {
   if (!value) return '';
@@ -225,18 +229,27 @@ export default async function handler(req, res) {
     if (catalogIdy.length > 0) {
       const { data: receptyProPostup, error: chybaPostupu } = await supabaseServer
         .from('recipes_catalog')
-        .select(SLOUPCE_KATALOGU_PRO_POSTUP)
+        .select(`${SLOUPCE_KATALOGU_PRO_POSTUP}, ${SLOUPCE_KATALOGU_PRO_SUROVINY}`)
         .in('id', catalogIdy);
 
       if (chybaPostupu) {
         console.error('[api/profile] postupy receptu:', chybaPostupu.message);
       } else {
         const postupy = new Map();
+        const suroviny = new Map();
         for (const radek of receptyProPostup ?? []) {
           const postup = postupZKatalogu(radek);
           if (postup) postupy.set(String(radek.id), postup);
+          if (Array.isArray(radek?.ingredients) && radek.ingredients.length > 0) {
+            suroviny.set(String(radek.id), radek.ingredients);
+          }
         }
         pridejPostupyDoPlanu(plansData, postupy);
+        // Nakupni radky se skladaji znovu ze stejneho duvodu jako postup:
+        // v ulozenem planu je zmrazeny text z te verze kodu, ktera plan
+        // generovala, vcetne nepreloxenych anglickych nazvu a rozseknutych
+        // zlomku („1 /"). Viz lib/profile/nakupniRadkyDoPlanu.js.
+        pridejNakupniRadkyDoPlanu(plansData, suroviny);
       }
     }
 

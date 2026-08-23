@@ -604,28 +604,33 @@ export function naNakupniSeznam(plan: any): ShoppingItem[] {
   const dny = strukturaPlanu(plan)?.days;
   if (!Array.isArray(dny)) return [];
 
-  const soucet = new Map<string, { nazev: string; mnozstvi: number; jednotka: string; volny: string[] }>();
+  const soucet = new Map<
+    string,
+    { nazev: string; mnozstvi: number; jednotka: string; volny: Set<string> }
+  >();
 
   for (const den of dny) {
     for (const jidlo of den?.meals || []) {
       for (const radek of jidlo?.shopping_ingredient_lines || []) {
-        const text = String(radek).trim();
-        if (!text) continue;
-        const m = text.match(/^([\d.,]+)\s*(\S+)\s+(.+)$/);
-        const nazev = (m ? m[3] : text).toLowerCase();
-        const zaznam = soucet.get(nazev) || { nazev: m ? m[3] : text, mnozstvi: 0, jednotka: '', volny: [] };
-        if (m) {
-          const cislo = Number(String(m[1]).replace(',', '.'));
-          if (Number.isFinite(cislo) && (!zaznam.jednotka || zaznam.jednotka === m[2])) {
-            zaznam.jednotka = m[2];
-            zaznam.mnozstvi += cislo;
-          } else {
-            zaznam.volny.push(text);
-          }
-        } else {
-          zaznam.volny.push(text);
+        const rozbor = rozeberRadekSuroviny(String(radek));
+        if (!rozbor) continue;
+
+        const klic = rozbor.nazev.toLowerCase();
+        const zaznam = soucet.get(klic)
+          || { nazev: rozbor.nazev, mnozstvi: 0, jednotka: '', volny: new Set<string>() };
+
+        if (rozbor.mnozstvi !== null && (!zaznam.jednotka || zaznam.jednotka === rozbor.jednotka)) {
+          zaznam.jednotka = rozbor.jednotka;
+          zaznam.mnozstvi += rozbor.mnozstvi;
+        } else if (rozbor.mnozstvi !== null) {
+          // Stejná surovina ve dvou různých jednotkách (150 g a 2 lžíce).
+          // Sečíst to nejde, tak se to vypíše vedle sebe — ale jen jednou.
+          zaznam.volny.add(`${formatujMnozstvi(rozbor.mnozstvi)} ${rozbor.jednotka}`.trim());
         }
-        soucet.set(nazev, zaznam);
+        // Řádek bez množství do `volny` nepatří: dřív se tam ukládal celý text
+        // a ve sloupci pro množství pak svítilo „mandle, mandle, mandle".
+
+        soucet.set(klic, zaznam);
       }
     }
   }
@@ -633,10 +638,87 @@ export function naNakupniSeznam(plan: any): ShoppingItem[] {
   return Array.from(soucet.values()).map((z, i) => ({
     id: `nakup-${i}`,
     name: z.nazev,
-    amount: z.mnozstvi > 0
-      ? `${Math.round(z.mnozstvi * 10) / 10} ${z.jednotka}`.trim()
-      : z.volny.join(', '),
+    amount: mnozstviDoTextu(z),
     category: kategorieSuroviny(z.nazev),
     checked: false
   }));
+}
+
+/** Číslo do seznamu: celá čísla bez desetin, zbytek na jedno místo s čárkou. */
+function formatujMnozstvi(n: number): string {
+  const zaokrouhlene = Math.round(n * 10) / 10;
+  return Number.isInteger(zaokrouhlene)
+    ? String(zaokrouhlene)
+    : zaokrouhlene.toFixed(1).replace('.', ',');
+}
+
+function mnozstviDoTextu(z: { mnozstvi: number; jednotka: string; volny: Set<string> }): string {
+  const casti: string[] = [];
+  if (z.mnozstvi > 0) casti.push(`${formatujMnozstvi(z.mnozstvi)} ${z.jednotka}`.trim());
+  casti.push(...z.volny);
+  // Prázdný řetězec, ne název suroviny. Množství, které neznáme, se nevypisuje.
+  return casti.join(' + ');
+}
+
+/**
+ * Rozbor jednoho řádku suroviny na název, množství a jednotku.
+ *
+ * Musí zvládnout několik tvarů najednou, protože uložené plány jsou zmražené
+ * v té podobě, jakou uměl kód v době generování:
+ *
+ *   „150 g ananas"          — dnešní tvar
+ *   „olivový olej 0.9 lžíce" — starší, obrácené pořadí
+ *   „3× vejce"              — bez jednotky
+ *   „½ lžičky cukru"        — zlomek znakem
+ *   „sůl dle chuti"         — bez množství, a to je v pořádku
+ *
+ * Vrací `null` jen pro prázdný řádek nebo pro zbytek po rozseknutém zlomku
+ * („1 /"), který nedává smysl ukazovat.
+ */
+export function rozeberRadekSuroviny(
+  radek: string
+): { nazev: string; mnozstvi: number | null; jednotka: string } | null {
+  const text = radek.trim().replace(/\s+/g, ' ');
+  if (!text) return null;
+  // Pozůstatek po staré čistící regulárce nad anglickým `original`: „1 /",
+  // „1 /2 lžičky cukru". Rozseknutý zlomek nepoužijeme ani jako množství.
+  // Náš formátovač zlomek píše znakem („½"), takže řádek, který začíná
+  // číslem a lomítkem, je vždycky pozůstatek po té staré regulárce —
+  // „1 /", „1 /2 lžičky cukru", „1/ chili powder".
+  if (/^\d+\s*\/\s*\d*/.test(text)) {
+    const zbytek = text.replace(/^\d+\s*\/\s*\d*\s*/, '').trim();
+    return zbytek ? { nazev: zbytek, mnozstvi: null, jednotka: '' } : null;
+  }
+
+  const zlomky: Record<string, number> = {
+    '¼': 0.25, '⅓': 1 / 3, '½': 0.5, '⅔': 2 / 3, '¾': 0.75
+  };
+  const cislo = (s: string): number | null => {
+    if (zlomky[s] !== undefined) return zlomky[s];
+    const n = Number(s.replace(',', '.'));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+
+  // „3× vejce"
+  const bezJednotky = text.match(/^([\d.,]+|[¼⅓½⅔¾])\s*×\s*(.+)$/);
+  if (bezJednotky) {
+    const n = cislo(bezJednotky[1]);
+    return { nazev: bezJednotky[2].trim(), mnozstvi: n, jednotka: n === null ? '' : 'ks' };
+  }
+
+  // „150 g ananas", „½ lžičky cukru"
+  const napred = text.match(/^([\d.,]+|[¼⅓½⅔¾])\s+(\S+)\s+(.+)$/);
+  if (napred) {
+    const n = cislo(napred[1]);
+    if (n !== null) return { nazev: napred[3].trim(), mnozstvi: n, jednotka: napred[2] };
+  }
+
+  // „olivový olej 0.9 lžíce" — starší plány psaly množství až za název.
+  const vzadu = text.match(/^(.+?)\s+([\d.,]+|[¼⅓½⅔¾])\s+(\S+)$/);
+  if (vzadu) {
+    const n = cislo(vzadu[2]);
+    if (n !== null) return { nazev: vzadu[1].trim(), mnozstvi: n, jednotka: vzadu[3] };
+  }
+
+  return { nazev: text, mnozstvi: null, jednotka: '' };
 }

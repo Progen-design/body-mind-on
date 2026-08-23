@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  LayoutDashboard,
   User,
   Scale,
   Utensils,
@@ -13,7 +12,12 @@ import { motion } from 'motion/react';
 // 'nakup' odstraneno — nakupni seznam ted zije v zalozce jidelnicku, pod jidly,
 // ze kterych vznika. Jako vlastni zalozka sedel hned pod kartou TED a vypadal
 // jako doporuceni trenera.
-export type ActiveTab = 'dnes' | 'profil' | 'vaha' | 'jidelnicek' | 'trenink' | 'regenerace';
+//
+// 'dnes' (Prehled) sloucen do 'profil'. Obe zalozky ukazovaly tytez udaje —
+// vahu, telesny tuk, svalovou hmotu a kartu uzivatele — jen jinak naskladane,
+// a makra dokonce rozdilne (Prehled 103 g bilkovin, Profil 184 g). Uzivatel
+// tak mel dve mista, kde hledat totez. Ted je vsechno v "Muj profil".
+export type ActiveTab = 'profil' | 'vaha' | 'jidelnicek' | 'trenink' | 'regenerace';
 
 interface NavigationTabsProps {
   activeTab: ActiveTab;
@@ -30,8 +34,7 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
     icon: React.ComponentType<{ className?: string }>;
     badge?: number | string;
   }[] = [
-    { id: 'dnes', label: 'Přehled', icon: LayoutDashboard },
-    { id: 'profil', label: 'Můj Profil', icon: User },
+    { id: 'profil', label: 'Můj profil', icon: User },
     { id: 'vaha', label: 'Tělo & Váha', icon: Scale },
     { id: 'jidelnicek', label: 'Jídelníček & Makra', icon: Utensils },
     { id: 'trenink', label: 'Tréninkový plán', icon: Dumbbell },

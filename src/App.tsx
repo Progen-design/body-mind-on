@@ -109,7 +109,8 @@ function AppContent() {
     znovu: znovuNacistProfil
   } = useProfilData(isAuthenticated);
 
-  const [activeTab, setActiveTab] = useState<ActiveTab>('dnes');
+  // Výchozí záložka je profil — „Přehled" už neexistuje, sloučil se do něj.
+  const [activeTab, setActiveTab] = useState<ActiveTab>('profil');
   const [profile, setProfile] = useState<UserProfile>(PRAZDNY_PROFIL);
   // Prazdno, dokud nedorazi server. Driv tu byl seed se sedmi vymyslenymi
   // vazenimi a graf tak ukazoval cizi hodnoty, nez se profil nacetl.
@@ -856,9 +857,9 @@ function AppContent() {
         {/* 3. Karta uživatele.
             Na záložce „Můj profil" se nekreslí — ProfileSection tam má vlastní
             hlavičku se stejným jménem, fotkou i stavem členství, jen podrobnější
-            (e-mail, věk, výška, odhlášení). Dvě karty téhož člověka nad sebou
-            vypadaly jako chyba a odkaz „zobrazit celý profil" tam vedl na
-            stránku, na které uživatel právě byl. */}
+            (e-mail, věk, výška). Dvě karty téhož člověka nad sebou vypadaly
+            jako chyba a odkaz „zobrazit celý profil" tam vedl na stránku,
+            na které uživatel právě byl. */}
         {activeTab !== 'profil' && (
           <UserProfileCard
             profile={displayedProfile}
@@ -875,44 +876,52 @@ function AppContent() {
         />
 
         {/* 6. Dynamic Content Based on Selected Tab */}
-        {/* TAB A: PŘEHLED (BENTO GRID DASHBOARD) */}
-        {activeTab === 'dnes' && (
-          <OverviewBentoGrid
-            latestWeightRecord={latestRecord}
-            biometrics={biometrics}
-            meals={meals}
-            todayWorkout={todayWorkout}
-            habits={habits}
-            badHabits={badHabits}
-            coachTips={coachTips}
-            preferences={preferences}
-            pocetNakupu={shoppingItems.length}
-            slozeni={slozeni}
-            onSelectTab={setActiveTab}
-            onOpenWorkoutLogger={() => setIsWorkoutLoggerOpen(true)}
-            onAskTed={() => zeptejSeTeda()}
-            onOpenAddWeightModal={() => setIsAddRecordModalOpen(true)}
-            onToggleMeal={handleToggleMeal}
-            onToggleHabit={handleToggleHabit}
-            onCompleteAllHabits={handleCompleteAllHabitsToday}
-            onSelectRecipe={(meal) => setSelectedRecipeMeal(meal)}
-          />
-        )}
 
-        {/* TAB B: MŮJ PROFIL & CÍLE */}
+        {/* TAB A: MŮJ PROFIL — ÚČET, CÍLE A DNEŠEK NA JEDNOM MÍSTĚ.
+            Do 23. 8. 2026 tu byly záložky dvě: „Přehled" a „Můj Profil".
+            Obě ukazovaly tutéž váhu, tentýž tělesný tuk i svalovou hmotu,
+            obě měly kartu s fotkou a jménem — a makra dokonce rozdílně
+            (Přehled 103 g bílkovin, Profil 184 g za týchž 34 %). Uživatel
+            měl dvě místa, kde hledat totéž. Teď jde profil odshora dolů:
+            kdo jsem a jaké mám cíle (ProfileSection), pak co je dnes
+            — regenerace, jídlo, trénink, TED (OverviewBentoGrid). */}
         {activeTab === 'profil' && (
-          <ProfileSection
-            profile={displayedProfile}
-            preferences={preferences}
-            latestWeightRecord={latestRecord}
-            biometrics={biometrics}
-            slozeni={slozeni}
-            birthDate={profilData?.user?.birth_date ?? null}
-            onEditPreferences={() => setIsPreferencesModalOpen(true)}
-            onSyncAll={handleManualWithingsSync}
-            onAddWeight={() => setIsAddRecordModalOpen(true)}
-            isSyncing={isSyncing}
-          />
+          <div className="space-y-4 sm:space-y-6">
+            <ProfileSection
+              profile={displayedProfile}
+              preferences={preferences}
+              latestWeightRecord={latestRecord}
+              biometrics={biometrics}
+              slozeni={slozeni}
+              birthDate={profilData?.user?.birth_date ?? null}
+              onEditPreferences={() => setIsPreferencesModalOpen(true)}
+              onSyncAll={handleManualWithingsSync}
+              onAddWeight={() => setIsAddRecordModalOpen(true)}
+              onOpenWeightTab={() => setActiveTab('vaha')}
+              isSyncing={isSyncing}
+            />
+
+            <OverviewBentoGrid
+              latestWeightRecord={latestRecord}
+              biometrics={biometrics}
+              meals={meals}
+              todayWorkout={todayWorkout}
+              habits={habits}
+              badHabits={badHabits}
+              coachTips={coachTips}
+              preferences={preferences}
+              pocetNakupu={shoppingItems.length}
+              slozeni={slozeni}
+              onSelectTab={setActiveTab}
+              onOpenWorkoutLogger={() => setIsWorkoutLoggerOpen(true)}
+              onAskTed={() => zeptejSeTeda()}
+              onOpenAddWeightModal={() => setIsAddRecordModalOpen(true)}
+              onToggleMeal={handleToggleMeal}
+              onToggleHabit={handleToggleHabit}
+              onCompleteAllHabits={handleCompleteAllHabitsToday}
+              onSelectRecipe={(meal) => setSelectedRecipeMeal(meal)}
+            />
+          </div>
         )}
 
         {/* TAB C: TĚLO & VÁHA (WITHINGS BODY SCAN) */}

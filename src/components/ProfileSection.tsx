@@ -24,6 +24,7 @@ import {
 import { motion } from 'motion/react';
 import { UserProfile, UserPreferences, WeightRecord, AppleWatchBiometrics, TelesneSlozeni } from '../types';
 import { hodnotaNeboPomlcka, kdyMereno, zmenaText } from '../data/adaptery';
+import { denniMakra } from '../lib/makra';
 import { useAuth } from '../context/AuthContext';
 import { NadpisSekce } from './NadpisSekce';
 import { useTed } from '../context/TedContext';
@@ -40,6 +41,8 @@ interface ProfileSectionProps {
   onEditPreferences: () => void;
   onSyncAll: () => void;
   onAddWeight: () => void;
+  /** Přepne na záložku Tělo & Váha s grafem vývoje. */
+  onOpenWeightTab: () => void;
   isSyncing?: boolean;
 }
 
@@ -53,10 +56,12 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   onEditPreferences,
   onSyncAll,
   onAddWeight,
+  onOpenWeightTab,
   isSyncing = false
 }) => {
   const { account, loggedInAt } = useAuth();
   const ted = useTed();
+  const makra = denniMakra(preferences);
 
   // Vek z data narozeni. Driv tu bylo natvrdo "34 let" bez ohledu na to,
   // kdo je prihlaseny.
@@ -259,6 +264,37 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
         </div>
       </div>
 
+      {/* BMI, DATUM MĚŘENÍ A ODKAZ NA GRAF.
+          Tyhle tři věci byly do 23. 8. 2026 v kartě „Tělesné složení
+          & Withings" na záložce Přehled — spolu s váhou, tukem a svalovou
+          hmotou, které jsou ale i tady nad tímhle řádkem. Po sloučení
+          záložek by ta karta kreslila tytéž tři hodnoty podruhé, takže
+          z ní zbylo jen to, co jinde není. */}
+      {slozeni && (
+        <div className="p-4 rounded-2xl bg-[#0e131d]/90 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-5">
+            {slozeni.bmi !== null && slozeni.bmi !== undefined && (
+              <div>
+                <div className="text-xs text-slate-400">BMI index</div>
+                <div className="text-xl font-extrabold text-white">
+                  {hodnotaNeboPomlcka(slozeni.bmi)}
+                </div>
+              </div>
+            )}
+            <div className="text-xs text-slate-500">
+              Změřeno {kdyMereno(slozeni.measured_at)}
+            </div>
+          </div>
+          <button
+            onClick={onOpenWeightTab}
+            className="py-2 px-4 rounded-xl text-xs font-bold text-cyan-300 bg-cyan-950/50 hover:bg-cyan-900/70 border border-cyan-500/40 hover:border-cyan-400 flex items-center justify-center gap-2 transition-all"
+          >
+            <span>Otevřít graf vývoje &amp; Withings měření</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* 3. Connected IoT Devices & Sync Status */}
       <div className="p-5 sm:p-6 rounded-3xl bg-[#0c1017]/90 border border-slate-800 shadow-xl space-y-4">
         <div className="flex items-center justify-between">
@@ -268,7 +304,9 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-white">Propojená chytrá zařízení &amp; Data</h3>
-              <p className="text-xs text-slate-400">Automatický obousměrný přenos biometrie a tělesných metrik</p>
+              {/* „Obousměrný" přenos nebyl — data chodí ze zařízení k nám,
+                  zpátky se neposílá nic. */}
+              <p className="text-xs text-slate-400">Měření z Withings a Apple Health se stahují při synchronizaci</p>
             </div>
           </div>
           <button
@@ -282,7 +320,12 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-          {/* Withings Scale */}
+          {/* STAV ZAŘÍZENÍ SE ODVOZUJE Z DAT, KTERÁ OPRAVDU DORAZILA.
+              Do 23. 8. 2026 tu svítilo „Připojeno" u obou zařízení natvrdo —
+              každému uživateli, i tomu, který nikdy nic nepřipojil. K tomu
+              „Poslední vážení dnes 07:15" jako pevný text (skutečné měření
+              bylo 22. 8. v 17:35) a „HRV, Spánek & Tep živě", ačkoli data
+              chodí dávkově při synchronizaci, ne živě. */}
           <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-cyan-950/50 border border-cyan-500/30 flex items-center justify-center text-[#00f2fe]">
@@ -290,12 +333,18 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
               </div>
               <div>
                 <div className="text-xs font-bold text-slate-200">Withings Body Scan</div>
-                <div className="text-[11px] text-slate-400">Poslední vážení dnes 07:15</div>
+                <div className="text-[11px] text-slate-400">
+                  {slozeni
+                    ? `Poslední vážení ${kdyMereno(slozeni.measured_at)}`
+                    : 'Zatím žádné měření'}
+                </div>
               </div>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-[#39ff14] bg-emerald-950/60 border border-emerald-500/30">
-              Připojeno
-            </span>
+            {slozeni && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-[#39ff14] bg-emerald-950/60 border border-emerald-500/30">
+                Připojeno
+              </span>
+            )}
           </div>
 
           {/* Apple Watch */}
@@ -306,12 +355,18 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
               </div>
               <div>
                 <div className="text-xs font-bold text-slate-200">Apple Health</div>
-                <div className="text-[11px] text-slate-400">HRV, Spánek &amp; Tep živě</div>
+                <div className="text-[11px] text-slate-400">
+                  {biometrics.appleWatchConnected && biometrics.lastSyncTime !== '—'
+                    ? `Naposledy ${biometrics.lastSyncTime}`
+                    : 'HRV, spánek a tep — stahuje se při synchronizaci'}
+                </div>
               </div>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-[#39ff14] bg-emerald-950/60 border border-emerald-500/30">
-              Připojeno
-            </span>
+            {biometrics.appleWatchConnected && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-[#39ff14] bg-emerald-950/60 border border-emerald-500/30">
+                Připojeno
+              </span>
+            )}
           </div>
 
           {/* AI TRENÉR TED.
@@ -377,28 +432,21 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             <span className="text-xl font-bold text-white">{preferences.dailyCalorieTarget} kcal</span>
           </div>
 
-          {/* Bílkoviny */}
+          {/* Makra ze sdíleného `denniMakra` — stejný výpočet jako v dlaždici
+              Jídelníček níž, aby se ta dvě čísla nemohla rozejít. */}
           <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <span className="text-xs text-slate-400 block mb-1">Bílkoviny ({preferences.proteinRatioPercent} %)</span>
-            <span className="text-xl font-bold text-[#00f2fe]">
-              {Math.round((preferences.dailyCalorieTarget * (preferences.proteinRatioPercent / 100)) / 4)} g
-            </span>
+            <span className="text-xs text-slate-400 block mb-1">Bílkoviny ({makra.bilkoviny.procenta} %)</span>
+            <span className="text-xl font-bold text-[#00f2fe]">{makra.bilkoviny.gramy} g</span>
           </div>
 
-          {/* Sacharidy — 4 kcal/g, stejně jako bílkoviny */}
           <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <span className="text-xs text-slate-400 block mb-1">Sacharidy ({preferences.carbsRatioPercent} %)</span>
-            <span className="text-xl font-bold text-amber-400">
-              {Math.round((preferences.dailyCalorieTarget * (preferences.carbsRatioPercent / 100)) / 4)} g
-            </span>
+            <span className="text-xs text-slate-400 block mb-1">Sacharidy ({makra.sacharidy.procenta} %)</span>
+            <span className="text-xl font-bold text-amber-400">{makra.sacharidy.gramy} g</span>
           </div>
 
-          {/* Tuky — 9 kcal/g */}
           <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <span className="text-xs text-slate-400 block mb-1">Tuky ({preferences.fatRatioPercent} %)</span>
-            <span className="text-xl font-bold text-fuchsia-400">
-              {Math.round((preferences.dailyCalorieTarget * (preferences.fatRatioPercent / 100)) / 9)} g
-            </span>
+            <span className="text-xs text-slate-400 block mb-1">Tuky ({makra.tuky.procenta} %)</span>
+            <span className="text-xl font-bold text-fuchsia-400">{makra.tuky.gramy} g</span>
           </div>
         </div>
       </div>

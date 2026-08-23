@@ -33,6 +33,7 @@ import {
 } from '../types';
 import { ActiveTab } from './NavigationTabs';
 import { hodnotaNeboPomlcka, kdyMereno, zmenaText } from '../data/adaptery';
+import { denniMakra } from '../lib/makra';
 import { Vysvetlivka } from './Vysvetlivka';
 
 interface OverviewBentoGridProps {
@@ -81,6 +82,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
 }) => {
   const currentCalories = meals.reduce((acc, m) => acc + (m.completed ? m.calories : 0), 0);
   const targetCalories = preferences.dailyCalorieTarget;
+  const makra = denniMakra(preferences);
   const completedExercises = todayWorkout?.exercises.filter(e => e.completed).length || 0;
   const totalExercises = todayWorkout?.exercises.length || 0;
   const completedHabitsCount = habits.filter(h => h.completed).length;
@@ -90,114 +92,12 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 auto-rows-auto">
       {/* 
         ========================================================================
-        HERO METRIKA 1: Tělesné složení & Withings (lg:col-span-2)
-        Prioritní velkoformátová karta s klíčovou vahou, přírůstkem svalů a kompozicí
-        ========================================================================
-      */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        className="col-span-1 md:col-span-2 lg:col-span-2 relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-[#0c1017]/95 backdrop-blur-xl border border-cyan-500/35 shadow-[0_10px_35px_rgba(0,0,0,0.55)] flex flex-col justify-between group hover:border-cyan-400/70 transition-all duration-300"
-      >
-        <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-36 h-36 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
-
-        <div>
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-cyan-950/70 border border-cyan-500/40 flex items-center justify-center text-[#00f2fe] shadow-[0_0_12px_rgba(0,242,254,0.25)]">
-                <Scale className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight">
-                    Tělesné složení &amp; Withings
-                  </h3>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-[#39ff14] bg-emerald-950/60 border border-emerald-500/30">
-                    Withings Body Scan
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400">Přesné segmentální měření tělesné kompozice</p>
-              </div>
-            </div>
-
-            <button
-              onClick={onOpenAddWeightModal}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-cyan-300 bg-cyan-950/60 hover:bg-cyan-900/70 border border-cyan-500/40 shadow-sm transition-all"
-              title="Zapsat váhu"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span className="hidden xs:inline">Zapsat</span>
-            </button>
-          </div>
-
-          {/* Main Weight Metric Display */}
-          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 mb-5 p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80">
-            <div>
-              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
-                Aktuální hmotnost
-              </div>
-              <div className="text-3xl sm:text-5xl font-black text-white tracking-tight flex items-baseline gap-2">
-                {hodnotaNeboPomlcka(latestWeightRecord?.weight)}
-                <span className="text-lg sm:text-xl font-bold text-cyan-400">kg</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Slozeni tela z chytre vahy. Bez mereni se blok nezobrazuje —
-              driv tu svitily nuly a vymyslene delty. */}
-          {slozeni && (
-            <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 mb-4">
-              <div className="grid grid-cols-3 gap-2.5">
-                <div>
-                  <div className="text-[11px] text-slate-400 font-medium">Tělesný tuk</div>
-                  <div className="text-base sm:text-xl font-black text-white mt-0.5">
-                    {hodnotaNeboPomlcka(slozeni.fat_percent, '%')}
-                  </div>
-                  {zmenaText(slozeni.zmena.fat_percent, '%') && (
-                    <div className="text-[10px] text-slate-400 font-medium">
-                      {zmenaText(slozeni.zmena.fat_percent, '%')} od minula
-                    </div>
-                  )}
-                </div>
-                <div className="border-l border-slate-800 pl-3">
-                  <div className="text-[11px] text-slate-400 font-medium">Svalová hmota</div>
-                  <div className="text-base sm:text-xl font-black text-[#00f2fe] mt-0.5">
-                    {hodnotaNeboPomlcka(slozeni.muscle_mass_kg, 'kg')}
-                  </div>
-                  {zmenaText(slozeni.zmena.muscle_mass_kg, 'kg') && (
-                    <div className="text-[10px] text-slate-400 font-medium">
-                      {zmenaText(slozeni.zmena.muscle_mass_kg, 'kg')} od minula
-                    </div>
-                  )}
-                </div>
-                <div className="border-l border-slate-800 pl-3">
-                  <div className="text-[11px] text-slate-400 font-medium">BMI Index</div>
-                  <div className="text-base sm:text-xl font-black text-white mt-0.5">
-                    {hodnotaNeboPomlcka(slozeni.bmi)}
-                  </div>
-                </div>
-              </div>
-              <div className="text-[10px] text-slate-500 mt-2">
-                Změřeno {kdyMereno(slozeni.measured_at)}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Action to switch to Weight deep tab */}
-        <div className="pt-1">
-          <button
-            onClick={() => onSelectTab('vaha')}
-            className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-cyan-300 bg-cyan-950/50 hover:bg-cyan-900/70 border border-cyan-500/40 hover:border-cyan-400 flex items-center justify-center gap-2 transition-all active:scale-98"
-          >
-            <span>Otevřít kompletní graf vývoje &amp; Withings měření</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      </motion.div>
+      {/* KARTA "TELESNE SLOZENI & WITHINGS" TU BYLA DO 23. 8. 2026.
+          Ukazovala vahu, telesny tuk, svalovou hmotu, BMI a datum mereni.
+          Po slouceni zalozek Prehled a Muj profil sedi presne tyhle hodnoty
+          o kus vys v ProfileSection -- kreslily by se podruhe pod sebou.
+          BMI, datum mereni a odkaz na graf, ktere v ProfileSection chybely,
+          se tam presunuly. */}
 
       {/* 
         ========================================================================
@@ -381,10 +281,16 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
               <div style={{ width: `${preferences.carbsRatioPercent}%` }} className="h-full rounded-full bg-[#2dd4bf] shadow-[0_0_8px_#2dd4bf]" />
               <div style={{ width: `${preferences.fatRatioPercent}%` }} className="h-full rounded-full bg-[#39ff14] shadow-[0_0_8px_#39ff14]" />
             </div>
+            {/* GRAMY SE POČÍTAJÍ, NEPÍŠOU SE.
+                Do 23. 8. 2026 tu stálo `B {procenta} % (103 g)` — procento
+                z profilu, gramy natvrdo z makety. Přehled tvrdil 103 g
+                bílkovin, Profil na vedlejší záložce 184 g. Sto tři gramů
+                odpovídalo poměru 19 %, což je výchozí hodnota makety, ne
+                uživatelův profil. Obě místa teď berou číslo z `denniMakra`. */}
             <div className="flex items-center justify-between text-xs font-semibold px-0.5">
-              <span className="text-[#00f2fe]">B {preferences.proteinRatioPercent} % (103 g)</span>
-              <span className="text-[#2dd4bf]">S {preferences.carbsRatioPercent} % (292 g)</span>
-              <span className="text-[#39ff14]">T {preferences.fatRatioPercent} % (65 g)</span>
+              <span className="text-[#00f2fe]">B {makra.bilkoviny.procenta} % ({makra.bilkoviny.gramy} g)</span>
+              <span className="text-[#2dd4bf]">S {makra.sacharidy.procenta} % ({makra.sacharidy.gramy} g)</span>
+              <span className="text-[#39ff14]">T {makra.tuky.procenta} % ({makra.tuky.gramy} g)</span>
             </div>
           </div>
 

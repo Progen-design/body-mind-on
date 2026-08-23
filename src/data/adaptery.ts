@@ -34,6 +34,8 @@ export interface ProfilOdpoved {
   user?: {
     id: string; email: string; name: string | null; avatar_url: string | null;
     height_cm: number | null; goal_weight_kg: number | null; birth_date: string | null;
+    /** Datum registrace. `api/profile.js` ho vracelo, jen tenhle typ o něm nevěděl. */
+    created_at?: string | null;
   };
   body_metrics?: any[];
   user_habits?: { habit_id: string; is_positive: boolean; sort_order: number }[];

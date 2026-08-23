@@ -128,6 +128,23 @@ function AppContent() {
   // neposila.
   const skupinyMetrik = useMemo(() => naSkupinyMetrik(zdravi.metriky), [zdravi.metriky]);
   const spanekNoc = useMemo(() => naSpanek(zdravi.spanek), [zdravi.spanek]);
+
+  /**
+   * POSLEDNÍ DEN, ZE KTERÉHO MÁME DATA Z HODINEK.
+   *
+   * Apple Health se nedá stáhnout ze serveru — payload posílá iPhone. Když se
+   * export v telefonu zastaví, aplikace to sama nepozná. Profil proto ukazuje
+   * stáří posledních dat a upozorní, když jsou starší než den a půl.
+   * Změřeno 23. 8. 2026: poslední payload z 22. 8. 17:58, mezitím trénink,
+   * o kterém aplikace neví.
+   */
+  const posledniZdravotniData = useMemo(() => {
+    const dny = (zdravi.regenerace || [])
+      .map((r: any) => String(r?.local_date || ''))
+      .filter(Boolean)
+      .sort();
+    return dny.length ? dny[dny.length - 1] : null;
+  }, [zdravi.regenerace]);
   const [biometrics, setBiometrics] = useState<AppleWatchBiometrics>(PRAZDNA_BIOMETRIE);
 
   useEffect(() => {
@@ -894,6 +911,8 @@ function AppContent() {
               biometrics={biometrics}
               slozeni={slozeni}
               birthDate={profilData?.user?.birth_date ?? null}
+              registrovanOd={profilData?.user?.created_at ?? null}
+              posledniZdravotniData={posledniZdravotniData}
               onEditPreferences={() => setIsPreferencesModalOpen(true)}
               onSyncAll={handleManualWithingsSync}
               onAddWeight={() => setIsAddRecordModalOpen(true)}
@@ -999,8 +1018,12 @@ function AppContent() {
           <p className="font-medium text-slate-500">
             Body &amp; Mind <span className="text-[#39ff14]">ON</span> • Biohacking, Performance &amp; AI trenér
           </p>
+          {/* „V reálném čase" tu bylo do 23. 8. 2026 a nebyla to pravda:
+              Withings se stahuje jednou za hodinu a Apple Health posílá
+              iPhone, když se k tomu dostane. Stav každého zdroje je
+              v profilu u dané dlaždice, tady stačí, čím se aplikace řídí. */}
           <p className="text-[11px] text-slate-600">
-            Všechna data jsou synchronizována v reálném čase se zařízeními Withings a Apple Health.
+            Naměřená data pocházejí z Withings a Apple Health.
           </p>
         </footer>
       </div>

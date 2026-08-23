@@ -1,25 +1,18 @@
 import React from 'react';
 import {
   User,
-  Repeat,
-  Check,
   Mail,
-  ShieldCheck,
   Activity,
   Scale,
   Watch,
-  Brain,
   Sliders,
-  Sparkles,
   Trophy,
   Flame,
   Calendar,
   ChevronRight,
-  TrendingUp,
   RefreshCw,
   Edit3,
-  Heart,
-  Dumbbell
+  AlertTriangle
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { UserProfile, UserPreferences, WeightRecord, AppleWatchBiometrics, TelesneSlozeni } from '../types';
@@ -27,7 +20,8 @@ import { hodnotaNeboPomlcka, kdyMereno, zmenaText } from '../data/adaptery';
 import { denniMakra } from '../lib/makra';
 import { useAuth } from '../context/AuthContext';
 import { NadpisSekce } from './NadpisSekce';
-import { useTed } from '../context/TedContext';
+// `useTed` tu bylo kvůli kartě „AI trenér TED" mezi zařízeními. TED není
+// zařízení a stejná karta je v Bento gridu níž — v profilu byl dvakrát.
 
 interface ProfileSectionProps {
   profile: UserProfile;
@@ -38,6 +32,10 @@ interface ProfileSectionProps {
   slozeni?: TelesneSlozeni | null;
   /** ISO datum narozeni z profilu. null = vek se nezobrazi. */
   birthDate?: string | null;
+  /** ISO datum registrace. null = řádek „Člen od" se nezobrazí. */
+  registrovanOd?: string | null;
+  /** ISO datum posledního dne s daty z Apple Health. null = zatím nic nedorazilo. */
+  posledniZdravotniData?: string | null;
   onEditPreferences: () => void;
   onSyncAll: () => void;
   onAddWeight: () => void;
@@ -53,6 +51,8 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   biometrics,
   slozeni = null,
   birthDate = null,
+  registrovanOd = null,
+  posledniZdravotniData = null,
   onEditPreferences,
   onSyncAll,
   onAddWeight,
@@ -60,7 +60,6 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   isSyncing = false
 }) => {
   const { account, loggedInAt } = useAuth();
-  const ted = useTed();
   const makra = denniMakra(preferences);
 
   // Vek z data narozeni. Driv tu bylo natvrdo "34 let" bez ohledu na to,
@@ -75,6 +74,35 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
     if (m < 0 || (m === 0 && dnes.getDate() < nar.getDate())) vek--;
     return vek >= 0 && vek < 130 ? vek : null;
   }, [birthDate]);
+
+  /**
+   * KDY NAPOSLED DORAZILA DATA Z HODINEK A JESTLI UŽ JSOU STARÁ.
+   *
+   * Apple Health se nedá stáhnout ze serveru — payload posílá iPhone. Když
+   * se export v telefonu zastaví, aplikace to nepozná sama od sebe a tváří
+   * se, že je všechno v pořádku. Změřeno 23. 8. 2026: poslední data z 22. 8.
+   * v 17:58, mezitím proběhl trénink, o kterém aplikace neví.
+   *
+   * Za zastaralé se považuje, když poslední den s daty není dnešek ani
+   * včerejšek — jeden vynechaný den je běžný, dva už znamenají zaseknutý
+   * export.
+   */
+  const { zdraviPosledni, zdraviZastarale } = React.useMemo(() => {
+    const iso = posledniZdravotniData || null;
+    const t = Date.parse(String(iso || ''));
+    if (!Number.isFinite(t)) return { zdraviPosledni: null, zdraviZastarale: false };
+    const stariHodin = (Date.now() - t) / 36e5;
+    return { zdraviPosledni: iso, zdraviZastarale: stariHodin > 36 };
+  }, [posledniZdravotniData]);
+
+  /** „2. 8. 2026" — datum registrace. Bez data se řádek nekreslí. */
+  const clenOd = React.useMemo(() => {
+    const t = Date.parse(String(registrovanOd || ''));
+    if (!Number.isFinite(t)) return null;
+    return new Date(t).toLocaleDateString('cs-CZ', {
+      day: 'numeric', month: 'numeric', year: 'numeric'
+    });
+  }, [registrovanOd]);
 
   const loggedInText = loggedInAt
     ? new Date(loggedInAt).toLocaleString('cs-CZ', {
@@ -142,10 +170,19 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                 </p>
               )}
 
-              <p className="text-xs sm:text-sm text-cyan-400 font-semibold mt-1 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-cyan-400" />
-                {profile.membershipPlan}
-              </p>
+              {/* TENHLE ŘÁDEK BYL PRÁZDNÝ ŠTÍT.
+                  Kreslil ikonu a vedle ní `profile.membershipPlan`, jenže
+                  ten se plní z `user_metadata.membership_plan`, kam nikdo nic
+                  nezapisuje — ověřeno na produkci 23. 8. 2026, hodnota je
+                  `null`. V UI tak zbyla osamocená ikona štítu bez textu.
+                  Tarif žije ve Stripe; až se sem protáhne, může se vrátit.
+                  Místo něj je tu datum registrace, které je skutečné. */}
+              {clenOd && (
+                <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                  <span>Člen od {clenOd}</span>
+                </p>
+              )}
 
               {/* Vek i vyska jdou z dat. Chybejici hodnota se nezobrazi —
                   driv tu svitilo natvrdo "34 let" a "Faze: Hypertrofie 6/12",
@@ -319,80 +356,90 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+        {/* DVĚ ZAŘÍZENÍ, NE TŘI.
+            Do 23. 8. 2026 tu byla jako třetí dlaždice karta „AI trenér TED".
+            TED není zařízení, nic nesynchronizuje a stejná karta je o kus níž
+            v sekci, která mu patří — v profilu tak byl dvakrát. */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           {/* STAV ZAŘÍZENÍ SE ODVOZUJE Z DAT, KTERÁ OPRAVDU DORAZILA.
               Do 23. 8. 2026 tu svítilo „Připojeno" u obou zařízení natvrdo —
               každému uživateli, i tomu, který nikdy nic nepřipojil. K tomu
               „Poslední vážení dnes 07:15" jako pevný text (skutečné měření
               bylo 22. 8. v 17:35) a „HRV, Spánek & Tep živě", ačkoli data
               chodí dávkově při synchronizaci, ne živě. */}
-          <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-cyan-950/50 border border-cyan-500/30 flex items-center justify-center text-[#00f2fe]">
-                <Scale className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-slate-200">Withings Body Scan</div>
-                <div className="text-[11px] text-slate-400">
-                  {slozeni
-                    ? `Poslední vážení ${kdyMereno(slozeni.measured_at)}`
-                    : 'Zatím žádné měření'}
+          <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-cyan-950/50 border border-cyan-500/30 flex items-center justify-center text-[#00f2fe] shrink-0">
+                  <Scale className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-slate-200">Withings Body Scan</div>
+                  <div className="text-[11px] text-slate-400">
+                    {slozeni
+                      ? `Poslední vážení ${kdyMereno(slozeni.measured_at)}`
+                      : 'Zatím žádné měření'}
+                  </div>
                 </div>
               </div>
+              {slozeni && (
+                <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold text-[#39ff14] bg-emerald-950/60 border border-emerald-500/30">
+                  Připojeno
+                </span>
+              )}
             </div>
-            {slozeni && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-[#39ff14] bg-emerald-950/60 border border-emerald-500/30">
-                Připojeno
-              </span>
-            )}
+            {/* Váha se stahuje sama — server se k Withings umí připojit. */}
+            <div className="text-[11px] text-emerald-400/90 mt-2 flex items-center gap-1.5">
+              <RefreshCw className="w-3 h-3 shrink-0" />
+              <span>Stahuje se automaticky každou hodinu</span>
+            </div>
           </div>
 
-          {/* Apple Watch */}
-          <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-lime-950/50 border border-lime-500/30 flex items-center justify-center text-[#39ff14]">
-                <Watch className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-slate-200">Apple Health</div>
-                <div className="text-[11px] text-slate-400">
-                  {biometrics.appleWatchConnected && biometrics.lastSyncTime !== '—'
-                    ? `Naposledy ${biometrics.lastSyncTime}`
-                    : 'HRV, spánek a tep — stahuje se při synchronizaci'}
+          {/* APPLE HEALTH — DATA POSÍLÁ TELEFON, SERVER SI JE NEVYŽÁDÁ.
+              Apple neumožňuje číst HealthKit ze serveru, takže tenhle kanál
+              nejde automatizovat z naší strany; export musí spustit iPhone.
+              Změřeno 23. 8. 2026: payloady dorazily 20., 21. a 22. 8., vždy
+              jako shluk v jedné minutě — tedy ručně spuštěný export. Karta
+              proto říká stáří dat a upozorní, když je starší než den.
+              Dřív tu svítilo jen „Připojeno", což uklidňovalo i ve chvíli,
+              kdy dva dny nepřišlo nic. */}
+          <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-lime-950/50 border border-lime-500/30 flex items-center justify-center text-[#39ff14] shrink-0">
+                  <Watch className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-slate-200">Apple Health</div>
+                  <div className="text-[11px] text-slate-400">
+                    {zdraviPosledni
+                      ? `Poslední data ${kdyMereno(zdraviPosledni)}`
+                      : 'Zatím žádná data z hodinek'}
+                  </div>
                 </div>
               </div>
+              {zdraviPosledni && !zdraviZastarale && (
+                <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold text-[#39ff14] bg-emerald-950/60 border border-emerald-500/30">
+                  Aktuální
+                </span>
+              )}
+              {zdraviZastarale && (
+                <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold text-amber-300 bg-amber-950/60 border border-amber-500/40">
+                  Zastaralé
+                </span>
+              )}
             </div>
-            {biometrics.appleWatchConnected && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-[#39ff14] bg-emerald-950/60 border border-emerald-500/30">
-                Připojeno
+            <div className={`text-[11px] mt-2 flex items-start gap-1.5 ${zdraviZastarale ? 'text-amber-300' : 'text-slate-500'}`}>
+              {zdraviZastarale
+                ? <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+                : <RefreshCw className="w-3 h-3 shrink-0 mt-0.5" />}
+              <span>
+                {zdraviZastarale
+                  ? 'Hodinky data neposlaly. Odesílá je iPhone, ne server — zkontroluj export v telefonu.'
+                  : 'Data posílá tvůj iPhone, server si je stáhnout nemůže'}
               </span>
-            )}
+            </div>
           </div>
-
-          {/* AI TRENÉR TED.
-              Dřív tu stálo „Verze 2.4 Hypertrophy Pro" — název ani číslo verze
-              nikde neexistuje, bylo to vymyšlené. Místo toho karta říká, co
-              TED umí, a otevře chat. */}
-          <button
-            onClick={ted.zeptejSe ? () => ted.zeptejSe() : undefined}
-            disabled={!ted.dostupny}
-            className="w-full p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-cyan-500/40 flex items-center justify-between transition-all disabled:cursor-default text-left"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-950/50 border border-purple-500/30 flex items-center justify-center text-purple-400">
-                <Brain className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-slate-200">AI trenér TED</div>
-                <div className="text-[11px] text-slate-400">Odpovídá podle tvého profilu a měření</div>
-              </div>
-            </div>
-            {ted.dostupny && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-500/30">
-                Zeptat se
-              </span>
-            )}
-          </button>
         </div>
       </div>
 

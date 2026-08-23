@@ -150,12 +150,12 @@ export function naBiometrii(
     hrvBaselineMs: jenCislo(dnes?.hrv_baseline7) ?? 0,
     restingHrBpm: jenCislo(dnes?.resting_hr) ?? 0,
     sleepDuration: dnes?.has_sleep ? trvani(jenCislo(dnes.sleep_asleep_min)) : '—',
-    deepSleepDuration: '—',
-    sleepEfficiencyPercent: 0,
     stepsToday: jenCislo(dnes?.steps) ?? 0,
     activeEnergyKcal: Math.round(jenCislo(dnes?.active_kcal) ?? 0),
     exerciseMinutes: jenCislo(dnes?.exercise_min) ?? 0,
-    bloodOxygenPercent: 0,
+    // SpO2 tu bylo `bloodOxygenPercent: 0` — konstanta, kvůli které se
+    // v UI kreslila pomlčka i ve dnech, kdy hodnota naměřená byla.
+    // Kyslík se teď čte v sekci klíčových metrik (`naSkupinyMetrik`).
     recentWorkouts: naTreninkyZHodinek(treninky),
     hrvTrend: trend(serazene, 'hrv_ms'),
     restingHrTrend: trend(serazene, 'resting_hr'),

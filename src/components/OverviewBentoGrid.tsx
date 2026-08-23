@@ -302,12 +302,10 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
               <div className="text-sm sm:text-base font-bold text-[#00f2fe] mt-0.5">
                 {biometrics.sleepDuration || '—'}
               </div>
-              {/* Efektivita jen kdyz ji opravdu mame; "92 %" tu bylo natvrdo. */}
-              {biometrics.sleepEfficiencyPercent > 0 && (
-                <div className="text-[10px] text-[#39ff14]">
-                  {biometrics.sleepEfficiencyPercent} % ef.
-                </div>
-              )}
+              {/* ŽÁDNÁ EFEKTIVITA SPÁNKU. Dřív tu bylo natvrdo „92 %", pak
+                  podmínka `> 0` — jenže adaptér tam vždycky psal nulu, takže
+                  to byla mrtvá větev. Zdroj posílá `inBedEnd` 16:20, z čehož
+                  se efektivita ani spočítat nedá. Pole je pryč z typu i UI. */}
             </div>
           </div>
         </div>

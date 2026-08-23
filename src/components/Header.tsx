@@ -45,9 +45,9 @@ export const Header: React.FC<HeaderProps> = ({
             ON
           </span>
         </h1>
-        <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-500/30">
-          PRO
-        </span>
+        {/* Odznak „PRO" tu byl natvrdo pro každého — i pro účet ve zkušební
+            době. Tarif se čte ze Stripe, ne z konstanty v hlavičce; než ho
+            sem někdo protáhne, radši žádný odznak než špatný. */}
       </div>
 
       {/* Action buttons */}
@@ -167,25 +167,14 @@ export const Header: React.FC<HeaderProps> = ({
                   ))}
                 </div>
 
-                <div className="mt-8 space-y-2">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-3">
-                    Integrace &amp; Zařízení
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-900/50 border border-slate-800 flex items-center justify-between">
-                    <div>
-                      <div className="text-xs font-semibold text-slate-200">Withings Body Scan</div>
-                      <div className="text-[11px] text-emerald-400">Připojeno • Baterie 92%</div>
-                    </div>
-                    <div className="w-2 h-2 rounded-full bg-[#39ff14] animate-pulse"></div>
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-900/50 border border-slate-800 flex items-center justify-between">
-                    <div>
-                      <div className="text-xs font-semibold text-slate-200">Apple Health / Garmin</div>
-                      <div className="text-[11px] text-cyan-400">Aktivní synchronizace</div>
-                    </div>
-                    <div className="w-2 h-2 rounded-full bg-[#00f2fe]"></div>
-                  </div>
-                </div>
+                {/* SEKCE „INTEGRACE & ZAŘÍZENÍ" JE PRYČ — BYLA CELÁ VYMYŠLENÁ.
+                    Ukazovala „Withings Body Scan — Připojeno • Baterie 92%"
+                    a „Apple Health / Garmin — Aktivní synchronizace" natvrdo,
+                    bez ohledu na to, kdo je přihlášený a jestli vůbec něco
+                    připojené má. Stav baterie z Withings API nechodí a Garmin
+                    v `api/` ani `lib/` neexistuje vůbec — to jméno se do makety
+                    dostalo omylem. Skutečný stav připojení je na záložce Profil,
+                    kde ho kreslí widget čtoucí `api/withings/**`. */}
               </div>
 
               <div className="pt-4 mt-4 border-t border-slate-800 space-y-3 shrink-0">
@@ -198,8 +187,11 @@ export const Header: React.FC<HeaderProps> = ({
                   <span>Odhlásit se</span>
                 </button>
 
+                {/* Žádné „Platform v3.4 • Pro". Číslo verze si maketa vymyslela
+                    (v gitu nic takového není) a „Pro" tvrdilo tarif, který se
+                    nikde nečte — členství žije v Stripe a v `requireActiveMembership`. */}
                 <div className="text-xs text-slate-500 text-center">
-                  Body &amp; Mind ON Platform v3.4 • Pro
+                  Body &amp; Mind ON
                 </div>
               </div>
             </motion.div>

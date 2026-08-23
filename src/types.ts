@@ -166,15 +166,17 @@ export interface AppleWatchBiometrics {
   hrvBaselineMs: number;
   restingHrBpm: number;
   sleepDuration: string;
-  deepSleepDuration: string;
-  sleepEfficiencyPercent: number;
+  // ŽÁDNÉ deepSleepDuration / sleepEfficiencyPercent / bloodOxygenPercent.
+  // Zdroj posílá fáze spánku jako nuly a `inBedEnd` má nesmyslné (16:20),
+  // takže hloubka i efektivita byly dopočítané z vadného vstupu. SpO2 se
+  // čte v sekci klíčových metrik z `api/health/**`. Pole tu zůstávala jako
+  // konstantní nuly a UI je kreslilo jako naměřené hodnoty — proto jsou pryč.
   stepsToday: number;
   stepsTarget: number;
   activeEnergyKcal: number;
   activeEnergyTargetKcal: number;
   exerciseMinutes: number;
   exerciseMinutesTarget: number;
-  bloodOxygenPercent: number;
   recentWorkouts: AppleWatchWorkoutItem[];
   hrvTrend: MetricTrendPoint[];
   restingHrTrend: MetricTrendPoint[];

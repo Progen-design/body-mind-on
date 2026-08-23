@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   User,
-  LogOut,
   Repeat,
   Check,
   Mail,
@@ -20,16 +19,12 @@ import {
   RefreshCw,
   Edit3,
   Heart,
-  Droplets,
-  Moon,
   Dumbbell
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { UserProfile, UserPreferences, WeightRecord, AppleWatchBiometrics, TelesneSlozeni } from '../types';
 import { hodnotaNeboPomlcka, kdyMereno, zmenaText } from '../data/adaptery';
 import { useAuth } from '../context/AuthContext';
-import { useToast } from '../context/ToastContext';
-import { ConfirmDialog } from './ConfirmDialog';
 import { NadpisSekce } from './NadpisSekce';
 import { useTed } from '../context/TedContext';
 
@@ -60,10 +55,8 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   onAddWeight,
   isSyncing = false
 }) => {
-  const { account, logout, loggedInAt } = useAuth();
-  const { showToast } = useToast();
+  const { account, loggedInAt } = useAuth();
   const ted = useTed();
-  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
   // Vek z data narozeni. Driv tu bylo natvrdo "34 let" bez ohledu na to,
   // kdo je prihlaseny.
@@ -86,16 +79,6 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
         minute: '2-digit'
       })
     : '—';
-
-  const handleConfirmLogout = () => {
-    setIsLogoutDialogOpen(false);
-    logout();
-    showToast({
-      title: 'Odhlášeno',
-      description: 'Tvoje data zůstávají uložená na účtu.',
-      variant: 'info'
-    });
-  };
 
 
   // Osobni silove rekordy odstraneny: pet vymyslenych hodnot (bench 135 kg,
@@ -182,7 +165,11 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             </div>
           </div>
 
-          {/* Akce. Jedno Odhlasit se, ne dve. */}
+          {/* JEDNO ODHLÁŠENÍ, A TO V MENU.
+              Tlačítko „Odhlásit se“ tu bylo podruhé — vedle stejného
+              v hamburger menu (Header.tsx). Ondrova poznámka 5 to hlásila
+              po 2. 8. Menu je dostupné ze všech záložek, tenhle blok jen
+              z profilu, takže zůstalo to v menu. */}
           <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
             <button
               onClick={onEditPreferences}
@@ -190,14 +177,6 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             >
               <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
               <span>Upravit cíle</span>
-            </button>
-
-            <button
-              onClick={() => setIsLogoutDialogOpen(true)}
-              className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-red-950/60 hover:bg-red-900/70 text-red-300 hover:text-red-200 border border-red-500/45 hover:border-red-400 shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all active:scale-95"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Odhlásit se</span>
             </button>
           </div>
         </div>
@@ -371,7 +350,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-white">Nastavené denní cíle &amp; Makroživiny</h3>
-              <p className="text-xs text-slate-400">Personalizovaný plán pro svalovou hypertrofii a regeneraci</p>
+              <p className="text-xs text-slate-400">Hodnoty, ze kterých se počítá tvůj jídelníček</p>
             </div>
           </div>
           <button
@@ -383,12 +362,19 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           </button>
         </div>
 
+        {/* JEN TO, CO SI UŽIVATEL NASTAVIL.
+            Do 23. 8. 2026 tu vedle kalorií svítily „Pitný režim 3,5 L“ a
+            „Cíl spánku 8h 00m“ — obojí natvrdo z makety v4. Žádné takové
+            pole v preferencích neexistuje, nikdo si je nezadal a nic je
+            neměří. Stejně tak popisky „Lehký přebytek (+150 kcal)“
+            a „~1,0 g / kg svalů“ — dopočet, který nikdo nespočítal.
+            Místo nich jsou tu všechna čtyři makra ze stejného zdroje,
+            ze kterého se staví jídelníček. */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* Kalorie */}
           <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
             <span className="text-xs text-slate-400 block mb-1">Denní kalorie</span>
             <span className="text-xl font-bold text-white">{preferences.dailyCalorieTarget} kcal</span>
-            <span className="text-[10px] text-cyan-400 block mt-0.5">Lehký přebytek (+150 kcal)</span>
           </div>
 
           {/* Bílkoviny */}
@@ -397,42 +383,26 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             <span className="text-xl font-bold text-[#00f2fe]">
               {Math.round((preferences.dailyCalorieTarget * (preferences.proteinRatioPercent / 100)) / 4)} g
             </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">~1,0 g / kg svalů</span>
           </div>
 
-          {/* Pitný režim */}
+          {/* Sacharidy — 4 kcal/g, stejně jako bílkoviny */}
           <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <span className="text-xs text-slate-400 block mb-1">Pitný režim</span>
-            <span className="text-xl font-bold text-blue-400 flex items-center gap-1">
-              <Droplets className="w-4 h-4" />
-              3,5 L
+            <span className="text-xs text-slate-400 block mb-1">Sacharidy ({preferences.carbsRatioPercent} %)</span>
+            <span className="text-xl font-bold text-amber-400">
+              {Math.round((preferences.dailyCalorieTarget * (preferences.carbsRatioPercent / 100)) / 4)} g
             </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">Voda &amp; elektrolyty</span>
           </div>
 
-          {/* Spánek */}
+          {/* Tuky — 9 kcal/g */}
           <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <span className="text-xs text-slate-400 block mb-1">Cíl spánku</span>
-            <span className="text-xl font-bold text-indigo-400 flex items-center gap-1">
-              <Moon className="w-4 h-4" />
-              8h 00m
+            <span className="text-xs text-slate-400 block mb-1">Tuky ({preferences.fatRatioPercent} %)</span>
+            <span className="text-xl font-bold text-fuchsia-400">
+              {Math.round((preferences.dailyCalorieTarget * (preferences.fatRatioPercent / 100)) / 9)} g
             </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">Hluboká regenerace</span>
           </div>
         </div>
       </div>
 
-      <ConfirmDialog
-        isOpen={isLogoutDialogOpen}
-        title="Opravdu se chceš odhlásit?"
-        description="Aplikace se zamkne a budeš se muset znovu přihlásit. Naměřená data, jídelníček i návyky zůstanou uložené na tvém účtu."
-        confirmLabel="Odhlásit se"
-        cancelLabel="Zůstat přihlášen"
-        tone="danger"
-        icon={LogOut}
-        onConfirm={handleConfirmLogout}
-        onCancel={() => setIsLogoutDialogOpen(false)}
-      />
     </div>
   );
 };

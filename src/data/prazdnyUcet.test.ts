@@ -93,7 +93,12 @@ test('prázdná biometrie nenese vymyšlené hodnoty ani rady', () => {
   // nez se data nacetla.
   assert.equal(PRAZDNA_BIOMETRIE.hrvMs, 0);
   assert.equal(PRAZDNA_BIOMETRIE.stepsToday, 0);
-  assert.equal(PRAZDNA_BIOMETRIE.bloodOxygenPercent, 0);
+  // bloodOxygenPercent / deepSleepDuration / sleepEfficiencyPercent tu
+  // byly jako konstantní nuly. Od 23. 8. 2026 v typu neexistují — nula
+  // v poli, které nikdo nenaplní, je tvrzení bez dat.
+  assert.ok(!('bloodOxygenPercent' in PRAZDNA_BIOMETRIE));
+  assert.ok(!('sleepEfficiencyPercent' in PRAZDNA_BIOMETRIE));
+  assert.ok(!('deepSleepDuration' in PRAZDNA_BIOMETRIE));
   assert.equal(PRAZDNA_BIOMETRIE.recoveryScore, 0);
   assert.equal(PRAZDNA_BIOMETRIE.recoveryAdvice, '');
   assert.equal(PRAZDNA_BIOMETRIE.sleepDuration, '');

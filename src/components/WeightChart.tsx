@@ -9,6 +9,29 @@ interface WeightChartProps {
   onAddMeasurement?: () => void;
 }
 
+/** Nejvíc popisků na ose X. Víc už se na šířku grafu nevejde čitelně. */
+const MAX_POPISKU = 6;
+
+/**
+ * Má se u tohohle bodu vykreslit datum?
+ *
+ * První a poslední bod vždycky — bez nich není poznat, jaké období graf
+ * ukazuje. Mezi nimi rovnoměrně, aby popisků bylo nejvýš `MAX_POPISKU`.
+ */
+function ukazPopisek(index: number, pocet: number): boolean {
+  if (pocet <= MAX_POPISKU) return true;
+  if (index === 0 || index === pocet - 1) return true;
+  const krok = Math.ceil((pocet - 1) / (MAX_POPISKU - 1));
+  return index % krok === 0;
+}
+
+/** „2026-08-22" → „22. 8." Rok do osy nepatří, je v hlavičce filtru. */
+function kratkeDatum(iso: string): string {
+  const [, mesic, den] = String(iso || '').slice(0, 10).split('-');
+  if (!mesic || !den) return String(iso || '');
+  return `${Number(den)}. ${Number(mesic)}.`;
+}
+
 export const WeightChart: React.FC<WeightChartProps> = ({
   recordsByFilter,
   onAddMeasurement
@@ -262,17 +285,24 @@ export const WeightChart: React.FC<WeightChartProps> = ({
                     filter="url(#glow)"
                   />
 
-                  {/* X-axis date labels */}
-                  <text
-                    x={pt.x}
-                    y={chartHeight - 4}
-                    textAnchor="middle"
-                    fill={isHovered ? '#38bdf8' : '#64748b'}
-                    fontSize="10"
-                    fontWeight={isHovered ? '600' : '400'}
-                  >
-                    {pt.record.date}
-                  </text>
+                  {/* POPISKY OSY X.
+                      Dřív se vykresloval popisek u každého bodu a celé ISO
+                      datum. Při jednom bodu to fungovalo; od 23. 8., kdy graf
+                      začal číst weight_history (46 měření místo 1), z toho byla
+                      nečitelná šmouha. Popisků je nejvýš šest, rozložených
+                      rovnoměrně, a datum je zkrácené na „22. 8.". */}
+                  {(ukazPopisek(idx, points.length) || isHovered) && (
+                    <text
+                      x={pt.x}
+                      y={chartHeight - 4}
+                      textAnchor="middle"
+                      fill={isHovered ? '#38bdf8' : '#64748b'}
+                      fontSize="10"
+                      fontWeight={isHovered ? '600' : '400'}
+                    >
+                      {kratkeDatum(pt.record.date)}
+                    </text>
+                  )}
                 </g>
               );
             })}
@@ -284,9 +314,14 @@ export const WeightChart: React.FC<WeightChartProps> = ({
       <div className="relative z-10 mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
         {hoveredPoint ? (
           <div className="flex items-center gap-3 text-slate-200">
-            <span className="font-semibold text-[#00f2fe]">{hoveredPoint.date}</span>
+            <span className="font-semibold text-[#00f2fe]">{kratkeDatum(hoveredPoint.date)}</span>
             <span>Váha: <strong className="text-white">{hodnotaNeboPomlcka(hoveredPoint.weight, 'kg')}</strong></span>
-            <span>Tuk: <strong className="text-[#39ff14]">{hodnotaNeboPomlcka(hoveredPoint.fatPercent, '%')}</strong></span>
+            {/* Tuk se u bodu grafu ukáže, jen když ho ten den opravdu známe.
+                `weight_history` ho nenese, takže tu dřív svítilo „Tuk: —"
+                u každého měření. Složení těla má vlastní kartu nad grafem. */}
+            {hoveredPoint.fatPercent > 0 && (
+              <span>Tuk: <strong className="text-[#39ff14]">{hodnotaNeboPomlcka(hoveredPoint.fatPercent, '%')}</strong></span>
+            )}
             {hoveredPoint.note && (
               <span className="hidden sm:inline text-slate-400 italic">({hoveredPoint.note})</span>
             )}

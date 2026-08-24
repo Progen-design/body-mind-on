@@ -137,7 +137,8 @@
     "fix:lactose-free-plans": "node --import ./scripts/lib/extensionlessResolve-register.mjs scripts/fix-lactose-free-active-plans.mjs",
     "migrate:plan-html-from-structured": "node scripts/rebuild-plan-html-from-structured.mjs",
     "deploy:note": "echo Use PR -> Vercel Preview -> merge to main. Do not auto git add/push.",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:db": "node --test lib/__tests__/db/odvozeneTagy.db.test.mjs"
   },
   "dependencies": {
     "@sentry/node": "^10.70.0",

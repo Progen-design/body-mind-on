@@ -178,13 +178,13 @@ BEGIN
   -- tag shodí — „nevíme" není „bez lepku".
   v_tagy := array_remove(v_tagy, 'gluten_free');
   IF array_length(public.recipe_diet_conflicts(p_ingredients, 'gluten_free'), 1) IS NULL THEN
-    v_tagy := v_tagy || 'gluten_free';
+    v_tagy := v_tagy || 'gluten_free'::text;
   END IF;
 
   -- low_carb: čistě z maker, práh 26 % energie ze sacharidů.
   v_tagy := array_remove(v_tagy, 'low_carb');
   IF public.je_low_carb(p_kcal, p_carbs_g) THEN
-    v_tagy := v_tagy || 'low_carb';
+    v_tagy := v_tagy || 'low_carb'::text;
   END IF;
 
   RETURN v_tagy;

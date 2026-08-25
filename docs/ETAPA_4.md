@@ -1,6 +1,6 @@
 # Etapa 4 — co klientovi v aplikaci chybí
 
-Pořadí práce: **4.7, 4.8, pak 4.1–4.3.** Zbytek (4.4–4.6) až po schválení.
+Pořadí práce: **4.0, 4.7, 4.8, pak 4.1–4.3.** Zbytek (4.4–4.6) až po schválení.
 Postupuj po jednom bodu, po každém ukaž diff a počkej na „schvaluji".
 
 Platí pravidla z `claude/BMON_PROMPT_KOMPLETACE_2026-08-23.md`:
@@ -8,6 +8,30 @@ bez dat žádný závěr, `null` je „—" a nikdy `0`, žádná mock data, ž�
 jeden zdroj pravdy, `lib/` je čisté JS s explicitními `.js` importy.
 
 ---
+
+## 4.0 Watchdog `nenormalizovana_surovina` hlásí falešné poplachy — HOTOVO
+
+Změřeno v produkci 25. 8. 2026: hlásil 13 surovin (agáve, bazalka, granola,
+ricotta, tymián, edamame, ostružiny, červená řepa, hroznové víno, chilli
+vločky, sezamová semínka, sójové maso, balsamico ocet) a všech 13 mělo
+kanonický název přímo v `ingredients_nutrition`.
+
+Dvě příčiny, obě opravené:
+
+1. **Větev se ptala jen na `ingredient_aliases`.** Název, který JE kanonický,
+   alias nepotřebuje — je normalizovaný z definice. Self-aliasů chybí 271
+   z 308, takže hlídka by křičela u každé další suroviny.
+2. **Log plnil cron podle špatného slovníku.** `resolveCanonicalName().matched`
+   se databáze neptá vůbec — porovnává proti konstantě v
+   `lib/ingredientAliasSeed.js` (74 klíčů), zatímco v DB je 376 surovin
+   a 503 aliasů. Kdyby se opravila jen větev, log by se plnil dál.
+
+Otázku „zná slovník tuhle surovinu?" teď zodpovídá jedno místo:
+`public.je_ve_slovniku()` (migrace `20260825090000`). Watchdog ji volá přímo,
+cron přes `suroviny_mimo_slovnik()`.
+
+Po opravě hlásí watchdog **0**. `resolveCanonicalName` zůstává beze změny —
+odpovídá na jinou otázku (klíč pro slučování položek nákupního seznamu).
 
 ## 4.7 Profilová fotka se nenačte
 

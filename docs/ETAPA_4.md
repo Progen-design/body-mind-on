@@ -77,14 +77,34 @@ toho fronta smí objednat. **Nejdřív návrh s čísly, pak implementace.**
 
 Zvlášť prověřit 14 položek ve stavu `failed` (bylo 9). Co je shodilo.
 
-## 4.10 Spoonacular je vyschlý
+## 4.10 Spoonacular je vyschlý — UZAVŘENO: KONEC ZDROJE
 
-66 dotazů vyčerpaných, 0 použitelných. Druhý zdroj katalogu nedodává vůbec,
-takže veškerý růst visí na generátoru z 4.9.
+**Rozhodnuto 25. 8. 2026: Spoonacular je dojetý. Růst katalogu visí na
+generátoru. Novou dávku dotazů nezkoušet.**
 
-Zjistit, jestli jde rotaci doplnit novými dotazy, nebo jestli je ten zdroj
-u konce a máme se spolehnout jen na generátor. **Říct to rovnou** — když je
-konec, ať to víme a přestaneme na něj čekat.
+Naměřeno 25. 8. 2026:
+
+```
+66 dotazů, 66 vyčerpaných, 63 vyřazených, 0 použitelných
+API status 200, kvóta zbývá 20–28  →  nejde o limit ani o klíč
+poslední běh 20. 8.
+```
+
+Výnos posledních dnů:
+
+| den | kandidátů | vloženo | duplicit |
+|---|---|---|---|
+| 17. 8. | 103 | 31 | 72 |
+| 18. 8. | 87 | **0** | 87 |
+| 19. 8. | 81 | 3 | 78 |
+| 20. 8. | 72 | **0** | 72 |
+
+API odpovídá a kvóta je — jen všechno, co těch 66 dotazů vrátí, už v katalogu
+máme. Tři vložené recepty za tři dny nestojí za údržbu rotace.
+
+Důsledek pro plánování: **jediný zdroj růstu je generátor**, takže na 4.9
+závisí celý katalog. `import-spoonacular` zatím běží dál a nic nekazí (jen
+vyhodnocuje duplicity), vypnutí crona je samostatné rozhodnutí.
 
 ## 4.11 Slovník surovin
 

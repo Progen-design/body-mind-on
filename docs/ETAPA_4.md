@@ -13,6 +13,26 @@ jeden zdroj pravdy, `lib/` je čisté JS s explicitními `.js` importy.
 
 ---
 
+## PRAVIDLO RECEPTŮ (Honza, 25. 8. 2026)
+
+Plné znění je v projektu jako `claude/BMON_PRAVIDLA_RECEPTU.md`. Tady je proto,
+že **mění brány katalogu** — kdo sahá na `enforce_recipe_catalog_rules` nebo na
+import, musí ho znát.
+
+**PRIORITA: hodně jídel, jednoduchých, rychlých. V tomhle pořadí.**
+
+- **Počet surovin NENÍ omezení.** Honza výslovně: „je mi jedno, z kolika se to
+  skládá surovin." Recept o deseti surovinách hotový za deset minut je lepší
+  než recept o pěti, co se dělá hodinu.
+- **Čas JE omezení.** „Nic extra složitého, na co zabere hodně času."
+- **Složitost postupu JE omezení** — počet úkonů a nádobí, ne délka seznamu
+  surovin.
+
+Co se tím NEUVOLŇUJE: dietní brána, alergeny, lepek, kalorické pásmo a trefa
+do maker zůstávají beze změny. Uvolnění se týká jen pohodlí vaření.
+
+---
+
 ## 4.0 Watchdog `nenormalizovana_surovina` hlásí falešné poplachy — HOTOVO
 
 Změřeno v produkci 25. 8. 2026: hlásil 13 surovin (agáve, bazalka, granola,
@@ -72,10 +92,40 @@ Zjistit a napsat **čísly**: kolik receptů vyrobí jeden běh, co ten strop ur
 (limit v kódu? `maxDuration`? cena?), a kolik stojí jeden recept v OpenAI
 kreditech. Bez ceny za kus se o zrychlení nedá rozhodnout.
 
-Pak navrhnout, co s tím — víc běhů denně, víc kusů na běh, nebo omezit, kolik
-toho fronta smí objednat. **Nejdřív návrh s čísly, pak implementace.**
-
 Zvlášť prověřit 14 položek ve stavu `failed` (bylo 9). Co je shodilo.
+
+### Rozhodnuto 25. 8. 2026, pořadí prací
+
+**1. Zastropovat frontu.** Schváleno v obou částech:
+   - **1a** `pozadovano` na položku zastropovat,
+   - **1b** slučovat duplicitní poptávku na **(slot, dieta)** s kanonickým
+     pásmem slotu z `ROZSAHY_CHODU`. Uživatelské pásmo z objednávky mizí —
+     katalog je sdílený a pásmo si vybírá plánovač při skládání.
+     Naměřeno: 2 042 kusů ve 100 položkách → **112 v 16 položkách**.
+   - **1c** **Uvolnit strop na počet surovin.** `countMainIngredients` dnes
+     tvrdě odmítá 11+ hlavních surovin, což podle pravidla recepty výš
+     neodpovídá zadání a zahazuje jídla, za která jsme zaplatili. Změřeno:
+     v katalogu je 174 aktivních receptů s 8+ surovinami a čas je přesto
+     v pořádku (max 30 min) — korelace „hodně surovin = dlouhé vaření"
+     neplatí. Nejdřív zjistit, **kolik receptů ten strop za poslední měsíc
+     odmítl**; když málo, neřešit a říct to. Když hodně, strop zvednout nebo
+     zrušit a nahradit limitem na **čas** a **počet kroků postupu**,
+     navrženým z naměřených dat.
+
+**2. Zjistit, proč model vrací míň, než se žádá.** Strop `RECIPE_GEN_MAX_OUTPUT_TOKENS`
+   to NENÍ — naměřeno 25. 8.: nejdelší odpověď za celou historii měla 1 518
+   tokenů ze 4 000, u stropu neskončilo ani jedno z 329 volání. Navíc se
+   o pět často vůbec nežádá (`Math.min(pozadovano - vyrobeno, 5, zbyva)`)
+   a `ai_runs` nelogují, kolik se žádalo. **Nejdřív dologovat `zadano`,
+   změřit skutečný poměr, teprve pak sahat na prompt.**
+
+**3. Zmenšit prompt.** Do každého volání jde seznam všech názvů slotu —
+   5,2 k tokenů při 600 receptech, 6,8 k při 930, roste lineárně s katalogem.
+   Schváleno předem: **A** vzorek ~80 názvů místo úplného seznamu + **C**
+   opřít dedup o `DEDUP_JACCARD_THRESHOLD` proti DB místo prosby v promptu.
+   Ukázat naměřenou úsporu.
+
+**Strop 50/den se nezvedá**, dokud není hotový bod 2.
 
 ## 4.10 Spoonacular je vyschlý — UZAVŘENO: KONEC ZDROJE
 

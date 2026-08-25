@@ -70,13 +70,15 @@ test('stáří se počítá z času doručení, ne z data měření', () => {
   );
 });
 
-test('práh zastarání odpovídá hodinovému odesílání', () => {
-  // Auto Export posila po hodine. Puvodnich 36 h byla mez pro denni
-  // odesilani a pri hodinove frekvenci by schovala dva dny vypadku.
+test('práh zastarání je jediné místo, kde se soudí', () => {
+  // Puvodnich 36 h byla mez pro denni odesilani a schovala by dva dny
+  // vypadku. Dvanact hodin ticha uz neni vypadek Wi-Fi, ale zaseknute
+  // odesilani; kratsi prah by hlasil poplach pres noc, kdy iOS aplikaci
+  // na pozadi bezne uspi.
   const shoda = /HODIN_DO_ZASTARANI = (\d+)/.exec(PROFIL);
   assert.ok(shoda, 'práh zastarání se nedá přečíst');
   const hodin = Number(shoda[1]);
-  assert.ok(hodin <= 12, `práh ${hodin} h je při hodinovém odesílání příliš benevolentní`);
+  assert.ok(hodin <= 12, `práh ${hodin} h by schoval celodenní výpadek`);
   assert.ok(hodin >= 6, `práh ${hodin} h by hlásil poplach přes noc`);
 });
 
@@ -84,12 +86,36 @@ test('rozdíl mezi zdroji je v UI vidět', () => {
   // Withings server stahuje sam, Apple Health posila iPhone. Kdyz to UI
   // nerekne, uzivatel ceka automatiku i tam, kde zadna neni.
   assert.ok(
-    PROFIL.includes('automaticky každou hodinu'),
-    'u Withings chybí, že se stahuje sám'
+    /Server naposled stahoval|Stahuje server sám/.test(PROFIL),
+    'u Withings chybí, že stahuje server'
   );
   assert.ok(
     /iPhone/.test(PROFIL),
     'u Apple Health chybí, že data posílá telefon'
+  );
+});
+
+test('karty netvrdí frekvenci, kterou nikdo neměří', () => {
+  // Zmereno 24. 8. 2026 08:20: z 45 payloadu prislo poslednich 8 mezi
+  // 23:07:00 a 23:08:08 — jedna davka za 68 sekund, ne hodinova uloha.
+  // Pak devet hodin ticho. "Kazdou hodinu" je nastaveni, ne pozorovani,
+  // a u Withings je to rozvrh cronu, ne zaznam o tom, ze probehl.
+  assert.ok(
+    !/každou hodinu/.test(PROFIL),
+    'karta zase tvrdí hodinový interval místo naměřeného odstupu'
+  );
+  assert.ok(
+    /odstupText/.test(PROFIL),
+    'karta nepočítá odstup od poslední dávky'
+  );
+});
+
+test('odznak u Apple Health ukazuje odstup, ne verdikt', () => {
+  // "Aktualni" u dat starych hodinu a pul bylo tvrzeni navic — opiralo se
+  // o predpoklad hodinoveho odesilani, ktery mereni nepotvrdilo.
+  assert.ok(
+    !/>\s*Aktuální\s*</.test(PROFIL),
+    'odznak zase tvrdí „Aktuální" místo naměřeného odstupu'
   );
 });
 

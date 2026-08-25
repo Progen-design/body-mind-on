@@ -907,6 +907,7 @@ function AppContent() {
               birthDate={profilData?.user?.birth_date ?? null}
               registrovanOd={profilData?.user?.created_at ?? null}
               posledniSynchronizace={posledniSynchronizaceHodinek}
+              withingsPosledniStazeni={profilData?.withings_last_sync_at ?? null}
               onEditPreferences={() => setIsPreferencesModalOpen(true)}
               onSyncAll={handleManualWithingsSync}
               onAddWeight={() => setIsAddRecordModalOpen(true)}

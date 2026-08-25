@@ -126,7 +126,10 @@ export default async function handler(req, res) {
         .maybeSingle(),
       supabaseServer
         .from('withings_connections')
-        .select('id')
+        // `last_sync_at` je NAMERENY fakt: kdy server naposled opravdu stahoval.
+        // Karta zarizeni ho potrebuje misto vety o hodinovem cronu — ta rika,
+        // co ma nastavene, ne co se stalo.
+        .select('id, last_sync_at')
         .eq('user_id', userId)
         .limit(1)
         .maybeSingle(),
@@ -531,6 +534,8 @@ export default async function handler(req, res) {
       },
       can_create_calendar_events: canCreateCalendarEvents,
       has_withings_connection: hasWithingsConnection,
+      /** Kdy server naposled stahoval z Withings. null = zatim nikdy. */
+      withings_last_sync_at: withingsConnRow?.last_sync_at || null,
       user: {
         id: user.id,
         email: user.email,

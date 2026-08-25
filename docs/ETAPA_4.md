@@ -1,7 +1,11 @@
 # Etapa 4 — co klientovi v aplikaci chybí
 
-Pořadí práce: **4.0, 4.7, 4.8, pak 4.1–4.3.** Zbytek (4.4–4.6) až po schválení.
+Pořadí práce: **4.0, 4.7, 4.8, 4.9, 4.10, 4.11, 4.12, pak 4.1–4.3.**
+Zbytek (4.4–4.6) až po schválení.
 Postupuj po jednom bodu, po každém ukaž diff a počkej na „schvaluji".
+
+U bodů 4.9–4.12 platí navíc: **nejdřív nález a návrh s čísly, teprve po
+schválení implementace.** Nezačínej kódovat proti nezměřenému odhadu.
 
 Platí pravidla z `claude/BMON_PROMPT_KOMPLETACE_2026-08-23.md`:
 bez dat žádný závěr, `null` je „—" a nikdy `0`, žádná mock data, žádný Next.js,
@@ -57,6 +61,54 @@ a 23:08:08 — tedy jedna dávka za 68 sekund, ne hodinová úloha. Od 23:08 do
 `last_sync_error` `null`, všech 45 zpracovaných bez chyby.
 
 Totéž zkontroluj u karty Withings — jestli i ona tvrdí interval místo měření.
+
+## 4.9 Průtok generátoru
+
+Fronta si říká o 2 079 kusů, generátor dělá 20 denně — 104 dní, a fronta roste
+při každém generování plánu. Nikdy se nevyprázdní. Nic to nezastaví, jen se
+plán opakuje a hůř trefuje makra.
+
+Zjistit a napsat **čísly**: kolik receptů vyrobí jeden běh, co ten strop určuje
+(limit v kódu? `maxDuration`? cena?), a kolik stojí jeden recept v OpenAI
+kreditech. Bez ceny za kus se o zrychlení nedá rozhodnout.
+
+Pak navrhnout, co s tím — víc běhů denně, víc kusů na běh, nebo omezit, kolik
+toho fronta smí objednat. **Nejdřív návrh s čísly, pak implementace.**
+
+Zvlášť prověřit 14 položek ve stavu `failed` (bylo 9). Co je shodilo.
+
+## 4.10 Spoonacular je vyschlý
+
+66 dotazů vyčerpaných, 0 použitelných. Druhý zdroj katalogu nedodává vůbec,
+takže veškerý růst visí na generátoru z 4.9.
+
+Zjistit, jestli jde rotaci doplnit novými dotazy, nebo jestli je ten zdroj
+u konce a máme se spolehnout jen na generátor. **Říct to rovnou** — když je
+konec, ať to víme a přestaneme na něj čekat.
+
+## 4.11 Slovník surovin
+
+44 receptů přišlo o `gluten_free` kvůli surovině mimo slovník. Watchdog
+`surovina_blokuje_dietni_tag` (migrace `20260825...`, viz 4.0 a Etapa 3) je
+vypisuje. Doplnit je — většina jsou triviální aliasy na věci, které ve slovníku
+už jsou (mleté hovězí, fettuccine, kukuřičné tortilly, listová kapusta…).
+
+U každé doplněné suroviny musí být jasné, **jestli obsahuje lepek**. Když si
+nejsi jistý, veď ji jako lepkovou a nahlas ji zvlášť — u celiaka je zbytečná
+přísnost levnější než omyl.
+
+Po doplnění ukázat, kolik receptů tag získalo zpátky.
+
+## 4.12 Cviky bez vizuálu
+
+14 cviků nemá GIF ani obrázek. Dnes žádný z nich není v aktivním plánu, takže
+to nikdo nevidí — ale až na ně generátor tréninku sáhne, tlačítko „Jak na to"
+bude prázdné.
+
+Zjistit, odkud se vizuály berou (`exercise_asset_registry`, cron
+`/api/cron/import-exercises`) a proč těmhle čtrnácti chybí. Doplnit je, nebo —
+když zdroj nemá — zajistit, že se u nich tlačítko nezobrazí a generátor je
+nepreferuje.
 
 ## 4.1 Náhrada jídla
 

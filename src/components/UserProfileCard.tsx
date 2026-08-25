@@ -3,6 +3,7 @@ import { UserProfile, WeightRecord, AppleWatchBiometrics } from '../types';
 import { ShieldCheck, User, Scale, Activity, ChevronRight, Edit3 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { hodnotaNeboPomlcka } from '../data/adaptery';
+import { Avatar } from './Avatar';
 
 interface UserProfileCardProps {
   profile: UserProfile;
@@ -35,11 +36,11 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({
         <div className="flex items-center gap-3.5 sm:gap-4 cursor-pointer" onClick={onViewFullProfile}>
           <div className="relative">
             <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden p-0.5 bg-gradient-to-tr from-[#00f2fe] to-[#39ff14] shadow-[0_0_15px_rgba(0,242,254,0.3)]">
-              <img
+              <Avatar
+                jmeno={profile.name}
                 src={profile.avatarUrl}
-                alt={profile.name}
-                referrerPolicy="no-referrer"
-                className="w-full h-full object-cover rounded-xl bg-slate-900"
+                className="w-full h-full rounded-xl bg-slate-900"
+                textClassName="text-lg sm:text-xl"
               />
             </div>
             <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#39ff14] border-2 border-[#0e131d] shadow-[0_0_8px_#39ff14]" />

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { ConfirmDialog } from './ConfirmDialog';
+import { Avatar } from './Avatar';
 
 interface HeaderProps {
   onOpenMenu: () => void;
@@ -60,11 +61,11 @@ export const Header: React.FC<HeaderProps> = ({
             className="flex items-center gap-2 pl-1 pr-1 sm:pr-3 py-1 rounded-full bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800/80 hover:border-cyan-500/40 transition-all active:scale-95"
             title={`Přihlášen: ${account.name}`}
           >
-            <img
+            <Avatar
+              jmeno={account.name}
               src={account.avatarUrl}
-              alt={account.name}
-              referrerPolicy="no-referrer"
-              className="w-7 h-7 rounded-full object-cover bg-slate-800"
+              className="w-7 h-7 rounded-full bg-slate-800 shrink-0"
+              textClassName="text-[10px]"
             />
             <span className="hidden sm:inline text-xs font-semibold text-slate-300 max-w-[7rem] truncate">
               {account.name.split(' ')[0]}
@@ -126,11 +127,11 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
 
                     <div className="p-3 rounded-2xl bg-slate-900/70 border border-cyan-500/25 flex items-center gap-3">
-                      <img
+                      <Avatar
+                        jmeno={account.name}
                         src={account.avatarUrl}
-                        alt={account.name}
-                        referrerPolicy="no-referrer"
-                        className="w-10 h-10 rounded-xl object-cover bg-slate-800 shrink-0"
+                        className="w-10 h-10 rounded-xl bg-slate-800 shrink-0"
+                        textClassName="text-xs"
                       />
                       <div className="min-w-0 flex-1">
                         <div className="text-xs font-bold text-slate-100 truncate">{account.name}</div>

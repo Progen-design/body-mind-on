@@ -18,6 +18,7 @@ import { motion } from 'motion/react';
 import { UserProfile, UserPreferences, WeightRecord, AppleWatchBiometrics, TelesneSlozeni } from '../types';
 import { hodnotaNeboPomlcka, kdyMereno, zmenaText } from '../data/adaptery';
 import { denniMakra } from '../lib/makra';
+import { Avatar } from './Avatar';
 import { useAuth } from '../context/AuthContext';
 import { NadpisSekce } from './NadpisSekce';
 // `useTed` tu bylo kvůli kartě „AI trenér TED" mezi zařízeními. TED není
@@ -148,11 +149,11 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           <div className="flex items-center gap-4 sm:gap-5 min-w-0">
             <div className="relative shrink-0">
               <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden p-1 bg-gradient-to-tr from-[#00f2fe] via-cyan-600 to-[#39ff14] shadow-[0_0_20px_rgba(0,242,254,0.3)]">
-                <img
+                <Avatar
+                  jmeno={account?.name || profile.name}
                   src={account?.avatarUrl || profile.avatarUrl}
-                  alt={account?.name || profile.name}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover rounded-xl bg-slate-900"
+                  className="w-full h-full rounded-xl bg-slate-900"
+                  textClassName="text-2xl sm:text-3xl"
                 />
               </div>
               <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#39ff14] border-2 border-[#0c1017] shadow-[0_0_10px_#39ff14]" />

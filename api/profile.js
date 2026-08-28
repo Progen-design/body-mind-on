@@ -8,6 +8,7 @@ import { getRegistrationAnchoredWeek } from '../lib/profileWeekRange.js';
 import { reconcileUserDataByEmail } from '../lib/reconcileUserDataByEmail.js';
 import { shouldShowWithingsSection } from '../lib/withingsProfileVisibility.js';
 import { canRenewPlanForMembership } from '../lib/planGenerationGate.js';
+import { isTierCheckoutEnabled } from '../lib/salesFeatureFlags.js';
 import { resolveProgramTier } from '../lib/programTier.js';
 import { zachytChybu, odesliChyby } from '../lib/sentryServer.js';
 import { sestavHistoriiVah } from '../lib/vahaHistorie.js';
@@ -79,7 +80,7 @@ export default async function handler(req, res) {
         .limit(50),
       supabaseServer
         .from('ai_generated_plans')
-        .select('id, plan_type, daily_calories, macros, valid_from, valid_until, created_at, plan_html, structured_plan_json, is_active, generated_by')
+        .select('id, plan_type, daily_calories, macros, valid_from, valid_until, created_at, plan_html, structured_plan_json, is_active, generated_by, locked')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(10),
@@ -533,6 +534,35 @@ export default async function handler(req, res) {
         trial_ended: planRenewal.trialEnded,
       },
       can_create_calendar_events: canCreateCalendarEvents,
+      /**
+       * ZAMČENÝ TÝDEN — co uživatel dostane, když zaplatí.
+       *
+       * Zámek se počítá TEĎ, ne při generování: `locked` na řádku znamená jen
+       * „vzniklo jako ukázka". Jakmile členství obnovu dovolí (zaplatil),
+       * `zamceno: false` a UI ho pustí bez toho, aby se cokoli přepisovalo.
+       *
+       * `dny_do_konce_trialu` je tu proto, aby UI nemuselo počítat z datumů
+       * samo — v `adaptery.ts` se `status: 'trial'` dosud zobrazoval jako
+       * „AKTIVNÍ" až do posledního dne.
+       */
+      zamceny_plan: (() => {
+        const ukazka = plansData.find((p) => p.locked);
+        if (!ukazka) return null;
+        return {
+          valid_from: String(ukazka.valid_from || '').split('T')[0] || null,
+          valid_until: String(ukazka.valid_until || '').split('T')[0] || null,
+          daily_calories: ukazka.daily_calories ?? null,
+          macros: ukazka.macros ?? null,
+          structured_plan_json: ukazka.structured_plan_json ?? null,
+          zamceno: !planRenewal.allowed,
+          // Server je jediný, kdo rozhoduje, co se prodává (`isTierCheckoutEnabled`
+          // v `create-checkout-session.js`) — klient se jen ptá, ne duplikuje.
+          dostupne_tiery: ['START', 'ON_CLUB', 'VIP'].filter((t) => isTierCheckoutEnabled(t)),
+        };
+      })(),
+      trial: program === 'START' && membershipStatus === 'trial' && trialEndsAt
+        ? { konci: String(trialEndsAt).split('T')[0], dny_do_konce: daysUntilTrialEnd }
+        : null,
       has_withings_connection: hasWithingsConnection,
       /** Kdy server naposled stahoval z Withings. null = zatim nikdy. */
       withings_last_sync_at: withingsConnRow?.last_sync_at || null,

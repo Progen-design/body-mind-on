@@ -249,11 +249,25 @@ export interface UserPreferences {
 
 export interface UserProfile {
   name: string;
-  status: 'AKTIVNÍ' | 'PAUZOVÁNO' | 'VIP';
+  status: 'AKTIVNÍ' | 'TRIAL' | 'PAUZOVÁNO' | 'VIP';
   avatarUrl: string;
   membershipPlan: string;
   nextConsultationDate: string;
   subtitle?: string;
+  /** Kolik dní zbývá do konce trialu. null = uživatel v trialu není. */
+  trialDniDoKonce?: number | null;
+}
+
+/** Zamčený týden — co uživatel dostane, když zaplatí. */
+export interface ZamcenyPlan {
+  validFrom: string | null;
+  validUntil: string | null;
+  dailyCalories: number | null;
+  /** Jídla prvního dne — ukázka, na kterou se dá kouknout přes paywall. */
+  ukazkaJidel: { typ: string; nazev: string; kcal: number | null }[];
+  zamceno: boolean;
+  /** Které tiery se dají koupit. Server rozhoduje (`isTierCheckoutEnabled`), ne klient. */
+  dostupneTiery: ('START' | 'ON_CLUB' | 'VIP')[];
 }
 
 /** Účet, pod kterým je uživatel přihlášen (lze mezi nimi přepínat). */

@@ -6,6 +6,7 @@ import { NavigationTabs, ActiveTab } from './components/NavigationTabs';
 import { QuickActionToolbar } from './components/QuickActionToolbar';
 import { OverviewBentoGrid } from './components/OverviewBentoGrid';
 import { ProfileSection } from './components/ProfileSection';
+import { TrialPaywallCard } from './components/TrialPaywallCard';
 import { BodyCompositionSection } from './components/BodyCompositionSection';
 import { NutritionSection } from './components/NutritionSection';
 import { WorkoutSection } from './components/WorkoutSection';
@@ -36,7 +37,7 @@ import type { NastaveniProfilu } from './data/adaptery';
 import {
   dnesekPraha, dnesniNavyky, mnozinaDokonceni, naJidla, naNakupniSeznam, naNavyky,
   hodnotaNeboPomlcka, naNastaveniProfilu, naPreference, naProfil, naTelesneSlozeni, naTreninky, naVazeni,
-  naZlozvyky, naZpravyTrenera, pouzijDokonceni,
+  naZlozvyky, naZpravyTrenera, naZamcenyPlan, pouzijDokonceni,
   pouzijDokonceniTreninku, vyberPlan
 } from './data/adaptery';
 import { ToastProvider, useToast } from './context/ToastContext';
@@ -69,7 +70,8 @@ import {
   UserProfile,
   CoachTip,
   TelesneSlozeni,
-  WithingsConnection
+  WithingsConnection,
+  ZamcenyPlan
 } from './types';
 
 /** Doplní chybějící pole, když jsou uložená data starší než aktuální tvar objektu. */
@@ -112,6 +114,9 @@ function AppContent() {
   // Výchozí záložka je profil — „Přehled" už neexistuje, sloučil se do něj.
   const [activeTab, setActiveTab] = useState<ActiveTab>('profil');
   const [profile, setProfile] = useState<UserProfile>(PRAZDNY_PROFIL);
+  // Ukázka příštího týdne pro trial, ať vidí konkrétní jídla dřív, než
+  // zaplatí. null = žádná ukázka (ne v trialu, nebo ještě nevznikla).
+  const [zamcenyPlan, setZamcenyPlan] = useState<ZamcenyPlan | null>(null);
   // Prazdno, dokud nedorazi server. Driv tu byl seed se sedmi vymyslenymi
   // vazenimi a graf tak ukazoval cizi hodnoty, nez se profil nacetl.
   const [weightRecords, setWeightRecords] =
@@ -170,6 +175,7 @@ function AppContent() {
     if (!profilData) return;
     const plan = vyberPlan(profilData.plans);
     setProfile(naProfil(profilData));
+    setZamcenyPlan(naZamcenyPlan(profilData));
 
     // Vychozi stav odskrtnuti jde ze serveru, ne z prazdna — jinak by se po
     // kazdem nacteni tvarilo, ze uzivatel dnes nic nesplnil.
@@ -914,6 +920,8 @@ function AppContent() {
               onOpenWeightTab={() => setActiveTab('vaha')}
               isSyncing={isSyncing}
             />
+
+            <TrialPaywallCard plan={zamcenyPlan} />
 
             <OverviewBentoGrid
               latestWeightRecord={latestRecord}

@@ -4,6 +4,7 @@ import { ShieldCheck, User, Scale, Activity, ChevronRight, Edit3 } from 'lucide-
 import { motion } from 'motion/react';
 import { hodnotaNeboPomlcka } from '../data/adaptery';
 import { Avatar } from './Avatar';
+import { MembershipStatusBadge } from './MembershipStatusBadge';
 
 interface UserProfileCardProps {
   profile: UserProfile;
@@ -80,10 +81,7 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({
             </div>
           )}
 
-          <div className="px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide uppercase text-[#39ff14] bg-emerald-950/40 border border-[#39ff14]/50 shadow-[0_0_15px_rgba(57,255,20,0.25)] flex items-center gap-1.5 select-none">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#39ff14] animate-ping" />
-            <span>{profile.status}</span>
-          </div>
+          <MembershipStatusBadge status={profile.status} trialDniDoKonce={profile.trialDniDoKonce} variant="card" />
 
           {onViewFullProfile && (
             <button

@@ -1,75 +1,69 @@
 # Další krok pro Claude Code
 
-Aktuální zadání. Pořadí: **5.9, pak 1c.** Jeden bod na jednu session, po
-dokončení `/clear`.
-
 ## Pravidla, která platí nade vším
 
-**Kredity docházejí.** 28. 8. padlo přes 20 $ za den. Proto:
+**Kredity docházejí.**
 
-- **Neměř produkci.** Žádné `supabase db dump`, žádné parsery nad produkčními
-  daty, žádné dotazy do DB kvůli číslům. Čísla dostaneš hotová. Ty píšeš kód.
+- **Neměř produkci.** Žádné `supabase db dump`, žádné dotazy do DB, žádné
+  Vercel MCP. Čísla dostaneš hotová.
+- **Nikdy `supabase db push` ani `apply_migration`.** Repo a
+  `schema_migrations` jsou od 23. 8. rozejité — `db push` by znovu pustil
+  14 už nasazených migrací. Migrace nasazuje Honzův druhý Claude.
+- **Jeden bod na jednu session.** Po dokončení `/clear`.
 - **Nečti soubory celé**, když stačí `grep` na konkrétní řádek.
-- **Model je Sonnet** (`.claude/settings.json`). Opus jen když si o něj
-  výslovně řekneš a zdůvodníš proč.
+- **Model je Sonnet.** Opus jen po výslovném zdůvodnění.
+- Eslint na `src/` nespouštěj — repo ho tam nemá (`lint` cílí na `api lib`).
 
-Ostatní beze změny: bez dat žádný závěr, `null` je „—" a nikdy `0`, žádná
-mock data, žádný Next.js, jeden zdroj pravdy, `lib/` je čisté JS
-s explicitními `.js` importy. Po každém bodu diff a čekej na „schvaluji".
-
----
-
-## 5.9 ZAMČENÝ DALŠÍ TÝDEN A CHECKOUT DO SPA
-
-**Honza schválil 28. 8.** Tohle je jediná věc mezi produktem a penězi.
-
-Dnes člověku po konci trialu svítí starý propadlý plán bez označení a nemá
-kde zaplatit. Nula ze tří trialů konvertovala.
-
-### Co udělat
-
-1. **Vygenerovat další týden i pro trial** a uložit ho jako zamčený.
-   `api/generate-plan-next-week.js` už existuje, není napojený a používá
-   jinou bránu, která trial pouští. Napoj ho.
-   Recepty stojí nulu — plán se skládá z katalogu, `OPENAI_PLAN_ENABLED`
-   je `false`.
-
-2. **Paywall do SPA.** Čtyři komponenty leží v `_legacy-next/`, které je
-   ve `.vercelignore`. Převezmi z nich, co jde; SPA dnes `plan_state` vůbec
-   nečte.
-   Zamčený týden musí být **vidět** — konkrétní jídla, konkrétní čísla —
-   a přes něj paywall. Člověk kupuje to, co má před očima.
-
-3. **Varování před koncem trialu.** Dnes štítek tvrdí „AKTIVNÍ" až do
-   posledního dne (`src/data/adaptery.ts:642`: `'trial' → AKTIVNÍ`).
-   Musí být vidět, kolik dní zbývá.
-
-4. **Cesta k zaplacení.** Ověř, že endpoint pro Stripe checkout session je
-   nasazený a funkční — 13. 8. proběhla ostrá platba, takže existovat má.
-
-Brány `start_trial_allows_initial_plan_only` v `planGenerationGate.js:69`
-a `planRenewalRules.js:100` se nemění — přidává se vedle nich cesta na
-zamčený plán, ne obcházení té stávající. Obě držet v souladu, UI čte
-`planRenewalRules`.
+Ostatní beze změny: bez dat žádný závěr, `null` je „—" a nikdy `0`, žádná mock
+data, žádný Next.js, jeden zdroj pravdy, `lib/` je čisté JS s explicitními
+`.js` importy.
 
 ---
 
-## 1c ZRUŠIT STROP NA POČET SUROVIN
+## 5.9b NA PAYWALLU JEN TO, CO SE OPRAVDU PRODÁVÁ
 
-**Honza schválil 28. 8.** včetně upřesnění:
+Rozhodnutí Honzy z 29. 8.: **prodává se jen START.** ON Club a VIP až po
+rozhodnutí, zatím se neprodávají.
 
-- Zrušit `count_main_ingredients > 10` v `enforce_recipe_catalog_rules`
-  **i ve sweeperu**. Obě místa — jinak sweeper vrátí, co brána vypne.
-- **Časový limit beze změny.**
-- **Nový limit na počet kroků nezavádět** — data ho neopodstatňují.
-- Dietní brána, alergeny, lepek, kalorické pásmo a trefa do maker se NEMĚNÍ.
+Hotová část 5.9 vykresluje tři tlačítka. Dvě z nich server odmítne přes
+`isTierCheckoutEnabled` a uživatel dostane „Připravujeme". Na obrazovce,
+jejímž jediným úkolem je vzít peníze, je rozbité tlačítko horší než žádné.
 
-Pravidlo z 25. 8.: „hodně jídel, jednoduchých, rychlých; je mi jedno,
-z kolika surovin."
+### Co změnit
+
+1. **`api/profile.js`** — do odpovědi přidat `dostupne_tiery`: pole těch
+   z `['START','ON_CLUB','VIP']`, pro které `isTierCheckoutEnabled(tier)`
+   (`lib/salesFeatureFlags.js`) vrací true. Žádný nový env, žádná druhá
+   kopie logiky — server je jediný, kdo o zapnutí rozhoduje, klient se ptá.
+
+2. **`src/data/adaptery.ts`** — přenést `dostupne_tiery` do `ZamcenyPlan`
+   (a doplnit typ v `src/types.ts`). Když pole chybí nebo je prázdné,
+   fallback `['START']`. Prázdný paywall je horší než špatný — nesmí
+   vzniknout stav bez jediné cesty k platbě.
+
+3. **`src/components/TrialPaywallCard.tsx`** — vykreslit jen tiery
+   z `dostupne_tiery`. Ostatní neukazovat vůbec: ani zašedlé, ani
+   s „Připravujeme". Při jediném dostupném tieru nesmí karta zůstat
+   v třetinové mřížce — roztáhnout na plnou šířku.
+
+4. **`src/data/adaptery.test.ts`** — dva testy: chybějící pole → `['START']`;
+   `['START','ON_CLUB']` projde beze změny pořadí.
+
+### Verifikace
+
+`npm run test:src`, `npx tsc --noEmit`, `npm run lint:copy`.
+
+**Necommituj.** Tohle jde do jednoho commitu s hotovou částí 5.9 — až po
+výslovném „schvaluji".
 
 ---
 
 ## Co čeká za tím
+
+**1c** — uvolnit strop na počet surovin. `countMainIngredients` odmítá 11+
+hlavních surovin. Honzovo pravidlo z 25. 8.: „hodně jídel, jednoduchých,
+rychlých; je mi jedno, z kolika surovin." Nahradit limitem na čas a počet
+kroků. Dietní brána, alergeny, lepek a kalorické pásmo se NEMĚNÍ.
 
 **4.9 bod 2** — dologovat `zadano` vedle `vraceno` do `ai_runs.result`, aby
 šlo změřit, kolik receptů se od modelu opravdu žádá. Teprve podle toho sahat

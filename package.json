@@ -138,7 +138,8 @@
     "migrate:plan-html-from-structured": "node scripts/rebuild-plan-html-from-structured.mjs",
     "deploy:note": "echo Use PR -> Vercel Preview -> merge to main. Do not auto git add/push.",
     "preview": "vite preview",
-    "test:db": "node --test lib/__tests__/db/odvozeneTagy.db.test.mjs lib/__tests__/db/slovnikSurovin.db.test.mjs lib/__tests__/db/frontaSlucovani.db.test.mjs"
+    "test:db": "node --test lib/__tests__/db/odvozeneTagy.db.test.mjs lib/__tests__/db/slovnikSurovin.db.test.mjs lib/__tests__/db/frontaSlucovani.db.test.mjs",
+    "check:migrace": "node scripts/kontrola-migraci.mjs"
   },
   "dependencies": {
     "@sentry/node": "^10.70.0",

@@ -1,64 +1,75 @@
 # Další krok pro Claude Code
 
-Aktuální zadání. Honza tenhle soubor otevře a řekne „udělej, co je
-v `docs/DALSI_KROK.md`". Nic jiného rozepsaného není.
+Aktuální zadání. Pořadí: **5.9, pak 1c.** Jeden bod na jednu session, po
+dokončení `/clear`.
 
-## Pravidla, která teď platí nade vším
+## Pravidla, která platí nade vším
 
 **Kredity docházejí.** 28. 8. padlo přes 20 $ za den. Proto:
 
 - **Neměř produkci.** Žádné `supabase db dump`, žádné parsery nad produkčními
-  daty, žádné dotazy do DB kvůli číslům. Čísla ti dodám hotová. Ty píšeš kód.
-- **Jeden bod na jednu session.** Po dokončení bodu `/clear`.
+  daty, žádné dotazy do DB kvůli číslům. Čísla dostaneš hotová. Ty píšeš kód.
 - **Nečti soubory celé**, když stačí `grep` na konkrétní řádek.
-- **Model je Sonnet** (nastaveno v `.claude/settings.json`). Opus jen když si
-  o něj výslovně řekneš a zdůvodníš proč.
+- **Model je Sonnet** (`.claude/settings.json`). Opus jen když si o něj
+  výslovně řekneš a zdůvodníš proč.
 
-Ostatní pravidla beze změny: bez dat žádný závěr, `null` je „—" a nikdy `0`,
-žádná mock data, žádný Next.js, jeden zdroj pravdy, `lib/` je čisté JS
+Ostatní beze změny: bez dat žádný závěr, `null` je „—" a nikdy `0`, žádná
+mock data, žádný Next.js, jeden zdroj pravdy, `lib/` je čisté JS
 s explicitními `.js` importy. Po každém bodu diff a čekej na „schvaluji".
 
 ---
 
-## 5.9 V SPA NENÍ PAYWALL ANI CHECKOUT
+## 5.9 ZAMČENÝ DALŠÍ TÝDEN A CHECKOUT DO SPA
 
-**Nejvyšší priorita.** Tohle je důvod, proč 0 ze 3 trialů konvertovalo — ne
-plán, ne katalog. Není kde zaplatit.
+**Honza schválil 28. 8.** Tohle je jediná věc mezi produktem a penězi.
 
-Ověřeno grepem přes celý `src/`: jediná zmínka o členství je
-`src/data/adaptery.ts:642` — štítek `'active' → AKTIVNÍ`, `'trial' → AKTIVNÍ`,
-jinak `PAUZOVÁNO`. Žádný paywall, žádné tlačítko zaplatit, žádný odkaz na
-checkout. `TrialExpiredPaywall`, `PlanLockedPaywall` a `TrialEndingSoonBanner`
-zůstaly ve starém Next.js appu a do Bento SPA se nepřenesly.
+Dnes člověku po konci trialu svítí starý propadlý plán bez označení a nemá
+kde zaplatit. Nula ze tří trialů konvertovala.
 
-### Nejdřív nález, pak čekej na schválení
+### Co udělat
 
-1. Kde ty staré komponenty jsou a co uměly. Jde je převzít, nebo psát znovu?
-2. Jaký endpoint zakládá Stripe checkout session a je nasazený? 13. 8.
-   proběhla ostrá platba, takže někde být má.
-3. Co dnes uvidí uživatel s prošlým trialem, obrazovku po obrazovce.
-4. Co uvidí uživatel, kterému trial končí za dva dny. Dnes mu štítek tvrdí
-   „AKTIVNÍ" a nikde nestojí, že končí — to je taky chyba.
+1. **Vygenerovat další týden i pro trial** a uložit ho jako zamčený.
+   `api/generate-plan-next-week.js` už existuje, není napojený a používá
+   jinou bránu, která trial pouští. Napoj ho.
+   Recepty stojí nulu — plán se skládá z katalogu, `OPENAI_PLAN_ENABLED`
+   je `false`.
 
-Zjisti to **z kódu**, ne z produkce.
+2. **Paywall do SPA.** Čtyři komponenty leží v `_legacy-next/`, které je
+   ve `.vercelignore`. Převezmi z nich, co jde; SPA dnes `plan_state` vůbec
+   nečte.
+   Zamčený týden musí být **vidět** — konkrétní jídla, konkrétní čísla —
+   a přes něj paywall. Člověk kupuje to, co má před očima.
 
-### Podklad, ať to nemusíš měřit
+3. **Varování před koncem trialu.** Dnes štítek tvrdí „AKTIVNÍ" až do
+   posledního dne (`src/data/adaptery.ts:642`: `'trial' → AKTIVNÍ`).
+   Musí být vidět, kolik dní zbývá.
 
-- Plán se skládá z katalogu, `OPENAI_PLAN_ENABLED` je `false`. Vygenerovat
-  další týden stojí prakticky nula, takže zamčený týden pod paywallem je levný.
-- Brána `start_trial_allows_initial_plan_only` pouští trialu jen `initial_plan`.
-  Je to záměr, ne chyba. Zatím na ni nesahej.
-- Účty k 28. 8.: 1 platící (`active`), 3 trialy — všem trial skončil a plán
-  jim skončil den před tím nebo dřív. Nula konverzí.
+4. **Cesta k zaplacení.** Ověř, že endpoint pro Stripe checkout session je
+   nasazený a funkční — 13. 8. proběhla ostrá platba, takže existovat má.
+
+Brány `start_trial_allows_initial_plan_only` v `planGenerationGate.js:69`
+a `planRenewalRules.js:100` se nemění — přidává se vedle nich cesta na
+zamčený plán, ne obcházení té stávající. Obě držet v souladu, UI čte
+`planRenewalRules`.
+
+---
+
+## 1c ZRUŠIT STROP NA POČET SUROVIN
+
+**Honza schválil 28. 8.** včetně upřesnění:
+
+- Zrušit `count_main_ingredients > 10` v `enforce_recipe_catalog_rules`
+  **i ve sweeperu**. Obě místa — jinak sweeper vrátí, co brána vypne.
+- **Časový limit beze změny.**
+- **Nový limit na počet kroků nezavádět** — data ho neopodstatňují.
+- Dietní brána, alergeny, lepek, kalorické pásmo a trefa do maker se NEMĚNÍ.
+
+Pravidlo z 25. 8.: „hodně jídel, jednoduchých, rychlých; je mi jedno,
+z kolika surovin."
 
 ---
 
 ## Co čeká za tím
-
-**1c** — uvolnit strop na počet surovin. `countMainIngredients` odmítá 11+
-hlavních surovin. Honzovo pravidlo z 25. 8.: „hodně jídel, jednoduchých,
-rychlých; je mi jedno, z kolika surovin." Nahradit limitem na čas a počet
-kroků. Dietní brána, alergeny, lepek a kalorické pásmo se NEMĚNÍ.
 
 **4.9 bod 2** — dologovat `zadano` vedle `vraceno` do `ai_runs.result`, aby
 šlo změřit, kolik receptů se od modelu opravdu žádá. Teprve podle toho sahat

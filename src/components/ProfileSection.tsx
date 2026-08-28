@@ -18,6 +18,8 @@ import { motion } from 'motion/react';
 import { UserProfile, UserPreferences, WeightRecord, AppleWatchBiometrics, TelesneSlozeni } from '../types';
 import { hodnotaNeboPomlcka, kdyMereno, zmenaText } from '../data/adaptery';
 import { denniMakra } from '../lib/makra';
+import { odstupHodin, odstupText } from '../lib/odstup';
+import { Avatar } from './Avatar';
 import { useAuth } from '../context/AuthContext';
 import { NadpisSekce } from './NadpisSekce';
 // `useTed` tu bylo kvůli kartě „AI trenér TED" mezi zařízeními. TED není
@@ -36,6 +38,8 @@ interface ProfileSectionProps {
   registrovanOd?: string | null;
   /** ISO čas posledního přijatého payloadu z Apple Health. null = zatím nic nedorazilo. */
   posledniSynchronizace?: string | null;
+  /** ISO čas posledního stažení z Withings. null = server zatím nestahoval. */
+  withingsPosledniStazeni?: string | null;
   onEditPreferences: () => void;
   onSyncAll: () => void;
   onAddWeight: () => void;
@@ -53,6 +57,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   birthDate = null,
   registrovanOd = null,
   posledniSynchronizace = null,
+  withingsPosledniStazeni = null,
   onEditPreferences,
   onSyncAll,
   onAddWeight,
@@ -93,13 +98,37 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
    */
   const HODIN_DO_ZASTARANI = 12;
 
-  const { zdraviPosledni, zdraviZastarale } = React.useMemo(() => {
+  /**
+   * ODSTUP SE POČÍTÁ, INTERVAL SE NETVRDÍ.
+   *
+   * Do 25. 8. 2026 karta psala „Odesílá tvůj iPhone každou hodinu" a u dat
+   * starých hodinu a půl svítil odznak „Aktuální". Změřeno 24. 8. 08:20:
+   * posledních 8 payloadů dorazilo mezi 23:07:00 a 23:08:08 — jedna dávka za
+   * 68 sekund, ne hodinová úloha. Pak devět hodin ticho. Žádnou pravidelnou
+   * frekvenci tedy tvrdit nemůžeme; víme jen, kdy dorazila poslední dávka.
+   *
+   * Proto odznak neříká verdikt („Aktuální"), ale naměřený odstup. Práh
+   * dvanácti hodin zůstává jediným místem, kde se soudí — tam už nejde
+   * o výpadek Wi-Fi, ale o zaseknuté odesílání.
+   */
+  const { zdraviPosledni, zdraviOdstup, zdraviZastarale } = React.useMemo(() => {
     const iso = posledniSynchronizace || null;
-    const t = Date.parse(String(iso || ''));
-    if (!Number.isFinite(t)) return { zdraviPosledni: null, zdraviZastarale: false };
-    const stariHodin = (Date.now() - t) / 36e5;
-    return { zdraviPosledni: iso, zdraviZastarale: stariHodin > HODIN_DO_ZASTARANI };
+    const stariHodin = odstupHodin(iso);
+    if (stariHodin === null) {
+      return { zdraviPosledni: null, zdraviOdstup: '', zdraviZastarale: false };
+    }
+    return {
+      zdraviPosledni: iso,
+      zdraviOdstup: odstupText(iso),
+      zdraviZastarale: stariHodin > HODIN_DO_ZASTARANI,
+    };
   }, [posledniSynchronizace]);
+
+  /** Kdy server naposled opravdu stahoval z Withings. Prázdno = nevíme. */
+  const withingsOdstup = React.useMemo(
+    () => odstupText(withingsPosledniStazeni),
+    [withingsPosledniStazeni],
+  );
 
   /** „2. 8. 2026" — datum registrace. Bez data se řádek nekreslí. */
   const clenOd = React.useMemo(() => {
@@ -148,11 +177,11 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           <div className="flex items-center gap-4 sm:gap-5 min-w-0">
             <div className="relative shrink-0">
               <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden p-1 bg-gradient-to-tr from-[#00f2fe] via-cyan-600 to-[#39ff14] shadow-[0_0_20px_rgba(0,242,254,0.3)]">
-                <img
+                <Avatar
+                  jmeno={account?.name || profile.name}
                   src={account?.avatarUrl || profile.avatarUrl}
-                  alt={account?.name || profile.name}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover rounded-xl bg-slate-900"
+                  className="w-full h-full rounded-xl bg-slate-900"
+                  textClassName="text-2xl sm:text-3xl"
                 />
               </div>
               <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#39ff14] border-2 border-[#0c1017] shadow-[0_0_10px_#39ff14]" />
@@ -408,10 +437,18 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                 </span>
               )}
             </div>
-            {/* Váha se stahuje sama — server se k Withings umí připojit. */}
+            {/* KDY SERVER OPRAVDU STAHOVAL, NE JAK ČASTO HO TO MÁ NAPLÁNOVANÉ.
+                Do 25. 8. 2026 tu stálo „Stahuje se automaticky každou hodinu".
+                To je rozvrh cronu, ne záznam o tom, že proběhl — a když se
+                stahování zasekne, věta lže dál. `last_sync_at` je naměřený
+                fakt a řekne totéž, jen pravdivě. */}
             <div className="text-[11px] text-emerald-400/90 mt-2 flex items-center gap-1.5">
               <RefreshCw className="w-3 h-3 shrink-0" />
-              <span>Stahuje se automaticky každou hodinu</span>
+              <span>
+                {withingsOdstup
+                  ? `Server naposled stahoval ${withingsOdstup}`
+                  : 'Stahuje server sám, zatím ale žádné stažení neproběhlo'}
+              </span>
             </div>
           </div>
 
@@ -431,21 +468,27 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-slate-200">Apple Health</div>
-                  <div className="text-[11px] text-slate-400">
+                  {/* Odstup je to podstatné, přesný čas jde vidět v titulku. */}
+                  <div className="text-[11px] text-slate-400" title={kdyMereno(zdraviPosledni)}>
                     {zdraviPosledni
-                      ? `Poslední odeslání ${kdyMereno(zdraviPosledni)}`
+                      ? `Poslední odeslání ${zdraviOdstup}`
                       : 'Zatím žádná data z hodinek'}
                   </div>
                 </div>
               </div>
-              {zdraviPosledni && !zdraviZastarale && (
-                <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold text-[#39ff14] bg-emerald-950/60 border border-emerald-500/30">
-                  Aktuální
-                </span>
-              )}
-              {zdraviZastarale && (
-                <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold text-amber-300 bg-amber-950/60 border border-amber-500/40">
-                  Zastaralé
+              {/* ODZNAK UKAZUJE ODSTUP, NE VERDIKT.
+                  „Aktuální" u dat starých hodinu a půl bylo tvrzení navíc:
+                  opíralo se o předpoklad hodinového odesílání, který měření
+                  nepotvrdilo. Číslo si uživatel přebere sám. */}
+              {zdraviPosledni && (
+                <span
+                  className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                    zdraviZastarale
+                      ? 'text-amber-300 bg-amber-950/60 border-amber-500/40'
+                      : 'text-slate-300 bg-slate-800/80 border-slate-600/50'
+                  }`}
+                >
+                  {zdraviOdstup}
                 </span>
               )}
             </div>
@@ -454,9 +497,13 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                 ? <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
                 : <RefreshCw className="w-3 h-3 shrink-0 mt-0.5" />}
               <span>
+                {/* ŽÁDNÁ FREKVENCE. Věta „Odesílá tvůj iPhone každou hodinu"
+                    tvrdila rozvrh, který měření nepotvrdilo — dávky chodí ve
+                    shlucích a devět hodinových slotů propadlo vcelku. Co platí
+                    pořád, je SMĚR: server si data vyžádat neumí. */}
                 {zdraviZastarale
                   ? `Přes ${HODIN_DO_ZASTARANI} hodin nepřišlo nic. Odesílá iPhone, ne server — zkontroluj Auto Export v telefonu.`
-                  : 'Odesílá tvůj iPhone každou hodinu, server si data stáhnout nemůže'}
+                  : 'Odesílá iPhone, server si data stáhnout nemůže'}
               </span>
             </div>
           </div>

@@ -51,6 +51,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/ai/run-scheduler",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/cron/import-exercises",
       "schedule": "45 2 * * *"
     },

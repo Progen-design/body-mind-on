@@ -46,6 +46,13 @@ export interface ProfilOdpoved {
   habit_logs_progress?: ZaznamNavyku[];
   body_composition?: TelesneSlozeni | null;
   coach_messages?: ZpravaTrenera[];
+  /**
+   * Kdy server naposled stahoval z Withings (`withings_connections.last_sync_at`).
+   * null = zatím nikdy. Karta zařízení z toho počítá odstup — dřív tam stála
+   * věta „Stahuje se automaticky každou hodinu", což je nastavení cronu, ne
+   * záznam o tom, že se to opravdu stalo.
+   */
+  withings_last_sync_at?: string | null;
 }
 
 /** Radek `ai_messages` (agent_slug = 'coach'), jak ho vraci /api/profile. */

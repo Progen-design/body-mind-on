@@ -1,11 +1,17 @@
 // GET/POST /api/cron/shopping-normalize-audit
-// Scan active plans; log ingredient names that fail canonical normalization.
+// Scan active plans; log ingredient names the DICTIONARY does not know.
+//
+// Do 25. 8. 2026 se tu ptalo `resolveCanonicalName().matched`, což je porovnani
+// proti konstante v lib/ingredientAliasSeed.js (74 kanonickych klicu), ne proti
+// slovniku v databazi (376 surovin, 503 aliasu). Log se tim plnil surovinami,
+// ktere slovnik zna, a watchdog je hlasil jako chybejici. Otazku "zna slovnik
+// tuhle surovinu?" ted zodpovida jedine misto: `suroviny_mimo_slovnik()` v DB.
 import { supabaseServer } from '../../lib/supabaseServer.js';
 import {
-  collectShoppingIngredientRecordsFromMeals,
-  parseShoppingIngredientRecord,
-} from '../../lib/shoppingListAggregate.js';
-import { resolveCanonicalName } from '../../lib/ingredientNormalize.js';
+  nazvySurovinVPlanech,
+  radkyKZapisu,
+  vsechnyNazvy,
+} from '../../lib/shoppingNormalizeAudit.js';
 
 function isCronAuthorized(req) {
   const secret = process.env.CRON_SECRET;
@@ -35,33 +41,25 @@ export default async function handler(req, res) {
       return res.status(500).json({ ok: false, error: planErr.message, started_at: startedAt });
     }
 
-    /** @type {Map<string, Set<number>>} */
-    const missesByPlan = new Map();
+    const podlePlanu = nazvySurovinVPlanech(plans || []);
+    const nazvy = vsechnyNazvy(podlePlanu);
 
-    for (const plan of plans || []) {
-      const days = plan.structured_plan_json?.days || [];
-      const meals = days.flatMap((d) => d?.meals || []);
-      const records = collectShoppingIngredientRecordsFromMeals(meals);
-      const unmapped = new Set();
+    // Jeden dotaz na vsechny nazvy naraz. Po jednom by to byly stovky
+    // round-tripu; stahnout si slovnik a porovnavat v JS by znamenalo opsat
+    // `normalizuj_nazev_suroviny` do JavaScriptu — a byli bychom zpatky
+    // u dvou slovniku, ktere se rozejdou.
+    let nezname = new Set();
+    if (nazvy.length > 0) {
+      const { data, error: rpcErr } = await supabaseServer
+        .rpc('suroviny_mimo_slovnik', { p_nazvy: nazvy });
 
-      for (const ing of records) {
-        const parsed = parseShoppingIngredientRecord(ing);
-        if (!parsed?.name) continue;
-        const resolved = resolveCanonicalName(parsed.name);
-        if (!resolved.matched) unmapped.add(String(parsed.name).trim());
+      if (rpcErr) {
+        return res.status(500).json({ ok: false, error: rpcErr.message, started_at: startedAt });
       }
-
-      if (unmapped.size > 0) {
-        missesByPlan.set(plan.id, unmapped);
-      }
+      nezname = new Set(data || []);
     }
 
-    const upsertRows = [];
-    for (const [planId, names] of missesByPlan) {
-      for (const rawName of names) {
-        upsertRows.push({ plan_id: planId, raw_name: rawName, seen_at: startedAt });
-      }
-    }
+    const upsertRows = radkyKZapisu(podlePlanu, nezname, startedAt);
 
     if (upsertRows.length > 0) {
       const { error: upsertErr } = await supabaseServer
@@ -75,7 +73,9 @@ export default async function handler(req, res) {
     return res.status(200).json({
       ok: true,
       plans_scanned: (plans || []).length,
-      plans_with_misses: missesByPlan.size,
+      names_checked: nazvy.length,
+      unknown_names: nezname.size,
+      plans_with_misses: new Set(upsertRows.map((r) => r.plan_id)).size,
       miss_rows: upsertRows.length,
       started_at: startedAt,
     });

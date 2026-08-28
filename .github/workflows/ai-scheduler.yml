@@ -1,25 +1,31 @@
-# AI Scheduler – supplemental cron for Vercel Hobby plan
+# AI Scheduler — RUČNÍ ZÁCHRANA. Pravidelný běh dělá Vercel cron.
 #
-# Vercel Hobby plan limits cron to 1x/day. This workflow calls the scheduler
-# every 5 minutes, independently of Vercel's native cron, ensuring autonomous
-# AI orchestration runs on time.
+# ===========================================================================
+# PROČ TADY UŽ NENÍ `schedule`
+# ===========================================================================
+# Tenhle workflow vznikl jako náhrada za Vercel Hobby plan, který uměl cron
+# jen 1× denně. Projekt je dneska na Pro a sub-denní crony prokazatelně jedou
+# (`translate-recipes` po 5 minutách).
 #
-# Required GitHub repository secrets:
-#   APP_URL        – musí být stejné jako app_url z GET https://…/api/integrations-status
-#   CRON_SECRET    – shodně s CRON_SECRET na Vercelu (Bearer u /api/ai/run-scheduler)
+# 21. 8. 2026 se `schedule` zakomentoval s odůvodněním, že „v repu nejsou
+# secrets APP_URL a CRON_SECRET". To nebyla pravda — oba jsou nastavené od
+# 11. 3. 2026 a běhy před vypnutím končily success za 9–17 s. Scheduler tím
+# přestal běžet na čtyři dny, aniž by to kdokoli poznal.
 #
-# To disable: remove or rename this file, or set `enabled: false` on the
-# `schedule` trigger (not supported natively – just delete the schedule block).
+# Přesunuto do `vercel.json` → `crons` (28. 8. 2026), protože:
+#   * je to jediné místo, kde jsou naplánované všechny ostatní úlohy,
+#   * odpadá duplikace CRON_SECRET mezi Vercelem a GitHubem — právě ta tenhle
+#     výpadek způsobila,
+#   * `api/ai/run-scheduler.js` už `maxDuration: 300` má, chyběl jen rozvrh.
+#
+# Soubor zůstává kvůli `workflow_dispatch`: ruční spuštění z Actions UI je
+# záchrana pro případ, kdy je Vercel cron mimo provoz nebo je potřeba frontu
+# protlačit hned. Rozvrh sem NEVRACEJ — dvě místa, která plánují totéž, se
+# zase rozejdou.
 
-name: AI Scheduler (every 5 min)
+name: AI Scheduler (ruční spuštění)
 
 on:
-  # VYPNUTO 2026-08-21: cron každých 5 minut trvale padal a zaplavoval Actions
-  # červenými běhy, protože v repu nejsou secrets APP_URL a CRON_SECRET.
-  # Až budou nastavené, stačí odkomentovat blok schedule níže.
-  # schedule:
-  #   - cron: "*/5 * * * *"
-  # Manuální spuštění z GitHub Actions UI zůstává funkční.
   workflow_dispatch:
 
 jobs:

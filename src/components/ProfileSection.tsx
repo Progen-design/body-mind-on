@@ -22,6 +22,7 @@ import { odstupHodin, odstupText } from '../lib/odstup';
 import { Avatar } from './Avatar';
 import { useAuth } from '../context/AuthContext';
 import { NadpisSekce } from './NadpisSekce';
+import { MembershipStatusBadge } from './MembershipStatusBadge';
 // `useTed` tu bylo kvůli kartě „AI trenér TED" mezi zařízeními. TED není
 // zařízení a stejná karta je v Bento gridu níž — v profilu byl dvakrát.
 
@@ -192,10 +193,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                   {account?.name || profile.name}
                 </h2>
-                <div className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-[#39ff14] bg-emerald-950/60 border border-[#39ff14]/50 shadow-[0_0_12px_rgba(57,255,20,0.25)] flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#39ff14] animate-ping" />
-                  <span>{profile.status}</span>
-                </div>
+                <MembershipStatusBadge status={profile.status} trialDniDoKonce={profile.trialDniDoKonce} variant="section" />
               </div>
 
               {account?.email && (

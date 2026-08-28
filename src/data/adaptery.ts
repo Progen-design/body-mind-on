@@ -26,12 +26,25 @@ import {
 import { naradiTreninku, svalCesky, zamereniTreninku } from '../../lib/profile/treninkPopis.js';
 import type {
   BadHabitItem, CoachTip, ExerciseItem, HabitItem, MealItem, RecipeDetail, ShoppingItem,
-  TelesneSlozeni, UserPreferences, UserProfile, WeightRecord, WorkoutDay
+  TelesneSlozeni, UserPreferences, UserProfile, WeightRecord, WorkoutDay,
+  ZamcenyPlan
 } from '../types';
 
 export interface ProfilOdpoved {
   program?: string;
   membershipStatus?: string;
+  /** Kolik dní zbývá do konce trialu. null/chybí = uživatel v trialu není. */
+  trial?: { konci: string; dny_do_konce: number | null } | null;
+  /** Ukázka příštího týdne pro trial. Zámek počítá server podle členství. */
+  zamceny_plan?: {
+    valid_from: string | null;
+    valid_until: string | null;
+    daily_calories: number | null;
+    structured_plan_json: unknown;
+    zamceno: boolean;
+    /** Které tiery `isTierCheckoutEnabled` pustí. Chybí/prázdné → naZamcenyPlan spadne na ['START']. */
+    dostupne_tiery?: ('START' | 'ON_CLUB' | 'VIP')[];
+  } | null;
   user?: {
     id: string; email: string; name: string | null; avatar_url: string | null;
     height_cm: number | null; goal_weight_kg: number | null; birth_date: string | null;
@@ -639,11 +652,57 @@ export function naProfil(odpoved: ProfilOdpoved): UserProfile {
   const stav = String(odpoved.membershipStatus || '');
   return {
     name: odpoved.user?.name || bm.name || odpoved.user?.email?.split('@')[0] || 'Můj profil',
-    status: stav === 'active' ? 'AKTIVNÍ' : stav === 'trial' ? 'AKTIVNÍ' : 'PAUZOVÁNO',
+    /*
+     * TRIAL NENÍ „AKTIVNÍ". Do 29. 8. 2026 se `trial` mapoval na „AKTIVNÍ"
+     * až do posledního dne, takže se člověk o konci dozvěděl tím, že mu
+     * přestal chodit plán. Zbývající dny nese `odpoved.trial`, aby si je
+     * UI nedopočítávalo z datumů samo.
+     */
+    status: stav === 'active' ? 'AKTIVNÍ' : stav === 'trial' ? 'TRIAL' : 'PAUZOVÁNO',
+    trialDniDoKonce: odpoved.trial?.dny_do_konce ?? null,
     avatarUrl: odpoved.user?.avatar_url || '',
     membershipPlan: NAZVY_PROGRAMU[program] || program,
     nextConsultationDate: '',
     subtitle: bm.goal ? String(bm.goal) : undefined
+  };
+}
+
+/**
+ * Ukázka zamčeného týdne pro paywall.
+ *
+ * Bere jídla PRVNÍHO dne, ne dnešního: ukázka je na příští týden, takže
+ * „dnešek" v ní neexistuje. Účel je ukázat konkrétní jídla a konkrétní čísla —
+ * paywall bez obsahu prodává slib, ne produkt.
+ */
+export function naZamcenyPlan(odpoved: ProfilOdpoved): ZamcenyPlan | null {
+  const z = odpoved.zamceny_plan;
+  if (!z) return null;
+
+  const struktura = strukturaPlanu({ structured_plan_json: z.structured_plan_json });
+  const prvniDen = struktura?.days?.[0];
+  const jidla = Array.isArray(prvniDen?.meals) ? prvniDen.meals : [];
+
+  let svaciny = 0;
+  return {
+    validFrom: z.valid_from,
+    validUntil: z.valid_until,
+    dailyCalories: z.daily_calories,
+    ukazkaJidel: jidla.map((m: any) => {
+      const jeSvacina = String(m?.type).toLowerCase() === 'snack';
+      const recept = m?.recipe || {};
+      return {
+        typ: typJidla(m?.type, jeSvacina ? svaciny++ : 0),
+        nazev: m?.display_name_cs || m?.name_cs || recept.title_cs || recept.title || 'Jídlo',
+        kcal: cislo(m?.kcal),
+      };
+    }),
+    zamceno: z.zamceno !== false,
+    // Prázdný paywall je horší než špatný — nesmí vzniknout stav bez jediné
+    // cesty k platbě. Chybějící/prázdné pole (starší odpověď serveru) spadne
+    // na START, ne na nic.
+    dostupneTiery: Array.isArray(z.dostupne_tiery) && z.dostupne_tiery.length > 0
+      ? z.dostupne_tiery
+      : ['START'],
   };
 }
 

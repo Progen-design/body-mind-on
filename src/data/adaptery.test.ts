@@ -417,3 +417,102 @@ test('prázdný vstup nedá graf, ne nulový bod', async () => {
   // Radek bez vahy neni mereni.
   assert.deepEqual(naVazeni({ weight_history: [{ date: '2026-08-22' }] } as never), []);
 });
+
+test('trial se zobrazuje jako TRIAL s poctem dni do konce, ne jako AKTIVNI', async () => {
+  const { naProfil } = await import('./adaptery.ts');
+
+  const profil = naProfil({
+    membershipStatus: 'trial',
+    trial: { konci: '2026-09-01', dny_do_konce: 3 },
+    user: { id: 'u1', email: 'u@example.com', name: 'Petr', avatar_url: null, height_cm: null, goal_weight_kg: null, birth_date: null, created_at: null }
+  } as never);
+
+  assert.equal(profil.status, 'TRIAL');
+  assert.equal(profil.trialDniDoKonce, 3);
+});
+
+test('aktivni clenstvi zustava AKTIVNI bez odpoctu dni', async () => {
+  const { naProfil } = await import('./adaptery.ts');
+
+  const profil = naProfil({
+    membershipStatus: 'active',
+    user: { id: 'u1', email: 'u@example.com', name: 'Petr', avatar_url: null, height_cm: null, goal_weight_kg: null, birth_date: null, created_at: null }
+  } as never);
+
+  assert.equal(profil.status, 'AKTIVNÍ');
+  assert.equal(profil.trialDniDoKonce, null);
+});
+
+test('zamceny plan bez dat z API je null, ne prazdny objekt', async () => {
+  const { naZamcenyPlan } = await import('./adaptery.ts');
+
+  assert.equal(naZamcenyPlan({} as never), null);
+  assert.equal(naZamcenyPlan({ zamceny_plan: null } as never), null);
+});
+
+test('zamceny plan preda konkretni jidla prvniho dne a stav zamku', async () => {
+  const { naZamcenyPlan } = await import('./adaptery.ts');
+
+  const plan = naZamcenyPlan({
+    zamceny_plan: {
+      valid_from: '2026-09-01',
+      valid_until: '2026-09-07',
+      daily_calories: 2400,
+      macros: null,
+      zamceno: true,
+      structured_plan_json: {
+        days: [
+          {
+            date: '2026-09-01',
+            meals: [
+              { type: 'breakfast', kcal: 500, display_name_cs: 'Ovesná kaše' },
+              { type: 'snack', kcal: 200, display_name_cs: 'Jogurt' }
+            ]
+          },
+          { date: '2026-09-02', meals: [{ type: 'lunch', kcal: 900, display_name_cs: 'Kuře s rýží' }] }
+        ]
+      }
+    }
+  } as never);
+
+  assert.equal(plan?.zamceno, true);
+  assert.equal(plan?.dailyCalories, 2400);
+  assert.equal(plan?.ukazkaJidel.length, 2);
+  assert.equal(plan?.ukazkaJidel[0].nazev, 'Ovesná kaše');
+  assert.equal(plan?.ukazkaJidel[0].kcal, 500);
+});
+
+test('chybejici dostupne_tiery spadne na START, ne na prazdny paywall', async () => {
+  const { naZamcenyPlan } = await import('./adaptery.ts');
+
+  const plan = naZamcenyPlan({
+    zamceny_plan: {
+      valid_from: '2026-09-01',
+      valid_until: '2026-09-07',
+      daily_calories: 2400,
+      macros: null,
+      zamceno: true,
+      structured_plan_json: null
+    }
+  } as never);
+
+  assert.deepEqual(plan?.dostupneTiery, ['START']);
+});
+
+test('dostupne_tiery ze serveru projdou beze zmeny poradi', async () => {
+  const { naZamcenyPlan } = await import('./adaptery.ts');
+
+  const plan = naZamcenyPlan({
+    zamceny_plan: {
+      valid_from: '2026-09-01',
+      valid_until: '2026-09-07',
+      daily_calories: 2400,
+      macros: null,
+      zamceno: true,
+      dostupne_tiery: ['START', 'ON_CLUB'],
+      structured_plan_json: null
+    }
+  } as never);
+
+  assert.deepEqual(plan?.dostupneTiery, ['START', 'ON_CLUB']);
+});

@@ -12,6 +12,7 @@
 // větev „nemá aktivní plán“ nikdy nevyhodnotí.
 import { isCronAuthorized } from '../../lib/adminAuth.js';
 import { runWeeklyPlanProducer } from '../../lib/weeklyPlanProducer.js';
+import { pripravZamceneUkazky } from '../../lib/zamcenyTydenPlanu.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -30,6 +31,34 @@ export default async function handler(req, res) {
   try {
     const vysledek = await runWeeklyPlanProducer({ dryRun });
 
+    // ZAMČENÉ UKÁZKY PRO TRIAL — běží tady, protože je to tentýž okamžik
+    // a tatáž otázka: „komu za chvíli dojde plán?". Rozdíl je jen v tom, že
+    // trialu nevzniká úloha, ale rovnou plán označený `locked`.
+    //
+    // Selhání ukázek NESMÍ shodit produkci opravdových plánů — ty jsou pro
+    // platící a mají přednost.
+    let ukazky = null;
+    let ukazkyError = null;
+    try {
+      ukazky = await pripravZamceneUkazky({ dryRun });
+    } catch (err) {
+      ukazkyError = err instanceof Error ? err.message : String(err);
+      console.error(JSON.stringify({
+        source: 'cron/weekly-plan-producer',
+        event: 'zamcene_ukazky_error',
+        error: ukazkyError,
+      }));
+    }
+
+    console.log(JSON.stringify({
+      source: 'cron/weekly-plan-producer',
+      event: 'zamcene_ukazky',
+      vyrobeno: ukazky?.vyrobeno ?? 0,
+      kandidatu: ukazky?.kandidatu ?? 0,
+      chyby: ukazky?.chyby ?? [],
+      error: ukazkyError,
+    }));
+
     console.log(JSON.stringify({
       source: 'cron/weekly-plan-producer',
       event: dryRun ? 'dry_run' : 'done',
@@ -41,7 +70,12 @@ export default async function handler(req, res) {
       errors: vysledek.errors?.length ?? 0,
     }));
 
-    return res.status(200).json({ ok: true, started_at: startedAt, ...vysledek });
+    return res.status(200).json({
+      ok: true,
+      started_at: startedAt,
+      ...vysledek,
+      zamcene_ukazky: ukazky ?? { error: ukazkyError },
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(JSON.stringify({

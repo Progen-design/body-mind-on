@@ -66,6 +66,11 @@ export interface ProfilOdpoved {
    * záznam o tom, že se to opravdu stalo.
    */
   withings_last_sync_at?: string | null;
+  /**
+   * Existuje řádek ve `withings_connections`? Karta Withings dřív měla
+   * odznak „Online" natvrdo v JSX a svítil i účtu bez jediného zařízení.
+   */
+  has_withings_connection?: boolean;
 }
 
 /** Radek `ai_messages` (agent_slug = 'coach'), jak ho vraci /api/profile. */

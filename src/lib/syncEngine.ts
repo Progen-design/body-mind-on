@@ -24,12 +24,6 @@ function monthLabel(date: Date): string {
   return `${m}.${date.getFullYear()}`;
 }
 
-/** "dnes v 08:45" — text pod tlačítkem synchronizace. */
-export function formatLastSynced(date: Date): string {
-  const time = date.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
-  return `dnes v ${time}`;
-}
-
 /**
  * Vloží nové vážení do všech časových řad. Když už pro dané období
  * existuje záznam se stejným popiskem (stejný den, resp. měsíc u 1R),

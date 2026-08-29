@@ -1,36 +1,48 @@
-import React, { useState } from 'react';
-import { RefreshCw, CheckCircle2, Wifi, Zap } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { RefreshCw, CheckCircle2, AlertTriangle, Wifi, WifiOff, Zap } from 'lucide-react';
 import { motion } from 'motion/react';
+import { SyncResult } from '../types';
+import { odstupText } from '../lib/odstup';
+import { withingsCardStav, withingsSyncOutcome } from '../../lib/withingsCardStav.js';
 
 interface WithingsCardProps {
-  onSync: () => Promise<void> | void;
+  /** Existuje řádek ve `withings_connections`? Ne odznak natvrdo. */
+  hasConnection: boolean;
+  /** `withings_last_sync_at` z profilu. null = server zatím nestahoval. */
+  lastSyncedAt: string | null;
+  /** `null`, když se sync nepovedl — karta to podle toho, ne podle uplynutí animace, pozná. */
+  onSync: () => Promise<SyncResult | null>;
   onOpenSettings: () => void;
-  lastSyncedText?: string;
 }
 
 export const WithingsCard: React.FC<WithingsCardProps> = ({
+  hasConnection,
+  lastSyncedAt,
   onSync,
-  onOpenSettings,
-  lastSyncedText = 'dnes v 08:45'
+  onOpenSettings
 }) => {
   const [isSyncing, setIsSyncing] = useState(false);
-  const [syncSuccess, setSyncSuccess] = useState(false);
+  const [syncOutcome, setSyncOutcome] = useState<'success' | 'error' | null>(null);
+
+  const lastSyncedText = odstupText(lastSyncedAt) || null;
+  const stav = useMemo(
+    () => withingsCardStav({ hasConnection, lastSyncedText }),
+    [hasConnection, lastSyncedText]
+  );
 
   const handleSyncClick = async () => {
     if (isSyncing) return;
     setIsSyncing(true);
-    setSyncSuccess(false);
+    setSyncOutcome(null);
 
     try {
-      if (onSync) {
-        await onSync();
-      }
-      // Simulated sync animation
-      await new Promise((res) => setTimeout(res, 1200));
-      setSyncSuccess(true);
-      setTimeout(() => setSyncSuccess(false), 3000);
+      const result = await onSync();
+      setSyncOutcome(withingsSyncOutcome(result));
+    } catch {
+      setSyncOutcome('error');
     } finally {
       setIsSyncing(false);
+      setTimeout(() => setSyncOutcome(null), 3000);
     }
   };
 
@@ -51,52 +63,73 @@ export const WithingsCard: React.FC<WithingsCardProps> = ({
             <h3 className="text-xl font-bold text-white tracking-tight">
               Withings
             </h3>
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/60 text-[#39ff14] border border-emerald-500/30">
-              <Wifi className="w-2.5 h-2.5" />
-              Online
-            </span>
+            {stav.badge === 'online' ? (
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/60 text-[#39ff14] border border-emerald-500/30">
+                <Wifi className="w-2.5 h-2.5" />
+                Online
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/50 text-amber-300 border border-amber-500/40">
+                <WifiOff className="w-2.5 h-2.5" />
+                Nepřipojeno
+              </span>
+            )}
           </div>
           <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
             Propojte svou chytrou váhu Withings pro automatickou synchronizaci měření tělesné kompozice a tepové frekvence.
           </p>
           <div className="text-[11px] text-slate-500 mt-2 flex items-center gap-1.5">
-            <span>Poslední úspěšná synchronizace:</span>
-            <span className="text-slate-300 font-medium">{lastSyncedText}</span>
+            {stav.badge === 'online' ? (
+              <>
+                <span>Poslední úspěšná synchronizace:</span>
+                <span className="text-slate-300 font-medium">{stav.statusLine}</span>
+              </>
+            ) : (
+              <span className="text-amber-300/90">{stav.statusLine}</span>
+            )}
           </div>
         </div>
 
         {/* Action Buttons matching screenshot layout */}
         <div className="flex flex-col gap-2.5 w-full md:w-auto min-w-[200px] sm:min-w-[240px]">
-          {/* Primary Cyan Glow Button: "Synchronizovat teď" */}
-          <button
-            onClick={handleSyncClick}
-            disabled={isSyncing}
-            className="w-full relative overflow-hidden py-3 px-5 rounded-2xl font-bold text-sm text-slate-950 bg-gradient-to-r from-[#00f2fe] to-[#38ef7d] hover:from-[#2bf5ff] hover:to-[#50fa8f] transition-all duration-300 shadow-[0_0_24px_rgba(0,242,254,0.4)] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-80"
-          >
-            {isSyncing ? (
-              <>
-                <RefreshCw className="w-4 h-4 text-slate-950 animate-spin" />
-                <span>Synchronizuji data...</span>
-              </>
-            ) : syncSuccess ? (
-              <>
-                <CheckCircle2 className="w-4 h-4 text-slate-950" />
-                <span>Aktualizováno!</span>
-              </>
-            ) : (
-              <>
-                <Zap className="w-4 h-4 text-slate-950 fill-current" />
-                <span>Synchronizovat teď</span>
-              </>
-            )}
-          </button>
+          {/* Primary Cyan Glow Button: "Synchronizovat teď" — bez připojení
+              nedává smysl, karta ho proto vůbec nekreslí. */}
+          {stav.showSyncButton && (
+            <button
+              onClick={handleSyncClick}
+              disabled={isSyncing}
+              className="w-full relative overflow-hidden py-3 px-5 rounded-2xl font-bold text-sm text-slate-950 bg-gradient-to-r from-[#00f2fe] to-[#38ef7d] hover:from-[#2bf5ff] hover:to-[#50fa8f] transition-all duration-300 shadow-[0_0_24px_rgba(0,242,254,0.4)] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-80"
+            >
+              {isSyncing ? (
+                <>
+                  <RefreshCw className="w-4 h-4 text-slate-950 animate-spin" />
+                  <span>Synchronizuji data...</span>
+                </>
+              ) : syncOutcome === 'success' ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-slate-950" />
+                  <span>Aktualizováno!</span>
+                </>
+              ) : syncOutcome === 'error' ? (
+                <>
+                  <AlertTriangle className="w-4 h-4 text-slate-950" />
+                  <span>Synchronizace selhala</span>
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 text-slate-950 fill-current" />
+                  <span>Synchronizovat teď</span>
+                </>
+              )}
+            </button>
+          )}
 
-          {/* Secondary Button: "Znovu propojit Withings" */}
+          {/* Secondary Button: propojení / nová autorizace */}
           <button
             onClick={onOpenSettings}
             className="w-full py-2.5 px-4 rounded-2xl text-xs sm:text-sm font-semibold text-slate-300 bg-slate-900/80 hover:bg-slate-800 hover:text-white border border-slate-700/60 hover:border-slate-600 transition-all duration-200 text-center active:scale-[0.98]"
           >
-            Znovu propojit Withings
+            {stav.badge === 'online' ? 'Znovu propojit Withings' : 'Připojit Withings'}
           </button>
         </div>
       </div>

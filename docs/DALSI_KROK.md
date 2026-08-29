@@ -14,59 +14,70 @@
 
 ---
 
-## 5.9c UKÁZKA SE GENERUJE DO MINULOSTI
+## 6.1 BEZLAKTÓZOVÝ UŽIVATEL DOSTAL MÁSLO
 
-Změřeno dry-runem produkčního cronu 29. 8., `zamcene_ukazky` vrátilo
-3 kandidáty:
+Změřeno v produkci 29. 8. Účet s `diet_type = 'lactose_free'` má v aktivním
+plánu tento recept:
 
 ```
-20bb0050  od 2026-08-10  do 2026-08-16   <- 19 dnu v minulosti
-e487293e  od 2026-08-25  do 2026-08-31   <- zacina v minulosti
-20d99b80  od 2026-08-28  do 2026-09-03   <- v poradku
+Pečené krevety s česnekovým máslem a špenátem
+  krevety 200 g
+  máslo 20 g        <- mlecny vyrobek
+  cesnek 5 g, spenat 100 g, olivovy olej 10 g, citronova stava 10 ml
 ```
 
-Příčina je v `lib/zamcenyTydenPlanu.js`: `od = poDnech(konec, 1)`, tedy
-ukázka vždy navazuje na poslední den posledního plánu — bez ohledu na to,
-jak dávno ten plán skončil. Komu plán dojel 9. 8., tomu se dnes vyrobí
-„další týden" na 10.–16. 8.
+Zbytek jeho týdne je čistý. Propadlo jedno jídlo na obyčejném „máslo".
 
-Paywall by pak tvrdil „Tvůj další týden je připravený" a ukazoval týden,
-který je 19 dní starý. To neprodá nic; spíš to prodej zabije.
+`lactose_free` se neřeší přes `diet_tags`, ale výhradně přes
+`mealContainsExcludedFood()` nad `DAIRY_TERMS` (viz komentář v
+`lib/dietOptions.js` a hlavička `lib/__tests__/dairyTerms.test.mjs`).
+Co v `DAIRY_TERMS` chybí, propluje publikační bránou. Stejná chyba jako
+feta a parmezán 14. 8. 2026.
 
 ### Co změnit
 
-V `najdiKandidatyNaUkazku()` počítat začátek jako **pozdější ze dvou dat**:
-den po konci posledního plánu, a dnešek. Nikdy dřív než dnes.
+Doplnit do `DAIRY_TERMS` máslo a jeho české tvary tak, aby dál procházela
+rostlinná másla. Pozor, tohle je celý vtip úkolu:
 
 ```
-const od = konec >= dnes ? poDnech(konec, 1) : dnes;
+BLOKOVAT      máslo, máslem, másla, přepuštěné máslo, ghí
+NEBLOKOVAT    arašídové máslo, mandlové máslo, kokosové máslo,
+              kakaové máslo, peanut butter
 ```
 
-`do` zůstává `poDnech(od, 6)`.
-
-Pozor na kontrolu duplicity o pár řádků níž — `maUkazkuOd.get(...) === od`
-porovnává datum začátku. Po téhle změně se `od` u propadlých trialů mění
-každý den, takže by se ukázka vyráběla znovu a znovu. Podmínku předělat na
-„už má JAKOUKOLI nepropadlou ukázku" — tedy existuje řádek s `locked` a
-`valid_until >= dnes`. To je jediná verze, která se sama neopakuje.
+Rozhodni se pro řešení, které nespoléhá na pořadí pravidel — seznam
+povolených výjimek musí vyhrát nad blokujícím termínem bez ohledu na to,
+v jakém pořadí se prochází.
 
 ### Testy
 
-Do `lib/` testové sady (najdi, kam patří — vzor podle sousedních modulů)
-přidat případy nad `najdiKandidatyNaUkazku` s podvrženým klientem:
+Rozšířit `lib/__tests__/dairyTerms.test.mjs` — struktura pro obojí tam už je:
 
-- plán skončil před 19 dny → `od` je dnešek, ne den po konci plánu
-- plán končí za 2 dny → `od` je den po konci plánu
-- už má ukázku s `valid_until` v budoucnu → kandidát nevzniká
-- už má ukázku, která propadla → kandidát vzniká znovu
+- do `MLECNE` přidat `máslo`, `máslem`, `přepuštěné máslo`, `ghí`
+  s odůvodněním „nález z 29. 8., recept Pečené krevety s česnekovým máslem"
+- do `ROSTLINNE` ověřit, že `arašídové máslo`, `mandlové máslo`,
+  `kokosové máslo`, `kakaové máslo` a `peanut butter` dál procházejí
+- přidat případ na název jídla, ne jen na řádek suroviny — produkční nález
+  byl v obou
 
 ### Verifikace
 
-`npm run test:src`, `npx tsc --noEmit`, `npm run lint:copy`.
+`npm run test:unit`, `npx tsc --noEmit`, `npm run lint:copy`.
 
 ---
 
-## Za tím
+## Za tím, v tomhle pořadí
 
-Audit stránky Profil — plán a čísla jsou v `docs/AUDIT_PROFILU.md`,
-postupuje se shora dolů po sekcích. Zadání pro každou sekci přijde sem.
+**6.2 Reset stavu při změně přihlášeného uživatele.** Po registraci nového
+účtu svítí v profilu data předchozího uživatele — váha, tělesný tuk, svalová
+hmota, připojený Withings, odznak AKTIVNÍ místo TRIAL. Po `F5` je vše
+správně, server tedy data neplete; SPA nezahodí stav starého uživatele.
+Podrobnosti a naměřená tabulka v `docs/TEST_UI_REGISTRACE_2026-08-29.md`.
+
+**6.3 Cena a délka zkušebního období do registrace.** V žádném z pěti kroků
+nestojí, kolik program stojí a že trial trvá 7 dní. Nález z 3. 8., pořád
+otevřený. U předplatného se zkušební dobou musí být cena uvedená předem.
+
+**6.4 Interní názvy receptů vidí zákazník.** V plánech jsou položky jako
+„Tuňák s pečivem — sytá svačina — XL" a „Vejce natvrdo s pečivem — XL".
+Vypadá to jako omylem odhalená databáze, ne jako prémiový produkt.

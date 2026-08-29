@@ -2,72 +2,71 @@
 
 ## Pravidla, která platí nade vším
 
-**Kredity docházejí.**
-
-- **Neměř produkci.** Žádné `supabase db dump`, žádné dotazy do DB, žádné
-  Vercel MCP. Čísla dostaneš hotová.
+- **Neměř produkci.** Žádné dotazy do DB, žádné Vercel MCP, žádné volání
+  produkčních endpointů. Čísla dostaneš hotová.
 - **Nikdy `supabase db push` ani `apply_migration`.** Repo a
-  `schema_migrations` jsou od 23. 8. rozejité — `db push` by znovu pustil
-  14 už nasazených migrací. Migrace nasazuje Honzův druhý Claude.
+  `schema_migrations` jsou od 23. 8. rozejité.
 - **Jeden bod na jednu session.** Po dokončení `/clear`.
-- **Nečti soubory celé**, když stačí `grep` na konkrétní řádek.
-- **Model je Sonnet.** Opus jen po výslovném zdůvodnění.
-- Eslint na `src/` nespouštěj — repo ho tam nemá (`lint` cílí na `api lib`).
-
-Ostatní beze změny: bez dat žádný závěr, `null` je „—" a nikdy `0`, žádná mock
-data, žádný Next.js, jeden zdroj pravdy, `lib/` je čisté JS s explicitními
-`.js` importy.
+- **Model Sonnet.** Eslint na `src/` nespouštěj, repo ho tam nemá.
+- Bez dat žádný závěr, `null` je „—" a nikdy `0`, žádná mock data, žádný
+  Next.js, jeden zdroj pravdy.
+- Konec = diff a čekání na „schvaluji". Necommituj sám.
 
 ---
 
-## 5.9b NA PAYWALLU JEN TO, CO SE OPRAVDU PRODÁVÁ
+## 5.9c UKÁZKA SE GENERUJE DO MINULOSTI
 
-Rozhodnutí Honzy z 29. 8.: **prodává se jen START.** ON Club a VIP až po
-rozhodnutí, zatím se neprodávají.
+Změřeno dry-runem produkčního cronu 29. 8., `zamcene_ukazky` vrátilo
+3 kandidáty:
 
-Hotová část 5.9 vykresluje tři tlačítka. Dvě z nich server odmítne přes
-`isTierCheckoutEnabled` a uživatel dostane „Připravujeme". Na obrazovce,
-jejímž jediným úkolem je vzít peníze, je rozbité tlačítko horší než žádné.
+```
+20bb0050  od 2026-08-10  do 2026-08-16   <- 19 dnu v minulosti
+e487293e  od 2026-08-25  do 2026-08-31   <- zacina v minulosti
+20d99b80  od 2026-08-28  do 2026-09-03   <- v poradku
+```
+
+Příčina je v `lib/zamcenyTydenPlanu.js`: `od = poDnech(konec, 1)`, tedy
+ukázka vždy navazuje na poslední den posledního plánu — bez ohledu na to,
+jak dávno ten plán skončil. Komu plán dojel 9. 8., tomu se dnes vyrobí
+„další týden" na 10.–16. 8.
+
+Paywall by pak tvrdil „Tvůj další týden je připravený" a ukazoval týden,
+který je 19 dní starý. To neprodá nic; spíš to prodej zabije.
 
 ### Co změnit
 
-1. **`api/profile.js`** — do odpovědi přidat `dostupne_tiery`: pole těch
-   z `['START','ON_CLUB','VIP']`, pro které `isTierCheckoutEnabled(tier)`
-   (`lib/salesFeatureFlags.js`) vrací true. Žádný nový env, žádná druhá
-   kopie logiky — server je jediný, kdo o zapnutí rozhoduje, klient se ptá.
+V `najdiKandidatyNaUkazku()` počítat začátek jako **pozdější ze dvou dat**:
+den po konci posledního plánu, a dnešek. Nikdy dřív než dnes.
 
-2. **`src/data/adaptery.ts`** — přenést `dostupne_tiery` do `ZamcenyPlan`
-   (a doplnit typ v `src/types.ts`). Když pole chybí nebo je prázdné,
-   fallback `['START']`. Prázdný paywall je horší než špatný — nesmí
-   vzniknout stav bez jediné cesty k platbě.
+```
+const od = konec >= dnes ? poDnech(konec, 1) : dnes;
+```
 
-3. **`src/components/TrialPaywallCard.tsx`** — vykreslit jen tiery
-   z `dostupne_tiery`. Ostatní neukazovat vůbec: ani zašedlé, ani
-   s „Připravujeme". Při jediném dostupném tieru nesmí karta zůstat
-   v třetinové mřížce — roztáhnout na plnou šířku.
+`do` zůstává `poDnech(od, 6)`.
 
-4. **`src/data/adaptery.test.ts`** — dva testy: chybějící pole → `['START']`;
-   `['START','ON_CLUB']` projde beze změny pořadí.
+Pozor na kontrolu duplicity o pár řádků níž — `maUkazkuOd.get(...) === od`
+porovnává datum začátku. Po téhle změně se `od` u propadlých trialů mění
+každý den, takže by se ukázka vyráběla znovu a znovu. Podmínku předělat na
+„už má JAKOUKOLI nepropadlou ukázku" — tedy existuje řádek s `locked` a
+`valid_until >= dnes`. To je jediná verze, která se sama neopakuje.
+
+### Testy
+
+Do `lib/` testové sady (najdi, kam patří — vzor podle sousedních modulů)
+přidat případy nad `najdiKandidatyNaUkazku` s podvrženým klientem:
+
+- plán skončil před 19 dny → `od` je dnešek, ne den po konci plánu
+- plán končí za 2 dny → `od` je den po konci plánu
+- už má ukázku s `valid_until` v budoucnu → kandidát nevzniká
+- už má ukázku, která propadla → kandidát vzniká znovu
 
 ### Verifikace
 
 `npm run test:src`, `npx tsc --noEmit`, `npm run lint:copy`.
 
-**Necommituj.** Tohle jde do jednoho commitu s hotovou částí 5.9 — až po
-výslovném „schvaluji".
-
 ---
 
-## Co čeká za tím
+## Za tím
 
-**1c** — uvolnit strop na počet surovin. `countMainIngredients` odmítá 11+
-hlavních surovin. Honzovo pravidlo z 25. 8.: „hodně jídel, jednoduchých,
-rychlých; je mi jedno, z kolika surovin." Nahradit limitem na čas a počet
-kroků. Dietní brána, alergeny, lepek a kalorické pásmo se NEMĚNÍ.
-
-**4.9 bod 2** — dologovat `zadano` vedle `vraceno` do `ai_runs.result`, aby
-šlo změřit, kolik receptů se od modelu opravdu žádá. Teprve podle toho sahat
-na prompt.
-
-**4.11** — doplnit 44 surovin, které blokují `gluten_free`. Watchdog
-`surovina_blokuje_dietni_tag` je vypisuje.
+Audit stránky Profil — plán a čísla jsou v `docs/AUDIT_PROFILU.md`,
+postupuje se shora dolů po sekcích. Zadání pro každou sekci přijde sem.

@@ -3,24 +3,28 @@ import { BodyStatsGrid } from './BodyStatsGrid';
 import { WeightChart } from './WeightChart';
 import { WithingsCard } from './WithingsCard';
 import { NadpisSekce } from './NadpisSekce';
-import { WeightRecord, TelesneSlozeni } from '../types';
+import { WeightRecord, TelesneSlozeni, SyncResult } from '../types';
 import { Plus, Scale, Sparkles, TrendingUp } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface BodyCompositionSectionProps {
   currentRecord: WeightRecord | null;
   recordsByFilter: Record<string, WeightRecord[]>;
-  lastSyncedText: string;
+  /** Existuje řádek ve `withings_connections`? */
+  hasWithingsConnection: boolean;
+  /** `withings_last_sync_at` z profilu. null = server zatím nestahoval. */
+  withingsLastSyncedAt: string | null;
   slozeni?: TelesneSlozeni | null;
   onAddMeasurement: () => void;
-  onSync: () => void;
+  onSync: () => Promise<SyncResult | null>;
   onOpenWithingsSettings: () => void;
 }
 
 export const BodyCompositionSection: React.FC<BodyCompositionSectionProps> = ({
   currentRecord,
   recordsByFilter,
-  lastSyncedText,
+  hasWithingsConnection,
+  withingsLastSyncedAt,
   slozeni = null,
   onAddMeasurement,
   onSync,
@@ -62,7 +66,8 @@ export const BodyCompositionSection: React.FC<BodyCompositionSectionProps> = ({
       <WithingsCard
         onSync={onSync}
         onOpenSettings={onOpenWithingsSettings}
-        lastSyncedText={lastSyncedText}
+        hasConnection={hasWithingsConnection}
+        lastSyncedAt={withingsLastSyncedAt}
       />
     </div>
   );

@@ -48,7 +48,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 // buildSyncedBiometrics a buildSyncedWeightRecord se uz nepouzivaji — hodnoty
 // si dopocitavaly v prohlizeci (mean-revert HRV k baseline), takze uzivatel
 // videl vymyslene zdravotni udaje. Data ted chodi z /api/health/recovery.
-import { applyWeightRecord, formatLastSynced } from './lib/syncEngine';
+import { applyWeightRecord } from './lib/syncEngine';
 import { apiFetch, jeNeaktivniClenstvi } from './lib/api';
 import { dnesniTrenink } from './lib/trenink';
 import { sestavZapisTreninku } from './lib/zapisTreninku';
@@ -254,8 +254,6 @@ function AppContent() {
   const [isExportPdfOpen, setIsExportPdfOpen] = useState(false);
   const [selectedRecipeMeal, setSelectedRecipeMeal] = useState<MealItem | null>(null);
 
-  // Sync Timestamp State
-  const [lastSyncedText, setLastSyncedText] = useLocalStorage(`${scope}:last-synced`, 'dnes v 08:45');
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Aktuální hodnoty pro asynchronní synchronizaci (bez zastaralých closure).
@@ -643,7 +641,6 @@ function AppContent() {
           method: 'POST',
           body: JSON.stringify({ weight_kg: vahaKg })
         });
-        setLastSyncedText(formatLastSynced(new Date()));
         showToast({
           title: 'Váha zapsána',
           description: hodnotaNeboPomlcka(vahaKg, 'kg'),
@@ -661,7 +658,7 @@ function AppContent() {
         return false;
       }
     },
-    [setLastSyncedText, showToast, znovuNacistProfil]
+    [showToast, znovuNacistProfil]
   );
 
   /**
@@ -689,7 +686,10 @@ function AppContent() {
         regenerace.rows || [], zdravi.treninky, true, now.toISOString(), biometricsRef.current
       );
       setBiometrics(nextBiometrics);
-      setLastSyncedText(formatLastSynced(now));
+      // Karta Withings čte `withings_last_sync_at` z profilu, ne z lokálního
+      // stavu — bez tohohle by po synchronizaci ukazovala starý odstup až
+      // do dalšího načtení stránky.
+      znovuNacistProfil();
 
       const vaha = Number(vazeni?.latest_weight_kg);
       if (Number.isFinite(vaha) && vaha > 0) {
@@ -738,7 +738,7 @@ function AppContent() {
       isSyncingRef.current = false;
       setIsSyncing(false);
     }
-  }, [setBiometrics, setWeightRecords, setLastSyncedText, showToast]);
+  }, [setBiometrics, setWeightRecords, showToast, znovuNacistProfil]);
 
   // Active workout
   // Pri prazdnem planu vracelo workouts[3] undefined a komponenty pak cetly
@@ -951,7 +951,8 @@ function AppContent() {
           <BodyCompositionSection
             currentRecord={latestRecord}
             recordsByFilter={weightRecords}
-            lastSyncedText={lastSyncedText}
+            hasWithingsConnection={profilData?.has_withings_connection === true}
+            withingsLastSyncedAt={profilData?.withings_last_sync_at ?? null}
             slozeni={slozeni}
             onAddMeasurement={() => setIsAddRecordModalOpen(true)}
             onSync={handleManualWithingsSync}

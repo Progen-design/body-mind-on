@@ -3,6 +3,7 @@ import { supabaseServer } from '../lib/supabaseServer.js';
 import { enqueueAIEvent, triggerImmediateDecision } from '../lib/aiEvents.js';
 // Meze sdilene s SPA, at klient i server rikaji totez.
 import { CHYBA_VAHY, MAX_VAHA_KG, MIN_VAHA_KG } from '../lib/vahaMeze.js';
+import { buildQuickWeightRow } from '../lib/quickWeightRow.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -42,25 +43,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Nejprve dokonči registraci (zadej výšku a váhu).' });
     }
 
-    const row = {
-      user_id: user.id,
-      weight_kg,
-      created_at,
-      height_cm: latest?.height_cm ?? 170,
-      email: latest?.email ?? user.email,
-      name: latest?.name ?? user.user_metadata?.name ?? null,
-      gender: latest?.gender ?? null,
-      age: latest?.age ?? null,
-      birth_date: latest?.birth_date ?? null,
-      activity: latest?.activity ?? null,
-      stress_level: latest?.stress_level ?? null,
-      occupation: latest?.occupation ?? null,
-      goal: latest?.goal ?? null,
-      freq_choice: latest?.freq_choice ?? null,
-      weekly_sessions_user: latest?.weekly_sessions_user ?? null,
-      notes: latest?.notes ?? null,
-      program: latest?.program ?? 'START',
-    };
+    const row = buildQuickWeightRow(latest, { userId: user.id, weightKg: weight_kg, createdAt: created_at });
 
     const { data, error } = await supabaseServer
       .from('body_metrics')

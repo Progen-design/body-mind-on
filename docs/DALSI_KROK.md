@@ -209,3 +209,12 @@ je to v pořádku, dřív připomínat netřeba.
 **Nákupní seznam:** rozsypané kategorie, sůl 74 g a pepř 69 g na týden,
 položky se dvěma jednotkami. Podrobnosti v
 `docs/AUDIT_PROFILU_NALEZY_2026-08-29.md`.
+
+**`PROGRESSION_BY_EXERCISE.kind` a `CANONICAL_EXERCISES.equipment` se
+rozcházejí i u `tricep_extension`** — objeveno 30.–31. 8. 2026 při Etapě 6.3.
+Progrese (`lib/workoutProgression.js`) ho vede jako `kind: 'dumbbell'`, ale
+statická mapa (`lib/exerciseCanonicalMap.js`) má `equipment: 'cable'`. Stejný
+vzorec driftu jako u `overhead_press` (tam progrese říkala `dumbbell`, mapa
+`barbell`, produkční registry dala za pravdu progresi — mapa byla stará).
+Neověřeno, co má pravdu tentokrát ani jestli mají podobný drift další klíče —
+žádné dotazy do produkční DB v týhle sérii. Neřešit teď, jen zapsáno.

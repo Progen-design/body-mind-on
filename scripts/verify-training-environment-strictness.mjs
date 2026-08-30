@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { filterWorkoutPlanForTrainingEnvironment, parseTrainingEnvironment, TRAINING_ENVIRONMENT_LABELS } from '../lib/trainingEnvironment.js';
+import { getCanonicalExercise } from '../lib/exerciseCanonicalMap.js';
 import { sessionTemplatesForBodyMetrics, workoutBlocksForBodyMetrics } from '../lib/workoutTemplates.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -72,16 +73,33 @@ if (pullUpHomePlan.days[0].exercises[0].canonical_key === 'pull_up') {
 
 console.log('\n--- home_equipment without gear ---');
 const equipPlan = {
-  days: [{ exercises: [{ canonical_key: 'bench_press', name_cs: 'Bench' }, { canonical_key: 'pull_up', name_cs: 'Shyby' }] }],
+  days: [{
+    exercises: [
+      { canonical_key: 'bench_press', name_cs: 'Bench' },
+      { canonical_key: 'bent_over_row', name_cs: 'Přítahy v předklonu' },
+      { canonical_key: 'pull_up', name_cs: 'Shyby' },
+    ],
+  }],
 };
 filterWorkoutPlanForTrainingEnvironment(equipPlan, {
   training_environment: 'home_equipment',
   available_equipment: ['dumbbells'],
   notes: 'Kde cvičí: Doma s vybavením. Pomůcky: Jednoručky',
 });
-const eqKeys = equipPlan.days[0].exercises.map((e) => e.canonical_key);
+const eqExercises = equipPlan.days[0].exercises;
+const eqKeys = eqExercises.map((e) => e.canonical_key);
 if (eqKeys.includes('pull_up')) fail('pull_up without pullup_bar should be replaced');
 else ok('home_equipment respects selected equipment');
+if (eqKeys.includes('bench_press')) fail('bench_press without lavice should be replaced');
+else ok('home_equipment replaces bench_press without lavice');
+if (eqKeys.includes('bent_over_row')) fail('bent_over_row should take a dumbbell-row variant, not stay barbell');
+else ok('home_equipment adapts bent_over_row to available equipment');
+
+// Symptom měřený 29. 8.: "Nářadí: jednoručky, velká činka" i s equipment: ['dumbbells'].
+// Barbell není mezi volbami v registraci — žádný cvik v home_equipment ho nesmí ukazovat.
+const eqBarbell = eqExercises.filter((e) => getCanonicalExercise(e.canonical_key)?.equipment === 'barbell');
+if (eqBarbell.length) fail(`home_equipment still shows barbell equipment: ${eqBarbell.map((e) => e.canonical_key).join(', ')}`);
+else ok('home_equipment never claims equipment the user did not select (no barbell)');
 
 const pullUpWithBarPlan = {
   days: [{ exercises: [{ canonical_key: 'pull_up', name_cs: 'Shyby' }] }],
@@ -137,23 +155,28 @@ const scenarioPlan = {
       { canonical_key: 'bench_press', name_cs: 'Bench' },
       { canonical_key: 'pull_up', name_cs: 'Shyby' },
       { canonical_key: 'tricep_extension', name_cs: 'TRX extension' },
+      { canonical_key: 'hamstring_curl', name_cs: 'Zakopávání vleže' },
       { canonical_key: 'squat', name_cs: 'Dřepy' },
     ],
   }],
 };
 filterWorkoutPlanForTrainingEnvironment(scenarioPlan, homeDbBenchMetrics);
 const scenarioKeys = scenarioPlan.days[0].exercises.map((e) => e.canonical_key);
-const forbiddenHome = ['leg_press', 'lat_pulldown', 'pull_up'];
+const forbiddenHome = ['leg_press', 'lat_pulldown', 'pull_up', 'hamstring_curl'];
 for (const f of forbiddenHome) {
   if (scenarioKeys.includes(f)) fail(`home_equipment dumbbells+bench still has ${f}`);
 }
-if (!scenarioKeys.includes('bench_press') && !scenarioKeys.some((k) => ['squat', 'overhead_press'].includes(k))) {
+if (!scenarioKeys.some((k) => ['bench_press', 'dumbbell_bench_press', 'squat', 'overhead_press'].includes(k))) {
   fail('home_equipment dumbbells+bench should keep equipment-based lifts');
 }
 if (scenarioKeys.every((k) => ['squat', 'pushup', 'plank', 'lunges', 'glute_bridge'].includes(k))) {
   fail('home_equipment dumbbells+bench plan should not be bodyweight-only');
 }
 else ok('home_equipment dumbbells+bench removes machines and unselected gear');
+
+const scenarioBarbell = scenarioPlan.days[0].exercises.filter((e) => getCanonicalExercise(e.canonical_key)?.equipment === 'barbell');
+if (scenarioBarbell.length) fail(`home_equipment dumbbells+bench still shows barbell equipment: ${scenarioBarbell.map((e) => e.canonical_key).join(', ')}`);
+else ok('home_equipment dumbbells+bench never claims barbell equipment');
 
 const detEquip = templatesSrc.split('export const HOME_EQUIPMENT_DUMBBELL_BENCH_TEMPLATES = Object.freeze([')[1]?.split(']);')[0] || '';
 if (!detEquip || !/dumbbell bench press/.test(detEquip)) fail('HOME_EQUIPMENT_DUMBBELL_BENCH_BLOCKS missing dumbbell exercises');

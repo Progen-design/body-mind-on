@@ -4,217 +4,169 @@
 
 - **Neměř produkci.** Žádné dotazy do DB, žádné Vercel MCP, žádné volání
   produkčních endpointů. Čísla dostaneš hotová.
-- **Nikdy `supabase db push` ani `apply_migration`.** Migrace nasazuje
-  Honzův druhý Claude.
+- **Migrace píšeš jako soubor, NEAPLIKUJEŠ ji.** Nasazuje ji Honzův druhý
+  Claude, a když ji kód potřebuje, tak před mergem.
 - **Jeden bod na jednu session.** Po dokončení `/clear`.
 - **Model Sonnet.** Eslint na `src/` nespouštěj, repo ho tam nemá.
 - Bez dat žádný závěr, `null` je „—" a nikdy `0`, žádná mock data, žádný
   Next.js, jeden zdroj pravdy.
+- **Před „hotovo" spusť celou sadu**, ne jen `test:src`:
+  `npm run test:unit`, `npm run test:src`, `npx tsc --noEmit`,
+  `npm run lint:copy`.
 - Konec = diff a čekání na „schvaluji". Necommituj sám.
 
 ---
 
-## 6.4 ZÁPIS VÁHY SMAŽE ČÁST PROFILU — DĚLEJ TOHLE PRVNÍ
+## 6.5 VÝŠKA SE UKLÁDÁ TAM, KDE JI NIKDO NEČTE
 
-Změřeno 29. 8. na účtu `janprikopa+t6@gmail.com`. Registrace v 01:54, ruční
-zápis váhy 61,4 kg tlačítkem „Nové vážení" v 02:07. Starý řádek
-`body_metrics` se nepřepsal — vznikl druhý, a ten přišel o data:
+Změřeno na produkci 31. 8., účet `janprikopa@gmail.com`. Uživatel uložil
+v modalu „Nastavení profilu" výšku 194 cm. Výsledek:
 
 ```
-vzniklo               váha    workout_days  diet_type    protein_g  kalorie
-2026-08-29 01:54:47   62.00   1,3,5         vegetarian   112        1436
-2026-08-29 02:07:36   61.40   NULL          NULL         NULL       1537
+auth.users.user_metadata.height_cm   194   změnilo se
+body_metrics.height_cm               182   NEZMĚNILO se
+tdee                                3101   beze změny
+calories_target                     2164   beze změny
+bmi                                31,64   pořád ze 182 cm
 ```
 
-Ztraceno: `diet_type` (vegetarian → NULL), `workout_days` (1,3,5 → NULL),
-`protein_target_g` (112 → NULL). A `calories_target` vyskočil z 1436 na
-1537, přestože uživatelka zhubla — při redukci má klesat.
+Hlavička profilu čte `user.height_cm` z metadat (`api/profile.js` ~ř. 577,
+`adaptery.ts`: `odpoved.user?.height_cm ?? bm.height_cm`), takže ukazuje 194.
+Generátor plánu a výpočet kalorií čtou `body_metrics.height_cm`, tedy 182.
 
-Generátor plánu čte poslední řádek `body_metrics`. Příští týdenní plán se
-tedy vyrobí bez vegetariánské diety, bez tréninkových dnů a s vyšším
-příjmem. Vegetariánka, která se zváží, přijde o vegetariánství.
+Rozdíl dvanácti centimetrů dělá na BMR zhruba 75 kcal (2001 vs 2076 podle
+Mifflin–St Jeor při 104,8 kg a 38 letech) a promítá se i do maker. Uživateli
+se tedy od 2. srpna skládá jídelníček na výšku, kterou nemá.
 
-Ostatní účty mají po jednom řádku jen proto, že u nich vážení nikdo
-nezkoušel. Není to okrajový případ.
+### Příčina
 
-**Pozn.: netýká se to chytré váhy ani hodinek.** Withings a Apple Health má
-zatím připojený jenom Honza na svém účtu a pro projekt to zatím není
-směrodatné. Tohle spouští obyčejné ruční vážení v UI.
+Na výšku existují dva endpointy:
 
-### Nejdřív nález, pak čekej na schválení
+```
+api/profile-body-data.js   zapisuje do body_metrics I do metadat   správně
+api/profile-settings.js    zapisuje JEN do metadat                 tudy jde modal
+```
 
-1. Endpoint za tlačítkem „Nové vážení" — co posílá a co s tím server dělá.
-   Kde přesně vzniká druhý řádek `body_metrics`.
-2. Jestli je `insert` místo `update` záměr (historie měření) nebo chyba.
-   Pokud záměr, musí nový řádek zdědit VŠECHNA pole, ne jen váhu.
-3. Odkud se vzalo 1537 kcal. Nižší váha má dát nižší cíl; podezření padá na
-   chybějící `goal` nebo `diet_type` v tom novém řádku.
-4. Jestli totéž dělá i synchronizace z Withings, nebo jen ruční zápis.
+`PreferencesModal.tsx` to má i v komentáři: „Cílová váha a výška zůstaly, ale
+jdou přes `/api/profile-settings`", s odůvodněním „bez regenerace plánu".
 
-Je to datová cesta, ne UI. Kód až po schválení návrhu.
+### Nejdřív nález a návrh, kód až po schválení
+
+1. Proč výška vede přes `profile-settings` a ne `profile-body-data`. Bylo to
+   kvůli tomu, aby se nepřegeneroval plán? Jde to splnit i tak, že se výška
+   uloží správně, jen se nespustí regenerace?
+
+2. Návrh, kde má výška bydlet. Chci **jeden zdroj pravdy**. Metadata smí být
+   kopie pro rychlé čtení, ale nesmí být místo, kde hodnota končí.
+
+3. Když se výška změní, **musí se přepočítat `calories_target` a makra** — z
+   výšky se počítá BMR. Je to vědomá cesta ve smyslu pravidla z etapy 6.4
+   (`lib/quickWeightRow.js`), ne automatický přepočet při vážení. Napiš, kde
+   ten přepočet má viset.
+
+4. **Cílová váha je jiný případ** — do výpočtu se nepromítá a „uloží se
+   rovnou" je u ní správně. Neslučuj je do jedné cesty bez rozmyslu.
+
+5. Endpointy se neshodnou na mezích: `profile-settings` bere 100–250 cm,
+   `profile-body-data` 120–230. Sjednotit a vzít meze ze sdíleného modulu,
+   stejně jako to dělá `lib/vahaMeze.js` u váhy.
+
+6. Text v modalu „Tyhle dva údaje plán nepřegenerují — uloží se rovnou" po
+   opravě nebude pro výšku platit. Navrhni, co tam má stát.
 
 ---
 
-## 6.2 KARTA WITHINGS — HOTOVO, NASAZENO (PR #110). NEŘEŠ, JE TU JEN PRO HISTORII.
+## 6.6 CHAT S TEDEM: STEJNÁ ODPOVĚĎ, POSUNUTÉ ČASY, CHYBĚJÍCÍ DATUM
 
-`src/components/WithingsCard.tsx` lže třikrát. Změřeno 29. 8. na účtu,
-který **nemá jediný řádek ve `withings_connections`**.
+Změřeno 31. 8. na produkci, účet `janprikopa@gmail.com`, tabulka
+`coach_chat_messages`.
 
-**a) Odznak „Online" je natvrdo v JSX** (ř. 52–57). Nikdy se neptá na stav
-připojení. Svítí i účtu bez zařízení.
+### a) TED vrací na různé otázky doslova stejnou odpověď
 
-**b) Čas poslední synchronizace je výchozí hodnota:**
-
-```js
-lastSyncedText = 'dnes v 08:45'
+```
+23:26:11  user  "co bxch mel udelat proto abych zhubnul"
+23:26:11  ted   "Abychom dosáhli úbytku hmotnosti, je důležité dodržovat…"
+23:26:56  user  "over to s mym profilem"
+23:26:56  ted   "Abychom dosáhli úbytku hmotnosti, je důležité dodržovat…"
 ```
 
-Na produkci se v jednom načtení zobrazilo `dnes v 08:45`, o chvíli později
-`dnes v 04:07` — ve čtyři ráno. Číslo se nebere z měření.
+Dvě různé otázky, odpověď znak po znaku totožná. Uživatel to hlásí slovy
+„když se zeptám, odpovídá pořád stejně". Zjisti, jestli je to cache odpovědi,
+nezahrnutá historie konverzace v promptu, nebo něco třetího.
 
-**c) Tlačítko hlásí úspěch, i když se nic nestalo** (ř. 27–31):
+### b) Časy v chatu jsou o dvě hodiny napřed
 
-```js
-await new Promise((res) => setTimeout(res, 1200)); // Simulated sync animation
-setSyncSuccess(true);
+```
+DB 2026-08-23 01:17:07  →  UI ukazuje 03:17
+DB 2026-08-30 23:26:11  →  UI ukazuje 01:26
 ```
 
-„Aktualizováno!" se zobrazí bez ohledu na výsledek `onSync()`.
+Přesně +2 h, tedy pražský offset. `coach_chat_messages.created_at` je
+`timestamp without time zone` s uloženým UTC; klient ho bere jako lokální čas
+a offset přičte podruhé. Ověř, jestli tentýž vzorec nemají i jiná místa, kde
+se zobrazuje čas z `timestamp without time zone`.
 
-### Co změnit
+### c) V chatu chybí datum, jen čas
 
-Karta nesmí tvrdit nic, co nemá z dat. Rozšířit props o skutečný stav
-připojení a skutečný čas posledního stažení, obojí z profilu (`api/profile.js`
-už `has_withings_connection` a `withings_last_sync_at` vrací — ověř grepem,
-nedomýšlej).
+Zpráva z 23. 8. se v panelu tváří jako dnešní („03:17"). To je hlavní důvod,
+proč uživatel čte starou odpověď jako novou. U zprávy starší než dnešek se
+musí zobrazit i datum.
 
-- **Bez připojení:** místo „Online" stav, který odpovídá skutečnosti, a
-  místo řádku o poslední synchronizaci výzva k propojení. Tlačítko
-  „Synchronizovat teď" v tomhle stavu nedává smysl.
-- **S připojením:** „Online" jen když spojení opravdu je, a čas z
-  `withings_last_sync_at`. Když je `null`, píše se „—", nikdy vymyšlený čas.
-- **Výsledek synchronizace:** „Aktualizováno!" jen když `onSync()` doběhne
-  bez chyby. Když selže, řekni to. Umělé čekání 1200 ms zrušit.
+### d) Nákupní seznam sedí vizuálně uvnitř panelu „AI Trenér TED"
 
-Vzor pro formulaci odstupu je na kartě Apple Health na záložce Můj profil —
-ta odstup měří správně (`před 17 min`) a text nelže. Použij tutéž pomocnou
-funkci, nepiš druhou.
+Karta „Nákupní seznam · 72 položek" je vykreslená ve stejném rámci jako AI
+trenér. Se seznamem k nákupu nemá TED nic společného — patří k jídelníčku.
 
-### Testy
+### e) „Dnešní trénink" ukazuje pátek v neděli
 
-Do `lib/__tests__/` přidat případy nad tou pomocnou funkcí a nad logikou
-stavu karty: bez připojení, s připojením a `null` časem, s připojením a
-časem. Vzor pro pojmenování je `withingsConnectedUi.test.mjs`.
+Potvrzeno podruhé, teď na druhém účtu (tréninkové dny po/st/pá, zobrazeno
+30. 8., což byla neděle, s nadpisem „Dnešní trénink" a štítkem „Pátek").
+Na záložce Tréninkový plán je tatáž věc popsaná správně jako „nejbližší
+trénink v plánu".
+
+### Co je naopak v pořádku (needit, jen ať to neopravuješ zbytečně)
+
+HRV 55,5 ms a klidový tep 61 bpm na kartě Regenerace sedí s
+`apple_health_daily` pro 30. 8. přesně. Spánek „—" je správně, data nejsou.
+Kalorie 2164 a makra 184/206/67 g sedí s `body_metrics` i s procenty
+34/38/28. Čísla z Withings na kartě Tělo & váha sedí se snapshotem.
+Rozdílná čísla HRV v TEDově zprávě (51 ms, tep 75) nejsou chyba — jsou
+z 23. 8. a pro ten den v DB sedí. Vypadají špatně jen kvůli bodu (c).
 
 ---
 
-## 6.3 REGISTRACE ZAHODÍ ZVOLENÉ VYBAVENÍ — PŮVODNÍ DIAGNÓZA BYLA ŠPATNĚ
+## Hotovo a nasazeno — NEŘEŠ ZNOVU
 
-Změřeno 29. 8. Účet, který v registraci vybral **doma s vybavením:
-jednoručky + odporové gumy**, dostal tréninkový plán s:
-
-```
-Nářadí: jednoručky, velká činka, vlastní váha
-2. Bench press          3 × 14-16
-3. Přítahy v předklonu  3 × 14-16
-```
-
-Velkou činku ani lavici nemá a nezadala je.
-
-### Co se čekalo (chybně) a co je skutečně
-
-Původní zápis níž předpokládal, že chybí sloupce `training_environment` a
-`available_equipment` v `body_metrics`, a že se proto data ztrácí v
-`lib/registration/bodyMetricsRegistration.js` ř. 275–276
-(`delete insertPayload.available_equipment`). **Sloupce v DB skutečně
-nejsou** (ověřeno), ale ztráta dat to není a migrace bug neopraví.
-
-`lib/trainingEnvironment.js` ř. 2 to říká rovnou: „bez DB migrace — ukládá
-se do notes". Hodnota se PŘED insertem vloží jako text do `payload.notes`
-(`trainingEnvironmentNotesSuffix`) a při čtení plánu se regexem parsuje
-zpátky (`parseTrainingEnvironment`/`parseAvailableEquipment`). Ověřeno
-spuštěním skutečného kódu (registrace → DB round-trip přes `notes` → re-parse):
-
-```
-notesFinal = "Kde cvičí: Doma s vybavením. Pomůcky: Jednoručky, Odporové gumy"
-parseTrainingEnvironment → home_equipment
-parseAvailableEquipment  → ['dumbbells', 'bands']
-```
-
-Vybavení se tedy zachová celou cestou až do `planOrchestrator.js`.
-
-### Kde je skutečná chyba
-
-`filterWorkoutPlanForTrainingEnvironment()` → `adaptExerciseForTrainingEnvironment()`
-v `lib/trainingEnvironment.js`. Ověřeno přímým voláním s
-`env='home_equipment'`, `equipment=['dumbbells','bands']`:
-
-```
-bench_press adapted    → beze změny (zůstává Bench press)
-bent_over_row adapted  → beze změny (zůstává Přítahy v předklonu)
-```
-
-Přesně reprodukuje produkční nález. Pro `home_equipment` (ř. 373–385) se na
-náhradu (`resolveHomeEquipmentReplacement`) posílá jen `GYM_MACHINE_ONLY`
-(`leg_press, lat_pulldown, chest_press, hamstring_curl, hip_thrust`) +
-`goblet_squat`. Zbytek `GYM_ONLY_CANONICAL` — **`bench_press`,
-`bent_over_row`, `romanian_deadlift`, `overhead_press`, `lateral_raise`,
-`bicep_curl`, `tricep_extension`** — touhle větví vůbec neprojde a padne jen
-na obecnou kontrolu `EQUIPMENT_REQUIRES` (ř. 113–123). Ta bere seznam jako
-„stačí libovolná jedna položka" (`equipmentHas` = `.some()`):
-`bench_press: Set(['bench','dumbbells'])` tak projde se samotnými
-jednoručkami, bez lavice — což neplatí, bench press bez lavice nejde.
-
-Zůstává tak výchozí **barbellová** varianta (`lib/exerciseCanonicalMap.js`:
-`bench_press`/`bent_over_row` mají `equipment: 'barbell'`) — proto plán
-ukazuje „velká činka", i když „barbell" není ani mezi možnostmi, které si
-uživatel v registraci může zvolit (`EQUIPMENT_LABELS` nabízí jen
-dumbbells/bands/pullup_bar/kettlebell/bench/trx/other).
-
-Existující test `scripts/verify-training-environment-strictness.mjs`
-ř. 73–84 („home_equipment without gear") staví plán s `bench_press` +
-`available_equipment: ['dumbbells']`, ale assertuje jen na `pull_up` —
-`bench_press` se nekontroluje, proto regrese prošla testem.
-
-### Co udělat
-
-**Žádná migrace.** `body_metrics.notes` fallback funguje a je to vědomá
-volba v repu. Oprava patří do `lib/trainingEnvironment.js`:
-
-1. Rozšířit `adaptExerciseForTrainingEnvironment()` pro `home_equipment` tak,
-   aby přes `resolveHomeEquipmentReplacement` (nebo obdobu) procházela celá
-   `GYM_ONLY_CANONICAL` sada, ne jen `GYM_MACHINE_ONLY`.
-2. Opravit `EQUIPMENT_REQUIRES['bench_press']` — potřebuje lavici *a*
-   nějakou zátěž, ne libovolnou jednu položku ze setu.
-3. Doplnit `scripts/verify-training-environment-strictness.mjs`, ať
-   „home_equipment without gear" test skutečně assertuje na `bench_press`
-   (a případně `bent_over_row`, `romanian_deadlift`, `overhead_press`),
-   ne jen na `pull_up`.
-
-Kód se zatím nepíše — čeká na schválení.
+- **6.1** máslo neprojde bezlaktózovou bránou — `4415955`
+- **6.2** karta Withings už netvrdí, co nemá z dat — `24f20a4` (PR #110)
+- **6.4** ruční vážení už nesmaže zbytek profilu — `0187255` (PR #111)
+- **6.3** doma s vybavením už nehlásí velkou činku — `24eccd5` (PR #112),
+  migrace `20260830120000` nasazená a ověřená: očekávaných klíčů 48,
+  registry 221 řádků, 0 očekávaných klíčů bez řádku, `cvik_bez_vizualu`
+  14 → 15 podle předpokladu.
 
 ---
-
-## Vyřešeno
-
-**6.1** — máslo neprojde bezlaktózovou bránou. Nasazeno `4415955`.
 
 ## Vědomě odloženo
 
-**Trial nemá kde zaplatit dřív než 3 dny před koncem.** Honza 29. 8.:
-je to v pořádku, dřív připomínat netřeba.
+**Trial nemá kde zaplatit dřív než 3 dny před koncem.** Honza 29. 8.: je to
+v pořádku, dřív připomínat netřeba.
 
-**Interní názvy receptů** („Tuňák s pečivem — sytá svačina — XL").
+**Interní názvy receptů** vidí zákazník („Tuňák s pečivem — sytá svačina — XL").
 
-**Nákupní seznam:** rozsypané kategorie, sůl 74 g a pepř 69 g na týden,
+**Nákupní seznam:** rozsypané kategorie (parmezán, tofu i voda v „Ořechy, Tuky
+& Ostatní", mandlové mléko v „Mléčné výrobky"), sůl 74 g a pepř 69 g na týden,
 položky se dvěma jednotkami. Podrobnosti v
 `docs/AUDIT_PROFILU_NALEZY_2026-08-29.md`.
 
 **`PROGRESSION_BY_EXERCISE.kind` a `CANONICAL_EXERCISES.equipment` se
-rozcházejí i u `tricep_extension`** — objeveno 30.–31. 8. 2026 při Etapě 6.3.
-Progrese (`lib/workoutProgression.js`) ho vede jako `kind: 'dumbbell'`, ale
-statická mapa (`lib/exerciseCanonicalMap.js`) má `equipment: 'cable'`. Stejný
-vzorec driftu jako u `overhead_press` (tam progrese říkala `dumbbell`, mapa
-`barbell`, produkční registry dala za pravdu progresi — mapa byla stará).
-Neověřeno, co má pravdu tentokrát ani jestli mají podobný drift další klíče —
-žádné dotazy do produkční DB v týhle sérii. Neřešit teď, jen zapsáno.
+rozcházejí u `tricep_extension`** — progrese `dumbbell`, statická mapa
+`cable`. Stejný vzorec driftu jako u `overhead_press`, kde produkční registry
+dala za pravdu progresi a mapa byla stará. Neověřeno, co má pravdu tentokrát.
+
+**Záložka Apple Watch je slepá ulička** — vyzývá „Připoj Apple Health", ale
+tlačítko tam žádné není.
+
+**„Dnešní trénink" na profilu ukazuje pondělní jednotku i v sobotu.**
+
+**Navigační záložky nemají přístupné jméno** pro odečítače obrazovky.

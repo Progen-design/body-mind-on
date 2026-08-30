@@ -7,6 +7,8 @@ import { TRAINING_ENVIRONMENT_OPTIONS, EQUIPMENT_OPTIONS } from '@lib/trainingEn
 import { Pole, Popisek, Chyba, Vyber, Vicenasobny } from './registrace/prvky';
 import { AKTIVITA, CIL, DIETA, DNY, FREKVENCE, STRES, TYP_PRACE } from './registrace/volby';
 import { NastaveniProfilu } from '../data/adaptery';
+// Meze sdilene s api/updateHeightCm.js, at klient i server rikaji totez.
+import { overVysku } from '../../lib/vyskaMeze.js';
 
 /**
  * NASTAVENÍ PROFILU.
@@ -141,11 +143,16 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
       e.training_environment_detail = 'Napiš, kde a s čím budeš cvičit.';
     }
 
-    for (const [klic, popis] of [['goal_weight_kg', 'Cílová váha'], ['height_cm', 'Výška']] as const) {
-      const raw = String(data[klic] || '').trim();
-      if (!raw) continue;
-      const n = Number(raw.replace(',', '.'));
-      if (!Number.isFinite(n) || n <= 0) e[klic] = `${popis} musí být číslo.`;
+    const rawGoalWeight = String(data.goal_weight_kg || '').trim();
+    if (rawGoalWeight) {
+      const n = Number(rawGoalWeight.replace(',', '.'));
+      if (!Number.isFinite(n) || n <= 0) e.goal_weight_kg = 'Cílová váha musí být číslo.';
+    }
+
+    const rawHeight = String(data.height_cm || '').trim();
+    if (rawHeight) {
+      const overeno = overVysku(rawHeight);
+      if (!overeno.ok) e.height_cm = overeno.chyba;
     }
 
     setChyby(e);
@@ -299,7 +306,7 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-800">
             <div className="sm:col-span-2 pt-4 -mb-1">
               <p className="text-[11px] text-slate-500">
-                Tyhle dva údaje plán nepřegenerují — uloží se rovnou.
+                Plán se nepřegeneruje. Cílová váha se jen uloží, výška navíc přepočítá tvůj denní kalorický cíl.
               </p>
             </div>
             <Pole id="goal_weight_kg" popisek="Cílová váha (kg)" volitelne type="number" step="0.1"

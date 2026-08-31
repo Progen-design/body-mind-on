@@ -497,7 +497,14 @@ export default async function handler(req, res) {
     const bodyMeasurements = (bodyMeasurementsRes.status === 'fulfilled' && bodyMeasurementsRes.value?.data) ? bodyMeasurementsRes.value.data : [];
     const weightHistory = sestavHistoriiVah(bodyMetrics, bodyMeasurements);
     const bodySnapshots = (bodySnapshotsRes.status === 'fulfilled' && bodySnapshotsRes.value?.data) ? bodySnapshotsRes.value.data : [];
-    const bodyComposition = vyberTelesneSlozeni(bodySnapshots);
+    // `meta` a `heightCm` se dřív počítaly až níž (viz jejich původní místo),
+    // ale BMI v historii složení potřebuje tutéž výšku, ze které appka BMI
+    // počítá všude jinde — proto se počítají tady, před vyberTelesneSlozeni().
+    const meta = user.user_metadata || {};
+    // Výška: body_metrics (zdroj pravdy) má přednost před metadaty
+    // (best-effort zrcadlo) — viz lib/efektivniVyskaCm.js a docs/DALSI_KROK.md 6.7(b).
+    const heightCm = efektivniVyskaCm(latestBodyMetricsForRender, meta);
+    const bodyComposition = vyberTelesneSlozeni(bodySnapshots, heightCm);
     const dailyActivityCompletions = (dailyCompletionsRes.status === 'fulfilled' && dailyCompletionsRes.value?.data) ? dailyCompletionsRes.value.data : [];
     const dailyCheckins = (dailyCheckinsRes.status === 'fulfilled' && dailyCheckinsRes.value?.data) ? dailyCheckinsRes.value.data : [];
     const habitLogsProgress = (habitLogsProgressRes.status === 'fulfilled' && habitLogsProgressRes.value?.data) ? habitLogsProgressRes.value.data : [];
@@ -526,7 +533,6 @@ export default async function handler(req, res) {
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
-    const meta = user.user_metadata || {};
     const wantsBodyTracking = meta.wants_body_tracking === true;
     const smartScaleProvider =
       meta.smart_scale_provider === 'withings' || meta.smart_scale_provider === 'other'
@@ -544,9 +550,6 @@ export default async function handler(req, res) {
       }
       return null;
     })();
-    // Výška: body_metrics (zdroj pravdy) má přednost před metadaty
-    // (best-effort zrcadlo) — viz lib/efektivniVyskaCm.js a docs/DALSI_KROK.md 6.7(b).
-    const heightCm = efektivniVyskaCm(latestBodyMetricsForRender, meta);
     const bodyMetricsProKlienta = bodyMetricsSeZonou(bodyMetrics);
     const profilePayload = {
       program,

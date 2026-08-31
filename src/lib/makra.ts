@@ -40,29 +40,57 @@ export function gramyMakra(kcalZaDen: number, procenta: number, kcalNaGram: numb
 }
 
 /**
+ * Cíl jedné makroživiny. Když máme uložené gramy (`body_metrics.*_target_g`),
+ * ty jsou zdroj pravdy a procento se dopočítá z nich. Když ne, spadne se na
+ * starý dopočet gramů z procenta — to je jediná cesta pro preference, které
+ * ještě žádná uložená makra nemají (výchozí stav před načtením profilu).
+ *
+ * DŘÍV TO BYLO JEN NAOPAK: gramy se vždy dopočítávaly z procenta, které je
+ * samo zaokrouhlený podíl uložených gramů. Cesta gramy → procento → gramy
+ * zaokrouhluje dvakrát. Změřeno 31. 8. 2026: uloženo B 189 g, profil ukazoval
+ * 191 g — žádná obrazovka neukazovala číslo, se kterým se skládá jídelníček
+ * (docs/DALSI_KROK.md 7.2b).
+ */
+function cilMakra(
+  kcalZaDen: number,
+  procentoZaloha: number,
+  kcalNaGram: number,
+  gramyUlozene: number | null | undefined
+): CileMakra {
+  if (typeof gramyUlozene === 'number' && gramyUlozene > 0) {
+    return {
+      gramy: gramyUlozene,
+      procenta: kcalZaDen > 0 ? Math.round((gramyUlozene * kcalNaGram * 100) / kcalZaDen) : 0,
+    };
+  }
+  return {
+    procenta: procentoZaloha,
+    gramy: gramyMakra(kcalZaDen, procentoZaloha, kcalNaGram),
+  };
+}
+
+/**
  * Denní cíle všech tří makroživin z uživatelských preferencí.
  *
- * @param preferences zdroj pravdy — kalorický cíl a poměry z profilu
+ * Vypočtené makro (`snědené dnes z jídel`) je JINÁ věc a nejde přes tuhle
+ * funkci — ta počítá jen CÍL. Konzument (`totalProteinGrams` v
+ * NutritionSection.tsx) sčítá gramy z `meals`, ne odsud.
+ *
+ * @param preferences zdroj pravdy — kalorický cíl, poměry a (pokud je máme) uložené gramy z profilu
  */
 export function denniMakra(preferences: {
   dailyCalorieTarget: number;
   proteinRatioPercent: number;
   carbsRatioPercent: number;
   fatRatioPercent: number;
+  proteinTargetG?: number | null;
+  carbsTargetG?: number | null;
+  fatTargetG?: number | null;
 }): DenniMakra {
   const kcal = preferences.dailyCalorieTarget;
   return {
-    bilkoviny: {
-      procenta: preferences.proteinRatioPercent,
-      gramy: gramyMakra(kcal, preferences.proteinRatioPercent, KCAL_NA_GRAM.bilkoviny),
-    },
-    sacharidy: {
-      procenta: preferences.carbsRatioPercent,
-      gramy: gramyMakra(kcal, preferences.carbsRatioPercent, KCAL_NA_GRAM.sacharidy),
-    },
-    tuky: {
-      procenta: preferences.fatRatioPercent,
-      gramy: gramyMakra(kcal, preferences.fatRatioPercent, KCAL_NA_GRAM.tuky),
-    },
+    bilkoviny: cilMakra(kcal, preferences.proteinRatioPercent, KCAL_NA_GRAM.bilkoviny, preferences.proteinTargetG),
+    sacharidy: cilMakra(kcal, preferences.carbsRatioPercent, KCAL_NA_GRAM.sacharidy, preferences.carbsTargetG),
+    tuky: cilMakra(kcal, preferences.fatRatioPercent, KCAL_NA_GRAM.tuky, preferences.fatTargetG),
   };
 }

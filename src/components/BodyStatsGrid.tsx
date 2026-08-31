@@ -9,6 +9,8 @@ interface BodyStatsGridProps {
   currentRecord: WeightRecord | null;
   /** Z chytré váhy. null = žádné měření složení, karty se nezobrazí. */
   slozeni: TelesneSlozeni | null;
+  /** Vlastní odhad appky (Mifflin–St Jeor) vedle Withings čísla — docs/DALSI_KROK.md 7.2g. */
+  vlastniBmrKcal?: number | null;
   onAddMeasurement: () => void;
 }
 
@@ -48,11 +50,12 @@ const Zmena: React.FC<{ text: string | null; kladneJeDobre: boolean }> = ({ text
   );
 };
 
-const Dlazdice: React.FC<{ popisek: string; hodnota: string; delay: number; pojem?: string }> = ({
+const Dlazdice: React.FC<{ popisek: string; hodnota: string; delay: number; pojem?: string; poznamka?: string }> = ({
   popisek,
   hodnota,
   delay,
-  pojem
+  pojem,
+  poznamka
 }) => (
   <motion.div
     initial={{ opacity: 0, scale: 0.98 }}
@@ -65,12 +68,14 @@ const Dlazdice: React.FC<{ popisek: string; hodnota: string; delay: number; poje
       {pojem && <Vysvetlivka pojem={pojem} />}
     </span>
     <div className="text-xl sm:text-2xl font-extrabold text-white tracking-tight mt-1">{hodnota}</div>
+    {poznamka && <div className="text-[11px] text-slate-500 mt-1">{poznamka}</div>}
   </motion.div>
 );
 
 export const BodyStatsGrid: React.FC<BodyStatsGridProps> = ({
   currentRecord,
   slozeni,
+  vlastniBmrKcal = null,
   onAddMeasurement
 }) => {
   const merenoText = slozeni ? kdyMereno(slozeni.measured_at) : '';
@@ -162,11 +167,21 @@ export const BodyStatsGrid: React.FC<BodyStatsGridProps> = ({
                 delay={0.34}
                 pojem="hydratace_kg"
               />
+              {/* Withings BMR se ukazuje dál, ne schovává — jen vedle něj appka
+                  přidává i svůj vlastní výpočet ze stejné výšky/váhy/věku,
+                  jaké profil zobrazuje jinde. Dvě čísla, která si na jedné
+                  obrazovce jinak tiše odporují (BMR vs. denní cíl), tak mají
+                  viditelný zdroj místo mlčení (docs/DALSI_KROK.md 7.2g). */}
               <Dlazdice
                 popisek="Bazální metabolismus:"
                 hodnota={hodnotaNeboPomlcka(slozeni.basal_metabolic_rate, 'kcal', 0)}
                 delay={0.37}
                 pojem="bazalni_metabolismus"
+                poznamka={
+                  vlastniBmrKcal
+                    ? `Podle vzorce z výšky, váhy a věku: ${hodnotaNeboPomlcka(vlastniBmrKcal, 'kcal', 0)}`
+                    : undefined
+                }
               />
             </div>
           </div>

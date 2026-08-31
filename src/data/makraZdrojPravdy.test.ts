@@ -29,6 +29,9 @@ const VYCHOZI = {
   proteinRatioPercent: 0,
   carbsRatioPercent: 0,
   fatRatioPercent: 0,
+  proteinTargetG: null,
+  carbsTargetG: null,
+  fatTargetG: null,
   currentHeightCm: 182,
   targetWeightKg: 0,
   weeklyWorkoutsTarget: 3,
@@ -71,6 +74,12 @@ test('ulozeny cil z body_metrics prebiji makra zamrzla v planu', () => {
 
   // A hlavne: nesmi to byt cislo z planu.
   assert.notEqual(gramy(pref.proteinRatioPercent, 2164, 4), 158, 'nebere se zamrzly plan');
+
+  // docs/DALSI_KROK.md 7.2b: gramy musí být přesné uložené číslo, ne jen to,
+  // co se z nich dá zpětně dopočítat přes zaokrouhlené procento.
+  assert.equal(pref.proteinTargetG, 185, 'proteinTargetG musí nést přesnou uloženou hodnotu');
+  assert.equal(pref.carbsTargetG, 205);
+  assert.equal(pref.fatTargetG, 67);
 });
 
 test('bez ulozenych maker se sahne do planu, ne na vychozi maketu', () => {

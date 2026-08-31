@@ -13,7 +13,9 @@ import {
 import { motion } from 'motion/react';
 import { Vysvetlivka } from './Vysvetlivka';
 import { NadpisSekce } from './NadpisSekce';
+import { CalorieMismatchBanner } from './CalorieMismatchBanner';
 import { MealItem, ShoppingItem } from '../types';
+import { NesouladCile } from '../data/adaptery';
 
 interface NutritionSectionProps {
   meals: MealItem[];
@@ -25,6 +27,10 @@ interface NutritionSectionProps {
   proteinPct: number;
   carbsPct: number;
   fatPct: number;
+  /** Cíl v preferencích ≠ cíl, na který je postavený plán. null = sedí. */
+  nesouladCile?: NesouladCile | null;
+  onRegeneratePlan?: () => void;
+  regenerujiPlan?: boolean;
   onToggleMeal: (id: string) => void;
   onSelectRecipe: (meal: MealItem) => void;
   onOpenWeeklyPlan: () => void;
@@ -42,6 +48,9 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
   proteinPct,
   carbsPct,
   fatPct,
+  nesouladCile = null,
+  onRegeneratePlan,
+  regenerujiPlan = false,
   onToggleMeal,
   onSelectRecipe,
   onOpenWeeklyPlan,
@@ -159,6 +168,18 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
           </button>
         </div>
       </motion.div>
+
+      {/* Plán je otisk cíle v okamžiku generování — po změně cíle (např.
+          oprava výšky, 6.5) se sám nepřegeneruje. Stejný banner jako na
+          profilu, ať uživatel nesoulad vidí i tam, odkud si jídelníček
+          skládá (docs/DALSI_KROK.md 7.2a). */}
+      {nesouladCile && onRegeneratePlan && (
+        <CalorieMismatchBanner
+          nesoulad={nesouladCile}
+          onRegenerate={onRegeneratePlan}
+          regenerating={regenerujiPlan}
+        />
+      )}
 
       {/* Detailed Meal Cards List (Snídaně, Dopolední svačina, Oběd, Odpolední svačina, Večeře) */}
       <div className="space-y-4">

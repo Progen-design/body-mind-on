@@ -25,6 +25,10 @@ const PROFIL = kod(cti('../components/ProfileSection.tsx'));
 const BENTO = kod(cti('../components/OverviewBentoGrid.tsx'));
 const APP = kod(cti('../App.tsx'));
 const WORKOUT_LOGGER = kod(cti('../components/WorkoutLoggerModal.tsx'));
+const NUTRITION = kod(cti('../components/NutritionSection.tsx'));
+const WITHINGS_CARD = kod(cti('../components/WithingsCard.tsx'));
+const BODY_STATS = kod(cti('../components/BodyStatsGrid.tsx'));
+const CALORIE_BANNER = kod(cti('../components/CalorieMismatchBanner.tsx'));
 
 test('AI trenér TED je v profilu jen jednou', () => {
   // TED byl jako dlaždice mezi zařízeními a zároveň jako vlastní karta níž.
@@ -175,4 +179,76 @@ test('WorkoutLoggerModal s prázdným todayWorkout vypadá jako záměr, ne jako
     WORKOUT_LOGGER.includes('Dnes nemáš v plánu žádný trénink'),
     'seznam cviků bez plánu pořád tvrdí "0 z 0 hotovo"'
   );
+});
+
+test('Karta 3 neříká "Všechna jídla" nad výřezem tří z pěti (docs/DALSI_KROK.md 7.2c)', () => {
+  // meals.slice(0, 3) pod nadpisem "Všechna jídla" ukazovalo 1338 kcal proti
+  // cíli 2634 — vypadalo to, že třetina dne chybí. Nadpis lhal o tom, co je
+  // pod ním; teď je pravdivý nadpis navigace + počet zobrazených jídel.
+  assert.ok(!BENTO.includes('Všechna jídla'), 'nadpis "Všechna jídla" nad výřezem se vrátil');
+  assert.ok(BENTO.includes('Otevřít jídelníček'), 'chybí pravdivý navigační odkaz na Kartě 3');
+  assert.ok(BENTO.includes('meals.length > 3'), 'chybí podmínka pro zobrazení počtu jídel jen když se opravdu ořezávají');
+  assert.ok(BENTO.includes('Zobrazeny 3 z'), 'chybí přiznání, že karta ukazuje jen výřez');
+});
+
+test('nesoulad cíle vs. plánu je vidět na profilu i v jídelníčku (docs/DALSI_KROK.md 7.2a)', () => {
+  // Watchdog `calorie_target_mismatch` detekci má, ale nikdo interní alert
+  // nečte. Uživatel musí nesoulad vidět na obou místech, odkud se s cílem
+  // pracuje — na profilu (kde cíl nastavuje) i v jídelníčku (kde se podle
+  // něj skládá jídlo) — ne jen na jednom z nich.
+  assert.ok(PROFIL.includes('CalorieMismatchBanner'), 'profil nezobrazuje banner nesouladu cíle');
+  assert.ok(NUTRITION.includes('CalorieMismatchBanner'), 'jídelníček nezobrazuje banner nesouladu cíle');
+  assert.ok(APP.includes('nesouladCile('), 'App.tsx nepočítá nesoulad cíle přes sdílenou funkci');
+  assert.ok(
+    APP.includes("'/api/profile-preferences'") && APP.includes('handleRegeneratePlanForCurrentTarget'),
+    'chybí handler pro přegenerování plánu na aktuální cíl'
+  );
+});
+
+test('přegenerování jídelníčku nesmí tiše zahodit rozpracovaný týden — regenerateMealsOnly (docs/DALSI_KROK.md 7.2a)', () => {
+  // Ověřeno na datech 31. 8. 2026: generatePlanForEmail bez shodného
+  // valid_from založí NOVÝ řádek ai_generated_plans s NOVÝM id, na které se
+  // stará daily_activity_completions.plan_id už nenaváže — odškrtnutí za
+  // celý týden (jídla i tréninky) zmizí. Tlačítko proto musí posílat
+  // regenerateMealsOnly, ne prázdné tělo (to spustí i regeneraci tréninku).
+  assert.ok(
+    APP.includes('regenerateMealsOnly: true'),
+    'handler neposílá regenerateMealsOnly — server přegeneruje i trénink a založí nový plan_id'
+  );
+});
+
+test('banner řekne důsledek PŘED kliknutím, ne až v toastu po akci (docs/DALSI_KROK.md 7.2a)', () => {
+  // Věta o tom, že se ztratí odškrtnutá jídla (trénink ne), musí být přímo
+  // v textu bannera — ne v title/aria-label (tooltip), ne jen v showToast().
+  assert.ok(
+    /trénink [^.]*beze změny/.test(CALORIE_BANNER) || /trénink [^.]*nezmění/.test(CALORIE_BANNER),
+    'banner neříká, že trénink zůstane beze změny'
+  );
+  assert.ok(
+    /jídla[^.]*ztrat/.test(CALORIE_BANNER) || /odškrtnut[^.]*ztrat/.test(CALORIE_BANNER),
+    'banner neříká, že se odškrtnutá jídla ztratí'
+  );
+  assert.ok(!CALORIE_BANNER.includes('title='), 'důsledek nesmí být schovaný v tooltipu (title=)');
+});
+
+test('tlačítko slibuje jídelníček — a s regenerateMealsOnly je to i pravda (docs/DALSI_KROK.md 7.2a)', () => {
+  assert.ok(CALORIE_BANNER.includes('Přegenerovat jídelníček'), 'tlačítko ztratilo svůj text');
+  // "jen jídelníček, ne trénink" musí platit i na serveru, ne jen v textu.
+  const HANDLER = cti('../../api/profile-preferences.js');
+  assert.match(HANDLER, /mealsOnly:\s*onlyDietChanged\s*\|\|\s*regenerateMealsOnly/, 'server u regenerateMealsOnly pořád přegeneruje i trénink');
+});
+
+test('připojenému uživateli Withings karta neříká, ať se připojí (docs/DALSI_KROK.md 7.2e)', () => {
+  // Odstavec "Propojte svou chytrou váhu…" byl v JSX natvrdo, bez podmínky.
+  assert.ok(!WITHINGS_CARD.includes('Propojte svou chytrou váhu'), 'text pro nepřipojené je pořád natvrdo v JSX');
+  assert.ok(WITHINGS_CARD.includes('stav.description'), 'karta nebere popisek z withingsCardStav()');
+});
+
+test('appka vedle Withings BMR ukazuje i vlastní výpočet, ne ho schovává (docs/DALSI_KROK.md 7.2g)', () => {
+  // "neschovávej bazální metabolismus" — dlaždice se štítkem "Bazální
+  // metabolismus:" a hodnotou z Withings (slozeni.basal_metabolic_rate)
+  // musí zůstat; přibývá jen druhá, jasně označená hodnota vedle ní.
+  assert.ok(BODY_STATS.includes('slozeni.basal_metabolic_rate'), 'Withings BMR zmizel z dlaždice');
+  assert.ok(BODY_STATS.includes('vlastniBmrKcal'), 'appka nemá vlastní BMR pro porovnání vedle Withings čísla');
+  assert.ok(APP.includes('bmrMifflinStJeor'), 'App.tsx nepočítá vlastní BMR přes sdílený vzorec');
 });

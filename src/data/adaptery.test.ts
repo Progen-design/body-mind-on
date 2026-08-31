@@ -2,7 +2,7 @@
 // vcetne tvaru recipe a shopping_ingredient_lines.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { naJidla, naTreninky, naNavyky, naZlozvyky, vyberPlan } from './adaptery.ts';
+import { naJidla, naTreninky, naNavyky, naZlozvyky, nesouladCile, vekZDataNarozeni, vyberPlan } from './adaptery.ts';
 
 const DNES = new Date().toISOString().slice(0, 10);
 
@@ -70,6 +70,38 @@ test('každé jídlo má čas a nechybí žádný název', () => {
   const j = naJidla(PLAN);
   assert.equal(j.filter((x) => !x.time).length, 0);
   assert.equal(j.filter((x) => !x.title || x.title === 'Jídlo').length, 0);
+});
+
+// docs/DALSI_KROK.md 7.2a — cíl v preferencích ≠ cíl, na který je postavený
+// aktivní plán. Watchdog `calorie_target_mismatch` hlásí totéž interně.
+test('nesouladCile pozná, když je plán postavený na jiný cíl', () => {
+  const aktivniPlan = { id: 'p', is_active: true, valid_from: DNES, valid_until: DNES, daily_calories: 2164 };
+  const n = nesouladCile({ plans: [aktivniPlan] } as any, 2634);
+  assert.deepEqual(n, { cilKcal: 2634, planKcal: 2164 });
+});
+
+test('nesouladCile mlčí, když cíl a plán sedí', () => {
+  const aktivniPlan = { id: 'p', is_active: true, valid_from: DNES, valid_until: DNES, daily_calories: 2634 };
+  assert.equal(nesouladCile({ plans: [aktivniPlan] } as any, 2634), null);
+});
+
+test('nesouladCile mlčí bez plánu nebo bez cíle — nemá co porovnat', () => {
+  assert.equal(nesouladCile({ plans: [] } as any, 2634), null);
+  const aktivniPlan = { id: 'p', is_active: true, valid_from: DNES, valid_until: DNES, daily_calories: 2164 };
+  assert.equal(nesouladCile({ plans: [aktivniPlan] } as any, 0), null);
+});
+
+test('vekZDataNarozeni spočítá celé roky, ne jen rozdíl letopočtů', () => {
+  const pred40lety = new Date();
+  pred40lety.setFullYear(pred40lety.getFullYear() - 40);
+  pred40lety.setDate(pred40lety.getDate() + 1); // narozeniny až zítra — letos ještě nebyly
+  assert.equal(vekZDataNarozeni(pred40lety.toISOString().slice(0, 10)), 39);
+});
+
+test('vekZDataNarozeni vrátí null pro chybějící nebo nesmyslné datum', () => {
+  assert.equal(vekZDataNarozeni(null), null);
+  assert.equal(vekZDataNarozeni(''), null);
+  assert.equal(vekZDataNarozeni('neni-datum'), null);
 });
 
 test('trénink se mapuje včetně cviků a dnešního dne', () => {

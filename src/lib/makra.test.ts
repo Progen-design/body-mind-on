@@ -43,6 +43,43 @@ test('bez kalorického cíle se nevyrábí číslo', () => {
   assert.equal(m.tuky.gramy, 0);
 });
 
+test('uložené gramy vyhrávají nad dopočtem z procenta (docs/DALSI_KROK.md 7.2b)', () => {
+  // Produkční nález 31. 8. 2026: uloženo B 189 g, profil ukazoval 191 g —
+  // dopočet z zaokrouhleného procenta (34 %) zaokrouhlil podruhé.
+  const m = denniMakra({
+    dailyCalorieTarget: 2634,
+    proteinRatioPercent: 29,
+    carbsRatioPercent: 43,
+    fatRatioPercent: 28,
+    proteinTargetG: 189,
+    carbsTargetG: 285,
+    fatTargetG: 82,
+  });
+  assert.equal(m.bilkoviny.gramy, 189, 'gramy musí být uložená hodnota, ne dopočet z procenta');
+  assert.equal(m.sacharidy.gramy, 285);
+  assert.equal(m.tuky.gramy, 82);
+  assert.notEqual(m.bilkoviny.gramy, gramyMakra(2634, 29, 4), 'test nic neřekne, pokud dopočet náhodou sedí');
+});
+
+test('procento se dopočítá z uložených gramů, ne naopak', () => {
+  const m = denniMakra({
+    dailyCalorieTarget: 2634,
+    proteinRatioPercent: 999, // schválně nesmyslné — nesmí se použít, když gramy máme
+    carbsRatioPercent: 999,
+    fatRatioPercent: 999,
+    proteinTargetG: 189,
+    carbsTargetG: 285,
+    fatTargetG: 82,
+  });
+  assert.equal(m.bilkoviny.procenta, Math.round((189 * 4 * 100) / 2634));
+  assert.notEqual(m.bilkoviny.procenta, 999);
+});
+
+test('bez uložených gramů spadne zpátky na dopočet z procenta', () => {
+  const m = denniMakra(PROFIL);
+  assert.equal(m.bilkoviny.gramy, gramyMakra(2164, 34, 4));
+});
+
 test('gramy maker nejsou nikde napsané natvrdo', () => {
   // Do 23. 8. 2026 měl OverviewBentoGrid v JSX `B {procenta} % (103 g)`.
   // Procento bylo z profilu, gramy z makety — Přehled tvrdil 103 g,

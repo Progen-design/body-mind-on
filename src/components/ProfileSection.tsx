@@ -16,13 +16,14 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { UserProfile, UserPreferences, WeightRecord, AppleWatchBiometrics, TelesneSlozeni } from '../types';
-import { hodnotaNeboPomlcka, kdyMereno, zmenaText } from '../data/adaptery';
+import { hodnotaNeboPomlcka, kdyMereno, zmenaText, NesouladCile } from '../data/adaptery';
 import { denniMakra } from '../lib/makra';
 import { odstupHodin, odstupText } from '../lib/odstup';
 import { Avatar } from './Avatar';
 import { useAuth } from '../context/AuthContext';
 import { NadpisSekce } from './NadpisSekce';
 import { MembershipStatusBadge } from './MembershipStatusBadge';
+import { CalorieMismatchBanner } from './CalorieMismatchBanner';
 // `useTed` tu bylo kvůli kartě „AI trenér TED" mezi zařízeními. TED není
 // zařízení a stejná karta je v Bento gridu níž — v profilu byl dvakrát.
 
@@ -41,6 +42,10 @@ interface ProfileSectionProps {
   posledniSynchronizace?: string | null;
   /** ISO čas posledního stažení z Withings. null = server zatím nestahoval. */
   withingsPosledniStazeni?: string | null;
+  /** Cíl v preferencích ≠ cíl, na který je postavený plán. null = sedí. */
+  nesouladCile?: NesouladCile | null;
+  onRegeneratePlan?: () => void;
+  regenerujiPlan?: boolean;
   onEditPreferences: () => void;
   onSyncAll: () => void;
   onAddWeight: () => void;
@@ -59,6 +64,9 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   registrovanOd = null,
   posledniSynchronizace = null,
   withingsPosledniStazeni = null,
+  nesouladCile = null,
+  onRegeneratePlan,
+  regenerujiPlan = false,
   onEditPreferences,
   onSyncAll,
   onAddWeight,
@@ -566,6 +574,18 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             <span className="text-xl font-bold text-fuchsia-400">{makra.tuky.gramy} g</span>
           </div>
         </div>
+
+        {/* Plán je otisk cíle v okamžiku generování — po změně cíle (např.
+            oprava výšky, 6.5) se sám nepřegeneruje. Watchdog to hlásí
+            (`calorie_target_mismatch`), tady to VIDÍ i uživatel
+            (docs/DALSI_KROK.md 7.2a). */}
+        {nesouladCile && onRegeneratePlan && (
+          <CalorieMismatchBanner
+            nesoulad={nesouladCile}
+            onRegenerate={onRegeneratePlan}
+            regenerating={regenerujiPlan}
+          />
+        )}
       </div>
 
     </div>

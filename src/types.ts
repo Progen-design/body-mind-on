@@ -239,6 +239,13 @@ export interface UserPreferences {
   proteinRatioPercent: number;
   carbsRatioPercent: number;
   fatRatioPercent: number;
+  /**
+   * Přesná uložená makra z `body_metrics.*_target_g`, ne dopočet z procent.
+   * `null` = zatím nevíme — spadne se na dopočet ze zaokrouhleného procenta.
+   */
+  proteinTargetG: number | null;
+  carbsTargetG: number | null;
+  fatTargetG: number | null;
   targetWeightKg: number;
   currentHeightCm: number;
   weeklyWorkoutsTarget: number;

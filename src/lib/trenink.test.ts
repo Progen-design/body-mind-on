@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DEN_BEZ_TRENINKU, dnesniTrenink, jeNaplanovany, vybranyTrenink } from './trenink.ts';
+import { DEN_BEZ_TRENINKU, dnesniTrenink, dnesniTreninkPresne, jeNaplanovany, vybranyTrenink } from './trenink.ts';
 import type { WorkoutDay } from '../types.ts';
 
 const DNY = ['Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota', 'Neděle'];
@@ -79,4 +79,33 @@ test('zástupce nenese vymyšlená čísla', () => {
   assert.equal(DEN_BEZ_TRENINKU.durationMin, 0);
   assert.equal(DEN_BEZ_TRENINKU.caloriesBurned, 0);
   assert.equal(DEN_BEZ_TRENINKU.focus, '');
+});
+
+test('v den volna se neukáže cizí trénink (docs/DALSI_KROK.md 6.9)', () => {
+  // Plán po/st/pá zobrazený v neděli: žádný den nemá isToday, ale plán
+  // neni prázdný. dnesniTrenink() tu schválně spadne na první den (jiné
+  // volající — vybranyTrenink() pro záložku Tréninkový plán — to potřebují),
+  // ale dnesniTreninkPresne() nesmí cizí den vydávat za dnešek.
+  const workouts = plan(5); // zadny den neni isToday
+  const presne = dnesniTreninkPresne(workouts);
+
+  assert.equal(presne.title, DEN_BEZ_TRENINKU.title);
+  assert.equal(presne.dayName, '');
+  assert.equal(jeNaplanovany(presne), false);
+
+  // Kontrolní důkaz, že rozdíl je opravdu jen v přesnosti: dnesniTrenink()
+  // na tomtéž vstupu pořád spadne na první den (nezměněné chování).
+  assert.equal(dnesniTrenink(workouts).dayName, 'Pondělí');
+});
+
+test('trénink označený jako dnešní je stejný v obou funkcích', () => {
+  const workouts = plan(5, 2); // Streda je isToday
+  assert.equal(dnesniTreninkPresne(workouts).dayName, 'Středa');
+  assert.equal(dnesniTreninkPresne(workouts).dayName, dnesniTrenink(workouts).dayName);
+});
+
+test('prázdný plán vrátí zástupce i přes dnesniTreninkPresne()', () => {
+  const presne = dnesniTreninkPresne([]);
+  assert.equal(presne.title, DEN_BEZ_TRENINKU.title);
+  assert.equal(jeNaplanovany(presne), false);
 });

@@ -128,3 +128,25 @@ test('záložka Přehled je pryč a profil kreslí obojí', () => {
     'profil musí kreslit ProfileSection i OverviewBentoGrid'
   );
 });
+
+test('nákupní seznam sedí u jídelníčku (Karta 3), ne u TEDa (Karta 6) — docs/DALSI_KROK.md 6.8', () => {
+  // Karta 6 se hlavičkou hlásila jako "AI Trenér TED", ale zobrazovala pod
+  // ní i nesouvisející nákupní seznam — rozpor mezi nadpisem a obsahem.
+  // Značky karet jsou v JSX komentářích, které kod() odstraňuje, proto se
+  // tu čte surový soubor, ne sdílená stripnutá konstanta BENTO.
+  const surovy = cti('../components/OverviewBentoGrid.tsx');
+  const zacatekKarty3 = surovy.indexOf('KARTA 3');
+  const zacatekKarty4 = surovy.indexOf('KARTA 4');
+  const zacatekKarty6 = surovy.indexOf('KARTA 6');
+  assert.ok(zacatekKarty3 > -1 && zacatekKarty4 > -1 && zacatekKarty6 > -1, 'značky karet zmizely ze souboru');
+
+  // kod() na výřezu, ne na celém souboru — markery karet jsou v komentářích
+  // a bez stripu by je nešlo najít; komentáře uvnitř výřezu ale nesmí
+  // ovlivnit test (např. tenhle komentář u Karty 6 sám "Nákupní seznam"
+  // zmiňuje jako historii, ne jako obsah).
+  const obsahKarty3 = kod(surovy.slice(zacatekKarty3, zacatekKarty4));
+  const obsahKarty6 = kod(surovy.slice(zacatekKarty6));
+
+  assert.ok(obsahKarty3.includes('Nákupní seznam'), 'Karta 3 nemá nákupní seznam');
+  assert.ok(!obsahKarty6.includes('Nákupní seznam'), 'Karta 6 (TED) zase zobrazuje nákupní seznam');
+});

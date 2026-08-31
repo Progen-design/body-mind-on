@@ -197,6 +197,49 @@ a JetBrains Mono z Google Fonts, změna písma je samostatné rozhodnutí.
 
 ---
 
+## 8.1 UDÁLOST `target_changed` A ZAPNUTÍ PRAVIDLA `missing_plan`
+
+Kontext a měření: `docs/BMON_EKOSYSTEM.md`. Krátce: řetěz
+`ai_events` → `ai_trigger_rules` → `ai_tasks` → exekutory existuje, ale
+ze sedmi pravidel je zapnuté jediné (`user_registered → initial_plan`)
+a od 10. 3. 2026 se jich nikdo nedotkl. Systém reaguje na člověka přesně
+jednou za život.
+
+### Co udělat
+
+1. **Nová událost `target_changed`.** Vzniká, když se změní
+   `body_metrics.calories_target`. Místo, kde se cíl mění, už existuje
+   jedno: `buildCalorieTargetBodyMetricsPatch()` a jeho čtyři volající
+   (viz komentář v `lib/calorieTargetIntegrity.js`). Napiš, kam přesně
+   událost patří, ať nevzniká čtyřikrát nebo vůbec.
+
+   `enqueueAIEvent()` v `lib/aiEvents.js` už používá
+   `api/profile-preferences.js` pro `diet_changed` a `goal_changed` —
+   drž se stejného vzoru.
+
+2. **Migrace (soubor, NEAPLIKUJ):** nové pravidlo
+   `target_changed → adjust_plan` a zapnutí `missing_plan → initial_plan`.
+   Obě s `enabled = false` v migraci — zapneme je ručně a po jednom, až
+   ověřím chování. Migrace je připraví, nespouští.
+
+3. **REŽIM „NAVRHNI, NEZASAHUJ".** `target_changed` NESMÍ v první verzi
+   přepsat člověku jídelníček sám. Má vyrobit stav, který uvidí na profilu
+   — to už umí banner z 7.2a (`nesouladCile()`). Navrhni, jak to spojit,
+   aby banner nevznikal z klientského porovnání, ale ze skutečné události.
+
+4. **Co se stane s `conditions_json`.** U všech sedmi pravidel je `null`,
+   takže pravidlo neumí říct „jen když". Napiš, co by `target_changed`
+   potřebovalo za podmínku (např. rozdíl větší než X kcal), ale
+   NEIMPLEMENTUJ to — jen popiš, ať víme, co nás čeká u 8.2.
+
+### Co v tomhle bodě NEDĚLEJ
+
+Nezapínej žádné pravidlo naostro. Nezapínej týdenní producer (to je 8.2).
+Nesahej na `weight_stagnation`, `high_stress` ani `low_adherence` —
+bez `conditions_json` by reagovaly na šum.
+
+---
+
 ## Hotovo a nasazeno — NEŘEŠ ZNOVU
 
 - **6.1** máslo neprojde bezlaktózovou bránou — `4415955`

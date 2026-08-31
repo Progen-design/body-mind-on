@@ -12,6 +12,7 @@ import { isTierCheckoutEnabled } from '../lib/salesFeatureFlags.js';
 import { resolveProgramTier } from '../lib/programTier.js';
 import { zachytChybu, odesliChyby } from '../lib/sentryServer.js';
 import { sestavHistoriiVah } from '../lib/vahaHistorie.js';
+import { efektivniVyskaCm } from '../lib/efektivniVyskaCm.js';
 import { SLOUPCE_SNAPSHOTU, vyberTelesneSlozeni } from '../lib/telesneSlozeni.js';
 import {
   catalogIdyZPlanu,
@@ -516,6 +517,9 @@ export default async function handler(req, res) {
       }
       return null;
     })();
+    // Výška: body_metrics (zdroj pravdy) má přednost před metadaty
+    // (best-effort zrcadlo) — viz lib/efektivniVyskaCm.js a docs/DALSI_KROK.md 6.7(b).
+    const heightCm = efektivniVyskaCm(latestBodyMetricsForRender, meta);
     const profilePayload = {
       program,
       membershipStatus,
@@ -574,7 +578,7 @@ export default async function handler(req, res) {
         daily_email: profileRow?.daily_email !== false,
         start_weight_kg: meta.start_weight_kg != null ? Number(meta.start_weight_kg) : null,
         goal_weight_kg: meta.goal_weight_kg != null ? Number(meta.goal_weight_kg) : null,
-        height_cm: meta.height_cm != null ? Number(meta.height_cm) : null,
+        height_cm: heightCm,
         birth_date: birthDateFromMeta || birthDateFromMetrics || null,
         created_at: user.created_at || null,
         wants_body_tracking: wantsBodyTracking,

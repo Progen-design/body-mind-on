@@ -4,7 +4,7 @@
 // Přegenerování plánu je orchestration-compatible: generatePlanForEmail používá stejný trainer jako task executor; v budoucnu lze nahradit za event + task adjust_plan.
 import { supabaseServer } from '../lib/supabaseServer.js';
 import { generatePlanForEmail } from '../lib/generatePlan.js';
-import { isValidHabitId, POSITIVE_HABITS } from '../lib/habits.js';
+import { isValidHabitId, invalidHabitIds, POSITIVE_HABITS } from '../lib/habits.js';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getFrequencyDayRange } from '../lib/preferenceConstants.js';
 import { enqueueAIEvent, triggerImmediateDecision } from '../lib/aiEvents.js';
 import { mergeTrainingEnvironmentIntoNotes } from '../lib/trainingEnvironment.js';
@@ -118,6 +118,19 @@ export default async function handler(req, res) {
       if (effectiveWorkoutDays.length < min || effectiveWorkoutDays.length > max) {
         return res.status(400).json({
           error: `Pro frekvenci ${effectiveFrequency} musí být vybráno ${min}-${max} tréninkových dní (aktuálně ${effectiveWorkoutDays.length}).`,
+        });
+      }
+    }
+
+    // Návyky se ověřují TADY, před jakýmkoli zápisem — ne až u samotného
+    // user_habits bloku níž. Ten dřív smazal existující návyky ještě před
+    // kontrolou vstupu: request se samými neplatnými klíči smazal člověku
+    // celý seznam a nevložil nic, beze chyby. Viz docs/DALSI_KROK.md 6.7.
+    if (b.selected_habits !== undefined) {
+      const neplatneNavyky = invalidHabitIds(b.selected_habits);
+      if (neplatneNavyky.length > 0) {
+        return res.status(400).json({
+          error: `Neznámé návyky: ${neplatneNavyky.map((v) => String(v)).join(', ')}.`,
         });
       }
     }

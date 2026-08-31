@@ -17,6 +17,123 @@
 
 ---
 
+## 7.2 PROFIL SI PROTIŘEČÍ SÁM SE SEBOU
+
+Změřeno 31. 8. 2026 průchodem `app.bodyandmindon.cz/profil` v prohlížeči,
+účet `janprikopa@gmail.com`, každé číslo porovnané se zdrojem v DB.
+Celý zápis: `docs/AUDIT_PRAVDIVOSTI_2026-08-31.md`.
+
+**Naměřená data z Withings a Apple Health sedí do poslední číslice.**
+Appka si nic nevymýšlí. Všech sedm nálezů níž je o tom, že jedna
+obrazovka tvrdí něco jiného než druhá.
+
+Dělej je v tomhle pořadí, ke každému vlastní test.
+
+### a) Denní cíl 2634 kcal, ale jídelníček je postavený na 2164
+
+```
+profil                         cíl 2 634 kcal
+ai_generated_plans             daily_calories 2164
+5 jídel na dnešek dohromady    2151 kcal
+```
+
+Plán vznikl před opravou výšky (6.5). Když se změní
+`body_metrics.calories_target`, plán se nepřegeneruje a nikdo se to
+nedozví. Uživatel může sníst celý denní plán a být 480 kcal pod cílem,
+který mu appka sama nastavila.
+
+Watchdog to hlásí (`calorie_target_mismatch`, view
+`system_health_alerts`), takže detekce existuje — chybí reakce.
+
+Nechci automatické přegenerování na pozadí; plán je rozhodnutí o člověku.
+**Chci, aby to uživatel VIDĚL** na profilu i v jídelníčku: plán je
+postavený na jiný cíl, tady je tlačítko ho přegenerovat. Navrhni tvar
+a zdůvodni ho dřív, než začneš psát.
+
+### b) Makra na obrazovce nejsou makra v databázi
+
+```
+body_metrics       189 B / 285 S / 82 T
+profil ukazuje     191 B / 283 S / 82 T
+```
+
+UI si gramy dopočítává z procent (`denniMakra` v `src/lib/makra.ts`),
+místo aby vzalo `protein_target_g`/`carbs_target_g`/`fat_target_g`,
+které tam od etapy 6.7 jsou. Rozdíl jsou dva gramy — ale znamená to, že
+žádná obrazovka neukazuje číslo, se kterým se skládá jídelníček.
+
+Ukazuj uložené gramy. Procenta z nich dopočítej, ne naopak.
+
+### c) Přehled ukazuje 3 z 5 jídel pod nadpisem „Všechna jídla"
+
+`OverviewBentoGrid.tsx:304`: `meals.slice(0, 3)`. Na kartě je
+436 + 604 + 298 = 1338 kcal proti cíli 2634 — vypadá to, že třetina dne
+chybí. Na záložce Jídelníček je všech pět.
+
+Buď ukázat všechna, nebo napsat pravdu („3 z 5 jídel"). Rozhodni.
+
+### d) Historie BMI míchá dvě různé výšky
+
+Withings počítá BMI z výšky, kterou má nastavenou u sebe. Do 30. 8. to
+bylo 182 cm, od 31. 8. správných 194:
+
+```
+30. 8.  104,8 kg  BMI 31,6   (ze 182 cm)
+31. 8.  105,7 kg  BMI 28,1   (ze 194 cm)
+```
+
+Váha stoupla, BMI spadlo o 3,5 bodu. Každý graf BMI přes čas ukáže
+zlepšení, které se nestalo — týká se 44 měření.
+
+BMI si má appka počítat sama z `body_metrics.height_cm` (má na to
+`calculateBmi`), ne přebírat `withings_body_snapshots.bmi`. Historii tím
+srovnáš na jednu výšku.
+
+### e) Karta Withings říká připojenému uživateli, ať se připojí
+
+`WithingsCard.tsx:79` — odstavec „Propojte svou chytrou váhu Withings pro
+automatickou synchronizaci…" se vykresluje **bez podmínky**, hned pod
+odznakem „Online" a pod „Poslední úspěšná synchronizace: před 1 h 22 min".
+Odznak i status po 6.2 chodí z dat správně, tenhle odstavec ne.
+
+### f) „+3,4 kg svalové hmoty od minula" za 21 hodin jako fakt
+
+Mezi 30. 8. 22:43 a 31. 8. 19:17 hlásí profil +3,4 kg svalů a −1,8 %
+tuku. Za den. To není pokrok, to je šum impedance — v historii kolísá
+svalová hmota mezi 81,3 a 92 kg podle hydratace.
+
+Rozdíl mezi dvěma měřeními v odstupu kratším než pár dní se nemá
+podávat jako změna složení těla. Navrhni práh a co se ukáže místo toho.
+Nevymýšlej si diagnózy ani rady — jen neříkej jako fakt něco, co měření
+neunese.
+
+### g) Doporučený příjem je pod bazálním metabolismem
+
+Na jednom profilu vedle sebe:
+
+```
+Bazální metabolismus (Withings)   2826 kcal
+Denní cíl                         2634 kcal
+```
+
+Withingsový BMR je nadsazený (počítá ho z těch 91,5 kg „svalů";
+Mifflin–St Jeor dá pro 105,7 kg / 194 cm / 38 let asi 2085 kcal), ale
+appka obě čísla ukazuje jako fakt a nikde je nesrovná. Uživatel čte, že
+má jíst o 190 kcal míň, než spálí v klidu.
+
+`lib/nutritionTargets.js` má `minimalniKalorickyCil()` s vlastním
+výpočtem BMR — appka tedy zná i své číslo. Navrhni, které z nich se má
+ukazovat a jak, aby si dvě čísla na jedné obrazovce neodporovala.
+
+### Co v tomhle bodě NEDĚLEJ
+
+Nákupní seznam (kuřecí prsa třikrát pod třemi názvy, kategorie, sůl 52 g
+na týden, dvě jednotky u položky) a chybějící ukázky u cviků
+`dumbbell_romanian_deadlift` / `dumbbell_row` jsou jiná oblast a jiná
+session. Zůstávají v „Vědomě odloženo".
+
+---
+
 ## 7.1 APPKA A WEB NESDÍLEJÍ JEDINOU HODNOTU — A APPKA NEMÁ TOKENY
 
 Změřeno 31. 8. 2026 porovnáním obou repozitářů.

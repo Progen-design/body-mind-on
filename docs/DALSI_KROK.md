@@ -17,25 +17,58 @@
 
 ---
 
-## 6.8 NÁKUPNÍ SEZNAM SEDÍ UVNITŘ PANELU „AI TRENÉR TED"
+## 6.8 + 6.9 KARTA 6 A KARTA 4 V OVERVIEWBENTOGRID
 
-Karta „Nákupní seznam · 72 položek" je vykreslená ve stejném rámci jako AI
-trenér. Se seznamem k nákupu nemá TED nic společného — patří k jídelníčku.
-Nález z průchodu profilem 29. 8., ověřeno na screenshotech.
+Oba body jsou ve stejném souboru (`src/components/OverviewBentoGrid.tsx`),
+takže je dělej v jedné session. Jinde nic měnit nemusíš.
 
-Samostatný bod, ne součást 6.6 — je to čistě rozvržení, žádná data.
+### 6.8 Nákupní seznam sedí uvnitř panelu „AI Trenér TED"
 
----
+Není to omyl v rozvržení — karta 6 je tak postavená schválně. V kódu se
+jmenuje `KARTA 6: AI Trenér TED & Rychlý nákup` (ř. 452) a komentář říká
+„Kompaktní informativní blok s AI doporučením a nákupním seznamem".
 
-## 6.9 „DNEŠNÍ TRÉNINK" UKAZUJE JINÝ DEN, NEŽ JE DNES
+Vadí to proto, že **hlavička karty říká jen „AI Trenér TED"** (ř. 470).
+Uživatel tedy vidí seznam k nákupu pod nadpisem, se kterým nemá nic
+společného. Rozpor je mezi záměrem a titulkem, ne v samotném umístění.
 
-Dvakrát potvrzeno: tréninkové dny po/st/pá, zobrazeno v neděli 30. 8. s
-nadpisem „Dnešní trénink" a štítkem „Pátek". Na záložce Tréninkový plán je
-tatáž věc popsaná správně jako „nejbližší trénink v plánu".
+Rozhodni a zdůvodni jednu z cest:
+  a) nákupní pilulku přesunout na kartu 3 (`Jídelníček & Makra dnes`,
+     ř. 227) — patří k jídelníčku a ta karta je přes dva sloupce;
+  b) nechat ji tam a doplnit hlavičku, ať odpovídá obsahu.
 
-Buď se má nadpis změnit na to, co karta opravdu ukazuje, nebo se má ve dnech
-bez tréninku ukázat, že dnes trénink není. Rozhodni a zdůvodni; nechci
-nadpis, který lže.
+Doporučení psané do zadání: (a). Karta 6 je jediné místo, kde je TED
+vidět, a nákup ho tam ředí. Pokud zvolíš (b), napiš proč.
+
+### 6.9 „Dnešní trénink" ukazuje jiný den, než je dnes
+
+Příčina je v `src/lib/trenink.ts` ř. 31:
+
+```ts
+export function dnesniTrenink(workouts: WorkoutDay[]): WorkoutDay {
+  return workouts.find(w => w.isToday) ?? workouts[0] ?? DEN_BEZ_TRENINKU;
+}
+```
+
+`isToday` se nastavuje v `src/data/adaptery.ts` ř. 340 jako
+`String(d?.date) === dnes` — porovnání data. V den bez tréninku (plán
+po/st/pá, zobrazeno v neděli) se tedy netrefí nic a funkce spadne na
+`workouts[0]`, tedy na první trénink v plánu. Karta ho pak ukáže pod
+nadpisem „Dnešní trénink" se štítkem dne, který dnes není.
+
+`DEN_BEZ_TRENINKU` (`title: 'Dnes bez tréninku'`) v tom souboru existuje,
+ale sáhne se po něm jen u úplně prázdného pole.
+
+Fallback na `workouts[0]` vznikl proto, aby komponenty nečetly
+`undefined.title` (komentář v App.tsx ř. 745). Ta obrana má zůstat —
+ale nesmí vydávat cizí den za dnešek. Zamysli se nad tím, kdo dnes
+`dnesniTrenink()` volá: `App.tsx` ř. 748 a `WorkoutSection.tsx` ř. 44
+(tam přes `vybranyTrenink`, kde je fallback na dnešek správný, protože
+záložka Tréninkový plán o sobě tvrdí „nejbližší trénink v plánu").
+Nerozbij druhé volání, když opravíš první.
+
+Ke každé změně test. Chování „v den volna se neukáže cizí trénink" patří
+do `src/lib/trenink.test.ts`.
 
 ---
 

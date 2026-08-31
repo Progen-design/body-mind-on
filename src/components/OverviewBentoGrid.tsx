@@ -34,6 +34,7 @@ import {
 import { ActiveTab } from './NavigationTabs';
 import { hodnotaNeboPomlcka, kdyMereno, zmenaText } from '../data/adaptery';
 import { denniMakra } from '../lib/makra';
+import { jeNaplanovany } from '../lib/trenink';
 import { Vysvetlivka } from './Vysvetlivka';
 
 interface OverviewBentoGridProps {
@@ -85,6 +86,9 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
   const makra = denniMakra(preferences);
   const completedExercises = todayWorkout?.exercises.filter(e => e.completed).length || 0;
   const totalExercises = todayWorkout?.exercises.length || 0;
+  // V den volna nabízí "Spustit záznamník" trénink, který v plánu není —
+  // tlačítko proto přejmenuje na zápis mimo plán (docs/DALSI_KROK.md 6.11).
+  const maDnesTrenink = jeNaplanovany(todayWorkout);
   const completedHabitsCount = habits.filter(h => h.completed).length;
   const topCoachTip = coachTips[0];
 
@@ -454,8 +458,17 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
             onClick={onOpenWorkoutLogger}
             className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-[#00f2fe] to-[#39ff14] hover:opacity-95 shadow-[0_0_15px_rgba(57,255,20,0.3)] flex items-center justify-center gap-2 transition-all active:scale-95"
           >
-            <Play className="w-3.5 h-3.5 fill-current" />
-            <span>Spustit záznamník (Stopky)</span>
+            {maDnesTrenink ? (
+              <>
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>Spustit záznamník (Stopky)</span>
+              </>
+            ) : (
+              <>
+                <Plus className="w-3.5 h-3.5" />
+                <span>Zapsat trénink mimo plán</span>
+              </>
+            )}
           </button>
 
           <button

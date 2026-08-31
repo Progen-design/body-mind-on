@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { WorkoutDay, ExerciseItem } from '../types';
+import { jeNaplanovany } from '../lib/trenink';
 import {
   PERCEIVED_DIFFICULTIES,
   PERCEIVED_DIFFICULTY_LABELS,
@@ -85,6 +86,10 @@ export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
   };
 
   const completedCount = todayWorkout.exercises.filter(e => e.completed).length;
+  // Prazdny todayWorkout (den volna) neni chyba dat — jen v planu dnes nic
+  // neni. Hlavicka a seznam cviku to musi rict rovnou, ne ukazat "0 z 0"
+  // jako by trenink existoval a byl prazdny (docs/DALSI_KROK.md 6.11).
+  const maPlan = jeNaplanovany(todayWorkout);
 
   const handleStartRest = (sec: number) => {
     setRestTimer(sec);
@@ -127,11 +132,11 @@ export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-cyan-400">
-                  Aktivní trénink • {todayWorkout.dayName}
+                  {maPlan ? `Aktivní trénink • ${todayWorkout.dayName}` : 'Trénink mimo plán'}
                 </span>
               </div>
               <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                {todayWorkout.title}
+                {maPlan ? todayWorkout.title : 'Vlastní trénink'}
               </h3>
             </div>
           </div>
@@ -195,60 +200,68 @@ export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
 
         {/* Exercises list with checkmarks */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-3 flex-1">
-          <div className="flex items-center justify-between pb-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Cviky a série ({completedCount} z {todayWorkout.exercises.length} hotovo)
-            </span>
-            <span className="text-xs text-[#39ff14] font-semibold">
-              {todayWorkout.caloriesBurned > 0 ? `Cíl: ${todayWorkout.caloriesBurned} kcal` : ''}
-            </span>
-          </div>
+          {maPlan ? (
+            <>
+              <div className="flex items-center justify-between pb-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Cviky a série ({completedCount} z {todayWorkout.exercises.length} hotovo)
+                </span>
+                <span className="text-xs text-[#39ff14] font-semibold">
+                  {todayWorkout.caloriesBurned > 0 ? `Cíl: ${todayWorkout.caloriesBurned} kcal` : ''}
+                </span>
+              </div>
 
-          {todayWorkout.exercises.map((ex, idx) => (
-            <div
-              key={ex.id}
-              onClick={() => onToggleExercise(todayWorkout.dayName, ex.id)}
-              className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer select-none flex items-center justify-between gap-3 ${
-                ex.completed
-                  ? 'bg-emerald-950/20 border-emerald-500/30 text-white'
-                  : 'bg-[#0e131d]/90 border-slate-800 hover:border-cyan-500/30'
-              }`}
-            >
-              <div className="flex items-center gap-3">
+              {todayWorkout.exercises.map((ex, idx) => (
                 <div
-                  className={`w-6 h-6 rounded-xl border flex items-center justify-center transition-all ${
+                  key={ex.id}
+                  onClick={() => onToggleExercise(todayWorkout.dayName, ex.id)}
+                  className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer select-none flex items-center justify-between gap-3 ${
                     ex.completed
-                      ? 'bg-[#39ff14] border-[#39ff14] text-slate-950 shadow-[0_0_8px_#39ff14]'
-                      : 'border-slate-700 bg-slate-900 text-transparent'
+                      ? 'bg-emerald-950/20 border-emerald-500/30 text-white'
+                      : 'bg-[#0e131d]/90 border-slate-800 hover:border-cyan-500/30'
                   }`}
                 >
-                  <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
-                </div>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-6 h-6 rounded-xl border flex items-center justify-center transition-all ${
+                        ex.completed
+                          ? 'bg-[#39ff14] border-[#39ff14] text-slate-950 shadow-[0_0_8px_#39ff14]'
+                          : 'border-slate-700 bg-slate-900 text-transparent'
+                      }`}
+                    >
+                      <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
+                    </div>
 
-                <div>
-                  <h4 className={`text-sm font-bold ${ex.completed ? 'text-emerald-300' : 'text-slate-100'}`}>
-                    {idx + 1}. {ex.name}
-                  </h4>
-                  <p className="text-xs text-slate-400">
-                    {ex.targetMuscle && <>Cílový sval: {ex.targetMuscle}</>}
-                    {ex.targetMuscle && ex.restSec > 0 && ' • '}
-                    {ex.restSec > 0 && <>Pauza {ex.restSec}s</>}
-                  </p>
-                </div>
-              </div>
+                    <div>
+                      <h4 className={`text-sm font-bold ${ex.completed ? 'text-emerald-300' : 'text-slate-100'}`}>
+                        {idx + 1}. {ex.name}
+                      </h4>
+                      <p className="text-xs text-slate-400">
+                        {ex.targetMuscle && <>Cílový sval: {ex.targetMuscle}</>}
+                        {ex.targetMuscle && ex.restSec > 0 && ' • '}
+                        {ex.restSec > 0 && <>Pauza {ex.restSec}s</>}
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200">
-                  {ex.sets} × {ex.reps}
-                </span>
-                {ex.weightKg && (
-                  <span className="px-2.5 py-1 rounded-xl bg-cyan-950/60 border border-cyan-500/30 text-xs font-bold text-[#00f2fe]">
-                    {ex.weightKg} kg
-                  </span>
-                )}
-              </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200">
+                      {ex.sets} × {ex.reps}
+                    </span>
+                    {ex.weightKg && (
+                      <span className="px-2.5 py-1 rounded-xl bg-cyan-950/60 border border-cyan-500/30 text-xs font-bold text-[#00f2fe]">
+                        {ex.weightKg} kg
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </>
+          ) : (
+            <div className="p-4 rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 text-sm text-slate-400">
+              Dnes nemáš v plánu žádný trénink — klidně si zapiš čas a pocit z toho, co sis dal navíc.
             </div>
-          ))}
+          )}
         </div>
 
         {/* Jak to slo a co to bylo — obojí jde přeskočit */}

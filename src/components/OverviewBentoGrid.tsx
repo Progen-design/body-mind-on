@@ -259,7 +259,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
               onClick={() => onSelectTab('jidelnicek')}
               className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
             >
-              <span>Všechna jídla</span>
+              <span>Otevřít jídelníček</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -299,8 +299,17 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
             </div>
           </div>
 
-          {/* Today's Meals Quick List with recipe buttons */}
+          {/* Today's Meals Quick List with recipe buttons.
+              KARTA UKAZUJE VÝŘEZ, NE VŠECHNA JÍDLA — a řekne to. Nadpis
+              "Všechna jídla" nad tříprvkovým výřezem z pěti jídel lhal o tom,
+              co je pod ním (docs/DALSI_KROK.md 7.2c): karta ukazovala
+              1338 kcal proti cíli 2634, jako by třetina dne chyběla. */}
           <div className="space-y-2 mb-4">
+            {meals.length > 3 && (
+              <div className="text-[10px] text-slate-500 px-0.5">
+                Zobrazeny 3 z {meals.length} jídel
+              </div>
+            )}
             {meals.slice(0, 3).map(meal => (
               <div
                 key={meal.id}

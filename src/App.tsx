@@ -33,12 +33,12 @@ import { naviguj, useCesta } from './routing';
 import { useProfilData } from './hooks/useProfilData';
 import { useZdravotniData } from './hooks/useZdravotniData';
 import { naBiometrii, maZdravotniData, naSkupinyMetrik, naSpanek } from './data/adapteryZdravi';
-import type { NastaveniProfilu } from './data/adaptery';
+import type { NastaveniProfilu, NesouladCile } from './data/adaptery';
 import {
   dnesekPraha, dnesniNavyky, mnozinaDokonceni, naJidla, naNakupniSeznam, naNavyky,
   hodnotaNeboPomlcka, naNastaveniProfilu, naPreference, naProfil, naTelesneSlozeni, naTreninky, naVazeni,
-  naZlozvyky, naZpravyTrenera, naZamcenyPlan, pouzijDokonceni,
-  pouzijDokonceniTreninku, vyberPlan
+  naZlozvyky, naZpravyTrenera, naZamcenyPlan, nesouladCile, pouzijDokonceni,
+  pouzijDokonceniTreninku, vekZDataNarozeni, vyberPlan
 } from './data/adaptery';
 import { ToastProvider, useToast } from './context/ToastContext';
 // Otaznik u kterekoli metriky umi otevrit TEDa s kontextem te polozky.
@@ -53,6 +53,7 @@ import { apiFetch, jeNeaktivniClenstvi } from './lib/api';
 import { dnesniTreninkPresne } from './lib/trenink';
 import { sestavZapisTreninku } from './lib/zapisTreninku';
 import { rozdelZmenyNastaveni, PRAZDNE_NASTAVENI } from './lib/nastaveniProfilu';
+import { bmrMifflinStJeor } from '../lib/nutritionTargets.js';
 
 // Initial Data
 import { PRAZDNA_BIOMETRIE, PRAZDNY_PROFIL, initialPreferences } from './data/initialData';
@@ -216,6 +217,82 @@ function AppContent() {
   const latestRecord: WeightRecord | null = monthRecords.length > 0
     ? monthRecords[monthRecords.length - 1]
     : null;
+
+  /**
+   * Cíl v preferencích ≠ cíl, na který je postavený aktivní plán.
+   * Watchdog (`calorie_target_mismatch`) tohle hlásí interně; tady je stejná
+   * kontrola vidět uživateli na profilu i v jídelníčku (docs/DALSI_KROK.md 7.2a).
+   */
+  const nesoulad = useMemo(
+    () => (profilData ? nesouladCile(profilData, preferences.dailyCalorieTarget) : null),
+    [profilData, preferences.dailyCalorieTarget]
+  );
+  const [regenerujiPlan, setRegenerujiPlan] = useState(false);
+  /**
+   * Přegenerování jídelníčku na aktuální cíl BEZ změny preferencí a BEZE ZMĚNY
+   * tréninku. `{ regenerateMealsOnly: true }` řekne `/api/profile-preferences`,
+   * ať přepočítá jen jídla z posledního uloženého `body_metrics` a přitom
+   * podrží stejné `plan_id` (stejný `valid_from` jako aktivní plán) — jinak by
+   * `daily_activity_completions` ukazovala na neexistující plán a odškrtnutí
+   * za tenhle týden by tiše zmizela, jídla i tréninky (ověřeno na datech
+   * 31. 8. 2026, docs/DALSI_KROK.md 7.2a). Podrobnosti u serverového handleru.
+   */
+  const handleRegeneratePlanForCurrentTarget = useCallback(async () => {
+    if (regenerujiPlan) return;
+    setRegenerujiPlan(true);
+    try {
+      // regenerateMealsOnly: true → server mění jen jídla, trénink kopíruje
+      // beze změny ze stejného plánu (stejné plan_id, viz komentář v
+      // api/profile-preferences.js) — tréninková odškrtnutí zůstanou platná,
+      // jídelní se ztratí. To samé musí stát v banneru PŘED kliknutím, ne
+      // jen tady v toastu po akci (docs/DALSI_KROK.md 7.2a).
+      const odpoved = await apiFetch<{ ok?: boolean; planRegenerated?: boolean; message?: string }>(
+        '/api/profile-preferences',
+        { method: 'PATCH', body: JSON.stringify({ regenerateMealsOnly: true }) }
+      );
+      if (odpoved?.planRegenerated) {
+        showToast({
+          title: 'Jídelníček přegenerován',
+          description: 'Jídla sedí na aktuální cíl, trénink zůstal beze změny. Poslali jsme to e-mailem.',
+          variant: 'success'
+        });
+        znovuNacistProfil();
+      } else {
+        showToast({
+          title: 'Nepodařilo se přegenerovat',
+          description: odpoved?.message || 'Zkus to prosím znovu.',
+          variant: 'error'
+        });
+      }
+    } catch (chyba) {
+      showToast({
+        title: 'Nepodařilo se přegenerovat',
+        description: chyba instanceof Error ? chyba.message : 'Zkus to prosím znovu.',
+        variant: 'error'
+      });
+    } finally {
+      setRegenerujiPlan(false);
+    }
+  }, [regenerujiPlan, showToast, znovuNacistProfil]);
+
+  /**
+   * Vlastní odhad bazálního metabolismu appky (Mifflin–St Jeor), ze stejných
+   * čísel, která profil už zobrazuje — váha, výška, věk. Ukazuje se vedle
+   * Withings čísla, ne místo něj (docs/DALSI_KROK.md 7.2g): appka BMR
+   * neschovává, jen ukazuje i svůj vlastní výpočet, aby dvě čísla na jedné
+   * obrazovce (bazální metabolismus vs. denní cíl) nepůsobila jako rozpor
+   * beze zdroje.
+   */
+  const vlastniBmrKcal = useMemo(
+    () =>
+      bmrMifflinStJeor({
+        weightKg: latestRecord?.weight ?? null,
+        heightCm: preferences.currentHeightCm,
+        age: vekZDataNarozeni(profilData?.user?.birth_date ?? null),
+        gender: profilData?.body_metrics?.[0]?.gender ?? null
+      }),
+    [latestRecord, preferences.currentHeightCm, profilData]
+  );
 
   // Zobrazený profil přebírá jméno a avatar z přihlášeného účtu.
   const displayedProfile = useMemo<UserProfile>(
@@ -920,6 +997,9 @@ function AppContent() {
               registrovanOd={profilData?.user?.created_at ?? null}
               posledniSynchronizace={posledniSynchronizaceHodinek}
               withingsPosledniStazeni={profilData?.withings_last_sync_at ?? null}
+              nesouladCile={nesoulad}
+              onRegeneratePlan={handleRegeneratePlanForCurrentTarget}
+              regenerujiPlan={regenerujiPlan}
               onEditPreferences={() => setIsPreferencesModalOpen(true)}
               onSyncAll={handleManualWithingsSync}
               onAddWeight={() => setIsAddRecordModalOpen(true)}
@@ -960,6 +1040,7 @@ function AppContent() {
             hasWithingsConnection={profilData?.has_withings_connection === true}
             withingsLastSyncedAt={profilData?.withings_last_sync_at ?? null}
             slozeni={slozeni}
+            vlastniBmrKcal={vlastniBmrKcal}
             onAddMeasurement={() => setIsAddRecordModalOpen(true)}
             onSync={handleManualWithingsSync}
             onOpenWithingsSettings={() => setIsWithingsModalOpen(true)}
@@ -977,6 +1058,9 @@ function AppContent() {
             proteinPct={preferences.proteinRatioPercent}
             carbsPct={preferences.carbsRatioPercent}
             fatPct={preferences.fatRatioPercent}
+            nesouladCile={nesoulad}
+            onRegeneratePlan={handleRegeneratePlanForCurrentTarget}
+            regenerujiPlan={regenerujiPlan}
             onToggleMeal={handleToggleMeal}
             onSelectRecipe={(m) => setSelectedRecipeMeal(m)}
             onOpenWeeklyPlan={() => setIsMealModalOpen(true)}

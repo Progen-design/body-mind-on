@@ -76,7 +76,7 @@ export const WithingsCard: React.FC<WithingsCardProps> = ({
             )}
           </div>
           <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-            Propojte svou chytrou váhu Withings pro automatickou synchronizaci měření tělesné kompozice a tepové frekvence.
+            {stav.description}
           </p>
           <div className="text-[11px] text-slate-500 mt-2 flex items-center gap-1.5">
             {stav.badge === 'online' ? (

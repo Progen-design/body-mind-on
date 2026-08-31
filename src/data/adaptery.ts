@@ -761,10 +761,59 @@ export function naPreference(odpoved: ProfilOdpoved, puvodni: UserPreferences): 
     proteinRatioPercent: bilkoviny ? zKcal(bilkoviny, 4) : puvodni.proteinRatioPercent,
     carbsRatioPercent: sacharidy ? zKcal(sacharidy, 4) : puvodni.carbsRatioPercent,
     fatRatioPercent: tuky ? zKcal(tuky, 9) : puvodni.fatRatioPercent,
+    // GRAMY ULOŽENÉ, NE DOPOČÍTANÉ Z PROCENT.
+    //
+    // `proteinRatioPercent` výš je zaokrouhlený podíl (`zKcal`) — dopočítat
+    // z něj gramy zpátky (`denniMakra` v lib/makra.ts) zaokrouhluje podruhé.
+    // Změřeno 31. 8. 2026: uloženo B 189 g, profil ukazoval 191 g. Tahle
+    // trojice nese přesné uložené číslo, aby ho `denniMakra` mohlo použít
+    // místo dopočtu (docs/DALSI_KROK.md 7.2b). `null`, když nemáme co uložit —
+    // `denniMakra` pak spadne na starý dopočet z procent.
+    proteinTargetG: bilkoviny > 0 ? bilkoviny : puvodni.proteinTargetG,
+    carbsTargetG: sacharidy > 0 ? sacharidy : puvodni.carbsTargetG,
+    fatTargetG: tuky > 0 ? tuky : puvodni.fatTargetG,
     currentHeightCm: cislo(odpoved.user?.height_cm ?? bm.height_cm, puvodni.currentHeightCm),
     targetWeightKg: cislo(odpoved.user?.goal_weight_kg, puvodni.targetWeightKg),
     weeklyWorkoutsTarget: cislo(bm.weekly_sessions, puvodni.weeklyWorkoutsTarget)
   };
+}
+
+export interface NesouladCile {
+  /** Aktuální kalorický cíl z preferencí (`body_metrics.calories_target`). */
+  cilKcal: number;
+  /** Cíl, na který je postavený aktivní jídelníček (`ai_generated_plans.daily_calories`). */
+  planKcal: number;
+}
+
+/**
+ * CÍL V PREFERENCÍCH A CÍL, NA KTERÝ JE POSTAVENÝ JÍDELNÍČEK, SE MOHOU ROZEJÍT.
+ *
+ * Plán je otisk cíle v okamžiku generování — kdyz se cíl v `body_metrics`
+ * později změní (např. po opravě výšky, 6.5), plán se sám nepřegeneruje.
+ * Watchdog to hlásí (`calorie_target_mismatch`, view `system_health_alerts`),
+ * detekce tedy existuje; tohle je tatáž kontrola na klientovi, aby ji uživatel
+ * VIDĚL na profilu i v jídelníčku, ne jen v interním alertu, který nikdo nečte.
+ *
+ * Změřeno 31. 8. 2026: cíl 2634 kcal, aktivní plán (27. 8. – 2. 9.) 2164 kcal.
+ * `null`, když čísla sedí nebo když nemáme co porovnat (docs/DALSI_KROK.md 7.2a).
+ */
+export function nesouladCile(odpoved: ProfilOdpoved, cilKcal: number): NesouladCile | null {
+  const plan = vyberPlan(odpoved.plans);
+  const planKcal = cislo(plan?.daily_calories, 0);
+  if (!(cilKcal > 0) || !(planKcal > 0) || planKcal === cilKcal) return null;
+  return { cilKcal, planKcal };
+}
+
+/** Věk v celých letech z data narození. `null`, když datum chybí nebo je nesmyslné. */
+export function vekZDataNarozeni(birthDate: string | null | undefined): number | null {
+  const t = Date.parse(String(birthDate || ''));
+  if (!Number.isFinite(t)) return null;
+  const nar = new Date(t);
+  const dnes = new Date();
+  let vek = dnes.getFullYear() - nar.getFullYear();
+  const m = dnes.getMonth() - nar.getMonth();
+  if (m < 0 || (m === 0 && dnes.getDate() < nar.getDate())) vek--;
+  return vek >= 0 && vek < 130 ? vek : null;
 }
 
 /**

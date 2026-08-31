@@ -32,6 +32,11 @@ export default async function handler(req, res) {
     if (!email) return res.status(400).json({ error: 'Chybí e-mail.' });
 
     const b = req.body || {};
+    // Explicitní žádost o „přegeneruj jídelníček na aktuální cíl", ne o změnu
+    // preferencí — posílá ji tlačítko u nesouladu cíle a plánu
+    // (docs/DALSI_KROK.md 7.2a). Bez tohohle by prázdné tělo spustilo
+    // `mealsOnly: false` a přegenerovalo i trénink, který se nezměnil.
+    const regenerateMealsOnly = b.regenerateMealsOnly === true;
 
     // Načíst nejnovější body_metrics
     const { data: metricsRows, error: metricsErr } = await supabaseServer
@@ -226,12 +231,46 @@ export default async function handler(req, res) {
     if (shouldRecalcCalories) {
       Object.assign(bmOverride, buildCalorieTargetBodyMetricsPatch(bmOverride, { forceRecalculate: true }));
     }
+    // ZACHOVAT ROZPRACOVANÝ TÝDEN, KDYŽ SE MĚNÍ JEN JÍDELNÍČEK.
+    //
+    // `daily_activity_completions` páruje odškrtnutí přes `plan_id` (viz
+    // `klicDokonceni` v src/data/adaptery.ts:360). `persistPlanFromUnified`
+    // upsertuje `ai_generated_plans` podle (`user_id`, `valid_from`) — když se
+    // `valid_from` neřekne, spadne na DNEŠEK, ne na začátek aktivního plánu,
+    // takže vznikne NOVÝ řádek s NOVÝM `id` a všechna odškrtnutí za tenhle
+    // týden (jídla i tréninky) tiše zmizí. Ověřeno na datech 31. 8. 2026.
+    //
+    // Když posíláme stejné `valid_from`/`valid_until`, jaké má aktivní plán,
+    // upsert aktualizuje TENTÝŽ řádek (unique constraint
+    // `uq_ai_generated_plans_user_valid_from`) — `plan_id` se nemění.
+    // S `mealsOnly: true` navíc `loadResolvedWorkoutsFromLatestPlan()`
+    // zkopíruje trénink z aktivního plánu BEZE ZMĚNY, takže tréninková
+    // odškrtnutí zůstanou platná (stejný obsah, stejný klíč). Jídla se
+    // přepočítávají na nový cíl, takže jejich odškrtnutí se ztratí — ale
+    // poctivě, protože jídla se opravdu mění.
+    let validFromOverride;
+    let validUntilOverride;
+    if (regenerateMealsOnly) {
+      const { data: aktivniPlan } = await supabaseServer
+        .from('ai_generated_plans')
+        .select('valid_from, valid_until')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+      if (aktivniPlan?.valid_from) {
+        validFromOverride = aktivniPlan.valid_from;
+        validUntilOverride = aktivniPlan.valid_until;
+      }
+    }
+
     let planRegenerated = false;
     try {
       const result = await generatePlanForEmail(email, {
         bmOverride,
         planChangeContext: true,
-        mealsOnly: onlyDietChanged,
+        mealsOnly: onlyDietChanged || regenerateMealsOnly,
+        ...(validFromOverride ? { validFromOverride, validUntilOverride } : {}),
       });
       planRegenerated = result?.ok === true;
     } catch (e) {
@@ -245,7 +284,11 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
-      message: planRegenerated ? 'Preference uloženy, plán přegenerován a odeslán na e-mail.' : 'Preference uloženy.',
+      message: planRegenerated
+        ? regenerateMealsOnly
+          ? 'Jídelníček přegenerován na aktuální cíl a odeslán na e-mail. Trénink zůstal beze změny.'
+          : 'Preference uloženy, plán přegenerován a odeslán na e-mail.'
+        : 'Preference uloženy.',
       planRegenerated,
     });
   } catch (err) {

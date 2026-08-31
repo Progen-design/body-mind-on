@@ -15,6 +15,8 @@ interface BodyCompositionSectionProps {
   /** `withings_last_sync_at` z profilu. null = server zatím nestahoval. */
   withingsLastSyncedAt: string | null;
   slozeni?: TelesneSlozeni | null;
+  /** Vlastní odhad appky (Mifflin–St Jeor). null = nemáme z čeho spočítat. */
+  vlastniBmrKcal?: number | null;
   onAddMeasurement: () => void;
   onSync: () => Promise<SyncResult | null>;
   onOpenWithingsSettings: () => void;
@@ -26,6 +28,7 @@ export const BodyCompositionSection: React.FC<BodyCompositionSectionProps> = ({
   hasWithingsConnection,
   withingsLastSyncedAt,
   slozeni = null,
+  vlastniBmrKcal = null,
   onAddMeasurement,
   onSync,
   onOpenWithingsSettings
@@ -53,6 +56,7 @@ export const BodyCompositionSection: React.FC<BodyCompositionSectionProps> = ({
       <BodyStatsGrid
         currentRecord={currentRecord}
         slozeni={slozeni}
+        vlastniBmrKcal={vlastniBmrKcal}
         onAddMeasurement={onAddMeasurement}
       />
 

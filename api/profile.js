@@ -35,6 +35,33 @@ function toDateKey(value) {
   return String(value).slice(0, 10);
 }
 
+/**
+ * `body_metrics.created_at` je `timestamp without time zone` a ALTER na
+ * timestamptz na produkci nejde: `rule _RETURN on view
+ * system_health_alerts_zaklad depends on column "created_at"` (watchdog
+ * `calorie_target_mismatch` na ní řadí `ORDER BY bm.created_at DESC`).
+ * Přestavět kvůli tomu pohled se nevyplatí — viz docs/DALSI_KROK.md 6.10.
+ * Zónu proto doplňuje server tady, při serializaci odpovědi, ne migrace.
+ *
+ * ŽE JE HODNOTA V UTC, NENÍ DOHAD. Změřeno 31. 8. 2026 na produkci: u všech
+ * 20 účtů se první řádek `body_metrics.created_at` liší od
+ * `auth.users.created_at` (timestamptz, vzniká ve stejné registraci) o
+ * −0,9 až −0,1 s — žádný řádek není v budoucnosti proti UTC. Kdyby šlo
+ * o pražský čas (SELČ, UTC+2), byl by rozdíl kolem 7200 s, ne pod sekundu.
+ * `Z` se proto jen PŘILEPÍ k existujícímu řetězci, nic se nepřepočítává.
+ *
+ * Mění se jen kopie pro klienta — `bodyMetrics` použitá jinde v handleru
+ * (výška, datum narození, historie vah) čte v Node na Vercelu, který běží
+ * v UTC, takže tam na zóně v řetězci nezáleží.
+ */
+function bodyMetricsSeZonou(bodyMetrics) {
+  return (bodyMetrics || []).map((row) => {
+    if (!row || typeof row.created_at !== 'string') return row;
+    if (/Z$|[+-]\d{2}:?\d{2}$/.test(row.created_at)) return row;
+    return { ...row, created_at: `${row.created_at}Z` };
+  });
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -520,6 +547,7 @@ export default async function handler(req, res) {
     // Výška: body_metrics (zdroj pravdy) má přednost před metadaty
     // (best-effort zrcadlo) — viz lib/efektivniVyskaCm.js a docs/DALSI_KROK.md 6.7(b).
     const heightCm = efektivniVyskaCm(latestBodyMetricsForRender, meta);
+    const bodyMetricsProKlienta = bodyMetricsSeZonou(bodyMetrics);
     const profilePayload = {
       program,
       membershipStatus,
@@ -584,7 +612,7 @@ export default async function handler(req, res) {
         wants_body_tracking: wantsBodyTracking,
         smart_scale_provider: smartScaleProvider,
       },
-      body_metrics: bodyMetrics,
+      body_metrics: bodyMetricsProKlienta,
       user_habits: userHabits,
       plans: plansData,
       show_withings_section: shouldShowWithingsSection({

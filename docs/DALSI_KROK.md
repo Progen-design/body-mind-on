@@ -100,6 +100,37 @@ mnohem víc než `ai_messages` (řazení, `quickWeightRow`, kalorické cesty),
 takže napřed vypiš všechna místa, která na něm závisí, a teprve pak navrhni
 změnu typu.
 
+**ZMĚNA TYPU SLOUPCE NEJDE — ZKOUŠENO NA PRODUKCI.** `ALTER COLUMN
+created_at TYPE timestamptz` padá:
+
+```
+ERROR: cannot alter type of a column used by a view or rule
+DETAIL: rule _RETURN on view system_health_alerts_zaklad
+        depends on column "created_at"
+```
+
+Na sloupci visí pohled `system_health_alerts_zaklad` (a nad ním
+`system_health_alerts`) — závislost je `ORDER BY bm.created_at DESC`
+v alertu `calorie_target_mismatch`. Aby `ALTER` prošel, musely by se oba
+pohledy zahodit (`DROP VIEW`) a postavit znovu se stejnou definicí po
+migraci — watchdog je moc drahý na přepisování kvůli tomuhle, takže se to
+nedělá. Sloupec zůstává `timestamp without time zone`.
+
+Místo migrace zónu doplňuje **server při serializaci odpovědi**:
+`api/profile.js` (`bodyMetricsSeZonou`) přilepí `Z` k `body_metrics[].created_at`
+předtím, než pole pošle klientovi — beze změny typu sloupce. `naVazeni()`
+v `src/data/adaptery.ts` počítá den přes `calendarDateIsoInPrague()`
+a řádek bez zóny zahodí (`maCasovouZonu`), takže po opravě v `api/profile.js`
+dostane zónu vždy a nic nezahazuje.
+
+**Co by změnu typu odemklo:** rozebrat `system_health_alerts_zaklad`
+a `system_health_alerts` (`DROP VIEW ... CASCADE`), provést `ALTER COLUMN`,
+pak oba pohledy znovu vytvořit se stejnou definicí (`ORDER BY` na
+`created_at` funguje na `timestamptz` stejně jako na `timestamp`, takže
+definice pohledu se nemusí měnit — jde jen o to, že Postgres nedovolí
+změnit typ sloupce, dokud na něm visí `rule`/pohled). Než se to udělá,
+tenhle bod zůstává u „opraveno na serveru", ne u „opraveno v DB".
+
 ---
 
 ## Hotovo a nasazeno — NEŘEŠ ZNOVU

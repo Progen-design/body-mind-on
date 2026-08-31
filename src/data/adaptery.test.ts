@@ -409,6 +409,32 @@ test('bez weight_history se spadne na body_metrics, ne na prázdno', async () =>
   assert.equal(body[0].weight, 104.6);
 });
 
+// docs/DALSI_KROK.md 6.10: vazeni pozdni vecer SELC (22:00-24:00 UTC) je uz
+// dalsi den v Praze. Zaloha na body_metrics musela pocitat den v
+// Europe/Prague, ne slicnout UTC retezec.
+test('pozdní večerní vážení v UTC padne na správný den v Praze, ne na předchozí', async () => {
+  const { naVazeni } = await import('./adaptery.ts');
+
+  // 23:30 UTC 30. 8. = 1:30 SELC 31. 8. — v Praze uz je jiny den.
+  const body = naVazeni({
+    body_metrics: [{ weight_kg: 104.6, created_at: '2026-08-30T23:30:00Z' }]
+  } as never);
+
+  assert.equal(body.length, 1);
+  assert.equal(body[0].date, '2026-08-31', 'den se pocita v Praze, ne v UTC');
+});
+
+test('body_metrics bez časové zóny se do grafu nedostane (docs/DALSI_KROK.md 6.6)', async () => {
+  const { naVazeni } = await import('./adaptery.ts');
+
+  // Presne produkcni tvar pred migraci 20260831170000: bez Z/offsetu.
+  const body = naVazeni({
+    body_metrics: [{ weight_kg: 104.6, created_at: '2026-08-31T00:03:59.275' }]
+  } as never);
+
+  assert.deepEqual(body, [], 'radek bez zony se ma preskocit, ne odhadovat den');
+});
+
 test('prázdný vstup nedá graf, ne nulový bod', async () => {
   const { naVazeni } = await import('./adaptery.ts');
 

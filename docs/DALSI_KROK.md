@@ -135,6 +135,49 @@ z 23. 8. a pro ten den v DB sedí. Vypadají špatně jen kvůli bodu (c).
 
 ---
 
+## 6.7 ZMĚNA VÝŠKY NEPŘEPOČÍTÁ MAKRA A NEJDE ULOŽIT NEZMĚNĚNOU HODNOTU
+
+Dva zbytky po etapě 6.5, oba změřené na produkci 31. 8.
+
+### a) Makra zůstanou po změně výšky stará
+
+`buildHeightUpdatePatch()` vrací `height_cm`, `bmi` a `calories_target`, ale
+NE `protein_target_g` / `carbs_target_g` / `fat_target_g`. Po opravě výšky
+u účtu `janprikopa@gmail.com`:
+
+```
+calories_target   2164 → 2634   přepočítáno
+protein_target_g  185           beze změny
+carbs_target_g    205           beze změny
+fat_target_g      67            beze změny
+```
+
+185 × 4 + 205 × 4 + 67 × 9 = 2163 kcal. Uložená makra tedy sedí na starý cíl
+2164, ne na nový 2634 — řádek si sám odporuje. Nikdo si toho zatím nevšiml,
+protože UI si gramy dopočítává z procent a kalorií (`src/data/adaptery.ts`),
+ale `protein_target_g` se čte i jinde (`adaptery.ts:727`) a zapisuje se při
+týdenním přepočtu (`lib/weeklyWeightRecalc.js:138`) — do té doby je v DB
+nekonzistence.
+
+Přepočítat makra stejnou cestou jako `calories_target`, ne druhým vzorcem.
+`lib/nutritionTargets.js` je už umí, používá je registrace i týdenní přepočet.
+
+### b) Nezměněnou hodnotu modal vůbec neodešle
+
+Uživatel měl v `user_metadata` výšku 194, v `body_metrics` 182. Modal načetl
+194 z metadat, uživatel klikl Uložit — a **na server nešlo nic**, protože pole
+nebylo „dirty". Rozjetý stav mezi zrcadlem a zdrojem pravdy se tedy přes UI
+nedal opravit vůbec: člověk vidí správné číslo, uloží ho a nic se nestane.
+
+Ověřeno protikladem: tentýž endpoint zavolaný přímo s `height_cm` funguje
+(testovací účet, 165 → 170, BMI 22,33 → 20,83, cíl 1436 → 1386).
+
+Návrh: buď posílat hodnoty vždy, ne jen změněné, nebo (lépe) po načtení
+profilu porovnat metadata proti `body_metrics` a rozdíl srovnat — uživatel
+by o tom vůbec neměl vědět.
+
+---
+
 ## Hotovo a nasazeno — NEŘEŠ ZNOVU
 
 - **6.1** máslo neprojde bezlaktózovou bránou — `4415955`

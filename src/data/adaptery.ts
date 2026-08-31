@@ -536,6 +536,29 @@ export function naNastaveniProfilu(odpoved: ProfilOdpoved): NastaveniProfilu {
 }
 
 /**
+ * Řekne, jestli řetězec nese časovou zónu (`Z`, nebo posun jako `+02:00`
+ * za částí s časem).
+ *
+ * Bez zóny je `Date.parse` nespolehlivý — ISO řetězec bez zóny bere jako
+ * lokální čas PROSTŘEDÍ, KTERÉ HO PARSUJE (prohlížeč uživatele, nebo Node
+ * v testu), ne jako čas v UTC, ve kterém je `ai_messages.created_at`
+ * doopravdy uložený (sloupec je `timestamp without time zone`, zapisuje ho
+ * server přes `now()`/JS ISO). Přesně tohle způsobilo dvouhodinový posun
+ * z docs/DALSI_KROK.md 6.6: `"2026-08-31T00:04:30.12"` vzniklo v 00:04 UTC
+ * (= 02:04 v Praze), ale prohlížeč ho zobrazil jako 00:04.
+ *
+ * Neopravujeme si datum sami (třeba přilepením `Z`) — to by tichým dohadem
+ * mohlo vzniknout jiné datum, než jaké server myslel. Radši zprávu bez
+ * zóny vůbec neukázat, stejně jako zprávu s nepoužitelným datem níž.
+ */
+function maCasovouZonu(hodnota: unknown): boolean {
+  if (typeof hodnota !== 'string') return false;
+  const casovaCast = hodnota.split('T')[1];
+  if (!casovaCast) return false;
+  return /Z$|[+-]\d{2}:?\d{2}$/.test(casovaCast);
+}
+
+/**
  * Zprávy trenéra ze serveru. Prázdné pole = žádná zpráva a banner se
  * nezobrazí — to je platný stav, ne chyba napojení.
  *
@@ -559,6 +582,9 @@ export function naZpravyTrenera(odpoved: ProfilOdpoved): CoachTip[] {
     // takže po týdnu je banner prázdný — a to je poctivější než tři týdny
     // starý pokyn tvářící se jako aktuální.
     .filter((z) => {
+      // Datum bez zóny je nepoužitelné, ne jen zobrazené o dvě hodiny vedle
+      // — viz docs/DALSI_KROK.md 6.6 a maCasovouZonu výš.
+      if (!maCasovouZonu(z?.created_at)) return false;
       const t = Date.parse(String(z?.created_at || ''));
       // Zpráva bez použitelného data je podezřelá — radši ji neukazujeme.
       return Number.isFinite(t) && t >= hranice;

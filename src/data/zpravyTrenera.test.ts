@@ -110,3 +110,47 @@ test('zpráva bez použitelného data se nezobrazí', () => {
     assert.deepEqual(t, [], `datum ${JSON.stringify(datum)} nemelo projit`);
   }
 });
+
+test('datum bez časové zóny se nezobrazí (docs/DALSI_KROK.md 6.6)', () => {
+  // Presne produkcni nalez: ai_messages.created_at je "timestamp without
+  // time zone", takze Supabase vrati retezec bez Z/offsetu. Bez zony bere
+  // Date.parse cas jako lokalni v prostredi, ktere ho parsuje — 00:04 UTC
+  // (vznik zpravy) se tak zobrazi jako 00:04 mistni, misto spravnych 02:04
+  // v Praze. Radsi zpravu vubec neukazat nez ji ukazat o dve hodiny vedle.
+  const bezZony = '2026-08-31T00:04:30.12';
+  const t = naZpravyTrenera({
+    coach_messages: [{ id: 'x', title: 'A', content: 'A', created_at: bezZony }]
+  } as never);
+  assert.deepEqual(t, [], 'datum bez zony nemelo projit');
+});
+
+test('stejné datum se zónou projde — vada je v chybějící zóně, ne v obsahu', () => {
+  const seZonou = '2026-08-31T00:04:30.12Z';
+  const t = naZpravyTrenera({
+    coach_messages: [{ id: 'x', title: 'A', content: 'A', created_at: seZonou }]
+  } as never);
+  assert.equal(t.length, 1, 'stejne datum se Z melo projit');
+});
+
+test('hranice stáří (PLATNOST_ZPRAVY_DNI) je posouzená ze skutečného UTC okamžiku, ne z místního čtení', () => {
+  // Kdyby filtr stari pocital z retezce bez zony (nebo z jinak spatne
+  // interpretovaneho casu), zprava by mohla vypadnout z banneru driv nebo
+  // pozdeji, nez ma — presne ta druha polovina nalezu 6.6. Se spravnou
+  // zonou (+00:00 misto Z, aby test overil i tenhle tvar) musi hranice sedet
+  // na den, ne "nekde do dvou hodin".
+  const tesneUvnitrHranice = new Date(
+    Date.now() - PLATNOST_ZPRAVY_DNI * 24 * 60 * 60 * 1000 + 60 * 60 * 1000
+  ).toISOString().replace('Z', '+00:00');
+  const tesneMimoHranici = new Date(
+    Date.now() - PLATNOST_ZPRAVY_DNI * 24 * 60 * 60 * 1000 - 60 * 60 * 1000
+  ).toISOString().replace('Z', '+00:00');
+
+  const t = naZpravyTrenera({
+    coach_messages: [
+      { id: 'uvnitr', title: 'A', content: 'A', created_at: tesneUvnitrHranice },
+      { id: 'mimo', title: 'B', content: 'B', created_at: tesneMimoHranici }
+    ]
+  } as never);
+
+  assert.deepEqual(t.map((z) => z.id), ['uvnitr']);
+});

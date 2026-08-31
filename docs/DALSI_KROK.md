@@ -17,41 +17,10 @@
 
 ---
 
-## 6.11 V DEN VOLNA KARTA NABÍZÍ ZÁZNAMNÍK PRO NEEXISTUJÍCÍ TRÉNINK
+## Zadání pro další session
 
-Zbytek po 6.9. Karta 4 v `src/components/OverviewBentoGrid.tsx` už v den
-volna správně hlásí „Dnes bez tréninku" (`dnesniTreninkPresne()` vrací
-`DEN_BEZ_TRENINKU`), ale pod tím dál nabízí tlačítko **„Spustit záznamník
-(Stopky)"** (ř. ~452, `onClick={onOpenWorkoutLogger}`).
-
-Kdo na něj klikne, dostane prázdný `WorkoutLoggerModal`:
-
-```
-Aktivní trénink •            ← prázdný dayName
-Dnes bez tréninku            ← title zástupce
-Cviky a série (0 z 0 hotovo)
-```
-
-Nespadne to (`DEN_BEZ_TRENINKU.exercises` je prázdné pole), jen to nedává
-smysl — karta nabízí nahrát trénink, který v plánu není.
-
-`jeNaplanovany()` v `src/lib/trenink.ts` přesně tenhle stav umí rozeznat
-(`WorkoutSection.tsx` ř. 45 ho tak už používá jako `maDnesTrenink`), ale
-Karta 4 ani `App.tsx` ho nevolají.
-
-Rozhodni a zdůvodni:
-  a) v den volna tlačítko schovat;
-  b) nechat ho a přejmenovat na zápis tréninku mimo plán — pak ale musí
-     `WorkoutLoggerModal` unést prázdný `todayWorkout` tak, aby to
-     vypadalo jako záměr, ne jako prázdná obrazovka.
-
-Doporučení psané do zadání: **(b)**. Člověk, který v den volna zacvičí,
-si to má mít kde zapsat — dnes to jde jen přes záložku Tréninkový plán,
-což z Přehledu není vidět. Ale (a) je levnější a taky poctivé; když
-zvolíš (a), napiš proč.
-
-Ke každé změně test. `src/lib/trenink.test.ts` a `src/lib/profilObsah.test.ts`
-jsou správná místa.
+Momentálně žádné. Body 6.1 až 6.11 jsou hotové a nasazené. Otevřené věci
+jsou v „Vědomě odloženo" níž — než z nich něco vytáhneš, počkej na zadání.
 
 ---
 
@@ -73,6 +42,12 @@ jsou správná místa.
   `ai_messages.created_at` lišilo od `auth.users.created_at` o 18–26 s,
   ne o dvě hodiny. Migrace šla ven PŘED kódem (opačné pořadí by nechalo
   banner prázdný).
+- **6.11** v den volna se dá zapsat trénink mimo plán — `553b5d5` (PR #121).
+  Karta 4 už nenabízí stopky pro trénink, který v plánu není: při
+  naplánovaném dni „Spustit záznamník (Stopky)", v den volna „Zapsat
+  trénink mimo plán". Ověřeno, že zápis mimo plán projde — `handleSaveWorkout`
+  a `sestavZapisTreninku` staví tělo POSTu jen z data, stopek a výběru
+  uživatele, žádné `planId`/`planDay`.
 - **6.8 + 6.9** nákupní seznam patří k jídelníčku, „Dnešní trénink" už
   nepodstrkuje cizí den — `5f5202c`, vydáno spolu s 6.10 v PR #119.
   Nová `dnesniTreninkPresne()` vrací `DEN_BEZ_TRENINKU`; původní

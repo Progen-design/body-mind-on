@@ -17,119 +17,41 @@
 
 ---
 
-## 6.8 + 6.9 KARTA 6 A KARTA 4 V OVERVIEWBENTOGRID
+## 6.11 V DEN VOLNA KARTA NABÍZÍ ZÁZNAMNÍK PRO NEEXISTUJÍCÍ TRÉNINK
 
-Oba body jsou ve stejném souboru (`src/components/OverviewBentoGrid.tsx`),
-takže je dělej v jedné session. Jinde nic měnit nemusíš.
+Zbytek po 6.9. Karta 4 v `src/components/OverviewBentoGrid.tsx` už v den
+volna správně hlásí „Dnes bez tréninku" (`dnesniTreninkPresne()` vrací
+`DEN_BEZ_TRENINKU`), ale pod tím dál nabízí tlačítko **„Spustit záznamník
+(Stopky)"** (ř. ~452, `onClick={onOpenWorkoutLogger}`).
 
-### 6.8 Nákupní seznam sedí uvnitř panelu „AI Trenér TED"
-
-Není to omyl v rozvržení — karta 6 je tak postavená schválně. V kódu se
-jmenuje `KARTA 6: AI Trenér TED & Rychlý nákup` (ř. 452) a komentář říká
-„Kompaktní informativní blok s AI doporučením a nákupním seznamem".
-
-Vadí to proto, že **hlavička karty říká jen „AI Trenér TED"** (ř. 470).
-Uživatel tedy vidí seznam k nákupu pod nadpisem, se kterým nemá nic
-společného. Rozpor je mezi záměrem a titulkem, ne v samotném umístění.
-
-Rozhodni a zdůvodni jednu z cest:
-  a) nákupní pilulku přesunout na kartu 3 (`Jídelníček & Makra dnes`,
-     ř. 227) — patří k jídelníčku a ta karta je přes dva sloupce;
-  b) nechat ji tam a doplnit hlavičku, ať odpovídá obsahu.
-
-Doporučení psané do zadání: (a). Karta 6 je jediné místo, kde je TED
-vidět, a nákup ho tam ředí. Pokud zvolíš (b), napiš proč.
-
-### 6.9 „Dnešní trénink" ukazuje jiný den, než je dnes
-
-Příčina je v `src/lib/trenink.ts` ř. 31:
-
-```ts
-export function dnesniTrenink(workouts: WorkoutDay[]): WorkoutDay {
-  return workouts.find(w => w.isToday) ?? workouts[0] ?? DEN_BEZ_TRENINKU;
-}
-```
-
-`isToday` se nastavuje v `src/data/adaptery.ts` ř. 340 jako
-`String(d?.date) === dnes` — porovnání data. V den bez tréninku (plán
-po/st/pá, zobrazeno v neděli) se tedy netrefí nic a funkce spadne na
-`workouts[0]`, tedy na první trénink v plánu. Karta ho pak ukáže pod
-nadpisem „Dnešní trénink" se štítkem dne, který dnes není.
-
-`DEN_BEZ_TRENINKU` (`title: 'Dnes bez tréninku'`) v tom souboru existuje,
-ale sáhne se po něm jen u úplně prázdného pole.
-
-Fallback na `workouts[0]` vznikl proto, aby komponenty nečetly
-`undefined.title` (komentář v App.tsx ř. 745). Ta obrana má zůstat —
-ale nesmí vydávat cizí den za dnešek. Zamysli se nad tím, kdo dnes
-`dnesniTrenink()` volá: `App.tsx` ř. 748 a `WorkoutSection.tsx` ř. 44
-(tam přes `vybranyTrenink`, kde je fallback na dnešek správný, protože
-záložka Tréninkový plán o sobě tvrdí „nejbližší trénink v plánu").
-Nerozbij druhé volání, když opravíš první.
-
-Ke každé změně test. Chování „v den volna se neukáže cizí trénink" patří
-do `src/lib/trenink.test.ts`.
-
----
-
-## 6.10 DATUM VÁŽENÍ SE MŮŽE TREFIT DO ŠPATNÉHO DNE
-
-Zbytek po 6.6, změřeno 31. 8. na produkci. Odpověď `GET /api/profile`
-u účtu r01:
+Kdo na něj klikne, dostane prázdný `WorkoutLoggerModal`:
 
 ```
-body_metrics[0].created_at = "2026-08-31T00:03:59.275"   ← bez zóny
+Aktivní trénink •            ← prázdný dayName
+Dnes bez tréninku            ← title zástupce
+Cviky a série (0 z 0 hotovo)
 ```
 
-`body_metrics.created_at` je pořád `timestamp without time zone`.
+Nespadne to (`DEN_BEZ_TRENINKU.exercises` je prázdné pole), jen to nedává
+smysl — karta nabízí nahrát trénink, který v plánu není.
 
-Serveru to nevadí — `lib/vahaHistorie.js` staví `weight_history` přes
-`calendarDateIsoInPrague()` a Node na Vercelu běží v UTC, takže datum
-vychází správně (ověřeno: 00:03 UTC → 2026-08-31, což je v Praze 02:03).
+`jeNaplanovany()` v `src/lib/trenink.ts` přesně tenhle stav umí rozeznat
+(`WorkoutSection.tsx` ř. 45 ho tak už používá jako `maDnesTrenink`), ale
+Karta 4 ani `App.tsx` ho nevolají.
 
-Vadí to **klientskému fallbacku**: `naVazeni()` v `src/data/adaptery.ts`
-(~ř. 811) bere `String(m.created_at).slice(0, 10)`, tedy kalendářní datum
-přímo z UTC řetězce. Vážení mezi 22:00 a 24:00 UTC (= 00:00–02:00 v Praze)
-tak spadne v grafu na předchozí den. Ta větev se použije, když v odpovědi
-chybí `weight_history`.
+Rozhodni a zdůvodni:
+  a) v den volna tlačítko schovat;
+  b) nechat ho a přejmenovat na zápis tréninku mimo plán — pak ale musí
+     `WorkoutLoggerModal` unést prázdný `todayWorkout` tak, aby to
+     vypadalo jako záměr, ne jako prázdná obrazovka.
 
-Stejný vzorec jako 6.6, jen o jednu tabulku vedle. Migraci piš stejně
-(`at time zone 'utc'`) — že jsou hodnoty v UTC, je ověřené na
-`ai_messages` stejnou cestou. Pozor: `body_metrics.created_at` se používá
-mnohem víc než `ai_messages` (řazení, `quickWeightRow`, kalorické cesty),
-takže napřed vypiš všechna místa, která na něm závisí, a teprve pak navrhni
-změnu typu.
+Doporučení psané do zadání: **(b)**. Člověk, který v den volna zacvičí,
+si to má mít kde zapsat — dnes to jde jen přes záložku Tréninkový plán,
+což z Přehledu není vidět. Ale (a) je levnější a taky poctivé; když
+zvolíš (a), napiš proč.
 
-**ZMĚNA TYPU SLOUPCE NEJDE — ZKOUŠENO NA PRODUKCI.** `ALTER COLUMN
-created_at TYPE timestamptz` padá:
-
-```
-ERROR: cannot alter type of a column used by a view or rule
-DETAIL: rule _RETURN on view system_health_alerts_zaklad
-        depends on column "created_at"
-```
-
-Na sloupci visí pohled `system_health_alerts_zaklad` (a nad ním
-`system_health_alerts`) — závislost je `ORDER BY bm.created_at DESC`
-v alertu `calorie_target_mismatch`. Aby `ALTER` prošel, musely by se oba
-pohledy zahodit (`DROP VIEW`) a postavit znovu se stejnou definicí po
-migraci — watchdog je moc drahý na přepisování kvůli tomuhle, takže se to
-nedělá. Sloupec zůstává `timestamp without time zone`.
-
-Místo migrace zónu doplňuje **server při serializaci odpovědi**:
-`api/profile.js` (`bodyMetricsSeZonou`) přilepí `Z` k `body_metrics[].created_at`
-předtím, než pole pošle klientovi — beze změny typu sloupce. `naVazeni()`
-v `src/data/adaptery.ts` počítá den přes `calendarDateIsoInPrague()`
-a řádek bez zóny zahodí (`maCasovouZonu`), takže po opravě v `api/profile.js`
-dostane zónu vždy a nic nezahazuje.
-
-**Co by změnu typu odemklo:** rozebrat `system_health_alerts_zaklad`
-a `system_health_alerts` (`DROP VIEW ... CASCADE`), provést `ALTER COLUMN`,
-pak oba pohledy znovu vytvořit se stejnou definicí (`ORDER BY` na
-`created_at` funguje na `timestamptz` stejně jako na `timestamp`, takže
-definice pohledu se nemusí měnit — jde jen o to, že Postgres nedovolí
-změnit typ sloupce, dokud na něm visí `rule`/pohled). Než se to udělá,
-tenhle bod zůstává u „opraveno na serveru", ne u „opraveno v DB".
+Ke každé změně test. `src/lib/trenink.test.ts` a `src/lib/profilObsah.test.ts`
+jsou správná místa.
 
 ---
 
@@ -151,6 +73,18 @@ tenhle bod zůstává u „opraveno na serveru", ne u „opraveno v DB".
   `ai_messages.created_at` lišilo od `auth.users.created_at` o 18–26 s,
   ne o dvě hodiny. Migrace šla ven PŘED kódem (opačné pořadí by nechalo
   banner prázdný).
+- **6.8 + 6.9** nákupní seznam patří k jídelníčku, „Dnešní trénink" už
+  nepodstrkuje cizí den — `5f5202c`, vydáno spolu s 6.10 v PR #119.
+  Nová `dnesniTreninkPresne()` vrací `DEN_BEZ_TRENINKU`; původní
+  `dnesniTrenink()` zůstala pro `vybranyTrenink()` na záložce Tréninkový
+  plán, která o sobě tvrdí „nejbližší trénink v plánu". Zbytek → 6.11.
+- **6.10** datum vážení už nespadne na předchozí den — `5e82a91` (PR #119).
+  Změna typu sloupce SE NEUDĚLALA a udělat nejde: `ALTER` padá na
+  `rule _RETURN on view system_health_alerts_zaklad`. Zónu doplňuje server
+  (`bodyMetricsSeZonou` v `api/profile.js`). Ověřeno na produkci:
+  `body_metrics[0].created_at` = `"2026-08-31T00:03:59.275Z"`.
+  Že jsou hodnoty v UTC, změřeno proti `auth.users.created_at`: 20 účtů,
+  rozdíl −0,9 až −0,1 s, žádný řádek v budoucnosti proti UTC.
 - **6.7** makra se přepočítají s kalorickým cílem, výška se čte ze zdroje
   pravdy, neznámý návyk se odmítne — `aefed74` (PR #114). Ověřeno na
   produkci po nasazení:

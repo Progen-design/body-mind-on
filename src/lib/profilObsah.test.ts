@@ -24,6 +24,7 @@ function kod(text: string): string {
 const PROFIL = kod(cti('../components/ProfileSection.tsx'));
 const BENTO = kod(cti('../components/OverviewBentoGrid.tsx'));
 const APP = kod(cti('../App.tsx'));
+const WORKOUT_LOGGER = kod(cti('../components/WorkoutLoggerModal.tsx'));
 
 test('AI trenér TED je v profilu jen jednou', () => {
   // TED byl jako dlaždice mezi zařízeními a zároveň jako vlastní karta níž.
@@ -149,4 +150,29 @@ test('nákupní seznam sedí u jídelníčku (Karta 3), ne u TEDa (Karta 6) — 
 
   assert.ok(obsahKarty3.includes('Nákupní seznam'), 'Karta 3 nemá nákupní seznam');
   assert.ok(!obsahKarty6.includes('Nákupní seznam'), 'Karta 6 (TED) zase zobrazuje nákupní seznam');
+});
+
+test('v den volna karta 4 nabízí zápis mimo plán, ne stopky pro neexistující trénink (docs/DALSI_KROK.md 6.11)', () => {
+  // "Spustit záznamník (Stopky)" dávalo smysl jen u naplánovaného tréninku.
+  // V den volna (DEN_BEZ_TRENINKU) muselo tlačítko dostat jiný text — jinak
+  // nabízelo nahrát trénink, který v plánu není.
+  assert.ok(BENTO.includes("from '../lib/trenink'"), 'Karta 4 nesahá na jeNaplanovany() z lib/trenink');
+  assert.ok(BENTO.includes('maDnesTrenink'), 'chybí rozlišení dne volna od naplánovaného tréninku');
+  assert.ok(BENTO.includes('Zapsat trénink mimo plán'), 'tlačítko v den volna nenabízí zápis mimo plán');
+  assert.ok(BENTO.includes('Spustit záznamník (Stopky)'), 'naplánovaný den ztratil původní text tlačítka');
+});
+
+test('WorkoutLoggerModal s prázdným todayWorkout vypadá jako záměr, ne jako prázdná obrazovka (docs/DALSI_KROK.md 6.11)', () => {
+  // Prázdný todayWorkout (den volna) dřív protekl do modalu beze změny:
+  // "Aktivní trénink •" bez dne a "Cviky a série (0 z 0 hotovo)". Modal
+  // teď musí rozlišit maPlan a nabídnout zápis tréninku mimo plán místo
+  // předstírání prázdného naplánovaného tréninku.
+  assert.ok(WORKOUT_LOGGER.includes("from '../lib/trenink'"), 'modal nesahá na jeNaplanovany() z lib/trenink');
+  assert.ok(WORKOUT_LOGGER.includes('maPlan'), 'chybí rozlišení prázdného tréninku v modalu');
+  assert.ok(WORKOUT_LOGGER.includes('Trénink mimo plán'), 'hlavička modalu bez plánu nezmizela');
+  assert.ok(WORKOUT_LOGGER.includes('Vlastní trénink'), 'nadpis modalu bez plánu zůstal "Dnes bez tréninku"');
+  assert.ok(
+    WORKOUT_LOGGER.includes('Dnes nemáš v plánu žádný trénink'),
+    'seznam cviků bez plánu pořád tvrdí "0 z 0 hotovo"'
+  );
 });

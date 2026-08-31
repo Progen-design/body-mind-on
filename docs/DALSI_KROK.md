@@ -17,10 +17,66 @@
 
 ---
 
-## Zadání pro další session
+## 7.1 APPKA A WEB NESDÍLEJÍ JEDINOU HODNOTU — A APPKA NEMÁ TOKENY
 
-Momentálně žádné. Body 6.1 až 6.11 jsou hotové a nasazené. Otevřené věci
-jsou v „Vědomě odloženo" níž — než z nich něco vytáhneš, počkej na zadání.
+Změřeno 31. 8. 2026 porovnáním obou repozitářů.
+
+`bodyandmindon-web/app/globals.css` má nad tokeny tenhle komentář:
+
+> „Tokeny odečtené z app.bodyandmindon.cz — landing a appka jsou jeden produkt."
+
+Záměr tedy existuje a je zapsaný. Skutečnost mu neodpovídá:
+
+```
+                      web (landing)              appka
+pozadí                #070b18 navy-950          #08090d
+akcenty               #34d399 / #10b981         #39ff14 (134×)
+                      #a78bfa / #8b5cf6         #00f2fe  (94×)
+                      #14b8a6
+písmo                 Inter (next/font)         Plus Jakarta Sans
+                                                + JetBrains Mono
+typografická škála    --text-hero/h2/h3/lead    žádná
+                      (clamp, plynulá)
+vrstva tokenů         @theme, pojmenovaná       ŽÁDNÁ
+```
+
+Ani jedna hodnota není společná. Web má smaragdovou a fialovou, appka
+neonově zelenou a azurovou. Web má Inter, appka Plus Jakarta Sans.
+
+**Appka nemá vrstvu tokenů vůbec.** 356 výskytů natvrdo zapsaných hex barev
+v 35 z 60 souborů v `src/`. Změna odstínu je dnes hromadné hledání
+a nahrazování napříč komponentami — proto se to nikdy neudělá a proto se to
+rozešlo.
+
+### Pořadí prací: tokenizace PŘED jakoukoli změnou vzhledu
+
+První krok nemění ani jeden pixel. Vytáhnout 356 natvrdo psaných hodnot do
+pojmenované vrstvy (`@theme` v `src/index.css`, stejný tvar jako web) a
+komponenty přepsat na názvy. Rendrovaný výsledek musí zůstat bajt po bajtu
+stejný — to je věc, kterou lze otestovat.
+
+Teprve pak je změna palety úpravou deseti řádků, ne třiceti pěti souborů.
+
+**Rozhodnutí o tom, KTERÁ paleta vyhraje, je na Honzovi a v tomhle bodě se
+nedělá.** Tokenizace je stejně potřeba v obou případech.
+
+### Zadání
+
+1. Vytvoř `@theme` blok v `src/index.css` se všemi barvami, které appka
+   dnes používá. Pojmenuj je podle role, ne podle odstínu — `--color-akcent`,
+   `--color-pozadi-karta`, ne `--color-lime`. Role pozná i ten, kdo paletu
+   později vymění.
+2. Přepiš `src/` na tyhle názvy. Žádná změna vzhledu.
+3. Test, který drží obojí:
+   - v `src/` (mimo `index.css`) nezůstal žádný literál `#rrggbb`;
+   - seznam tokenů odpovídá barvám, které se v appce dnes používají.
+4. Vypiš, kolik hodnot vzniklo a která barva je použitá jen jednou nebo
+   dvakrát — to jsou kandidáti na překlep, ne na token (`#2bf5ff`,
+   `#50fa8f`, `#38ef7d`, `#0e1420`, `#0d1722`, `#0a0b0e`). U každé napiš,
+   jestli je to záměrná varianta, nebo omyl. Neslučuj je sám.
+
+Písmo v tomhle bodě neřeš — `index.html` načítá Plus Jakarta Sans
+a JetBrains Mono z Google Fonts, změna písma je samostatné rozhodnutí.
 
 ---
 

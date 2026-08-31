@@ -17,68 +17,6 @@
 
 ---
 
-## 6.6 ČASY U ZPRÁV TRENÉRA JSOU O DVĚ HODINY NAPŘED
-
-Změřeno 31. 8. 2026 v 15:15 na produkci, účet `janprikopa+r01@gmail.com`,
-odpověď `GET /api/profile`:
-
-```
-coach_messages[0].created_at = "2026-08-31T00:04:30.12"
-```
-
-Za časem **není žádná zóna**. Prohlížeč takový řetězec bere jako lokální čas,
-takže zprávu vzniklou v 00:04 UTC (= 02:04 v Praze) ukáže jako 00:04. Přesně
-ten dvouhodinový posun, který Honza viděl.
-
-Příčina je ve schématu, ne v komponentě:
-
-```
-ai_messages.created_at          timestamp without time zone   ← zdroj posunu
-ai_messages.delivered_at        timestamp without time zone   ← totéž
-coach_chat_messages.created_at  timestamp with time zone      ← správně
-```
-
-`ai_messages` je jediná tabulka v tomhle řetězci bez zóny. Hodnoty v ní jsou
-uložené v UTC (zapisuje je server přes `now()` / JS ISO), takže převod je
-jednoznačný.
-
-### Co s tím
-
-1. **Migrace** (napiš soubor, neaplikuj):
-   `alter table public.ai_messages alter column created_at type timestamptz
-   using created_at at time zone 'utc';` totéž pro `delivered_at`. Zkontroluj
-   i `default` u sloupce — ať po převodu není `now()` v jiném významu.
-
-2. **Projdi všechny ostatní `timestamp without time zone`** v `public` a
-   napiš seznam: u kterých se hodnota dostane až do UI (a mají tedy stejnou
-   vadu) a u kterých ne. Neopravuj je v tomhle bodě, jen je vyjmenuj.
-
-3. **Test, který tenhle tvar chytí.** Datum bez zóny se nesmí dostat do
-   `naZpravyTrenera`. Buď to serverem normalizuj na ISO s `Z`, nebo to v
-   adaptéru odmítni jako nepoužitelné datum — ale ať to tvrdí test, ne
-   komentář.
-
-4. Filtr stáří v `naZpravyTrenera` (`PLATNOST_ZPRAVY_DNI = 7`) počítá s
-   `Date.parse` téhož řetězce, takže je i hranice o dvě hodiny vedle. Po
-   opravě dat se to spraví samo — ověř to testem, ne pohledem.
-
-### Co v tomhle bodě NEDĚLEJ
-
-**Bod „TED odpovídá na různé otázky stejně" padá — neplatí.** Změřeno dnes
-na produkci, dvě různé otázky přes `POST /api/coach-chat`, účet r01:
-
-```
-„Co bych měl udělat, abych zhubnul?"   → 2162 kcal, 166 g bílkovin, 1–2× týdně
-„Kolik bílkovin mám denně jíst?"       → „denně 166 g bílkovin", nic víc
-```
-
-Dvě různé, věcně správné odpovědi s reálnými čísly toho účtu (sedí s
-`body_metrics` na jednotku). Původní nález vznikl na dvojici otázek, kde
-druhá zněla „over to s mym profilem" — na tak neurčitý dotaz je podobná
-odpověď v pořádku. Cache to není. **Neřeš to, nepřepisuj prompt.**
-
----
-
 ## 6.8 NÁKUPNÍ SEZNAM SEDÍ UVNITŘ PANELU „AI TRENÉR TED"
 
 Karta „Nákupní seznam · 72 položek" je vykreslená ve stejném rámci jako AI
@@ -101,6 +39,36 @@ nadpis, který lže.
 
 ---
 
+## 6.10 DATUM VÁŽENÍ SE MŮŽE TREFIT DO ŠPATNÉHO DNE
+
+Zbytek po 6.6, změřeno 31. 8. na produkci. Odpověď `GET /api/profile`
+u účtu r01:
+
+```
+body_metrics[0].created_at = "2026-08-31T00:03:59.275"   ← bez zóny
+```
+
+`body_metrics.created_at` je pořád `timestamp without time zone`.
+
+Serveru to nevadí — `lib/vahaHistorie.js` staví `weight_history` přes
+`calendarDateIsoInPrague()` a Node na Vercelu běží v UTC, takže datum
+vychází správně (ověřeno: 00:03 UTC → 2026-08-31, což je v Praze 02:03).
+
+Vadí to **klientskému fallbacku**: `naVazeni()` v `src/data/adaptery.ts`
+(~ř. 811) bere `String(m.created_at).slice(0, 10)`, tedy kalendářní datum
+přímo z UTC řetězce. Vážení mezi 22:00 a 24:00 UTC (= 00:00–02:00 v Praze)
+tak spadne v grafu na předchozí den. Ta větev se použije, když v odpovědi
+chybí `weight_history`.
+
+Stejný vzorec jako 6.6, jen o jednu tabulku vedle. Migraci piš stejně
+(`at time zone 'utc'`) — že jsou hodnoty v UTC, je ověřené na
+`ai_messages` stejnou cestou. Pozor: `body_metrics.created_at` se používá
+mnohem víc než `ai_messages` (řazení, `quickWeightRow`, kalorické cesty),
+takže napřed vypiš všechna místa, která na něm závisí, a teprve pak navrhni
+změnu typu.
+
+---
+
 ## Hotovo a nasazeno — NEŘEŠ ZNOVU
 
 - **6.1** máslo neprojde bezlaktózovou bránou — `4415955`
@@ -111,6 +79,14 @@ nadpis, který lže.
   registry 221 řádků, 0 očekávaných klíčů bez řádku, `cvik_bez_vizualu`
   14 → 15 podle předpokladu.
 - **6.5** výška se ukládá tam, kde ji někdo čte — `305af91` (PR #113)
+- **6.6** zprávy trenéra už nechodí o dvě hodiny posunuté — `be0f30c`
+  (PR #116), migrace `20260831160000` nasazená a ověřená: `ai_messages`
+  má `created_at` i `delivered_at` jako `timestamptz`, produkční odpověď
+  vrací `"2026-08-31T00:04:30.12+00:00"` = 2:04:30 v Praze. Že hodnoty byly
+  v UTC, nebyl dohad z konfigurace — u deseti registrací z 31. 8. se
+  `ai_messages.created_at` lišilo od `auth.users.created_at` o 18–26 s,
+  ne o dvě hodiny. Migrace šla ven PŘED kódem (opačné pořadí by nechalo
+  banner prázdný).
 - **6.7** makra se přepočítají s kalorickým cílem, výška se čte ze zdroje
   pravdy, neznámý návyk se odmítne — `aefed74` (PR #114). Ověřeno na
   produkci po nasazení:

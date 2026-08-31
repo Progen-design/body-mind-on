@@ -240,6 +240,100 @@ bez `conditions_json` by reagovaly na šum.
 
 ---
 
+## 8.2 PŘEGENEROVÁNÍ „BEZE ZMĚNY TRÉNINKU" ZTRATÍ NÁZEV TRÉNINKU
+
+Změřeno 31. 8. 2026 naostro: po stisku „Přegenerovat jídelníček"
+(bod 7.2a) se plán `64bf0ee1…` zachoval se stejným `plan_id` a
+dokončení zůstala — pojistka funguje. Ale trénink přišel o jméno:
+
+```
+před   workout: { workout_name: "Trénink B", exercises: […5], … }
+po     workout: { day_index, exercises: […5], duration_minutes }
+UI     „Trénink B"  →  „Trénink"
+```
+
+Cviky, počet i zaměření sedí. Chybí jen název.
+
+Příčina je v `lib/services/priorPlanWorkouts.js` ř. 11. Funkce
+`loadResolvedWorkoutsFromLatestPlan()` má v dokumentaci návratový typ
+`Array<{ day_index: number, exercises: object[] }>` a kopíruje doslova
+jen `exercises`. Orchestrátor pak objekt tréninku poskládá znovu a
+`workout_name` nemá odkud vzít.
+
+Komentář v `api/profile-preferences.js` i text v banneru přitom slibují,
+že trénink zůstane **beze změny**. Nezůstane — ztratí jméno.
+
+### Co udělat
+
+1. Přenést i `workout_name` (a cokoli dalšího, co se ztrácí — projdi
+   klíče objektu `workout` v plánu PŘED a PO a vypiš rozdíl, ať to
+   nedoděláváme potřetí).
+2. Test, který drží tvrzení z bannera: po `mealsOnly` regeneraci musí
+   být objekt tréninku shodný s původním, ne jen mít stejný počet cviků.
+3. Jestli se ukáže, že „beze změny" nejde splnit doslova, oprav TEXT
+   v banneru — ne aby slib zůstal a skutečnost se lišila.
+
+---
+
+## 8.3 GENERÁTOR NEZNÁ ULOŽENÝ CÍL VÝŽIVY
+
+Změřeno 31. 8. na stejném přegenerování. Jídelníček se srovnal na
+kalorie, ale ne na makra:
+
+```
+                 cíl (body_metrics)   nový plán      původní plán
+kcal                        2634        ~2685            2151
+bílkoviny                  189 g        156 g           163 g
+sacharidy                  285 g        252 g           147 g
+tuky                        82 g        117 g           106 g
+```
+
+Sacharidy se srovnaly. **Tuky jsou o 43 % nad cílem, bílkoviny o 17 %
+pod ním.** U redukce jsou přitom bílkoviny to hlavní, co drží svalovou
+hmotu — tohle není kosmetika.
+
+Příčina: **uložený cíl výživy se do generátoru vůbec nedostane.**
+Grep přes `lib/` a `api/` (mimo testy): `protein_target_g`,
+`carbs_target_g` a `fat_target_g` čte jen
+
+```
+lib/registration/bodyMetricsRegistration.js   zápis při registraci
+lib/calorieTargetIntegrity.js                 zápis při změně cíle
+lib/weeklyWeightRecalc.js                     zápis při týdenním přepočtu
+lib/nutritionTargets.js:143-145               čtení uvnitř calculateNutritionTargets
+```
+
+A `calculateNutritionTargets()` volá registrace, `deterministicFallback`,
+`calorieTargetIntegrity` a `weeklyWeightRecalc` — **ne
+`unifiedPlanPipeline` ani `planOrchestrator`**, tedy ne hlavní cesta,
+kterou plán vzniká.
+
+Generátor přitom nějakou představu o bílkovinách má
+(`lib/nutrition/cilBilkovinSlotu.js`, `lib/plan/proteinHint.js`,
+`lib/recipesCatalog.js` ř. 1515 pracuje s `targets?.protein_g`) — jen
+si ji odvozuje sám, místo aby vzal to, co je uložené u člověka.
+
+### Co udělat
+
+1. **Nejdřív dohledat a POPSAT, odkud dnes generátor bere makra.** Kde
+   se v `planOrchestrator`/`unifiedPlanPipeline` vezme `targets`, které
+   doteče do `recipesCatalog.js:1515`. Napiš to dřív, než začneš měnit.
+2. Teprve pak návrh, jak do té cesty dostat uložený cíl z
+   `body_metrics.*_target_g` — a co se stane, když uložený cíl chybí
+   (starší účty ho nemají).
+3. **Nedělej z maker tvrdou podmínku bez rozmyslu.** Katalog má omezený
+   počet receptů (viz `dieta_pod_kritickym_poctem` ve watchdogu); tvrdý
+   filtr na tři makra najednou může skončit tím, že se plán nesestaví
+   vůbec. Navrhni, jak to ošetřit — tolerance, priorita bílkovin před
+   ostatními, nebo něco jiného. Zdůvodni.
+4. Měřitelný cíl: součet maker dne se má vejít do tolerance kolem cíle.
+   Navrhni, jaká tolerance je poctivá, a napiš, proč zrovna ta.
+
+Tenhle bod je větší než předchozí. Klidně skonči u návrhu a kód nech na
+příště — radši dobrý návrh než rychlá změna v generátoru.
+
+---
+
 ## Hotovo a nasazeno — NEŘEŠ ZNOVU
 
 - **6.1** máslo neprojde bezlaktózovou bránou — `4415955`
@@ -300,6 +394,11 @@ v pořádku, dřív připomínat netřeba.
 **Cena a délka trialu nejsou v registraci vidět** ani v jednom z pěti kroků.
 U předplatného se zkušební dobou to bude potřeba doplnit dřív, než přijdou
 první platící lidé.
+
+**Tlačítko „Přegenerovat jídelníček" nekontroluje `locked`.** Tři účty
+mají zamčený plán (vzorek z 5.9). Dnes na to nikdo nedosáhne — nesoulad
+cíle mají jen dva účty a ani jeden zamčený není — ale až se zamčené plány
+rozšíří, přepis by zamčený vzorek zrušil.
 
 **Interní názvy receptů** vidí zákazník („Tuňák s pečivem — sytá svačina — XL").
 

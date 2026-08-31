@@ -17,164 +17,87 @@
 
 ---
 
-## 6.5 VÝŠKA SE UKLÁDÁ TAM, KDE JI NIKDO NEČTE
+## 6.6 ČASY U ZPRÁV TRENÉRA JSOU O DVĚ HODINY NAPŘED
 
-Změřeno na produkci 31. 8., účet `janprikopa@gmail.com`. Uživatel uložil
-v modalu „Nastavení profilu" výšku 194 cm. Výsledek:
-
-```
-auth.users.user_metadata.height_cm   194   změnilo se
-body_metrics.height_cm               182   NEZMĚNILO se
-tdee                                3101   beze změny
-calories_target                     2164   beze změny
-bmi                                31,64   pořád ze 182 cm
-```
-
-Hlavička profilu čte `user.height_cm` z metadat (`api/profile.js` ~ř. 577,
-`adaptery.ts`: `odpoved.user?.height_cm ?? bm.height_cm`), takže ukazuje 194.
-Generátor plánu a výpočet kalorií čtou `body_metrics.height_cm`, tedy 182.
-
-Rozdíl dvanácti centimetrů dělá na BMR zhruba 75 kcal (2001 vs 2076 podle
-Mifflin–St Jeor při 104,8 kg a 38 letech) a promítá se i do maker. Uživateli
-se tedy od 2. srpna skládá jídelníček na výšku, kterou nemá.
-
-### Příčina
-
-Na výšku existují dva endpointy:
+Změřeno 31. 8. 2026 v 15:15 na produkci, účet `janprikopa+r01@gmail.com`,
+odpověď `GET /api/profile`:
 
 ```
-api/profile-body-data.js   zapisuje do body_metrics I do metadat   správně
-api/profile-settings.js    zapisuje JEN do metadat                 tudy jde modal
+coach_messages[0].created_at = "2026-08-31T00:04:30.12"
 ```
 
-`PreferencesModal.tsx` to má i v komentáři: „Cílová váha a výška zůstaly, ale
-jdou přes `/api/profile-settings`", s odůvodněním „bez regenerace plánu".
+Za časem **není žádná zóna**. Prohlížeč takový řetězec bere jako lokální čas,
+takže zprávu vzniklou v 00:04 UTC (= 02:04 v Praze) ukáže jako 00:04. Přesně
+ten dvouhodinový posun, který Honza viděl.
 
-### Nejdřív nález a návrh, kód až po schválení
+Příčina je ve schématu, ne v komponentě:
 
-1. Proč výška vede přes `profile-settings` a ne `profile-body-data`. Bylo to
-   kvůli tomu, aby se nepřegeneroval plán? Jde to splnit i tak, že se výška
-   uloží správně, jen se nespustí regenerace?
+```
+ai_messages.created_at          timestamp without time zone   ← zdroj posunu
+ai_messages.delivered_at        timestamp without time zone   ← totéž
+coach_chat_messages.created_at  timestamp with time zone      ← správně
+```
 
-2. Návrh, kde má výška bydlet. Chci **jeden zdroj pravdy**. Metadata smí být
-   kopie pro rychlé čtení, ale nesmí být místo, kde hodnota končí.
+`ai_messages` je jediná tabulka v tomhle řetězci bez zóny. Hodnoty v ní jsou
+uložené v UTC (zapisuje je server přes `now()` / JS ISO), takže převod je
+jednoznačný.
 
-3. Když se výška změní, **musí se přepočítat `calories_target` a makra** — z
-   výšky se počítá BMR. Je to vědomá cesta ve smyslu pravidla z etapy 6.4
-   (`lib/quickWeightRow.js`), ne automatický přepočet při vážení. Napiš, kde
-   ten přepočet má viset.
+### Co s tím
 
-4. **Cílová váha je jiný případ** — do výpočtu se nepromítá a „uloží se
-   rovnou" je u ní správně. Neslučuj je do jedné cesty bez rozmyslu.
+1. **Migrace** (napiš soubor, neaplikuj):
+   `alter table public.ai_messages alter column created_at type timestamptz
+   using created_at at time zone 'utc';` totéž pro `delivered_at`. Zkontroluj
+   i `default` u sloupce — ať po převodu není `now()` v jiném významu.
 
-5. Endpointy se neshodnou na mezích: `profile-settings` bere 100–250 cm,
-   `profile-body-data` 120–230. Sjednotit a vzít meze ze sdíleného modulu,
-   stejně jako to dělá `lib/vahaMeze.js` u váhy.
+2. **Projdi všechny ostatní `timestamp without time zone`** v `public` a
+   napiš seznam: u kterých se hodnota dostane až do UI (a mají tedy stejnou
+   vadu) a u kterých ne. Neopravuj je v tomhle bodě, jen je vyjmenuj.
 
-6. Text v modalu „Tyhle dva údaje plán nepřegenerují — uloží se rovnou" po
-   opravě nebude pro výšku platit. Navrhni, co tam má stát.
+3. **Test, který tenhle tvar chytí.** Datum bez zóny se nesmí dostat do
+   `naZpravyTrenera`. Buď to serverem normalizuj na ISO s `Z`, nebo to v
+   adaptéru odmítni jako nepoužitelné datum — ale ať to tvrdí test, ne
+   komentář.
+
+4. Filtr stáří v `naZpravyTrenera` (`PLATNOST_ZPRAVY_DNI = 7`) počítá s
+   `Date.parse` téhož řetězce, takže je i hranice o dvě hodiny vedle. Po
+   opravě dat se to spraví samo — ověř to testem, ne pohledem.
+
+### Co v tomhle bodě NEDĚLEJ
+
+**Bod „TED odpovídá na různé otázky stejně" padá — neplatí.** Změřeno dnes
+na produkci, dvě různé otázky přes `POST /api/coach-chat`, účet r01:
+
+```
+„Co bych měl udělat, abych zhubnul?"   → 2162 kcal, 166 g bílkovin, 1–2× týdně
+„Kolik bílkovin mám denně jíst?"       → „denně 166 g bílkovin", nic víc
+```
+
+Dvě různé, věcně správné odpovědi s reálnými čísly toho účtu (sedí s
+`body_metrics` na jednotku). Původní nález vznikl na dvojici otázek, kde
+druhá zněla „over to s mym profilem" — na tak neurčitý dotaz je podobná
+odpověď v pořádku. Cache to není. **Neřeš to, nepřepisuj prompt.**
 
 ---
 
-## 6.6 CHAT S TEDEM: STEJNÁ ODPOVĚĎ, POSUNUTÉ ČASY, CHYBĚJÍCÍ DATUM
-
-Změřeno 31. 8. na produkci, účet `janprikopa@gmail.com`, tabulka
-`coach_chat_messages`.
-
-### a) TED vrací na různé otázky doslova stejnou odpověď
-
-```
-23:26:11  user  "co bxch mel udelat proto abych zhubnul"
-23:26:11  ted   "Abychom dosáhli úbytku hmotnosti, je důležité dodržovat…"
-23:26:56  user  "over to s mym profilem"
-23:26:56  ted   "Abychom dosáhli úbytku hmotnosti, je důležité dodržovat…"
-```
-
-Dvě různé otázky, odpověď znak po znaku totožná. Uživatel to hlásí slovy
-„když se zeptám, odpovídá pořád stejně". Zjisti, jestli je to cache odpovědi,
-nezahrnutá historie konverzace v promptu, nebo něco třetího.
-
-### b) Časy v chatu jsou o dvě hodiny napřed
-
-```
-DB 2026-08-23 01:17:07  →  UI ukazuje 03:17
-DB 2026-08-30 23:26:11  →  UI ukazuje 01:26
-```
-
-Přesně +2 h, tedy pražský offset. `coach_chat_messages.created_at` je
-`timestamp without time zone` s uloženým UTC; klient ho bere jako lokální čas
-a offset přičte podruhé. Ověř, jestli tentýž vzorec nemají i jiná místa, kde
-se zobrazuje čas z `timestamp without time zone`.
-
-### c) V chatu chybí datum, jen čas
-
-Zpráva z 23. 8. se v panelu tváří jako dnešní („03:17"). To je hlavní důvod,
-proč uživatel čte starou odpověď jako novou. U zprávy starší než dnešek se
-musí zobrazit i datum.
-
-### d) Nákupní seznam sedí vizuálně uvnitř panelu „AI Trenér TED"
+## 6.8 NÁKUPNÍ SEZNAM SEDÍ UVNITŘ PANELU „AI TRENÉR TED"
 
 Karta „Nákupní seznam · 72 položek" je vykreslená ve stejném rámci jako AI
 trenér. Se seznamem k nákupu nemá TED nic společného — patří k jídelníčku.
+Nález z průchodu profilem 29. 8., ověřeno na screenshotech.
 
-### e) „Dnešní trénink" ukazuje pátek v neděli
-
-Potvrzeno podruhé, teď na druhém účtu (tréninkové dny po/st/pá, zobrazeno
-30. 8., což byla neděle, s nadpisem „Dnešní trénink" a štítkem „Pátek").
-Na záložce Tréninkový plán je tatáž věc popsaná správně jako „nejbližší
-trénink v plánu".
-
-### Co je naopak v pořádku (needit, jen ať to neopravuješ zbytečně)
-
-HRV 55,5 ms a klidový tep 61 bpm na kartě Regenerace sedí s
-`apple_health_daily` pro 30. 8. přesně. Spánek „—" je správně, data nejsou.
-Kalorie 2164 a makra 184/206/67 g sedí s `body_metrics` i s procenty
-34/38/28. Čísla z Withings na kartě Tělo & váha sedí se snapshotem.
-Rozdílná čísla HRV v TEDově zprávě (51 ms, tep 75) nejsou chyba — jsou
-z 23. 8. a pro ten den v DB sedí. Vypadají špatně jen kvůli bodu (c).
+Samostatný bod, ne součást 6.6 — je to čistě rozvržení, žádná data.
 
 ---
 
-## 6.7 ZMĚNA VÝŠKY NEPŘEPOČÍTÁ MAKRA A NEJDE ULOŽIT NEZMĚNĚNOU HODNOTU
+## 6.9 „DNEŠNÍ TRÉNINK" UKAZUJE JINÝ DEN, NEŽ JE DNES
 
-Dva zbytky po etapě 6.5, oba změřené na produkci 31. 8.
+Dvakrát potvrzeno: tréninkové dny po/st/pá, zobrazeno v neděli 30. 8. s
+nadpisem „Dnešní trénink" a štítkem „Pátek". Na záložce Tréninkový plán je
+tatáž věc popsaná správně jako „nejbližší trénink v plánu".
 
-### a) Makra zůstanou po změně výšky stará
-
-`buildHeightUpdatePatch()` vrací `height_cm`, `bmi` a `calories_target`, ale
-NE `protein_target_g` / `carbs_target_g` / `fat_target_g`. Po opravě výšky
-u účtu `janprikopa@gmail.com`:
-
-```
-calories_target   2164 → 2634   přepočítáno
-protein_target_g  185           beze změny
-carbs_target_g    205           beze změny
-fat_target_g      67            beze změny
-```
-
-185 × 4 + 205 × 4 + 67 × 9 = 2163 kcal. Uložená makra tedy sedí na starý cíl
-2164, ne na nový 2634 — řádek si sám odporuje. Nikdo si toho zatím nevšiml,
-protože UI si gramy dopočítává z procent a kalorií (`src/data/adaptery.ts`),
-ale `protein_target_g` se čte i jinde (`adaptery.ts:727`) a zapisuje se při
-týdenním přepočtu (`lib/weeklyWeightRecalc.js:138`) — do té doby je v DB
-nekonzistence.
-
-Přepočítat makra stejnou cestou jako `calories_target`, ne druhým vzorcem.
-`lib/nutritionTargets.js` je už umí, používá je registrace i týdenní přepočet.
-
-### b) Nezměněnou hodnotu modal vůbec neodešle
-
-Uživatel měl v `user_metadata` výšku 194, v `body_metrics` 182. Modal načetl
-194 z metadat, uživatel klikl Uložit — a **na server nešlo nic**, protože pole
-nebylo „dirty". Rozjetý stav mezi zrcadlem a zdrojem pravdy se tedy přes UI
-nedal opravit vůbec: člověk vidí správné číslo, uloží ho a nic se nestane.
-
-Ověřeno protikladem: tentýž endpoint zavolaný přímo s `height_cm` funguje
-(testovací účet, 165 → 170, BMI 22,33 → 20,83, cíl 1436 → 1386).
-
-Návrh: buď posílat hodnoty vždy, ne jen změněné, nebo (lépe) po načtení
-profilu porovnat metadata proti `body_metrics` a rozdíl srovnat — uživatel
-by o tom vůbec neměl vědět.
+Buď se má nadpis změnit na to, co karta opravdu ukazuje, nebo se má ve dnech
+bez tréninku ukázat, že dnes trénink není. Rozhodni a zdůvodni; nechci
+nadpis, který lže.
 
 ---
 
@@ -187,6 +110,20 @@ by o tom vůbec neměl vědět.
   migrace `20260830120000` nasazená a ověřená: očekávaných klíčů 48,
   registry 221 řádků, 0 očekávaných klíčů bez řádku, `cvik_bez_vizualu`
   14 → 15 podle předpokladu.
+- **6.5** výška se ukládá tam, kde ji někdo čte — `305af91` (PR #113)
+- **6.7** makra se přepočítají s kalorickým cílem, výška se čte ze zdroje
+  pravdy, neznámý návyk se odmítne — `aefed74` (PR #114). Ověřeno na
+  produkci po nasazení:
+  - `POST /api/body-metrics` s `selected_habits: ['zdrava_strava',
+    'kvalitni_spanek']` vrací **400 `Neznámé návyky: …`** a žádný účet
+    nevznikne;
+  - `GET /api/profile` u účtu r01 vrací `height_cm: 178` z `body_metrics`,
+    přestože v `user_metadata` výška vůbec není — **18 z 20 účtů** ji tam
+    nemá, těm všem se do teď výška na profilu nezobrazovala;
+  - dva řádky s rozjetými makry dorovnány přes `buildCalorieTargetBodyMetricsPatch`
+    (`janprikopa@gmail.com` 185/205/67 → 189/285/82 při 2634 kcal;
+    `+t6` 112/146/45 → 108/142/43 při 1386 kcal). Zbylých 19 účtů sedí
+    v rámci zaokrouhlení (±2 kcal).
 
 ---
 
@@ -194,6 +131,10 @@ by o tom vůbec neměl vědět.
 
 **Trial nemá kde zaplatit dřív než 3 dny před koncem.** Honza 29. 8.: je to
 v pořádku, dřív připomínat netřeba.
+
+**Cena a délka trialu nejsou v registraci vidět** ani v jednom z pěti kroků.
+U předplatného se zkušební dobou to bude potřeba doplnit dřív, než přijdou
+první platící lidé.
 
 **Interní názvy receptů** vidí zákazník („Tuňák s pečivem — sytá svačina — XL").
 
@@ -209,7 +150,5 @@ dala za pravdu progresi a mapa byla stará. Neověřeno, co má pravdu tentokrá
 
 **Záložka Apple Watch je slepá ulička** — vyzývá „Připoj Apple Health", ale
 tlačítko tam žádné není.
-
-**„Dnešní trénink" na profilu ukazuje pondělní jednotku i v sobotu.**
 
 **Navigační záložky nemají přístupné jméno** pro odečítače obrazovky.

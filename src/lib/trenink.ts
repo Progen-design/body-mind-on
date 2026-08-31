@@ -27,9 +27,32 @@ export function jeNaplanovany(workout: WorkoutDay): boolean {
 /**
  * Trénink na dnešek: označený `isToday`, jinak první den plánu.
  * Nikdy nevrací `undefined` — volající čtou `.title` bez guardu.
+ *
+ * FALLBACK NA `workouts[0]` PLATÍ JEN TAM, KDE SI HO VOLAJÍCÍ SÁM HLÍDÁ
+ * (`vybranyTrenink()` a záložka Tréninkový plán, která o sobě otevřeně
+ * tvrdí „nejbližší trénink v plánu", ne „dnešní" — pozná fallback podle
+ * `.isToday === false` a nadpis tomu přizpůsobí). Kdo `.isToday`
+ * nekontroluje a nadpis má napevno „Dnešní trénink" (Karta 4 v
+ * OverviewBentoGrid, App.tsx), potřebuje `dnesniTreninkPresne()` níž —
+ * viz docs/DALSI_KROK.md 6.9.
  */
 export function dnesniTrenink(workouts: WorkoutDay[]): WorkoutDay {
   return workouts.find(w => w.isToday) ?? workouts[0] ?? DEN_BEZ_TRENINKU;
+}
+
+/**
+ * Trénink na dnešek, PŘESNĚ — bez záskoku cizím dnem. Když dnes v plánu
+ * nic není (den volna), vrátí `DEN_BEZ_TRENINKU`, ne první den plánu.
+ *
+ * Nález 31. 8. 2026: plán po/st/pá zobrazený v neděli ukazoval nadpis
+ * „Dnešní trénink" se štítkem „Pátek" — `dnesniTrenink()` spadla na
+ * `workouts[0]` a karta to vydávala za dnešek, protože sama `.isToday`
+ * nekontroluje. Použij tuhle funkci všude, kde se „dnešní trénink" ukazuje
+ * bez dalšího rozlišení — `dnesniTrenink()` beze změny zůstává tam, kde
+ * záskok cizím dnem je součástí zamýšleného chování.
+ */
+export function dnesniTreninkPresne(workouts: WorkoutDay[]): WorkoutDay {
+  return workouts.find(w => w.isToday) ?? DEN_BEZ_TRENINKU;
 }
 
 /**

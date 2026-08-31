@@ -50,7 +50,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 // videl vymyslene zdravotni udaje. Data ted chodi z /api/health/recovery.
 import { applyWeightRecord } from './lib/syncEngine';
 import { apiFetch, jeNeaktivniClenstvi } from './lib/api';
-import { dnesniTrenink } from './lib/trenink';
+import { dnesniTreninkPresne } from './lib/trenink';
 import { sestavZapisTreninku } from './lib/zapisTreninku';
 import { rozdelZmenyNastaveni, PRAZDNE_NASTAVENI } from './lib/nastaveniProfilu';
 
@@ -744,8 +744,14 @@ function AppContent() {
   // Pri prazdnem planu vracelo workouts[3] undefined a komponenty pak cetly
   // todayWorkout.title -> bila obrazovka. Prazdny plan je bezny stav (novy
   // uzivatel, plan se prave generuje), takze musi projit bez padu.
+  //
+  // dnesniTreninkPresne(), ne dnesniTrenink(): karty, ktere tenhle
+  // todayWorkout ctou (OverviewBentoGrid, WorkoutLoggerModal), nadpis
+  // "Dnesni trenink" nijak nepodmiuji — kdyby dnes zadny trenink nebyl,
+  // dnesniTrenink() by tise podstrcila prvni den planu jako dnesek.
+  // Viz docs/DALSI_KROK.md 6.9.
   const maPlan = meals.length > 0 || workouts.length > 0;
-  const todayWorkout: WorkoutDay = dnesniTrenink(workouts);
+  const todayWorkout: WorkoutDay = dnesniTreninkPresne(workouts);
 
   // Calculated macros
   const totalCalories = meals.reduce((acc, m) => acc + (m.completed ? m.calories : 0), 0);

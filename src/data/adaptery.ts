@@ -805,10 +805,26 @@ export function naVazeni(odpoved: ProfilOdpoved): WeightRecord[] {
   }
 
   // Záloha pro starší odpověď serveru, která `weight_history` ještě neposílá.
+  //
+  // DEN SE POČÍTÁ V EUROPE/PRAGUE, NE `slice(0, 10)` Z UTC ŘETĚZCE.
+  // `body_metrics.created_at` je uložený v UTC (docs/DALSI_KROK.md 6.10) —
+  // vážení mezi 22:00 a 24:00 UTC (= 00:00–02:00 v Praze) by syrový UTC
+  // řetězec zařadilo pod předchozí den. `calendarDateIsoInPrague` navíc
+  // potřebuje řetězec se zónou, aby ho `new Date(...)` neparsoval jako
+  // lokální čas prohlížeče/testu — stejný důvod jako u `maCasovouZonu`
+  // výš (docs/DALSI_KROK.md 6.6). Řádek bez zóny se proto přeskočí, ne
+  // odhaduje. Neplatné datum se zónou (poškozený řádek) by jinak
+  // `calendarDateIsoInPrague` tiše nahradilo dneškem — proto se ověřuje
+  // i parsovatelnost, ne jen přítomnost zóny.
   return (odpoved.body_metrics || [])
-    .filter((m) => m?.weight_kg != null)
+    .filter(
+      (m) =>
+        m?.weight_kg != null &&
+        maCasovouZonu(m?.created_at) &&
+        Number.isFinite(Date.parse(String(m.created_at)))
+    )
     .map((m) => ({
-      date: String(m.created_at || '').slice(0, 10),
+      date: calendarDateIsoInPrague(String(m.created_at)),
       weight: cislo(m.weight_kg),
       fatPercent: 0,
       muscleKg: 0,

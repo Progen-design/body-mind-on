@@ -225,7 +225,8 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
       {/* 
         ========================================================================
         KARTA 3: Jídelníček & Makra dnes (col-span-1 md:col-span-1 lg:col-span-2)
-        Široká karta s přehledem denních kalorií, makro-baru a receptů
+        Široká karta s přehledem denních kalorií, makro-baru, receptů
+        a nákupního seznamu (viz docs/DALSI_KROK.md 6.8)
         ========================================================================
       */}
       <motion.div
@@ -327,6 +328,27 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
                 </button>
               </div>
             ))}
+          </div>
+
+          {/* Nákupní seznam patří k jídelníčku, ne k TEDovi — přesunuto sem
+              z Karty 6 (AI Trenér TED). Ta karta se hlavičkou hlásila jako
+              „AI Trenér TED", ale zobrazovala pod ní i nesouvisející nákup;
+              Karta 6 je navíc jediné místo, kde je TED vidět, a nákup ho tam
+              ředil. Viz docs/DALSI_KROK.md 6.8. */}
+          <div
+            onClick={() => onSelectTab('jidelnicek')}
+            className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/30 flex items-center justify-between cursor-pointer transition-all"
+          >
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4 text-cyan-400" />
+              <span className="text-xs font-bold text-slate-200">Nákupní seznam</span>
+            </div>
+            {/* Skutecny pocet, ne natvrdo 12 — seznam jich ma pres sto. */}
+            {pocetNakupu > 0 && (
+              <span className="text-[10px] font-semibold text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded-full">
+                {pocetNakupu} {pocetNakupu === 1 ? 'položka' : pocetNakupu < 5 ? 'položky' : 'položek'}
+              </span>
+            )}
           </div>
         </div>
 
@@ -449,8 +471,10 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
 
       {/* 
         ========================================================================
-        KARTA 6: AI Trenér TED & Rychlý nákup (col-span-1 md:col-span-2 lg:col-span-1)
-        Kompaktní informativní blok s AI doporučením a nákupním seznamem
+        KARTA 6: AI Trenér TED (col-span-1 md:col-span-2 lg:col-span-1)
+        Kompaktní informativní blok s AI doporučením. Soupis k nákupu odsud
+        putoval na Kartu 3 — patří k jídelníčku, ne k TEDovi, a ředil
+        jediné místo, kde je TED vidět (docs/DALSI_KROK.md 6.8).
         ========================================================================
       */}
       <motion.div
@@ -497,23 +521,6 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
               </p>
             </button>
           )}
-
-          {/* Shopping List Quick Pill */}
-          <div
-            onClick={() => onSelectTab('jidelnicek')}
-            className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/30 flex items-center justify-between cursor-pointer transition-all mb-2"
-          >
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="w-4 h-4 text-cyan-400" />
-              <span className="text-xs font-bold text-slate-200">Nákupní seznam</span>
-            </div>
-            {/* Skutecny pocet, ne natvrdo 12 — seznam jich ma pres sto. */}
-            {pocetNakupu > 0 && (
-              <span className="text-[10px] font-semibold text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded-full">
-                {pocetNakupu} {pocetNakupu === 1 ? 'položka' : pocetNakupu < 5 ? 'položky' : 'položek'}
-              </span>
-            )}
-          </div>
         </div>
 
       </motion.div>

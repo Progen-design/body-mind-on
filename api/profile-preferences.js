@@ -12,6 +12,7 @@ import { dietTypeRejectionReason } from '../lib/dietOptions.js';
 import {
   buildCalorieTargetBodyMetricsPatch,
   CALORIE_TARGET_RECALC_FIELDS,
+  emitCalorieTargetChangedEvent,
 } from '../lib/calorieTargetIntegrity.js';
 
 export default async function handler(req, res) {
@@ -180,6 +181,16 @@ export default async function handler(req, res) {
         return res.status(500).json({
           error: friendly || 'Nepodařilo se uložit preference.',
           detail: process.env.NODE_ENV === 'development' ? msg : undefined,
+        });
+      }
+
+      // docs/DALSI_KROK.md 8.1 — jedno z pěti míst, kde se `calories_target`
+      // opravdu mění (cíl/aktivita/váha/frekvence v preferencích).
+      if (shouldRecalcCalories) {
+        await emitCalorieTargetChangedEvent(userId, {
+          oldCaloriesTarget: latest.calories_target,
+          patch: toUpdate,
+          source: 'preferences_updated',
         });
       }
     }

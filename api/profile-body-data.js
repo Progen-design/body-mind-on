@@ -10,7 +10,7 @@
  */
 import { supabaseServer } from '../lib/supabaseServer.js';
 import { validateBirthDate } from '../lib/bodyMetricsBirthDate.js';
-import { buildCalorieTargetBodyMetricsPatch } from '../lib/calorieTargetIntegrity.js';
+import { buildCalorieTargetBodyMetricsPatch, emitCalorieTargetChangedEvent } from '../lib/calorieTargetIntegrity.js';
 import { updateHeightCm } from '../lib/updateHeightCm.js';
 
 export default async function handler(req, res) {
@@ -81,6 +81,15 @@ export default async function handler(req, res) {
         console.error('[profile-body-data] body_metrics update', updErr);
         return res.status(500).json({ ok: false, error: 'Nepodařilo uložit tělesné údaje.' });
       }
+
+      // docs/DALSI_KROK.md 8.1 — jedno z pěti míst, kde se `calories_target`
+      // opravdu mění. `no-op`, pokud váha vůbec nepřišla (metricsUpdate pak
+      // calories_target nemá) — `emitCalorieTargetChangedEvent` to samo pozná.
+      await emitCalorieTargetChangedEvent(user.id, {
+        oldCaloriesTarget: latest.calories_target,
+        patch: metricsUpdate,
+        source: 'weight_updated',
+      });
     }
 
     if (birth_date) {

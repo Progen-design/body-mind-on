@@ -796,6 +796,26 @@ export interface NesouladCile {
  *
  * Změřeno 31. 8. 2026: cíl 2634 kcal, aktivní plán (27. 8. – 2. 9.) 2164 kcal.
  * `null`, když čísla sedí nebo když nemáme co porovnat (docs/DALSI_KROK.md 7.2a).
+ *
+ * NÁVRH (docs/DALSI_KROK.md 8.1, bod 3) — NEIMPLEMENTOVÁNO: tahle funkce
+ * pořád počítá nesoulad při KAŽDÉM zobrazení profilu, z aktuálních čísel na
+ * klientovi, ne ze skutečné události. Od `target_changed`
+ * (`lib/calorieTargetIntegrity.js`) by šlo přejít na dotaz „existuje pro
+ * uživatele otevřený `ai_tasks` řádek s `task_type = 'adjust_plan'` a
+ * `source_event_id` ukazujícím na `target_changed`?" — `GET /api/profile`
+ * by ho přidal do `ProfilOdpoved` a `nesouladCile()` by ho jen četla, misto
+ * aby si sama počítala rozdíl. Výhoda: banner by zmizel přesně ve chvíli,
+ * kdy se úloha vyřídí (dnes zmizí, jen když se čísla shodou okolností srovnají),
+ * a nesl by frontovaný kontext (starý/nový cíl, zdroj změny), ne jen dvě
+ * kcal čísla.
+ *
+ * PROČ SE TO NEDĚLÁ TEĎ: `target_changed → adjust_plan` je v
+ * `ai_trigger_rules` `enabled = false` (migrace `20260901090000`) a
+ * `lib/aiDecisionEngine.js` navíc `target_changed` jako trigger_type vůbec
+ * nezná (viz komentář v migraci) — dokud se to nezapne a nedoplní, žádný
+ * `ai_tasks` řádek by nevznikl a banner by tiše zmizel i tam, kde je cíl
+ * fakt jinde než plán. Radši nechat klientské porovnání, dokud funguje a
+ * lidem se zobrazuje, než ho nahradit zdrojem, který zatím nic nevyrábí.
  */
 export function nesouladCile(odpoved: ProfilOdpoved, cilKcal: number): NesouladCile | null {
   const plan = vyberPlan(odpoved.plans);

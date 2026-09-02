@@ -52,6 +52,19 @@ malá svačina, 700 kcal je plnohodnotná večeře. Aplikace si to ověří sama
 
 Dostaneš `uz_mame` — názvy receptů, které v katalogu jsou. Nevymýšlej jejich
 varianty. „Čočkové kari“ a „Kari z červené čočky“ je pro nás totéž jídlo.
+
+Dostaneš i `existujici_kombinace_surovin` — konkrétní kombinace surovin,
+které v katalogu už jsou, každá jako jedna položka (např. „banán, arašídové
+máslo, chia semínka“). **Tohle je přísnější a důležitější než `uz_mame`:**
+posuzuje se podle surovin, ne podle názvu. Jiný název se stejnou nebo skoro
+stejnou kombinací surovin je pro nás POŘÁD totéž jídlo a takový recept
+zahodíme — přejmenování nepomůže. „Banánový toast s arašídovým máslem
+a chia semínky“ proti existující kombinaci „banán, arašídové máslo, chia
+semínka“ je zamítnutí, i když název zní jinak.
+
+Vezmi kombinaci ze seznamu, uber nebo přidej aspoň dvě suroviny, nebo použij
+jiný základ úplně — ne stejné suroviny s jedním pozměněným detailem.
+
 Každý recept v odpovědi musí být jiný i vůči ostatním v téže odpovědi.
 
 ## Hlavní bílkovina — když je zadaná, je závazná

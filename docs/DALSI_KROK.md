@@ -18,89 +18,6 @@
 
 ---
 
-## 8.6 GENERÁTOR OPAKUJE SUROVINY A NEDĚLÁ OBRÁZKY
-
-Dvě části, obě nezávislé. Dělej je v tomhle pořadí, ke každé vlastní test.
-
-Změřeno 2. 9. 2026 po nasazení 8.5.
-
-### a) Čtyři z pěti receptů se zahodí kvůli shodě surovin
-
-Běh generátoru naostro: zapsán 1 recept, 4 zahozeny, všechny čtyři
-s důvodem `prunik_surovin` (Jaccard ≥ 0,7, `DEDUP_JACCARD_THRESHOLD`
-v `lib/recipeGenerator.js:51`). Zamítnuté byly:
-
-```
-Banánový toast s arašídovým máslem a chia semínky   proti: Banánové plátky s arašídovým máslem a chia
-Čokoládový chia pudink s banánem a arašídovým máslem proti: Čokoládový chia pudink s banánem
-Avokádový toast s kozím sýrem a semínky              proti: Rychlá avokádová pomazánka
-Celozrnný toast s avokádem a banánem                 proti: Avokádový toast s banánem
-```
-
-**Práh 0,7 je správně a NEZVYŠUJ ho.** Dělá přesně to, co má — zahazuje
-pátou variantu banánového toastu. Problém je, že model neví, co v katalogu
-už je, takže ho vymýšlí znovu. Platíme za dávku, ze které použijeme pětinu.
-
-Uprav prompt tak, aby model dostal seznam surovin/kombinací, které pro
-daný slot a dietu v katalogu **už jsou**, a měl zadáno vymyslet jiné.
-Rozmysli a napiš dřív, než začneš:
-
-- Kolik položek do promptu vejít může, aniž by to nafouklo cenu (dnes
-  0,096 USD za běh) — celý katalog tam nedáš.
-- Podle čeho vybrat, které existující recepty ukázat (stejný `meal_type`
-  a dieta je minimum; možná stačí seznam hlavních surovin, ne názvů).
-- Jestli má smysl posílat i to, co se právě zahodilo, a nechat model
-  opravit dávku, nebo je levnější napravit až příští běh.
-
-Měřitelný cíl: podíl zahozených pro `prunik_surovin` klesne. Změřím ho
-po nasazení proti dnešnímu stavu (4 z 5).
-
-### b) 99 % jídel v plánech nemá obrázek
-
-```
-zdroj             receptů   s obrázkem
-llm_generated        445         0
-coach_seed_v1        150         0
-simple_start          23         0
-spoonacular          159       159
-meal_cache            30        30
-```
-
-V aktivních plánech: **695 ze 700 jídel bez obrázku.** `recipeGenerator.js`
-ani `recipeGeneratorRun.js` s `image_url` vůbec nepracují, takže každý
-nový recept je bez obrázku — a Spoonacular import, který obrázky přinášel,
-je od 20. 8. vyčerpaný.
-
-Honzovo rozhodnutí: **dohledávat obrázky přes Spoonacular podle názvu**
-(metoda B), ne je generovat. Klíč je obnovený a ověřený (2. 9. 2026:
-HTTP 200, kvóta 48,99/50, jeden `complexSearch` stojí 1,01 bodu).
-
-`lib/mealEnrichment.js` už hledání podle názvu umí a `image_url` z něj
-bere. Chybí dávkový průchod přes katalog.
-
-Zadání:
-
-1. Nový cron nebo skript, který projde `recipes_catalog` s
-   `active = true and (image_url is null or image_url = '')` a doplní
-   `image_url`. Nesahej na nic jiného v tom řádku.
-2. **Kvóta je 50 bodů denně a je sdílená s importem receptů.**
-   `lib/spoonacularQuotaGate.js` existuje — použij ho, nepiš vlastní
-   počítadlo. Nech si rezervu, ať jeden běh nesebere celý denní limit.
-3. **Nepodstrkuj obrázek, který neodpovídá.** Když hledání nevrátí
-   dostatečně jistou shodu, nech `image_url` prázdné. Prázdné místo je
-   lepší než fotka cizího jídla — u appky o jídle to platí dvojnásob.
-   Napiš, jaký práh jistoty používáš a proč.
-4. Zaloguj počty: kolik receptů prošlo, kolik dostalo obrázek, kolik
-   skončilo bez shody, kolik bodů kvóty to stálo.
-
-### Co v tomhle bodě NEDĚLAT
-
-Nezvyšuj `DEDUP_JACCARD_THRESHOLD`. Nezvyšuj denní strop generátoru
-(20 receptů/den je Honzovo rozhodnutí). Nesahej na Spoonacular import
-receptů — obrázky jsou jiná cesta než import. Negeneruj obrázky modelem.
-
----
-
 ## 8.4 TUKOVÝ CÍL: PENALTA TAM, KDE JE Z ČEHO VYBÍRAT
 
 Návrh, ze kterého tenhle bod vychází, je hotový a zmergovaný:
@@ -232,6 +149,24 @@ a JetBrains Mono z Google Fonts, změna písma je samostatné rozhodnutí.
 ---
 
 ## Hotovo a nasazeno — NEŘEŠ ZNOVU
+- **8.6a** generátor už ví, jaké kombinace surovin v katalogu jsou.
+  Změřeno naostro: z 5 receptů se 4 zahodily pro `prunik_surovin`, všechny
+  proti položkám, které v katalogu **už byly**. Práh 0,7 zůstává beze změny
+  — dělá to, co má. Chyběl signál, ne přísnost.
+  - `existujiciKombinaceSurovin()` posílá do promptu **suroviny, ne názvy**.
+    `uz_mame` (jména) model dostával už předtím a shodu podle nich nepoznal
+    — musel by uhodnout, že „Banánový toast s arašídovým máslem a chia
+    semínky" je totéž co „Banánové plátky s arašídovým máslem a chia".
+  - Deduplikace podle normalizované množiny surovin **před** oříznutím na
+    strop, ať porcové varianty téhož jídla nesežerou limit jednou kombinací.
+  - Recept zahozený pro shodu surovin se přidá do `existujici`, takže druhý
+    pokus i zbytek dávky vidí, že je ta kombinace obsazená.
+  - Strop 30 kombinací je vědomý odhad, ne změřené optimum, a je tak
+    i okomentovaný. Cena není důvod — 100 kombinací je ~0,005 USD, tedy 5 %
+    ceny běhu; důvod je, že dlouhý nediferencovaný seznam model přehlédne.
+  - Měřitelný cíl: podíl zahozených pro `prunik_surovin` klesne proti
+    dnešním 4 z 5. Změřím po nasazení.
+
 - **8.5** fronta receptů si už nezadává nesplnitelný cíl bílkovin —
   `dade0b6` (PR #135). Změřeno, že `protein_hint` srážel úspěšnost 3,5×
   (17–20 % vs 69–73 %, dieta bez vlivu) a rozpad byl skokový: podíl 0,25 →
@@ -361,6 +296,55 @@ a JetBrains Mono z Google Fonts, změna písma je samostatné rozhodnutí.
 ---
 
 ## Vědomě odloženo
+**Obrázky u receptů — 99 % jídel je nemá, a dohledávání přes Spoonacular
+NEFUNGUJE. Nezkoušet znovu.** Honza 2. 9. 2026: „budeme řešit později."
+
+Stav: v aktivních plánech je **695 ze 700 jídel bez obrázku**.
+`llm_generated` má 0 obrázků ze 445, `coach_seed_v1` 0 ze 150,
+`simple_start` 0 z 23. Obrázky nese jen `spoonacular` (159/159) a
+`meal_cache` (30/30), a Spoonacular import je od 20. 8. vyčerpaný.
+`recipeGenerator.js` s `image_url` vůbec nepracuje.
+
+**Metoda B (dohledat přes Spoonacular podle názvu) byla implementována
+a po měření zahozena.** Změřeno 2. 9. proti živému API na skutečných
+názvech z katalogu:
+
+```
+česky (co by backfill posílal)                      výsledků
+Krůtí toast s avokádem a sýrem feta                     0
+Cottage s borůvkami a arašídovým máslem                 0
+Libové hovězí s dýňovým pyré                            0
+Tofu s avokádem a chilli                                0
+Tvarohový salát s okurkou a rajčetem                    0
+Salát s hovězím steakem a avokádem                      0
+```
+
+Nula ze šesti. Kontrolní vzorek ručně přeložený do angličtiny dal
+**1 ze 6**, a ten jediný byl „Steak Salad with Chimichurri Sauce" proti
+našemu „Salát s hovězím steakem a avokádem" — jiné jídlo, tedy přesně ta
+fotka cizího jídla, kterou nechceme.
+
+Kořen: Spoonacular je katalog **existujících anglických receptů**. Naše
+jídla vymyslel model a jsou česká — „Krůtí klobása s caprese špízy" v jejich
+korpusu není a nebude. `name_en` je u `llm_generated` navíc **identický
+s `name_cs`** (čeština, ne angličtina), takže i „hledej podle anglického
+názvu" by nefungovalo bez nového překladu.
+
+Kód metody B (`lib/recipeImageBackfill.js`, `api/cron/backfill-recipe-images.js`)
+byl napsaný správně — dotýkal se jen `image_url`, respektoval rozpočet
+(`lib/spoonacular/importBudget.js`, ne `spoonacularQuotaGate.js`, což je
+jen přepínač režimu) a práh jistoty 0,7. **Smazán, protože by doplnil nula
+obrázků a spálil kvótu.** Chyba byla v zadání, ne v provedení.
+
+Zbývající cesty, až na to přijde řada:
+- **generovat obrázky modelem** — jediné, co pro vymyšlená česká jídla
+  dává smysl; ~0,04 USD/obrázek, 445 receptů ≈ 18 USD jednorázově;
+  je to ilustrace, ne fotka, ale bude odpovídat jídlu;
+- nechat bez obrázků.
+
+Spoonacular klíč je obnovený a funkční (2. 9., HTTP 200, kvóta 50/den) —
+na import receptů použitelný zůstává, na obrázky ne.
+
 
 **Trial nemá kde zaplatit dřív než 3 dny před koncem.** Honza 29. 8.: je to
 v pořádku, dřív připomínat netřeba.

@@ -18,143 +18,67 @@
 
 ---
 
-## 8.1 + 8.3 CÍL VÝŽIVY: SYSTÉM O JEHO ZMĚNĚ NEVÍ A GENERÁTOR HO NEČTE
+## 8.4 TUKOVÝ CÍL: PENALTA TAM, KDE JE Z ČEHO VYBÍRAT
 
-Dva nálezy, jeden kořen. Sloučené záměrně — opravovat je odděleně nedává
-smysl:
+Návrh, ze kterého tenhle bod vychází, je hotový a zmergovaný:
+`docs/BMON_MAKRA_V_GENERATORU.md`. **Přečti si ho celý, než začneš** —
+tenhle bod je jeho poslední kapitola převedená na práci, ne nové zadání.
 
-- **8.1** — když se změní `body_metrics.calories_target`, nevznikne žádná
-  událost. Systém se to nedozví.
-- **8.3** — i kdyby se to dozvěděl a plán přegeneroval, generátor uložený
-  cíl výživy stejně nečte. Reakce by byla naprázdno.
+Krátce, co z něj platí a co se tím mění:
 
-Proto **Fáze A je kód (8.1), Fáze B je jen analýza a návrh (8.3)**. Mezi
-nimi zastav, ukaž diff Fáze A a počkej na „schvaluji". Do generátoru
-v téhle session nesaháš ani řádkou.
+- Uložený cíl výživy se do generátoru **dostane** (`structured_plan_json.targets`
+  se shoduje s `body_metrics` do gramu). Premisa původního 8.3 byla špatná.
+- Díra je ve **výběru jídel**. Změřeno na 140 dnech ve 20 aktivních plánech,
+  podíl skutečnost/cíl: bílkoviny 94 % (45 % dnů v ±10 %), sacharidy 79 %
+  (25 %), **tuky 148 % (10 %)**.
+- Tuk nemá dnes na cíl žádnou vazbu. Bílkoviny mají od 23. 8. soft ranking
+  (`lib/nutrition/cilBilkovinSlotu.js`), tuk a sacharidy nic.
+- **Tolerance u tuku není volba algoritmu — je to strop daný katalogem
+  a týdenním stropem opakování** (`MAX_OPAKOVANI_RECEPTU_TYDNE = 2`,
+  tvrdé vyloučení, `lib/plan/pestrostReceptu.js:25`).
 
----
+### Co se dělá
 
-### FÁZE A — kód: událost `target_changed` a migrace pravidel
+**1. `lib/nutrition/cilTukuSlotu.js`** — zrcadlo `cilBilkovinSlotu.js`,
+soft ranking podle podílu tuku na kaloriích, s obrácenou asymetrií vah:
+u tuku se penalizuje **přestřelení**, ne podstřelení. Žádný SQL filtr,
+žádná tvrdá podmínka. Penalta se přičte do `catalogPickRank()` s nižší
+váhou než bílkovinná, aby při konfliktu vyhrály bílkoviny.
 
-Kontext a měření: `docs/BMON_EKOSYSTEM.md`. Krátce: řetěz
-`ai_events` → `ai_trigger_rules` → `ai_tasks` → exekutory existuje, ale
-ze sedmi pravidel je zapnuté jediné (`user_registered → initial_plan`)
-a od 10. 3. 2026 se jich nikdo nedotkl. Systém reaguje na člověka přesně
-jednou za život.
-
-#### 1. Nová událost `target_changed`
-
-Vzniká, když se změní `body_metrics.calories_target`. Místo, kde se cíl
-mění, už existuje jedno: `buildCalorieTargetBodyMetricsPatch()` a jeho
-čtyři volající (viz komentář v `lib/calorieTargetIntegrity.js`). Napiš,
-kam přesně událost patří, ať nevzniká čtyřikrát nebo vůbec — a proč
-zrovna tam.
-
-`enqueueAIEvent()` v `lib/aiEvents.js` už používá `api/profile-preferences.js`
-pro `diet_changed` a `goal_changed` — drž se stejného vzoru.
-
-Do payloadu dej **starou i novou hodnotu cíle** a zdroj změny (registrace /
-ruční změna cíle / týdenní přepočet). Bez staré hodnoty se v bodě 4 ani
-ve Fázi B nedá postavit žádná podmínka — a dodělávat to podruhé je zbytečné.
-
-#### 2. Migrace (soubor, NEAPLIKUJ)
-
-Nové pravidlo `target_changed → adjust_plan` a zapnutí
-`missing_plan → initial_plan`. **Obě s `enabled = false`** — zapneme je
-ručně a po jednom, až ověřím chování. Migrace je připraví, nespouští.
-
-#### 3. Režim „navrhni, nezasahuj"
-
-`target_changed` NESMÍ v první verzi přepsat člověku jídelníček sám. Má
-vyrobit stav, který uvidí na profilu — to už umí banner ze 7.2a
-(`nesouladCile()` + `src/components/CalorieMismatchBanner.tsx`).
-
-Navrhni, jak to spojit, aby banner nevznikal z klientského porovnání, ale
-ze skutečné události. Pokud ti vyjde, že to bez zapnutého pravidla nejde,
-**napiš to a banner nech, jak je** — nepřepisuj ho do stavu, kdy do zapnutí
-pravidla nevykreslí nic. Dnes funguje a lidem se zobrazuje.
-
-#### 4. Co se stane s `conditions_json`
-
-U všech sedmi pravidel je `null`, takže pravidlo neumí říct „jen když".
-Napiš, co by `target_changed` potřebovalo za podmínku (např. rozdíl větší
-než X kcal), ale **NEIMPLEMENTUJ to** — je to vstup pro Fázi B, bod 5.
-
-#### Co ve Fázi A NEDĚLAT
-
-Nezapínej žádné pravidlo naostro. Nezapínej týdenní producer. Nesahej na
-`weight_stagnation`, `high_stress` ani `low_adherence` — bez
-`conditions_json` by reagovaly na šum. A nesahej na generátor.
-
-#### Konec Fáze A
-
-Celá testovací sada, diff, stop. Na Fázi B pokračuj až po „schvaluji" —
-**ve stejné session, bez `/clear`**, ať máš kontext z Fáze A.
-
----
-
-### FÁZE B — jen analýza a návrh: generátor nezná uložený cíl výživy
-
-Změřeno 31. 8. na přegenerování naostro. Jídelníček se srovnal na kalorie,
-ale ne na makra:
+**2. Měření zvlášť po `meal_type`, ne jeden průměr.** Pool nízkotučných
+receptů v pásmu slotu (cíl ±15 %) je změřený a je dramaticky nerovnoměrný:
 
 ```
-                 cíl (body_metrics)   nový plán      původní plán
-kcal                        2634        ~2685            2151
-bílkoviny                  189 g        156 g           163 g
-sacharidy                  285 g        252 g           147 g
-tuky                        82 g        117 g           106 g
+2634 kcal / 5 jídel     slotů/týden   pool tuk ≤28 %   nutné minimum
+oběd                          7             49                4
+večeře                        7             33                4
+snídaně                       7             11                4
+svačina                      14              8                7
 ```
 
-Sacharidy se srovnaly. **Tuky jsou o 43 % nad cílem, bílkoviny o 17 %
-pod ním.** U redukce jsou přitom bílkoviny to hlavní, co drží svalovou
-hmotu — tohle není kosmetika.
+U oběda a večeře má penalta na čem stavět. U svačiny je pool 6–8 proti
+potřebě 14 slotů týdně — a u šestijídlových plánů 7 proti 21 slotům, kde
+nutné minimum je 11, tedy **pod hranicí, ne na hraně** (dodatek v návrhu).
+Jeden zprůměrovaný výsledek by úspěch u oběda schoval za neúspěch
+u svačiny. Test i výstup měření musí být per `meal_type`.
 
-Příčina: **uložený cíl výživy se do generátoru vůbec nedostane.** Grep přes
-`lib/` a `api/` (mimo testy): `protein_target_g`, `carbs_target_g` a
-`fat_target_g` čte jen
+**3. Nesahej na sacharidy.** Návrh tvrdí, že jsou svázané s tukem přes
+sdílený energetický rozpočet a mohly by se zlepšit jako vedlejší efekt.
+Je to hypotéza, ne fakt. Ověří se **po** nasazení tukové penalty
+přeměřením, ne dalším kódem.
 
-```
-lib/registration/bodyMetricsRegistration.js   zápis při registraci
-lib/calorieTargetIntegrity.js                 zápis při změně cíle
-lib/weeklyWeightRecalc.js                     zápis při týdenním přepočtu
-lib/nutritionTargets.js:143-145               čtení uvnitř calculateNutritionTargets
-```
+**4. Perzistuj diagnostiku.** `trefaBilkovin` (`recipesCatalog.js:1525-1531`)
+se dnes počítá a zahazuje. Přidej `protein_trefa` i nový `fat_trefa` do
+`planOut._diagnostics` — bez toho se dopad téhle změny nedá změřit jinak
+než ručním dotazem do `structured_plan_json`.
 
-A `calculateNutritionTargets()` volá registrace, `deterministicFallback`,
-`calorieTargetIntegrity` a `weeklyWeightRecalc` — **ne `unifiedPlanPipeline`
-ani `planOrchestrator`**, tedy ne hlavní cestu, kterou plán vzniká.
+### Co v tomhle bodě NEDĚLAT
 
-Generátor přitom nějakou představu o bílkovinách má
-(`lib/nutrition/cilBilkovinSlotu.js`, `lib/plan/proteinHint.js`,
-`lib/recipesCatalog.js` ř. 1515 pracuje s `targets?.protein_g`) — jen si ji
-odvozuje sám, místo aby vzal to, co je uložené u člověka.
-
-**V téhle fázi nepíšeš kód.** Výstup je jeden dokument:
-`docs/BMON_MAKRA_V_GENERATORU.md`.
-
-1. **Popiš, odkud dnes generátor bere makra.** Celá cesta, soubor po
-   souboru, s čísly řádků: kde se v `planOrchestrator` / `unifiedPlanPipeline`
-   vezme `targets`, které doteče do `recipesCatalog.js:1515`. Tohle je
-   nejdůležitější část — bez ní je zbytek dohad.
-2. **Návrh, jak do té cesty dostat uložený cíl** z `body_metrics.*_target_g`
-   — a co se stane, když uložený cíl chybí. Starší účty ho nemají a fallback
-   nesmí být tichý.
-3. **Nedělej z maker tvrdou podmínku bez rozmyslu.** Katalog má omezený počet
-   receptů (viz `dieta_pod_kritickym_poctem` ve watchdogu); tvrdý filtr na tři
-   makra najednou může skončit tím, že se plán nesestaví vůbec. Navrhni, jak
-   to ošetřit — tolerance, priorita bílkovin před ostatními, nebo něco jiného.
-   Zdůvodni.
-4. **Jaká tolerance je poctivá** pro součet maker dne kolem cíle a proč
-   zrovna ta. Napiš i to, jestli jde z kódu zjistit, kolik receptů v katalogu
-   ji dnes vůbec umožňuje splnit. Když to bez produkce nejde, napiš, jaké
-   číslo ti mám změřit — změřím ho a dostaneš ho hotové.
-5. **Co z toho patří do `conditions_json`** u `target_changed` (navazuje na
-   Fázi A, bod 4): jak velká změna cíle vůbec stojí za reakci.
-
-Konec Fáze B = ten dokument a stop. Kód do generátoru přijde samostatnou
-session, až návrh projde. **Radši dobrý návrh než rychlá změna
-v generátoru** — je to nejcitlivější místo v celé appce.
+Nedovážej recepty do katalogu — to je samostatná práce a moje měření
+(potřeba: 21 nízkotučných svačin v pásmu, minimum 11). Nesahej na
+`conditions_json` ani na `lib/aiDecisionEngine.js`. Nezapínej žádné
+pravidlo. Nezaváděj tvrdý filtr na makra do SQL, za žádných okolností —
+`fetchCatalogCandidates()` nemá dostat `minProtein`/`maxFat` do `WHERE`.
 
 ---
 
@@ -225,6 +149,35 @@ a JetBrains Mono z Google Fonts, změna písma je samostatné rozhodnutí.
 ---
 
 ## Hotovo a nasazeno — NEŘEŠ ZNOVU
+
+- **8.1 + 8.3** cíl výživy: událost `target_changed` a návrh na makra
+  v generátoru — `83576d9` (PR #131) a `docs/BMON_MAKRA_V_GENERATORU.md`.
+  - **Fáze A (kód):** cíl se mění na PĚTI místech, ne čtyřech —
+    `lib/weeklyWeightRecalc.js` píše `calories_target` mimo
+    `buildCalorieTargetBodyMetricsPatch()`. Jedna funkce
+    `emitCalorieTargetChangedEvent()` volaná ze všech pěti až po úspěšném
+    zápisu; chybové větve `return`ují dřív. Payload nese starou i novou
+    hodnotu a zdroj změny. Migrace `20260901090000` aplikovaná
+    a orazítkovaná před mergem — ověřeno: `ai_trigger_rules` má 8 řádků,
+    `target_changed → adjust_plan` s `enabled = false`, zapnuté je pořád
+    jen `user_registered`.
+  - Ověřeno taky, že `enqueueAIEvent()` nevyhazuje výjimku (vrací
+    `{ ok: false }`), takže holé `await` nemůže shodit request na uložení
+    výšky ani váhy, a že `ai_events` nemá CHECK na `event_type`.
+  - `ruleMatches()` (`lib/aiDecisionEngine.js`) zná pevný seznam
+    `trigger_type` a `target_changed` mezi nimi NENÍ — i po zapnutí by
+    pravidlo zatím nic nevytvořilo. Vědomě mimo migraci.
+  - **Fáze B (návrh):** premisa původního 8.3 byla špatná — uložený cíl
+    se do generátoru dostane. `structured_plan_json.targets` se shoduje
+    s `body_metrics` do gramu (ověřeno na třech účtech). Díra je ve výběru
+    jídel. Změřeno na 140 dnech / 20 plánech: bílkoviny 94 % cíle
+    (45 % dnů v ±10 %), sacharidy 79 % (25 %), tuky 148 % (10 %).
+  - Katalog (791 aktivních receptů): medián podílu tuku 32–46 % proti cíli
+    27–28 %. Po zúžení na pásmo slotu (cíl ±15 %) je pool nízkotučných
+    u oběda 49 a večeře 33, ale u svačiny 6–8 proti 14 slotům týdně —
+    a u šestijídlových plánů 7 proti 21 slotům, kde nutné minimum je 11.
+  - Pokračování je bod **8.4**.
+
 
 - **8.2** přegenerování „beze změny tréninku" už tréninku nesebere jméno —
   `d62772c` (PR #129). Ověřeno na produkci 1. 9. na třech účtech

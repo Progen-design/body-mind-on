@@ -18,57 +18,90 @@
 
 ---
 
-## 8.5 GENERÁTOR RECEPTŮ NEZNÁ TUK A Z 94 % SELHÁVÁ
+## 8.5 FRONTA RECEPTŮ SI SAMA ZADÁVÁ NESPLNITELNÝ CÍL BÍLKOVIN
 
 Měření: `docs/BMON_ZDROJE_RECEPTU_2026-09-02.md`. **Přečti si ho, než
-začneš.** Krátce:
+začneš.** Spoonacular import je 13 dní mrtvý (všech 66 dotazů vyčerpaných),
+jediný živý zdroj je `llm_generated` — 118 receptů za 14 dní se 44–48 %
+kalorií z tuku proti cíli 27–28 %. Katalog se tím každý den zhoršuje.
 
-- Spoonacular import je 13 dní mrtvý — všech 66 dotazů vyčerpaných,
-  poslední běh 20. 8. Za 14 dní 0 nových receptů odtamtud.
-- Jediný živý zdroj je `llm_generated`: 118 receptů za 14 dní. A má
-  **44–48 % kalorií z tuku** proti cíli 27–28 %. Ručně naseedovaný
-  `coach_seed_v1` má 20–24 %.
-- **Katalog se tím každý den zhoršuje.** Pool nízkotučných svačin se
-  nezvětšuje, jen relativně zmenšuje.
-- Fronta u svačin: 224 požadováno, **13 vyrobeno (6 %)**. U večeří 5 %.
+Ale příčina nízké propustnosti fronty je jinde, než to na první pohled
+vypadalo, a je to důležitější než tuk.
 
-Tenhle bod je PŘED bodem 8.4 v pořadí, i když má vyšší číslo. Nemá cenu
-ladit řazení podle tuku nad katalogem, který si sám denně přilévá.
+### Změřeno: zabijákem je `protein_hint`, ne kalorické pásmo
+
+```
+                    s dietou   bez diety
+s protein_hint         17 %       20 %
+bez protein_hint       69 %       73 %
+```
+
+Dieta nehraje roli. `protein_hint` sráží úspěšnost 3,5×. A rozpad je
+skoro dokonale monotónní podle požadovaného podílu bílkovin — svačiny,
+střed pásma 270 kcal:
+
+```
+podíl 0,20  →   7/15   (47 %)
+podíl 0,25  →  10/15   (67 %)
+podíl 0,30  →   1/30   ( 3 %)
+podíl 0,35  →   1/35   ( 3 %)
+podíl 0,40  →   0/40   ( 0 %)
+podíl 0,45  →   0/30   ( 0 %)
+podíl 0,50  →   0/30   ( 0 %)
+podíl 0,55  →   0/40   ( 0 %)
+```
+
+Podíl 0,55 na svačině o 270 kcal je **37 g bílkovin ve svačině** — to není
+recept, to je proteinový nápoj. Objednáno 40, vyrobeno 0.
+
+Hintů jsou přitom dva druhy a chová se to opačně:
+- **surovinové** (`drubez`, `ryby`, `vejce`, `mlecne`, `lusteniny`) —
+  úspěšnost vysoká, tyhle jsou v pořádku;
+- **`{"podil": X}`** — nad 0,30 prakticky nulová.
+
+### Kořen: samozesilující smyčka
+
+`resolveMealsFromCatalog` při nevyřešeném slotu objedná recept
+s podílem, který se mu nepodařilo najít — `objednejZNevyresenehoSlotu({
+minPodilBilkovin: cilovyPodilBilkovin })`, `lib/recipesCatalog.js:1309-1316`.
+Nic se nevyrobí → díra zůstane → příště se objedná znovu, s ještě vyšším
+podílem → selže hůř. Fronta si sama eskaluje zadání, dokud není
+nesplnitelné.
 
 ### Co udělat
 
-**1. Nejdřív zjisti, proč fronta padá — měř, nehádej.** Nejčastější zápis
-v `posledni_chyba` je „model vrátil dávku, ale žádný recept neprošel
-validací" (43 řádků, 194 nevyrobených). Konkrétní zamítnutí ukazují, že
-model míjí kalorické pásmo slotu:
-
-```
-125 kcal mimo pásmo 170–370 pro slot svacina
-380 kcal mimo pásmo 170–370 pro slot svacina
-294 kcal mimo pásmo 300–520 pro slot snidane
-```
-
-Najdi, kde se to pásmo do promptu dostává (nebo nedostává), a napiš,
-proč ho model nedodržuje. **Popiš dřív, než začneš měnit prompt** —
-u svačin je pásmo 170–370, tedy poměr max/min jen 2,2; je možné, že
-zadání je splnitelné a chyba je jinde než v modelu.
-
-**2. Tukový cíl do generování receptů.** Obdoba `protein_hint`:
-nový sloupec v `recipe_generation_queue` (migrace jako soubor,
-NEAPLIKUJ), promítnutí do promptu a validace stejně jako u kalorií.
-Bez toho každý další den zhoršuje katalog.
-
-**3. Nesahej na `cilTukuSlotu.js`** — to je bod 8.4 a je pořád platný
-pro oběd a večeři, kde je pool 33–49. Tenhle bod je o katalogu, ne
-o výběru.
+1. **Zastropovat `{"podil": X}`.** Změřená hranice použitelnosti je mezi
+   0,25 a 0,30. Navrhni strop (a zdůvodni ho z těch čísel), nad který
+   `objednejZNevyresenehoSlotu` podíl nepošle. Nad stropem se má buď
+   poslat surovinový hint, nebo žádný — radši recept bez bílkovinového
+   cíle než žádný recept.
+2. **Rozbít smyčku.** Napiš, jak zabránit tomu, aby opakované selhání
+   zvyšovalo požadavek. Nevyrobený požadavek není důkaz, že je potřeba
+   žádat víc.
+3. **Rozšířit kalorické pásmo u `demand` řádků.** Mimo START režim
+   škáluje `clampedPortionMultiplier` **0,5–2,0×**
+   (`lib/nutrition/portionScaling.js:146-155`), takže recept je
+   použitelný, pokud jeho kcal leží v `[cíl/2, cíl×2]`. Svačinové řádky
+   mají pásmo 170–370, ačkoli použitelné je zhruba 100–1000. Komentář na
+   `recipesCatalog.js:1321` už u logu poptávky říká, že se pásmo odvozuje
+   z rozsahu 0,5–2,0× — fronta to nedělá. Srovnej to.
+   **Pásmo nerušit** — recept o 125 kcal se do slotu 306 kcal nedostane
+   ani při 2×, takže úplně bez pásma by přibývaly recepty, které nikdo
+   nepoužije. Jde o rozšíření na to, co škálování unese, ne o zrušení.
+4. **Změř dopad na vzorku, ne odhadem.** Po změně nech doběhnout jeden
+   cyklus `generate-recipes` a vypiš úspěšnost proti dnešním 33 %
+   u `zdroj = 'demand'`.
 
 ### Co v tomhle bodě NEDĚLAT
 
-Neobjednávej recepty do fronty — dokud projde 6 %, je to plýtvání
-tokeny. Nesahej na Spoonacular import: `maxFat` sice ve whitelistu
-(`lib/spoonacular/importQueryRotation.js:163`) je a fungoval by bez
-změny kódu, ale pool je vyčerpaný a přidat filtr do prázdné studny dá
-míň, ne víc. Zakládání nových dotazů je moje práce, ne tvoje.
+**Nepřidávej `fat_hint`.** To bylo v předchozí verzi tohohle zadání a je
+to špatně: dokud jedno tvrdé kritérium sráží propustnost na 17 %, druhé
+ji srazí na nulu. Tuk se do generování receptů dostane až po tomhle bodě,
+a podle stejného měření — se stropem, ne jako neomezený požadavek.
+
+Nesahej na surovinové hinty, ty fungují. Nesahej na `cilTukuSlotu.js`
+(bod 8.4). Neobjednávej nic do fronty. Nesahej na Spoonacular import —
+zakládání dotazů je moje práce.
 
 ---
 

@@ -18,90 +18,86 @@
 
 ---
 
-## 8.5 FRONTA RECEPTŮ SI SAMA ZADÁVÁ NESPLNITELNÝ CÍL BÍLKOVIN
+## 8.6 GENERÁTOR OPAKUJE SUROVINY A NEDĚLÁ OBRÁZKY
 
-Měření: `docs/BMON_ZDROJE_RECEPTU_2026-09-02.md`. **Přečti si ho, než
-začneš.** Spoonacular import je 13 dní mrtvý (všech 66 dotazů vyčerpaných),
-jediný živý zdroj je `llm_generated` — 118 receptů za 14 dní se 44–48 %
-kalorií z tuku proti cíli 27–28 %. Katalog se tím každý den zhoršuje.
+Dvě části, obě nezávislé. Dělej je v tomhle pořadí, ke každé vlastní test.
 
-Ale příčina nízké propustnosti fronty je jinde, než to na první pohled
-vypadalo, a je to důležitější než tuk.
+Změřeno 2. 9. 2026 po nasazení 8.5.
 
-### Změřeno: zabijákem je `protein_hint`, ne kalorické pásmo
+### a) Čtyři z pěti receptů se zahodí kvůli shodě surovin
 
-```
-                    s dietou   bez diety
-s protein_hint         17 %       20 %
-bez protein_hint       69 %       73 %
-```
-
-Dieta nehraje roli. `protein_hint` sráží úspěšnost 3,5×. A rozpad je
-skoro dokonale monotónní podle požadovaného podílu bílkovin — svačiny,
-střed pásma 270 kcal:
+Běh generátoru naostro: zapsán 1 recept, 4 zahozeny, všechny čtyři
+s důvodem `prunik_surovin` (Jaccard ≥ 0,7, `DEDUP_JACCARD_THRESHOLD`
+v `lib/recipeGenerator.js:51`). Zamítnuté byly:
 
 ```
-podíl 0,20  →   7/15   (47 %)
-podíl 0,25  →  10/15   (67 %)
-podíl 0,30  →   1/30   ( 3 %)
-podíl 0,35  →   1/35   ( 3 %)
-podíl 0,40  →   0/40   ( 0 %)
-podíl 0,45  →   0/30   ( 0 %)
-podíl 0,50  →   0/30   ( 0 %)
-podíl 0,55  →   0/40   ( 0 %)
+Banánový toast s arašídovým máslem a chia semínky   proti: Banánové plátky s arašídovým máslem a chia
+Čokoládový chia pudink s banánem a arašídovým máslem proti: Čokoládový chia pudink s banánem
+Avokádový toast s kozím sýrem a semínky              proti: Rychlá avokádová pomazánka
+Celozrnný toast s avokádem a banánem                 proti: Avokádový toast s banánem
 ```
 
-Podíl 0,55 na svačině o 270 kcal je **37 g bílkovin ve svačině** — to není
-recept, to je proteinový nápoj. Objednáno 40, vyrobeno 0.
+**Práh 0,7 je správně a NEZVYŠUJ ho.** Dělá přesně to, co má — zahazuje
+pátou variantu banánového toastu. Problém je, že model neví, co v katalogu
+už je, takže ho vymýšlí znovu. Platíme za dávku, ze které použijeme pětinu.
 
-Hintů jsou přitom dva druhy a chová se to opačně:
-- **surovinové** (`drubez`, `ryby`, `vejce`, `mlecne`, `lusteniny`) —
-  úspěšnost vysoká, tyhle jsou v pořádku;
-- **`{"podil": X}`** — nad 0,30 prakticky nulová.
+Uprav prompt tak, aby model dostal seznam surovin/kombinací, které pro
+daný slot a dietu v katalogu **už jsou**, a měl zadáno vymyslet jiné.
+Rozmysli a napiš dřív, než začneš:
 
-### Kořen: samozesilující smyčka
+- Kolik položek do promptu vejít může, aniž by to nafouklo cenu (dnes
+  0,096 USD za běh) — celý katalog tam nedáš.
+- Podle čeho vybrat, které existující recepty ukázat (stejný `meal_type`
+  a dieta je minimum; možná stačí seznam hlavních surovin, ne názvů).
+- Jestli má smysl posílat i to, co se právě zahodilo, a nechat model
+  opravit dávku, nebo je levnější napravit až příští běh.
 
-`resolveMealsFromCatalog` při nevyřešeném slotu objedná recept
-s podílem, který se mu nepodařilo najít — `objednejZNevyresenehoSlotu({
-minPodilBilkovin: cilovyPodilBilkovin })`, `lib/recipesCatalog.js:1309-1316`.
-Nic se nevyrobí → díra zůstane → příště se objedná znovu, s ještě vyšším
-podílem → selže hůř. Fronta si sama eskaluje zadání, dokud není
-nesplnitelné.
+Měřitelný cíl: podíl zahozených pro `prunik_surovin` klesne. Změřím ho
+po nasazení proti dnešnímu stavu (4 z 5).
 
-### Co udělat
+### b) 99 % jídel v plánech nemá obrázek
 
-1. **Zastropovat `{"podil": X}`.** Změřená hranice použitelnosti je mezi
-   0,25 a 0,30. Navrhni strop (a zdůvodni ho z těch čísel), nad který
-   `objednejZNevyresenehoSlotu` podíl nepošle. Nad stropem se má buď
-   poslat surovinový hint, nebo žádný — radši recept bez bílkovinového
-   cíle než žádný recept.
-2. **Rozbít smyčku.** Napiš, jak zabránit tomu, aby opakované selhání
-   zvyšovalo požadavek. Nevyrobený požadavek není důkaz, že je potřeba
-   žádat víc.
-3. **Rozšířit kalorické pásmo u `demand` řádků.** Mimo START režim
-   škáluje `clampedPortionMultiplier` **0,5–2,0×**
-   (`lib/nutrition/portionScaling.js:146-155`), takže recept je
-   použitelný, pokud jeho kcal leží v `[cíl/2, cíl×2]`. Svačinové řádky
-   mají pásmo 170–370, ačkoli použitelné je zhruba 100–1000. Komentář na
-   `recipesCatalog.js:1321` už u logu poptávky říká, že se pásmo odvozuje
-   z rozsahu 0,5–2,0× — fronta to nedělá. Srovnej to.
-   **Pásmo nerušit** — recept o 125 kcal se do slotu 306 kcal nedostane
-   ani při 2×, takže úplně bez pásma by přibývaly recepty, které nikdo
-   nepoužije. Jde o rozšíření na to, co škálování unese, ne o zrušení.
-4. **Změř dopad na vzorku, ne odhadem.** Po změně nech doběhnout jeden
-   cyklus `generate-recipes` a vypiš úspěšnost proti dnešním 33 %
-   u `zdroj = 'demand'`.
+```
+zdroj             receptů   s obrázkem
+llm_generated        445         0
+coach_seed_v1        150         0
+simple_start          23         0
+spoonacular          159       159
+meal_cache            30        30
+```
+
+V aktivních plánech: **695 ze 700 jídel bez obrázku.** `recipeGenerator.js`
+ani `recipeGeneratorRun.js` s `image_url` vůbec nepracují, takže každý
+nový recept je bez obrázku — a Spoonacular import, který obrázky přinášel,
+je od 20. 8. vyčerpaný.
+
+Honzovo rozhodnutí: **dohledávat obrázky přes Spoonacular podle názvu**
+(metoda B), ne je generovat. Klíč je obnovený a ověřený (2. 9. 2026:
+HTTP 200, kvóta 48,99/50, jeden `complexSearch` stojí 1,01 bodu).
+
+`lib/mealEnrichment.js` už hledání podle názvu umí a `image_url` z něj
+bere. Chybí dávkový průchod přes katalog.
+
+Zadání:
+
+1. Nový cron nebo skript, který projde `recipes_catalog` s
+   `active = true and (image_url is null or image_url = '')` a doplní
+   `image_url`. Nesahej na nic jiného v tom řádku.
+2. **Kvóta je 50 bodů denně a je sdílená s importem receptů.**
+   `lib/spoonacularQuotaGate.js` existuje — použij ho, nepiš vlastní
+   počítadlo. Nech si rezervu, ať jeden běh nesebere celý denní limit.
+3. **Nepodstrkuj obrázek, který neodpovídá.** Když hledání nevrátí
+   dostatečně jistou shodu, nech `image_url` prázdné. Prázdné místo je
+   lepší než fotka cizího jídla — u appky o jídle to platí dvojnásob.
+   Napiš, jaký práh jistoty používáš a proč.
+4. Zaloguj počty: kolik receptů prošlo, kolik dostalo obrázek, kolik
+   skončilo bez shody, kolik bodů kvóty to stálo.
 
 ### Co v tomhle bodě NEDĚLAT
 
-**Nepřidávej `fat_hint`.** To bylo v předchozí verzi tohohle zadání a je
-to špatně: dokud jedno tvrdé kritérium sráží propustnost na 17 %, druhé
-ji srazí na nulu. Tuk se do generování receptů dostane až po tomhle bodě,
-a podle stejného měření — se stropem, ne jako neomezený požadavek.
-
-Nesahej na surovinové hinty, ty fungují. Nesahej na `cilTukuSlotu.js`
-(bod 8.4). Neobjednávej nic do fronty. Nesahej na Spoonacular import —
-zakládání dotazů je moje práce.
+Nezvyšuj `DEDUP_JACCARD_THRESHOLD`. Nezvyšuj denní strop generátoru
+(20 receptů/den je Honzovo rozhodnutí). Nesahej na Spoonacular import
+receptů — obrázky jsou jiná cesta než import. Negeneruj obrázky modelem.
 
 ---
 
@@ -236,6 +232,28 @@ a JetBrains Mono z Google Fonts, změna písma je samostatné rozhodnutí.
 ---
 
 ## Hotovo a nasazeno — NEŘEŠ ZNOVU
+- **8.5** fronta receptů si už nezadává nesplnitelný cíl bílkovin —
+  `dade0b6` (PR #135). Změřeno, že `protein_hint` srážel úspěšnost 3,5×
+  (17–20 % vs 69–73 %, dieta bez vlivu) a rozpad byl skokový: podíl 0,25 →
+  67 %, 0,30 → 3 %, 0,40 až 0,55 → **0 ze 145**. `MAX_PODIL_OBJEDNAVKY = 0.25`
+  se aplikuje centrálně v `objednejRecepty()`, čímž se přetrhla i
+  samozesilující smyčka (nevyrobený požadavek se dřív bral jako důvod žádat
+  víc). `pasmoPoptavky()` rozšiřuje kalorické pásmo demand objednávky na to,
+  co unese škálování porce (0,5–2,0×), s kvantizací po 300 kcal —
+  změřeno, že krok 100 by frontu roztříštil na 9–17 pásem místo jednoho,
+  krok 300 na 4–7.
+  - Ověřeno před mergem: `{"podil": X}` je výhradně v `demand` řádcích
+    (89/89), surovinové hinty výhradně v `seed` (17/17), a ani
+    `fill_recipe_queue_from_demand`, ani `kanonicke_pasmo_slotu`
+    `protein_hint` nenastavuje (`pg_get_functiondef`).
+  - Fronta vyčištěna: 64 zaseknutých `failed` řádků byly ve skutečnosti
+    jen 11 objednávek lišících se eskalujícím podílem. 5 obnoveno na
+    `pending` s podílem 0,25 (33 receptů), 59 označeno jako sloučené.
+  - Po nasazení spuštěno naostro: žádné zamítnutí kvůli bílkovinám ani
+    kvůli kalorickému pásmu. Narazilo se na jiné brzdy → bod 8.6.
+    Denní strop 20 receptů (`RECIPE_GEN_MAX_PER_DAY` ve Vercelu) zůstává
+    vědomě, Honza 2. 9.: „to bude stačit".
+
 
 - **8.1 + 8.3** cíl výživy: událost `target_changed` a návrh na makra
   v generátoru — `83576d9` (PR #131) a `docs/BMON_MAKRA_V_GENERATORU.md`.

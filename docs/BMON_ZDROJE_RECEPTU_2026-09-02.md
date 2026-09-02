@@ -159,3 +159,68 @@ první krok je přestat vyrábět tučné.**
 Měřeno dotazy do produkce, ne z kódu: stav `spoonacular_import_queries`,
 `recipes_catalog` po `source`, `recipe_generation_queue` po `stav`
 a `posledni_chyba`. Whitelist a filtry v bodě 1 jsou z kódu.
+
+---
+
+## 6. Oprava: zabijákem fronty není kalorické pásmo, ale `protein_hint`
+
+Doměřeno 2. 9. 2026 po dopsání bodu 4. **Bod 4 výš obvinil kalorické
+pásmo na základě viditelných chybových hlášek („125 kcal mimo pásmo
+170–370"). To byl špatný závěr z malého vzorku** — ty hlášky jsou vidět,
+protože jsou konkrétní, ale drtivá většina selhání má hlášku obecnou
+(„model vrátil dávku, ale žádný recept neprošel validací", 43 řádků,
+194 nevyrobených). Rozhoduje něco jiného.
+
+```
+                    s dietou   bez diety
+s protein_hint         17 %       20 %
+bez protein_hint       69 %       73 %
+```
+
+Dieta nehraje roli (69 vs 73, 17 vs 20). `protein_hint` sráží úspěšnost
+3,5×.
+
+### Rozpad podle požadovaného podílu bílkovin
+
+Svačiny, střed kalorického pásma 270 kcal:
+
+```
+podíl 0,20  →   7/15   (47 %)
+podíl 0,25  →  10/15   (67 %)
+podíl 0,30  →   1/30   ( 3 %)
+podíl 0,35  →   1/35   ( 3 %)
+podíl 0,40  →   0/40   ( 0 %)
+podíl 0,45  →   0/30   ( 0 %)
+podíl 0,50  →   0/30   ( 0 %)
+podíl 0,55  →   0/40   ( 0 %)
+```
+
+Hranice použitelnosti leží mezi 0,25 a 0,30. Nad ní model nedodá nic —
+podíl 0,55 na 270 kcal znamená 37 g bílkovin ve svačině.
+
+Surovinové hinty (`drubez`, `ryby`, `vejce`, `mlecne`, `lusteniny`) se
+chovají opačně a fungují dobře. Problém je výhradně `{"podil": X}`.
+
+### Samozesilující smyčka
+
+`resolveMealsFromCatalog` při nevyřešeném slotu objedná recept s podílem,
+který se mu nepodařilo najít (`objednejZNevyresenehoSlotu({
+minPodilBilkovin: cilovyPodilBilkovin })`, `lib/recipesCatalog.js:1309-1316`).
+Nic se nevyrobí, díra zůstane, příště se objedná znovu a s vyšším podílem.
+Fronta si eskaluje zadání, dokud není nesplnitelné. U svačin bylo takhle
+objednáno 145 receptů s podílem ≥ 0,40 a vyrobeno **nula**.
+
+### Co z toho plyne pro doporučení v bodě 5
+
+Bod 5 navrhoval přidat tukový cíl do generování receptů jako krok 2.
+**To je teď špatně a mění se to:** dokud jedno tvrdé kritérium sráží
+propustnost na 17 %, druhé ji srazí na nulu. Pořadí je:
+
+1. zastropovat `{"podil": X}` na změřené hranici a rozbít smyčku,
+2. rozšířit kalorické pásmo `demand` řádků na to, co škálování unese
+   (`clampedPortionMultiplier` mimo START je 0,5–2,0×, takže použitelné
+   je `[cíl/2, cíl×2]` — u svačin zhruba 100–1000, ne 170–370). Pásmo
+   nerušit: recept o 125 kcal se do slotu 306 kcal nedostane ani při 2×.
+3. teprve pak tukový cíl, a taky se stropem.
+
+Zadání je v `docs/DALSI_KROK.md`, bod 8.5.

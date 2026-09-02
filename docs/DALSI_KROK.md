@@ -18,6 +18,60 @@
 
 ---
 
+## 8.5 GENERÁTOR RECEPTŮ NEZNÁ TUK A Z 94 % SELHÁVÁ
+
+Měření: `docs/BMON_ZDROJE_RECEPTU_2026-09-02.md`. **Přečti si ho, než
+začneš.** Krátce:
+
+- Spoonacular import je 13 dní mrtvý — všech 66 dotazů vyčerpaných,
+  poslední běh 20. 8. Za 14 dní 0 nových receptů odtamtud.
+- Jediný živý zdroj je `llm_generated`: 118 receptů za 14 dní. A má
+  **44–48 % kalorií z tuku** proti cíli 27–28 %. Ručně naseedovaný
+  `coach_seed_v1` má 20–24 %.
+- **Katalog se tím každý den zhoršuje.** Pool nízkotučných svačin se
+  nezvětšuje, jen relativně zmenšuje.
+- Fronta u svačin: 224 požadováno, **13 vyrobeno (6 %)**. U večeří 5 %.
+
+Tenhle bod je PŘED bodem 8.4 v pořadí, i když má vyšší číslo. Nemá cenu
+ladit řazení podle tuku nad katalogem, který si sám denně přilévá.
+
+### Co udělat
+
+**1. Nejdřív zjisti, proč fronta padá — měř, nehádej.** Nejčastější zápis
+v `posledni_chyba` je „model vrátil dávku, ale žádný recept neprošel
+validací" (43 řádků, 194 nevyrobených). Konkrétní zamítnutí ukazují, že
+model míjí kalorické pásmo slotu:
+
+```
+125 kcal mimo pásmo 170–370 pro slot svacina
+380 kcal mimo pásmo 170–370 pro slot svacina
+294 kcal mimo pásmo 300–520 pro slot snidane
+```
+
+Najdi, kde se to pásmo do promptu dostává (nebo nedostává), a napiš,
+proč ho model nedodržuje. **Popiš dřív, než začneš měnit prompt** —
+u svačin je pásmo 170–370, tedy poměr max/min jen 2,2; je možné, že
+zadání je splnitelné a chyba je jinde než v modelu.
+
+**2. Tukový cíl do generování receptů.** Obdoba `protein_hint`:
+nový sloupec v `recipe_generation_queue` (migrace jako soubor,
+NEAPLIKUJ), promítnutí do promptu a validace stejně jako u kalorií.
+Bez toho každý další den zhoršuje katalog.
+
+**3. Nesahej na `cilTukuSlotu.js`** — to je bod 8.4 a je pořád platný
+pro oběd a večeři, kde je pool 33–49. Tenhle bod je o katalogu, ne
+o výběru.
+
+### Co v tomhle bodě NEDĚLAT
+
+Neobjednávej recepty do fronty — dokud projde 6 %, je to plýtvání
+tokeny. Nesahej na Spoonacular import: `maxFat` sice ve whitelistu
+(`lib/spoonacular/importQueryRotation.js:163`) je a fungoval by bez
+změny kódu, ale pool je vyčerpaný a přidat filtr do prázdné studny dá
+míň, ne víc. Zakládání nových dotazů je moje práce, ne tvoje.
+
+---
+
 ## 8.4 TUKOVÝ CÍL: PENALTA TAM, KDE JE Z ČEHO VYBÍRAT
 
 Návrh, ze kterého tenhle bod vychází, je hotový a zmergovaný:

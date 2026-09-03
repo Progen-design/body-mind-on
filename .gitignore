@@ -34,3 +34,8 @@ apps/*/node_modules/
 # Plosne *.sql vyse by tise vyradilo kazdou novou migraci. Existujici jsou
 # v gitu jen proto, ze se kdysi pridaly silou. Vyjimka tomu zabrani.
 !supabase/migrations/*.sql
+# Odlozene migrace (napsane, ale zatim vedome NEAPLIKOVANE, cekaji na
+# samostatnou kontrolu — viz docs/DALSI_KROK.md). Bez tyhle vyjimky by
+# plosne *.sql vyse soubor v podadresari tise vyradilo z gitu a "NEMAZ,
+# jen odloz" by po prvnim pushi znamenalo "smazano".
+!supabase/migrations/_odlozene/*.sql

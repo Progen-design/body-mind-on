@@ -18,67 +18,119 @@
 
 ---
 
-## 8.4 TUKOVÝ CÍL: PENALTA TAM, KDE JE Z ČEHO VYBÍRAT
+## 8.7 CENA A TRIAL NEJSOU V REGISTRACI NIKDE VIDĚT — BLOCKER SPUŠTĚNÍ
 
-Návrh, ze kterého tenhle bod vychází, je hotový a zmergovaný:
-`docs/BMON_MAKRA_V_GENERATORU.md`. **Přečti si ho celý, než začneš** —
-tenhle bod je jeho poslední kapitola převedená na práci, ne nové zadání.
+Změřeno 3. 9. 2026. Hledání `599` a `1499` napříč všemi `.tsx` v `src/`
+nevrátilo **nic**. Registrace má pět kroků (`REGISTRATION_STEPS`,
+`src/components/registrace/StartRegistrace.tsx`, názvy v `volby.ts`)
+a v žádném z nich se cena ani délka trialu neobjeví.
 
-Krátce, co z něj platí a co se tím mění:
-
-- Uložený cíl výživy se do generátoru **dostane** (`structured_plan_json.targets`
-  se shoduje s `body_metrics` do gramu). Premisa původního 8.3 byla špatná.
-- Díra je ve **výběru jídel**. Změřeno na 140 dnech ve 20 aktivních plánech,
-  podíl skutečnost/cíl: bílkoviny 94 % (45 % dnů v ±10 %), sacharidy 79 %
-  (25 %), **tuky 148 % (10 %)**.
-- Tuk nemá dnes na cíl žádnou vazbu. Bílkoviny mají od 23. 8. soft ranking
-  (`lib/nutrition/cilBilkovinSlotu.js`), tuk a sacharidy nic.
-- **Tolerance u tuku není volba algoritmu — je to strop daný katalogem
-  a týdenním stropem opakování** (`MAX_OPAKOVANI_RECEPTU_TYDNE = 2`,
-  tvrdé vyloučení, `lib/plan/pestrostReceptu.js:25`).
-
-### Co se dělá
-
-**1. `lib/nutrition/cilTukuSlotu.js`** — zrcadlo `cilBilkovinSlotu.js`,
-soft ranking podle podílu tuku na kaloriích, s obrácenou asymetrií vah:
-u tuku se penalizuje **přestřelení**, ne podstřelení. Žádný SQL filtr,
-žádná tvrdá podmínka. Penalta se přičte do `catalogPickRank()` s nižší
-váhou než bílkovinná, aby při konfliktu vyhrály bílkoviny.
-
-**2. Měření zvlášť po `meal_type`, ne jeden průměr.** Pool nízkotučných
-receptů v pásmu slotu (cíl ±15 %) je změřený a je dramaticky nerovnoměrný:
+Na webu (`bodyandmindon.cz`) přitom stojí, ověřeno průchodem:
 
 ```
-2634 kcal / 5 jídel     slotů/týden   pool tuk ≤28 %   nutné minimum
-oběd                          7             49                4
-večeře                        7             33                4
-snídaně                       7             11                4
-svačina                      14              8                7
+START      599 Kč / měsíc
+ON CLUB  1 499 Kč / měsíc
+"7 dní zdarma · platíš až 8. den · zrušíš kdykoli"
+"První platba: 8. den"
 ```
 
-U oběda a večeře má penalta na čem stavět. U svačiny je pool 6–8 proti
-potřebě 14 slotů týdně — a u šestijídlových plánů 7 proti 21 slotům, kde
-nutné minimum je 11, tedy **pod hranicí, ne na hraně** (dodatek v návrhu).
-Jeden zprůměrovaný výsledek by úspěch u oběda schoval za neúspěch
-u svačiny. Test i výstup měření musí být per `meal_type`.
+Člověk tedy vidí cenu na webu, projde pěti kroky registrace, kde už ji
+nikde nemá, a založí si předplatné. To je u placené služby se zkušební
+dobou věc, kterou je potřeba mít vyřešenou dřív, než přijde první platící
+člověk — ne kvůli hezčímu UX, ale proto, že si zákazník musí být jistý,
+co a kdy zaplatí.
 
-**3. Nesahej na sacharidy.** Návrh tvrdí, že jsou svázané s tukem přes
-sdílený energetický rozpočet a mohly by se zlepšit jako vedlejší efekt.
-Je to hypotéza, ne fakt. Ověří se **po** nasazení tukové penalty
-přeměřením, ne dalším kódem.
+### Co udělat
 
-**4. Perzistuj diagnostiku.** `trefaBilkovin` (`recipesCatalog.js:1525-1531`)
-se dnes počítá a zahazuje. Přidej `protein_trefa` i nový `fat_trefa` do
-`planOut._diagnostics` — bez toho se dopad téhle změny nedá změřit jinak
-než ručním dotazem do `structured_plan_json`.
+1. **Do posledního kroku registrace (`krok5`) doplň shrnutí:** co člověk
+   dostává, kolik to stojí, kdy proběhne první platba a že může zrušit.
+   Text ber doslova z webu, ať se ty dvě čísla nikdy nerozejdou —
+   599 Kč / měsíc, 7 dní zdarma, první platba 8. den, zrušíš kdykoli.
+
+2. **Ceny NEPIŠ natvrdo do komponenty.** Vznikl by třetí zdroj pravdy
+   (web, Stripe, appka) a jednou se rozejdou. Najdi, odkud appka bere
+   cenu pro Stripe checkout, a použij tentýž zdroj. Jestli žádný sdílený
+   zdroj neexistuje, **napiš to a navrhni ho** — jeden modul s cenami,
+   ze kterého čte appka i checkout. Nezakládej ho, dokud to neschválím.
+
+3. **Zkontroluj, co přesně říká Stripe.** Sedí délka trialu v kódu
+   (`trial_period_days` nebo ekvivalent) s tím, co slibuje web?
+   Jestli ne, je to nález a nahlas ho — neopravuj to potichu.
+
+4. **Text piš podle `bmon-copy`** (dovednost v repu), ne vlastním
+   stylem. Stručně, bez omáčky, bez vykřičníků.
 
 ### Co v tomhle bodě NEDĚLAT
 
-Nedovážej recepty do katalogu — to je samostatná práce a moje měření
-(potřeba: 21 nízkotučných svačin v pásmu, minimum 11). Nesahej na
-`conditions_json` ani na `lib/aiDecisionEngine.js`. Nezapínej žádné
-pravidlo. Nezaváděj tvrdý filtr na makra do SQL, za žádných okolností —
-`fetchCatalogCandidates()` nemá dostat `minProtein`/`maxFat` do `WHERE`.
+Neměň ceny ani délku trialu — jen je zobraz. Nesahej na Stripe
+konfiguraci. Nedělej redesign registrace, jen doplň, co chybí.
+
+---
+
+## 8.8 TUKOVÝ CÍL DO VÝROBY RECEPTŮ — JEDINÁ CESTA, JAK SROVNAT MAKRA
+
+**Tenhle bod jsem sám dvakrát odložil. Teď na něj došlo a je potřeba
+vědět proč, ať se to nezruší potřetí.**
+
+### Proč teď a ne dřív
+
+Odkládal jsem ho, protože přidat druhé tvrdé kritérium do fronty, která
+tehdy pouštěla 17 %, by ji srazilo na nulu. To už neplatí:
+
+- 8.5 zastropovalo `{"podil": X}` na 0,25 a rozbilo eskalující smyčku,
+- 8.6a dalo modelu do promptu kombinace surovin, které v katalogu už jsou,
+- **měřeno 3. 9.: běh zapsal 10 receptů proti dřívějšímu 1**, brzdou je
+  teď denní strop 20, ne zamítání.
+
+Fronta má prostor unést další kritérium.
+
+### Proč to nejde vyřešit řazením
+
+8.4 nasadilo tukovou penaltu do výběru a změřilo, že nestačí:
+
+```
+napříč 20 plány, 140 dnů    tuky 149 % cíle, v ±10 % jen 11 ze 140 dnů
+r09 (bílkoviny na 108 %)    tuk 132 % → 124 %
+r02 (bílkoviny na 67 %)     tuk 154 % → 154 %
+```
+
+Rozpad po slotech u r02: oběd **58,2 %** kalorií z tuku proti cíli 28 %.
+Řazení nevybere recept, který v katalogu není — a medián receptu má
+32–46 % kalorií z tuku. **Katalog je systematicky tučnější, než na co
+appka cílí, a sám se v tom zhoršuje:** `llm_generated` (jediný živý zdroj,
++20 receptů denně) má 44–48 % kalorií z tuku, ručně naseedovaný
+`coach_seed_v1` má 20–24 %.
+
+Dokud generátor cíl na tuk nezná, každý den katalog zhoršuje.
+
+### Co udělat
+
+1. **Tukový cíl do objednávky a do promptu.** Obdoba `protein_hint`:
+   nový sloupec v `recipe_generation_queue` (**migrace jako soubor,
+   NEAPLIKUJ**), promítnutí do promptu, validace stejně jako u kalorií.
+
+2. **SE STROPEM, od začátku.** Tohle je poučení z 8.5, kde neomezený
+   podíl bílkovin frontu zabil: podíl 0,25 → 67 % úspěšnost, 0,30 → 3 %,
+   0,40 a výš → 0 ze 145. Navrhni strop pro tuk a **zdůvodni ho** —
+   u tuku je to horní mez („nejvýš tolik"), ne dolní, takže se chová
+   opačně a nesmyslně nízký strop je stejně nesplnitelný jako byl vysoký
+   u bílkovin. Cíl je 27–28 % kalorií; kolik je rozumné žádat po modelu,
+   aby to ještě dodal?
+
+3. **Nezahazuj recept jen kvůli tuku.** Kalorie a bílkoviny už zamítají;
+   třetí tvrdá podmínka je přesně to, co srazilo propustnost naposled.
+   Navrhni, jestli má být tuk tvrdá validace, nebo jen instrukce
+   v promptu bez zamítnutí — a rozhodni to z čísel z 8.5, ne od oka.
+
+4. **Změř dopad na vzorku.** Po nasazení nech doběhnout jeden běh
+   a vypiš podíl tuku u nově vyrobených receptů proti dnešním 44–48 %.
+
+### Co v tomhle bodě NEDĚLAT
+
+Nezvyšuj denní strop 20 (Honzovo rozhodnutí, „to bude stačit").
+Nesahej na `cilTukuSlotu.js` z 8.4 — ten je nasazený a funguje, jen
+nemá z čeho vybírat. Nesahej na sacharidy. Neřeš obrázky (Honza 3. 9.:
+„zatím řešit nebudeme").
 
 ---
 
@@ -149,6 +201,26 @@ a JetBrains Mono z Google Fonts, změna písma je samostatné rozhodnutí.
 ---
 
 ## Hotovo a nasazeno — NEŘEŠ ZNOVU
+- **8.4** tuk má konečně vazbu na cíl výživy — `1d7243e` (PR #138).
+  `lib/nutrition/cilTukuSlotu.js` je zrcadlo bílkovinné penalty
+  s OBRÁCENOU asymetrií: penalizuje se přestřelení, ne podstřelení.
+  Ověřeno spuštěním — při cíli 0,28 a slotu 700 kcal stojí stejná odchylka
+  0,10 celkem **14 bodů při podstřelení a 42 při přestřelení**.
+  - `bilkoviny podstřelení 1,00 / přestřelení 0,35`,
+    `tuk podstřelení 0,20 / přestřelení 0,60` — váha tuku je pod
+    bílkovinnou, takže při konfliktu vyhrají bílkoviny.
+  - Tukový dluh dne padne na 0, jakmile den cíl přetáhne (ověřeno:
+    1200 kcal / 0 g → 0). Zbytek dne pak tlačí na nejnižší tuk v katalogu.
+  - `protein_trefa` i nové `fat_trefa` se persistují do
+    `planOut._diagnostics` — do té doby se `protein_trefa` počítal
+    a zahazoval.
+  - **Změřeno po nasazení a nestačí to.** Přegenerování dvou účtů:
+    r09 (bílkoviny na 108 %) tuk 132 → 124 %; r02 (bílkoviny na 67 %)
+    tuk 154 → 154 %. Rozpad po slotech u r02: oběd 58,2 % kalorií z tuku
+    proti cíli 28 %. Kde je bílkovinový dluh, přebije ho — záměrně,
+    protože bílkoviny mají vyšší váhu. Řazení nevybere recept, který
+    v katalogu není. Pokračování je bod **8.8** (tuk do výroby receptů).
+
 - **8.6a** generátor už ví, jaké kombinace surovin v katalogu jsou.
   Změřeno naostro: z 5 receptů se 4 zahodily pro `prunik_surovin`, všechny
   proti položkám, které v katalogu **už byly**. Práh 0,7 zůstává beze změny

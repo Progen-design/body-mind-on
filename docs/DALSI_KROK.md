@@ -18,55 +18,6 @@
 
 ---
 
-## 8.7 CENA A TRIAL NEJSOU V REGISTRACI NIKDE VIDĚT — BLOCKER SPUŠTĚNÍ
-
-Změřeno 3. 9. 2026. Hledání `599` a `1499` napříč všemi `.tsx` v `src/`
-nevrátilo **nic**. Registrace má pět kroků (`REGISTRATION_STEPS`,
-`src/components/registrace/StartRegistrace.tsx`, názvy v `volby.ts`)
-a v žádném z nich se cena ani délka trialu neobjeví.
-
-Na webu (`bodyandmindon.cz`) přitom stojí, ověřeno průchodem:
-
-```
-START      599 Kč / měsíc
-ON CLUB  1 499 Kč / měsíc
-"7 dní zdarma · platíš až 8. den · zrušíš kdykoli"
-"První platba: 8. den"
-```
-
-Člověk tedy vidí cenu na webu, projde pěti kroky registrace, kde už ji
-nikde nemá, a založí si předplatné. To je u placené služby se zkušební
-dobou věc, kterou je potřeba mít vyřešenou dřív, než přijde první platící
-člověk — ne kvůli hezčímu UX, ale proto, že si zákazník musí být jistý,
-co a kdy zaplatí.
-
-### Co udělat
-
-1. **Do posledního kroku registrace (`krok5`) doplň shrnutí:** co člověk
-   dostává, kolik to stojí, kdy proběhne první platba a že může zrušit.
-   Text ber doslova z webu, ať se ty dvě čísla nikdy nerozejdou —
-   599 Kč / měsíc, 7 dní zdarma, první platba 8. den, zrušíš kdykoli.
-
-2. **Ceny NEPIŠ natvrdo do komponenty.** Vznikl by třetí zdroj pravdy
-   (web, Stripe, appka) a jednou se rozejdou. Najdi, odkud appka bere
-   cenu pro Stripe checkout, a použij tentýž zdroj. Jestli žádný sdílený
-   zdroj neexistuje, **napiš to a navrhni ho** — jeden modul s cenami,
-   ze kterého čte appka i checkout. Nezakládej ho, dokud to neschválím.
-
-3. **Zkontroluj, co přesně říká Stripe.** Sedí délka trialu v kódu
-   (`trial_period_days` nebo ekvivalent) s tím, co slibuje web?
-   Jestli ne, je to nález a nahlas ho — neopravuj to potichu.
-
-4. **Text piš podle `bmon-copy`** (dovednost v repu), ne vlastním
-   stylem. Stručně, bez omáčky, bez vykřičníků.
-
-### Co v tomhle bodě NEDĚLAT
-
-Neměň ceny ani délku trialu — jen je zobraz. Nesahej na Stripe
-konfiguraci. Nedělej redesign registrace, jen doplň, co chybí.
-
----
-
 ## 8.8 TUKOVÝ CÍL DO VÝROBY RECEPTŮ — JEDINÁ CESTA, JAK SROVNAT MAKRA
 
 **Tenhle bod jsem sám dvakrát odložil. Teď na něj došlo a je potřeba
@@ -201,6 +152,28 @@ a JetBrains Mono z Google Fonts, změna písma je samostatné rozhodnutí.
 ---
 
 ## Hotovo a nasazeno — NEŘEŠ ZNOVU
+- **8.7** cena a délka trialu jsou konečně vidět v registraci — poslední
+  krok teď ukazuje: *„7 dní zdarma, pak 599 Kč / měsíc. První platba
+  8. den. Zrušit můžeš kdykoli v profilu."* Doslova to, co slibuje web
+  (ověřeno průchodem přes Chrome 3. 9.).
+  - Před opravou: hledání `599` a `1499` napříč všemi `.tsx` v `src/`
+    nevrátilo **nic**. Člověk viděl cenu na webu, prošel pěti kroky
+    registrace bez ní a založil si předplatné.
+  - Ceny se nepíšou natvrdo — krok5 čte `TRIAL_DAYS`
+    a `START_VARIANT_PRICE_LABEL` z `lib/pricingConstants.js`, stejného
+    zdroje jako `TrialPaywallCard`, paywall a lifecycle e-maily.
+  - **Nález navíc, opravený rovnou:** `TRIAL_PERIOD_DAYS`
+    (`lib/trialEligibility.js`, jde do Stripe `trial_period_days`) byla
+    vlastní konstanta `= 7` s komentářem „jediné místo pravdy" — a ten
+    samý komentář měl i `pricingConstants.js`. Dvě nezávislé konstanty,
+    obě 7, obě se tvářily jako jediný zdroj. Kdyby se rozešly, appka by
+    slibovala jinou zkušební dobu, než jakou Stripe nastaví. Teď
+    `TRIAL_PERIOD_DAYS = TRIAL_DAYS`, jeden zdroj.
+  - **Zbývá na Honzovi:** `START_PRICE_CZK = 599` je zrcadlo ceny,
+    skutečnou částku určuje Stripe Price objekt z env
+    `STRIPE_PRICE_START_MONTHLY`. Ověřit v Stripe dashboardu, že sedí —
+    odsud to změřit nejde.
+
 - **8.4** tuk má konečně vazbu na cíl výživy — `1d7243e` (PR #138).
   `lib/nutrition/cilTukuSlotu.js` je zrcadlo bílkovinné penalty
   s OBRÁCENOU asymetrií: penalizuje se přestřelení, ne podstřelení.

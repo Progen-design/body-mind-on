@@ -16,6 +16,12 @@ import {
   EMAIL_TAKEN_MESSAGE_CS,
   EMAIL_CHECK_FAILED_MESSAGE_CS
 } from '@lib/registration/checkEmailAvailableClient.js';
+// Stejný zdroj jako TrialPaywallCard a lifecycle e-maily — jediné místo
+// pravdy pro cenu a délku trialu (lib/pricingConstants.js). Ceny se sem
+// nepíšou natvrdo, ať appka a checkout nikdy nemají jiné číslo.
+// `START_VARIANT_PRICE_LABEL` je formát se stejnými mezerami kolem lomítka,
+// jaké má web ("599 Kč / měsíc") — bod 8.7 chce text doslova z webu.
+import { TRIAL_DAYS, START_VARIANT_PRICE_LABEL } from '@lib/pricing';
 import { useKontrolaEmailu } from '../../hooks/useKontrolaEmailu';
 import { Krokovac, Pole, Vicenasobny, Vyber, Popisek, Chyba } from './prvky';
 import { AKTIVITA, CIL, CHYTRA_VAHA, DIETA, DNY, FREKVENCE, KROKY, POHLAVI, STRES, TYP_PRACE } from './volby';
@@ -382,6 +388,16 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
 
   const krok5 = (
     <div className="space-y-5">
+      {/* docs/DALSI_KROK.md 8.7 — cena a trial nebyly v registraci vidět nikde. */}
+      <div className="p-3.5 rounded-2xl bg-slate-900/70 border border-slate-800">
+        <p className="text-xs font-semibold text-slate-200 mb-1.5">Než založíš účet</p>
+        <p className="text-xs text-slate-400">
+          Dostaneš osobní jídelníček a tréninkový plán, které se každý týden upravují podle tvého vývoje.
+        </p>
+        <p className="text-xs text-slate-400 mt-2">
+          {TRIAL_DAYS} dní zdarma, pak {START_VARIANT_PRICE_LABEL}. První platba {TRIAL_DAYS + 1}. den. Zrušit můžeš kdykoli v profilu.
+        </p>
+      </div>
       {doporucene.length > 0 && (
         <div className="p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex gap-2.5">
           <Sparkles className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />

@@ -86,6 +86,26 @@ než abys sáhl po drůbeži.
 
 Bez `hlavni_bilkovina` v zadání vybíráš surovinu volně jako dosud.
 
+## Tuk — strop, ne cíl
+
+Zadání může nést `max_podil_tuku_pct` (třeba `30`) a `max_tuku_g_na_100_kcal`
+(přepočet na gramy pro stejnou hodnotu) — **kolik nejvýš** smí mít recept
+kalorií z tuku. Je to horní mez, ne cíl: recept s NIŽŠÍM podílem tuku je
+v pořádku a lepší, ne chyba.
+
+Drž tuk nízko hlavně přes výběr surovin — libové maso místo tučného, méně
+oleje a másla, mléčné výrobky s nižším obsahem tuku, tam kde je ve slovníku
+dostupná varianta. Nepřidávej tuk navíc jen kvůli chuti, když recept vyjde
+i bez něj.
+
+Tenhle recept se kvůli tuku NEZAHAZUJE — je to zadání, se kterým máš pracovat,
+ne podmínka, kterou musíš zaručit doslova. Zkus se mu ale co nejvíc přiblížit,
+zvlášť když je zadaná i `hlavni_bilkovina` z tučnějšího zdroje (třeba hovězí):
+vyber libovější kus a menší přílohovou tučnost, ne obojí tučné najednou.
+
+Bez `max_podil_tuku_pct` v zadání tuk neřešíš navíc, jen ho neženeš záměrně
+nahoru.
+
 ## Tón názvů a postupu
 
 Název česky, konkrétně, bez superlativů: „Čočka na kyselo s cibulí“, ne

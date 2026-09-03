@@ -18,72 +18,211 @@
 
 ---
 
-## 8.8 TUKOVÝ CÍL DO VÝROBY RECEPTŮ — JEDINÁ CESTA, JAK SROVNAT MAKRA
+## 8.9 „NEZNÁMÁ SUROVINA", KTERÁ NENÍ NEZNÁMÁ — CHYBA JE V JEDNOTCE
 
-**Tenhle bod jsem sám dvakrát odložil. Teď na něj došlo a je potřeba
-vědět proč, ať se to nezruší potřetí.**
+**Tohle je oprava mojí vlastní chybné diagnózy. Dvakrát jsem tvrdil, že
+generátor zahazuje recepty kvůli surovinám, které nejsou ve slovníku.
+Není to pravda a měření to vyvrací.**
 
-### Proč teď a ne dřív
+### Co se skutečně děje
 
-Odkládal jsem ho, protože přidat druhé tvrdé kritérium do fronty, která
-tehdy pouštěla 17 %, by ji srazilo na nulu. To už neplatí:
+`compute_nutrition_for_ingredients` označí surovinu za nedohledanou,
+když neplatí `name_cs is not null AND gramu is not null`. Do
+`ingredients_unmatched` se ale v obou případech zapíše **název suroviny**.
+Když selže převod jednotky, chyba obviní surovinu.
 
-- 8.5 zastropovalo `{"podil": X}` na 0,25 a rozbilo eskalující smyčku,
-- 8.6a dalo modelu do promptu kombinace surovin, které v katalogu už jsou,
-- **měřeno 3. 9.: běh zapsal 10 receptů proti dřívějšímu 1**, brzdou je
-  teď denní strop 20, ne zamítání.
-
-Fronta má prostor unést další kritérium.
-
-### Proč to nejde vyřešit řazením
-
-8.4 nasadilo tukovou penaltu do výběru a změřilo, že nestačí:
+Změřeno 3. 9. na produkci, `losos` (ve slovníku je: `name_cs='losos'`,
+208 kcal/100 g, `reference_cs`):
 
 ```
-napříč 20 plány, 140 dnů    tuky 149 % cíle, v ±10 % jen 11 ze 140 dnů
-r09 (bílkoviny na 108 %)    tuk 132 % → 124 %
-r02 (bílkoviny na 67 %)     tuk 154 % → 154 %
+jednotka   ingredients_unmatched   kcal
+g          []                      2.1
+ml         []                      —
+ks         []                      312.0
+''         []                      312.0
+kus        ["losos"]               null
+kg         ["losos"]               null
+gram       ["losos"]               null
+dkg        ["losos"]               null
+dl         ["losos"]               null
+porce      ["losos"]               null
+balení     ["losos"]               null
+konzerva   ["losos"]               null
 ```
 
-Rozpad po slotech u r02: oběd **58,2 %** kalorií z tuku proti cíli 28 %.
-Řazení nevybere recept, který v katalogu není — a medián receptu má
-32–46 % kalorií z tuku. **Katalog je systematicky tučnější, než na co
-appka cílí, a sám se v tom zhoršuje:** `llm_generated` (jediný živý zdroj,
-+20 receptů denně) má 44–48 % kalorií z tuku, ručně naseedovaný
-`coach_seed_v1` má 20–24 %.
+Odtud je i hláška ve frontě `posledni_chyba = "losos, losos, losos"`
+(položka 1704, 3. 9.) a `"losos, krevety, losos, krevety"` (31. 8.).
+Losos i krevety jsou ve slovníku. Padlo to na jednotce.
 
-Dokud generátor cíl na tuk nezná, každý den katalog zhoršuje.
+Doprovodná měření:
+
+- `unit_conversions` má 76 obecných převodů. Chybí mezi nimi `kg`,
+  `gram`, `gramů`, `dkg`, `dl`, `kus`. Přitom `kgs`, `l` a `ml` tam jsou.
+- `ingredients_nutrition` má 376 řádků, z toho 68 bez `name_cs` — samé
+  anglické zbytky po Spoonaculuaru (`salmon`, `olive oil`, `quinoa`).
+  `nactiPovoleneSuroviny()` je filtruje pryč, takže povolený seznam má
+  308 jmen. To je v pořádku, ne chyba.
+- Suroviny, o kterých byla řeč — maliny, borůvky, rukola, krevety, cizrna,
+  ricotta, ostružiny, fíky, tahini, hummus, tofu, tempeh — **jsou ve
+  slovníku všechny**, se správnými dietními příznaky. Do slovníku se
+  nepřidává nic.
+- Všech 2 749 gramáží + 208 mililitrů v přijatých `llm_generated`
+  receptech používá jen `g` a `ml`. Jiná jednotka = dávka spadla. To je
+  survivorship bias, ne důkaz, že model jiné jednotky nepíše.
+
+### Proč to bolí dvakrát
+
+Zahozený recept není to nejhorší. `nedohledane` jde do dalšího pokusu jako
+`tyhle_suroviny_neznam: ["losos"]` — **modelu se tím zakáže surovina,
+která byla celou dobu v pořádku.** Fronta si sama zužuje prostor a učí se
+špatnou lekci. U rybích a mořských slotů je to přímý důvod, proč se
+nedaří dotáhnout objednávku.
 
 ### Co udělat
 
-1. **Tukový cíl do objednávky a do promptu.** Obdoba `protein_hint`:
-   nový sloupec v `recipe_generation_queue` (**migrace jako soubor,
-   NEAPLIKUJ**), promítnutí do promptu, validace stejně jako u kalorií.
+1. **Rozdělit chybu v SQL.** Nová verze `compute_nutrition_for_ingredients`
+   (**migrace jako soubor, NEAPLIKUJ ji**) vrací navíc
+   `units_unmatched text[]` — suroviny, které slovník zná, ale u kterých
+   selhal převod jednotky. `ingredients_unmatched` zůstane jen pro
+   skutečně neznámé názvy. `complete` se chová stejně jako dnes.
 
-2. **SE STROPEM, od začátku.** Tohle je poučení z 8.5, kde neomezený
-   podíl bílkovin frontu zabil: podíl 0,25 → 67 % úspěšnost, 0,30 → 3 %,
-   0,40 a výš → 0 ze 145. Navrhni strop pro tuk a **zdůvodni ho** —
-   u tuku je to horní mez („nejvýš tolik"), ne dolní, takže se chová
-   opačně a nesmyslně nízký strop je stejně nesplnitelný jako byl vysoký
-   u bílkovin. Cíl je 27–28 % kalorií; kolik je rozumné žádat po modelu,
-   aby to ještě dodal?
+2. **`zapisRecept()` ty dvě věci nesmí míchat.** Nový důvod
+   `neznama_jednotka` vedle `nutrice_neuplna`. **Do `nedohledane`
+   (a tedy do `tyhle_suroviny_neznam`) smí jít výhradně
+   `ingredients_unmatched`.** Neznámá jednotka patří do vlastního pole
+   promptu, ne mezi zakázané suroviny.
 
-3. **Nezahazuj recept jen kvůli tuku.** Kalorie a bílkoviny už zamítají;
-   třetí tvrdá podmínka je přesně to, co srazilo propustnost naposled.
-   Navrhni, jestli má být tuk tvrdá validace, nebo jen instrukce
-   v promptu bez zamítnutí — a rozhodni to z čísel z 8.5, ne od oka.
+3. **Uzavřít svět jednotek v promptu.** Seznam surovin je uzavřený, seznam
+   jednotek otevřený — to je ta asymetrie, která tohle způsobila.
+   Do `buildGeneratorInput()` přidat `povolene_jednotky: ["g", "ml"]`
+   a do `prompts/recipe-generate.md` větu, že jiná jednotka je chyba.
+   Data ukazují, že model to už dnes v 100 % úspěšných případů dodržuje.
 
-4. **Změř dopad na vzorku.** Po nasazení nech doběhnout jeden běh
-   a vypiš podíl tuku u nově vyrobených receptů proti dnešním 44–48 %.
+4. **Doplnit deterministické převody** (`unit_conversions`, obecné, tedy
+   `ingredient_match is null`) — migrace jako soubor:
+   `kg` = 1000, `dkg` = 10, `dl` = 100, `gram` / `gramy` / `gramů` = 1,
+   `mililitr` / `mililitrů` = 1, `kus` / `kusy` / `kusů` → **stejné
+   chování jako prázdná jednotka a `ks`**, tedy dohledat gramáž kusu
+   v `ingredient_match`; obecný fallback pro `kus` NEPŘIDÁVAT.
+
+5. **Test** na to, že známá surovina v neznámé jednotce se neobjeví
+   v `tyhle_suroviny_neznam`. To je jádro celé opravy.
 
 ### Co v tomhle bodě NEDĚLAT
 
-Nezvyšuj denní strop 20 (Honzovo rozhodnutí, „to bude stačit").
-Nesahej na `cilTukuSlotu.js` z 8.4 — ten je nasazený a funguje, jen
-nemá z čeho vybírat. Nesahej na sacharidy. Neřeš obrázky (Honza 3. 9.:
-„zatím řešit nebudeme").
+- **Nepřidávej suroviny do `ingredients_nutrition`.** Jsou tam. Změřeno.
+- **Nepřidávej obecný převod pro `kus`, `porce`, `balení`, `steak`,
+  `šálek`, `konzerva`.** Jeden kus lososa a jeden stroužek česneku nejsou
+  stejná gramáž. Obecná hodnota by nezvýšila průchodnost, jen by tiše
+  zfalšovala makra — a makra jsou přesně to, co se teď snažíme srovnat.
+  Správná cesta je uzavřený seznam jednotek (bod 3).
+- **Nepouštěj se do `is_pantry_ingredient`.** Zjištění k tomu je v textu
+  níž a je to samostatné rozhodnutí, ne součást téhle opravy.
 
----
+## 8.10 SYSTÉM SÁM OBJEDNAL RYBU NA VEGETARIÁNSKÝ OBĚD — KVŮLI RYBÍZU
+
+**Tohle je skutečná příčina spadlých položek fronty. 8.9 (jednotky) byla
+vedle: `unit` má v JSON schématu `enum ['g','ml']`, model jinou jednotku
+vrátit nemůže. Diagnóza z 8.9 vznikla ze syntetické sondy, ne z pádu.**
+
+### Měření, které to uzavírá
+
+```
+recipe_generation_queue 1704   meal_type obed   diet_tags ["vegetarian"]
+ai_runs (4 běhy)               hlavni_bilkovina "ryby"
+                               vraceno 3, zapsano 0
+posledni_chyba                 "losos, losos, losos"
+```
+
+Totéž u 1627 a 1705 — obě `["vegetarian"]`, obě `hlavni_bilkovina "ryby"`.
+
+Model neselhal. **Dostal pokyn udělat rybu na vegetariánskou objednávku
+a poslechl.** Pak ji povolený seznam (správně) odmítl.
+
+### Řetěz
+
+1. `surovinyProDietu` vyhodí z povoleného seznamu všechny ryby. Správně.
+2. `bilkovinaProPolozku` se ptá `dostupne('ryby')`, což je
+   `surovinySkupiny(povolene, 'ryby').length > 0`.
+3. `surovinySkupiny` → `skupinaSuroviny` → vzor skupiny `ryby` obsahuje
+   **`/ryb/i`**.
+4. V povoleném vegetariánském seznamu zůstal **`černý rybíz`**
+   (`is_vegan = true`, 1,4 g bílkovin). `/ryb/i` ho chytí.
+5. `dostupne('ryby')` → `true`. Rotace objedná „ryby a mořské plody".
+6. Adresář pro model (`hlavni_bilkovina_suroviny`) obsahuje jedinou
+   položku: `černý rybíz`.
+7. Model udělá lososa. `surovinyMimoSeznam` ho zahodí. Položka `failed`.
+
+```
+vegetarian   failed  46   ← největší jednotlivá ztráta ve frontě
+(bez diety)  failed  26
+gluten_free  failed  22
+vegan        failed   0
+```
+
+Vegan má nulu, protože veganský seznam je užší a `černý rybíz` v něm sice
+je — ale veganské položky se zatím z fronty odbavily dřív. Tahle chyba
+čeká i na ně.
+
+### Co udělat
+
+1. **`rybíz` mezi `NENI_ZDROJ_PORCE`.** Ten seznam přesně na tohle je —
+   „vývar je ochucovadlo, ne porce masa". Rybíz je ovoce, ne ryba. Je to
+   jeden řádek a `skupinaSuroviny` ho konzultuje jako první, takže to
+   spraví klasifikaci všude naráz (rotace, adresář, `receptSplnujeBilkovinu`).
+
+2. **Ale nespoléhat na to.** Shoda jménem je slabý zdroj pravdy — dnes
+   rybíz, zítra „sójová omáčka" jako zdroj bílkovin. Skupina se nesmí
+   nabídnout, když ji dieta vylučuje, bez ohledu na to, co chytí vzor.
+   Explicitní mapa, aplikovaná PŘED `dostupne()`:
+
+   - `vegan` vylučuje `drubez`, `ryby`, `hovezi`, `veprove`, `vejce`, `mlecne`
+   - `vegetarian` vylučuje `drubez`, `ryby`, `hovezi`, `veprove`
+
+   Neznámý tag (`gluten_free`, `low_carb`, `lactose_free`) nevylučuje nic —
+   stejná zásada jako u `surovinyProDietu`: co neumíme ověřit, netvrdíme.
+
+3. **Vegetariánská objednávka musí mít kam jít.** `CILOVE_BILKOVINY` je
+   `['hovezi','veprove','ryby','lusteniny','drubez']` — čtyři z pěti jsou
+   maso. Po vyloučení podle bodu 2 zbude vegetariánovi jediný kandidát
+   (`lusteniny`) a veganovi taky. Doplň `vejce` a `mlecne` — ale tak, aby
+   **objednávka bez diety se chovala přesně jako dnes**, bit po bitu.
+   Rozšiřuj až tehdy, když mapa z bodu 2 nějakou skupinu vyloučila.
+   (U veganské položky `vejce` a `mlecne` vypadnou samy podle bodu 2.)
+
+4. **Dieta do promptu jako tvrdé pravidlo.** `diet_tags` se dnes posílají
+   jako holé pole a `prompts/recipe-generate.md` o nich neříká nic.
+   Doplň větu: u `vegetarian` žádné maso, ryby ani mořské plody; u `vegan`
+   navíc žádné mléčné výrobky ani vejce; recept, který to poruší, spadne
+   stejně jako recept se surovinou mimo seznam.
+
+5. **Migrace jako soubor, NEAPLIKUJ ji** — dva doopravdy chybějící názvy
+   z `posledni_chyba`:
+   - `červená paprika` → řádek do `ingredient_aliases`
+     (`canonical_normalized = 'paprika'`; `paprika` ve slovníku je,
+     alias `papriky → paprika` už existuje). NE nový nutriční řádek.
+   - `římský kmín` → koření, patří do `pantry_ingredients`, ne do
+     `ingredients_nutrition`.
+
+6. **Testy** — tohle je ten bod, kvůli kterému to celé je:
+   - `skupinaSuroviny('černý rybíz')` není `'ryby'`
+   - vegetariánská položka nikdy nedostane `hlavni_bilkovina` z masa ani ryb,
+     ani když povolený seznam obsahuje surovinu, kterou vzor skupiny chytí
+   - veganská položka nedostane `vejce` ani `mlecne`
+   - objednávka **bez** diety dostane přesně tutéž skupinu jako před změnou
+     (regresní test na dnešní chování — pořadí `CILOVE_BILKOVINY` je zároveň
+     pravidlo pro remízu, nesmí se rozsypat)
+   - `gluten_free` / `low_carb` / `lactose_free` nevylučují žádnou skupinu
+
+### Co v tomhle bodě NEDĚLAT
+
+- **Nevracej spadlé položky fronty do `pending`.** To je zásah do dat na
+  produkci, dělá ho Honzův druhý Claude po nasazení.
+- **Neměň `surovinyProDietu`.** Ta funguje správně — je to jediná část
+  řetězu, která se zachovala, jak měla.
+- **Nesahej na `protein_hint` ani `fat_hint`.** Explicitní hint z fronty
+  má i nadále přednost před rotací; mapa z bodu 2 se na něj nevztahuje.
+- Nepřidávej nic do `ingredients_nutrition` kromě toho, co říká bod 5.
 
 ## 7.1 APPKA A WEB NESDÍLEJÍ JEDINOU HODNOTU — A APPKA NEMÁ TOKENY
 
@@ -152,6 +291,9 @@ a JetBrains Mono z Google Fonts, změna písma je samostatné rozhodnutí.
 ---
 
 ## Hotovo a nasazeno — NEŘEŠ ZNOVU
+- **8.8** tukový strop `fat_hint` (default 0,30, CHECK `(0,1]`) je ve
+  frontě i v promptu — jako zadání, ne jako důvod k zahození. Nasazeno
+  3. 9., `fc0cac2`. Účinek na nově vyrobených receptech se teprve měří.
 - **8.7** cena a délka trialu jsou konečně vidět v registraci — poslední
   krok teď ukazuje: *„7 dní zdarma, pak 599 Kč / měsíc. První platba
   8. den. Zrušit můžeš kdykoli v profilu."* Doslova to, co slibuje web

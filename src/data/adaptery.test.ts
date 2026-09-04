@@ -92,10 +92,20 @@ test('nesouladCile mlčí bez plánu nebo bez cíle — nemá co porovnat', () =
 });
 
 test('vekZDataNarozeni spočítá celé roky, ne jen rozdíl letopočtů', () => {
+  // `vekZDataNarozeni` porovnává LOKÁLNÍ složky data, takže i vstup se musí
+  // sestavit lokálně. `toISOString()` převádí do UTC a mezi půlnocí a druhou
+  // ranní (CEST = UTC+2) posunul datum o den zpět — z „narozeniny zítra" se
+  // stalo „narozeniny dnes" a test spadl na 40 místo 39. Spolehlivě, ne
+  // náhodně: změřeno 5. 9. 2026 v 01:23. Funkce byla v pořádku, chyba tady.
   const pred40lety = new Date();
   pred40lety.setFullYear(pred40lety.getFullYear() - 40);
   pred40lety.setDate(pred40lety.getDate() + 1); // narozeniny až zítra — letos ještě nebyly
-  assert.equal(vekZDataNarozeni(pred40lety.toISOString().slice(0, 10)), 39);
+  const lokalneISO = [
+    pred40lety.getFullYear(),
+    String(pred40lety.getMonth() + 1).padStart(2, '0'),
+    String(pred40lety.getDate()).padStart(2, '0'),
+  ].join('-');
+  assert.equal(vekZDataNarozeni(lokalneISO), 39);
 });
 
 test('vekZDataNarozeni vrátí null pro chybějící nebo nesmyslné datum', () => {

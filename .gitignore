@@ -39,3 +39,4 @@ apps/*/node_modules/
 # plosne *.sql vyse soubor v podadresari tise vyradilo z gitu a "NEMAZ,
 # jen odloz" by po prvnim pushi znamenalo "smazano".
 !supabase/migrations/_odlozene/*.sql
+.vercel

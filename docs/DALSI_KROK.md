@@ -290,6 +290,124 @@ Stejná třída jako „červená paprika" v 8.10.
   recepty 49,6 % kalorií z tuku proti 45 % před ním) — ale řeší se to
   v 8.11 na straně výběru, ne tady.
 
+## 8.13 TUKOVÝ STROP JAKO TVRDÁ VALIDACE — PROMPT NESTAČÍ
+
+**Tři měření za sebou. 8.8 (tuk jen jako zadání do promptu) nezabrala
+ani jednou.**
+
+```
+3. 9.  před 8.8    45,0 % kalorií z tuku
+4. 9.  po 8.8      49,6 %
+4. 9.  druhý běh   47,5 %   (1 recept z 12 pod 35 %)
+```
+
+Bílkovinový hint, který se v `zapisRecept()` TVRDĚ validuje
+(`receptSplnujePodil`, důvod `pod_cilem_bilkovin`), přitom drží
+33 % spolehlivě. Rozdíl mezi tím, co se kontroluje, a tím, co se jen
+napíše do promptu.
+
+### Rozložení, ze kterého se musí vyjít
+
+110 receptů `llm_generated` za 7 dní:
+
+```
+medián            51,4 % kalorií z tuku
+do 30 %           15 ze 110   (14 %)
+do 35 %           21          (19 %)
+do 40 %           33          (30 %)
+do 45 %           43          (39 %)
+```
+
+**Tvrdý strop na 0,30 by zahodil 86 % dávky a frontu zabil** — přesně
+to riziko, kvůli kterému se 8.8 dělala jen jako prompt. Strop musí být
+tam, kde je splnitelný, a utahovat se až podle měření.
+
+### Co udělat
+
+1. **Tvrdá validace v `zapisRecept()`**, zrcadlo bílkovinové kontroly:
+   recept nad stropem se nezapíše, důvod `nad_stropem_tuku`, detail
+   nese skutečný podíl i strop. Kontroluje se až z
+   `compute_nutrition_for_ingredients`, model makra nevrací.
+
+2. **Strop ber z `fat_hint` položky fronty**, ne z konstanty —
+   sloupec už existuje (8.8, default 0,30). **Ale nepoužívej ho
+   syrový:** validační strop = `max(fat_hint, MIN_TVRDY_STROP_TUKU)`,
+   kde `MIN_TVRDY_STROP_TUKU = 0,45`. Důvod je v rozložení výš: při
+   0,30 projde 14 % dávky, při 0,45 projde 39 %. Chceme tlak, ne
+   zaseknutou frontu.
+
+3. **Důvod do dalšího pokusu.** `nad_stropem_tuku` patří do
+   `nedohledane`? NE — nejsou to názvy surovin. Vlastní pole promptu,
+   stejně jako `tyhle_jednotky_nepouzivej` z 8.9: konkrétní číslo
+   („minule 52 %, strop je 45 %"), ne obecné „dej míň tuku".
+
+4. **Počítadlo do `ai_runs.result`** — `zahozeno_nad_stropem_tuku`,
+   obdoba `zahozeno_pod_cilem_bilkovin`. Bez něj nepůjde poznat, jestli
+   se strop dá utáhnout, nebo už škrtí.
+
+5. **Testy:** recept nad stropem se nezapíše; přesně na stropu projde;
+   `fat_hint` pod 0,45 se zvedne na 0,45; chybějící makra recept
+   nezahodí (stejné pravidlo jako u bílkovin — chybějící hodnota není
+   porušení).
+
+### Co v tomhle bodě NEDĚLAT
+
+- **Nesnižuj `MIN_TVRDY_STROP_TUKU` pod 0,45**, dokud měření neukáže,
+  že fronta má rezervu. Utahuje se po nasazení, ne dopředu.
+- **Nesahej na `catalogPickRank` ani na 8.11.** Tohle je výroba,
+  8.11 je výběr; měří se odděleně.
+- **Neměň `RECIPE_GEN_MAX_PER_DAY`.**
+
+## 8.14 PROFIL: TÝDEN MUSÍ BÝT VIDĚT CELÝ, NÁKUPNÍ SEZNAM SE MÁ SBALIT
+
+**Zadání od Honzy po prohlídce profilu 5. 9. Tři věci ve dvou
+komponentách, žádná databáze.**
+
+### 1. Týdenní rozpis tréninků ukazuje jen tréninkové dny
+
+`src/data/adaptery.ts` (kolem ř. 336) mapuje na `workouts` jen dny,
+které mají trénink. Profil pak v „Týdenním rozpisu" zobrazí tři dlaždice
+(Pá, Po, St) a zbytek týdne prostě není. Člověk nevidí, že úterý je
+volno — vidí, že úterý neexistuje.
+
+**Doplnit všech sedm dní, Po–Ne.** Volný den je dlaždice jako každá
+jiná, jen popisek `Volno` místo názvu tréninku, bez délky a bez
+kalorií, a **není klikací** (`disabled`, žádný hover efekt).
+Grid už `lg:grid-cols-7` má, takže layout se nemění.
+
+Pořadí dní je Po–Ne, ne pořadí, ve kterém přišly z API.
+
+### 2. Klikání zůstane, ale nesmí vypadat jako hlavní ovládání
+
+Honza: *„člověk musí mít jasný cíl a směr"*. Karta **DNEŠNÍ NAPLÁNOVANÝ
+TRÉNINK** je to hlavní; rozpis je přehled. Dnes působí rozpis jako
+navigace, protože kliknutí přepíše detail pod ním a nic to nenaznačuje.
+
+- Kliknutí na tréninkový den detail dál přepíná (Honza to chce zachovat).
+- **Vizuálně se rozpis podřídí:** menší, tišší, bez svítící ramečkové
+  animace, kterou má dnes vybraná dlaždice. Zvýraznění dneška
+  (`isToday`, pulzující tečka) zůstává.
+- Když je vybraný jiný den než dnešek, **musí to být nad detailem vidět**
+  — dnes to není poznat a vypadá to, jako by se změnil dnešní trénink.
+  Text typu „Prohlížíš pondělí" a odkaz „zpět na dnešek".
+
+### 3. Nákupní seznam se má sbalit
+
+`src/components/NutritionSection.tsx` (kolem ř. 269) vypisuje všech
+63 položek pod sebou a odtlačí zbytek profilu mimo obrazovku.
+
+**Sbalený stav jako výchozí**, rozbalovací. V hlavičce zůstane počet
+(`zbývá X z Y`), aby šlo poznat stav bez rozbalení. Tlačítko „Otevřít
+přes celou obrazovku" zůstává, kde je.
+
+### Co v tomhle bodě NEDĚLAT
+
+- **Nesahej na jídelníček.** Dnešní jídla + tlačítko „Celý týdenní
+  jídelníček" Honzovi vyhovují, ověřeno.
+- **Neodstraňuj týdenní rozpis** ani přepínání — obojí zůstává,
+  mění se jen rozsah (7 dní) a vizuální váha.
+- Žádná migrace, žádná změna API, jen `src/`.
+
 ## 7.1 APPKA A WEB NESDÍLEJÍ JEDINOU HODNOTU — A APPKA NEMÁ TOKENY
 
 > **Nedělá se teď.** Honza 31. 8.: vzhled má počkat, dokud systém nefunguje.

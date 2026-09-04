@@ -119,110 +119,176 @@ nedaří dotáhnout objednávku.
 - **Nepouštěj se do `is_pantry_ingredient`.** Zjištění k tomu je v textu
   níž a je to samostatné rozhodnutí, ne součást téhle opravy.
 
-## 8.10 SYSTÉM SÁM OBJEDNAL RYBU NA VEGETARIÁNSKÝ OBĚD — KVŮLI RYBÍZU
+## 8.11 MAKRA SE NELÁMOU V GENERÁTORU, ALE VE VÝBĚRU
 
-**Tohle je skutečná příčina spadlých položek fronty. 8.9 (jednotky) byla
-vedle: `unit` má v JSON schématu `enum ['g','ml']`, model jinou jednotku
-vrátit nemůže. Diagnóza z 8.9 vznikla ze syntetické sondy, ne z pádu.**
+**Zásoba libových receptů v katalogu JE. Skladač je nebere.** Tohle je
+nejlevnější cesta k tomu, aby appka splnila to, co web slibuje slovem
+„makra" — nepotřebuje jediný nový recept.
 
-### Měření, které to uzavírá
+### Měření, které to obrací
 
-```
-recipe_generation_queue 1704   meal_type obed   diet_tags ["vegetarian"]
-ai_runs (4 běhy)               hlavni_bilkovina "ryby"
-                               vraceno 3, zapsano 0
-posledni_chyba                 "losos, losos, losos"
-```
-
-Totéž u 1627 a 1705 — obě `["vegetarian"]`, obě `hlavni_bilkovina "ryby"`.
-
-Model neselhal. **Dostal pokyn udělat rybu na vegetariánskou objednávku
-a poslechl.** Pak ji povolený seznam (správně) odmítl.
-
-### Řetěz
-
-1. `surovinyProDietu` vyhodí z povoleného seznamu všechny ryby. Správně.
-2. `bilkovinaProPolozku` se ptá `dostupne('ryby')`, což je
-   `surovinySkupiny(povolene, 'ryby').length > 0`.
-3. `surovinySkupiny` → `skupinaSuroviny` → vzor skupiny `ryby` obsahuje
-   **`/ryb/i`**.
-4. V povoleném vegetariánském seznamu zůstal **`černý rybíz`**
-   (`is_vegan = true`, 1,4 g bílkovin). `/ryb/i` ho chytí.
-5. `dostupne('ryby')` → `true`. Rotace objedná „ryby a mořské plody".
-6. Adresář pro model (`hlavni_bilkovina_suroviny`) obsahuje jedinou
-   položku: `černý rybíz`.
-7. Model udělá lososa. `surovinyMimoSeznam` ho zahodí. Položka `failed`.
+Průměr katalogu je 41 % kalorií z tuku proti cíli 27–28 %. To ale
+nerozhoduje. Rozhoduje, kolik libových receptů je k dispozici:
 
 ```
-vegetarian   failed  46   ← největší jednotlivá ztráta ve frontě
-(bez diety)  failed  26
-gluten_free  failed  22
-vegan        failed   0
+slot       aktivních   do 35 % tuku   do 30 %
+obed          229          127          104
+vecere        219           86           66
+snidane       179           68           54
+svacina       208           64           52
 ```
 
-Vegan má nulu, protože veganský seznam je užší a `černý rybíz` v něm sice
-je — ale veganské položky se zatím z fronty odbavily dřív. Tahle chyba
-čeká i na ně.
+Týdenní plán potřebuje při `MAX_OPAKOVANI_RECEPTU_TYDNE = 2` aspoň
+⌈7/2⌉ = 4 recepty na slot (u šestijídlových plánů 7 na svačiny).
+K dispozici je 64 až 127. **Zásoba není brzda.**
+
+### Kudy plán vzniká (ověřeno v kódu, ne odhad)
+
+```
+LLM agent                    kostra týdne — které jídlo, jaký den, název
+resolveMealsFromCatalog      slot NAHRADÍ skutečným receptem z katalogu
+pickSeededCatalogRecipe   →  pickFromTopKCatalogRow  →  catalogPickRank
+```
+
+Model tedy recept NEVYBÍRÁ. Vybírá ho vzorec. Proto se makra nedají
+spravit promptem a proto je celý tenhle bod v `lib/`.
+
+### Tři závady, ne jedna
+
+1. **Váhy.** `catalogPickRank` = `kcalDiff × 1,15` + penalizace bílkovin
+   + penalizace tuku − `simplicity × 2,8`. Překročení tuku má váhu
+   `VAHA_NAD_CILEM_TUK = 0,6`, takže tučný recept, který trefí kalorie,
+   porazí libový s odchylkou padesát kalorií.
+
+2. **Losuje se z TOP-5.** `pickFromTopKCatalogRow` seřadí kandidáty a pak
+   z prvních `CATALOG_PICK_TOP_K` (default 5, clamp 3–8) seedovaně losuje
+   kvůli variabilitě per uživatel/týden/slot. Sebelepší řazení se tím
+   rozředí — pátý v pořadí může být výrazně tučnější než první.
+
+3. **Nouzová větev penalizaci tuku NEZNÁ.** `pickClosestCatalogRow`
+   (`lib/nutrition/portionScaling.js`) volá `sortCatalogRowsForSimplePick`
+   **bez** `cilovyPodilBilkovin` a `cilovyPodilTuku` — defaultují na `null`
+   a řadí se čistě podle kalorií a jednoduchosti. Spouští ji
+   `pickClosestCatalogRecipe` z `resolveMealsFromCatalog` po hlášce
+   „TITLE/FILTER MISS — emergency catalog pick". **Na téhle cestě je celá
+   8.4 mrtvá.** Tohle je díra, ne ladění.
 
 ### Co udělat
 
-1. **`rybíz` mezi `NENI_ZDROJ_PORCE`.** Ten seznam přesně na tohle je —
-   „vývar je ochucovadlo, ne porce masa". Rybíz je ovoce, ne ryba. Je to
-   jeden řádek a `skupinaSuroviny` ho konzultuje jako první, takže to
-   spraví klasifikaci všude naráz (rotace, adresář, `receptSplnujeBilkovinu`).
+1. **Zalátat nouzovou větev (bod 3) jako první.** `pickClosestCatalogRow`
+   musí přijímat a předávat `cilovyPodilBilkovin` a `cilovyPodilTuku`
+   stejně jako `pickFromTopKCatalogRow`, a `pickClosestCatalogRecipe` je
+   musí protáhnout z `resolveMealsFromCatalog`. Bez tohohle nemá smysl
+   ladit váhy — část plánů by ladění minulo.
 
-2. **Ale nespoléhat na to.** Shoda jménem je slabý zdroj pravdy — dnes
-   rybíz, zítra „sójová omáčka" jako zdroj bílkovin. Skupina se nesmí
-   nabídnout, když ji dieta vylučuje, bez ohledu na to, co chytí vzor.
-   Explicitní mapa, aplikovaná PŘED `dostupne()`:
+2. **Tvrdý strop na tuk ve výběru, ne jen penalta.** Penalta je spojitá a
+   dá se „přeplatit" kalorickou trefou. Přidej do řazení pásmo: kandidáti
+   s podílem tuku do `STROP_TUKU_VYBERU` (navrhuju 0,35) tvoří přednostní
+   pool; teprve když jich je míň než `topK`, doplní se zbytkem. Stejný
+   vzor, jaký už `sortCatalogRowsForSimplePick` používá pro `simplicity`
+   (`SIMPLE_FLOOR`, postupné povolování) — nekopíruj ho, ale drž se ho.
+   Měření výš říká, že pool bude neprázdný ve všech čtyřech slotech.
 
-   - `vegan` vylučuje `drubez`, `ryby`, `hovezi`, `veprove`, `vejce`, `mlecne`
-   - `vegetarian` vylučuje `drubez`, `ryby`, `hovezi`, `veprove`
+3. **Zúžit losování, když je z čeho brát.** `topK` nech, ale losuj jen
+   z těch kandidátů přednostního poolu. Variabilita zůstane (64+ receptů
+   na slot), zmizí jen možnost vylosovat tučný, když libový byl po ruce.
 
-   Neznámý tag (`gluten_free`, `low_carb`, `lactose_free`) nevylučuje nic —
-   stejná zásada jako u `surovinyProDietu`: co neumíme ověřit, netvrdíme.
+4. **Až potom sahej na váhy.** `VAHA_NAD_CILEM_TUK` zvyš jen tehdy, když
+   po bodech 1–3 měření pořád ukazuje překročení. Neměň víc věcí naráz —
+   pak se nedá poznat, co zabralo.
 
-3. **Vegetariánská objednávka musí mít kam jít.** `CILOVE_BILKOVINY` je
-   `['hovezi','veprove','ryby','lusteniny','drubez']` — čtyři z pěti jsou
-   maso. Po vyloučení podle bodu 2 zbude vegetariánovi jediný kandidát
-   (`lusteniny`) a veganovi taky. Doplň `vejce` a `mlecne` — ale tak, aby
-   **objednávka bez diety se chovala přesně jako dnes**, bit po bitu.
-   Rozšiřuj až tehdy, když mapa z bodu 2 nějakou skupinu vyloučila.
-   (U veganské položky `vejce` a `mlecne` vypadnou samy podle bodu 2.)
+5. **Diagnostika do logu.** Do `[catalog-resolve] ... complete` přidej,
+   kolik slotů se vybralo z přednostního poolu a kolik ze zbytku. Bez
+   toho nepůjde po nasazení říct, jestli bod 2 zabral, nebo jen pool byl
+   pokaždé prázdný.
 
-4. **Dieta do promptu jako tvrdé pravidlo.** `diet_tags` se dnes posílají
-   jako holé pole a `prompts/recipe-generate.md` o nich neříká nic.
-   Doplň větu: u `vegetarian` žádné maso, ryby ani mořské plody; u `vegan`
-   navíc žádné mléčné výrobky ani vejce; recept, který to poruší, spadne
-   stejně jako recept se surovinou mimo seznam.
-
-5. **Migrace jako soubor, NEAPLIKUJ ji** — dva doopravdy chybějící názvy
-   z `posledni_chyba`:
-   - `červená paprika` → řádek do `ingredient_aliases`
-     (`canonical_normalized = 'paprika'`; `paprika` ve slovníku je,
-     alias `papriky → paprika` už existuje). NE nový nutriční řádek.
-   - `římský kmín` → koření, patří do `pantry_ingredients`, ne do
-     `ingredients_nutrition`.
-
-6. **Testy** — tohle je ten bod, kvůli kterému to celé je:
-   - `skupinaSuroviny('černý rybíz')` není `'ryby'`
-   - vegetariánská položka nikdy nedostane `hlavni_bilkovina` z masa ani ryb,
-     ani když povolený seznam obsahuje surovinu, kterou vzor skupiny chytí
-   - veganská položka nedostane `vejce` ani `mlecne`
-   - objednávka **bez** diety dostane přesně tutéž skupinu jako před změnou
-     (regresní test na dnešní chování — pořadí `CILOVE_BILKOVINY` je zároveň
-     pravidlo pro remízu, nesmí se rozsypat)
-   - `gluten_free` / `low_carb` / `lactose_free` nevylučují žádnou skupinu
+6. **Testy** — čisté funkce, žádná DB:
+   - `pickClosestCatalogRow` s cílovým podílem tuku vybere libovější
+     recept než bez něj (regrese na bod 3)
+   - při dostatku libových kandidátů se tučný nedostane do losování
+   - když je libových míň než `topK`, pool se doplní a nic nespadne
+   - `topK = 1` a prázdný vstup nespadnou
+   - beze změny chování, když `cilovyPodilTuku` je `null` (starší volání)
 
 ### Co v tomhle bodě NEDĚLAT
 
-- **Nevracej spadlé položky fronty do `pending`.** To je zásah do dat na
-  produkci, dělá ho Honzův druhý Claude po nasazení.
-- **Neměň `surovinyProDietu`.** Ta funguje správně — je to jediná část
-  řetězu, která se zachovala, jak měla.
-- **Nesahej na `protein_hint` ani `fat_hint`.** Explicitní hint z fronty
-  má i nadále přednost před rotací; mapa z bodu 2 se na něj nevztahuje.
-- Nepřidávej nic do `ingredients_nutrition` kromě toho, co říká bod 5.
+- **Neměň `MAX_OPAKOVANI_RECEPTU_TYDNE`.** Strop opakování je to jediné,
+  co drží pestrost; zvýšit ho kvůli makrům by vyměnilo jeden problém
+  za druhý.
+- **Nedeaktivuj tučné recepty v katalogu.** Jsou správné pro lidi
+  s vyšším cílem na tuk; problém je výběr pro konkrétní cíl, ne recept.
+- **Nesahej na generátor ani na `fat_hint`.** 8.8 se teprve měří.
+- **Nezvyšuj `CATALOG_PICK_TOP_K`.** Řeší se opačný problém.
+
+## 8.12 ÚKLID FRONTY — CO SE NEKONTROLUJE, TO SE NEDODRŽÍ
+
+**Tři malé věci, které vyplavalo měření 4. 9. po nasazení 8.10. Žádná
+z nich není velká, dohromady ale drží frontu v polorozbitém stavu.**
+
+### Měření, ze kterého to vzešlo (produkce 4. 9., NEMĚŘ SI TO SÁM)
+
+8.10 zabralo: běh v 11:15 UTC nedal ani jedné vegetariánské položce
+`hlavni_bilkovina: "ryby"` — dostaly `vejce`. `hovezi`/`veprove` se
+objevily jen u `gluten_free`, kde se nic nevylučuje. Správně.
+
+Spadly ale znovu, na něčem jiném:
+
+```
+1567  vecere   vegetarian   protein_hint {"podil":0.55}
+1568  svacina  vegetarian   {"podil":0.55}     posledni_chyba: "černý pepř"
+1660  svacina  vegetarian   {"podil":0.5}
+1527  vecere   vegetarian   {"podil":0.4}
+```
+
+55 % kalorií z bílkovin na vegetariánské svačině je nesplnitelné. 8.5
+tenhle podíl zastropovala na 0,25 — ale jen v `omezPodilProObjednavku()`
+při ZAKLÁDÁNÍ objednávky. Staré řádky ve frontě si původní hodnoty nesou
+dál a **CHECK constraint v databázi pořád povoluje až 0,55**. Kód a
+schéma si odporují a schéma je slabší.
+
+Stav po ručním zásahu (Honzův druhý Claude, 4. 9.): 6 řádků zastropováno
+na 0,25, **53 zbylo** — po zastropování by se srazily s objednávkou,
+která na tentýž slot už čeká. Je to duplicitní poptávka, ne ztráta, ale
+budou se donekonečna pokoušet a padat.
+
+A do třetice: `pantry_ingredients` obsahuje `pepr`, `mlety pepr`,
+`kajensky pepr` — ale ne `černý pepř`. Jedna položka na tom dnes spadla.
+Stejná třída jako „červená paprika" v 8.10.
+
+### Co udělat
+
+1. **Zpřísnit CHECK na `protein_hint` z 0,55 na 0,25** — migrace jako
+   soubor, NEAPLIKUJ ji. Ať se kód a schéma přestanou lišit; dnes je
+   `omezPodilProObjednavku()` jediná obrana a stačí ji jednou obejít.
+   Constraint je `recipe_generation_queue_protein_hint_check` a je to
+   regulární výraz nad textem (`^\{("zdroj":"...",)?"podil":0\.[0-9]{1,2}\}$`)
+   plus rozsah — **měň jen tu horní mez, formát nech být.** Migrace musí
+   napřed zastropovat existující řádky, jinak `ALTER TABLE ... ADD
+   CONSTRAINT` na starých datech spadne.
+
+2. **Uzavřít mrtvé objednávky.** Řádek ve `failed`, jehož specifikace se
+   po zastropování na 0,25 kryje s jinou položkou v `pending`/`running`,
+   se nemá zkoušet znovu. Přidej stav (`nadbytecna` nebo podobně, doplň
+   ho do CHECKu na `stav`) a v migraci ho těm řádkům nastav.
+   **Nemaž je** — historie fronty je jediné, z čeho se dá zpětně poznat,
+   co si appka kdy vyžádala.
+
+3. **`černý pepř` do `pantry_ingredients`** (`cerny pepr`, kategorie
+   `seasoning`, vegan i vegetarián). Stejná migrace, `ON CONFLICT DO
+   NOTHING` jako u „římského kmínu".
+
+4. **Test** na `omezPodilProObjednavku()`, že 0,55 na vstupu dá 0,25 na
+   výstupu — už existuje, ověř že platí, a přidej k němu poznámku, že
+   od téhle migrace to hlídá i schéma.
+
+### Co v tomhle bodě NEDĚLAT
+
+- **Neměň strop 0,25 samotný.** Je to změřené rozhodnutí z 8.5
+  (nad 0,25 spadla úspěšnost fronty 3,5×), ne odhad.
+- **Nemaž řádky fronty.**
+- **Nesahej na `fat_hint`.** Měření 4. 9. ukázalo, že nezabral (nové
+  recepty 49,6 % kalorií z tuku proti 45 % před ním) — ale řeší se to
+  v 8.11 na straně výběru, ne tady.
 
 ## 7.1 APPKA A WEB NESDÍLEJÍ JEDINOU HODNOTU — A APPKA NEMÁ TOKENY
 
@@ -291,6 +357,15 @@ a JetBrains Mono z Google Fonts, změna písma je samostatné rozhodnutí.
 ---
 
 ## Hotovo a nasazeno — NEŘEŠ ZNOVU
+- **8.10** vegetariánská objednávka už nedostane rybu. `černý rybíz`
+  spadl do skupiny `ryby` přes vzor `/ryb/i`, rotace objednala rybu a
+  povolený seznam ji zahodil — 46 položek `failed`. Opraveno vzorem
+  i nezávislou mapou `VYLOUCENE_SKUPINY_PODLE_DIETY`. Nasazeno 4. 9.,
+  `2dba634` (#144). Migrace `20260903220000` (jednotky) a `20260904090000`
+  (alias „červená paprika", „římský kmín" do spíže) aplikované a
+  orazítkované. 24 položek vráceno do `pending`, zbylých 22 mělo
+  shodnou specifikaci s něčím, co ve frontě už čekalo. Účinek se měří
+  po běhu 4. 9. v 11:15 UTC (dřív brání denní strop 20).
 - **8.8** tukový strop `fat_hint` (default 0,30, CHECK `(0,1]`) je ve
   frontě i v promptu — jako zadání, ne jako důvod k zahození. Nasazeno
   3. 9., `fc0cac2`. Účinek na nově vyrobených receptech se teprve měří.

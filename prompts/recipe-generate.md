@@ -118,10 +118,16 @@ oleje a másla, mléčné výrobky s nižším obsahem tuku, tam kde je ve slovn
 dostupná varianta. Nepřidávej tuk navíc jen kvůli chuti, když recept vyjde
 i bez něj.
 
-Tenhle recept se kvůli tuku NEZAHAZUJE — je to zadání, se kterým máš pracovat,
-ne podmínka, kterou musíš zaručit doslova. Zkus se mu ale co nejvíc přiblížit,
-zvlášť když je zadaná i `hlavni_bilkovina` z tučnějšího zdroje (třeba hovězí):
-vyber libovější kus a menší přílohovou tučnost, ne obojí tučné najednou.
+Cíl je `max_podil_tuku_pct`, ale malé přestřelení má pořád šanci projít —
+aplikace po zápisu kontroluje vlastní, o něco vyšší tvrdou hranici. Přesto
+tenhle recept **může spadnout kvůli tuku úplně stejně jako kvůli nepovolené
+surovině** — velké přestřelení se zahazuje. Zvlášť opatrně, když je zadaná
+i `hlavni_bilkovina` z tučnějšího zdroje (třeba hovězí): vyber libovější
+kus a menší přílohovou tučnost, ne obojí tučné najednou.
+
+Když dostaneš `prekroceny_strop_tuku`, poslední pokus tuhle tvrdou hranici
+překročil o konkrétní podíl (např. „52 % kalorií z tuku, strop je 45 %“) —
+příště zvol libovější suroviny, ať se pod ni vejdeš.
 
 Bez `max_podil_tuku_pct` v zadání tuk neřešíš navíc, jen ho neženeš záměrně
 nahoru.

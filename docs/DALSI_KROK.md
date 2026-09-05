@@ -400,10 +400,44 @@ navigace, protože kliknutí přepíše detail pod ním a nic to nenaznačuje.
 (`zbývá X z Y`), aby šlo poznat stav bez rozbalení. Tlačítko „Otevřít
 přes celou obrazovku" zůstává, kde je.
 
+### 4. „Celý týdenní jídelníček" ukazuje jeden den
+
+**Změřeno v kódu 5. 9.** `src/App.tsx` drží `meals` z `naJidla(plan)`,
+a `naJidla` (`src/data/adaptery.ts:249`) si hned na druhém řádku vybere
+`dnesniDen(struktura)` — vrací tedy **jedno pole jídel dnešního dne**.
+`MealPlanModal` dostává `meals={meals}`, tedy totéž, a jeho typ je
+`meals: MealItem[]` — o dnech nikdy nevěděl.
+
+Tlačítko slibuje týden, komponenta umí den. Není to chyba v datech —
+`structured_plan_json.days` má všech sedm dnů, plán je celý.
+
+**Co udělat:**
+
+- Nový adaptér `naJidlaTydne(plan)` vedle `naJidla`, který vrátí
+  `{ datum, denNazev, jeDnes, meals: MealItem[] }[]` za všechny dny
+  plánu. Vnitřek jednoho dne je TÁŽ logika jako v `naJidla` — vytáhni
+  ji do sdílené funkce, ať se ty dvě cesty nemůžou rozejít
+  (`naJidla` ať je pak `naJidlaTydne(plan).find(d => d.jeDnes)`).
+- `MealPlanModal` bere dny, ne ploché pole. **Každý den je sbalený
+  řádek, jídla se ukážou až po rozkliknutí** — sedm dnů po pěti jídlech
+  je 35 položek a přes celou stránku se v tom nedá vyznat.
+  Ve sbaleném řádku musí být vidět: den v týdnu, datum, počet jídel
+  a součet kalorií — tolik, aby šlo vybrat den bez rozklikávání všech.
+  Dnešek je rozbalený jako jediný, ostatní sbalené. Rozbalených smí
+  být víc naráz (není to akordeon, který ostatní zavírá).
+- Odškrtávání jídel (`onToggleMeal`) musí dál fungovat a psát na
+  správný den — `MealItem` už nese `planDay`, použij ho.
+
+**Pozor:** `id` jídla je dnes `catalog_id ?? recipe_id ?? "${den.date}-${i}"`.
+Napříč týdnem se stejný recept opakuje (strop jsou 2× týdně), takže
+`catalog_id` NENÍ v rámci týdne unikátní — jako React key i pro
+odškrtávání musí být klíč složený z dne a pořadí, jinak se odškrtnutí
+propíše do dvou dnů naráz.
+
 ### Co v tomhle bodě NEDĚLAT
 
-- **Nesahej na jídelníček.** Dnešní jídla + tlačítko „Celý týdenní
-  jídelníček" Honzovi vyhovují, ověřeno.
+- **Nesahej na sekci „Dnešní jídla" v profilu.** Ta je v pořádku —
+  mění se jen modál za tlačítkem „Celý týdenní jídelníček" (bod 4).
 - **Neodstraňuj týdenní rozpis** ani přepínání — obojí zůstává,
   mění se jen rozsah (7 dní) a vizuální váha.
 - Žádná migrace, žádná změna API, jen `src/`.

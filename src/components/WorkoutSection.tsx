@@ -43,9 +43,14 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
   const selectedWorkout = vybranyTrenink(workouts, selectedDayName);
   const todayWorkout = dnesniTrenink(workouts);
   const maDnesTrenink = jeNaplanovany(todayWorkout);
+  // Rozpis teď nese i dny volna (docs/DALSI_KROK.md 8.14) — bez tohohle by
+  // klik na jiný den vypadal, jako by se přepsal DNEŠNÍ trénink, protože nic
+  // nenaznačuje, že se dole zobrazuje jiný den než dnešek.
+  const prohlizisJinyDenNezDnes = !selectedWorkout.isToday;
 
   const totalWeeklyCalories = workouts.reduce((acc, w) => acc + (w.isCompleted ? w.caloriesBurned : 0), 0);
   const totalCompletedWorkouts = workouts.filter(w => w.isCompleted).length;
+  const naplanovanychDni = workouts.filter(w => w.maTrenink !== false).length;
 
   /**
    * Věta o tom, proč jsou v týdnu různé tréninky a co která jmenovka znamená.
@@ -57,6 +62,9 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
   const vysvetleniStridani = React.useMemo(() => {
     const podleNazvu = new Map<string, { pocet: number; zamereni: string }>();
     for (const w of workouts) {
+      // Dny volna (docs/DALSI_KROK.md 8.14) mají title "Volno" — bez tohohle
+      // by se počítaly jako další tréninková jednotka vedle Trénink A/B.
+      if (w.maTrenink === false) continue;
       const nazev = String(w.title || '').trim();
       if (!nazev) continue;
       const zaznam = podleNazvu.get(nazev);
@@ -149,28 +157,37 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
         </div>
       </motion.div>
 
-      {/* Week Split Navigator (PO - NE) */}
-      <div className="space-y-4">
+      {/* Week Split Navigator (PO - NE).
+          Podřízené kartě DNEŠNÍHO tréninku výš — je to přehled, ne hlavní
+          ovládání (docs/DALSI_KROK.md 8.14): menší dlaždice, žádná svítící
+          animace na vybraném dni. Zvýraznění dneška (pulzující tečka)
+          zůstává, to je orientace, ne ovládací prvek. */}
+      <div className="space-y-3">
         <NadpisSekce
           uroven="podsekce"
           titulek="Týdenní rozpis"
-          podtitulek={`Splněno ${totalCompletedWorkouts} z ${workouts.length} jednotek${
+          podtitulek={`Splněno ${totalCompletedWorkouts} z ${naplanovanychDni} jednotek${
             totalWeeklyCalories > 0 ? ` (${totalWeeklyCalories} kcal)` : ''
           }`}
-          ikona={<CalendarDays className="w-4 h-4 text-[#00f2fe]" />}
+          ikona={<CalendarDays className="w-4 h-4 text-slate-400" />}
         />
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
           {workouts.map(w => {
-            const isSelected = w.dayName === selectedDayName;
+            const isSelected = w.dayName === selectedDayName || (!selectedDayName && w.isToday);
+            const jeVolno = w.maTrenink === false;
             return (
               <button
                 key={w.dayName}
-                onClick={() => setSelectedDayName(w.dayName)}
-                className={`p-3 rounded-2xl border text-left transition-all relative select-none ${
-                  isSelected
-                    ? 'bg-cyan-950/40 border-[#00f2fe]/60 shadow-[0_0_15px_rgba(0,242,254,0.2)]'
-                    : 'bg-[#0e131d]/90 border-slate-800 hover:border-slate-700'
+                type="button"
+                disabled={jeVolno}
+                onClick={jeVolno ? undefined : () => setSelectedDayName(w.dayName)}
+                className={`p-2.5 rounded-xl border text-left transition-all relative select-none ${
+                  jeVolno
+                    ? 'bg-[#0a0d13]/70 border-slate-800/60 cursor-default'
+                    : isSelected
+                      ? 'bg-cyan-950/30 border-cyan-500/50'
+                      : 'bg-[#0e131d]/90 border-slate-800 hover:border-slate-700'
                 }`}
               >
                 {w.isToday && (
@@ -178,26 +195,42 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
                 )}
 
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-extrabold text-slate-200">{w.dayShort}</span>
-                  {w.isCompleted ? (
-                    <span className="text-[10px] font-bold text-[#39ff14]">✓ Hotovo</span>
-                  ) : (
-                    <span className="text-[10px] text-slate-500 font-medium">{w.durationMin}m</span>
+                  <span className={`text-xs font-bold ${jeVolno ? 'text-slate-500' : 'text-slate-300'}`}>
+                    {w.dayShort}
+                  </span>
+                  {!jeVolno && (
+                    w.isCompleted ? (
+                      <span className="text-[10px] font-bold text-[#39ff14]">✓</span>
+                    ) : (
+                      <span className="text-[10px] text-slate-500 font-medium">{w.durationMin}m</span>
+                    )
                   )}
                 </div>
 
-                <div className="text-xs font-bold text-white truncate mt-1">
+                <div className={`text-xs font-semibold truncate mt-1 ${jeVolno ? 'text-slate-500' : 'text-white'}`}>
                   {w.title}
                 </div>
-                {w.caloriesBurned > 0 && (
-                  <div className="text-[10px] text-slate-400 truncate mt-0.5">
-                    {w.caloriesBurned} kcal
-                  </div>
-                )}
               </button>
             );
           })}
         </div>
+
+        {/* Vybraný den ≠ dnešek — bez tohohle vypadalo přepnutí, jako by se
+            změnil DNEŠNÍ trénink v kartě výš. */}
+        {prohlizisJinyDenNezDnes && (
+          <div className="flex items-center justify-between gap-3 text-xs bg-slate-900/60 border border-slate-800 rounded-xl px-3.5 py-2">
+            <span className="text-slate-300">
+              Prohlížíš <strong className="text-white">{selectedWorkout.dayName}</strong>, ne dnešek.
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelectedDayName(null)}
+              className="font-bold text-cyan-400 hover:text-cyan-300 whitespace-nowrap"
+            >
+              zpět na dnešek
+            </button>
+          </div>
+        )}
 
         {/* PROČ SE TRÉNINKY STŘÍDAJÍ.
             „Trénink A" a „Trénink B" jsou jen jmenovky a nikomu nic neřeknou.

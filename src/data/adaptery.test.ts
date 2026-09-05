@@ -2,7 +2,9 @@
 // vcetne tvaru recipe a shopping_ingredient_lines.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { naJidla, naTreninky, naNavyky, naZlozvyky, nesouladCile, vekZDataNarozeni, vyberPlan } from './adaptery.ts';
+import {
+  naJidla, naJidlaTydne, naTreninky, naNavyky, naZlozvyky, nesouladCile, vekZDataNarozeni, vyberPlan
+} from './adaptery.ts';
 
 const DNES = new Date().toISOString().slice(0, 10);
 
@@ -131,6 +133,81 @@ test('nemeřená čísla zůstávají nulová, aby je UI skrylo', () => {
   assert.equal(t[0].caloriesBurned, 0, 'spálené kalorie generátor nevrací');
   assert.equal(t[0].exercises[0].restSec, 0, 'pauzu generátor nevrací');
   assert.equal(t[0].exercises[0].targetMuscle, '', 'cílový sval generátor nevrací');
+});
+
+// docs/DALSI_KROK.md 8.14 — týden musí být vidět celý, ne jen tréninkové dny.
+const TYDEN_PLAN = {
+  id: 'tyden-plan',
+  structured_plan_json: {
+    days: [
+      { date: '2026-09-04', day_name: 'Pátek', workout: { workout_name: 'Trénink A', duration_minutes: 45, exercises: [{ name_cs: 'Dřepy' }] } },
+      { date: '2026-09-05', day_name: 'Sobota' },
+      { date: '2026-09-06', day_name: 'Neděle', workout: { exercises: [] } },
+      { date: '2026-08-31', day_name: 'Pondělí', workout: { workout_name: 'Trénink B', duration_minutes: 50, exercises: [{ name_cs: 'Mrtvý tah' }] } },
+      { date: '2026-09-01', day_name: 'Úterý' },
+      { date: '2026-09-02', day_name: 'Středa', workout: { workout_name: 'Trénink C', duration_minutes: 40, exercises: [{ name_cs: 'Bench' }] } },
+      { date: '2026-09-03', day_name: 'Čtvrtek' }
+    ]
+  }
+};
+
+test('naTreninky vrátí všech sedm dnů, dny volna nejsou klikací trénink', () => {
+  const t = naTreninky(TYDEN_PLAN);
+  assert.equal(t.length, 7);
+
+  const volno = t.filter((d) => d.maTrenink === false);
+  assert.equal(volno.length, 4, 'Sobota, Neděle (prázdné exercises), Úterý, Čtvrtek');
+  for (const d of volno) {
+    assert.equal(d.title, 'Volno');
+    assert.equal(d.exercises.length, 0);
+    assert.equal(d.durationMin, 0);
+  }
+
+  const treninky = t.filter((d) => d.maTrenink !== false);
+  assert.equal(treninky.length, 3);
+});
+
+test('naTreninky řadí dny Po–Ne bez ohledu na pořadí z API', () => {
+  const t = naTreninky(TYDEN_PLAN);
+  assert.deepEqual(t.map((d) => d.dayName), [
+    'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota', 'Neděle'
+  ]);
+});
+
+test('naJidlaTydne vrátí všechny dny s obálkou datum/denNazev/jeDnes', () => {
+  const t = naJidlaTydne(PLAN);
+  assert.equal(t.length, 1);
+  assert.equal(t[0].denNazev, 'Pátek');
+  assert.equal(t[0].datum, DNES);
+  assert.equal(t[0].jeDnes, true);
+  assert.equal(t[0].meals.length, 5);
+});
+
+test('naJidla je jen dnešní den z naJidlaTydne', () => {
+  assert.deepEqual(naJidla(PLAN), naJidlaTydne(PLAN).find((d) => d.jeDnes)?.meals);
+});
+
+// docs/DALSI_KROK.md 8.14 „Pozor": catalog_id NENÍ napříč týdnem unikátní —
+// stejný recept smí patřit do jídelníčku 2× týdně.
+const DVA_DNY_STEJNY_RECEPT = {
+  id: 'plan-opakovani',
+  structured_plan_json: {
+    days: [
+      { date: '2026-09-01', day_name: 'Úterý', meals: [{ type: 'lunch', kcal: 500, catalog_id: 42, name_cs: 'Kuřecí curry' }] },
+      { date: '2026-09-03', day_name: 'Čtvrtek', meals: [{ type: 'lunch', kcal: 500, catalog_id: 42, name_cs: 'Kuřecí curry' }] }
+    ]
+  }
+};
+
+test('stejný recept 2× týdně: id je stejné, ale planDay je rozliší', () => {
+  const [utery, ctvrtek] = naJidlaTydne(DVA_DNY_STEJNY_RECEPT);
+  assert.equal(utery.meals[0].id, ctvrtek.meals[0].id, 'stejný catalog_id napříč týdnem je očekávaný');
+  assert.notEqual(utery.meals[0].planDay, ctvrtek.meals[0].planDay);
+  assert.notEqual(
+    `${utery.meals[0].planDay}-${utery.meals[0].activityKey}`,
+    `${ctvrtek.meals[0].planDay}-${ctvrtek.meals[0].activityKey}`,
+    'slozeny klic planDay+activityKey musi byt napric dny jedinecny, i kdyz id koliduje'
+  );
 });
 
 test('návyky se dělí na pozitivní a zlozvyky a mají české popisky', () => {

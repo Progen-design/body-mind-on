@@ -19,17 +19,40 @@ export const DEN_BEZ_TRENINKU: WorkoutDay = {
   exercises: []
 };
 
-/** Pozná zástupce od skutečně naplánovaného tréninku. */
+/**
+ * Pozná zástupce (i den volna) od skutečně naplánovaného tréninku.
+ *
+ * `maTrenink === false` je EXPLICITNÍ den volna z `naTreninky()`
+ * (docs/DALSI_KROK.md 8.14) — od 8.14 nese neprázdné `dayName` stejně jako
+ * skutečný trénink, takže samotné `dayName !== ''` už nestačí. Když
+ * `maTrenink` chybí (starší volající, testovací fixtury), zůstává původní
+ * pravidlo beze změny.
+ */
 export function jeNaplanovany(workout: WorkoutDay): boolean {
+  if (workout.maTrenink === false) return false;
   return workout.dayName !== '' || workout.exercises.length > 0;
 }
 
 /**
- * Trénink na dnešek: označený `isToday`, jinak první den plánu.
- * Nikdy nevrací `undefined` — volající čtou `.title` bez guardu.
+ * Dny plánu, které SKUTEČNĚ mají trénink — bez dnů volna.
  *
- * FALLBACK NA `workouts[0]` PLATÍ JEN TAM, KDE SI HO VOLAJÍCÍ SÁM HLÍDÁ
- * (`vybranyTrenink()` a záložka Tréninkový plán, která o sobě otevřeně
+ * `naTreninky()` (docs/DALSI_KROK.md 8.14) teď vrací všech sedm dnů, takže
+ * `workouts[0]` už není spolehlivě první trénink — může to být pondělní
+ * volno. Cokoli, co dřív spoléhalo na „první den pole = první trénink",
+ * musí filtrovat přes tuhle funkci, na jednom místě, ne v každé komponentě
+ * zvlášť (viz hlavička souboru).
+ */
+export function treninkoveDny(workouts: WorkoutDay[]): WorkoutDay[] {
+  return workouts.filter(w => w.maTrenink !== false);
+}
+
+/**
+ * Trénink na dnešek: označený `isToday`, jinak první TRÉNINKOVÝ den plánu
+ * (`treninkoveDny()` — dny volna se jako záskok nepočítají, docs/DALSI_KROK.md
+ * 8.14). Nikdy nevrací `undefined` — volající čtou `.title` bez guardu.
+ *
+ * FALLBACK NA PRVNÍ TRÉNINKOVÝ DEN PLATÍ JEN TAM, KDE SI HO VOLAJÍCÍ SÁM
+ * HLÍDÁ (`vybranyTrenink()` a záložka Tréninkový plán, která o sobě otevřeně
  * tvrdí „nejbližší trénink v plánu", ne „dnešní" — pozná fallback podle
  * `.isToday === false` a nadpis tomu přizpůsobí). Kdo `.isToday`
  * nekontroluje a nadpis má napevno „Dnešní trénink" (Karta 4 v
@@ -37,7 +60,7 @@ export function jeNaplanovany(workout: WorkoutDay): boolean {
  * viz docs/DALSI_KROK.md 6.9.
  */
 export function dnesniTrenink(workouts: WorkoutDay[]): WorkoutDay {
-  return workouts.find(w => w.isToday) ?? workouts[0] ?? DEN_BEZ_TRENINKU;
+  return workouts.find(w => w.isToday) ?? treninkoveDny(workouts)[0] ?? DEN_BEZ_TRENINKU;
 }
 
 /**

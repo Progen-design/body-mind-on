@@ -35,11 +35,12 @@ import { useZdravotniData } from './hooks/useZdravotniData';
 import { naBiometrii, maZdravotniData, naSkupinyMetrik, naSpanek } from './data/adapteryZdravi';
 import type { NastaveniProfilu, NesouladCile } from './data/adaptery';
 import {
-  dnesekPraha, dnesniNavyky, mnozinaDokonceni, naJidla, naNakupniSeznam, naNavyky,
+  dnesekPraha, dnesniNavyky, mnozinaDokonceni, naJidla, naJidlaTydne, naNakupniSeznam, naNavyky,
   hodnotaNeboPomlcka, naNastaveniProfilu, naPreference, naProfil, naTelesneSlozeni, naTreninky, naVazeni,
   naZlozvyky, naZpravyTrenera, naZamcenyPlan, nesouladCile, pouzijDokonceni,
   pouzijDokonceniTreninku, vekZDataNarozeni, vyberPlan
 } from './data/adaptery';
+import type { TydenniDenJidel } from './data/adaptery';
 import { ToastProvider, useToast } from './context/ToastContext';
 // Otaznik u kterekoli metriky umi otevrit TEDa s kontextem te polozky.
 // Kontext, ne prop — otazniky sedi hluboko v kartach a modalech.
@@ -50,7 +51,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 // videl vymyslene zdravotni udaje. Data ted chodi z /api/health/recovery.
 import { applyWeightRecord } from './lib/syncEngine';
 import { apiFetch, jeNeaktivniClenstvi } from './lib/api';
-import { dnesniTreninkPresne } from './lib/trenink';
+import { dnesniTreninkPresne, treninkoveDny } from './lib/trenink';
 import { sestavZapisTreninku } from './lib/zapisTreninku';
 import { rozdelZmenyNastaveni, PRAZDNE_NASTAVENI } from './lib/nastaveniProfilu';
 import { bmrMifflinStJeor } from '../lib/nutritionTargets.js';
@@ -123,6 +124,10 @@ function AppContent() {
   const [weightRecords, setWeightRecords] =
     useState<Record<string, WeightRecord[]>>({});
   const [meals, setMeals] = useState<MealItem[]>([]);
+  // Celý týden pro modál „Celý týdenní jídelníček" (docs/DALSI_KROK.md 8.14).
+  // `meals` výš zůstává jen dnešek — sekce „Dnešní jídla" na něm dál stojí
+  // beze změny.
+  const [weekMeals, setWeekMeals] = useState<TydenniDenJidel[]>([]);
   const [workouts, setWorkouts] = useState<WorkoutDay[]>([]);
   const [habits, setHabits] = useState<HabitItem[]>([]);
   const [badHabits, setBadHabits] = useState<BadHabitItem[]>([]);
@@ -182,6 +187,9 @@ function AppContent() {
     // kazdem nacteni tvarilo, ze uzivatel dnes nic nesplnil.
     const hotove = mnozinaDokonceni(profilData.daily_activity_completions);
     setMeals(pouzijDokonceni(naJidla(plan), 'meal', hotove));
+    setWeekMeals(
+      naJidlaTydne(plan).map((den) => ({ ...den, meals: pouzijDokonceni(den.meals, 'meal', hotove) }))
+    );
     setWorkouts(pouzijDokonceniTreninku(naTreninky(plan), hotove));
     setHabits(naNavyky(profilData.user_habits, dnesniNavyky(profilData.habit_logs_progress)));
     // Seznam = polozky spocitane z jidelnicku + to, co si uzivatel dopsal sam.
@@ -402,6 +410,39 @@ function AppContent() {
       if (!ok) {
         setMeals(prev => prev.map(m => (m.id === id ? { ...m, completed: !hotovo } : m)));
       }
+    },
+    [zapisDokonceni]
+  );
+
+  /**
+   * Odškrtnutí z týdenního modálu (docs/DALSI_KROK.md 8.14).
+   *
+   * `catalog_id` (tedy `MealItem.id`) NENÍ napříč týdnem unikátní — stejný
+   * recept smí být v jídelníčku 2× týdně, takže hledat jídlo podle `id` by
+   * mohlo trefit den jiný, než na který uživatel klikl. Bere se rovnou celý
+   * objekt jídla (modál ho má z vlastních dat) a den se pozná podle dvojice
+   * `planDay` + `activityKey`, stejně jako server v `klicDokonceni()`
+   * (src/data/adaptery.ts).
+   *
+   * Dnešek je i sekce „Dnešní jídla" (stav `meals` výš) — aktualizuje se
+   * spolu s `weekMeals`, ať se odškrtnutí stejného jídla na dvou místech
+   * profilu nerozejde.
+   */
+  const handleToggleWeekMeal = useCallback(
+    async (meal: MealItem) => {
+      const hotovo = !meal.completed;
+      const patri = (m: MealItem) => m.planDay === meal.planDay && m.activityKey === meal.activityKey;
+      const nastav = (stav: boolean) => {
+        setWeekMeals(prev => prev.map(den => ({
+          ...den,
+          meals: den.meals.map(m => (patri(m) ? { ...m, completed: stav } : m))
+        })));
+        setMeals(prev => prev.map(m => (patri(m) ? { ...m, completed: stav } : m)));
+      };
+
+      nastav(hotovo);
+      const ok = await zapisDokonceni(meal, 'meal', hotovo);
+      if (!ok) nastav(!hotovo);
     },
     [zapisDokonceni]
   );
@@ -827,7 +868,11 @@ function AppContent() {
   // "Dnesni trenink" nijak nepodmiuji — kdyby dnes zadny trenink nebyl,
   // dnesniTrenink() by tise podstrcila prvni den planu jako dnesek.
   // Viz docs/DALSI_KROK.md 6.9.
-  const maPlan = meals.length > 0 || workouts.length > 0;
+  // `workouts` teď nese i dny volna (docs/DALSI_KROK.md 8.14) — `naTreninky()`
+  // vrací všech sedm dnů i pro plán bez jediného tréninku, takže
+  // `workouts.length > 0` samo o sobě už neznamená "má plán". Počítají se
+  // jen dny, které skutečně trénink mají.
+  const maPlan = meals.length > 0 || treninkoveDny(workouts).length > 0;
   const todayWorkout: WorkoutDay = dnesniTreninkPresne(workouts);
 
   // Calculated macros
@@ -1126,8 +1171,8 @@ function AppContent() {
       <MealPlanModal
         isOpen={isMealModalOpen}
         onClose={() => setIsMealModalOpen(false)}
-        meals={meals}
-        onToggleMeal={handleToggleMeal}
+        days={weekMeals}
+        onToggleMeal={handleToggleWeekMeal}
       />
 
       <RecipeModal

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Utensils,
   BookOpen,
@@ -6,6 +6,7 @@ import {
   Download,
   CheckCircle2,
   ChevronRight,
+  ChevronDown,
   Flame,
   Sparkles,
   Plus
@@ -63,6 +64,10 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
   const totalFatGrams = meals.reduce((acc, m) => acc + (m.completed ? m.fat : 0), 0);
 
   const kNakupu = shoppingItems.filter(i => !i.checked).length;
+  // Sbalený stav jako výchozí — docs/DALSI_KROK.md 8.14. 63 položek pod sebou
+  // odtlačilo zbytek profilu mimo obrazovku; počet v hlavičce (`zbývá X z Y`)
+  // pozná stav i bez rozbalení.
+  const [rozbaleno, setRozbaleno] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -278,17 +283,27 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
           ikona={<ShoppingBag className="w-4 h-4 text-[#39ff14]" />}
           akce={
             shoppingItems.length > 0 ? (
-              <button
-                onClick={onOpenShoppingList}
-                className="px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-300 bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-500/40 transition-all active:scale-95"
-              >
-                Otevřít přes celou obrazovku
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => setRozbaleno(v => !v)}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 bg-slate-900/90 hover:bg-slate-800 border border-slate-700 transition-all active:scale-95"
+                >
+                  <span>{rozbaleno ? 'Sbalit' : `Rozbalit (${shoppingItems.length})`}</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${rozbaleno ? 'rotate-180' : ''}`} />
+                </button>
+                <button
+                  onClick={onOpenShoppingList}
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-300 bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-500/40 transition-all active:scale-95"
+                >
+                  Otevřít přes celou obrazovku
+                </button>
+              </>
             ) : undefined
           }
         />
 
-        {shoppingItems.length > 0 && (
+        {shoppingItems.length > 0 && rozbaleno && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {shoppingItems.map(item => (
               <button

@@ -29,6 +29,7 @@ const NUTRITION = kod(cti('../components/NutritionSection.tsx'));
 const WITHINGS_CARD = kod(cti('../components/WithingsCard.tsx'));
 const BODY_STATS = kod(cti('../components/BodyStatsGrid.tsx'));
 const CALORIE_BANNER = kod(cti('../components/CalorieMismatchBanner.tsx'));
+const WEEKLY_WORKOUT_MODAL = kod(cti('../components/WeeklyWorkoutModal.tsx'));
 
 test('AI trenér TED je v profilu jen jednou', () => {
   // TED byl jako dlaždice mezi zařízeními a zároveň jako vlastní karta níž.
@@ -164,6 +165,22 @@ test('v den volna karta 4 nabízí zápis mimo plán, ne stopky pro neexistujíc
   assert.ok(BENTO.includes('maDnesTrenink'), 'chybí rozlišení dne volna od naplánovaného tréninku');
   assert.ok(BENTO.includes('Zapsat trénink mimo plán'), 'tlačítko v den volna nenabízí zápis mimo plán');
   assert.ok(BENTO.includes('Spustit záznamník (Stopky)'), 'naplánovaný den ztratil původní text tlačítka');
+});
+
+test('maPlan v App.tsx nepočítá dny volna jako důkaz existujícího plánu (docs/DALSI_KROK.md 8.14)', () => {
+  // naTreninky() od 8.14 vrací všech sedm dnů i pro plán bez jediného
+  // tréninku — samotné "workouts.length > 0" by pak tvrdilo, že plán
+  // existuje, i když je celý týden volno.
+  assert.ok(APP.includes('treninkoveDny(workouts).length > 0'), 'maPlan zase počítá syrové workouts.length');
+  assert.ok(!/\bworkouts\.length > 0/.test(APP), 'nefiltrovaný workouts.length > 0 je zpátky');
+});
+
+test('WeeklyWorkoutModal nedovolí vybrat ani zobrazit den volna jako aktuální (docs/DALSI_KROK.md 8.14)', () => {
+  // "Celý rozpis" mapuje `workouts`, který teď nese i dny volna — bez téhle
+  // úpravy byly klikací a po kliknutí ukázaly "Volno" a "Seznam cviků (0)".
+  assert.ok(WEEKLY_WORKOUT_MODAL.includes('treninkoveDny'), 'currentDay se vybírá ze všech dnů včetně volna');
+  assert.ok(WEEKLY_WORKOUT_MODAL.includes('jeVolno'), 'den volna už nemá žádné rozlišení v záložkách');
+  assert.ok(WEEKLY_WORKOUT_MODAL.includes('disabled={jeVolno}'), 'záložka dne volna je zase klikací');
 });
 
 test('WorkoutLoggerModal s prázdným todayWorkout vypadá jako záměr, ne jako prázdná obrazovka (docs/DALSI_KROK.md 6.11)', () => {

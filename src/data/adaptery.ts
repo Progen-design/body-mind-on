@@ -246,13 +246,11 @@ function naRecept(recept: any): RecipeDetail | undefined {
   };
 }
 
-export function naJidla(plan: any): MealItem[] {
-  const struktura = strukturaPlanu(plan);
-  const den = dnesniDen(struktura);
+/** Jídla jednoho dne plánu — sdílené jádro `naJidla()` i `naJidlaTydne()`. */
+function mealyDne(struktura: any, den: any, planId: string | null): MealItem[] {
   if (!den || !Array.isArray(den.meals)) return [];
 
   const planDay = indexDne(struktura, den);
-  const planId = idPlanu(plan);
 
   let svaciny = 0;
   return den.meals.map((m: any, i: number) => {
@@ -260,6 +258,11 @@ export function naJidla(plan: any): MealItem[] {
     const typ = typJidla(m?.type, jeSvacina ? svaciny++ : 0);
     const recept = m?.recipe || {};
     return {
+      // POZOR: `catalog_id` NENÍ napříč týdnem unikátní (recept smí patřit
+      // do jídelníčku 2× týdně, docs/DALSI_KROK.md 8.14) — jako klíč napříč
+      // dny (React key, cíl odškrtávání) proto slouží dvojice
+      // `planDay` + `activityKey` z `MealItem`, ne tohle `id`. Tohle `id`
+      // zůstává jedinečné jen v rámci jednoho dne.
       id: String(m?.catalog_id ?? m?.recipe_id ?? `${den.date}-${i}`),
       type: typ,
       time: CAS_JIDLA[typ],
@@ -282,15 +285,64 @@ export function naJidla(plan: any): MealItem[] {
   });
 }
 
+/** Jeden den týdenního jídelníčku — docs/DALSI_KROK.md 8.14. */
+export interface TydenniDenJidel {
+  datum: string;
+  denNazev: string;
+  jeDnes: boolean;
+  meals: MealItem[];
+}
+
+/**
+ * Jídelníček za VŠECHNY dny plánu, ne jen dnešek.
+ *
+ * `jeDnes` kopíruje výběr `dnesniDen()` včetně jejího záskoku na první den,
+ * když plán dnešek nepokrývá — proto `naJidla()` níž smí být prostě
+ * `naJidlaTydne(plan).find(d => d.jeDnes)`, beze ztráty toho chování.
+ */
+export function naJidlaTydne(plan: any): TydenniDenJidel[] {
+  const struktura = strukturaPlanu(plan);
+  const dny = struktura?.days;
+  if (!Array.isArray(dny) || dny.length === 0) return [];
+
+  const planId = idPlanu(plan);
+  const vybranyDnes = dnesniDen(struktura);
+
+  return dny.map((den: any) => ({
+    datum: String(den?.date ?? ''),
+    denNazev: String(den?.day_name ?? ''),
+    jeDnes: den === vybranyDnes,
+    meals: mealyDne(struktura, den, planId)
+  }));
+}
+
+export function naJidla(plan: any): MealItem[] {
+  return naJidlaTydne(plan).find((d) => d.jeDnes)?.meals ?? [];
+}
+
 const ZKRATKY: Record<string, string> = {
   'Pondělí': 'Po', 'Úterý': 'Út', 'Středa': 'St', 'Čtvrtek': 'Čt',
   'Pátek': 'Pá', 'Sobota': 'So', 'Neděle': 'Ne'
 };
 
+/** Kanonické pořadí dnů v týdnu — dny plánu chodí v pořadí API, ne Po–Ne. */
+const PORADI_DNU_V_TYDNU = ['Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota', 'Neděle'];
+
 /**
  * caloriesBurned, restSec a targetMuscle generator NEVRACI. Zamerne se
  * nedopocitavaji odhadem - UI je pri nulove hodnote skryje. Radsi nic nez
  * vymyslene cislo u zdravotnich dat.
+ *
+ * VŠECH SEDM DNŮ, NE JEN TY S TRÉNINKEM — docs/DALSI_KROK.md 8.14. Dřív se
+ * filtrovaly pryč dny bez `workout`, takže tříденní plán vrátil pole o
+ * délce 3 a „Týdenní rozpis" ukázal tři dlaždice s dírou mezi nimi — den
+ * volna vypadal, jako by v týdnu vůbec nebyl. Den volna je teď dlaždice
+ * jako každá jiná (`maTrenink: false`, `title: 'Volno'`, bez cviků), a
+ * `jeNaplanovany()` (lib/trenink.ts) ji podle `maTrenink` pozná od
+ * skutečného tréninku.
+ *
+ * Výstup se navíc řadí Po–Ne, protože `struktura.days` chodí v pořadí, ve
+ * kterém plán začíná (`valid_from`), ne nutně od pondělí.
  */
 export function naTreninky(plan: any): WorkoutDay[] {
   const struktura = strukturaPlanu(plan);
@@ -300,14 +352,14 @@ export function naTreninky(plan: any): WorkoutDay[] {
   const dnes = new Date().toISOString().slice(0, 10);
   const planId = idPlanu(plan);
 
-  return dny
-    .filter((d: any) => d?.workout && Array.isArray(d.workout.exercises))
-    .map((d: any) => {
-      const w = d.workout;
-      // Index se bere z puvodniho pole dnu, ne z tohohle predfiltrovaneho.
-      const planDay = indexDne(struktura, d);
+  const vsechny = dny.map((d: any) => {
+    // Index se bere z puvodniho pole dnu, at uz je vysledne poradi jakekoli.
+    const planDay = indexDne(struktura, d);
+    const w = d?.workout;
+    const maTrenink = !!(w && Array.isArray(w.exercises) && w.exercises.length > 0);
 
-      const cviky: ExerciseItem[] = w.exercises.map((e: any, i: number) => ({
+    const cviky: ExerciseItem[] = maTrenink
+      ? w.exercises.map((e: any, i: number) => ({
         id: String(e?.canonical_key || `${d.date}-cvik-${i}`),
         name: e?.display_name_cs || e?.name_cs || e?.name || 'Cvik',
         sets: cislo(e?.sets),
@@ -325,31 +377,39 @@ export function naTreninky(plan: any): WorkoutDay[] {
         planId,
         planDay,
         activityKey: klicCviku(i)
-      }));
+      }))
+      : [];
 
-      return {
-        planId,
-        planDay,
-        // Cely trenink ma vlastni klic vedle jednotlivych cviku (cvik#0, cvik#1…).
-        activityKey: KLIC_CELEHO_TRENINKU,
-        dayName: String(d?.day_name || ''),
-        dayShort: ZKRATKY[String(d?.day_name)] || String(d?.day_name || '').slice(0, 2),
-        title: w?.workout_name || 'Trénink',
-        durationMin: cislo(w?.duration_minutes),
-        caloriesBurned: 0,
-        isToday: String(d?.date) === dnes,
-        isCompleted: false,
-        // ZAMĚŘENÍ SE SKLÁDÁ ZE CVIKŮ, NEOPISUJE NÁZEV.
-        // Dřív tu bylo `Varianta ${start_program_variant}`, takže pod
-        // nadpisem „Trénink B" stálo „Fokus: Varianta B" — tatáž informace
-        // podruhé. Teď se vypíšou svalové skupiny, které ten den přijdou
-        // na řadu, a když pokrývají horní i dolní půlku, řekne se rovnou,
-        // že je to celotělový trénink.
-        focus: zamereniTreninku(w.exercises) ?? '',
-        naradi: naradiTreninku(w.exercises),
-        exercises: cviky
-      } as WorkoutDay;
-    });
+    return {
+      planId,
+      planDay,
+      // Cely trenink ma vlastni klic vedle jednotlivych cviku (cvik#0, cvik#1…).
+      activityKey: KLIC_CELEHO_TRENINKU,
+      dayName: String(d?.day_name || ''),
+      dayShort: ZKRATKY[String(d?.day_name)] || String(d?.day_name || '').slice(0, 2),
+      title: maTrenink ? (w?.workout_name || 'Trénink') : 'Volno',
+      durationMin: maTrenink ? cislo(w?.duration_minutes) : 0,
+      caloriesBurned: 0,
+      isToday: String(d?.date) === dnes,
+      isCompleted: false,
+      // ZAMĚŘENÍ SE SKLÁDÁ ZE CVIKŮ, NEOPISUJE NÁZEV.
+      // Dřív tu bylo `Varianta ${start_program_variant}`, takže pod
+      // nadpisem „Trénink B" stálo „Fokus: Varianta B" — tatáž informace
+      // podruhé. Teď se vypíšou svalové skupiny, které ten den přijdou
+      // na řadu, a když pokrývají horní i dolní půlku, řekne se rovnou,
+      // že je to celotělový trénink.
+      focus: maTrenink ? (zamereniTreninku(w.exercises) ?? '') : '',
+      naradi: maTrenink ? naradiTreninku(w.exercises) : undefined,
+      maTrenink,
+      exercises: cviky
+    } as WorkoutDay;
+  });
+
+  return vsechny.sort((a: WorkoutDay, b: WorkoutDay) => {
+    const ia = PORADI_DNU_V_TYDNU.indexOf(a.dayName);
+    const ib = PORADI_DNU_V_TYDNU.indexOf(b.dayName);
+    return (ia === -1 ? PORADI_DNU_V_TYDNU.length : ia) - (ib === -1 ? PORADI_DNU_V_TYDNU.length : ib);
+  });
 }
 
 /**

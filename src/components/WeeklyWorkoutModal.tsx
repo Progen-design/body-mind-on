@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Check, Dumbbell, Clock, Flame, Shield, ChevronRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import { WorkoutDay, ExerciseItem } from '../types';
-import { vybranyTrenink } from '../lib/trenink';
+import { treninkoveDny, vybranyTrenink } from '../lib/trenink';
 
 interface WeeklyWorkoutModalProps {
   isOpen: boolean;
@@ -24,7 +24,11 @@ export const WeeklyWorkoutModal: React.FC<WeeklyWorkoutModalProps> = ({
 
   // Uzivatel s jidelnickem, ale bez treninkovych dnu se sem dostane (maPlan
   // ho pusti dal) a driv tu dostal undefined -> pad na currentDay.dayName.
-  const currentDay = vybranyTrenink(workouts, selectedDayName);
+  //
+  // `workouts` teď nese i dny volna (docs/DALSI_KROK.md 8.14) — vybírá se
+  // jen z `treninkoveDny()`, ať vybraný den nikdy není den volna, ani jako
+  // shoda jména, ani jako fallback na dnešek/první den.
+  const currentDay = vybranyTrenink(treninkoveDny(workouts), selectedDayName);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -71,22 +75,27 @@ export const WeeklyWorkoutModal: React.FC<WeeklyWorkoutModalProps> = ({
         {/* Day selector tabs */}
         <div className="p-3 bg-[#0e1420] border-b border-slate-800/80 flex items-center gap-1.5 overflow-x-auto">
           {workouts.map((day) => {
-            const isSelected = day.dayName === selectedDayName;
+            const isSelected = day.dayName === currentDay.dayName;
+            const jeVolno = day.maTrenink === false;
             return (
               <button
                 key={day.dayName}
-                onClick={() => setSelectedDayName(day.dayName)}
+                type="button"
+                disabled={jeVolno}
+                onClick={jeVolno ? undefined : () => setSelectedDayName(day.dayName)}
                 className={`px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                  isSelected
-                    ? 'bg-lime-500/20 text-[#39ff14] border border-[#39ff14]/50 shadow-[0_0_12px_rgba(57,255,20,0.25)]'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent'
+                  jeVolno
+                    ? 'text-slate-600 cursor-default border border-transparent'
+                    : isSelected
+                      ? 'bg-lime-500/20 text-[#39ff14] border border-[#39ff14]/50 shadow-[0_0_12px_rgba(57,255,20,0.25)]'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent'
                 }`}
               >
                 <span>{day.dayShort}</span>
                 {day.isToday && (
                   <span className="w-1.5 h-1.5 rounded-full bg-[#00f2fe] animate-pulse" />
                 )}
-                {day.isCompleted && (
+                {!jeVolno && day.isCompleted && (
                   <Check className="w-3 h-3 text-[#39ff14]" />
                 )}
               </button>

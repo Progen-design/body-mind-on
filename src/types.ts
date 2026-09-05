@@ -86,6 +86,14 @@ export interface WorkoutDay extends AktivitaPlanu {
   focus: string;
   /** Nářadí, které si má člověk připravit. Prázdné = neznáme. */
   naradi?: string[];
+  /**
+   * Má tenhle den skutečně naplánovaný trénink? `false` = den volna —
+   * `naTreninky()` teď vrací všech sedm dnů (docs/DALSI_KROK.md 8.14),
+   * takže i den volna má neprázdné `dayName`, a `jeNaplanovany()`
+   * (lib/trenink.ts) potřebuje tenhle příznak, ne `dayName`, aby dny volna
+   * nevydávala za trénink.
+   */
+  maTrenink?: boolean;
   exercises: ExerciseItem[];
 }
 

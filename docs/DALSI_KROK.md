@@ -119,73 +119,76 @@ nedaří dotáhnout objednávku.
 - **Nepouštěj se do `is_pantry_ingredient`.** Zjištění k tomu je v textu
   níž a je to samostatné rozhodnutí, ne součást téhle opravy.
 
-## 8.15 UŽIVATEL DOSTANE DEVĚT CVIKŮ DOKOLA
+## 8.16 DOMA BEZ VYBAVENÍ SE 8.15 MINULA — DEVĚT CVIKŮ ZŮSTALO
 
-**Změřeno na produkci 5. 9. — NEMĚŘ SI TO SÁM:**
+**8.15 rozšířila rotaci na všechny čtyři varianty. U dvou prostředí to
+zabralo, u třetího ne:**
 
 ```
-různých cviků na jeden plán      9      (rozsah 5–14)
-různých cviků napříč 21 plány   24
-nejčastější cvik „Prkno"        42×
-cviků v registru               209
+za 4 týdny, různých cviků      před 8.15    po 8.15
+  gym                              9          14
+  home_equipment                   9          13
+  home_bodyweight                  9           9    ← beze změny
 ```
 
-### Příčina
+### Proč
 
-`lib/workoutStartProgram.js`:
+Varianty A–D pro `home_bodyweight` sdílejí skoro všechno:
 
-```js
-export const PRAH_ROZSIRENE_ROTACE = 4;
-pocetVariantProTyden(3) -> 2
+```
+A: squat, pushup, superman, glute_bridge, plank
+B: lunges, pushup, superman, russian_twist, plank_side
+C: squat, lunges, glute_bridge, dead_bug, plank
+D: pushup, squat, superman, dead_bug, plank_side
 ```
 
-Varianty **C a D jsou v `lib/workoutTemplates.js` kompletně napsané**
-pro všechna tři prostředí (`gym`, `home_equipment`, `home_bodyweight`),
-ale při méně než čtyřech trénincích týdně se nikdy nepoužijí. Většina
-lidí trénuje 3×, takže dostane jen A a B — dvě šablony po sedmi cvicích
-s překryvem, tedy devět různých cviků na celý program.
+Dvacet pozic, devět unikátních cviků. `pushup`, `squat` a `superman`
+každý 3×. Rotace nemá co rotovat.
 
-Rotace napříč týdny už funguje: `startVariantForSession` počítá
-`(weekIndex * perWeek) + sessionIndex`. Škrtí ji jen ta konstanta.
+### Zásoba je k dispozici
+
+`exercise_asset_registry` má **29 cviků s `equipment_class = 'body_weight'`,
+všechny s vizuálem**. Šest z nich jde doma bez jakéhokoli vybavení a
+v šablonách nejsou:
+
+```
+bent_knee_hip_raise    Zvedání pánve s pokrčenými koleny   abs
+crunch_hands_overhead  Zkracovačky nad hlavou              abs
+mountain_climber       Mountain climber                    core/cardio
+glute_kickback         Zapažování                          glutes
+calf_raise             Zvedání na špičky                   calves
+single_leg_butt_kick   Kopy jednonož                       quads
+```
 
 ### Co udělat
 
-Rotovat přes všechny čtyři varianty i při třech trénincích týdně.
-Při 3× týdně to dá:
+Rozšířit varianty C a D pro `home_bodyweight` tak, aby se překryv s A/B
+zmenšil — cíl je **aspoň 13 unikátních cviků za čtyři týdny**, tedy na
+úrovni ostatních dvou prostředí.
 
-```
-týden 1:  A B C
-týden 2:  D A B
-týden 3:  C D A
-```
-
-Uživatel tedy uvidí za tři týdny všechny čtyři varianty místo dvou.
-
-### Na co si dát pozor
-
-- **Věta „V týdnu se střídají 2 různé jednotky…"** v profilu
-  (`WorkoutSection.tsx`, `vysvetleniStridani`) se skládá z reálných dat,
-  takže by měla sednout sama. Ověř to a napiš, co říká po změně.
-- **Progrese** (`start_workout_progression`, 250 řádků na produkci) se
-  váže na variantu a cvik. Změna rotace nesmí rozbít dopočet u lidí,
-  kteří program už běží — projdi `startProgramWeekIndex` a cestu, která
-  progresi dohledává, a napiš, co se stane uživateli uprostřed programu.
-- **`PRAH_ROZSIRENE_ROTACE`** možná přestane dávat smysl. Když ji rušíš,
-  zruš ji celou včetně testů, ať nezůstane mrtvá konstanta.
+Drž se pravidel, která ty šablony už mají:
+- pět cviků na jednotku, ne šest
+- každá jednotka pokrývá vzory (tlak, tah, nohy, core), ne partie
+- progrese: každý cvik musí mít pravidlo (`upravProCil`, `sets`,
+  `reps_min/max` nebo `duration_sec`) — existující test
+  „všechny cviky mají pravidlo progrese" to hlídá
 
 ### Co v tomhle bodě NEDĚLAT
 
-- **Neměň obsah šablon** v `workoutTemplates.js`. Tenhle bod je o rotaci,
-  ne o nových cvicích.
-- **Nesahej na registr cviků** ani na `exerciseCatalogPool`.
-- **Neměň počet cviků v jednotce** (dnes 7).
+- **Nesahej na `gym` ani `home_equipment`.** Tam 8.15 zabrala.
+- **Nepřidávej cviky, které potřebují vybavení.** `pull_up`, `chin_up`,
+  `bench_dips`, `incline_push_up*` a `bench_jump` mají v registru
+  `body_weight`, ale potřebují hrazdu nebo lavici — doma bez vybavení
+  nejdou. Ověř `equipment_class` i to, co cvik reálně potřebuje.
+- **`warmup`, `rest` a `cooldown` nejsou cviky**, i když jsou v registru.
+- **Neměň A a B.** Ty jsou odladěné a lidé na nich mají progresi.
 
-### Testy
+### Vedlejší nález — neopravovat tady, jen zapsat
 
-- při 3 trénincích týdně se za tři týdny objeví všechny čtyři varianty
-- rotace zůstává deterministická (stejný vstup = stejný výstup)
-- při 5 trénincích se chování nezmění oproti dnešku
-- uživatel uprostřed programu nedostane jiný předpis pro tentýž cvik
+`exercise_asset_registry.primary_muscle` je u některých řádků nesmysl:
+`rest` má `glutes`, `cooldown` má `triceps`. Nikde to nic neláme
+(ty klíče se do plánu nedostanou), ale kdyby se někdy `primary_muscle`
+použil k výběru cviků, bude to zdroj chyb.
 
 ## 7.1 APPKA A WEB NESDÍLEJÍ JEDINOU HODNOTU — A APPKA NEMÁ TOKENY
 
@@ -254,6 +257,10 @@ a JetBrains Mono z Google Fonts, změna písma je samostatné rozhodnutí.
 ---
 
 ## Hotovo a nasazeno — NEŘEŠ ZNOVU
+- **8.15** rotace přes všechny čtyři varianty i při 3 trénincích týdně
+  (`PRAH_ROZSIRENE_ROTACE` zrušen). Za 4 týdny: gym 14 různých cviků,
+  home_equipment 13, home_bodyweight 9. Progrese pokračuje podle
+  `canonical_key`, ne podle varianty. Nasazeno 5. 9., `2da9748` (#148).
 - **8.14** profil ukazuje celý týden: rozpis tréninků má všech sedm dnů
   (volno neklikací), nákupní seznam je sbalený, „Celý týdenní jídelníček"
   zobrazuje sedm sbalených dnů místo jednoho. `treninkoveDny()` je jediné

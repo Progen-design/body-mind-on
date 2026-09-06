@@ -220,6 +220,87 @@ Napiš JEDNU migraci, která opraví data v `exercise_asset_registry`:
 - Nespouštěj migraci. Píšeš jen soubor.
 - Neměř produkci. Čísla výš jsou změřená, ber je jako zadání.
 
+## 8.19 HLÍDKA KŘIČÍ CRITICAL NA NĚCO, CO FUNGUJE - A NEVÍME, PROČ PADÁ 90 % DÁVKY
+
+Změřeno v produkci 6. 9. 2026.
+
+### A) `generator_nedodava` je falešný poplach
+
+Pohled `system_health_alerts` hlásí **critical**: „Generator nevyrobil zadny
+recept 20 h, posledni: 2026-09-06 03:18".
+
+Skutečnost z `ai_runs` (`purpose = 'recipe_generator_beh'`):
+
+    6. 9. 03:18   zapsano 12, zahozeno 93   (bezel)
+    6. 9. 11:15   reason: denni_strop_vycerpan, skipped: true
+    6. 9. 19:15   reason: denni_strop_vycerpan, skipped: true
+
+Generátor tedy **nespadl** - narazil na denní strop, který je v produkci
+nastavený přes `RECIPE_GEN_MAX_PER_DAY` (podle chování na 20; hodnota je
+ve Vercelu zašifrovaná). `vyrobenoZa24h()` v `lib/recipeGenerator.js`
+počítá `recipes_catalog` se `source = 'llm_generated'` za 24 h - naměřeno
+20 v okně, takže `zbyvaDnes = 0` a běh se korektně přeskočí.
+
+To je navržené chování, ne porucha. Ale hlídka ho hlásí jako `critical`,
+takže:
+
+- `critical` v tomhle systému přestává něco znamenat - je tam pořád,
+- až generátor opravdu spadne, nikdo si toho nevšimne.
+
+Falešný poplach na kritické úrovni je horší než žádný poplach.
+
+**CO UDĚLAT:** větev `generator_nedodava` v pohledu `system_health_alerts`
+nesmí hlásit nic, když poslední záznam `recipe_generator_beh` v `ai_runs`
+má `result->>'reason' = 'denni_strop_vycerpan'` nebo
+`result->>'skipped' = 'true'`. Tehdy je stav normální.
+
+`critical` ať zůstane jen pro skutečný výpadek - tzn. žádný běh vůbec
+(ani přeskočený), nebo běh s `error`. Když chceš stav „strop vyčerpán"
+zviditelnit, dej ho jako `info`, ne jako `warning` ani `critical`.
+
+Napiš to jako migraci, která pohled přepíše. Zbytek větví pohledu nech
+znak po znaku stejný - vytáhni si aktuální definici přes
+`pg_get_viewdef`, ne ze staré migrace.
+
+### B) Nevíme, proč padá 90 % dávky
+
+    beh            zapsano   zahozeno   vyteznost
+    6. 9. 03:18       12        93        11 %
+    5. 9. 19:19        8        98         8 %
+    4. 9. 22:09       12        56        18 %
+
+Na osm až devět zahozených kandidátů připadá jeden zapsaný recept. To je
+osminásobek nákladů na model, než by muselo být.
+
+**Podezření je, že to NENÍ tuk.** Jednotlivá volání (`purpose =
+'recipe_generation'`) hlásí `zahozeno_nad_stropem_tuku` jen 0-2 na volání,
+a `validacniStropTuku()` stejně zvedá strop na 0,45, i když objednávka
+říká 0,30. Hlavní důvod bude jinde - dedup, kalorické pásmo, bílkoviny
+nebo nedohledané suroviny - ale z dat to dnes NEJDE poznat, protože
+`zahozeno` na úrovni běhu je jedno slepené číslo.
+
+**CO UDĚLAT:** rozpad, ne oprava. V `provedBeh()` v
+`lib/recipeGeneratorRun.js` už existují dílčí počítadla
+(`nadStropemTuku`, `podCilemBilkovin`, `mimoBilkovinu`, `nedohledane`).
+Doplň k nim zbylé důvody zahození tak, aby jejich součet dal `zahozeno`,
+a všechna je zapiš do `ai_runs.result` u `recipe_generator_beh` - stejně,
+jako tam 8.13 přidala `zahozeno_nad_stropem_tuku`.
+
+Ať z jednoho běhu jde přečíst věta „z 93 zahozených bylo X duplicit,
+Y mimo kalorické pásmo, Z pod bílkovinami, W nedohledaná surovina".
+
+NEOPRAVUJ zatím žádný z těch důvodů a neměň žádnou validaci ani prompt.
+Nejdřív chci vidět čísla, pak se rozhodne, co se povolí.
+
+### NEDĚLAT
+
+- Neměň `validacniStropTuku()`, `receptNepresahujeStropTuku()` ani
+  `MIN_TVRDY_STROP_TUKU`. Strop tuku z 8.13 zůstává.
+- Neměň prompt generátoru ani jeho JSON schéma.
+- Nesahej na `RECIPE_GEN_MAX_PER_DAY` ani jinou konfiguraci prostředí.
+- Nespouštěj migraci. Píšeš jen soubor.
+- Neměř produkci. Čísla výš jsou změřená.
+
 ## 7.1 APPKA A WEB NESDÍLEJÍ JEDINOU HODNOTU — A APPKA NEMÁ TOKENY
 
 > **Nedělá se teď.** Honza 31. 8.: vzhled má počkat, dokud systém nefunguje.

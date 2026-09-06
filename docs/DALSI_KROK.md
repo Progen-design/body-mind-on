@@ -119,328 +119,73 @@ nedaří dotáhnout objednávku.
 - **Nepouštěj se do `is_pantry_ingredient`.** Zjištění k tomu je v textu
   níž a je to samostatné rozhodnutí, ne součást téhle opravy.
 
-## 8.11 MAKRA SE NELÁMOU V GENERÁTORU, ALE VE VÝBĚRU
+## 8.15 UŽIVATEL DOSTANE DEVĚT CVIKŮ DOKOLA
 
-**Zásoba libových receptů v katalogu JE. Skladač je nebere.** Tohle je
-nejlevnější cesta k tomu, aby appka splnila to, co web slibuje slovem
-„makra" — nepotřebuje jediný nový recept.
-
-### Měření, které to obrací
-
-Průměr katalogu je 41 % kalorií z tuku proti cíli 27–28 %. To ale
-nerozhoduje. Rozhoduje, kolik libových receptů je k dispozici:
+**Změřeno na produkci 5. 9. — NEMĚŘ SI TO SÁM:**
 
 ```
-slot       aktivních   do 35 % tuku   do 30 %
-obed          229          127          104
-vecere        219           86           66
-snidane       179           68           54
-svacina       208           64           52
+různých cviků na jeden plán      9      (rozsah 5–14)
+různých cviků napříč 21 plány   24
+nejčastější cvik „Prkno"        42×
+cviků v registru               209
 ```
 
-Týdenní plán potřebuje při `MAX_OPAKOVANI_RECEPTU_TYDNE = 2` aspoň
-⌈7/2⌉ = 4 recepty na slot (u šestijídlových plánů 7 na svačiny).
-K dispozici je 64 až 127. **Zásoba není brzda.**
+### Příčina
 
-### Kudy plán vzniká (ověřeno v kódu, ne odhad)
+`lib/workoutStartProgram.js`:
 
-```
-LLM agent                    kostra týdne — které jídlo, jaký den, název
-resolveMealsFromCatalog      slot NAHRADÍ skutečným receptem z katalogu
-pickSeededCatalogRecipe   →  pickFromTopKCatalogRow  →  catalogPickRank
+```js
+export const PRAH_ROZSIRENE_ROTACE = 4;
+pocetVariantProTyden(3) -> 2
 ```
 
-Model tedy recept NEVYBÍRÁ. Vybírá ho vzorec. Proto se makra nedají
-spravit promptem a proto je celý tenhle bod v `lib/`.
+Varianty **C a D jsou v `lib/workoutTemplates.js` kompletně napsané**
+pro všechna tři prostředí (`gym`, `home_equipment`, `home_bodyweight`),
+ale při méně než čtyřech trénincích týdně se nikdy nepoužijí. Většina
+lidí trénuje 3×, takže dostane jen A a B — dvě šablony po sedmi cvicích
+s překryvem, tedy devět různých cviků na celý program.
 
-### Tři závady, ne jedna
-
-1. **Váhy.** `catalogPickRank` = `kcalDiff × 1,15` + penalizace bílkovin
-   + penalizace tuku − `simplicity × 2,8`. Překročení tuku má váhu
-   `VAHA_NAD_CILEM_TUK = 0,6`, takže tučný recept, který trefí kalorie,
-   porazí libový s odchylkou padesát kalorií.
-
-2. **Losuje se z TOP-5.** `pickFromTopKCatalogRow` seřadí kandidáty a pak
-   z prvních `CATALOG_PICK_TOP_K` (default 5, clamp 3–8) seedovaně losuje
-   kvůli variabilitě per uživatel/týden/slot. Sebelepší řazení se tím
-   rozředí — pátý v pořadí může být výrazně tučnější než první.
-
-3. **Nouzová větev penalizaci tuku NEZNÁ.** `pickClosestCatalogRow`
-   (`lib/nutrition/portionScaling.js`) volá `sortCatalogRowsForSimplePick`
-   **bez** `cilovyPodilBilkovin` a `cilovyPodilTuku` — defaultují na `null`
-   a řadí se čistě podle kalorií a jednoduchosti. Spouští ji
-   `pickClosestCatalogRecipe` z `resolveMealsFromCatalog` po hlášce
-   „TITLE/FILTER MISS — emergency catalog pick". **Na téhle cestě je celá
-   8.4 mrtvá.** Tohle je díra, ne ladění.
+Rotace napříč týdny už funguje: `startVariantForSession` počítá
+`(weekIndex * perWeek) + sessionIndex`. Škrtí ji jen ta konstanta.
 
 ### Co udělat
 
-1. **Zalátat nouzovou větev (bod 3) jako první.** `pickClosestCatalogRow`
-   musí přijímat a předávat `cilovyPodilBilkovin` a `cilovyPodilTuku`
-   stejně jako `pickFromTopKCatalogRow`, a `pickClosestCatalogRecipe` je
-   musí protáhnout z `resolveMealsFromCatalog`. Bez tohohle nemá smysl
-   ladit váhy — část plánů by ladění minulo.
+Rotovat přes všechny čtyři varianty i při třech trénincích týdně.
+Při 3× týdně to dá:
 
-2. **Tvrdý strop na tuk ve výběru, ne jen penalta.** Penalta je spojitá a
-   dá se „přeplatit" kalorickou trefou. Přidej do řazení pásmo: kandidáti
-   s podílem tuku do `STROP_TUKU_VYBERU` (navrhuju 0,35) tvoří přednostní
-   pool; teprve když jich je míň než `topK`, doplní se zbytkem. Stejný
-   vzor, jaký už `sortCatalogRowsForSimplePick` používá pro `simplicity`
-   (`SIMPLE_FLOOR`, postupné povolování) — nekopíruj ho, ale drž se ho.
-   Měření výš říká, že pool bude neprázdný ve všech čtyřech slotech.
+```
+týden 1:  A B C
+týden 2:  D A B
+týden 3:  C D A
+```
 
-3. **Zúžit losování, když je z čeho brát.** `topK` nech, ale losuj jen
-   z těch kandidátů přednostního poolu. Variabilita zůstane (64+ receptů
-   na slot), zmizí jen možnost vylosovat tučný, když libový byl po ruce.
+Uživatel tedy uvidí za tři týdny všechny čtyři varianty místo dvou.
 
-4. **Až potom sahej na váhy.** `VAHA_NAD_CILEM_TUK` zvyš jen tehdy, když
-   po bodech 1–3 měření pořád ukazuje překročení. Neměň víc věcí naráz —
-   pak se nedá poznat, co zabralo.
+### Na co si dát pozor
 
-5. **Diagnostika do logu.** Do `[catalog-resolve] ... complete` přidej,
-   kolik slotů se vybralo z přednostního poolu a kolik ze zbytku. Bez
-   toho nepůjde po nasazení říct, jestli bod 2 zabral, nebo jen pool byl
-   pokaždé prázdný.
-
-6. **Testy** — čisté funkce, žádná DB:
-   - `pickClosestCatalogRow` s cílovým podílem tuku vybere libovější
-     recept než bez něj (regrese na bod 3)
-   - při dostatku libových kandidátů se tučný nedostane do losování
-   - když je libových míň než `topK`, pool se doplní a nic nespadne
-   - `topK = 1` a prázdný vstup nespadnou
-   - beze změny chování, když `cilovyPodilTuku` je `null` (starší volání)
+- **Věta „V týdnu se střídají 2 různé jednotky…"** v profilu
+  (`WorkoutSection.tsx`, `vysvetleniStridani`) se skládá z reálných dat,
+  takže by měla sednout sama. Ověř to a napiš, co říká po změně.
+- **Progrese** (`start_workout_progression`, 250 řádků na produkci) se
+  váže na variantu a cvik. Změna rotace nesmí rozbít dopočet u lidí,
+  kteří program už běží — projdi `startProgramWeekIndex` a cestu, která
+  progresi dohledává, a napiš, co se stane uživateli uprostřed programu.
+- **`PRAH_ROZSIRENE_ROTACE`** možná přestane dávat smysl. Když ji rušíš,
+  zruš ji celou včetně testů, ať nezůstane mrtvá konstanta.
 
 ### Co v tomhle bodě NEDĚLAT
 
-- **Neměň `MAX_OPAKOVANI_RECEPTU_TYDNE`.** Strop opakování je to jediné,
-  co drží pestrost; zvýšit ho kvůli makrům by vyměnilo jeden problém
-  za druhý.
-- **Nedeaktivuj tučné recepty v katalogu.** Jsou správné pro lidi
-  s vyšším cílem na tuk; problém je výběr pro konkrétní cíl, ne recept.
-- **Nesahej na generátor ani na `fat_hint`.** 8.8 se teprve měří.
-- **Nezvyšuj `CATALOG_PICK_TOP_K`.** Řeší se opačný problém.
+- **Neměň obsah šablon** v `workoutTemplates.js`. Tenhle bod je o rotaci,
+  ne o nových cvicích.
+- **Nesahej na registr cviků** ani na `exerciseCatalogPool`.
+- **Neměň počet cviků v jednotce** (dnes 7).
 
-## 8.12 ÚKLID FRONTY — CO SE NEKONTROLUJE, TO SE NEDODRŽÍ
+### Testy
 
-**Tři malé věci, které vyplavalo měření 4. 9. po nasazení 8.10. Žádná
-z nich není velká, dohromady ale drží frontu v polorozbitém stavu.**
-
-### Měření, ze kterého to vzešlo (produkce 4. 9., NEMĚŘ SI TO SÁM)
-
-8.10 zabralo: běh v 11:15 UTC nedal ani jedné vegetariánské položce
-`hlavni_bilkovina: "ryby"` — dostaly `vejce`. `hovezi`/`veprove` se
-objevily jen u `gluten_free`, kde se nic nevylučuje. Správně.
-
-Spadly ale znovu, na něčem jiném:
-
-```
-1567  vecere   vegetarian   protein_hint {"podil":0.55}
-1568  svacina  vegetarian   {"podil":0.55}     posledni_chyba: "černý pepř"
-1660  svacina  vegetarian   {"podil":0.5}
-1527  vecere   vegetarian   {"podil":0.4}
-```
-
-55 % kalorií z bílkovin na vegetariánské svačině je nesplnitelné. 8.5
-tenhle podíl zastropovala na 0,25 — ale jen v `omezPodilProObjednavku()`
-při ZAKLÁDÁNÍ objednávky. Staré řádky ve frontě si původní hodnoty nesou
-dál a **CHECK constraint v databázi pořád povoluje až 0,55**. Kód a
-schéma si odporují a schéma je slabší.
-
-Stav po ručním zásahu (Honzův druhý Claude, 4. 9.): 6 řádků zastropováno
-na 0,25, **53 zbylo** — po zastropování by se srazily s objednávkou,
-která na tentýž slot už čeká. Je to duplicitní poptávka, ne ztráta, ale
-budou se donekonečna pokoušet a padat.
-
-A do třetice: `pantry_ingredients` obsahuje `pepr`, `mlety pepr`,
-`kajensky pepr` — ale ne `černý pepř`. Jedna položka na tom dnes spadla.
-Stejná třída jako „červená paprika" v 8.10.
-
-### Co udělat
-
-1. **Zpřísnit CHECK na `protein_hint` z 0,55 na 0,25** — migrace jako
-   soubor, NEAPLIKUJ ji. Ať se kód a schéma přestanou lišit; dnes je
-   `omezPodilProObjednavku()` jediná obrana a stačí ji jednou obejít.
-   Constraint je `recipe_generation_queue_protein_hint_check` a je to
-   regulární výraz nad textem (`^\{("zdroj":"...",)?"podil":0\.[0-9]{1,2}\}$`)
-   plus rozsah — **měň jen tu horní mez, formát nech být.** Migrace musí
-   napřed zastropovat existující řádky, jinak `ALTER TABLE ... ADD
-   CONSTRAINT` na starých datech spadne.
-
-2. **Uzavřít mrtvé objednávky.** Řádek ve `failed`, jehož specifikace se
-   po zastropování na 0,25 kryje s jinou položkou v `pending`/`running`,
-   se nemá zkoušet znovu. Přidej stav (`nadbytecna` nebo podobně, doplň
-   ho do CHECKu na `stav`) a v migraci ho těm řádkům nastav.
-   **Nemaž je** — historie fronty je jediné, z čeho se dá zpětně poznat,
-   co si appka kdy vyžádala.
-
-3. **`černý pepř` do `pantry_ingredients`** (`cerny pepr`, kategorie
-   `seasoning`, vegan i vegetarián). Stejná migrace, `ON CONFLICT DO
-   NOTHING` jako u „římského kmínu".
-
-4. **Test** na `omezPodilProObjednavku()`, že 0,55 na vstupu dá 0,25 na
-   výstupu — už existuje, ověř že platí, a přidej k němu poznámku, že
-   od téhle migrace to hlídá i schéma.
-
-### Co v tomhle bodě NEDĚLAT
-
-- **Neměň strop 0,25 samotný.** Je to změřené rozhodnutí z 8.5
-  (nad 0,25 spadla úspěšnost fronty 3,5×), ne odhad.
-- **Nemaž řádky fronty.**
-- **Nesahej na `fat_hint`.** Měření 4. 9. ukázalo, že nezabral (nové
-  recepty 49,6 % kalorií z tuku proti 45 % před ním) — ale řeší se to
-  v 8.11 na straně výběru, ne tady.
-
-## 8.13 TUKOVÝ STROP JAKO TVRDÁ VALIDACE — PROMPT NESTAČÍ
-
-**Tři měření za sebou. 8.8 (tuk jen jako zadání do promptu) nezabrala
-ani jednou.**
-
-```
-3. 9.  před 8.8    45,0 % kalorií z tuku
-4. 9.  po 8.8      49,6 %
-4. 9.  druhý běh   47,5 %   (1 recept z 12 pod 35 %)
-```
-
-Bílkovinový hint, který se v `zapisRecept()` TVRDĚ validuje
-(`receptSplnujePodil`, důvod `pod_cilem_bilkovin`), přitom drží
-33 % spolehlivě. Rozdíl mezi tím, co se kontroluje, a tím, co se jen
-napíše do promptu.
-
-### Rozložení, ze kterého se musí vyjít
-
-110 receptů `llm_generated` za 7 dní:
-
-```
-medián            51,4 % kalorií z tuku
-do 30 %           15 ze 110   (14 %)
-do 35 %           21          (19 %)
-do 40 %           33          (30 %)
-do 45 %           43          (39 %)
-```
-
-**Tvrdý strop na 0,30 by zahodil 86 % dávky a frontu zabil** — přesně
-to riziko, kvůli kterému se 8.8 dělala jen jako prompt. Strop musí být
-tam, kde je splnitelný, a utahovat se až podle měření.
-
-### Co udělat
-
-1. **Tvrdá validace v `zapisRecept()`**, zrcadlo bílkovinové kontroly:
-   recept nad stropem se nezapíše, důvod `nad_stropem_tuku`, detail
-   nese skutečný podíl i strop. Kontroluje se až z
-   `compute_nutrition_for_ingredients`, model makra nevrací.
-
-2. **Strop ber z `fat_hint` položky fronty**, ne z konstanty —
-   sloupec už existuje (8.8, default 0,30). **Ale nepoužívej ho
-   syrový:** validační strop = `max(fat_hint, MIN_TVRDY_STROP_TUKU)`,
-   kde `MIN_TVRDY_STROP_TUKU = 0,45`. Důvod je v rozložení výš: při
-   0,30 projde 14 % dávky, při 0,45 projde 39 %. Chceme tlak, ne
-   zaseknutou frontu.
-
-3. **Důvod do dalšího pokusu.** `nad_stropem_tuku` patří do
-   `nedohledane`? NE — nejsou to názvy surovin. Vlastní pole promptu,
-   stejně jako `tyhle_jednotky_nepouzivej` z 8.9: konkrétní číslo
-   („minule 52 %, strop je 45 %"), ne obecné „dej míň tuku".
-
-4. **Počítadlo do `ai_runs.result`** — `zahozeno_nad_stropem_tuku`,
-   obdoba `zahozeno_pod_cilem_bilkovin`. Bez něj nepůjde poznat, jestli
-   se strop dá utáhnout, nebo už škrtí.
-
-5. **Testy:** recept nad stropem se nezapíše; přesně na stropu projde;
-   `fat_hint` pod 0,45 se zvedne na 0,45; chybějící makra recept
-   nezahodí (stejné pravidlo jako u bílkovin — chybějící hodnota není
-   porušení).
-
-### Co v tomhle bodě NEDĚLAT
-
-- **Nesnižuj `MIN_TVRDY_STROP_TUKU` pod 0,45**, dokud měření neukáže,
-  že fronta má rezervu. Utahuje se po nasazení, ne dopředu.
-- **Nesahej na `catalogPickRank` ani na 8.11.** Tohle je výroba,
-  8.11 je výběr; měří se odděleně.
-- **Neměň `RECIPE_GEN_MAX_PER_DAY`.**
-
-## 8.14 PROFIL: TÝDEN MUSÍ BÝT VIDĚT CELÝ, NÁKUPNÍ SEZNAM SE MÁ SBALIT
-
-**Zadání od Honzy po prohlídce profilu 5. 9. Tři věci ve dvou
-komponentách, žádná databáze.**
-
-### 1. Týdenní rozpis tréninků ukazuje jen tréninkové dny
-
-`src/data/adaptery.ts` (kolem ř. 336) mapuje na `workouts` jen dny,
-které mají trénink. Profil pak v „Týdenním rozpisu" zobrazí tři dlaždice
-(Pá, Po, St) a zbytek týdne prostě není. Člověk nevidí, že úterý je
-volno — vidí, že úterý neexistuje.
-
-**Doplnit všech sedm dní, Po–Ne.** Volný den je dlaždice jako každá
-jiná, jen popisek `Volno` místo názvu tréninku, bez délky a bez
-kalorií, a **není klikací** (`disabled`, žádný hover efekt).
-Grid už `lg:grid-cols-7` má, takže layout se nemění.
-
-Pořadí dní je Po–Ne, ne pořadí, ve kterém přišly z API.
-
-### 2. Klikání zůstane, ale nesmí vypadat jako hlavní ovládání
-
-Honza: *„člověk musí mít jasný cíl a směr"*. Karta **DNEŠNÍ NAPLÁNOVANÝ
-TRÉNINK** je to hlavní; rozpis je přehled. Dnes působí rozpis jako
-navigace, protože kliknutí přepíše detail pod ním a nic to nenaznačuje.
-
-- Kliknutí na tréninkový den detail dál přepíná (Honza to chce zachovat).
-- **Vizuálně se rozpis podřídí:** menší, tišší, bez svítící ramečkové
-  animace, kterou má dnes vybraná dlaždice. Zvýraznění dneška
-  (`isToday`, pulzující tečka) zůstává.
-- Když je vybraný jiný den než dnešek, **musí to být nad detailem vidět**
-  — dnes to není poznat a vypadá to, jako by se změnil dnešní trénink.
-  Text typu „Prohlížíš pondělí" a odkaz „zpět na dnešek".
-
-### 3. Nákupní seznam se má sbalit
-
-`src/components/NutritionSection.tsx` (kolem ř. 269) vypisuje všech
-63 položek pod sebou a odtlačí zbytek profilu mimo obrazovku.
-
-**Sbalený stav jako výchozí**, rozbalovací. V hlavičce zůstane počet
-(`zbývá X z Y`), aby šlo poznat stav bez rozbalení. Tlačítko „Otevřít
-přes celou obrazovku" zůstává, kde je.
-
-### 4. „Celý týdenní jídelníček" ukazuje jeden den
-
-**Změřeno v kódu 5. 9.** `src/App.tsx` drží `meals` z `naJidla(plan)`,
-a `naJidla` (`src/data/adaptery.ts:249`) si hned na druhém řádku vybere
-`dnesniDen(struktura)` — vrací tedy **jedno pole jídel dnešního dne**.
-`MealPlanModal` dostává `meals={meals}`, tedy totéž, a jeho typ je
-`meals: MealItem[]` — o dnech nikdy nevěděl.
-
-Tlačítko slibuje týden, komponenta umí den. Není to chyba v datech —
-`structured_plan_json.days` má všech sedm dnů, plán je celý.
-
-**Co udělat:**
-
-- Nový adaptér `naJidlaTydne(plan)` vedle `naJidla`, který vrátí
-  `{ datum, denNazev, jeDnes, meals: MealItem[] }[]` za všechny dny
-  plánu. Vnitřek jednoho dne je TÁŽ logika jako v `naJidla` — vytáhni
-  ji do sdílené funkce, ať se ty dvě cesty nemůžou rozejít
-  (`naJidla` ať je pak `naJidlaTydne(plan).find(d => d.jeDnes)`).
-- `MealPlanModal` bere dny, ne ploché pole. **Každý den je sbalený
-  řádek, jídla se ukážou až po rozkliknutí** — sedm dnů po pěti jídlech
-  je 35 položek a přes celou stránku se v tom nedá vyznat.
-  Ve sbaleném řádku musí být vidět: den v týdnu, datum, počet jídel
-  a součet kalorií — tolik, aby šlo vybrat den bez rozklikávání všech.
-  Dnešek je rozbalený jako jediný, ostatní sbalené. Rozbalených smí
-  být víc naráz (není to akordeon, který ostatní zavírá).
-- Odškrtávání jídel (`onToggleMeal`) musí dál fungovat a psát na
-  správný den — `MealItem` už nese `planDay`, použij ho.
-
-**Pozor:** `id` jídla je dnes `catalog_id ?? recipe_id ?? "${den.date}-${i}"`.
-Napříč týdnem se stejný recept opakuje (strop jsou 2× týdně), takže
-`catalog_id` NENÍ v rámci týdne unikátní — jako React key i pro
-odškrtávání musí být klíč složený z dne a pořadí, jinak se odškrtnutí
-propíše do dvou dnů naráz.
-
-### Co v tomhle bodě NEDĚLAT
-
-- **Nesahej na sekci „Dnešní jídla" v profilu.** Ta je v pořádku —
-  mění se jen modál za tlačítkem „Celý týdenní jídelníček" (bod 4).
-- **Neodstraňuj týdenní rozpis** ani přepínání — obojí zůstává,
-  mění se jen rozsah (7 dní) a vizuální váha.
-- Žádná migrace, žádná změna API, jen `src/`.
+- při 3 trénincích týdně se za tři týdny objeví všechny čtyři varianty
+- rotace zůstává deterministická (stejný vstup = stejný výstup)
+- při 5 trénincích se chování nezmění oproti dnešku
+- uživatel uprostřed programu nedostane jiný předpis pro tentýž cvik
 
 ## 7.1 APPKA A WEB NESDÍLEJÍ JEDINOU HODNOTU — A APPKA NEMÁ TOKENY
 
@@ -509,6 +254,19 @@ a JetBrains Mono z Google Fonts, změna písma je samostatné rozhodnutí.
 ---
 
 ## Hotovo a nasazeno — NEŘEŠ ZNOVU
+- **8.14** profil ukazuje celý týden: rozpis tréninků má všech sedm dnů
+  (volno neklikací), nákupní seznam je sbalený, „Celý týdenní jídelníček"
+  zobrazuje sedm sbalených dnů místo jednoho. `treninkoveDny()` je jediné
+  místo, které odlišuje trénink od volna. Nasazeno 5. 9., `9974d01` (#147).
+- **8.13** tvrdá validace tuku ve výrobě (`nad_stropem_tuku`, strop
+  `max(fat_hint, 0,45)`). Nasazeno 5. 9., `31a641e` (#146). Účinek se měří
+  po prvním běhu generátoru.
+- **8.12** úklid fronty: CHECK na `protein_hint` zpřísněn na 0,25, stav
+  `nadbytecna` pro duplicity (56 řádků), „černý pepř" do spíže. Migrace
+  `20260904150000` aplikovaná a orazítkovaná.
+- **8.11** makra ve výběru: `STROP_TUKU_VYBERU` 0,35, přednostní pool,
+  nouzová větev konečně zná makra. Změřeno: tuk v týdenním plánu 43 % → 22 %
+  (cíl 28 %), bílkoviny 31 % proti cíli 32 %.
 - **8.10** vegetariánská objednávka už nedostane rybu. `černý rybíz`
   spadl do skupiny `ryby` přes vzor `/ryb/i`, rotace objednala rybu a
   povolený seznam ji zahodil — 46 položek `failed`. Opraveno vzorem

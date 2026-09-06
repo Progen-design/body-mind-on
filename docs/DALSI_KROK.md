@@ -820,3 +820,32 @@ dala za pravdu progresi a mapa byla stará. Neověřeno, co má pravdu tentokrá
 tlačítko tam žádné není.
 
 **Navigační záložky nemají přístupné jméno** pro odečítače obrazovky.
+
+**`equipment_class` nemá hodnotu pro hrazdu ani lavici** — 8.18 (6.–7. 9.
+2026). Osm cviků v `exercise_asset_registry` (`pull_up`, `chin_up`,
+`bench_dips`, `bench_jump`, `incline_push_up` + tři varianty) skutečně
+potřebuje hrazdu nebo lavici, ale `equipment_class` dnes zná jen sedm
+hodnot (`body_weight, dumbbell, barbell, cable, machine, kettlebell, band`
+— `TRIDY_VYBAVENI` v `lib/exerciseImportQueue.js`, `TRIDY_V_POSILOVNE`
+v `lib/exerciseCatalogPool.js`) a žádná neznamená ani jedno. 8.18 to řešila
+tak, že těmhle osmi nastavila `usable_in_plan = false` (přes
+`equipment_class = NULL`, migrace `20260907100000`) — bezpečnější než cvik
+nabízet s lživým „vlastní váha".
+
+Návrh na později, kdyby se hrazda/lavice měly nabízet doma jako skutečné
+vybavení (dnes `pullup_bar` a `bench` v `EQUIPMENT_LABELS`,
+`lib/trainingEnvironment.js`, existují jako volby vybavení, ale na žádnou
+třídu cviků se nenapojují):
+
+- přidat `equipment_class` hodnoty `pullup_bar` a `bench`,
+- rozšířit `TRIDY_VYBAVENI` (`lib/exerciseImportQueue.js`) a
+  `TRIDY_V_POSILOVNE` (`lib/exerciseCatalogPool.js`) o obě,
+- doplnit `NACINI_NA_TRIDU` (`lib/exerciseCatalogPool.js`) o
+  `pullup_bar: 'pullup_bar', bench: 'bench'` — dnes mapuje jen
+  `dumbbells`/`kettlebell`/`bands`, takže i uživatel, který hrazdu nebo
+  lavici doma skutečně má, by bez týhle úpravy cviky nedostal,
+- **a hlavně** rozšířit hardcoded seznam sedmi hodnot přímo v SQL triggeru
+  `enforce_exercise_registry_rules()` (samostatná migrace) — `equipment_class`
+  nemá na úrovni tabulky CHECK constraint, těch sedm hodnot vynucuje jen
+  tenhle trigger, a bez jeho úpravy by nová třída dostala `usable_in_plan
+  = false` úplně všude, včetně posilovny.

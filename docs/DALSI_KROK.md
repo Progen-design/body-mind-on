@@ -1,4 +1,4 @@
-# Další krok pro Claude Code
+﻿# Další krok pro Claude Code
 
 ## Pravidla, která platí nade vším
 
@@ -119,7 +119,156 @@ nedaří dotáhnout objednávku.
 - **Nepouštěj se do `is_pantry_ingredient`.** Zjištění k tomu je v textu
   níž a je to samostatné rozhodnutí, ne součást téhle opravy.
 
-## 8.16 DOMA BEZ VYBAVENÍ SE 8.15 MINULA — DEVĚT CVIKŮ ZŮSTALO
+## 8.17 VLÁKNINU NIKDO NEPOČÍTÁ - APPKA JI ZOBRAZUJE JAKO POMLČKU
+
+Stav k 6. 9. 2026: `recipes_catalog.fiber_g` je null u **488 z 875** aktivních
+receptů a u **463 z 513** `llm_generated`. Appka i týdenní e-mail vlákninu
+zobrazují (`lib/mealDisplayModel.js`, `src/data/adaptery.ts`), takže uživatel
+u devíti z deseti jídel vidí "Vláknina —".
+
+### Kde je příčina
+
+Není v generátoru promptu. Makra nepočítá LLM - `lib/recipeGeneratorRun.js:428`
+volá RPC `compute_nutrition_for_ingredients(p_ingredients)` a bere z něj
+`kcal`, `protein_g`, `carbs_g`, `fat_g`. Ta funkce vlákninu nesčítá, i když
+`ingredients_nutrition.fiber_g_per_100g` existuje.
+
+### Data jsou doplněná, dělat je nemusíš
+
+Migrace `20260906180000_vlaknina_surovin.sql` je **už aplikovaná v produkci
+a orazítkovaná**. Doplnila `fiber_g_per_100g` u 112 surovin:
+
+| | před | po |
+|---|---|---|
+| surovin s vlákninou ve slovníku | 34 | 146 |
+| pokrytí použití v katalogu | 32 % | **94,8 %** |
+
+Nesahej na tu migraci a nepiš k ní žádnou další.
+
+### CO UDĚLAT
+
+**1) Nová SQL funkce - jako samostatný soubor migrace, NEAPLIKUJ ji.**
+
+`compute_nutrition_for_ingredients` má osmisloupcový `RETURNS TABLE`.
+`CREATE OR REPLACE FUNCTION` návratový typ změnit NEUMÍ (chyba 42P13) a
+`DROP` neprojde, protože na `compute_recipe_nutrition` visí view
+`system_health_alerts_zaklad`. Tohle je přesně past, na kterou najel bod 8.9.
+
+Proto přidej **novou samostatnou** funkci, stávající nech být:
+
+```
+public.compute_fiber_for_ingredients(p_ingredients jsonb) returns numeric
+```
+
+Matchování surovin i převod jednotek zkopíruj 1:1 z
+`compute_nutrition_for_ingredients` (`pg_get_functiondef` ti dá zdroj) -
+tedy `lower(extensions.unaccent(...))`, `ingredient_aliases`,
+`unit_conversions` se čtyřmi fallbacky, `search_path` na prázdno, `stable`.
+Liší se jen tím, co sčítá.
+
+Návratová hodnota:
+- součet `fiber_g_per_100g * gramů / 100`, zaokrouhlený na 1 desetinné místo,
+  přes suroviny, kde je surovina i gramáž známá **a `fiber_g_per_100g` není null**
+- `null`, když ani jedna surovina receptu nemá data o vláknině - tzn.
+  nerozlišitelné od "nespočítáno". Nula smí vyjít jen tehdy, když data
+  opravdu jsou a součet je nula (olej + sůl + kuřecí prsa).
+
+**2) Generátor ať výsledek zapisuje.**
+
+V `lib/recipeGeneratorRun.js` přidej druhé RPC volání hned za to stávající a
+`fiber_g` doplň do objektu, který se zapisuje do `recipes_catalog` (kolem
+řádku 532, vedle `kcal`, `protein_g`, `carbs_g`, `fat_g`).
+
+Když druhé RPC selže, recept se **musí uložit dál** - jen bez vlákniny.
+Vláknina není důvod zahodit jinak platný recept. Chybu zaloguj do
+`ai_runs.result` jako počítadlo `vlaknina_nespoctena`, stejným způsobem, jakým
+tam 8.13 přidala `zahozeno_nad_stropem_tuku`.
+
+**3) Testy.**
+
+Unit test na to, že se `fiber_g` propíše do zapisovaného objektu a že selhání
+druhého RPC recept nezahodí. Neposílej dotazy do produkce.
+
+### NEDĚLAT
+
+- Neměň `compute_nutrition_for_ingredients` ani `compute_recipe_nutrition`.
+  Ani signaturu, ani tělo.
+- Nepřidávej `fiber_g` do JSON schématu, které dostává LLM. Vlákninu si model
+  vymýšlí, u makra proto celý systém stojí na výpočtu ze surovin - a to je
+  správně.
+- Nedělej dávkový přepočet existujících 488 receptů. To spustím já zvlášť, až
+  bude funkce nasazená.
+- Nespouštěj migraci. Píšeš jen soubor.
+
+## 7.1 APPKA A WEB NESDÍLEJÍ JEDINOU HODNOTU — A APPKA NEMÁ TOKENY
+
+> **Nedělá se teď.** Honza 31. 8.: vzhled má počkat, dokud systém nefunguje.
+> Zadání zůstává hotové a připravené, až na něj přijde řada.
+
+Změřeno 31. 8. 2026 porovnáním obou repozitářů.
+
+`bodyandmindon-web/app/globals.css` má nad tokeny tenhle komentář:
+
+> „Tokeny odečtené z app.bodyandmindon.cz — landing a appka jsou jeden produkt."
+
+Záměr tedy existuje a je zapsaný. Skutečnost mu neodpovídá:
+
+```
+                      web (landing)              appka
+pozadí                #070b18 navy-950          #08090d
+akcenty               #34d399 / #10b981         #39ff14 (134×)
+                      #a78bfa / #8b5cf6         #00f2fe  (94×)
+                      #14b8a6
+písmo                 Inter (next/font)         Plus Jakarta Sans
+                                                + JetBrains Mono
+typografická škála    --text-hero/h2/h3/lead    žádná
+                      (clamp, plynulá)
+vrstva tokenů         @theme, pojmenovaná       ŽÁDNÁ
+```
+
+Ani jedna hodnota není společná. Web má smaragdovou a fialovou, appka
+neonově zelenou a azurovou. Web má Inter, appka Plus Jakarta Sans.
+
+**Appka nemá vrstvu tokenů vůbec.** 356 výskytů natvrdo zapsaných hex barev
+v 35 z 60 souborů v `src/`. Změna odstínu je dnes hromadné hledání
+a nahrazování napříč komponentami — proto se to nikdy neudělá a proto se to
+rozešlo.
+
+### Pořadí prací: tokenizace PŘED jakoukoli změnou vzhledu
+
+První krok nemění ani jeden pixel. Vytáhnout 356 natvrdo psaných hodnot do
+pojmenované vrstvy (`@theme` v `src/index.css`, stejný tvar jako web) a
+komponenty přepsat na názvy. Rendrovaný výsledek musí zůstat bajt po bajtu
+stejný — to je věc, kterou lze otestovat.
+
+Teprve pak je změna palety úpravou deseti řádků, ne třiceti pěti souborů.
+
+**Rozhodnutí o tom, KTERÁ paleta vyhraje, je na Honzovi a v tomhle bodě se
+nedělá.** Tokenizace je stejně potřeba v obou případech.
+
+### Zadání
+
+1. Vytvoř `@theme` blok v `src/index.css` se všemi barvami, které appka
+   dnes používá. Pojmenuj je podle role, ne podle odstínu — `--color-akcent`,
+   `--color-pozadi-karta`, ne `--color-lime`. Role pozná i ten, kdo paletu
+   později vymění.
+2. Přepiš `src/` na tyhle názvy. Žádná změna vzhledu.
+3. Test, který drží obojí:
+   - v `src/` (mimo `index.css`) nezůstal žádný literál `#rrggbb`;
+   - seznam tokenů odpovídá barvám, které se v appce dnes používají.
+4. Vypiš, kolik hodnot vzniklo a která barva je použitá jen jednou nebo
+   dvakrát — to jsou kandidáti na překlep, ne na token (`#2bf5ff`,
+   `#50fa8f`, `#38ef7d`, `#0e1420`, `#0d1722`, `#0a0b0e`). U každé napiš,
+   jestli je to záměrná varianta, nebo omyl. Neslučuj je sám.
+
+Písmo v tomhle bodě neřeš — `index.html` načítá Plus Jakarta Sans
+a JetBrains Mono z Google Fonts, změna písma je samostatné rozhodnutí.
+
+---
+
+## Hotovo a nasazeno — NEŘEŠ ZNOVU
+
+### 8.16 - doma bez vybaveni rotuje 15 cviku misto 9 (PR #149, 4c11c26)
 
 **8.15 rozšířila rotaci na všechny čtyři varianty. U dvou prostředí to
 zabralo, u třetího ne:**
@@ -190,73 +339,6 @@ Drž se pravidel, která ty šablony už mají:
 (ty klíče se do plánu nedostanou), ale kdyby se někdy `primary_muscle`
 použil k výběru cviků, bude to zdroj chyb.
 
-## 7.1 APPKA A WEB NESDÍLEJÍ JEDINOU HODNOTU — A APPKA NEMÁ TOKENY
-
-> **Nedělá se teď.** Honza 31. 8.: vzhled má počkat, dokud systém nefunguje.
-> Zadání zůstává hotové a připravené, až na něj přijde řada.
-
-Změřeno 31. 8. 2026 porovnáním obou repozitářů.
-
-`bodyandmindon-web/app/globals.css` má nad tokeny tenhle komentář:
-
-> „Tokeny odečtené z app.bodyandmindon.cz — landing a appka jsou jeden produkt."
-
-Záměr tedy existuje a je zapsaný. Skutečnost mu neodpovídá:
-
-```
-                      web (landing)              appka
-pozadí                #070b18 navy-950          #08090d
-akcenty               #34d399 / #10b981         #39ff14 (134×)
-                      #a78bfa / #8b5cf6         #00f2fe  (94×)
-                      #14b8a6
-písmo                 Inter (next/font)         Plus Jakarta Sans
-                                                + JetBrains Mono
-typografická škála    --text-hero/h2/h3/lead    žádná
-                      (clamp, plynulá)
-vrstva tokenů         @theme, pojmenovaná       ŽÁDNÁ
-```
-
-Ani jedna hodnota není společná. Web má smaragdovou a fialovou, appka
-neonově zelenou a azurovou. Web má Inter, appka Plus Jakarta Sans.
-
-**Appka nemá vrstvu tokenů vůbec.** 356 výskytů natvrdo zapsaných hex barev
-v 35 z 60 souborů v `src/`. Změna odstínu je dnes hromadné hledání
-a nahrazování napříč komponentami — proto se to nikdy neudělá a proto se to
-rozešlo.
-
-### Pořadí prací: tokenizace PŘED jakoukoli změnou vzhledu
-
-První krok nemění ani jeden pixel. Vytáhnout 356 natvrdo psaných hodnot do
-pojmenované vrstvy (`@theme` v `src/index.css`, stejný tvar jako web) a
-komponenty přepsat na názvy. Rendrovaný výsledek musí zůstat bajt po bajtu
-stejný — to je věc, kterou lze otestovat.
-
-Teprve pak je změna palety úpravou deseti řádků, ne třiceti pěti souborů.
-
-**Rozhodnutí o tom, KTERÁ paleta vyhraje, je na Honzovi a v tomhle bodě se
-nedělá.** Tokenizace je stejně potřeba v obou případech.
-
-### Zadání
-
-1. Vytvoř `@theme` blok v `src/index.css` se všemi barvami, které appka
-   dnes používá. Pojmenuj je podle role, ne podle odstínu — `--color-akcent`,
-   `--color-pozadi-karta`, ne `--color-lime`. Role pozná i ten, kdo paletu
-   později vymění.
-2. Přepiš `src/` na tyhle názvy. Žádná změna vzhledu.
-3. Test, který drží obojí:
-   - v `src/` (mimo `index.css`) nezůstal žádný literál `#rrggbb`;
-   - seznam tokenů odpovídá barvám, které se v appce dnes používají.
-4. Vypiš, kolik hodnot vzniklo a která barva je použitá jen jednou nebo
-   dvakrát — to jsou kandidáti na překlep, ne na token (`#2bf5ff`,
-   `#50fa8f`, `#38ef7d`, `#0e1420`, `#0d1722`, `#0a0b0e`). U každé napiš,
-   jestli je to záměrná varianta, nebo omyl. Neslučuj je sám.
-
-Písmo v tomhle bodě neřeš — `index.html` načítá Plus Jakarta Sans
-a JetBrains Mono z Google Fonts, změna písma je samostatné rozhodnutí.
-
----
-
-## Hotovo a nasazeno — NEŘEŠ ZNOVU
 - **8.15** rotace přes všechny čtyři varianty i při 3 trénincích týdně
   (`PRAH_ROZSIRENE_ROTACE` zrušen). Za 4 týdny: gym 14 různých cviků,
   home_equipment 13, home_bodyweight 9. Progrese pokračuje podle

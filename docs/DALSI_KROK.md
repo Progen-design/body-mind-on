@@ -119,7 +119,176 @@ nedaří dotáhnout objednávku.
 - **Nepouštěj se do `is_pantry_ingredient`.** Zjištění k tomu je v textu
   níž a je to samostatné rozhodnutí, ne součást téhle opravy.
 
-## 8.17 VLÁKNINU NIKDO NEPOČÍTÁ - APPKA JI ZOBRAZUJE JAKO POMLČKU
+## 8.18 REGISTR CVIKŮ LŽE O NÁŘADÍ - DOMA BEZ VYBAVENÍ MŮŽE PADNOUT SHYB
+
+Změřeno v produkci 6. 9. 2026 nad `exercise_asset_registry`: 225 řádků,
+209 s `usable_in_plan = true`.
+
+### Proč to není kosmetika
+
+`lib/exerciseCatalogPool.js` má v hlavičce vlastní varování:
+
+> VYBAVENÍ SI HLÍDÁME SAMI. Nabídku nelze jen rozšířit a spolehnout se, že ji
+> `adaptExerciseForTrainingEnvironment()` dorovná - ta funkce pracuje s natvrdo
+> vypsanými seznamy kanonických klíčů a NEZNÁMÝ KLÍČ PROPUSTÍ BEZE ZMĚNY.
+
+Filtr `.in('equipment_class', tridy)` v `nactiKatalogovouZasobu()` je tedy
+**jediná pojistka**. Když je `equipment_class` v registru špatně, cvik projde
+až do tréninku uživatele. Zároveň `equipment_class` řídí štítek „Nářadí"
+v profilu (`lib/profile/treninkPopis.js`) a `primary_muscle` popis
+procvičených svalů (`lib/profile/svalyDoPlanu.js`).
+
+### A) Osm cviků potřebuje hrazdu nebo lavici, ale jsou v třídě `body_weight`
+
+Uživatel s prostředím `home_bodyweight` je může dostat do plánu:
+
+    pull_up                        Shyby / Přítahy              hrazda
+    chin_up                        Shyby podhmatem              hrazda
+    bench_dips                     Tricepsové kliky na bradlech lavice
+    bench_jump                     Výskoky na lavici            lavice
+    incline_push_up                Kliky na šikmé lavici        lavice
+    incline_push_up_medium         Kliky na šikmé lavici        lavice
+    incline_push_up_close_grip     Kliky na šikmé lavici úzkým  lavice
+    incline_push_up_reverse_grip   Kliky na šikmé lavici podhm. lavice
+
+### B) `plank` je označené jako činkový cvik
+
+    canonical_key   equipment   equipment_class   správně
+    plank           weighted    dumbbell          body_weight
+
+Registr se trefil do „weighted plank". Důsledky jsou dva a oba jsou vidět:
+prkno je v šablonách `HOME_BW_A` i `HOME_BW_C`, takže uživateli bez vybavení
+svítí v profilu u prkna „Nářadí: jednoručky"; a do náhrad se prkno nabízí jen
+lidem s činkami.
+
+### C) Tři řádky nejsou cviky, ale jsou v zásobě
+
+    warmup     Rozcvička              primary_muscle full_body
+    rest       Odpočinek / Procházka  primary_muscle glutes
+    cooldown   Závěr / Strečink       primary_muscle triceps
+
+Všechny tři mají `usable_in_plan = true`, takže je `nactiKatalogovouZasobu()`
+načte jako plnohodnotné cviky. `rest` navíc tvrdí, že procvičuje hýždě, a
+`cooldown` tricepsy - to jde rovnou do popisu tréninku v profilu.
+
+### D) `superman` má špatný sval
+
+    canonical_key   primary_muscle   target       body_part   správně
+    superman        chest            pectorals    chest       lower_back
+
+Superman je zádový cvik. Je v `HOME_BW_A` i `HOME_BW_B`, takže profil hlásí
+špatně procvičený sval u dvou ze čtyř domácích variant.
+
+### CO UDĚLAT
+
+Napiš JEDNU migraci, která opraví data v `exercise_asset_registry`:
+
+1. Osmi klíčům z bodu A) nastav `equipment_class`:
+   - `pull_up`, `chin_up` -> nová hodnota pro hrazdu
+   - `bench_dips`, `bench_jump`, `incline_push_up*` (čtyři klíče) -> hodnota
+     pro lavici
+
+   POZOR: `equipment_class` má povolené hodnoty. Podívej se do
+   `TRIDY_VYBAVENI` v `lib/exerciseImportQueue.js` a do `NACINI_NA_TRIDU`
+   a `TRIDY_V_POSILOVNE` v `lib/exerciseCatalogPool.js`, co je dnes dovolené.
+   Jestli tam pro hrazdu ani lavici třída NENÍ, nevymýšlej novou hodnotu na
+   vlastní pěst - navrhni mi v shrnutí dvě varianty (přidat třídy vs. dát
+   těmhle osmi `usable_in_plan = false`) a čekej. Nová třída znamená doplnit
+   ji i do těch tří seznamů v JS, jinak by cviky zmizely i z posilovny.
+
+2. `plank`: `equipment_class = 'body_weight'`, `equipment = 'body weight'`.
+
+3. `warmup`, `rest`, `cooldown`: `usable_in_plan = false`. Zůstávají v tabulce
+   kvůli médiím a popiskům, jen se přestanou nabízet jako cviky.
+
+4. `superman`: `primary_muscle`, `target` a `body_part` na zádové hodnoty.
+   Použij takové řetězce, jaké registr používá u jiných zádových cviků -
+   nevymýšlej vlastní. Zjisti si je z existujících řádků v migracích.
+
+5. Do migrace přidej `DO $$` blok, který po opravě ověří, že:
+   - žádný řádek s `usable_in_plan = true` a `equipment_class = 'body_weight'`
+     nemá v `canonical_key` ani `display_name_cs` slovo naznačující hrazdu
+     nebo lavici,
+   - `plank` má `body_weight`,
+   - `warmup`, `rest`, `cooldown` mají `usable_in_plan = false`.
+
+### NEDĚLAT
+
+- Neměň `lib/workoutStartProgram.js`. Šablony jsou po 8.16 v pořádku, tohle je
+  chyba dat v registru.
+- Nepřidávej novou hodnotu `equipment_class` bez odsouhlasení (viz bod 1).
+- Nespouštěj migraci. Píšeš jen soubor.
+- Neměř produkci. Čísla výš jsou změřená, ber je jako zadání.
+
+## 7.1 APPKA A WEB NESDÍLEJÍ JEDINOU HODNOTU — A APPKA NEMÁ TOKENY
+
+> **Nedělá se teď.** Honza 31. 8.: vzhled má počkat, dokud systém nefunguje.
+> Zadání zůstává hotové a připravené, až na něj přijde řada.
+
+Změřeno 31. 8. 2026 porovnáním obou repozitářů.
+
+`bodyandmindon-web/app/globals.css` má nad tokeny tenhle komentář:
+
+> „Tokeny odečtené z app.bodyandmindon.cz — landing a appka jsou jeden produkt."
+
+Záměr tedy existuje a je zapsaný. Skutečnost mu neodpovídá:
+
+```
+                      web (landing)              appka
+pozadí                #070b18 navy-950          #08090d
+akcenty               #34d399 / #10b981         #39ff14 (134×)
+                      #a78bfa / #8b5cf6         #00f2fe  (94×)
+                      #14b8a6
+písmo                 Inter (next/font)         Plus Jakarta Sans
+                                                + JetBrains Mono
+typografická škála    --text-hero/h2/h3/lead    žádná
+                      (clamp, plynulá)
+vrstva tokenů         @theme, pojmenovaná       ŽÁDNÁ
+```
+
+Ani jedna hodnota není společná. Web má smaragdovou a fialovou, appka
+neonově zelenou a azurovou. Web má Inter, appka Plus Jakarta Sans.
+
+**Appka nemá vrstvu tokenů vůbec.** 356 výskytů natvrdo zapsaných hex barev
+v 35 z 60 souborů v `src/`. Změna odstínu je dnes hromadné hledání
+a nahrazování napříč komponentami — proto se to nikdy neudělá a proto se to
+rozešlo.
+
+### Pořadí prací: tokenizace PŘED jakoukoli změnou vzhledu
+
+První krok nemění ani jeden pixel. Vytáhnout 356 natvrdo psaných hodnot do
+pojmenované vrstvy (`@theme` v `src/index.css`, stejný tvar jako web) a
+komponenty přepsat na názvy. Rendrovaný výsledek musí zůstat bajt po bajtu
+stejný — to je věc, kterou lze otestovat.
+
+Teprve pak je změna palety úpravou deseti řádků, ne třiceti pěti souborů.
+
+**Rozhodnutí o tom, KTERÁ paleta vyhraje, je na Honzovi a v tomhle bodě se
+nedělá.** Tokenizace je stejně potřeba v obou případech.
+
+### Zadání
+
+1. Vytvoř `@theme` blok v `src/index.css` se všemi barvami, které appka
+   dnes používá. Pojmenuj je podle role, ne podle odstínu — `--color-akcent`,
+   `--color-pozadi-karta`, ne `--color-lime`. Role pozná i ten, kdo paletu
+   později vymění.
+2. Přepiš `src/` na tyhle názvy. Žádná změna vzhledu.
+3. Test, který drží obojí:
+   - v `src/` (mimo `index.css`) nezůstal žádný literál `#rrggbb`;
+   - seznam tokenů odpovídá barvám, které se v appce dnes používají.
+4. Vypiš, kolik hodnot vzniklo a která barva je použitá jen jednou nebo
+   dvakrát — to jsou kandidáti na překlep, ne na token (`#2bf5ff`,
+   `#50fa8f`, `#38ef7d`, `#0e1420`, `#0d1722`, `#0a0b0e`). U každé napiš,
+   jestli je to záměrná varianta, nebo omyl. Neslučuj je sám.
+
+Písmo v tomhle bodě neřeš — `index.html` načítá Plus Jakarta Sans
+a JetBrains Mono z Google Fonts, změna písma je samostatné rozhodnutí.
+
+---
+
+## Hotovo a nasazeno — NEŘEŠ ZNOVU
+
+### 8.17 - vlakninu pocita trigger (PR #150 + #151, e9346b8)
 
 Stav k 6. 9. 2026: `recipes_catalog.fiber_g` je null u **488 z 875** aktivních
 receptů a u **463 z 513** `llm_generated`. Appka i týdenní e-mail vlákninu
@@ -200,73 +369,6 @@ druhého RPC recept nezahodí. Neposílej dotazy do produkce.
   bude funkce nasazená.
 - Nespouštěj migraci. Píšeš jen soubor.
 
-## 7.1 APPKA A WEB NESDÍLEJÍ JEDINOU HODNOTU — A APPKA NEMÁ TOKENY
-
-> **Nedělá se teď.** Honza 31. 8.: vzhled má počkat, dokud systém nefunguje.
-> Zadání zůstává hotové a připravené, až na něj přijde řada.
-
-Změřeno 31. 8. 2026 porovnáním obou repozitářů.
-
-`bodyandmindon-web/app/globals.css` má nad tokeny tenhle komentář:
-
-> „Tokeny odečtené z app.bodyandmindon.cz — landing a appka jsou jeden produkt."
-
-Záměr tedy existuje a je zapsaný. Skutečnost mu neodpovídá:
-
-```
-                      web (landing)              appka
-pozadí                #070b18 navy-950          #08090d
-akcenty               #34d399 / #10b981         #39ff14 (134×)
-                      #a78bfa / #8b5cf6         #00f2fe  (94×)
-                      #14b8a6
-písmo                 Inter (next/font)         Plus Jakarta Sans
-                                                + JetBrains Mono
-typografická škála    --text-hero/h2/h3/lead    žádná
-                      (clamp, plynulá)
-vrstva tokenů         @theme, pojmenovaná       ŽÁDNÁ
-```
-
-Ani jedna hodnota není společná. Web má smaragdovou a fialovou, appka
-neonově zelenou a azurovou. Web má Inter, appka Plus Jakarta Sans.
-
-**Appka nemá vrstvu tokenů vůbec.** 356 výskytů natvrdo zapsaných hex barev
-v 35 z 60 souborů v `src/`. Změna odstínu je dnes hromadné hledání
-a nahrazování napříč komponentami — proto se to nikdy neudělá a proto se to
-rozešlo.
-
-### Pořadí prací: tokenizace PŘED jakoukoli změnou vzhledu
-
-První krok nemění ani jeden pixel. Vytáhnout 356 natvrdo psaných hodnot do
-pojmenované vrstvy (`@theme` v `src/index.css`, stejný tvar jako web) a
-komponenty přepsat na názvy. Rendrovaný výsledek musí zůstat bajt po bajtu
-stejný — to je věc, kterou lze otestovat.
-
-Teprve pak je změna palety úpravou deseti řádků, ne třiceti pěti souborů.
-
-**Rozhodnutí o tom, KTERÁ paleta vyhraje, je na Honzovi a v tomhle bodě se
-nedělá.** Tokenizace je stejně potřeba v obou případech.
-
-### Zadání
-
-1. Vytvoř `@theme` blok v `src/index.css` se všemi barvami, které appka
-   dnes používá. Pojmenuj je podle role, ne podle odstínu — `--color-akcent`,
-   `--color-pozadi-karta`, ne `--color-lime`. Role pozná i ten, kdo paletu
-   později vymění.
-2. Přepiš `src/` na tyhle názvy. Žádná změna vzhledu.
-3. Test, který drží obojí:
-   - v `src/` (mimo `index.css`) nezůstal žádný literál `#rrggbb`;
-   - seznam tokenů odpovídá barvám, které se v appce dnes používají.
-4. Vypiš, kolik hodnot vzniklo a která barva je použitá jen jednou nebo
-   dvakrát — to jsou kandidáti na překlep, ne na token (`#2bf5ff`,
-   `#50fa8f`, `#38ef7d`, `#0e1420`, `#0d1722`, `#0a0b0e`). U každé napiš,
-   jestli je to záměrná varianta, nebo omyl. Neslučuj je sám.
-
-Písmo v tomhle bodě neřeš — `index.html` načítá Plus Jakarta Sans
-a JetBrains Mono z Google Fonts, změna písma je samostatné rozhodnutí.
-
----
-
-## Hotovo a nasazeno — NEŘEŠ ZNOVU
 
 ### 8.16 - doma bez vybaveni rotuje 15 cviku misto 9 (PR #149, 4c11c26)
 

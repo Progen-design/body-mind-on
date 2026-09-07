@@ -29,6 +29,80 @@
 
 ---
 
+## 9.10 TED ODMÍTÁ ODPOVĚDĚT, I KDYŽ DATA MÁ — CHYBA JE V PROMPTU
+
+Honza 7. 9. 2026 poslal konverzaci uživatele `ondra.novak18@gmail.com`:
+
+    "kolik litru vody mam denne vypit?"
+    TED: "Nemam konkretni doporuceni pro denni prijem vody v tvem profilu.
+          Obecne se doporucuje pit priblizne 2 az 3 litry vody denne..."
+
+Zadání znělo „ověř, jak to dělá". Ověřeno — a příčina není tam, kde by
+člověk čekal.
+
+### Data TED MÁ. Všechna.
+
+`api/coach-chat.js` volá `runAgent('coach', …)` a do kontextu jde:
+
+- `buildAgentContext('trainer_coach', …)` → `body_metrics.select('*')`,
+  tedy **celý profil** (váha, výška, věk, cíl, `calories_target`,
+  aktivita), k tomu posledních pár plánů, návyky a analýza pokroku;
+- `namerenaData()` (lib/coachChatKontext.js) → HRV, klidový tep, kroky,
+  spánek, tělesné složení za 14 dní.
+
+Na otázku o pitném režimu tedy TED **zná váhu i aktivitu** a mohl
+odpovědět konkrétně. Neodpověděl.
+
+### Příčina: chatu se půjčuje prompt psaný pro kartu
+
+`ai_agents.system_prompt` u agenta `coach` (2423 znaků) končí takhle:
+
+    Vracej POUZE platny JSON, bez markdownu okolo:
+    { "ok", "title", "message", "focus", "actions" }
+    "message": "3-5 vet v tomto poradi: (1) co se deje a proc, konkretne
+      k jeho datum; ... (4) jedna veta na konec, ktera ho postavi na nohy"
+    Kdyz nemas dost dat na smysluplnou radu, vrat ok:false a v message
+    napis, CO CHYBI.
+
+To je zadání pro **uvítací / doporučovací kartu**, ne pro rozhovor.
+Ta poslední věta je přesně to, co uživatel dostal: model nemá „pitný
+režim" jako pole v profilu, tak poslušně napíše, co chybí. Chová se
+správně podle promptu — prompt je špatně.
+
+K tomu sekce PRÁCE S DATY: „Vždy vycházej z dat, která dostaneš
+v kontextu. Když data chybí, řekni to." V kombinaci s tím `ok:false`
+pravidlem to znamená: **cokoli, co není doslova políčko v profilu, se
+odmítne** — i když se to z profilu dá spočítat.
+
+Odpověď na steroidy byla naopak v pořádku (odkaz na lékaře) — to hlídá
+sekce NESMÍŠ a ta zůstává.
+
+### Co s tím
+
+Chat potřebuje **vlastní režim v promptu**, ne půjčený formát karty:
+
+1. Odpovídej na položenou otázku. Když jde spočítat z profilu, spočítej
+   ji a řekni číslo i z čeho vyšlo („při 106 kg a třech trénincích
+   týdně vychází zhruba 3–3,5 l").
+2. „To nevím" patří jen tam, kde odpověď opravdu potřebuje údaj, který
+   nemáme — ne tam, kde téma není políčkem v profilu.
+3. Zdravotní hranice z NESMÍŠ zůstávají beze změny.
+4. Formát odpovědi pro chat je text, ne karta s `focus` a `actions`.
+
+**POZOR — TOHLE NENÍ ÚKOL PRO CODE.** `system_prompt` je řádek v tabulce
+`ai_agents`, ne soubor v gitu. Mění se v DB, mění ho druhý Claude.
+
+### Vedlejší nález: prompty agentů nejsou ve verzování
+
+`prompts/` v gitu obsahuje jen prompty generátoru a překladů
+(`recipe-generate.md`, `catalog-translate.md`, …). Prompty šesti agentů
+z `ai_agents` v repozitáři **nejsou** — nejde je revidovat v PR, nejde
+se vrátit k předchozí verzi a změna se nikde neprojeví jako commit.
+Že chat mluví špatně, se pozná až z konverzace uživatele. Samostatný
+bod, neřešit spolu s tímhle.
+
+---
+
 ## 9.8 JÍDELNÍČEK POTŘEBUJE PŘEPÍNAČ DNŮ JAKO TRÉNINK
 
 Rozhodnutí Honzy 7. 9. 2026: **jídelníček a makra mají mít stejné záložky

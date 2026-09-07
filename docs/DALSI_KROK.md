@@ -130,6 +130,102 @@ nedaří dotáhnout objednávku.
 - **Nepouštěj se do `is_pantry_ingredient`.** Zjištění k tomu je v textu
   níž a je to samostatné rozhodnutí, ne součást téhle opravy.
 
+## 9.3 SPOONACULAR NEBĚŽEL 18 DNÍ A NIKDO SE TO NEDOZVĚDĚL
+
+Změřeno 7. 9. 2026.
+
+    posledni beh importu      2026-08-20 03:00     (pred 18 dny)
+    behu celkem               121
+    vlozeno celkem            47 receptu
+    behu za posledni tyden    0
+
+Cron je přitom nastavený správně — `vercel.json`, `/api/cron/import-spoonacular`,
+`0 3 * * *`, jednou denně. Spustí se, nenajde co dělat a skončí, aniž by
+o běhu vznikl záznam.
+
+### Proč
+
+Všech 66 řádků v `spoonacular_import_queries` je mimo hru:
+
+    meal_type      dotazu   vyrazenych   duvody
+    main course      25        24        pool_empty, pool_exhausted
+    snack            10        10        pool_exhausted
+    breakfast         9         8        pool_empty, pool_exhausted
+    salad             8         7        pool_empty, pool_exhausted
+    soup              8         8        pool_empty, pool_exhausted
+    dessert           4         4        pool_empty, pool_exhausted
+    appetizer         2         2        pool_exhausted
+
+    pouzitelnych: 0
+
+Rotace dotazů se vyčerpala a nikdo ji nedoplnil. Katalog tudy přestal růst.
+
+### Proč se to nedozvíme
+
+Dvě větve hlídky se navzájem umlčí:
+
+- `import_rotace_vycerpana` má severity **`info`** — „není co importovat".
+- `import_nebezel` (warning) má v podmínce
+  `EXISTS (SELECT 1 FROM spoonacular_import_queries WHERE exhausted_at IS NULL
+  AND retired_reason IS NULL)` — tedy **nehlásí nic, právě když je pool prázdný**.
+
+Takže stav „import osmnáct dní nic nedělá" se hlásí jako informace, ne jako
+problém. Stejný vzorec jako falešný `critical` u 8.19, jen obráceně: tam
+křičelo něco funkčního, tady mlčí něco rozbitého.
+
+### CO UDĚLAT
+
+**1) Rotace se musí umět doplnit sama.**
+
+Dnes je seznam dotazů jednorázová dávka, kterou někdo nasypal a která došla.
+Navrhni mechanismus, který ji drží živou, a v shrnutí popiš, PROČ zrovna ten.
+Možnosti, mezi kterými se rozhoduj (můžeš i jinou, když ji obhájíš):
+
+- **Znovuotevření po čase.** `exhausted_at` neznamená „navždy prázdné" —
+  Spoonacular přidává recepty průběžně, takže dotaz vyčerpaný před měsícem
+  může dnes vracet nové. Znovu otevřít dotaz, který je `exhausted` déle než
+  N dní, a začít od `next_offset`.
+- **Generování kombinací.** Dotazy jsou `params` v jsonb. Z uzavřených
+  seznamů (typ jídla × kuchyně × hlavní surovina × kalorické pásmo) jde
+  vyrobit řádově víc kombinací, než jich je dnes 66.
+
+`retired_reason` respektuj — dotaz vyřazený natrvalo se znovu neotevírá.
+Rozliš to od `exhausted_at`, to jsou dvě různé věci a dnes se chovají stejně.
+
+**2) Prázdný pool musí být vidět jako problém, ne jako informace.**
+
+Uprav větve v `system_health_alerts_zaklad`:
+
+- `import_rotace_vycerpana` — zvedni ze `info` na `warning`. Když není co
+  importovat, katalog neroste, a to je provozní problém.
+- `import_nebezel` — dnes se schválně vypne, když je pool prázdný. To je
+  přesně naopak, než má být. Ať hlásí i tehdy, jen s jiným textem
+  („import 48 h neběžel, pool dotazů je prázdný").
+
+Aktuální definici pohledu vytáhni přes `pg_get_viewdef`, měň VÝHRADNĚ tyhle
+dvě větve, zbytek znak po znaku stejný, a obnov `security_invoker`
+(viz migrace 20260907110000).
+
+**3) Import ať zapíše běh i když nic neudělal.**
+
+Dnes při prázdném poolu nevznikne řádek v `spoonacular_import_runs`, takže
+z dat nejde poznat rozdíl mezi „cron neběžel" a „cron běžel a neměl co
+dělat". Zapiš běh vždycky, s důvodem přeskočení — stejně, jako to od 26. 8.
+dělá generátor receptů (`lib/recipeGeneratorRun.js`, zápis o běhu i když
+nic nevzniklo).
+
+### NEDĚLAT
+
+- Neměň rozvrh cronu. `0 3 * * *`, jednou denně, je správně a je to
+  pravidlo — Honza to potvrdil 7. 9.
+- Nezvyšuj počet importovaných receptů na běh. Cílem je, aby import zase
+  měl co dělat, ne aby bral víc najednou.
+- Nesahej na denní rozpočet ani na `budget_exhausted` větev.
+- Nespouštěj migraci. Píšeš jen soubory.
+- Neměř produkci. Čísla výš jsou změřená.
+
+---
+
 ## 9.2 SMAZANÝ ÚČET SE TVÁŘÍ JAKO SPADLÁ REGISTRACE
 
 Objeveno 7. 9. 2026 hodinu po tom, co dostalo `ai_generated_plans` cizí klíč

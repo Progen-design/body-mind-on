@@ -53,53 +53,135 @@ Zadání znělo „ověř, jak to dělá". Ověřeno — a příčina není tam,
 Na otázku o pitném režimu tedy TED **zná váhu i aktivitu** a mohl
 odpovědět konkrétně. Neodpověděl.
 
-### Příčina: chatu se půjčuje prompt psaný pro kartu
+### OPRAVA: PRVNÍ VERZE TOHOHLE BODU BYLA DVAKRÁT ŠPATNĚ
 
-`ai_agents.system_prompt` u agenta `coach` (2423 znaků) končí takhle:
+Napsal jsem sem, že (a) chat si půjčuje prompt agenta `coach` psaný pro
+uvítací kartu a (b) prompty agentů nejsou ve verzování. **Ani jedno není
+pravda.** Podíval jsem se na agenta `coach` místo na `coach_chat`.
 
-    Vracej POUZE platny JSON, bez markdownu okolo:
-    { "ok", "title", "message", "focus", "actions" }
-    "message": "3-5 vet v tomto poradi: (1) co se deje a proc, konkretne
-      k jeho datum; ... (4) jedna veta na konec, ktera ho postavi na nohy"
-    Kdyz nemas dost dat na smysluplnou radu, vrat ok:false a v message
-    napis, CO CHYBI.
+Jak to je doopravdy:
 
-To je zadání pro **uvítací / doporučovací kartu**, ne pro rozhovor.
-Ta poslední věta je přesně to, co uživatel dostal: model nemá „pitný
-režim" jako pole v profilu, tak poslušně napíše, co chybí. Chová se
-správně podle promptu — prompt je špatně.
+- Chat běží pod vlastním slugem **`coach_chat`** (`lib/coachChat.js`),
+  ne pod `coach`.
+- Prompty se berou **Z KÓDU, ne z DB**. `lib/getAgentConfig.js` to má
+  v hlavičce: „Agenti vždy berou instrukce z kódu –
+  `assistantInstructions.js`, `agentPromptsForSync.js`. DB (`ai_agents`)
+  se nepoužívá pro prompty – pouze pro volitelný `enabled` flag."
+  Řádek `coach_chat` v `ai_agents` ani neexistuje a nevadí to.
+- Chatový prompt tedy JE v gitu: `SYSTEM_PROMPT_CHATU`
+  v `lib/coachChat.js`, a je psaný pro rozhovor — vrací
+  `{ok, odpoved, chybejici_data}`, ne kartu s `focus` a `actions`.
 
-K tomu sekce PRÁCE S DATY: „Vždy vycházej z dat, která dostaneš
-v kontextu. Když data chybí, řekni to." V kombinaci s tím `ok:false`
-pravidlem to znamená: **cokoli, co není doslova políčko v profilu, se
-odmítne** — i když se to z profilu dá spočítat.
+Takže i „vedlejší nález" o neverzovaných promptech padá. Prompty v PR
+revidovat jde, jsou to konstanty v JS.
 
-Odpověď na steroidy byla naopak v pořádku (odkaz na lékaře) — to hlídá
-sekce NESMÍŠ a ta zůstává.
+### Skutečná příčina: jedno pravidlo v chatovém promptu je moc široké
 
-### Co s tím
+V `SYSTEM_PROMPT_CHATU`, sekce „ODKUD BEREŠ DATA — TOHLE JE
+NEJDŮLEŽITĚJŠÍ PRAVIDLO":
 
-Chat potřebuje **vlastní režim v promptu**, ne půjčený formát karty:
+    Kdyz se pta na cislo, ktere v kontextu neni, rekni rovnou, ze ho
+    v jeho profilu nevidis. NEDOPOCITAVEJ HO, NEODHADUJ, NEBER HO
+    Z OBECNYCH ZNALOSTI.
 
-1. Odpovídej na položenou otázku. Když jde spočítat z profilu, spočítej
-   ji a řekni číslo i z čeho vyšlo („při 106 kg a třech trénincích
-   týdně vychází zhruba 3–3,5 l").
-2. „To nevím" patří jen tam, kde odpověď opravdu potřebuje údaj, který
-   nemáme — ne tam, kde téma není políčkem v profilu.
-3. Zdravotní hranice z NESMÍŠ zůstávají beze změny.
-4. Formát odpovědi pro chat je text, ne karta s `focus` a `actions`.
+To pravidlo tam patří a má dobrý důvod: bez něj by TED tvrdil „tvoje HRV
+je 45 ms", i kdyby žádné HRV nedostal, a uživatel by si to přečetl jako
+své naměřené číslo. **Jenže je napsané tak široce, že zakazuje i to, co
+chceme.** Pitný režim není uložené políčko, takže spadne pod „číslo,
+které v kontextu není" — a TED odmítne, přestože váhu i aktivitu má.
 
-**POZOR — TOHLE NENÍ ÚKOL PRO CODE.** `system_prompt` je řádek v tabulce
-`ai_agents`, ne soubor v gitu. Mění se v DB, mění ho druhý Claude.
+Rozdíl, který prompt nerozlišuje:
 
-### Vedlejší nález: prompty agentů nejsou ve verzování
+    NAMERENA HODNOTA   HRV, tep, vaha, spanek, kroky
+                       -> vymyslet ji NESMI, nikdy, ani jako priklad
+    ODVOZENE DOPORUCENI  pitny rezim, odhad porce, tempo chuze
+                       -> spocitat z toho, co v kontextu JE, SMI a MA
 
-`prompts/` v gitu obsahuje jen prompty generátoru a překladů
-(`recipe-generate.md`, `catalog-translate.md`, …). Prompty šesti agentů
-z `ai_agents` v repozitáři **nejsou** — nejde je revidovat v PR, nejde
-se vrátit k předchozí verzi a změna se nikde neprojeví jako commit.
-Že chat mluví špatně, se pozná až z konverzace uživatele. Samostatný
-bod, neřešit spolu s tímhle.
+### Co udělat
+
+Rozdělit to jedno pravidlo na dvě a napsat, podle čeho se pozná, které
+platí. Odvozené doporučení musí vždy říct, **z čeho vyšlo** („při 106 kg
+a třech trénincích týdně vychází zhruba 3–3,5 l denně") — tím zůstane
+zřejmé, že je to výpočet, ne naměřený údaj.
+
+Zdravotní hranice (sekce HRANICE) se **nemění**. Odpověď na dotaz
+o steroidech byla v pořádku a musí taková zůstat.
+
+Detailní zadání je v bodu **9.11**.
+
+---
+
+## 9.11 TED SMÍ SPOČÍTAT, CO NEMÁ ULOŽENÉ — ALE NESMÍ SI TO VYMYSLET
+
+Zadání k příčině popsané v 9.10. Mění se **jeden soubor**:
+`SYSTEM_PROMPT_CHATU` v `lib/coachChat.js`.
+
+### Co je špatně
+
+Sekce „ODKUD BEREŠ DATA" má dnes jedno pravidlo pro dvě různé věci:
+
+    Kdyz se pta na cislo, ktere v kontextu neni, rekni rovnou, ze ho
+    v jeho profilu nevidis. Nedopocitavej ho, neodhaduj, neber ho
+    z obecnych znalosti.
+
+Kvůli němu TED odmítl otázku „kolik litrů vody mám denně vypít?", i když
+váhu i aktivitu uživatele v kontextu měl.
+
+### Co má platit místo toho
+
+**Pravidlo A — naměřená hodnota se NIKDY nevymýšlí.** HRV, klidový tep,
+váha, spánek, kroky, tělesné složení, kalorický cíl. Když v kontextu
+nejsou, TED řekne, že je v profilu nevidí. Nedopočítává, neodhaduje,
+nebere z obecných znalostí, neuvádí je ani jako příklad. **Tohle
+pravidlo zůstává doslova tak přísné, jak je dnes** — je to ochrana proti
+tomu, aby si uživatel přečetl vymyšlené číslo jako své naměřené.
+
+**Pravidlo B — odvozené doporučení se spočítat SMÍ a MÁ.** Pitný režim,
+odhad velikosti porce, tempo chůze, rozložení jídel v čase. To nejsou
+naměřené hodnoty, ale doporučení odvozená z toho, co v kontextu JE.
+Podmínky:
+
+- vychází se **jen** z hodnot, které v kontextu opravdu jsou,
+- odpověď **vždy** řekne, z čeho vyšla — „při 106 kg a třech trénincích
+  týdně vychází zhruba 3–3,5 l denně", ne holé „pij 3 litry",
+- když chybí i vstup pro výpočet (třeba váha), platí pravidlo A.
+
+Jak se to pozná: **ptá se na SVOJE číslo, nebo na doporučení?**
+„Jaké mám HRV" = A. „Kolik mám pít" = B.
+
+### Ostatní se nemění
+
+- Sekce HRANICE zůstává **beze změny**. Odpověď na dotaz o steroidech
+  (odkaz na lékaře, bez dramatizace) byla správná a musí taková zůstat.
+- Formát výstupu `{ok, odpoved, chybejici_data}` zůstává.
+- Délka odpovědi (2–5 vět) a tón zůstávají.
+- `chybejici_data` má u odvozeného doporučení zůstat prázdné — nic
+  nechybělo, jen se to nepočítalo z uloženého pole.
+
+### Testy
+
+`SYSTEM_PROMPT_CHATU` je konstanta bez I/O, testuje se tvarem promptu
+(stejně jako `profilObsah.test.ts` hlídá texty v UI):
+
+- prompt obsahuje obě pravidla a rozlišuje naměřenou hodnotu od
+  odvozeného doporučení,
+- pravidlo A pořád výslovně zakazuje vymýšlet naměřenou hodnotu
+  „ani jako příklad",
+- u pravidla B je požadavek říct, z čeho výpočet vyšel,
+- sekce HRANICE je nezměněná — porovnej ji doslova s dnešním zněním,
+  ať se do ní při přepisu nesáhne.
+
+### Nedělat
+
+- **Neměkčit pravidlo A.** Kdyby z toho vypadlo, že TED smí odhadnout
+  HRV nebo váhu, je to horší než původní chyba.
+- Nesahat na `lib/coachChatKontext.js` ani na `buildAgentContext` —
+  data jsou v pořádku, chyba byla jen v promptu.
+- Nepřidávat do kontextu nová data. Otázka zněla, proč nepoužívá to,
+  co má.
+- Neměnit `AGENT_PROMPTS` u ostatních agentů. Mění se `coach_chat`.
+- Nezakládat řádek `coach_chat` v `ai_agents` — prompty jdou z kódu,
+  DB drží jen `enabled`.
 
 ---
 

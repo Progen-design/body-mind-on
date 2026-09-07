@@ -44,6 +44,9 @@ test('trendy berou jen dny, kde hodnota opravdu je', () => {
   const b = naBiometrii(radky as any, [], true, null, PRAZDNA_BIOMETRIE);
   assert.equal(b.hrvTrend.length, 2);
   assert.deepEqual(b.hrvTrend.map((t) => t.value), [40, 43.4]);
+  // Popisek osy je den. mesic — ne americke "08.12", jak to delal
+  // puvodni slice(5).replace('-', '.').
+  assert.deepEqual(b.hrvTrend.map((t) => t.day), ['12. 8.', '13. 8.']);
 });
 
 test('maZdravotniData pozná prázdno', () => {

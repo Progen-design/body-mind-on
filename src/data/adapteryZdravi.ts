@@ -12,6 +12,8 @@ import {
   jednotkaProUzivatele, nazevKategorie, poradiKategorie
 } from '../../lib/health/kategorieMetrik.js';
 import { posledniNoc } from '../../lib/health/spanek.js';
+// Přípona schválně: `node --test` (test:src) ESM import bez ní nedohledá.
+import { kratkeDatumCS } from '../lib/datum.ts';
 
 /** Radek pohledu apple_health_recovery. */
 export interface RadekRegenerace {
@@ -74,7 +76,10 @@ function trend(radky: RadekRegenerace[], klic: keyof RadekRegenerace): MetricTre
     .filter((r) => jenCislo(r[klic]) !== null)
     .slice(-7)
     .map((r) => ({
-      day: (r.local_date || '').slice(5).replace('-', '.'),
+      // Bylo tu `.slice(5).replace('-', '.')` — z „2026-09-01" vypadlo
+      // „09.01", tedy americké měsíc-den. Popisek osy i bublina teď jedou
+      // přes společný český formát (src/lib/datum.ts).
+      day: kratkeDatumCS(r.local_date),
       value: Math.round(Number(r[klic]) * 10) / 10
     }));
 }

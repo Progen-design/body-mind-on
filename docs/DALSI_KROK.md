@@ -589,6 +589,54 @@ a JetBrains Mono z Google Fonts, změna písma je samostatné rozhodnutí.
 
 ## Hotovo a nasazeno — NEŘEŠ ZNOVU
 
+### 9.4 - osa grafu zdravi ukazovala americke datum
+
+Osa X u HRV / klidoveho tepu / kroku / energie v profilu psala
+`09.01 … 09.07`. Zdroj: `src/data/adapteryZdravi.ts`, funkce `trend()`:
+
+```js
+day: (r.local_date || '').slice(5).replace('-', '.'),
+```
+
+Z `2026-09-01` vypadlo `09.01`, tedy **mesic-den**. Uzivatel to cetl jako
+9. ledna. O par centimetru vedle pritom graf vahy (`WeightChart.tsx`,
+`kratkeDatum()`) psal spravne `1. 9.` - dve funkce, dva formaty.
+
+**Provereno cele UI, ne jen tenhle graf.** Prohledany `src/`, `lib/`, `api/`
+na `toLocale*String`, `Intl.DateTimeFormat` a rucni skladani datumu:
+
+- Jediny americky tvar v zivem kodu byl ten jeden radek. `slice(5)` se
+  nikde jinde nevyskytuje.
+- Vsechny ostatni viditelne datumy uz cs-CZ maji spravne poradi:
+  `ProfileSection.tsx` (`7. 9. 2026`), `TrialPaywallCard.tsx` (`7. zari`),
+  `adapteryZdravi.ts` radek „Aktualizovano" (`7. 9. 18:23`),
+  `lib/plan/structuredWeekSource.js`, `lib/planPdf.js`,
+  `WeightChart.kratkeDatum`.
+- `en-CA` / `sv-SE` / `en-US` v `lib/czechCalendar.js`, `lib/health/guards.ts`,
+  `lib/coachChatKontext.js`, `api/habits.js`, `api/coach-chat.js`
+  **NEJSOU chyba a nesahat na ne** - vyrabi strojove `YYYY-MM-DD` a nazvy
+  dnu pro vnitrni mapovani, nic z toho uzivatel nevidi.
+- `lib/profileDates.js` a `lib/profile/telesneMetriky.js` importuje uz jen
+  `_legacy-next/` - mrtvy kod, neresi se.
+
+Oprava: novy `src/lib/datum.ts` s `kratkeDatumCS()` (den prvni, retezec se
+jen deli, **neparsuje se pres `new Date()`** - hole `YYYY-MM-DD` je pulnoc
+UTC a v zapadni zone by popisek spadl o den zpatky). Pouzivaji ho oba grafy.
+
+Rok se do osy nedava zamerne: 7 popisku na sirku tydne uz ted sotva prolezou
+a rok je v hlavicce filtru. Plne `DD. MM. YYYY` je vsude, kde datum stoji
+samo (profil, PDF, platnost planu).
+
+Pozor pri dalsi praci s `WeightChart`: filtr **1R** si po synchronizaci
+prepisuje `record.date` na `09.2026` (`syncEngine.applyWeightRecord`). To
+neni ISO a `kratkeDatumCS` na nej vraci prazdno - proto ma `kratkeDatum()`
+ve `WeightChart.tsx` fallback na puvodni retezec. Bez nej by se osa 1R
+vyprazdnila.
+
+Testy: `src/lib/datum.test.ts` (zaregistrovan v `test:src`, hlida i to, ze
+vysledek **nikdy** nezacina nulou-mesicem) + assert na `t.day`
+v `src/data/adapteryZdravi.test.ts`.
+
 ### 8.18 - registr cviku prestal lhat o naradi (PR #156, 63bd520)
 
 Změřeno v produkci 6. 9. 2026 nad `exercise_asset_registry`: 225 řádků,

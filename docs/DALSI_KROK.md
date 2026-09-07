@@ -130,7 +130,97 @@ nedaří dotáhnout objednávku.
 - **Nepouštěj se do `is_pantry_ingredient`.** Zjištění k tomu je v textu
   níž a je to samostatné rozhodnutí, ne součást téhle opravy.
 
-## 9.1 CÍLE VÝŽIVY NEBEROU OHLED NA DIETU ANI NA METABOLISMUS
+## 9.2 SMAZANÝ ÚČET SE TVÁŘÍ JAKO SPADLÁ REGISTRACE
+
+Objeveno 7. 9. 2026 hodinu po tom, co dostalo `ai_generated_plans` cizí klíč
+(bod 9.1/E). Smazal jsem 16 testovacích účtů a v hlídce vyskočilo:
+
+    warning  registrations_viselec  "Registrace ulozena, ucet nevznikl"  16x
+             janprikopa+r01@gmail.com, janprikopa+r02@gmail.com, ...
+
+Přesně těch 16, co jsem smazal. Alert tvrdí opak toho, co se stalo.
+
+### Proč
+
+Větev `registrations_viselec` v `system_health_alerts_zaklad` porovnává
+tabulku `registrations` proti `profiles`:
+
+```sql
+FROM registrations r
+LEFT JOIN profiles pr ON lower(pr.email) = lower(r.email)
+WHERE pr.id IS NULL AND NOT je_testovaci_email(r.email)
+```
+
+Řádek v `registrations` po smazání účtu zůstává, protože `registrations`
+vzniká PŘED účtem — cizí klíč na `auth.users` tam z principu nepatří, na
+rozdíl od `ai_generated_plans`. Pro pohled je pak „smazaný účet" a „účet
+nikdy nevznikl" totéž.
+
+Naměřeno: 36 registrací celkem, 21 bez profilu. Z toho 16 je
+`janprikopa+*` (smazané testy) a 5 je `info+bm-*@bodyandmindon.cz`,
+které `je_testovaci_email()` správně odfiltruje.
+
+### Proč to není kosmetika
+
+`registrations_viselec` má odhalit, že se registrační flow rozbil a lidem
+nevznikají účty. To chceš vědět hned. Když v ní trvale svítí šestnáct
+falešných záznamů, tak až se to opravdu stane, zapadne to mezi ně — stejný
+mechanismus jako u falešného `critical` v bodu 8.19. Navíc se to bude
+opakovat po KAŽDÉM úklidu testovacích účtů.
+
+### CO UDĚLAT
+
+**1) `api/delete-account.js` ať smaže i řádek v `registrations`.**
+
+Zjisti si, jak dnes maže (podle 9.1/E prochází dynamicky tabulky se
+sloupcem `user_id`). `registrations` se klíčuje e-mailem, ne `user_id`,
+takže ji ta smyčka minula. Doplň explicitní smazání podle e-mailu mazaného
+uživatele.
+
+Je to ZÁMĚRNÉ smazání, ne cizí klíč — napiš k tomu do kódu proč, ať to
+někdo nepřidá do FK smyčky a nerozbije tím registraci, která zatím účet
+nemá.
+
+**2) `je_testovaci_email()` ať zná `+` aliasy.**
+
+Dnešní tvar zná jen `info+`/`smoketest+` na doméně `bodyandmindon.cz`,
+`@example.*` a `bm-smoke-*`. Testuje se ale běžně přes `janprikopa+u01@`
+a podobné aliasy na Gmailu — a ty hlídka bere jako skutečné lidi.
+
+Rozšiř funkci tak, aby za testovací považovala i adresu s `+` značkou,
+která začíná na `t`, `r`, `u` nebo `test`. Nedávej tam natvrdo Honzův
+e-mail — to je konfigurace osoby, ne pravidlo systému.
+
+Migrace, `CREATE OR REPLACE FUNCTION`. Signatura ani návratový typ se
+nemění, takže projde. Do migrace dej `DO $$` blok, který ověří, že
+`janprikopa+u01@gmail.com` je nově testovací a `janprikopa@gmail.com`
+(bez značky) NENÍ.
+
+**3) Ať `registrations_viselec` nekřičí donekonečna.**
+
+I po opravě 1) a 2) zůstane pohled slepý k rozdílu mezi „účet smazán" a
+„účet nevznikl" u budoucích případů. Přidej do té větve časové omezení:
+zajímá nás registrace z posledních 7 dnů. Starší už není živý problém.
+
+Aktuální definici pohledu si vytáhni přes `pg_get_viewdef`, ne ze staré
+migrace, a měň VÝHRADNĚ větev `registrations_viselec` — zbytek musí zůstat
+znak po znaku stejný. `CREATE OR REPLACE VIEW` shazuje `security_invoker`,
+takže ho obnov explicitně (viz jak to řeší migrace 20260907110000).
+
+### NEDĚLAT
+
+- Nepřidávej cizí klíč na `registrations`. Registrace vzniká před účtem,
+  klíč by rozbil legitimní stav.
+- Neměň větev `registrace_selhava` (ta s `HAVING count(*) >= 2`) — hlídá
+  něco jiného a funguje.
+- Nemaž existující řádky z `registrations` v migraci. Po opravě 3) přestanou
+  vadit samy a jsou to jediná stopa po tom, že ty registrace proběhly.
+- Nespouštěj migraci. Píšeš jen soubory.
+- Neměř produkci. Čísla výš jsou změřená.
+
+---
+
+## 9.1 — HOTOVO A NASAZENO (PR #162, c313555). NEŘEŠ ZNOVU.
 
 Změřeno 7. 9. 2026 na deseti čerstvých registracích přes produkční
 `POST /api/body-metrics` (stejná cesta jako formulář), profily se skutečným

@@ -29,7 +29,7 @@
 
 ---
 
-## 9.6 TÝDENNÍ PLÁN ZAČÍNÁ VE ČTVRTEK, PROTOŽE HO KDYSI NĚKDO PŘEGENEROVAL
+## 9.6 PLÁN MÁ BĚŽET 7 DNÍ OD REGISTRACE — DNES SE KOTVA POSOUVÁ PO VÝPADKU
 
 Změřeno 7. 9. 2026 na účtu janprikopa@gmail.com. Dnes je **pondělí**,
 aplikace ukazuje týdenní jídelníček od **čtvrtka 3. 9.**
@@ -53,83 +53,115 @@ v `lib/weeklyPlanProducer.js` počítá `max(valid_until + 1, dnešek)`, takže
 plán navazuje den po předchozím. `executeTrainerTask` ten `target_from`
 respektuje (ověřeno v kódu — má přednost před odvozením z `latestPlan`).
 
-Jenže **nic nikdy nezarovná začátek na pondělí**. Jakmile jednou vznikl plán
-ve čtvrtek (13. 8., zjevně `force_regenerate`), producent tu středu-čtvrtek
-poctivě posouvá o 7 dní donekonečna.
+**OPRAVA MOJÍ VLASTNÍ DIAGNÓZY (7. 9. 2026 večer).** Napsal jsem, že kotvu
+rozjelo `force_regenerate` 13. 8. To je špatně — data říkají něco jiného
+a je to důležitější:
 
-A teď to hlavní: funkce, která to má řešit, **existuje a nikdo ji nevolá**.
+    valid_from  den  generated_by                  vzniklo
+    2026-08-03  Mon  admin-regenerate-user-plan    2026-08-02
+    2026-08-13  Thu  ai-task:weekly_plan_update    2026-08-13   <- tady
+    2026-08-20  Thu  admin-regen-ulozeny-cil       2026-08-13
+    2026-08-27  Thu  unified-pipeline-email        2026-08-14
+    2026-09-03  Thu  ai-task:weekly_plan_update    2026-09-01
 
-    lib/czechCalendar.js:79   export function nextMondayStartIsoPrague(...)
-    /** ... Pro recurring / weekly_plan_update. */
+Plán 13. 8. vyrobila **normální weekly úloha**, ne force. Předchozí plán
+skončil v neděli 9. 8., producent doběhl až ve čtvrtek 13. 8. — a
+`computeTargetFrom` vzal `max(valid_until + 1, dnešek) = max(10. 8., 13. 8.)
+= 13. 8.` To je jeho **doběhové pravidlo** a je napsané schválně (viz
+komentář v `weeklyPlanProducer.js`: kdo přišel o týden, dostane plán od
+dneška, zmeškané týdny se zpětně negenerují).
 
-Grep přes `lib/`, `api/`, `src/` a `scripts/`: jediný výskyt je ta
-definice. Import nula. Byla napsaná přesně pro tenhle případ a nikdy se
-nezapojila.
+Jenže tím se kotva **přepíše natrvalo**. Tři dny výpadku producenta v srpnu
+posunuly celý cyklus z pondělí na čtvrtek — a od té doby ho každý další
+běh poctivě posouvá o 7 dní. Nic to nikdy nevrátí zpátky.
 
-### Co s tím (a co je na tom ošemetné)
+### ROZHODNUTÍ HONZY 7. 9. 2026 — KOTVA JE REGISTRACE, NE PONDĚLÍ
 
-Zarovnat na pondělí nejde tak, že se prostě zavolá ta funkce — vyrobilo by
-to díru. Když plán propadne ve středu a další začne až v pondělí, uživatel
-je čtyři dny bez jídelníčku. Proto tam nejspíš `sevenDayRangeFromTodayIso`
-vzniklo: bezpečné, ale nikdy se nezarovná.
+> „Pokud se registruji ve středu, tak to není pondělí, takže je potřeba ty
+> plány mít nastavené tak, že je to vždy 7 dní od dané registrace a ne od
+> toho, kdy začíná týden."
 
-Zadání pro Code je proto **jen návrh, ne implementace**. Chci vidět
-porovnané varianty dřív, než se to sáhne:
+**Zarovnání na pondělí je tím zamítnuté.** `nextMondayStartIsoPrague()`
+v `lib/czechCalendar.js` (dodnes nikým nevolaná — grep přes `lib/`, `api/`,
+`src/`, `scripts/` najde jen definici) se tedy zapojovat NEBUDE.
 
-  A) Zarovnat `computeTargetFrom` na nejbližší pondělí a překlenovací dny
-     doplnit prodloužením stávajícího plánu (`valid_until` posunout na
-     neděli). Jednorázově 1–6 dní navíc ze stejného katalogu.
-  B) Nechat plán 7denní klouzavý a zarovnání řešit jen v UI (řadit dny od
-     dneška, ne od `valid_from`). Levné, ale „týden" pak neodpovídá
-     nákupnímu seznamu ani týdennímu e-mailu.
-  C) Nedělat nic a jen to popsat jako záměr.
+To pravidlo dává cyklům přesnou definici: **`registrace + 7k`.** Plán
+`initial_plan` už dnes startuje dnem registrace
+(`initialPlanWeekRangeFromRegistration`), takže u nového uživatele je
+chování správné. Rozbíjí ho až doběhové pravidlo v `computeTargetFrom`.
 
-Ke každé variantě chci: co se stane s běžícím plánem 3.–9. 9., co
-s `idempotency_key` (`weekly:<user>:<target_from>`) a s
-`UNIQUE(user_id, target_from)`, a co s nákupním seznamem na týden.
+Změřeno na účtu janprikopa@gmail.com:
 
-### Analýza od Code (7. 9. 2026) — ČEKÁ SE NA HONZOVO ROZHODNUTÍ
+    registrace           2026-08-03 (pondeli, cas prazsky)
+    dnu od registrace    35   =  přesně 5 cyklů, zbytek 0
+    cyklus bezici dnes   2026-09-07 - 2026-09-13
+    plan v aplikaci      2026-09-03 - 2026-09-09     <- posunuty o 4 dny
 
-Doplňující fakta z kódu: plán je vždy `from + 6`
-(`taskExecutors.js:550`), a nákupní řádky se skládají při čtení
-z `structured_plan_json.days` — seznam tedy kopíruje dny plánu, ať je
-jich kolik chce.
+Honzova intuice („dneska je pondělí, mělo by to navazovat") a jeho pravidlo
+si tedy odpovídají — registroval se v pondělí, takže cyklus vychází na
+pondělí. U uživatele registrovaného ve středu bude cyklus středa–úterý a
+bude to tak správně.
 
-**A) zarovnat + překlenout prodloužením** — běžící plán 3.–9. 9. se při
-další weekly úloze prodlouží o Čt 10. 9.–Ne 13. 9. (4 dny ze stejného
-katalogu, `valid_until` → 13. 9.), jednorázově 11denní plán; další pak
-Po 14. 9.–Ne 20. 9. Klíče se od té chvíle ustálí na pondělcích, takže
-`UNIQUE(user_id, target_from)` začne vynucovat právě jeden plán na
-kalendářní týden. **Klíčová vlastnost: samoléčení** — po každém budoucím
-`force_regenerate` (který zůstává „od dneška") další weekly úloha kotvu
-zase srovná. Cena: prodlužovací logika musí být idempotentní (prodloužit
-jen když `valid_until < target_from − 1`), jinak retry přidá dny dvakrát.
-Pozor na přechod: pending úloha s `target_from` 10. 9. by UNIQUE
-nezablokoval (jiné datum) a vznikl by překryv — pendingy uklidím já.
+### Co udělat
 
-**B) klouzavý plán, zarovnání jen v UI** — nic se nerozbije, ale nákupní
-seznam i týdenní e-mail dál pokrývají Čt–St, zatímco UI tvrdí „od
-pondělí". K tomu trvalá výjimka „pořadí dnů ≠ pořadí v JSON", kterou musí
-respektovat každá budoucí obrazovka.
+Doběhové pravidlo v `computeTargetFrom()` nesmí kotvu přepisovat. Místo
+`max(valid_until + 1, dnešek)` se má **přichytit na mřížku
+`registrace + 7k`**:
 
-**C) nedělat nic** — nula nákladů, ale kotva není záměr, je to artefakt
-jednoho přegenerování a každý další `force` ji posune jinam.
+- Plán ještě běží nebo právě skončil → `valid_until + 1`. To už na mřížce
+  je a nic se nemění.
+- Producent zaspal a `valid_until + 1` je v minulosti → vzít **začátek
+  cyklu, ve kterém je dnešek**, tedy
+  `registrace + 7 * floor((dnešek − registrace) / 7)`. NE dnešek.
 
-**Code doporučuje A, souhlasím.** Je to jediná varianta, kde „týden
-plánu" = kalendářní týden = nákupní seznam = týdenní e-mail, a jediná,
-kde se kotva po budoucích zásazích srovná sama. Implementačně:
-zarovnání do `computeTargetFrom`, prodloužení do exekuce weekly úlohy,
-`sevenDayRangeFromTodayIso` beze změny, `nextMondayStartIsoPrague` se
-konečně zapojí.
+Tím se zmeškané cykly pořád zpětně negenerují (to pravidlo platí dál a je
+správné), ale mřížka přežije. Po výpadku se cyklus sám vrátí tam, kam
+patří, místo aby se posunul napořád.
+
+**Vědomý kompromis, který v tom je:** když producent zaspí do půlky cyklu,
+plán začne v minulosti a uživateli zbyde jen zbytek cyklu — ne celých 7
+dní. To je záměr, ne chyba. Alternativa (posunout start na dnešek) je
+přesně to, co kotvu rozbilo; alternativa „počkat na další cyklus" by
+nechala díru bez plánu. Krátký plán je z těch tří nejmenší zlo a další
+už zase sedí. **Napiš to do komentáře**, ať to za měsíc nikdo „neopraví".
+
+Zdroj data registrace: tentýž, ze kterého ho bere
+`initialPlanWeekRangeFromRegistration(bm)` → `bm.created_at`. Když chybí,
+chová se `computeTargetFrom` jako dosud (`max(valid_until + 1, dnešek)`) —
+bez kotvy není mřížku z čeho počítat a hádat se nemá.
+
+Pozor na `idempotency_key` (`weekly:<user>:<target_from>`) a
+`UNIQUE(user_id, target_from)`: hodnota `target_from` se změní, takže po
+nasazení může vzniknout úloha na nové datum vedle staré pendingové na
+datum staré. UNIQUE to nezachytí (jiné datum). **Pendingové úlohy uklidím
+já**, ty jen napiš, že to je potřeba.
+
+### Testy
+
+`computeTargetFrom` je čistá funkce bez DB — testuje se chováním, ne
+tvarem zdrojáku:
+
+- Plán běží → `valid_until + 1`, kotva se nepoužije.
+- Producent zaspal o 3 dny (přesně případ z 13. 8.: registrace pondělí,
+  `valid_until` neděle, dnešek čtvrtek) → vyjde **pondělí**, ne čtvrtek.
+  Tenhle test je celý smysl bodu — kdyby padl, kotva se rozjede znovu.
+- Registrace ve **středu** → cyklus je středa–úterý a při výpadku se vrací
+  na středu. Pondělí se nesmí objevit nikde.
+- Výpadek delší než týden → vezme se cyklus obsahující dnešek, ne první
+  zmeškaný. Zmeškané cykly se negenerují.
+- Chybí `bm.created_at` → chování jako dosud.
 
 ### Nedělat
 
-- **Neměnit `sevenDayRangeFromTodayIso`** naslepo — je to fallback pro
-  `force_regenerate` a pro účty bez předchozího plánu.
-- Nemazat `nextMondayStartIsoPrague`, i kdyby varianta B vyhrála. Napiš
-  do ní komentář, proč se nepoužívá.
-- Neopravovat data existujících plánů. To udělám já, až bude jasné, co má
-  být cílový tvar.
+- **Neměnit `sevenDayRangeFromTodayIso`** — je to fallback pro
+  `force_regenerate` a pro účty bez předchozího plánu a zůstává „od
+  dneška". Kdo si vynutí přegenerování, chce plán od dneška.
+- **Nezapojovat `nextMondayStartIsoPrague`.** Honza zarovnání na pondělí
+  zamítl. Nemazat ji ale — napiš do ní komentář, že se nepoužívá a proč
+  (rozhodnutí 7. 9. 2026, kotva je registrace).
+- Negenerovat zmeškané cykly zpětně. Jídelníček na minulé úterý nikomu
+  nepomůže a stojí stejně jako dnešní.
+- Neopravovat data existujících plánů ani pendingové úlohy. To udělám já.
 
 ---
 

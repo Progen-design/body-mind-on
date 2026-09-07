@@ -117,7 +117,12 @@ test('datum bez časové zóny se nezobrazí (docs/DALSI_KROK.md 6.6)', () => {
   // Date.parse cas jako lokalni v prostredi, ktere ho parsuje — 00:04 UTC
   // (vznik zpravy) se tak zobrazi jako 00:04 mistni, misto spravnych 02:04
   // v Praze. Radsi zpravu vubec neukazat nez ji ukazat o dve hodiny vedle.
-  const bezZony = '2026-08-31T00:04:30.12';
+  // Datum je RELATIVNI (predDny), ne natvrdo — viz komentar u predDny() vys.
+  // Do 7. 9. 2026 tu bylo pevne '2026-08-31T00:04:30.12' a druhy z teto
+  // dvojice testu zacal padat sam od sebe presne v okamziku, kdy fixture
+  // prekrocila PLATNOST_ZPRAVY_DNI: lokalne (UTC+2) jeste prosel, v CI (UTC)
+  // uz ne. Test ma overovat CHYBEJICI ZONU, ne stari zpravy.
+  const bezZony = predDny(1).replace(/Z$/, '');
   const t = naZpravyTrenera({
     coach_messages: [{ id: 'x', title: 'A', content: 'A', created_at: bezZony }]
   } as never);
@@ -125,7 +130,7 @@ test('datum bez časové zóny se nezobrazí (docs/DALSI_KROK.md 6.6)', () => {
 });
 
 test('stejné datum se zónou projde — vada je v chybějící zóně, ne v obsahu', () => {
-  const seZonou = '2026-08-31T00:04:30.12Z';
+  const seZonou = predDny(1);
   const t = naZpravyTrenera({
     coach_messages: [{ id: 'x', title: 'A', content: 'A', created_at: seZonou }]
   } as never);

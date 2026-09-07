@@ -35,8 +35,21 @@ export default async function handler(req, res) {
 
     const userId = user.id;
 
+    // E-MAIL SE POSÍLÁ SCHVÁLNĚ — docs/DALSI_KROK.md 9.2.
+    //
+    // `registrations` (a waitlist) se klíčuje e-mailem, ne user_id, protože
+    // registrace vzniká PŘED účtem. Dynamická smyčka v `delete_user_data`
+    // přes sloupec user_id ji proto mine — funkce má na to zvláštní větev
+    // podle e-mailu, která se bez `target_email` vůbec nespustí. Řádek pak
+    // přežil smazání účtu a hlídka `registrations_viselec` hlásila smazané
+    // účty jako spadlé registrace (16 falešných záznamů, 7. 9. 2026).
+    //
+    // Je to ZÁMĚRNÉ smazání v aplikační vrstvě, NE kandidát na cizí klíč:
+    // FK na auth.users na `registrations` z principu nepatří — rozbil by
+    // legitimní stav „registrace uložena, účet ještě neexistuje".
     const { data: deleted, error: rpcErr } = await supabaseServer.rpc('delete_user_data', {
       target_user_id: userId,
+      target_email: user.email ?? null,
     });
     if (rpcErr) {
       console.error('[delete-account] delete_user_data:', rpcErr);

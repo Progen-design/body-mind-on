@@ -6,7 +6,18 @@
   produkčních endpointů. Čísla dostaneš hotová.
 - **Migrace píšeš jako soubor, NEAPLIKUJEŠ ji.** Nasazuje ji Honzův druhý
   Claude, a když ji kód potřebuje, tak před mergem.
-- **Model Sonnet.** Eslint na `src/` nespouštěj, repo ho tam nemá.
+- Eslint na `src/` nespouštěj, repo ho tam nemá.
+- **ZADÁNÍ NENÍ PŘÍKAZ. Autor zadání se plete pravidelně.** Když v něm něco
+  nesedí — čísla si odporují, odkaz míří jinam, vzorec dá nesmyslný
+  výsledek — ZASTAV SE a napiš to, místo abys to poslušně implementoval.
+  Tohle pravidlo vzniklo 7. 9. 2026 po bodu 9.1: v zadání stálo
+  „TDEE = BMR × koeficient_aktivity, už existuje". Ten koeficient ale vrací
+  0,95, takže vzorec dal cíl POD bazálním metabolismem — 1377 kcal pro
+  ženu, jejíž BMR je 1449. Zadání bylo špatně, implementace věrná.
+- **Po každém výpočtu si spočítej jeden případ ručně a podívej se, jestli
+  výsledek dává smysl.** Ne jestli prošel test — jestli to číslo může být
+  pravda. Kalorický cíl pod bazálem, porce 2 kg, trénink o 14 cvicích:
+  takové výsledky se hlásí, ne odevzdávají.
 - Bez dat žádný závěr, `null` je „—" a nikdy `0`, žádná mock data, žádný
   Next.js, jeden zdroj pravdy.
 - **Před „hotovo" spusť celou sadu**, ne jen `test:src`:

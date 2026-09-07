@@ -29,6 +29,162 @@
 
 ---
 
+## 9.6 TÝDENNÍ PLÁN ZAČÍNÁ VE ČTVRTEK, PROTOŽE HO KDYSI NĚKDO PŘEGENEROVAL
+
+Změřeno 7. 9. 2026 na účtu janprikopa@gmail.com. Dnes je **pondělí**,
+aplikace ukazuje týdenní jídelníček od **čtvrtka 3. 9.**
+
+    plan 5d7dea6e  valid_from 2026-09-03 (Ct)  valid_until 2026-09-09 (St)
+                   generated_by  ai-task:weekly_plan_update
+                   created_at    2026-09-01    updated_at 2026-09-03 22:05
+
+Historie plánů toho účtu:
+
+    2026-08-03  pondeli
+    2026-08-13  ctvrtek     <- tady se kotva rozjela
+    2026-08-20  ctvrtek
+    2026-08-27  ctvrtek
+    2026-09-03  ctvrtek
+
+### Proč
+
+Řetěz je funkčně v pořádku a je spojitý. `computeTargetFrom()`
+v `lib/weeklyPlanProducer.js` počítá `max(valid_until + 1, dnešek)`, takže
+plán navazuje den po předchozím. `executeTrainerTask` ten `target_from`
+respektuje (ověřeno v kódu — má přednost před odvozením z `latestPlan`).
+
+Jenže **nic nikdy nezarovná začátek na pondělí**. Jakmile jednou vznikl plán
+ve čtvrtek (13. 8., zjevně `force_regenerate`), producent tu středu-čtvrtek
+poctivě posouvá o 7 dní donekonečna.
+
+A teď to hlavní: funkce, která to má řešit, **existuje a nikdo ji nevolá**.
+
+    lib/czechCalendar.js:79   export function nextMondayStartIsoPrague(...)
+    /** ... Pro recurring / weekly_plan_update. */
+
+Grep přes `lib/`, `api/`, `src/` a `scripts/`: jediný výskyt je ta
+definice. Import nula. Byla napsaná přesně pro tenhle případ a nikdy se
+nezapojila.
+
+### Co s tím (a co je na tom ošemetné)
+
+Zarovnat na pondělí nejde tak, že se prostě zavolá ta funkce — vyrobilo by
+to díru. Když plán propadne ve středu a další začne až v pondělí, uživatel
+je čtyři dny bez jídelníčku. Proto tam nejspíš `sevenDayRangeFromTodayIso`
+vzniklo: bezpečné, ale nikdy se nezarovná.
+
+Zadání pro Code je proto **jen návrh, ne implementace**. Chci vidět
+porovnané varianty dřív, než se to sáhne:
+
+  A) Zarovnat `computeTargetFrom` na nejbližší pondělí a překlenovací dny
+     doplnit prodloužením stávajícího plánu (`valid_until` posunout na
+     neděli). Jednorázově 1–6 dní navíc ze stejného katalogu.
+  B) Nechat plán 7denní klouzavý a zarovnání řešit jen v UI (řadit dny od
+     dneška, ne od `valid_from`). Levné, ale „týden" pak neodpovídá
+     nákupnímu seznamu ani týdennímu e-mailu.
+  C) Nedělat nic a jen to popsat jako záměr.
+
+Ke každé variantě chci: co se stane s běžícím plánem 3.–9. 9., co
+s `idempotency_key` (`weekly:<user>:<target_from>`) a s
+`UNIQUE(user_id, target_from)`, a co s nákupním seznamem na týden.
+
+### Nedělat
+
+- **Neměnit `sevenDayRangeFromTodayIso`** naslepo — je to fallback pro
+  `force_regenerate` a pro účty bez předchozího plánu.
+- Nemazat `nextMondayStartIsoPrague`, i kdyby varianta B vyhrála. Napiš
+  do ní komentář, proč se nepoužívá.
+- Neopravovat data existujících plánů. To udělám já, až bude jasné, co má
+  být cílový tvar.
+
+---
+
+## 9.5 SPOONACULAR: ROZŠÍŘIT DOTAZY, AŤ JE Z ČEHO BRÁT
+
+Rozhodnutí Honzy 7. 9. 2026: **„není důležitý čas, ale jednoduchost."**
+Uvolnit čas na 35 minut a zvednout i strop kroků, ať je receptů co nejvíc.
+
+Podklad je v sekci 9.3 výš (první ostrý běh: 70 receptů staženo, 0
+vloženo, 19 z 37 zamítnutí bylo `too_many_steps`; `total_results` u dotazů
+0–44).
+
+### Kde se ta čísla berou — POZOR, JSOU NA DVOU MÍSTECH
+
+1. **Pravidla po stažení** — `lib/spoonacular/catalogImportGate.js`, řádky
+   20–23:
+
+        snidane: { maxMainIngredients: 10, maxReadyTime: 20, maxSteps: 12 }
+        svacina: { maxMainIngredients: 10, maxReadyTime: 15, maxSteps: 99 }
+        obed:    { maxMainIngredients: 10, maxReadyTime: 30, maxSteps: 8 }
+        vecere:  { maxMainIngredients: 10, maxReadyTime: 30, maxSteps: 6 }
+
+2. **Parametry samotného dotazu na API** — sloupec `params`
+   v `spoonacular_import_queries`, například:
+
+        {"type":"main course","maxCalories":900,"minCalories":520,"maxReadyTime":20}
+        query_signature: "main course|di=|rt=20|slot=obed"
+
+   `mergeFiltersWithMealRules()` dosazuje pravidlo jen tehdy, když filtr
+   chybí (`if (merged.maxReadyTime == null)`). **Řádky v DB jsou tedy
+   přísnější než tabulka pravidel a přebíjejí ji.** Kdo změní jen tabulku,
+   nezmění nic — API se pořád zeptá na `maxReadyTime=20`.
+
+### Cílové hodnoty
+
+        snidane: maxReadyTime 25, maxSteps 14
+        svacina: maxReadyTime 20, maxSteps 99   (kroky beze změny)
+        obed:    maxReadyTime 35, maxSteps 12
+        vecere:  maxReadyTime 35, maxSteps 12
+
+Proč se u kroků nebojím o „jednoduchost": Spoonacular krájí instrukce
+extrémně jemně — „Preheat the oven" a „Chop the onion" jsou dva kroky.
+Počet kroků tedy měří hlavně upovídanost receptu. Skutečné pojistky
+jednoduchosti zůstávají nedotčené a **nesahej na ně**:
+`maxMainIngredients: 10` a `COMPLEX_PREP_REGEX` v `catalogSimplicity.js`
+(marinovat přes noc, tlakový hrnec, fritování, cukrářský teploměr).
+
+### Migrace na řádky dotazů
+
+Napiš migraci, která u `spoonacular_import_queries`:
+
+- zvýší `params->>'maxReadyTime'` na cílovou hodnotu podle slotu
+  (slot je v `query_signature` za `slot=`, a je i ve sloupci
+  `catalog_meal_type`),
+- přepíše `query_signature`, aby v něm `rt=` odpovídalo nové hodnotě,
+- **resetuje `next_offset` na 0** u každého řádku, kterému se
+  `maxReadyTime` změnil, a zároveň vynuluje `exhausted_at`,
+  `retired_reason` a `empty_streak`.
+
+Reset offsetu je nutný, ne volitelný: širší dotaz vrací jinou a větší
+množinu v jiném pořadí, takže staré `next_offset` (u obědu 44) ukazuje
+doprostřed něčeho, co už neexistuje. Jednorázově to znamená víc duplicit
+při prvním běhu — to je zaplacená cena, ne chyba. Napiš to do komentáře
+migrace, ať to za měsíc nikdo „neopraví" zpátky.
+
+Migrace musí být idempotentní a po sobě si ověřit, že
+`query_signature` a `params->>'maxReadyTime'` spolu souhlasí u všech 66
+řádků.
+
+### Testy
+
+- Tabulka pravidel má nové hodnoty a `svacina.maxSteps` zůstalo 99.
+- `mergeFiltersWithMealRules()` pořád nechává explicitní filtr vyhrát nad
+  pravidlem (to chování se nemění, jen se posouvají čísla).
+- `COMPLEX_PREP_REGEX` a `maxMainIngredients` beze změny — test, který to
+  hlídá, ať existuje, protože právě tudy by se dovnitř dostala složitost.
+- Migrace: `rt=` v podpisu odpovídá `params`, offsety vynulované.
+
+### Nedělat
+
+- Neměnit `minProtein` (5) ani `maxSugar` (30). Ty zamítly dohromady 4
+  recepty ze 70 — nejsou to úzké hrdlo.
+- Nezakládat nové dotazy do rotace. Nejdřív chci vidět, kolik přinese
+  rozšíření těch stávajících.
+- Nesahat na denní rozpočet bodů ani na `MAX_QUERIES_PER_RUN`.
+- Neaplikovat migraci. Píšeš soubor.
+
+---
+
 ## 8.9 „NEZNÁMÁ SUROVINA", KTERÁ NENÍ NEZNÁMÁ — CHYBA JE V JEDNOTCE
 
 **Tohle je oprava mojí vlastní chybné diagnózy. Dvakrát jsem tvrdil, že

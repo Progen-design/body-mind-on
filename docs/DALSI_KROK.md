@@ -152,6 +152,59 @@ Náklad znovuotevření: dotaz, který po návratu do rotace zase nic nenajde,
 spotřebuje jednu stránku (~1 bod) a zavře se na další měsíc. Při 66
 dotazech je to ~66 bodů měsíčně — proti dennímu rozpočtu zanedbatelné.
 
+### CO UKÁZAL PRVNÍ OSTRÝ BĚH — MECHANIKA FUNGUJE, KATALOG NEROSTE
+
+Cron spuštěný ručně hned po nasazení (7. 9. 2026 17:44, první běh od
+20. 8.):
+
+    dotazu probehlo     22
+    receptu stazeno     70
+    VLOZENO             0
+    duplicit            33
+    zahozeno filtrem    37  (too_many_steps 19, too_complex 8,
+                             not_a_recipe 4, max_sugar 3,
+                             protected 2, min_protein 1)
+    API requestu        11
+    bodu                17.7   (dosly, beh se zastavil na rozpoctu)
+
+Znovuotevření tedy prokazatelně funguje — import po 18 dnech zase běžel.
+**Nepřineslo to ani jeden recept a příště nepřinese taky.** Důvod je
+v `total_results` u dotazů, které doběhly:
+
+    main course|di=|rt=20|slot=obed        44
+    main course|di=|rt=20|slot=vecere      44
+    main course|di=gluten free|slot=obed    9
+    breakfast|di=|rt=15|slot=snidane        6
+    salad|di=vegetarian|rt=20|slot=obed     3
+    soup|di=vegetarian|rt=20|slot=obed      0
+    salad|di=vegan|rt=20|slot=obed          0
+    soup|di=vegan|rt=20|slot=vecere         0
+
+To NENÍ „došli jsme na konec stránkování a za měsíc přibude". To je celý
+výsledek, který Spoonacular pro ten dotaz má. Nejštědřejší dotaz z celé
+rotace vrací 44 receptů — a ty už v katalogu jsou (proto 33 duplicit ze
+70). Osm z 22 dotazů vrací dlouhodobě nulu.
+
+**Závěr: rotace 66 dotazů je vyčerpaná u zdroje, ne v našem stránkování.**
+121 běhů → 47 receptů za celou historii. Katalog má dnes 895 aktivních
+a 209 neaktivních receptů; Spoonacular k tomu už nic nepřidá, dokud se
+nezmění SAMY DOTAZY.
+
+Kde je prostor (změřeno, ne odhad):
+
+1. **Dotazy jsou moc úzké.** `readyInMinutes` 15–20 minut × dieta × slot
+   dělá kombinace, které v Spoonacularu skoro nic nemají (vegan polévka
+   do 20 minut = 0). Uvolnit čas na 30–35 minut u obědů a večeří je
+   jediná změna, která zvětší zdrojovou množinu řádově.
+2. **`too_many_steps` zahodilo 19 ze 70 (27 %)** — nejsilnější filtr ze
+   všech. Práh je v `getMealSimplicityRules()`
+   (`lib/spoonacular/catalogSimplicity.js`). Stojí za to změřit, kolik
+   receptů by prošlo při prahu o 2 kroky vyšším, než ho měnit naslepo.
+
+Obojí je rozhodnutí o produktu (jak složité jídlo ještě chceme uživateli
+dát), ne technická oprava — proto to tady jen leží změřené a čeká na
+Honzu. **Nedělej z toho úkol pro Code sám od sebe.**
+
 Původní zadání níž.
 
 ## 9.3 (PŮVODNÍ ZADÁNÍ)

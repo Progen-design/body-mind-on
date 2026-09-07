@@ -130,7 +130,31 @@ nedaří dotáhnout objednávku.
 - **Nepouštěj se do `is_pantry_ingredient`.** Zjištění k tomu je v textu
   níž a je to samostatné rozhodnutí, ne součást téhle opravy.
 
-## 9.3 SPOONACULAR NEBĚŽEL 18 DNÍ A NIKDO SE TO NEDOZVĚDĚL
+## 9.3 — HOTOVO A NASAZENO (PR #166). NEŘEŠ ZNOVU.
+
+Migrace `20260907130000` aplikovaná a orazítkovaná 7. 9. 2026.
+Ověřeno hned po ní na produkci — obě větve už mluví:
+
+- `import_nebezel` = **warning**, „Spoonacular import 48 h nebezel, pool
+  dotazu je prazdny", poslední běh 2026-08-20 03:00. Předtím ji umlčoval
+  právě prázdný pool.
+- `import_rotace_vycerpana` = **warning** (bylo `info`), 66× vyčerpaný
+  dotaz, 0 použitelných.
+
+Změřený dopad znovuotevírání: z 66 dotazů se při nejbližším běhu vrátí do
+rotace **36** (vyčerpané před 8. 8., tedy dřív než před 30 dny). Zbylých 30
+(vyčerpané 8.–20. 8.) doputuje za lhůtu postupně během následujících týdnů.
+Trvale ručně vyřazený dotaz se neotevře žádný — všech 66 má
+`retired_reason` buď NULL (3×), `pool_exhausted` (55×) nebo `pool_empty`
+(8×), což jsou důvody automatu.
+
+Náklad znovuotevření: dotaz, který po návratu do rotace zase nic nenajde,
+spotřebuje jednu stránku (~1 bod) a zavře se na další měsíc. Při 66
+dotazech je to ~66 bodů měsíčně — proti dennímu rozpočtu zanedbatelné.
+
+Původní zadání níž.
+
+## 9.3 (PŮVODNÍ ZADÁNÍ)
 
 Změřeno 7. 9. 2026.
 
@@ -226,7 +250,21 @@ nic nevzniklo).
 
 ---
 
-## 9.2 SMAZANÝ ÚČET SE TVÁŘÍ JAKO SPADLÁ REGISTRACE
+## 9.2 — HOTOVO A NASAZENO (PR #166). NEŘEŠ ZNOVU.
+
+Migrace `20260907140000` aplikovaná a orazítkovaná 7. 9. 2026.
+Po ní `registrations_viselec` z `system_health_alerts` **zmizel** — všech
+16 falešných warningů je pryč, řádky v `registrations` zůstaly.
+
+Ověřeno v produkci, že `delete_user_data` má opravdu podpis
+`(target_user_id uuid, target_email text DEFAULT NULL)` — jediný overload,
+žádný drift — a že větev podle e-mailu maže z `registrations`, `waitlist`
+i `users` přes `lower(email)`. Bez `target_email` se ta větev nespustí,
+proto ta změna v `api/delete-account.js` není kosmetika.
+
+Původní zadání níž.
+
+## 9.2 (PŮVODNÍ ZADÁNÍ)
 
 Objeveno 7. 9. 2026 hodinu po tom, co dostalo `ai_generated_plans` cizí klíč
 (bod 9.1/E). Smazal jsem 16 testovacích účtů a v hlídce vyskočilo:

@@ -88,6 +88,40 @@ Ke každé variantě chci: co se stane s běžícím plánem 3.–9. 9., co
 s `idempotency_key` (`weekly:<user>:<target_from>`) a s
 `UNIQUE(user_id, target_from)`, a co s nákupním seznamem na týden.
 
+### Analýza od Code (7. 9. 2026) — ČEKÁ SE NA HONZOVO ROZHODNUTÍ
+
+Doplňující fakta z kódu: plán je vždy `from + 6`
+(`taskExecutors.js:550`), a nákupní řádky se skládají při čtení
+z `structured_plan_json.days` — seznam tedy kopíruje dny plánu, ať je
+jich kolik chce.
+
+**A) zarovnat + překlenout prodloužením** — běžící plán 3.–9. 9. se při
+další weekly úloze prodlouží o Čt 10. 9.–Ne 13. 9. (4 dny ze stejného
+katalogu, `valid_until` → 13. 9.), jednorázově 11denní plán; další pak
+Po 14. 9.–Ne 20. 9. Klíče se od té chvíle ustálí na pondělcích, takže
+`UNIQUE(user_id, target_from)` začne vynucovat právě jeden plán na
+kalendářní týden. **Klíčová vlastnost: samoléčení** — po každém budoucím
+`force_regenerate` (který zůstává „od dneška") další weekly úloha kotvu
+zase srovná. Cena: prodlužovací logika musí být idempotentní (prodloužit
+jen když `valid_until < target_from − 1`), jinak retry přidá dny dvakrát.
+Pozor na přechod: pending úloha s `target_from` 10. 9. by UNIQUE
+nezablokoval (jiné datum) a vznikl by překryv — pendingy uklidím já.
+
+**B) klouzavý plán, zarovnání jen v UI** — nic se nerozbije, ale nákupní
+seznam i týdenní e-mail dál pokrývají Čt–St, zatímco UI tvrdí „od
+pondělí". K tomu trvalá výjimka „pořadí dnů ≠ pořadí v JSON", kterou musí
+respektovat každá budoucí obrazovka.
+
+**C) nedělat nic** — nula nákladů, ale kotva není záměr, je to artefakt
+jednoho přegenerování a každý další `force` ji posune jinam.
+
+**Code doporučuje A, souhlasím.** Je to jediná varianta, kde „týden
+plánu" = kalendářní týden = nákupní seznam = týdenní e-mail, a jediná,
+kde se kotva po budoucích zásazích srovná sama. Implementačně:
+zarovnání do `computeTargetFrom`, prodloužení do exekuce weekly úlohy,
+`sevenDayRangeFromTodayIso` beze změny, `nextMondayStartIsoPrague` se
+konečně zapojí.
+
 ### Nedělat
 
 - **Neměnit `sevenDayRangeFromTodayIso`** naslepo — je to fallback pro
@@ -99,7 +133,62 @@ s `idempotency_key` (`weekly:<user>:<target_from>`) a s
 
 ---
 
-## 9.5 SPOONACULAR: ROZŠÍŘIT DOTAZY, AŤ JE Z ČEHO BRÁT
+## 9.5 — HOTOVO A NASAZENO (PR #169, 4a343d7). NEŘEŠ ZNOVU.
+
+Migrace `20260907150000` aplikovaná a orazítkovaná 7. 9. 2026.
+
+    pouzitelnych dotazu v rotaci     14  ->  57
+    radku vraceno na offset 0                58
+    slouceno s dvojcetem                      1
+    radek s rt=40 (id 2745)             netknuty
+
+**První běh po rozšíření se ještě nestihl** — denní rozpočet bodů byl už
+vyčerpaný dvěma dnešními běhy (`import_denni_rozpocet_vycerpan`, info).
+Skutečná čísla „kolik receptů to přineslo" budou až po cronu v 03:00 UTC.
+
+Hlídka po nasazení: `import_nebezel` i `import_rotace_vycerpana` **zmizely**
+(import dneska běžel, pool má 57 dotazů). Nový `import_nizka_kvota`
+(warning, quota_left 19.2) je správně a je to informace, ne porucha.
+Falešný critical z `budget_exhausted` NEVZNIKL — ta větev má vlastní
+`info` hlášku, na rozdíl od toho, čeho se bál komentář v 9.3.
+
+### Tři věci, které se ukázaly až při aplikaci na produkci
+
+Zadání i implementace je minuly. Zapsané, ať se neopakují:
+
+1. **Čas se smí jen zvyšovat.** Řádek id=2745
+   `main course|carb=40|kcal=400-800|rt=40|slot=obed` měl `maxReadyTime`
+   **40**, tedy víc než cílových 35. Dosadit mu cíl by dotaz ZÚŽILO a
+   navrch shodilo jeho `next_offset` (36) na nulu. Migrace proto používá
+   `GREATEST` a post-check porovnává „aspoň cíl", ne rovnost. Je to táž
+   úvaha, kterou Code správně použil na řádky bez `maxReadyTime` — jen ji
+   nikdo nedotáhl na řádky, které jsou širší už teď.
+
+2. **Rozšířením mohou dva dotazy splynout v jeden.** `query_signature` má
+   UNIQUE index a `rt=` je jeho součástí, takže dotazy lišící se JEN časem
+   mají po zvýšení tentýž podpis. Na produkci to nastalo jednou:
+   id 2732 (`rt=30`) vs. id 2754 (`rt=35`), jinak identické. Migrace na to
+   původně spadla na constraintu. Teď kolizi detekuje a druhý z dvojice
+   trvale vyřadí jako `merged_after_widening`.
+
+3. **CHECK na `retired_reason` trvalý důvod vůbec nepřipouštěl.** Znělo to
+
+        CHECK (retired_reason IS NULL OR retired_reason IN ('pool_exhausted','pool_empty'))
+
+   — tedy PŘESNĚ hodnoty z `DOCASNE_DUVODY_VYRAZENI`. Komentář
+   v `lib/spoonacular/importQueryRotation.js` (z bodu 9.3, PR #166) přitom
+   slibuje: „JAKÝKOLI JINÝ důvod znamená trvalé ruční vyřazení — takový
+   dotaz se znovu NEOTVÍRÁ." Jenže žádný jiný důvod nešlo do sloupce
+   zapsat, takže ta větev hlídala stav, který DB nedovolila vzniknout, a
+   po 30 dnech se do rotace vracelo úplně všechno. CHECK je rozšířený,
+   slib teď platí a `merged_after_widening` je jeho první skutečný případ.
+
+   **Kdo bude přidávat další trvalý důvod, přidá ho do CHECKu a NEPŘIDÁ
+   ho do `DOCASNE_DUVODY_VYRAZENI`.**
+
+Původní zadání níž.
+
+## 9.5 (PŮVODNÍ ZADÁNÍ)
 
 Rozhodnutí Honzy 7. 9. 2026: **„není důležitý čas, ale jednoduchost."**
 Uvolnit čas na 35 minut a zvednout i strop kroků, ať je receptů co nejvíc.

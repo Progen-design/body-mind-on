@@ -73,7 +73,7 @@ export const Vysvetlivka: React.FC<VysvetlivkaProps> = ({ pojem, hodnota }) => {
             exit={{ opacity: 0, y: -4, scale: 0.97 }}
             transition={{ duration: 0.14 }}
             onClick={(e) => e.stopPropagation()}
-            className="absolute left-0 top-full mt-1.5 z-50 w-64 sm:w-72 p-3.5 rounded-2xl bg-[#0c1017] border border-cyan-500/30 shadow-[0_8px_30px_rgba(0,0,0,0.7)] text-left cursor-default"
+            className="absolute left-0 top-full mt-1.5 z-50 w-64 sm:w-72 p-3.5 rounded-2xl bg-povrch border border-cyan-500/30 shadow-[0_8px_30px_rgba(0,0,0,0.7)] text-left cursor-default"
           >
             <span className="flex items-start justify-between gap-2 mb-1.5">
               <span className="text-xs font-bold text-white leading-snug">{zaznam.pojem}</span>
@@ -99,7 +99,7 @@ export const Vysvetlivka: React.FC<VysvetlivkaProps> = ({ pojem, hodnota }) => {
                   setOtevreno(false);
                   ted.zeptejSe({ typ: 'pojem', klic: pojem, popis: zaznam.pojem, hodnota });
                 }}
-                className="mt-2.5 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold text-[#00f2fe] bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-500/30 hover:border-cyan-400/60 transition-all normal-case tracking-normal"
+                className="mt-2.5 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold text-akcent-cyan bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-500/30 hover:border-cyan-400/60 transition-all normal-case tracking-normal"
               >
                 <Sparkles className="w-3 h-3" />
                 <span>Co to znamená u mě?</span>

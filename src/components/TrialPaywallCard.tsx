@@ -127,7 +127,7 @@ export const TrialPaywallCard: React.FC<TrialPaywallCardProps> = ({ plan }) => {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-[#0e131d]/90 backdrop-blur-xl border border-amber-400/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+      className="relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-karta/90 backdrop-blur-xl border border-amber-400/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
     >
       <div className="flex items-start gap-3 mb-4">
         <div className="w-10 h-10 rounded-2xl bg-amber-950/60 border border-amber-400/40 flex items-center justify-center shrink-0">

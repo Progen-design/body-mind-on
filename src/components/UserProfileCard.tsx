@@ -26,7 +26,7 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="relative overflow-hidden rounded-3xl p-4 sm:p-5 bg-[#0e131d]/90 backdrop-blur-xl border border-cyan-500/25 shadow-[0_8px_32px_rgba(0,0,0,0.5)] group hover:border-cyan-500/40 transition-all duration-300"
+      className="relative overflow-hidden rounded-3xl p-4 sm:p-5 bg-karta/90 backdrop-blur-xl border border-cyan-500/25 shadow-[0_8px_32px_rgba(0,0,0,0.5)] group hover:border-cyan-500/40 transition-all duration-300"
     >
       {/* Ambient subtle light gradient */}
       <div className="absolute -top-12 -right-12 w-36 h-36 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
@@ -36,7 +36,7 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({
         {/* User avatar and name */}
         <div className="flex items-center gap-3.5 sm:gap-4 cursor-pointer" onClick={onViewFullProfile}>
           <div className="relative">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden p-0.5 bg-gradient-to-tr from-[#00f2fe] to-[#39ff14] shadow-[0_0_15px_rgba(0,242,254,0.3)]">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden p-0.5 bg-gradient-to-tr from-akcent-cyan to-akcent-lime shadow-[0_0_15px_rgba(0,242,254,0.3)]">
               <Avatar
                 jmeno={profile.name}
                 src={profile.avatarUrl}
@@ -44,7 +44,7 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({
                 textClassName="text-lg sm:text-xl"
               />
             </div>
-            <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#39ff14] border-2 border-[#0e131d] shadow-[0_0_8px_#39ff14]" />
+            <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-akcent-lime border-2 border-karta shadow-[0_0_8px_var(--color-akcent-lime)]" />
           </div>
 
           <div>
@@ -74,8 +74,8 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({
                   hodnota, ne jako chybějící údaj. */}
               {biometrics && biometrics.recoveryScore > 0 && (
                 <div className="flex items-center gap-1 text-slate-300 border-l border-slate-800 pl-3">
-                  <Activity className="w-3.5 h-3.5 text-[#39ff14]" />
-                  <strong className="text-[#39ff14]">{biometrics.recoveryScore}/100</strong>
+                  <Activity className="w-3.5 h-3.5 text-akcent-lime" />
+                  <strong className="text-akcent-lime">{biometrics.recoveryScore}/100</strong>
                 </div>
               )}
             </div>

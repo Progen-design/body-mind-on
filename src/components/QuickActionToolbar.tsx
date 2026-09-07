@@ -33,18 +33,18 @@ export const QuickActionToolbar: React.FC<QuickActionToolbarProps> = ({
             na „proč mám v plánu tohle" a „co to číslo znamená u mě". */}
         <button
           onClick={onAskTed}
-          className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-cyan-950/70 hover:bg-cyan-900/70 text-[#00f2fe] border border-cyan-500/40 hover:border-cyan-400 shadow-[0_0_12px_rgba(0,242,254,0.25)] transition-all active:scale-95"
+          className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-cyan-950/70 hover:bg-cyan-900/70 text-akcent-cyan border border-cyan-500/40 hover:border-cyan-400 shadow-[0_0_12px_rgba(0,242,254,0.25)] transition-all active:scale-95"
         >
-          <Sparkles className="w-3.5 h-3.5 text-[#00f2fe]" />
+          <Sparkles className="w-3.5 h-3.5 text-akcent-cyan" />
           <span>Zeptat se TEDa</span>
         </button>
 
         {/* Zapsat trénink */}
         <button
           onClick={onLogWorkout}
-          className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-gradient-to-r from-emerald-950/80 to-cyan-950/80 hover:from-emerald-900/80 hover:to-cyan-900/80 text-emerald-300 border border-[#39ff14]/40 hover:border-[#39ff14] shadow-[0_0_12px_rgba(57,255,20,0.2)] transition-all active:scale-95"
+          className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-gradient-to-r from-emerald-950/80 to-cyan-950/80 hover:from-emerald-900/80 hover:to-cyan-900/80 text-emerald-300 border border-akcent-lime/40 hover:border-akcent-lime shadow-[0_0_12px_rgba(57,255,20,0.2)] transition-all active:scale-95"
         >
-          <Dumbbell className="w-3.5 h-3.5 text-[#39ff14]" />
+          <Dumbbell className="w-3.5 h-3.5 text-akcent-lime" />
           <span>Zapsat trénink</span>
         </button>
 
@@ -61,9 +61,9 @@ export const QuickActionToolbar: React.FC<QuickActionToolbarProps> = ({
         <button
           onClick={onSyncAll}
           disabled={isSyncing}
-          className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-cyan-950/70 hover:bg-cyan-900/70 text-[#00f2fe] border border-cyan-500/40 hover:border-cyan-400 shadow-[0_0_12px_rgba(0,242,254,0.25)] transition-all active:scale-95 disabled:opacity-50"
+          className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-cyan-950/70 hover:bg-cyan-900/70 text-akcent-cyan border border-cyan-500/40 hover:border-cyan-400 shadow-[0_0_12px_rgba(0,242,254,0.25)] transition-all active:scale-95 disabled:opacity-50"
         >
-          <RefreshCw className={`w-3.5 h-3.5 text-[#00f2fe] ${isSyncing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-3.5 h-3.5 text-akcent-cyan ${isSyncing ? 'animate-spin' : ''}`} />
           <span>{isSyncing ? 'Synchronizuji...' : 'Synchronizovat teď'}</span>
         </button>
 

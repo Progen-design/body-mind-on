@@ -68,7 +68,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     'placeholder:text-slate-600 outline-none transition-colors focus:border-cyan-500/60';
 
   return (
-    <div className="min-h-screen bg-[#08090d] text-slate-100 relative overflow-x-hidden font-['Plus_Jakarta_Sans',sans-serif] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-pozadi text-slate-100 relative overflow-x-hidden font-['Plus_Jakarta_Sans',sans-serif] flex items-center justify-center p-4">
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] bg-gradient-to-b from-cyan-500/10 via-emerald-500/5 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="fixed bottom-0 right-0 w-[550px] h-[450px] bg-lime-500/5 rounded-full blur-3xl pointer-events-none -z-10" />
 
@@ -76,11 +76,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-md rounded-3xl bg-[#0c1017]/95 backdrop-blur-2xl border border-cyan-500/25 shadow-[0_8px_40px_rgba(0,0,0,0.6)] p-6 sm:p-8"
+        className="w-full max-w-md rounded-3xl bg-povrch/95 backdrop-blur-2xl border border-cyan-500/25 shadow-[0_8px_40px_rgba(0,0,0,0.6)] p-6 sm:p-8"
       >
         <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-1.5 select-none">
           <span>Body &amp; Mind</span>
-          <span className="text-[#39ff14] font-extrabold drop-shadow-[0_0_12px_rgba(57,255,20,0.6)]">ON</span>
+          <span className="text-akcent-lime font-extrabold drop-shadow-[0_0_12px_rgba(57,255,20,0.6)]">ON</span>
         </h1>
         <p className="mt-2 text-sm text-slate-400">Přihlas se a otevři svůj plán.</p>
 
@@ -148,7 +148,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           <button
             type="submit"
             disabled={odesilam}
-            className="w-full py-3 rounded-2xl bg-[#39ff14] text-[#08090d] font-bold text-sm shadow-[0_0_24px_rgba(57,255,20,0.35)] transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-2xl bg-akcent-lime text-na-akcentu font-bold text-sm shadow-[0_0_24px_rgba(57,255,20,0.35)] transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {odesilam && <Loader2 className="w-4 h-4 animate-spin" />}
             {odesilam ? 'Přihlašuji…' : 'Přihlásit se'}
@@ -159,7 +159,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           <Lock className="w-4 h-4 text-cyan-400 shrink-0" />
           <p className="text-xs text-slate-400">
             Ještě nemáš účet?{' '}
-            <button onClick={onPrejitNaRegistraci} className="text-[#39ff14] font-semibold hover:underline">
+            <button onClick={onPrejitNaRegistraci} className="text-akcent-lime font-semibold hover:underline">
               Vytvořit účet (START)
             </button>
           </p>

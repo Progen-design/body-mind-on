@@ -46,12 +46,12 @@ export const WeeklyWorkoutModal: React.FC<WeeklyWorkoutModalProps> = ({
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className="relative z-10 w-full max-w-3xl max-h-[90vh] bg-[#0c1017] rounded-3xl border border-lime-500/30 shadow-[0_0_50px_rgba(57,255,20,0.15)] flex flex-col overflow-hidden"
+        className="relative z-10 w-full max-w-3xl max-h-[90vh] bg-povrch rounded-3xl border border-lime-500/30 shadow-[0_0_50px_rgba(57,255,20,0.15)] flex flex-col overflow-hidden"
       >
         {/* Header */}
         <div className="p-5 sm:p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/40">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-950/70 border border-emerald-500/40 flex items-center justify-center text-[#39ff14]">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-950/70 border border-emerald-500/40 flex items-center justify-center text-akcent-lime">
               <Dumbbell className="w-5 h-5" />
             </div>
             <div>
@@ -73,7 +73,7 @@ export const WeeklyWorkoutModal: React.FC<WeeklyWorkoutModalProps> = ({
         </div>
 
         {/* Day selector tabs */}
-        <div className="p-3 bg-[#0e1420] border-b border-slate-800/80 flex items-center gap-1.5 overflow-x-auto">
+        <div className="p-3 bg-pruh-modalu border-b border-slate-800/80 flex items-center gap-1.5 overflow-x-auto">
           {workouts.map((day) => {
             const isSelected = day.dayName === currentDay.dayName;
             const jeVolno = day.maTrenink === false;
@@ -87,16 +87,16 @@ export const WeeklyWorkoutModal: React.FC<WeeklyWorkoutModalProps> = ({
                   jeVolno
                     ? 'text-slate-600 cursor-default border border-transparent'
                     : isSelected
-                      ? 'bg-lime-500/20 text-[#39ff14] border border-[#39ff14]/50 shadow-[0_0_12px_rgba(57,255,20,0.25)]'
+                      ? 'bg-lime-500/20 text-akcent-lime border border-akcent-lime/50 shadow-[0_0_12px_rgba(57,255,20,0.25)]'
                       : 'text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent'
                 }`}
               >
                 <span>{day.dayShort}</span>
                 {day.isToday && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#00f2fe] animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-akcent-cyan animate-pulse" />
                 )}
                 {!jeVolno && day.isCompleted && (
-                  <Check className="w-3 h-3 text-[#39ff14]" />
+                  <Check className="w-3 h-3 text-akcent-lime" />
                 )}
               </button>
             );
@@ -108,7 +108,7 @@ export const WeeklyWorkoutModal: React.FC<WeeklyWorkoutModalProps> = ({
           <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900/90 to-slate-950 border border-slate-800 flex flex-wrap items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-[#39ff14] uppercase tracking-wider">
+                <span className="text-xs font-bold text-akcent-lime uppercase tracking-wider">
                   {currentDay.dayName} {currentDay.isToday && '• Dnešní fokus'}
                 </span>
               </div>
@@ -156,7 +156,7 @@ export const WeeklyWorkoutModal: React.FC<WeeklyWorkoutModalProps> = ({
                     type="button"
                     className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
                       exercise.completed
-                        ? 'bg-[#39ff14] text-slate-950 shadow-[0_0_8px_#39ff14]'
+                        ? 'bg-akcent-lime text-slate-950 shadow-[0_0_8px_var(--color-akcent-lime)]'
                         : 'bg-slate-800 text-transparent border border-slate-700'
                     }`}
                   >
@@ -182,7 +182,7 @@ export const WeeklyWorkoutModal: React.FC<WeeklyWorkoutModalProps> = ({
                     {exercise.sets} série × {exercise.reps}
                   </div>
                   {exercise.weightKg && (
-                    <div className="text-xs font-semibold text-[#39ff14] mt-0.5">
+                    <div className="text-xs font-semibold text-akcent-lime mt-0.5">
                       {exercise.weightKg} kg
                     </div>
                   )}
@@ -199,7 +199,7 @@ export const WeeklyWorkoutModal: React.FC<WeeklyWorkoutModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-[#00f2fe] to-[#39ff14]"
+            className="px-5 py-2 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-akcent-cyan to-akcent-lime"
           >
             Zavřít
           </button>

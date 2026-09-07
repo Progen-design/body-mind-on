@@ -199,11 +199,11 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className="relative z-10 w-full max-w-2xl max-h-[92vh] bg-[#0c1017] rounded-3xl border border-cyan-500/30 shadow-[0_0_50px_rgba(0,242,254,0.15)] flex flex-col overflow-hidden"
+        className="relative z-10 w-full max-w-2xl max-h-[92vh] bg-povrch rounded-3xl border border-cyan-500/30 shadow-[0_0_50px_rgba(0,242,254,0.15)] flex flex-col overflow-hidden"
       >
         <div className="p-5 sm:p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/40 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-950/70 border border-cyan-500/40 flex items-center justify-center text-[#00f2fe]">
+            <div className="w-10 h-10 rounded-2xl bg-cyan-950/70 border border-cyan-500/40 flex items-center justify-center text-akcent-cyan">
               <Sliders className="w-5 h-5" />
             </div>
             <div>
@@ -319,7 +319,7 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
 
           {meniPlan && (
             <div className="p-3.5 rounded-2xl bg-cyan-950/30 border border-cyan-500/30 flex items-start gap-2.5">
-              <Mail className="w-4 h-4 text-[#00f2fe] shrink-0 mt-0.5" />
+              <Mail className="w-4 h-4 text-akcent-cyan shrink-0 mt-0.5" />
               <p className="text-[11px] text-slate-300 leading-relaxed">
                 Po uložení se plán přegeneruje podle nových údajů a přijde ti e-mailem.
                 Chvíli to trvá — nezavírej okno.
@@ -352,7 +352,7 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
               type="button"
               onClick={odesli}
               disabled={uklada || !jsouZmeny}
-              className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-[#00f2fe] to-[#39ff14] hover:opacity-95 shadow-[0_0_15px_rgba(0,242,254,0.3)] disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-akcent-cyan to-akcent-lime hover:opacity-95 shadow-[0_0_15px_rgba(0,242,254,0.3)] disabled:opacity-50"
             >
               {uklada && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>{uklada ? (meniPlan ? 'Ukládám a generuji plán…' : 'Ukládám…') : 'Uložit'}</span>

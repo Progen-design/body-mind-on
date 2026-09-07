@@ -45,7 +45,7 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
 
   return (
     <nav className="relative z-20 mb-5 overflow-x-auto no-scrollbar scroll-smooth">
-      <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-[#0c1017]/95 border border-slate-800/90 backdrop-blur-xl min-w-max shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
+      <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-povrch/95 border border-slate-800/90 backdrop-blur-xl min-w-max shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
         {tabs.map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -68,13 +68,13 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
                 />
               )}
               <span className="relative z-10 flex items-center gap-2">
-                <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-[#00f2fe]' : 'text-slate-400'}`} />
+                <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-akcent-cyan' : 'text-slate-400'}`} />
                 <span>{tab.label}</span>
                 {tab.badge && (
                   <span
                     className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                       isActive
-                        ? 'bg-[#39ff14]/20 text-[#39ff14] border border-[#39ff14]/40'
+                        ? 'bg-akcent-lime/20 text-akcent-lime border border-akcent-lime/40'
                         : 'bg-slate-800 text-slate-400'
                     }`}
                   >

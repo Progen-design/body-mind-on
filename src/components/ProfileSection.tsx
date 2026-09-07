@@ -168,7 +168,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
       <NadpisSekce
         titulek="Můj profil & cíle"
         podtitulek="Účet, tělesné údaje, cíle a připojená zařízení"
-        ikona={<User className="w-5 h-5 text-[#00f2fe]" />}
+        ikona={<User className="w-5 h-5 text-akcent-cyan" />}
       />
 
       {/* 1. Main Profile Hero Header Card */}
@@ -176,7 +176,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="relative overflow-hidden rounded-3xl p-5 sm:p-7 bg-[#0c1017]/90 backdrop-blur-2xl border border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+        className="relative overflow-hidden rounded-3xl p-5 sm:p-7 bg-povrch/90 backdrop-blur-2xl border border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
       >
         <div className="absolute top-0 right-0 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-72 h-72 bg-lime-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -185,7 +185,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           {/* Avatar & identita */}
           <div className="flex items-center gap-4 sm:gap-5 min-w-0">
             <div className="relative shrink-0">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden p-1 bg-gradient-to-tr from-[#00f2fe] via-cyan-600 to-[#39ff14] shadow-[0_0_20px_rgba(0,242,254,0.3)]">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden p-1 bg-gradient-to-tr from-akcent-cyan via-cyan-600 to-akcent-lime shadow-[0_0_20px_rgba(0,242,254,0.3)]">
                 <Avatar
                   jmeno={account?.name || profile.name}
                   src={account?.avatarUrl || profile.avatarUrl}
@@ -193,7 +193,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                   textClassName="text-2xl sm:text-3xl"
                 />
               </div>
-              <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#39ff14] border-2 border-[#0c1017] shadow-[0_0_10px_#39ff14]" />
+              <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-akcent-lime border-2 border-povrch shadow-[0_0_10px_var(--color-akcent-lime)]" />
             </div>
 
             <div className="min-w-0">
@@ -271,7 +271,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           rozhoduje. Datum měření chodí z `withings_body_snapshots`. */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Váha */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0e131d]/90 border border-cyan-500/25 shadow-lg">
+        <div className="p-4 sm:p-5 rounded-2xl bg-karta/90 border border-cyan-500/25 shadow-lg">
           <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
             <span>Aktuální váha</span>
             <Scale className="w-4 h-4 text-cyan-400" />
@@ -288,7 +288,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
 
         {/* Tuk — jen kdyz ho chytra vaha zmerila */}
         {slozeni && (
-          <div className="p-4 sm:p-5 rounded-2xl bg-[#0e131d]/90 border border-cyan-500/25 shadow-lg">
+          <div className="p-4 sm:p-5 rounded-2xl bg-karta/90 border border-cyan-500/25 shadow-lg">
             <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
               <span>Tělesný tuk</span>
               <Activity className="w-4 h-4 text-emerald-400" />
@@ -309,7 +309,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
 
         {/* Svalová hmota */}
         {slozeni && (
-          <div className="p-4 sm:p-5 rounded-2xl bg-[#0e131d]/90 border border-cyan-500/25 shadow-lg">
+          <div className="p-4 sm:p-5 rounded-2xl bg-karta/90 border border-cyan-500/25 shadow-lg">
             <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
               <span>Svalová hmota</span>
               <Flame className="w-4 h-4 text-orange-400" />
@@ -333,7 +333,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             tělesného tuku", což je natvrdo psaná podmínka, kterou nikdo
             nezadal ani nespočítal. Nula není cíl, je to prázdné pole.
             Když cíl není, karta nabídne, kde si ho nastavit. */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0e131d]/90 border border-cyan-500/25 shadow-lg">
+        <div className="p-4 sm:p-5 rounded-2xl bg-karta/90 border border-cyan-500/25 shadow-lg">
           <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
             <span>Cílová hmotnost</span>
             <Trophy className="w-4 h-4 text-amber-400" />
@@ -363,7 +363,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           záložek by ta karta kreslila tytéž tři hodnoty podruhé, takže
           z ní zbylo jen to, co jinde není. */}
       {slozeni && (
-        <div className="p-4 rounded-2xl bg-[#0e131d]/90 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="p-4 rounded-2xl bg-karta/90 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-5">
             {slozeni.bmi !== null && slozeni.bmi !== undefined && (
               <div>
@@ -388,7 +388,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
       )}
 
       {/* 3. Connected IoT Devices & Sync Status */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-[#0c1017]/90 border border-slate-800 shadow-xl space-y-4">
+      <div className="p-5 sm:p-6 rounded-3xl bg-povrch/90 border border-slate-800 shadow-xl space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-cyan-400">
@@ -404,7 +404,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           <button
             onClick={onSyncAll}
             disabled={isSyncing}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-cyan-950/70 hover:bg-cyan-900/70 text-[#00f2fe] border border-cyan-500/40 shadow-sm transition-all"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-cyan-950/70 hover:bg-cyan-900/70 text-akcent-cyan border border-cyan-500/40 shadow-sm transition-all"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
             <span>{isSyncing ? 'Synchronizuji...' : 'Synchronizovat teď'}</span>
@@ -425,7 +425,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-cyan-950/50 border border-cyan-500/30 flex items-center justify-center text-[#00f2fe] shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-cyan-950/50 border border-cyan-500/30 flex items-center justify-center text-akcent-cyan shrink-0">
                   <Scale className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
@@ -438,7 +438,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                 </div>
               </div>
               {slozeni && (
-                <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold text-[#39ff14] bg-emerald-950/60 border border-emerald-500/30">
+                <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold text-akcent-lime bg-emerald-950/60 border border-emerald-500/30">
                   Připojeno
                 </span>
               )}
@@ -469,7 +469,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-lime-950/50 border border-lime-500/30 flex items-center justify-center text-[#39ff14] shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-lime-950/50 border border-lime-500/30 flex items-center justify-center text-akcent-lime shrink-0">
                   <Watch className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
@@ -517,7 +517,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
       </div>
 
       {/* 5. Cíle stravování, Maker & Životosprávy */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-[#0c1017]/90 border border-slate-800 shadow-xl space-y-4">
+      <div className="p-5 sm:p-6 rounded-3xl bg-povrch/90 border border-slate-800 shadow-xl space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
@@ -561,7 +561,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
               Jídelníček níž, aby se ta dvě čísla nemohla rozejít. */}
           <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
             <span className="text-xs text-slate-400 block mb-1">Bílkoviny ({makra.bilkoviny.procenta} %)</span>
-            <span className="text-xl font-bold text-[#00f2fe]">{makra.bilkoviny.gramy} g</span>
+            <span className="text-xl font-bold text-makro-bilkoviny">{makra.bilkoviny.gramy} g</span>
           </div>
 
           <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">

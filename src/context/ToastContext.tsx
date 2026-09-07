@@ -26,9 +26,9 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 
 const VARIANT_STYLE: Record<ToastVariant, { border: string; icon: React.ElementType; iconColor: string }> = {
   success: {
-    border: 'border-[#39ff14]/50 shadow-[0_0_25px_rgba(57,255,20,0.18)]',
+    border: 'border-akcent-lime/50 shadow-[0_0_25px_rgba(57,255,20,0.18)]',
     icon: CheckCircle2,
-    iconColor: 'text-[#39ff14]'
+    iconColor: 'text-akcent-lime'
   },
   error: {
     border: 'border-red-500/50 shadow-[0_0_25px_rgba(239,68,68,0.18)]',
@@ -38,7 +38,7 @@ const VARIANT_STYLE: Record<ToastVariant, { border: string; icon: React.ElementT
   info: {
     border: 'border-cyan-500/50 shadow-[0_0_25px_rgba(0,242,254,0.18)]',
     icon: Info,
-    iconColor: 'text-[#00f2fe]'
+    iconColor: 'text-akcent-cyan'
   }
 };
 
@@ -89,7 +89,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 12, scale: 0.96 }}
                 transition={{ type: 'spring', damping: 24, stiffness: 320 }}
-                className={`pointer-events-auto w-full sm:w-[22rem] p-3.5 rounded-2xl bg-[#0c1017]/95 backdrop-blur-xl border ${style.border} flex items-start gap-3`}
+                className={`pointer-events-auto w-full sm:w-[22rem] p-3.5 rounded-2xl bg-povrch/95 backdrop-blur-xl border ${style.border} flex items-start gap-3`}
                 role="status"
                 aria-live="polite"
               >

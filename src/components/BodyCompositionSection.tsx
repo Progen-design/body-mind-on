@@ -40,11 +40,11 @@ export const BodyCompositionSection: React.FC<BodyCompositionSectionProps> = ({
       <NadpisSekce
         titulek="Tělo & váha"
         podtitulek="Váha, tělesný tuk, svalová hmota a jejich vývoj z chytré váhy"
-        ikona={<Scale className="w-5 h-5 text-[#00f2fe]" />}
+        ikona={<Scale className="w-5 h-5 text-akcent-cyan" />}
         akce={
           <button
             onClick={onAddMeasurement}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-[#00f2fe] text-slate-950 hover:bg-[#00f2fe]/90 shadow-[0_0_15px_rgba(0,242,254,0.3)] transition-all active:scale-95 whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-akcent-cyan text-slate-950 hover:bg-akcent-cyan/90 shadow-[0_0_15px_rgba(0,242,254,0.3)] transition-all active:scale-95 whitespace-nowrap"
           >
             <Plus className="w-4 h-4" />
             <span>Zapsat nové měření</span>

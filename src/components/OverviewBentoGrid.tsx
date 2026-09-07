@@ -113,7 +113,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, delay: 0.05 }}
-        className="col-span-1 md:col-span-2 lg:col-span-1 relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-[#0c1017]/95 backdrop-blur-xl border border-cyan-500/35 shadow-[0_10px_35px_rgba(0,0,0,0.55)] flex flex-col justify-between group hover:border-lime-400/60 transition-all duration-300"
+        className="col-span-1 md:col-span-2 lg:col-span-1 relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-povrch/95 backdrop-blur-xl border border-cyan-500/35 shadow-[0_10px_35px_rgba(0,0,0,0.55)] flex flex-col justify-between group hover:border-lime-400/60 transition-all duration-300"
       >
         <div className="absolute top-0 right-0 w-44 h-44 bg-lime-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -121,7 +121,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-lime-950/70 border border-lime-500/40 flex items-center justify-center text-[#39ff14] shadow-[0_0_12px_rgba(57,255,20,0.25)]">
+              <div className="w-9 h-9 rounded-xl bg-lime-950/70 border border-lime-500/40 flex items-center justify-center text-akcent-lime shadow-[0_0_12px_rgba(57,255,20,0.25)]">
                 <Activity className="w-5 h-5" />
               </div>
               <div>
@@ -203,7 +203,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
             </div>
             <div className="border-l border-slate-800 pl-2">
               <div className="text-[10px] text-slate-400 font-medium">Spánek</div>
-              <div className="text-sm sm:text-base font-bold text-[#00f2fe] mt-0.5">
+              <div className="text-sm sm:text-base font-bold text-akcent-cyan mt-0.5">
                 {biometrics.sleepDuration || '—'}
               </div>
               {/* ŽÁDNÁ EFEKTIVITA SPÁNKU. Dřív tu bylo natvrdo „92 %", pak
@@ -237,7 +237,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, delay: 0.1 }}
-        className="col-span-1 md:col-span-1 lg:col-span-2 relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-[#0c1017]/95 backdrop-blur-xl border border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col justify-between group hover:border-cyan-400/60 transition-all duration-300"
+        className="col-span-1 md:col-span-1 lg:col-span-2 relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-povrch/95 backdrop-blur-xl border border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col justify-between group hover:border-cyan-400/60 transition-all duration-300"
       >
         <div className="absolute -bottom-8 -right-8 w-36 h-36 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
 
@@ -245,7 +245,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
           {/* Header */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center text-[#00f2fe]">
+              <div className="w-8 h-8 rounded-xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center text-akcent-cyan">
                 <Utensils className="w-4 h-4" />
               </div>
               <div>
@@ -274,7 +274,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
                 / cíl {targetCalories.toLocaleString('cs-CZ')} kcal
               </span>
             </div>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold text-[#39ff14] bg-emerald-950/60 border border-emerald-500/30">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold text-akcent-lime bg-emerald-950/60 border border-emerald-500/30">
               {Math.round((currentCalories / targetCalories) * 100)} % splněno
             </span>
           </div>
@@ -282,9 +282,9 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
           {/* Segmented Macro Bar */}
           <div className="space-y-1.5 mb-4">
             <div className="flex items-center gap-1.5 h-2.5 w-full rounded-full overflow-hidden p-0.5 bg-slate-900 border border-slate-800">
-              <div style={{ width: `${preferences.proteinRatioPercent}%` }} className="h-full rounded-full bg-[#00f2fe] shadow-[0_0_8px_#00f2fe]" />
-              <div style={{ width: `${preferences.carbsRatioPercent}%` }} className="h-full rounded-full bg-[#2dd4bf] shadow-[0_0_8px_#2dd4bf]" />
-              <div style={{ width: `${preferences.fatRatioPercent}%` }} className="h-full rounded-full bg-[#39ff14] shadow-[0_0_8px_#39ff14]" />
+              <div style={{ width: `${preferences.proteinRatioPercent}%` }} className="h-full rounded-full bg-makro-bilkoviny shadow-[0_0_8px_var(--color-makro-bilkoviny)]" />
+              <div style={{ width: `${preferences.carbsRatioPercent}%` }} className="h-full rounded-full bg-makro-sacharidy shadow-[0_0_8px_var(--color-makro-sacharidy)]" />
+              <div style={{ width: `${preferences.fatRatioPercent}%` }} className="h-full rounded-full bg-makro-tuky shadow-[0_0_8px_var(--color-makro-tuky)]" />
             </div>
             {/* GRAMY SE POČÍTAJÍ, NEPÍŠOU SE.
                 Do 23. 8. 2026 tu stálo `B {procenta} % (103 g)` — procento
@@ -293,9 +293,9 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
                 odpovídalo poměru 19 %, což je výchozí hodnota makety, ne
                 uživatelův profil. Obě místa teď berou číslo z `denniMakra`. */}
             <div className="flex items-center justify-between text-xs font-semibold px-0.5">
-              <span className="text-[#00f2fe]">B {makra.bilkoviny.procenta} % ({makra.bilkoviny.gramy} g)</span>
-              <span className="text-[#2dd4bf]">S {makra.sacharidy.procenta} % ({makra.sacharidy.gramy} g)</span>
-              <span className="text-[#39ff14]">T {makra.tuky.procenta} % ({makra.tuky.gramy} g)</span>
+              <span className="text-makro-bilkoviny">B {makra.bilkoviny.procenta} % ({makra.bilkoviny.gramy} g)</span>
+              <span className="text-makro-sacharidy">S {makra.sacharidy.procenta} % ({makra.sacharidy.gramy} g)</span>
+              <span className="text-makro-tuky">T {makra.tuky.procenta} % ({makra.tuky.gramy} g)</span>
             </div>
           </div>
 
@@ -320,7 +320,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
                     onClick={() => onToggleMeal(meal.id)}
                     className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${
                       meal.completed
-                        ? 'bg-[#39ff14] border-[#39ff14] text-slate-950 font-bold'
+                        ? 'bg-akcent-lime border-akcent-lime text-slate-950 font-bold'
                         : 'border-slate-700 bg-slate-800'
                     }`}
                   >
@@ -386,7 +386,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, delay: 0.15 }}
-        className="col-span-1 md:col-span-1 lg:col-span-1 relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-[#0c1017]/95 backdrop-blur-xl border border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col justify-between group hover:border-cyan-400/60 transition-all duration-300"
+        className="col-span-1 md:col-span-1 lg:col-span-1 relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-povrch/95 backdrop-blur-xl border border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col justify-between group hover:border-cyan-400/60 transition-all duration-300"
       >
         <div className="absolute -bottom-8 -left-8 w-36 h-36 bg-lime-500/10 rounded-full blur-2xl pointer-events-none" />
 
@@ -394,7 +394,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
           {/* Header */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-lime-950/60 border border-lime-500/40 flex items-center justify-center text-[#39ff14]">
+              <div className="w-8 h-8 rounded-xl bg-lime-950/60 border border-lime-500/40 flex items-center justify-center text-akcent-lime">
                 <Dumbbell className="w-4 h-4" />
               </div>
               <div>
@@ -410,7 +410,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
             </div>
             {/* Den z planu, ne natvrdo "Ctvrtek" sedm dni v tydnu. */}
             {todayWorkout.dayName && (
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-[#39ff14] bg-emerald-950/60 border border-emerald-500/30">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-akcent-lime bg-emerald-950/60 border border-emerald-500/30">
                 {todayWorkout.dayName}
               </span>
             )}
@@ -450,12 +450,12 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
           <div className="space-y-1.5 mb-4">
             <div className="flex justify-between text-xs text-slate-400">
               <span>Cviky</span>
-              <span className="font-bold text-[#39ff14]">{completedExercises} z {totalExercises} hotovo</span>
+              <span className="font-bold text-akcent-lime">{completedExercises} z {totalExercises} hotovo</span>
             </div>
             <div className="h-2 w-full bg-slate-900 rounded-full overflow-hidden p-0.5 border border-slate-800">
               <div
                 style={{ width: `${totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0}%` }}
-                className="h-full bg-gradient-to-r from-cyan-400 to-[#39ff14] rounded-full shadow-[0_0_8px_#39ff14] transition-all duration-300"
+                className="h-full bg-gradient-to-r from-cyan-400 to-akcent-lime rounded-full shadow-[0_0_8px_var(--color-akcent-lime)] transition-all duration-300"
               />
             </div>
           </div>
@@ -465,7 +465,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
         <div className="space-y-2 pt-1">
           <button
             onClick={onOpenWorkoutLogger}
-            className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-[#00f2fe] to-[#39ff14] hover:opacity-95 shadow-[0_0_15px_rgba(57,255,20,0.3)] flex items-center justify-center gap-2 transition-all active:scale-95"
+            className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-akcent-cyan to-akcent-lime hover:opacity-95 shadow-[0_0_15px_rgba(57,255,20,0.3)] flex items-center justify-center gap-2 transition-all active:scale-95"
           >
             {maDnesTrenink ? (
               <>
@@ -503,7 +503,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, delay: 0.25 }}
-        className="col-span-1 md:col-span-2 lg:col-span-1 relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-[#0c1017]/95 backdrop-blur-xl border border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col justify-between"
+        className="col-span-1 md:col-span-2 lg:col-span-1 relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-povrch/95 backdrop-blur-xl border border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col justify-between"
       >
         <div>
           {/* Header */}
@@ -535,7 +535,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
               className="w-full text-left p-3.5 rounded-2xl bg-slate-900/80 hover:bg-slate-900 border border-slate-800 hover:border-cyan-500/40 mb-3 transition-all"
             >
               <div className="text-xs font-bold text-slate-100 mb-1 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-[#00f2fe]" />
+                <Sparkles className="w-3.5 h-3.5 text-akcent-cyan" />
                 <span>Zeptej se TEDa</span>
               </div>
               <p className="text-[11px] text-slate-400 leading-relaxed">

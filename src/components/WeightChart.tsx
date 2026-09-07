@@ -101,7 +101,7 @@ export const WeightChart: React.FC<WeightChartProps> = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.3 }}
-      className="relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-[#0e131d]/85 backdrop-blur-xl border border-cyan-500/25 shadow-[0_8px_32px_rgba(0,0,0,0.5)] group hover:border-cyan-400/50 transition-all duration-300"
+      className="relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-karta/85 backdrop-blur-xl border border-cyan-500/25 shadow-[0_8px_32px_rgba(0,0,0,0.5)] group hover:border-cyan-400/50 transition-all duration-300"
     >
       {/* Background ambient glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-32 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -129,7 +129,7 @@ export const WeightChart: React.FC<WeightChartProps> = ({
               }}
               className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
                 activeFilter === filter
-                  ? 'bg-cyan-500/20 text-[#00f2fe] border border-cyan-500/40 shadow-[0_0_8px_rgba(0,242,254,0.3)]'
+                  ? 'bg-cyan-500/20 text-akcent-cyan border border-cyan-500/40 shadow-[0_0_8px_rgba(0,242,254,0.3)]'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
               }`}
             >
@@ -149,16 +149,16 @@ export const WeightChart: React.FC<WeightChartProps> = ({
             <defs>
               {/* Gradient for the Stroke: Cyan to Lime */}
               <linearGradient id="neonLineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#00f2fe" />
-                <stop offset="60%" stopColor="#2dd4bf" />
-                <stop offset="100%" stopColor="#39ff14" />
+                <stop offset="0%" stopColor="var(--color-graf-vahy-od)" />
+                <stop offset="60%" stopColor="var(--color-graf-vahy-stred)" />
+                <stop offset="100%" stopColor="var(--color-graf-vahy-cil)" />
               </linearGradient>
 
               {/* Gradient for Area Fill */}
               <linearGradient id="neonAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#00f2fe" stopOpacity="0.28" />
-                <stop offset="50%" stopColor="#39ff14" stopOpacity="0.12" />
-                <stop offset="100%" stopColor="#0a0b0e" stopOpacity="0" />
+                <stop offset="0%" stopColor="var(--color-graf-vahy-od)" stopOpacity="0.28" />
+                <stop offset="50%" stopColor="var(--color-graf-vahy-cil)" stopOpacity="0.12" />
+                <stop offset="100%" stopColor="var(--color-graf-vahy-mizeni)" stopOpacity="0" />
               </linearGradient>
 
               {/* Node drop shadow glow */}
@@ -177,7 +177,7 @@ export const WeightChart: React.FC<WeightChartProps> = ({
                     x={paddingLeft - 8}
                     y={y + 4}
                     textAnchor="end"
-                    fill="#64748b"
+                    fill="var(--color-graf-popisek)"
                     fontSize="11"
                     fontFamily="monospace"
                   >
@@ -188,7 +188,7 @@ export const WeightChart: React.FC<WeightChartProps> = ({
                     y1={y}
                     x2={width - paddingRight}
                     y2={y}
-                    stroke="#1e293b"
+                    stroke="var(--color-graf-mrizka)"
                     strokeWidth="1"
                     strokeDasharray="4 4"
                   />
@@ -234,7 +234,7 @@ export const WeightChart: React.FC<WeightChartProps> = ({
               const isLast = idx === points.length - 1;
               const isHovered = hoveredIndex === idx;
               // Color transitions from cyan to lime
-              const color = idx > points.length / 2 ? '#39ff14' : '#00f2fe';
+              const color = idx > points.length / 2 ? 'var(--color-graf-vahy-cil)' : 'var(--color-graf-vahy-od)';
 
               return (
                 <g
@@ -259,7 +259,7 @@ export const WeightChart: React.FC<WeightChartProps> = ({
                       cx={pt.x}
                       cy={pt.y}
                       r="9"
-                      fill="#39ff14"
+                      fill="var(--color-graf-vahy-cil)"
                       fillOpacity="0.25"
                       className="animate-ping"
                     />
@@ -280,7 +280,7 @@ export const WeightChart: React.FC<WeightChartProps> = ({
                     cy={pt.y}
                     r={isHovered ? "4.5" : "3.5"}
                     fill={color}
-                    stroke="#0e131d"
+                    stroke="var(--color-karta)"
                     strokeWidth="1.5"
                     filter="url(#glow)"
                   />
@@ -296,7 +296,7 @@ export const WeightChart: React.FC<WeightChartProps> = ({
                       x={pt.x}
                       y={chartHeight - 4}
                       textAnchor="middle"
-                      fill={isHovered ? '#38bdf8' : '#64748b'}
+                      fill={isHovered ? 'var(--color-graf-popisek-hover)' : 'var(--color-graf-popisek)'}
                       fontSize="10"
                       fontWeight={isHovered ? '600' : '400'}
                     >
@@ -314,13 +314,13 @@ export const WeightChart: React.FC<WeightChartProps> = ({
       <div className="relative z-10 mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
         {hoveredPoint ? (
           <div className="flex items-center gap-3 text-slate-200">
-            <span className="font-semibold text-[#00f2fe]">{kratkeDatum(hoveredPoint.date)}</span>
+            <span className="font-semibold text-akcent-cyan">{kratkeDatum(hoveredPoint.date)}</span>
             <span>Váha: <strong className="text-white">{hodnotaNeboPomlcka(hoveredPoint.weight, 'kg')}</strong></span>
             {/* Tuk se u bodu grafu ukáže, jen když ho ten den opravdu známe.
                 `weight_history` ho nenese, takže tu dřív svítilo „Tuk: —"
                 u každého měření. Složení těla má vlastní kartu nad grafem. */}
             {hoveredPoint.fatPercent > 0 && (
-              <span>Tuk: <strong className="text-[#39ff14]">{hodnotaNeboPomlcka(hoveredPoint.fatPercent, '%')}</strong></span>
+              <span>Tuk: <strong className="text-makro-tuky">{hodnotaNeboPomlcka(hoveredPoint.fatPercent, '%')}</strong></span>
             )}
             {hoveredPoint.note && (
               <span className="hidden sm:inline text-slate-400 italic">({hoveredPoint.note})</span>

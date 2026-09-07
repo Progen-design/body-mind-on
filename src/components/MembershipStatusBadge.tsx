@@ -23,15 +23,15 @@ function textOdpoctu(dny: number): string {
 }
 
 const BARVY: Record<UserProfile['status'], string> = {
-  'AKTIVNÍ': 'text-[#39ff14] border-[#39ff14]/50',
-  'VIP': 'text-[#39ff14] border-[#39ff14]/50',
+  'AKTIVNÍ': 'text-akcent-lime border-akcent-lime/50',
+  'VIP': 'text-akcent-lime border-akcent-lime/50',
   'TRIAL': 'text-amber-300 border-amber-400/50',
   'PAUZOVÁNO': 'text-slate-400 border-slate-500/40',
 };
 
 const TECKA: Record<UserProfile['status'], string> = {
-  'AKTIVNÍ': 'bg-[#39ff14]',
-  'VIP': 'bg-[#39ff14]',
+  'AKTIVNÍ': 'bg-akcent-lime',
+  'VIP': 'bg-akcent-lime',
   'TRIAL': 'bg-amber-300',
   'PAUZOVÁNO': 'bg-slate-500',
 };

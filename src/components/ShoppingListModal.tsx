@@ -79,12 +79,12 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className="relative z-10 w-full max-w-2xl max-h-[90vh] bg-[#0c1017] rounded-3xl border border-cyan-500/40 shadow-[0_0_50px_rgba(0,242,254,0.2)] flex flex-col overflow-hidden"
+        className="relative z-10 w-full max-w-2xl max-h-[90vh] bg-povrch rounded-3xl border border-cyan-500/40 shadow-[0_0_50px_rgba(0,242,254,0.2)] flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div className="p-5 sm:p-6 border-b border-slate-800 flex items-center justify-between bg-gradient-to-r from-[#0e1624] to-[#0c1017]">
+        <div className="p-5 sm:p-6 border-b border-slate-800 flex items-center justify-between bg-gradient-to-r from-hlavicka-tmava-od to-povrch">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-950/70 border border-cyan-500/40 flex items-center justify-center text-[#00f2fe]">
+            <div className="w-10 h-10 rounded-2xl bg-cyan-950/70 border border-cyan-500/40 flex items-center justify-center text-akcent-cyan">
               <ShoppingBag className="w-5 h-5" />
             </div>
             <div>
@@ -103,7 +103,7 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
               className="p-2 rounded-xl text-slate-300 hover:text-white bg-slate-900 border border-slate-800 flex items-center gap-1.5 text-xs font-semibold"
               title="Zkopírovat seznam do schránky"
             >
-              {isCopied ? <CheckCheck className="w-4 h-4 text-[#39ff14]" /> : <Copy className="w-4 h-4 text-cyan-400" />}
+              {isCopied ? <CheckCheck className="w-4 h-4 text-akcent-lime" /> : <Copy className="w-4 h-4 text-cyan-400" />}
               <span className="hidden sm:inline">{isCopied ? 'Zkopírováno' : 'Kopírovat'}</span>
             </button>
 
@@ -124,7 +124,7 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
               onClick={() => setSelectedCategory(cat)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                 selectedCategory === cat
-                  ? 'bg-cyan-950 text-[#00f2fe] border border-cyan-500/40 shadow-sm'
+                  ? 'bg-cyan-950 text-akcent-cyan border border-cyan-500/40 shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 bg-slate-900/40 border border-transparent'
               }`}
             >
@@ -147,14 +147,14 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
                 className={`flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer select-none ${
                   item.checked
                     ? 'bg-slate-900/40 border-slate-800/60 opacity-60'
-                    : 'bg-[#0e131d]/90 border-slate-800 hover:border-cyan-500/30'
+                    : 'bg-karta/90 border-slate-800 hover:border-cyan-500/30'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <div
                     className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${
                       item.checked
-                        ? 'bg-[#39ff14] border-[#39ff14] text-slate-950 shadow-[0_0_8px_#39ff14]'
+                        ? 'bg-akcent-lime border-akcent-lime text-slate-950 shadow-[0_0_8px_var(--color-akcent-lime)]'
                         : 'border-slate-700 bg-slate-900'
                     }`}
                   >
@@ -222,7 +222,7 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
               </button>
               <button
                 type="submit"
-                className="px-4 py-1.5 rounded-xl text-xs font-bold bg-[#00f2fe] text-slate-950 hover:bg-[#00f2fe]/90"
+                className="px-4 py-1.5 rounded-xl text-xs font-bold bg-akcent-cyan text-slate-950 hover:bg-akcent-cyan/90"
               >
                 Přidat položku
               </button>

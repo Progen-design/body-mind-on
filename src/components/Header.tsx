@@ -42,7 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center gap-2 select-none">
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-1.5">
           <span>Body &amp; Mind</span>
-          <span className="text-[#39ff14] font-extrabold drop-shadow-[0_0_12px_rgba(57,255,20,0.6)]">
+          <span className="text-akcent-lime font-extrabold drop-shadow-[0_0_12px_rgba(57,255,20,0.6)]">
             ON
           </span>
         </h1>
@@ -103,13 +103,13 @@ export const Header: React.FC<HeaderProps> = ({
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 280 }}
-              className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-[#0c1017] border-l border-cyan-500/20 z-50 p-6 flex flex-col justify-between shadow-[0_0_50px_rgba(0,0,0,0.8)]"
+              className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-povrch border-l border-cyan-500/20 z-50 p-6 flex flex-col justify-between shadow-[0_0_50px_rgba(0,0,0,0.8)]"
             >
               <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-800">
                   <div className="flex items-center gap-2">
                     <span className="text-lg font-bold text-white">Body &amp; Mind</span>
-                    <span className="text-[#39ff14] font-black">ON</span>
+                    <span className="text-akcent-lime font-black">ON</span>
                   </div>
                   <button
                     onClick={onCloseMenu}

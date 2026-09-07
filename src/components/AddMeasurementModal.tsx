@@ -72,12 +72,12 @@ export const AddMeasurementModal: React.FC<AddMeasurementModalProps> = ({
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className="relative z-10 w-full max-w-md bg-[#0c1017] rounded-3xl border border-cyan-500/30 shadow-[0_0_50px_rgba(0,242,254,0.15)] flex flex-col overflow-hidden"
+        className="relative z-10 w-full max-w-md bg-povrch rounded-3xl border border-cyan-500/30 shadow-[0_0_50px_rgba(0,242,254,0.15)] flex flex-col overflow-hidden"
       >
         {/* Header */}
         <div className="p-5 sm:p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/40">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-950/70 border border-cyan-500/40 flex items-center justify-center text-[#00f2fe]">
+            <div className="w-10 h-10 rounded-2xl bg-cyan-950/70 border border-cyan-500/40 flex items-center justify-center text-akcent-cyan">
               <Scale className="w-5 h-5" />
             </div>
             <div>
@@ -116,7 +116,7 @@ export const AddMeasurementModal: React.FC<AddMeasurementModalProps> = ({
               }}
               placeholder={latestWeight ? `Naposledy ${String(latestWeight).replace('.', ',')}` : ''}
               className={`w-full bg-slate-900/90 border focus:outline-none rounded-xl px-3 py-2.5 text-sm font-bold text-white shadow-inner disabled:opacity-60 ${
-                chyba ? 'border-red-500/60' : 'border-slate-700 focus:border-[#00f2fe]'
+                chyba ? 'border-red-500/60' : 'border-slate-700 focus:border-akcent-cyan'
               }`}
             />
             {chyba && <p className="text-[11px] text-red-400 mt-1.5">{chyba}</p>}
@@ -134,7 +134,7 @@ export const AddMeasurementModal: React.FC<AddMeasurementModalProps> = ({
             <button
               type="submit"
               disabled={uklada}
-              className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-[#00f2fe] to-[#39ff14] hover:opacity-95 shadow-[0_0_15px_rgba(0,242,254,0.3)] cursor-pointer disabled:opacity-60"
+              className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-akcent-cyan to-akcent-lime hover:opacity-95 shadow-[0_0_15px_rgba(0,242,254,0.3)] cursor-pointer disabled:opacity-60"
             >
               {uklada && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>{uklada ? 'Ukládám…' : 'Uložit váhu'}</span>

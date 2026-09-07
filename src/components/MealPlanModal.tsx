@@ -66,12 +66,12 @@ export const MealPlanModal: React.FC<MealPlanModalProps> = ({
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className="relative z-10 w-full max-w-2xl max-h-[90vh] bg-[#0c1017] rounded-3xl border border-cyan-500/30 shadow-[0_0_50px_rgba(0,242,254,0.15)] flex flex-col overflow-hidden"
+        className="relative z-10 w-full max-w-2xl max-h-[90vh] bg-povrch rounded-3xl border border-cyan-500/30 shadow-[0_0_50px_rgba(0,242,254,0.15)] flex flex-col overflow-hidden"
       >
         {/* Header */}
         <div className="p-5 sm:p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/40">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-950/70 border border-cyan-500/40 flex items-center justify-center text-[#00f2fe]">
+            <div className="w-10 h-10 rounded-2xl bg-cyan-950/70 border border-cyan-500/40 flex items-center justify-center text-akcent-cyan">
               <Utensils className="w-5 h-5" />
             </div>
             <div>
@@ -93,18 +93,18 @@ export const MealPlanModal: React.FC<MealPlanModalProps> = ({
         </div>
 
         {/* Macro summary pills — dnešek, stejně jako v hlavičce výš */}
-        <div className="px-5 py-3 bg-[#0e1420] border-b border-slate-800/80 grid grid-cols-3 gap-2 text-center text-xs">
+        <div className="px-5 py-3 bg-pruh-modalu border-b border-slate-800/80 grid grid-cols-3 gap-2 text-center text-xs">
           <div className="p-2 rounded-xl bg-slate-900/80 border border-cyan-500/20">
             <div className="text-slate-400">Bílkoviny (B)</div>
-            <div className="text-sm font-bold text-[#00f2fe]">{totalProtein}g</div>
+            <div className="text-sm font-bold text-makro-bilkoviny">{totalProtein}g</div>
           </div>
           <div className="p-2 rounded-xl bg-slate-900/80 border border-teal-500/20">
             <div className="text-slate-400">Sacharidy (S)</div>
-            <div className="text-sm font-bold text-[#2dd4bf]">{totalCarbs}g</div>
+            <div className="text-sm font-bold text-makro-sacharidy">{totalCarbs}g</div>
           </div>
           <div className="p-2 rounded-xl bg-slate-900/80 border border-lime-500/20">
             <div className="text-slate-400">Tuky (T)</div>
-            <div className="text-sm font-bold text-[#39ff14]">{totalFat}g</div>
+            <div className="text-sm font-bold text-makro-tuky">{totalFat}g</div>
           </div>
         </div>
 
@@ -128,12 +128,12 @@ export const MealPlanModal: React.FC<MealPlanModalProps> = ({
                   className="w-full p-4 flex items-center justify-between gap-3 text-left"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <CalendarDays className={`w-4 h-4 shrink-0 ${den.jeDnes ? 'text-[#00f2fe]' : 'text-slate-500'}`} />
+                    <CalendarDays className={`w-4 h-4 shrink-0 ${den.jeDnes ? 'text-akcent-cyan' : 'text-slate-500'}`} />
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-bold text-white">{den.denNazev || '—'}</span>
                         {den.jeDnes && (
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#00f2fe] bg-cyan-950/60 px-1.5 py-0.5 rounded-md border border-cyan-500/30">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-akcent-cyan bg-cyan-950/60 px-1.5 py-0.5 rounded-md border border-cyan-500/30">
                             Dnes
                           </span>
                         )}
@@ -173,7 +173,7 @@ export const MealPlanModal: React.FC<MealPlanModalProps> = ({
                               type="button"
                               className={`mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
                                 meal.completed
-                                  ? 'bg-[#39ff14] text-slate-950 shadow-[0_0_8px_#39ff14]'
+                                  ? 'bg-akcent-lime text-slate-950 shadow-[0_0_8px_var(--color-akcent-lime)]'
                                   : 'bg-slate-800 text-transparent border border-slate-700'
                               }`}
                             >
@@ -230,7 +230,7 @@ export const MealPlanModal: React.FC<MealPlanModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-[#00f2fe] to-[#39ff14]"
+            className="px-5 py-2 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-akcent-cyan to-akcent-lime"
           >
             Hotovo
           </button>

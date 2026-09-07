@@ -156,12 +156,12 @@ export const CoachChatModal: React.FC<CoachChatModalProps> = ({ isOpen, onClose,
       <motion.div
         initial={{ scale: 0.96, opacity: 0, y: 16 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="relative z-10 w-full max-w-2xl h-[620px] max-h-[90vh] bg-[#0c1017] rounded-3xl border border-cyan-500/40 shadow-[0_0_50px_rgba(0,242,254,0.2)] flex flex-col overflow-hidden"
+        className="relative z-10 w-full max-w-2xl h-[620px] max-h-[90vh] bg-povrch rounded-3xl border border-cyan-500/40 shadow-[0_0_50px_rgba(0,242,254,0.2)] flex flex-col overflow-hidden"
       >
         {/* Hlavička */}
         <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/40">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-950/80 border border-cyan-500/50 flex items-center justify-center text-[#00f2fe] shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-cyan-950/80 border border-cyan-500/50 flex items-center justify-center text-akcent-cyan shrink-0">
               <Brain className="w-5 h-5" />
             </div>
             <div className="min-w-0">
@@ -195,7 +195,7 @@ export const CoachChatModal: React.FC<CoachChatModalProps> = ({ isOpen, onClose,
         </div>
 
         {/* Konverzace */}
-        <div className="p-4 sm:p-5 overflow-y-auto space-y-3.5 flex-1 bg-[#090c12]/70">
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-3.5 flex-1 bg-plocha-chatu/70">
           {nacitam && (
             <div className="flex items-center gap-2 text-xs text-slate-500">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -205,7 +205,7 @@ export const CoachChatModal: React.FC<CoachChatModalProps> = ({ isOpen, onClose,
 
           {!nacitam && zpravy.length === 0 && (
             <div className="text-center py-8 px-4">
-              <div className="w-12 h-12 mx-auto rounded-2xl bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-[#00f2fe] mb-3">
+              <div className="w-12 h-12 mx-auto rounded-2xl bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-akcent-cyan mb-3">
                 <Brain className="w-6 h-6" />
               </div>
               <p className="text-sm text-slate-300 mb-1">Zeptej se na cokoli ze svého plánu nebo měření.</p>
@@ -221,7 +221,7 @@ export const CoachChatModal: React.FC<CoachChatModalProps> = ({ isOpen, onClose,
             return (
               <div key={z.id} className={`flex items-start gap-2.5 ${jeTed ? 'justify-start' : 'justify-end'}`}>
                 {jeTed && (
-                  <div className="w-7 h-7 rounded-lg bg-cyan-950 border border-cyan-500/40 flex items-center justify-center text-[#00f2fe] shrink-0 mt-0.5">
+                  <div className="w-7 h-7 rounded-lg bg-cyan-950 border border-cyan-500/40 flex items-center justify-center text-akcent-cyan shrink-0 mt-0.5">
                     <Brain className="w-3.5 h-3.5" />
                   </div>
                 )}
@@ -291,13 +291,13 @@ export const CoachChatModal: React.FC<CoachChatModalProps> = ({ isOpen, onClose,
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') odesli(); }}
             disabled={odesilam}
-            className="flex-1 bg-slate-950 border border-slate-700 focus:border-[#00f2fe] focus:outline-none rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder:text-slate-500 disabled:opacity-60"
+            className="flex-1 bg-slate-950 border border-slate-700 focus:border-akcent-cyan focus:outline-none rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder:text-slate-500 disabled:opacity-60"
           />
           <button
             onClick={() => odesli()}
             disabled={!text.trim() || odesilam}
             aria-label="Odeslat"
-            className="p-2.5 rounded-2xl bg-gradient-to-r from-[#00f2fe] to-[#39ff14] text-slate-950 hover:opacity-90 disabled:opacity-40 transition-all"
+            className="p-2.5 rounded-2xl bg-gradient-to-r from-akcent-cyan to-akcent-lime text-slate-950 hover:opacity-90 disabled:opacity-40 transition-all"
           >
             <Send className="w-4 h-4 stroke-[2.5]" />
           </button>

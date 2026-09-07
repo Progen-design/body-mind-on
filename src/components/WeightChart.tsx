@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { WeightRecord } from '../types';
 import { hodnotaNeboPomlcka } from '../data/adaptery';
+import { kratkeDatumCS } from '../lib/datum.ts';
 import { Calendar, Plus, Info } from 'lucide-react';
 
 interface WeightChartProps {
@@ -25,11 +26,16 @@ function ukazPopisek(index: number, pocet: number): boolean {
   return index % krok === 0;
 }
 
-/** „2026-08-22" → „22. 8." Rok do osy nepatří, je v hlavičce filtru. */
+/**
+ * „2026-08-22" → „22. 8." Rok do osy nepatří, je v hlavičce filtru.
+ *
+ * Filtr 1R si po synchronizaci přepisuje `date` na měsíční popisek
+ * „09.2026" (`syncEngine.applyWeightRecord`) — to není ISO datum a
+ * `kratkeDatumCS` na něj vrátí prázdno. Proto ten fallback: radši původní
+ * řetězec než prázdná osa.
+ */
 function kratkeDatum(iso: string): string {
-  const [, mesic, den] = String(iso || '').slice(0, 10).split('-');
-  if (!mesic || !den) return String(iso || '');
-  return `${Number(den)}. ${Number(mesic)}.`;
+  return kratkeDatumCS(iso) || String(iso || '');
 }
 
 export const WeightChart: React.FC<WeightChartProps> = ({

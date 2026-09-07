@@ -29,6 +29,121 @@
 
 ---
 
+## 9.8 JÍDELNÍČEK POTŘEBUJE PŘEPÍNAČ DNŮ JAKO TRÉNINK
+
+Rozhodnutí Honzy 7. 9. 2026: **jídelníček a makra mají mít stejné záložky
+dní jako trénink.**
+
+Dnes je to nesouměrné. `WorkoutSection` má pod dnešní jednotkou pruh
+Po–Ne, kliknutím se přepne den a pod ním se objeví hláška „Prohlížíš
+Úterý, ne dnešek" s odkazem zpět. `NutritionSection` nic takového nemá —
+dostává jen `meals: MealItem[]`, což jsou jídla DNEŠKA, a celý týden je
+schovaný v modalu za tlačítkem „Celý týdenní jídelníček".
+
+### Data už existují, nic se nemusí dotahovat
+
+`App.tsx` má `weekMeals: TydenniDenJidel[]` — celý týden včetně `datum`,
+`jeDnes` a `meals` — a předává ho do `MealPlanModal`. Stačí ho předat
+i do `NutritionSection`.
+
+### Co udělat
+
+1. `NutritionSection` dostane celý týden a stav vybraného dne (stejný
+   vzor jako `selectedDayName` ve `WorkoutSection`).
+2. Pruh dnů: **vezmi ho z `WorkoutSection`, neopisuj ho.** Dnes je ten
+   kód zapsaný přímo v ní (mřížka `grid-cols-2 sm:grid-cols-4
+   lg:grid-cols-7`, pulzující tečka na dnešku, vybraný den
+   `bg-cyan-950/30 border-cyan-500/50`). Vytáhni ho do sdílené komponenty
+   a použij ji na obou místech — dvě kopie by se rozešly při první změně
+   vzhledu, přesně jak se to stalo s formátem data v 9.4.
+3. Místo `60m` / `✓` u tréninku ukaž u jídelníčku **kcal dne** a stav
+   splnění. Dlaždice dne bez jídel se chová jako „Volno" u tréninku:
+   neklikací.
+4. Hláška „Prohlížíš X, ne dnešek" + „zpět na dnešek" stejně jako
+   u tréninku.
+5. Karta „Denní příjem & Makronutrienty" nahoře musí počítat **vybraný
+   den**, ne pořád dnešek. To je jádro bodu — jinak přepínač lže.
+
+### Nedělat
+
+- **Neodškrtávej jídla jiného dne než dneška**, dokud se to neprobere.
+  U návyků to pravidlo už platí (`api/habits.js` cokoli jiného než dnešek
+  odmítá se 400) a jídla mají stejnou logiku. Přepínač je na prohlížení;
+  checkbox u nednešního dne buď schovej, nebo nech neaktivní — a napiš,
+  kterou variantu jsi zvolil a proč.
+- Neruš tlačítko „Celý týdenní jídelníček" ani `MealPlanModal`. Modal
+  ukazuje celý týden najednou, pruh přepíná jeden den — jsou to dvě
+  různé věci.
+- Neměň `WorkoutSection` vizuálně. Vytažení pruhu do sdílené komponenty
+  musí být bez viditelné změny; kdyby to nešlo, zastav se a napiš proč.
+
+---
+
+## 9.9 U CVIKU MÁ BÝT I POSTUP, NEJEN OBRÁZEK
+
+Rozhodnutí Honzy 7. 9. 2026: **u cviku má být vedle obrázku stručně, jak
+se provádí.**
+
+### Zdroj už máme, jen se zahazoval
+
+Změřeno 7. 9. 2026 nad `exercise_asset_registry` (230 řádků):
+
+    external_source     cviku   pouzitelnych
+    free-exercise-db     185        178
+    exercisedb            32         27
+    (zadny)               13          0
+
+**185 cviků pochází z `free-exercise-db`** (`lib/exerciseImportRun.js`,
+github.com/yuhonas/free-exercise-db, licence Unlicense = volné dílo)
+a ten dataset má u každého cviku pole `instructions`. Import ho
+zahazoval, protože nebylo kam ho uložit. Zbylých 45 cviků instrukce ve
+zdroji nemá a **zůstanou bez postupu** — `NULL` je poctivější než
+vymyšlený text.
+
+### Migrace je hotová a aplikovaná
+
+`20260907160000_cvik_postup_provedeni.sql` přidala dva sloupce:
+
+    instructions_en text[]   syrovy zdroj, do UI NEJDE
+    instructions_cs text[]   cesky preklad, JEDINE co se ukazuje
+
+Dva sloupce schválně — přesně stejný vzor, jaký už má
+`recipes_catalog.instructions_cs`. Anglický otisk zůstává, aby se dal
+překlad zopakovat bez dalšího stahování. Pole, ne jeden `text`: kroky
+jsou očíslované a slepit je do řetězce by znamenalo je v UI zase
+rozsekávat podle teček, což u zkratek („approx.") selže.
+
+### Co udělat
+
+1. **Import doplní `instructions_en`.** Rozšiř `lib/exerciseImportRun.js`,
+   ať z datasetu bere i `instructions` a ukládá je. Nový cvik je dostane
+   rovnou.
+2. **Doplnění pro 185 už naimportovaných.** Skript, který projde řádky
+   s `external_source = 'free-exercise-db'` a prázdným
+   `instructions_en`, dohledá je v datasetu podle `external_id` a doplní.
+   Dataset se stahuje jednou, ne 185×.
+3. **Překlad do `instructions_cs`.** Vezmi ten samý postup, jakým se
+   překládají recepty (`lib/spoonacular/` fronta překladů) — nevymýšlej
+   druhý mechanismus. Překládá se z `instructions_en`, dávkově.
+4. **UI.** Pod obrázkem cviku vypiš kroky z `instructions_cs`. Když jsou
+   prázdné, **nezobrazuj nic** — žádné „Postup není k dispozici", žádný
+   anglický text. Karta cviku už dnes ukazuje název, série × opakování
+   a partii; postup patří pod obrázek, sbalený nebo zkrácený, ať karta
+   nenaroste o půl obrazovky.
+
+### Nedělat
+
+- **Negeneruj postup modelem.** Cvičební pokyny jsou zdravotně citlivé
+  a vymyšlený postup u dřepu je horší než žádný. Překládá se to, co je
+  ve zdroji.
+- Nesahej na `usable_in_plan` ani na trigger
+  `enforce_exercise_registry_rules`. Chybějící postup NENÍ důvod cvik
+  vyřadit z plánu — 45 cviků ho mít nebude a pořád jsou v pořádku.
+- Neukazuj anglický text uživateli ani dočasně.
+- Neaplikuj migraci, je aplikovaná. A nepiš k ní další.
+
+---
+
 ## 9.7 SEDM DNÍ ZDARMA MUSÍ BÝT OPRAVDU SEDM
 
 Rozhodnutí Honzy 7. 9. 2026: **„potřebuji, aby při registraci měl opravdu

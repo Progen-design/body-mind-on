@@ -1,3 +1,16 @@
+/**
+ * ZÁMĚRNĚ NENAMONTOVANÝ — NEVRACET DO App.tsx BEZ ROZMYSLU.
+ *
+ * Do 7. 9. 2026 se tenhle banner vykresloval v App.tsx MIMO podmínku na
+ * záložku, takže uvítací zpráva svítila na všech pěti záložkách a na
+ * profilu se ještě zdvojovala s kartou TEDa v OverviewBentoGrid.
+ * Honza chtěl zprávu jednou, u uvítání — tu roli plní ta karta.
+ *
+ * Soubor tu zůstává, ne jako mrtvý kód, ale pro případ, že se TED rozjede
+ * a začne posílat víc zpráv (dnes je v `ai_trigger_rules` enabled jediné
+ * pravidlo `user_registered -> initial_plan`). Až k tomu dojde, banner
+ * má smysl — ale POD PODMÍNKOU na jednu záložku.
+ */
 import React, { useState } from 'react';
 import { Brain, Sparkles, ChevronRight, MessageSquareCode, ArrowUpRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';

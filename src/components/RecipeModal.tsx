@@ -40,13 +40,13 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className="relative z-10 w-full max-w-2xl max-h-[90vh] bg-[#0c1017] rounded-3xl border border-cyan-500/40 shadow-[0_0_50px_rgba(0,242,254,0.2)] flex flex-col overflow-hidden"
+        className="relative z-10 w-full max-w-2xl max-h-[90vh] bg-povrch rounded-3xl border border-cyan-500/40 shadow-[0_0_50px_rgba(0,242,254,0.2)] flex flex-col overflow-hidden"
       >
         {/* Modal Header */}
-        <div className="p-5 sm:p-6 border-b border-slate-800 flex items-start justify-between bg-gradient-to-r from-[#0e1624] to-[#0c1017]">
+        <div className="p-5 sm:p-6 border-b border-slate-800 flex items-start justify-between bg-gradient-to-r from-hlavicka-tmava-od to-povrch">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase bg-cyan-950 text-[#00f2fe] border border-cyan-500/40">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase bg-cyan-950 text-akcent-cyan border border-cyan-500/40">
                 {meal.type} • {meal.time}
               </span>
             </div>
@@ -72,15 +72,15 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
               <span className="text-base sm:text-lg font-black text-amber-400">{meal.calories} kcal</span>
             </div>
             <div>
-              <span className="text-[11px] text-[#00f2fe] font-semibold block">Bílkoviny</span>
+              <span className="text-[11px] text-makro-bilkoviny font-semibold block">Bílkoviny</span>
               <span className="text-base sm:text-lg font-black text-white">{meal.protein} g</span>
             </div>
             <div>
-              <span className="text-[11px] text-[#2dd4bf] font-semibold block">Sacharidy</span>
+              <span className="text-[11px] text-makro-sacharidy font-semibold block">Sacharidy</span>
               <span className="text-base sm:text-lg font-black text-white">{meal.carbs} g</span>
             </div>
             <div>
-              <span className="text-[11px] text-[#39ff14] font-semibold block">Tuky</span>
+              <span className="text-[11px] text-makro-tuky font-semibold block">Tuky</span>
               <span className="text-base sm:text-lg font-black text-white">{meal.fat} g</span>
             </div>
           </div>
@@ -106,7 +106,7 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
                   key={i}
                   className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs font-medium text-slate-200"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#00f2fe]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-akcent-cyan" />
                   <span>{ing}</span>
                 </div>
               ))}
@@ -122,7 +122,7 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
             <div className="space-y-3">
               {recipe.instructions.map((step, idx) => (
                 <div key={idx} className="flex items-start gap-3 text-xs sm:text-sm">
-                  <div className="w-6 h-6 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-[#00f2fe] font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-akcent-cyan font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
                     {idx + 1}
                   </div>
                   <p className="text-slate-300 leading-relaxed pt-0.5">{step}</p>

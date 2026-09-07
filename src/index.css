@@ -1,5 +1,98 @@
 @import "tailwindcss";
 
+/*
+ * TOKENY — docs/DALSI_KROK.md 7.1, první krok (jen tokenizace, žádná změna
+ * vzhledu). Vytaženo z 357 natvrdo psaných hex hodnot v 35 z 61 souborů
+ * v src/ (změřeno 7. 9. 2026). Tvar bloku stejný jako
+ * bodyandmindon-web/app/globals.css ("Tokeny odečtené z app.bodyandmindon.cz
+ * — landing a appka jsou jeden produkt") — appka ale svoje tokeny
+ * pojmenovává podle ROLE, ne podle odstínu, takže názvy s webem nesdílí.
+ *
+ * Beze změny hodnoty. Ani jeden token tu nemá jinou hex hodnotu, než jakou
+ * měl string, který nahrazuje — to hlídá src/lib/barevneTokeny.test.ts.
+ *
+ * STEJNÁ HODNOTA, RŮZNÝ ÚČEL = DVA TOKENY. Několik hodnot je tu proto
+ * víckrát pod různými jmény (např. #00f2fe jako --color-akcent-cyan i jako
+ * --color-makro-bilkoviny) — je to schválně: dnes je to náhodou stejná
+ * barva, ale je to jiné rozhodnutí (barva vitríny appky vs. barva
+ * bílkovin v grafu maker) a musí jít změnit nezávisle.
+ */
+@theme {
+  /* --- Pozadí a povrchy ---------------------------------------------- */
+  --color-pozadi: #08090d;              /* nejtmavší podklad — stránka, prázdný bod grafu */
+  --color-na-akcentu: #08090d;          /* tmavý text na limetkovém tlačítku (stejná hodnota jako pozadí, jiný účel) */
+  --color-povrch: #0c1017;              /* hlavní vyvýšená plocha — modaly, toolbar, bento karty, toast */
+  --color-karta: #0e131d;               /* vnořená karta uvnitř stránky */
+  --color-karta-nedokoncena: #0a0d14;   /* nesplněná položka jídelníčku, ztlumená */
+  --color-dlazdice-volno: #0a0d13;      /* dlaždice dne volna v tréninkovém rozpisu */
+  --color-plocha-chatu: #090c12;        /* posuvná plocha zpráv v chatu s TEDem */
+  --color-pruh-modalu: #0e1420;         /* podhlavička uvnitř modalu (souhrn maker, výběr dne) */
+  --color-hlavicka-tmava-od: #0e1624;   /* start gradientu hlavičky modalu / hero baneru jídelníčku */
+
+  /* --- Akcenty appky (dvě neonové barvy appky, napříč celou appkou) --- */
+  --color-akcent-cyan: #00f2fe;
+  --color-akcent-lime: #39ff14;
+
+  /* --- Makra (bílkoviny/sacharidy/tuky) — vlastní barevná škála grafů - */
+  --color-makro-bilkoviny: #00f2fe;
+  --color-makro-sacharidy: #2dd4bf;
+  --color-makro-tuky: #39ff14;
+
+  /* --- Metriky z hodinek — každá svoje barva v mini-grafu ------------ */
+  --color-metrika-hrv: #00f2fe;
+  --color-metrika-tep: #f43f5e;
+  --color-metrika-kroky: #39ff14;
+  --color-metrika-energie: #fbbf24;
+
+  /* --- Graf váhy (WeightChart) — vlastní neonový gradient ------------- */
+  --color-graf-vahy-od: #00f2fe;
+  --color-graf-vahy-stred: #2dd4bf;
+  --color-graf-vahy-cil: #39ff14;
+  --color-graf-vahy-mizeni: #0a0b0e;    /* konec plošného gradientu, mizí na opacity 0 */
+
+  /* --- Společné prvky grafů (BiometricsSection i WeightChart) --------- */
+  --color-graf-mrizka: #1e293b;
+  --color-graf-popisek: #64748b;
+  --color-graf-popisek-hover: #38bdf8;
+
+  /* --- Posuvník (scrollbar) ------------------------------------------- */
+  --color-scrollbar-thumb: #1e293b;
+  --color-scrollbar-thumb-hover: #334155;
+
+  /* --- Tlačítko .neon-btn-cyan (gradient + hover) --------------------- */
+  --color-tlacitko-cyan-do: #4facfe;
+  --color-tlacitko-cyan-hover-od: #24f6ff;
+  --color-tlacitko-cyan-hover-do: #68b9ff;
+
+  /* --- Tlačítko synchronizace Withings (gradient + hover) ------------- */
+  --color-tlacitko-withings-do: #38ef7d;
+  --color-tlacitko-withings-hover-od: #2bf5ff;
+  --color-tlacitko-withings-hover-do: #50fa8f;
+
+  /* --- Hero banner: Tréninkový plán (WorkoutSection) ------------------ */
+  --color-hero-trenink-od: #0d1722;
+  --color-hero-trenink-stred: #0d141e;
+  --color-hero-trenink-cil: #091512;
+
+  /* --- Hero banner: AI trenér TED (AICoachBanner) --------------------- */
+  --color-hero-ted-od: #0d1422;
+  --color-hero-ted-stred: #0d1720;
+  --color-hero-ted-cil: #0b1716;
+
+  /* --- Hero banner: Jídelníček (NutritionSection) --------------------- */
+  /* "od" sdílí --color-hlavicka-tmava-od výš — stejný gradient-start jako hlavičky modalů. */
+  --color-hero-jidelnicek-stred: #0c121c;
+  --color-hero-jidelnicek-cil: #0d161a;
+
+  /* --- Karta cirkadiánního rytmu (BiometricsSection) ------------------ */
+  /* "cíl" sdílí --color-povrch výš. */
+  --color-hero-cirkadianni-od: #111927;
+  --color-hero-cirkadianni-stred: #0e141f;
+
+  /* --- Banner regenerace (BiometricsSection) -------------------------- */
+  --color-hero-regenerace-stred: #0e1622;
+}
+
 @layer base {
   * {
     border-color: rgba(255, 255, 255, 0.08);
@@ -34,12 +127,12 @@
 }
 
 .neon-btn-cyan {
-  background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+  background: linear-gradient(135deg, var(--color-akcent-cyan) 0%, var(--color-tlacitko-cyan-do) 100%);
   box-shadow: 0 0 24px -2px rgba(0, 242, 254, 0.45);
 }
 
 .neon-btn-cyan:hover {
-  background: linear-gradient(135deg, #24f6ff 0%, #68b9ff 100%);
+  background: linear-gradient(135deg, var(--color-tlacitko-cyan-hover-od) 0%, var(--color-tlacitko-cyan-hover-do) 100%);
   box-shadow: 0 0 30px 2px rgba(0, 242, 254, 0.6);
 }
 
@@ -50,14 +143,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #08090d;
+  background: var(--color-pozadi);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: var(--color-scrollbar-thumb);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: var(--color-scrollbar-thumb-hover);
 }

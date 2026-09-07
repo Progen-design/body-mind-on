@@ -24,7 +24,7 @@ export const AICoachBanner: React.FC<AICoachBannerProps> = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.05 }}
-      className="relative overflow-hidden rounded-3xl p-4 sm:p-5 bg-gradient-to-r from-[#0d1422]/90 via-[#0d1720]/85 to-[#0b1716]/90 backdrop-blur-xl border border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] group hover:border-cyan-400/50 transition-all duration-300"
+      className="relative overflow-hidden rounded-3xl p-4 sm:p-5 bg-gradient-to-r from-hero-ted-od/90 via-hero-ted-stred/85 to-hero-ted-cil/90 backdrop-blur-xl border border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] group hover:border-cyan-400/50 transition-all duration-300"
     >
       {/* Background glow effects */}
       <div className="absolute top-0 right-1/4 w-32 h-32 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
@@ -35,7 +35,7 @@ export const AICoachBanner: React.FC<AICoachBannerProps> = ({
           {/* AI Coach header with brain icon */}
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-cyan-950/70 border border-cyan-500/50 flex items-center justify-center shadow-[0_0_12px_rgba(0,242,254,0.35)]">
-              <Brain className="w-4 h-4 text-[#00f2fe]" />
+              <Brain className="w-4 h-4 text-akcent-cyan" />
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs sm:text-sm font-bold tracking-wider uppercase text-white">
@@ -44,7 +44,7 @@ export const AICoachBanner: React.FC<AICoachBannerProps> = ({
               {/* "Doporuceni dne" lhalo: uvitaci zprava z onboardingu je porad
                   platna, ale dnesni neni. Datum vzniku rozhoduje. */}
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-950/60 text-cyan-300 border border-cyan-500/30">
-                <Sparkles className="w-2.5 h-2.5 text-[#00f2fe]" />
+                <Sparkles className="w-2.5 h-2.5 text-akcent-cyan" />
                 Zpráva od trenéra
               </span>
               {currentTip.timestamp && (
@@ -74,7 +74,7 @@ export const AICoachBanner: React.FC<AICoachBannerProps> = ({
                   onClick={() => setActiveTipIndex(idx)}
                   className={`h-1.5 rounded-full transition-all ${
                     idx === activeTipIndex
-                      ? 'w-5 bg-[#00f2fe] shadow-[0_0_8px_#00f2fe]'
+                      ? 'w-5 bg-akcent-cyan shadow-[0_0_8px_var(--color-akcent-cyan)]'
                       : 'w-1.5 bg-slate-700 hover:bg-slate-500'
                   }`}
                   aria-label={`Zobrazit tip ${idx + 1}`}

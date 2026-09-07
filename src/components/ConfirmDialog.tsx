@@ -58,7 +58,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 16 }}
             transition={{ type: 'spring', damping: 26, stiffness: 320 }}
-            className={`relative z-10 w-full max-w-sm rounded-3xl bg-[#0c1017] border p-5 sm:p-6 shadow-[0_0_50px_rgba(0,0,0,0.7)] ${
+            className={`relative z-10 w-full max-w-sm rounded-3xl bg-povrch border p-5 sm:p-6 shadow-[0_0_50px_rgba(0,0,0,0.7)] ${
               isDanger ? 'border-red-500/40' : 'border-cyan-500/30'
             }`}
           >
@@ -67,7 +67,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                 className={`w-11 h-11 shrink-0 rounded-2xl flex items-center justify-center border ${
                   isDanger
                     ? 'bg-red-950/60 border-red-500/40 text-red-400'
-                    : 'bg-cyan-950/60 border-cyan-500/40 text-[#00f2fe]'
+                    : 'bg-cyan-950/60 border-cyan-500/40 text-akcent-cyan'
                 }`}
               >
                 <Icon className="w-5 h-5" />
@@ -91,7 +91,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                 className={`flex-1 px-4 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
                   isDanger
                     ? 'text-white bg-red-600 hover:bg-red-500 shadow-[0_0_18px_rgba(239,68,68,0.35)]'
-                    : 'text-slate-950 bg-[#00f2fe] hover:bg-[#00f2fe]/90 shadow-[0_0_18px_rgba(0,242,254,0.3)]'
+                    : 'text-slate-950 bg-akcent-cyan hover:bg-akcent-cyan/90 shadow-[0_0_18px_rgba(0,242,254,0.3)]'
                 }`}
               >
                 {confirmLabel}

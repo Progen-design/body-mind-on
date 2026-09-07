@@ -50,7 +50,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
       data: biometrics.hrvTrend,
       unit: 'ms',
       label: 'Variabilita srdečního tepu (HRV)',
-      color: '#00f2fe',
+      color: 'var(--color-metrika-hrv)',
       baseline: biometrics.hrvBaselineMs,
       baselineLabel: biometrics.hrvBaselineMs > 0
         ? `Průměrná základna (${hodnotaNeboPomlcka(biometrics.hrvBaselineMs, 'ms')})`
@@ -60,7 +60,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
       data: biometrics.restingHrTrend,
       unit: 'bpm',
       label: 'Klidový tep (Resting Heart Rate)',
-      color: '#f43f5e',
+      color: 'var(--color-metrika-tep)',
       baseline: 0,
       baselineLabel: ''
     },
@@ -68,7 +68,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
       data: biometrics.stepsTrend,
       unit: 'kroků',
       label: 'Denní kroky',
-      color: '#39ff14',
+      color: 'var(--color-metrika-kroky)',
       baseline: biometrics.stepsTarget,
       baselineLabel: biometrics.stepsTarget > 0 ? `Denní cíl (${biometrics.stepsTarget.toLocaleString('cs-CZ')})` : ''
     },
@@ -76,7 +76,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
       data: biometrics.energyTrend,
       unit: 'kcal',
       label: 'Aktivní energie (Active Burn)',
-      color: '#fbbf24',
+      color: 'var(--color-metrika-energie)',
       baseline: biometrics.activeEnergyTargetKcal,
       baselineLabel: biometrics.activeEnergyTargetKcal > 0
         ? `Denní cíl (${biometrics.activeEnergyTargetKcal.toLocaleString('cs-CZ')} kcal)`
@@ -121,34 +121,34 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
       <NadpisSekce
         titulek="Apple Watch & regenerace"
         podtitulek="Co hodinky a chytrá váha naměřily — bez dopočtů, které vypadají jako měření"
-        ikona={<Watch className="w-5 h-5 text-[#39ff14]" />}
+        ikona={<Watch className="w-5 h-5 text-akcent-lime" />}
       />
 
       {/* Top Banner: Device Connection Statuses & Sync */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Withings Scale Status */}
-        <div className="flex items-center justify-between p-4 rounded-2xl bg-[#0e131d]/90 border border-slate-800/80 shadow-md">
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-karta/90 border border-slate-800/80 shadow-md">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-[#00f2fe]">
+            <div className="w-10 h-10 rounded-xl bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-akcent-cyan">
               <Scale className="w-5 h-5" />
             </div>
             <div>
               <div className="text-xs text-slate-400 font-medium">Chytrá váha</div>
               <div className="text-sm font-bold text-white flex items-center gap-2">
                 <span>Withings Body Scan</span>
-                <span className="w-2 h-2 rounded-full bg-[#39ff14] shadow-[0_0_8px_#39ff14]" />
+                <span className="w-2 h-2 rounded-full bg-akcent-lime shadow-[0_0_8px_var(--color-akcent-lime)]" />
               </div>
             </div>
           </div>
-          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-950/60 text-[#39ff14] border border-emerald-500/30">
+          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-950/60 text-akcent-lime border border-emerald-500/30">
             připojeno
           </span>
         </div>
 
         {/* Apple Watch Status */}
-        <div className="flex items-center justify-between p-4 rounded-2xl bg-[#0e131d]/90 border border-slate-800/80 shadow-md">
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-karta/90 border border-slate-800/80 shadow-md">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-950/60 border border-emerald-500/30 flex items-center justify-center text-[#39ff14]">
+            <div className="w-10 h-10 rounded-xl bg-emerald-950/60 border border-emerald-500/30 flex items-center justify-center text-akcent-lime">
               <Watch className="w-5 h-5" />
             </div>
             <div>
@@ -157,11 +157,11 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
                 {/* Model zarizeni nikde nemame — z /api/health je jen boolean
                     "pripojeno". "Ultra 2" tu bylo natvrdo, jinde "Series 9". */}
                 <span>Apple Health</span>
-                <span className="w-2 h-2 rounded-full bg-[#39ff14] shadow-[0_0_8px_#39ff14]" />
+                <span className="w-2 h-2 rounded-full bg-akcent-lime shadow-[0_0_8px_var(--color-akcent-lime)]" />
               </div>
             </div>
           </div>
-          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-950/60 text-[#39ff14] border border-emerald-500/30">
+          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-950/60 text-akcent-lime border border-emerald-500/30">
             připojeno
           </span>
         </div>
@@ -173,7 +173,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="lg:col-span-1 rounded-3xl p-6 bg-gradient-to-br from-[#111927]/90 via-[#0e141f]/90 to-[#0c1017]/90 border border-amber-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col justify-between relative overflow-hidden"
+          className="lg:col-span-1 rounded-3xl p-6 bg-gradient-to-br from-hero-cirkadianni-od/90 via-hero-cirkadianni-stred/90 to-povrch/90 border border-amber-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col justify-between relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -233,7 +233,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
         {/* 3 Core Metric Tiles: HRV, Klidový tep, Spánek */}
         <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* HRV Tile */}
-          <div className="rounded-3xl p-5 bg-[#0e131d]/90 border border-cyan-500/30 flex flex-col justify-between shadow-lg relative overflow-hidden group hover:border-cyan-400/60 transition-all">
+          <div className="rounded-3xl p-5 bg-karta/90 border border-cyan-500/30 flex flex-col justify-between shadow-lg relative overflow-hidden group hover:border-cyan-400/60 transition-all">
             <div className="absolute -top-6 -right-6 w-20 h-20 bg-cyan-500/10 rounded-full blur-xl pointer-events-none" />
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -241,7 +241,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
                   HRV
                   <Vysvetlivka pojem="hrv" />
                 </span>
-                <Activity className="w-4 h-4 text-[#00f2fe]" />
+                <Activity className="w-4 h-4 text-akcent-cyan" />
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-extrabold text-white tracking-tight">
@@ -254,7 +254,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
               {biometrics.hrvMs > 0 && biometrics.hrvBaselineMs > 0 && (
                 <div
                   className={`flex items-center gap-1 text-xs font-medium mt-1 ${
-                    biometrics.hrvMs < biometrics.hrvBaselineMs ? 'text-rose-400' : 'text-[#39ff14]'
+                    biometrics.hrvMs < biometrics.hrvBaselineMs ? 'text-rose-400' : 'text-akcent-lime'
                   }`}
                 >
                   {biometrics.hrvMs < biometrics.hrvBaselineMs ? (
@@ -273,7 +273,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
           </div>
 
           {/* Klidový tep Tile */}
-          <div className="rounded-3xl p-5 bg-[#0e131d]/90 border border-rose-500/30 flex flex-col justify-between shadow-lg relative overflow-hidden group hover:border-rose-400/60 transition-all">
+          <div className="rounded-3xl p-5 bg-karta/90 border border-rose-500/30 flex flex-col justify-between shadow-lg relative overflow-hidden group hover:border-rose-400/60 transition-all">
             <div className="absolute -top-6 -right-6 w-20 h-20 bg-rose-500/10 rounded-full blur-xl pointer-events-none" />
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -310,7 +310,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
               dopočtem z časů, které nesedí (15. 8.: konec pobytu v posteli
               16:20 odpoledne → 705 min v posteli proti 254 min spánku).
               Zůstává jen to, co je naměřené. Viz lib/health/spanek.js. */}
-          <div className="rounded-3xl p-5 bg-[#0e131d]/90 border border-emerald-500/30 flex flex-col justify-between shadow-lg relative overflow-hidden group hover:border-emerald-400/60 transition-all">
+          <div className="rounded-3xl p-5 bg-karta/90 border border-emerald-500/30 flex flex-col justify-between shadow-lg relative overflow-hidden group hover:border-emerald-400/60 transition-all">
             <div className="absolute -top-6 -right-6 w-20 h-20 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -318,7 +318,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
                   Spánek
                   <Vysvetlivka pojem="spanek_celkem" />
                 </span>
-                <Moon className="w-4 h-4 text-[#39ff14]" />
+                <Moon className="w-4 h-4 text-akcent-lime" />
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
@@ -355,9 +355,9 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
       </div>
 
       {/* Block: "Co z toho vyplývá" (AI Training Load Advice & Interpretation) */}
-      <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-r from-cyan-950/40 via-[#0e1622]/90 to-emerald-950/40 border border-cyan-500/40 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+      <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-r from-cyan-950/40 via-hero-regenerace-stred/90 to-emerald-950/40 border border-cyan-500/40 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
         <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-2xl bg-cyan-950/80 border border-cyan-500/60 flex items-center justify-center text-[#00f2fe] shrink-0 shadow-[0_0_12px_rgba(0,242,254,0.4)]">
+          <div className="w-10 h-10 rounded-2xl bg-cyan-950/80 border border-cyan-500/60 flex items-center justify-center text-akcent-cyan shrink-0 shadow-[0_0_12px_rgba(0,242,254,0.4)]">
             <Brain className="w-5 h-5" />
           </div>
           <div className="space-y-2">
@@ -377,7 +377,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
       </div>
 
       {/* 30-Day Mini-Graphs & Trend Inspector */}
-      <div className="rounded-3xl p-5 sm:p-6 bg-[#0e131d]/90 border border-slate-800 shadow-xl space-y-4">
+      <div className="rounded-3xl p-5 sm:p-6 bg-karta/90 border border-slate-800 shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h3 className="text-base font-bold text-white">
@@ -394,7 +394,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
               onClick={() => setActiveMetricTab('hrv')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 activeMetricTab === 'hrv'
-                  ? 'bg-cyan-950 text-[#00f2fe] border border-cyan-500/40 shadow-sm'
+                  ? 'bg-cyan-950 text-metrika-hrv border border-cyan-500/40 shadow-sm'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -414,7 +414,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
               onClick={() => setActiveMetricTab('steps')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 activeMetricTab === 'steps'
-                  ? 'bg-emerald-950 text-[#39ff14] border border-[#39ff14]/40 shadow-sm'
+                  ? 'bg-emerald-950 text-metrika-kroky border border-metrika-kroky/40 shadow-sm'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -463,14 +463,14 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
                 </linearGradient>
                 <linearGradient id="biometricLineGrad" x1="0" y1="0" x2="1" y2="0">
                   <stop offset="0%" stopColor={trendData.color} />
-                  <stop offset="100%" stopColor="#39ff14" />
+                  <stop offset="100%" stopColor="var(--color-akcent-lime)" />
                 </linearGradient>
               </defs>
 
               {/* Grid lines */}
-              <line x1={paddingX} y1={height / 4} x2={width - paddingX} y2={height / 4} stroke="#1e293b" strokeDasharray="3 3" />
-              <line x1={paddingX} y1={height / 2} x2={width - paddingX} y2={height / 2} stroke="#1e293b" strokeDasharray="3 3" />
-              <line x1={paddingX} y1={(3 * height) / 4} x2={width - paddingX} y2={(3 * height) / 4} stroke="#1e293b" strokeDasharray="3 3" />
+              <line x1={paddingX} y1={height / 4} x2={width - paddingX} y2={height / 4} stroke="var(--color-graf-mrizka)" strokeDasharray="3 3" />
+              <line x1={paddingX} y1={height / 2} x2={width - paddingX} y2={height / 2} stroke="var(--color-graf-mrizka)" strokeDasharray="3 3" />
+              <line x1={paddingX} y1={(3 * height) / 4} x2={width - paddingX} y2={(3 * height) / 4} stroke="var(--color-graf-mrizka)" strokeDasharray="3 3" />
 
               {/* Area fill */}
               <path d={areaD} fill="url(#biometricAreaGrad)" />
@@ -492,7 +492,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
                     cx={p.x}
                     cy={p.y}
                     r="5"
-                    fill="#08090d"
+                    fill="var(--color-pozadi)"
                     stroke={trendData.color}
                     strokeWidth="2.5"
                     className="hover:scale-125 transition-transform"
@@ -501,7 +501,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
                     x={p.x}
                     y={height - 5}
                     textAnchor="middle"
-                    fill="#64748b"
+                    fill="var(--color-graf-popisek)"
                     fontSize="10"
                     fontWeight="600"
                   >
@@ -544,7 +544,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
                 {skupina.metriky.map(m => (
                   <div
                     key={m.klic}
-                    className="p-4 rounded-2xl bg-[#0e131d]/90 border border-slate-800"
+                    className="p-4 rounded-2xl bg-karta/90 border border-slate-800"
                   >
                     <span className="text-xs text-slate-400 inline-flex items-center gap-1">
                       {m.nazev}
@@ -569,10 +569,10 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
 
 
       {/* Tréninky z Apple Watch Table */}
-      <div className="rounded-3xl p-5 sm:p-6 bg-[#0e131d]/90 border border-slate-800 shadow-xl">
+      <div className="rounded-3xl p-5 sm:p-6 bg-karta/90 border border-slate-800 shadow-xl">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Watch className="w-5 h-5 text-[#39ff14]" />
+            <Watch className="w-5 h-5 text-akcent-lime" />
             <h3 className="text-base font-bold text-white">
               Zaznamenané tréninky z Apple Watch
             </h3>
@@ -586,7 +586,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
           {biometrics.recentWorkouts.map(wo => (
             <div key={wo.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-[#00f2fe]">
+                <div className="w-10 h-10 rounded-xl bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-akcent-cyan">
                   {wo.icon === 'waves' ? <Waves className="w-5 h-5" /> : <Dumbbell className="w-5 h-5" />}
                 </div>
                 <div>

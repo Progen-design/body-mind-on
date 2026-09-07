@@ -34,14 +34,14 @@ const Zmena: React.FC<{ text: string | null; kladneJeDobre: boolean }> = ({ text
       <div
         className={`w-9 h-9 rounded-xl flex items-center justify-center border ${
           dobre
-            ? 'bg-emerald-950/50 border-emerald-500/30 text-[#39ff14]'
+            ? 'bg-emerald-950/50 border-emerald-500/30 text-akcent-lime'
             : 'bg-slate-900 border-slate-700 text-slate-400'
         }`}
       >
         <Ikona className="w-4 h-4" />
       </div>
       <div className="text-right">
-        <div className={`text-sm font-bold leading-none ${dobre ? 'text-[#39ff14]' : 'text-slate-300'}`}>
+        <div className={`text-sm font-bold leading-none ${dobre ? 'text-akcent-lime' : 'text-slate-300'}`}>
           {text}
         </div>
         <div className="text-xs text-slate-400 mt-0.5">Od minula</div>
@@ -61,7 +61,7 @@ const Dlazdice: React.FC<{ popisek: string; hodnota: string; delay: number; poje
     initial={{ opacity: 0, scale: 0.98 }}
     animate={{ opacity: 1, scale: 1 }}
     transition={{ duration: 0.4, delay }}
-    className="relative overflow-hidden rounded-3xl p-4 sm:p-5 bg-[#0e131d]/85 backdrop-blur-xl border border-cyan-500/25 shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+    className="relative overflow-hidden rounded-3xl p-4 sm:p-5 bg-karta/85 backdrop-blur-xl border border-cyan-500/25 shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
   >
     <span className="text-xs sm:text-sm font-medium text-slate-400 inline-flex items-center gap-1">
       {popisek}
@@ -91,7 +91,7 @@ export const BodyStatsGrid: React.FC<BodyStatsGridProps> = ({
           /* `self-start` schválně: bez něj se karta v gridu roztáhne na výšku
              sousedního sloupce a od 3.10, kdy dlaždic složení přibylo, z ní
              byla vysoká poloprázdná plocha. */
-          className="md:col-span-5 self-start relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-[#0e131d]/85 backdrop-blur-xl border border-cyan-500/25 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col justify-between min-h-[170px]"
+          className="md:col-span-5 self-start relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-karta/85 backdrop-blur-xl border border-cyan-500/25 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col justify-between min-h-[170px]"
         >
           <div className="absolute -top-10 -left-10 w-28 h-28 bg-cyan-500/15 rounded-full blur-2xl pointer-events-none" />
 
@@ -119,7 +119,7 @@ export const BodyStatsGrid: React.FC<BodyStatsGridProps> = ({
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4, delay: 0.15 }}
-              className="relative overflow-hidden rounded-3xl p-5 bg-[#0e131d]/85 backdrop-blur-xl border border-cyan-500/25 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex items-center justify-between gap-3"
+              className="relative overflow-hidden rounded-3xl p-5 bg-karta/85 backdrop-blur-xl border border-cyan-500/25 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex items-center justify-between gap-3"
             >
               <div>
                 <span className="text-sm font-medium text-slate-400">Tuk:</span>

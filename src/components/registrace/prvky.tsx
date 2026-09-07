@@ -144,7 +144,7 @@ export const Krokovac: React.FC<{ krok: number; celkem: number; nazev: string }>
     </div>
     <div className="h-1.5 rounded-full bg-slate-900 overflow-hidden">
       <div
-        className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-[#39ff14] transition-all duration-300"
+        className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-akcent-lime transition-all duration-300"
         style={{ width: `${(krok / celkem) * 100}%` }}
       />
     </div>

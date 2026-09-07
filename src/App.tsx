@@ -895,8 +895,8 @@ function AppContent() {
   // Dokud nevime, jestli je session platna, neposilame nikoho na prihlaseni.
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#08090d] flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-slate-800 border-t-[#39ff14] animate-spin" />
+      <div className="min-h-screen bg-pozadi flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-slate-800 border-t-akcent-lime animate-spin" />
       </div>
     );
   }
@@ -917,8 +917,8 @@ function AppContent() {
   // ze uzivatel zadny nema.
   if (nacitamProfil) {
     return (
-      <div className="min-h-screen bg-[#08090d] flex flex-col items-center justify-center gap-3">
-        <div className="w-8 h-8 rounded-full border-2 border-slate-800 border-t-[#39ff14] animate-spin" />
+      <div className="min-h-screen bg-pozadi flex flex-col items-center justify-center gap-3">
+        <div className="w-8 h-8 rounded-full border-2 border-slate-800 border-t-akcent-lime animate-spin" />
         <p className="text-xs text-slate-500">Načítám tvůj plán…</p>
       </div>
     );
@@ -926,13 +926,13 @@ function AppContent() {
 
   if (chybaProfilu) {
     return (
-      <div className="min-h-screen bg-[#08090d] flex items-center justify-center p-4">
-        <div className="max-w-sm w-full rounded-3xl bg-[#0c1017] border border-rose-500/30 p-6 text-center">
+      <div className="min-h-screen bg-pozadi flex items-center justify-center p-4">
+        <div className="max-w-sm w-full rounded-3xl bg-povrch border border-rose-500/30 p-6 text-center">
           <p className="text-sm text-rose-300 mb-1">Profil se nepodařilo načíst.</p>
           <p className="text-xs text-slate-500 mb-4">{chybaProfilu}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2.5 rounded-2xl bg-[#39ff14] text-[#08090d] font-bold text-sm"
+            className="px-4 py-2.5 rounded-2xl bg-akcent-lime text-na-akcentu font-bold text-sm"
           >
             Zkusit znovu
           </button>
@@ -945,11 +945,11 @@ function AppContent() {
   // než doběhne. Do té doby nemá smysl ukazovat prázdný jídelníček.
   if (!maPlan) {
     return (
-      <div className="min-h-screen bg-[#08090d] flex items-center justify-center p-4">
-        <div className="max-w-sm w-full rounded-3xl bg-[#0c1017] border border-cyan-500/25 p-6 text-center">
+      <div className="min-h-screen bg-pozadi flex items-center justify-center p-4">
+        <div className="max-w-sm w-full rounded-3xl bg-povrch border border-cyan-500/25 p-6 text-center">
           <h1 className="text-xl font-bold text-white flex items-center justify-center gap-1.5 mb-3">
             <span>Body &amp; Mind</span>
-            <span className="text-[#39ff14] font-extrabold">ON</span>
+            <span className="text-akcent-lime font-extrabold">ON</span>
           </h1>
           <p className="text-sm text-slate-300 mb-1">Tvůj plán se připravuje.</p>
           <p className="text-xs text-slate-500 mb-4">
@@ -957,7 +957,7 @@ function AppContent() {
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2.5 rounded-2xl bg-[#39ff14] text-[#08090d] font-bold text-sm"
+            className="px-4 py-2.5 rounded-2xl bg-akcent-lime text-na-akcentu font-bold text-sm"
           >
             Zkusit načíst znovu
           </button>
@@ -968,7 +968,7 @@ function AppContent() {
 
   return (
     <TedProvider zeptejSe={zeptejSeTeda}>
-    <div className="min-h-screen bg-[#08090d] text-slate-100 relative overflow-x-hidden font-['Plus_Jakarta_Sans',sans-serif]">
+    <div className="min-h-screen bg-pozadi text-slate-100 relative overflow-x-hidden font-['Plus_Jakarta_Sans',sans-serif]">
       {/* Ambient Cyber Neon Background Glows */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] bg-gradient-to-b from-cyan-500/10 via-emerald-500/5 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="fixed bottom-0 right-0 w-[550px] h-[450px] bg-lime-500/5 rounded-full blur-3xl pointer-events-none -z-10" />
@@ -1135,7 +1135,7 @@ function AppContent() {
             onSync={handleManualWithingsSync}
           />
         ) : (
-          <div className="p-6 rounded-3xl bg-[#0c1017] border border-slate-800 text-center">
+          <div className="p-6 rounded-3xl bg-povrch border border-slate-800 text-center">
             <p className="text-sm text-slate-300 mb-1">Zatím nemáme data z hodinek.</p>
             <p className="text-xs text-slate-500">
               {zdravi.pripojeno
@@ -1155,7 +1155,7 @@ function AppContent() {
         {/* Footer */}
         <footer className="pt-6 pb-8 text-center text-xs text-slate-600 space-y-1 select-none">
           <p className="font-medium text-slate-500">
-            Body &amp; Mind <span className="text-[#39ff14]">ON</span> • Biohacking, Performance &amp; AI trenér
+            Body &amp; Mind <span className="text-akcent-lime">ON</span> • Biohacking, Performance &amp; AI trenér
           </p>
           {/* „V reálném čase" tu bylo do 23. 8. 2026 a nebyla to pravda:
               Withings se stahuje jednou za hodinu a Apple Health posílá

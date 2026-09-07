@@ -121,12 +121,12 @@ export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className="relative z-10 w-full max-w-2xl max-h-[90vh] bg-[#0c1017] rounded-3xl border border-cyan-500/40 shadow-[0_0_50px_rgba(0,242,254,0.2)] flex flex-col overflow-hidden"
+        className="relative z-10 w-full max-w-2xl max-h-[90vh] bg-povrch rounded-3xl border border-cyan-500/40 shadow-[0_0_50px_rgba(0,242,254,0.2)] flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div className="p-5 sm:p-6 border-b border-slate-800 flex items-center justify-between bg-gradient-to-r from-[#0e1624] to-[#0c1017]">
+        <div className="p-5 sm:p-6 border-b border-slate-800 flex items-center justify-between bg-gradient-to-r from-hlavicka-tmava-od to-povrch">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-950/70 border border-cyan-500/40 flex items-center justify-center text-[#00f2fe]">
+            <div className="w-10 h-10 rounded-2xl bg-cyan-950/70 border border-cyan-500/40 flex items-center justify-center text-akcent-cyan">
               <Dumbbell className="w-5 h-5" />
             </div>
             <div>
@@ -154,12 +154,12 @@ export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
           {/* Main Stopwatch */}
           <div className="flex items-center gap-3">
             <div className="text-xs text-slate-400 font-semibold">Trvání tréninku:</div>
-            <div className="text-xl font-mono font-black text-[#00f2fe] bg-slate-950 px-3 py-1 rounded-xl border border-cyan-500/30 shadow-inner">
+            <div className="text-xl font-mono font-black text-akcent-cyan bg-slate-950 px-3 py-1 rounded-xl border border-cyan-500/30 shadow-inner">
               {formatTime(timerSeconds)}
             </div>
             <button
               onClick={() => setIsTimerRunning(!isTimerRunning)}
-              className="p-2 rounded-xl bg-cyan-950/60 text-[#00f2fe] border border-cyan-500/40 hover:bg-cyan-900/60"
+              className="p-2 rounded-xl bg-cyan-950/60 text-akcent-cyan border border-cyan-500/40 hover:bg-cyan-900/60"
             >
               {isTimerRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
             </button>
@@ -183,7 +183,7 @@ export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
                 onClick={() => handleStartRest(sec)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
                   restTimer === sec
-                    ? 'bg-[#39ff14] text-slate-950 font-black'
+                    ? 'bg-akcent-lime text-slate-950 font-black'
                     : 'bg-slate-950 text-slate-300 border border-slate-800 hover:border-slate-700'
                 }`}
               >
@@ -191,7 +191,7 @@ export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
               </button>
             ))}
             {restTimer !== null && (
-              <span className="px-2 py-1 rounded-lg bg-emerald-950 text-[#39ff14] text-xs font-mono font-bold border border-emerald-500/40 animate-pulse">
+              <span className="px-2 py-1 rounded-lg bg-emerald-950 text-akcent-lime text-xs font-mono font-bold border border-emerald-500/40 animate-pulse">
                 {restTimer}s
               </span>
             )}
@@ -206,7 +206,7 @@ export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
                   Cviky a série ({completedCount} z {todayWorkout.exercises.length} hotovo)
                 </span>
-                <span className="text-xs text-[#39ff14] font-semibold">
+                <span className="text-xs text-akcent-lime font-semibold">
                   {todayWorkout.caloriesBurned > 0 ? `Cíl: ${todayWorkout.caloriesBurned} kcal` : ''}
                 </span>
               </div>
@@ -218,14 +218,14 @@ export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
                   className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer select-none flex items-center justify-between gap-3 ${
                     ex.completed
                       ? 'bg-emerald-950/20 border-emerald-500/30 text-white'
-                      : 'bg-[#0e131d]/90 border-slate-800 hover:border-cyan-500/30'
+                      : 'bg-karta/90 border-slate-800 hover:border-cyan-500/30'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <div
                       className={`w-6 h-6 rounded-xl border flex items-center justify-center transition-all ${
                         ex.completed
-                          ? 'bg-[#39ff14] border-[#39ff14] text-slate-950 shadow-[0_0_8px_#39ff14]'
+                          ? 'bg-akcent-lime border-akcent-lime text-slate-950 shadow-[0_0_8px_var(--color-akcent-lime)]'
                           : 'border-slate-700 bg-slate-900 text-transparent'
                       }`}
                     >
@@ -249,7 +249,7 @@ export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
                       {ex.sets} × {ex.reps}
                     </span>
                     {ex.weightKg && (
-                      <span className="px-2.5 py-1 rounded-xl bg-cyan-950/60 border border-cyan-500/30 text-xs font-bold text-[#00f2fe]">
+                      <span className="px-2.5 py-1 rounded-xl bg-cyan-950/60 border border-cyan-500/30 text-xs font-bold text-akcent-cyan">
                         {ex.weightKg} kg
                       </span>
                     )}
@@ -280,7 +280,7 @@ export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
                     onClick={() => setObtiznost(vybrano ? null : klic)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all active:scale-95 ${
                       vybrano
-                        ? 'bg-cyan-950/60 border-[#00f2fe]/60 text-[#00f2fe] shadow-[0_0_10px_rgba(0,242,254,0.2)]'
+                        ? 'bg-cyan-950/60 border-akcent-cyan/60 text-akcent-cyan shadow-[0_0_10px_rgba(0,242,254,0.2)]'
                         : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
                     }`}
                   >
@@ -305,7 +305,7 @@ export const WorkoutLoggerModal: React.FC<WorkoutLoggerModalProps> = ({
                     onClick={() => setTypTreninku(vybrano ? null : klic)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all active:scale-95 ${
                       vybrano
-                        ? 'bg-emerald-950/60 border-[#39ff14]/50 text-[#39ff14] shadow-[0_0_10px_rgba(57,255,20,0.18)]'
+                        ? 'bg-emerald-950/60 border-akcent-lime/50 text-akcent-lime shadow-[0_0_10px_rgba(57,255,20,0.18)]'
                         : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
                     }`}
                   >

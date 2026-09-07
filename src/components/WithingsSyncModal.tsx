@@ -186,12 +186,12 @@ export const WithingsSyncModal: React.FC<WithingsSyncModalProps> = ({
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className="relative z-10 w-full max-w-lg max-h-[90vh] bg-[#0c1017] rounded-3xl border border-cyan-500/30 shadow-[0_0_50px_rgba(0,242,254,0.15)] flex flex-col overflow-hidden"
+        className="relative z-10 w-full max-w-lg max-h-[90vh] bg-povrch rounded-3xl border border-cyan-500/30 shadow-[0_0_50px_rgba(0,242,254,0.15)] flex flex-col overflow-hidden"
       >
         {/* Header */}
         <div className="p-5 sm:p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/40 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-950/70 border border-cyan-500/40 flex items-center justify-center text-[#00f2fe]">
+            <div className="w-10 h-10 rounded-2xl bg-cyan-950/70 border border-cyan-500/40 flex items-center justify-center text-akcent-cyan">
               <Smartphone className="w-5 h-5" />
             </div>
             <div>
@@ -220,8 +220,8 @@ export const WithingsSyncModal: React.FC<WithingsSyncModalProps> = ({
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-semibold text-white">Stav připojení</span>
               {connection.isConnected ? (
-                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold text-[#39ff14] bg-emerald-950/60 border border-emerald-500/40">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#39ff14] animate-pulse" />
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold text-akcent-lime bg-emerald-950/60 border border-emerald-500/40">
+                  <span className="w-1.5 h-1.5 rounded-full bg-akcent-lime animate-pulse" />
                   Aktivní &amp; Spárováno
                 </span>
               ) : (
@@ -253,7 +253,7 @@ export const WithingsSyncModal: React.FC<WithingsSyncModalProps> = ({
           {/* API token */}
           <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800 space-y-3">
             <div className="flex items-center gap-2">
-              <KeyRound className="w-4 h-4 text-[#00f2fe]" />
+              <KeyRound className="w-4 h-4 text-akcent-cyan" />
               <div>
                 <div className="text-sm font-semibold text-white">Přístupový token Withings API</div>
                 <div className="text-xs text-slate-400">
@@ -321,7 +321,7 @@ export const WithingsSyncModal: React.FC<WithingsSyncModalProps> = ({
               <button
                 onClick={handleAuthorize}
                 disabled={isAuthorizing || tokenInput.trim().length === 0}
-                className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-slate-950 bg-[#00f2fe] hover:bg-[#00f2fe]/90 disabled:bg-slate-800 disabled:text-slate-500 shadow-[0_0_15px_rgba(0,242,254,0.25)] disabled:shadow-none transition-all active:scale-95 flex items-center justify-center gap-2"
+                className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-slate-950 bg-akcent-cyan hover:bg-akcent-cyan/90 disabled:bg-slate-800 disabled:text-slate-500 shadow-[0_0_15px_rgba(0,242,254,0.25)] disabled:shadow-none transition-all active:scale-95 flex items-center justify-center gap-2"
               >
                 {isAuthorizing ? (
                   <>
@@ -352,7 +352,7 @@ export const WithingsSyncModal: React.FC<WithingsSyncModalProps> = ({
                 aria-pressed={connection.autoSyncEnabled}
                 aria-label="Automatická ranní synchronizace"
                 className={`w-12 h-6 shrink-0 rounded-full transition-colors p-1 flex items-center ${
-                  connection.autoSyncEnabled ? 'bg-[#00f2fe] justify-end' : 'bg-slate-800 justify-start'
+                  connection.autoSyncEnabled ? 'bg-akcent-cyan justify-end' : 'bg-slate-800 justify-start'
                 }`}
               >
                 <motion.div layout className="w-4 h-4 rounded-full bg-slate-950 shadow-md" />
@@ -363,7 +363,7 @@ export const WithingsSyncModal: React.FC<WithingsSyncModalProps> = ({
           {/* Živé stahování dat */}
           <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800 space-y-3">
             <div className="flex items-center gap-2">
-              <Download className="w-4 h-4 text-[#39ff14]" />
+              <Download className="w-4 h-4 text-akcent-lime" />
               <div>
                 <div className="text-sm font-semibold text-white">Stažení dat ze zařízení</div>
                 <div className="text-xs text-slate-400">
@@ -401,7 +401,7 @@ export const WithingsSyncModal: React.FC<WithingsSyncModalProps> = ({
               <div className="space-y-1.5">
                 <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
                   <motion.div
-                    className="h-full rounded-full bg-gradient-to-r from-[#00f2fe] to-[#39ff14]"
+                    className="h-full rounded-full bg-gradient-to-r from-akcent-cyan to-akcent-lime"
                     initial={{ width: 0 }}
                     animate={{ width: `${progressPercent}%` }}
                     transition={{ duration: 0.35 }}
@@ -419,7 +419,7 @@ export const WithingsSyncModal: React.FC<WithingsSyncModalProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30 space-y-2"
               >
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[#39ff14]">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-akcent-lime">
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Staženo v {lastResult.syncedAt}</span>
                 </div>
@@ -450,7 +450,7 @@ export const WithingsSyncModal: React.FC<WithingsSyncModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-[#00f2fe] to-[#39ff14] shrink-0"
+            className="px-5 py-2 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-akcent-cyan to-akcent-lime shrink-0"
           >
             Hotovo
           </button>

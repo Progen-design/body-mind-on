@@ -51,7 +51,7 @@ export const WithingsCard: React.FC<WithingsCardProps> = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.35 }}
-      className="relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-[#0e131d]/85 backdrop-blur-xl border border-cyan-500/25 shadow-[0_8px_32px_rgba(0,0,0,0.5)] group hover:border-cyan-400/50 transition-all duration-300"
+      className="relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-karta/85 backdrop-blur-xl border border-cyan-500/25 shadow-[0_8px_32px_rgba(0,0,0,0.5)] group hover:border-cyan-400/50 transition-all duration-300"
     >
       {/* Background glow */}
       <div className="absolute top-0 right-0 w-36 h-36 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -64,7 +64,7 @@ export const WithingsCard: React.FC<WithingsCardProps> = ({
               Withings
             </h3>
             {stav.badge === 'online' ? (
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/60 text-[#39ff14] border border-emerald-500/30">
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/60 text-akcent-lime border border-emerald-500/30">
                 <Wifi className="w-2.5 h-2.5" />
                 Online
               </span>
@@ -98,7 +98,7 @@ export const WithingsCard: React.FC<WithingsCardProps> = ({
             <button
               onClick={handleSyncClick}
               disabled={isSyncing}
-              className="w-full relative overflow-hidden py-3 px-5 rounded-2xl font-bold text-sm text-slate-950 bg-gradient-to-r from-[#00f2fe] to-[#38ef7d] hover:from-[#2bf5ff] hover:to-[#50fa8f] transition-all duration-300 shadow-[0_0_24px_rgba(0,242,254,0.4)] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-80"
+              className="w-full relative overflow-hidden py-3 px-5 rounded-2xl font-bold text-sm text-slate-950 bg-gradient-to-r from-akcent-cyan to-tlacitko-withings-do hover:from-tlacitko-withings-hover-od hover:to-tlacitko-withings-hover-do transition-all duration-300 shadow-[0_0_24px_rgba(0,242,254,0.4)] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-80"
             >
               {isSyncing ? (
                 <>

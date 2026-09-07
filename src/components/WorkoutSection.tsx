@@ -86,14 +86,14 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
       <NadpisSekce
         titulek="Tréninkový plán"
         podtitulek="Dnešní jednotka, týdenní rozpis a záznam odcvičeného"
-        ikona={<Dumbbell className="w-5 h-5 text-[#39ff14]" />}
+        ikona={<Dumbbell className="w-5 h-5 text-akcent-lime" />}
       />
 
       {/* Top Banner: Today's Active Workout Hero */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-3xl p-5 sm:p-6 bg-gradient-to-r from-[#0d1722] via-[#0d141e] to-[#091512] border border-lime-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative overflow-hidden"
+        className="rounded-3xl p-5 sm:p-6 bg-gradient-to-r from-hero-trenink-od via-hero-trenink-stred to-hero-trenink-cil border border-lime-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative overflow-hidden"
       >
         <div className="space-y-2">
           <div className="flex items-center gap-2">
@@ -184,14 +184,14 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
                 onClick={jeVolno ? undefined : () => setSelectedDayName(w.dayName)}
                 className={`p-2.5 rounded-xl border text-left transition-all relative select-none ${
                   jeVolno
-                    ? 'bg-[#0a0d13]/70 border-slate-800/60 cursor-default'
+                    ? 'bg-dlazdice-volno/70 border-slate-800/60 cursor-default'
                     : isSelected
                       ? 'bg-cyan-950/30 border-cyan-500/50'
-                      : 'bg-[#0e131d]/90 border-slate-800 hover:border-slate-700'
+                      : 'bg-karta/90 border-slate-800 hover:border-slate-700'
                 }`}
               >
                 {w.isToday && (
-                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#00f2fe] animate-ping" />
+                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-akcent-cyan animate-ping" />
                 )}
 
                 <div className="flex items-center justify-between mb-1">
@@ -200,7 +200,7 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
                   </span>
                   {!jeVolno && (
                     w.isCompleted ? (
-                      <span className="text-[10px] font-bold text-[#39ff14]">✓</span>
+                      <span className="text-[10px] font-bold text-akcent-lime">✓</span>
                     ) : (
                       <span className="text-[10px] text-slate-500 font-medium">{w.durationMin}m</span>
                     )
@@ -244,10 +244,10 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
       </div>
 
       {/* Selected Day Exercise Matrix */}
-      <div className="rounded-3xl p-5 sm:p-6 bg-[#0e131d]/90 border border-slate-800 shadow-xl space-y-4">
+      <div className="rounded-3xl p-5 sm:p-6 bg-karta/90 border border-slate-800 shadow-xl space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-slate-800">
           <div>
-            <div className="text-xs font-bold uppercase tracking-wider text-[#39ff14]">
+            <div className="text-xs font-bold uppercase tracking-wider text-akcent-lime">
               {[selectedWorkout.dayName, selectedWorkout.focus].filter(Boolean).join(' • ')}
             </div>
             <h4 className="text-lg font-bold text-white tracking-tight mt-0.5">
@@ -262,7 +262,7 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
               <Vysvetlivka pojem="zapis_serii" />
             </span>
             {selectedWorkout.caloriesBurned > 0 && (
-              <span className="px-2.5 py-1 rounded-lg bg-emerald-950/60 text-[#39ff14] font-bold border border-emerald-500/30">
+              <span className="px-2.5 py-1 rounded-lg bg-emerald-950/60 text-akcent-lime font-bold border border-emerald-500/30">
                 {selectedWorkout.caloriesBurned} kcal
               </span>
             )}
@@ -288,7 +288,7 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
                 <div
                   className={`w-6 h-6 rounded-xl border flex items-center justify-center transition-all ${
                     ex.completed
-                      ? 'bg-[#39ff14] border-[#39ff14] text-slate-950 shadow-[0_0_8px_#39ff14]'
+                      ? 'bg-akcent-lime border-akcent-lime text-slate-950 shadow-[0_0_8px_var(--color-akcent-lime)]'
                       : 'border-slate-700 bg-slate-900 text-transparent'
                   }`}
                 >
@@ -318,7 +318,7 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
                   {ex.sets} × {ex.reps}
                 </span>
                 {ex.weightKg && (
-                  <span className="px-3 py-1 rounded-xl bg-cyan-950/60 border border-cyan-500/30 text-xs font-extrabold text-[#00f2fe]">
+                  <span className="px-3 py-1 rounded-xl bg-cyan-950/60 border border-cyan-500/30 text-xs font-extrabold text-akcent-cyan">
                     {ex.weightKg} kg
                   </span>
                 )}
@@ -336,7 +336,7 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
                     }}
                     className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold inline-flex items-center gap-1 transition-all ${
                       otevrenaUkazka === ex.id
-                        ? 'bg-cyan-950/70 border-cyan-500/50 text-[#00f2fe]'
+                        ? 'bg-cyan-950/70 border-cyan-500/50 text-akcent-cyan'
                         : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-cyan-500/40'
                     }`}
                     title="Ukázat provedení cviku"

@@ -19,6 +19,7 @@ import { dnesniTrenink, jeNaplanovany, vybranyTrenink } from '../lib/trenink';
 import { serieOpakovaniSlovy } from '../../lib/profile/treninkPopis.js';
 import { Vysvetlivka } from './Vysvetlivka';
 import { NadpisSekce } from './NadpisSekce';
+import { PruhDnu } from './PruhDnu';
 
 interface WorkoutSectionProps {
   workouts: WorkoutDay[];
@@ -172,48 +173,25 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
           ikona={<CalendarDays className="w-4 h-4 text-slate-400" />}
         />
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-          {workouts.map(w => {
-            const isSelected = w.dayName === selectedDayName || (!selectedDayName && w.isToday);
-            const jeVolno = w.maTrenink === false;
-            return (
-              <button
-                key={w.dayName}
-                type="button"
-                disabled={jeVolno}
-                onClick={jeVolno ? undefined : () => setSelectedDayName(w.dayName)}
-                className={`p-2.5 rounded-xl border text-left transition-all relative select-none ${
-                  jeVolno
-                    ? 'bg-dlazdice-volno/70 border-slate-800/60 cursor-default'
-                    : isSelected
-                      ? 'bg-cyan-950/30 border-cyan-500/50'
-                      : 'bg-karta/90 border-slate-800 hover:border-slate-700'
-                }`}
-              >
-                {w.isToday && (
-                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-akcent-cyan animate-ping" />
-                )}
-
-                <div className="flex items-center justify-between mb-1">
-                  <span className={`text-xs font-bold ${jeVolno ? 'text-slate-500' : 'text-slate-300'}`}>
-                    {w.dayShort}
-                  </span>
-                  {!jeVolno && (
-                    w.isCompleted ? (
-                      <span className="text-[10px] font-bold text-akcent-lime">✓</span>
-                    ) : (
-                      <span className="text-[10px] text-slate-500 font-medium">{w.durationMin}m</span>
-                    )
-                  )}
-                </div>
-
-                <div className={`text-xs font-semibold truncate mt-1 ${jeVolno ? 'text-slate-500' : 'text-white'}`}>
-                  {w.title}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        {/* Dlaždice kreslí sdílený PruhDnu (docs/DALSI_KROK.md 9.8) — stejný
+            pruh má i jídelníček. Tady se jen mapují data: indikátor je ✓ po
+            splnění, jinak délka jednotky; Volno je neklikací. */}
+        <PruhDnu
+          polozky={workouts.map(w => ({
+            klic: w.dayName,
+            zkratka: w.dayShort,
+            nazev: w.title,
+            jeDnes: w.isToday,
+            jeNeklikaci: w.maTrenink === false,
+            indikator: w.maTrenink === false
+              ? null
+              : w.isCompleted
+                ? 'splneno'
+                : `${w.durationMin}m`
+          }))}
+          vybranyKlic={selectedDayName}
+          onVybrat={setSelectedDayName}
+        />
 
         {/* Vybraný den ≠ dnešek — bez tohohle vypadalo přepnutí, jako by se
             změnil DNEŠNÍ trénink v kartě výš. */}
@@ -327,8 +305,10 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
                     `gif_url`, ale nikde se nezobrazovala — člověk viděl jen
                     název a musel si provedení domýšlet. Otevírá se na klik,
                     aby seznam zůstal přehledný a animace se nenačítaly
-                    všechny naráz. */}
-                {ex.ukazkaUrl && (
+                    všechny naráz. Od 9.9 je pod obrázkem i slovní postup
+                    (`postup` z registru cviků) — tlačítko se proto ukazuje
+                    i cviku, který má jen kroky bez média. */}
+                {(ex.ukazkaUrl || (ex.postup?.length ?? 0) > 0) && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -348,16 +328,31 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
               </div>
             </div>
 
-            {ex.ukazkaUrl && otevrenaUkazka === ex.id && (
+            {(ex.ukazkaUrl || (ex.postup?.length ?? 0) > 0) && otevrenaUkazka === ex.id && (
               <div className="px-4 pb-4">
-                <div className="rounded-xl overflow-hidden bg-slate-950 border border-slate-800">
-                  <img
-                    src={ex.ukazkaUrl}
-                    alt={`Provedení cviku ${ex.name}`}
-                    loading="lazy"
-                    className="w-full max-h-72 object-contain bg-white"
-                  />
-                </div>
+                {ex.ukazkaUrl && (
+                  <div className="rounded-xl overflow-hidden bg-slate-950 border border-slate-800">
+                    <img
+                      src={ex.ukazkaUrl}
+                      alt={`Provedení cviku ${ex.name}`}
+                      loading="lazy"
+                      className="w-full max-h-72 object-contain bg-white"
+                    />
+                  </div>
+                )}
+
+                {/* POSTUP POD OBRÁZKEM — docs/DALSI_KROK.md 9.9. Jen české
+                    kroky z registru; bez nich se nekreslí nic — žádné
+                    „Postup není k dispozici", žádná angličtina. Sedí uvnitř
+                    sbaleného bloku „Jak na to", takže karta cviku neroste. */}
+                {ex.postup && ex.postup.length > 0 && (
+                  <ol className="mt-3 space-y-1.5 text-xs text-slate-300 leading-relaxed list-decimal list-inside marker:text-slate-500">
+                    {ex.postup.map((krok, k) => (
+                      <li key={k}>{krok}</li>
+                    ))}
+                  </ol>
+                )}
+
                 <p className="text-[11px] text-slate-500 mt-2">
                   {serieOpakovaniSlovy(ex.sets, ex.reps)}
                   {ex.targetMuscle && ` • zabírá ${ex.targetMuscle}`}

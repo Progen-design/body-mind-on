@@ -68,6 +68,12 @@ export interface ExerciseItem extends AktivitaPlanu {
    * z ExerciseDB; když u cviku chybí, náhled se nekreslí.
    */
   ukazkaUrl?: string;
+  /**
+   * Kroky provedení česky (`instructions_cs` z registru cviků, doplňuje
+   * /api/profile). Když chybí, nekreslí se NIC — žádný náhradní text ani
+   * angličtina (docs/DALSI_KROK.md 9.9).
+   */
+  postup?: string[];
   completed?: boolean;
 }
 

@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ChevronRight,
   ChevronDown,
+  CalendarDays,
   Flame,
   Sparkles,
   Plus
@@ -15,15 +16,27 @@ import { motion } from 'motion/react';
 import { Vysvetlivka } from './Vysvetlivka';
 import { NadpisSekce } from './NadpisSekce';
 import { CalorieMismatchBanner } from './CalorieMismatchBanner';
+import { PruhDnu } from './PruhDnu';
 import { MealItem, ShoppingItem } from '../types';
-import { NesouladCile } from '../data/adaptery';
+import { NesouladCile, zkratkaDne } from '../data/adaptery';
+import type { TydenniDenJidel } from '../data/adaptery';
+import {
+  pocetJidelSlovy,
+  seradDnyPoNe,
+  souhrnDneJidel,
+  vybranyDenJidel
+} from '../lib/jidelnicekDny';
 
 interface NutritionSectionProps {
-  meals: MealItem[];
+  /**
+   * Celý týden včetně `datum`, `jeDnes` a jídel — docs/DALSI_KROK.md 9.8.
+   * Dřív sekce dostávala jen jídla dneška (`meals`); přepínač dnů potřebuje
+   * tatáž data, jaká už měl `MealPlanModal`.
+   */
+  weekMeals: TydenniDenJidel[];
   /** Nákupní seznam patří k jídelníčku — vychází z něj. Dřív měl vlastní záložku. */
   shoppingItems: ShoppingItem[];
   onToggleShoppingItem: (id: string) => void;
-  currentCalories: number;
   targetCalories: number;
   proteinPct: number;
   carbsPct: number;
@@ -32,7 +45,12 @@ interface NutritionSectionProps {
   nesouladCile?: NesouladCile | null;
   onRegeneratePlan?: () => void;
   regenerujiPlan?: boolean;
-  onToggleMeal: (id: string) => void;
+  /**
+   * Celý objekt jídla, ne `id` — `catalog_id` NENÍ napříč týdnem unikátní
+   * (stejný recept smí být v jídelníčku 2× týdně), den se pozná podle
+   * `planDay` + `activityKey`. Stejný důvod jako u `MealPlanModal`.
+   */
+  onToggleMeal: (meal: MealItem) => void;
   onSelectRecipe: (meal: MealItem) => void;
   onOpenWeeklyPlan: () => void;
   onOpenShoppingList: () => void;
@@ -41,10 +59,9 @@ interface NutritionSectionProps {
 }
 
 export const NutritionSection: React.FC<NutritionSectionProps> = ({
-  meals,
+  weekMeals,
   shoppingItems,
   onToggleShoppingItem,
-  currentCalories,
   targetCalories,
   proteinPct,
   carbsPct,
@@ -59,9 +76,20 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
   onExportPdf,
   onAddCustomMeal
 }) => {
-  const totalProteinGrams = meals.reduce((acc, m) => acc + (m.completed ? m.protein : 0), 0);
-  const totalCarbsGrams = meals.reduce((acc, m) => acc + (m.completed ? m.carbs : 0), 0);
-  const totalFatGrams = meals.reduce((acc, m) => acc + (m.completed ? m.fat : 0), 0);
+  // null = uživatel zatím nic nevybral, den se odvodí z dat (jeDnes).
+  // Stejný vzor jako `selectedDayName` ve WorkoutSection — uložené datum by
+  // po přegenerování plánu ukazovalo na neexistující den.
+  const [vybranyDatum, setVybranyDatum] = useState<string | null>(null);
+
+  const dny = seradDnyPoNe(weekMeals);
+  const den = vybranyDenJidel(dny, vybranyDatum);
+  const meals = den?.meals ?? [];
+  // KARTA MAKRO POČÍTÁ VYBRANÝ DEN, NE POŘÁD DNEŠEK — jádro bodu 9.8;
+  // jinak by přepínač lhal.
+  const souhrn = souhrnDneJidel(den);
+  // Odškrtávat jde jen dnešek — viz komentář u checkboxu níž.
+  const jeDnesek = den?.jeDnes ?? false;
+  const prohlizisJinyDenNezDnes = !!den && !den.jeDnes;
 
   const kNakupu = shoppingItems.filter(i => !i.checked).length;
   // Sbalený stav jako výchozí — docs/DALSI_KROK.md 8.14. 63 položek pod sebou
@@ -97,13 +125,13 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
 
             <div className="flex items-baseline gap-3">
               <span className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-                {currentCalories.toLocaleString('cs-CZ')}
+                {souhrn.kcalSnedeno.toLocaleString('cs-CZ')}
               </span>
               <span className="text-sm sm:text-base text-slate-400 font-medium">
                 kcal / cíl {targetCalories.toLocaleString('cs-CZ')} kcal
               </span>
               <span className="text-xs font-bold text-akcent-cyan bg-cyan-950/60 px-2.5 py-1 rounded-full border border-cyan-500/30">
-                Zbývá {Math.max(0, targetCalories - currentCalories)} kcal
+                Zbývá {Math.max(0, targetCalories - souhrn.kcalSnedeno)} kcal
               </span>
             </div>
           </div>
@@ -132,15 +160,15 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
             <div className="flex items-center justify-between text-xs font-bold">
               <div className="flex items-center gap-1.5 text-makro-bilkoviny">
                 <span className="w-2 h-2 rounded-full bg-makro-bilkoviny" />
-                <span>Bílkoviny {proteinPct} % ({totalProteinGrams} g)</span>
+                <span>Bílkoviny {proteinPct} % ({souhrn.bilkovinyG} g)</span>
               </div>
               <div className="flex items-center gap-1.5 text-makro-sacharidy">
                 <span className="w-2 h-2 rounded-full bg-makro-sacharidy" />
-                <span>Sacharidy {carbsPct} % ({totalCarbsGrams} g)</span>
+                <span>Sacharidy {carbsPct} % ({souhrn.sacharidyG} g)</span>
               </div>
               <div className="flex items-center gap-1.5 text-makro-tuky">
                 <span className="w-2 h-2 rounded-full bg-makro-tuky" />
-                <span>Tuky {fatPct} % ({totalFatGrams} g)</span>
+                <span>Tuky {fatPct} % ({souhrn.tukyG} g)</span>
               </div>
             </div>
           </div>
@@ -186,11 +214,62 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
         />
       )}
 
+      {/* Pruh dnů Po–Ne — stejné záložky jako u tréninku (docs/DALSI_KROK.md
+          9.8), kreslí je sdílený PruhDnu. Místo „60m / ✓" nese dlaždice kcal
+          dne a stav splnění; den bez jídel se chová jako „Volno": neklikací. */}
+      {dny.length > 0 && (
+        <div className="space-y-3">
+          <NadpisSekce
+            uroven="podsekce"
+            titulek="Týdenní přehled"
+            podtitulek="Klikni na den a prohlédni si jeho jídla i makra"
+            ikona={<CalendarDays className="w-4 h-4 text-slate-400" />}
+          />
+
+          <PruhDnu
+            polozky={dny.map(d => {
+              const s = souhrnDneJidel(d);
+              return {
+                klic: d.datum,
+                zkratka: zkratkaDne(d.denNazev),
+                nazev: pocetJidelSlovy(d.meals.length),
+                jeDnes: d.jeDnes,
+                jeNeklikaci: !s.maJidla,
+                indikator: !s.maJidla
+                  ? null
+                  : s.vseSplneno
+                    ? 'splneno'
+                    : `${s.kcalPlan.toLocaleString('cs-CZ')} kcal`
+              };
+            })}
+            vybranyKlic={vybranyDatum}
+            onVybrat={setVybranyDatum}
+          />
+
+          {/* Vybraný den ≠ dnešek — stejná hláška jako u tréninku, jinak by
+              přepnutí vypadalo, že se změnil DNEŠNÍ jídelníček v kartě výš. */}
+          {prohlizisJinyDenNezDnes && (
+            <div className="flex items-center justify-between gap-3 text-xs bg-slate-900/60 border border-slate-800 rounded-xl px-3.5 py-2">
+              <span className="text-slate-300">
+                Prohlížíš <strong className="text-white">{den?.denNazev}</strong>, ne dnešek.
+              </span>
+              <button
+                type="button"
+                onClick={() => setVybranyDatum(null)}
+                className="font-bold text-cyan-400 hover:text-cyan-300 whitespace-nowrap"
+              >
+                zpět na dnešek
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Detailed Meal Cards List (Snídaně, Dopolední svačina, Oběd, Odpolední svačina, Večeře) */}
       <div className="space-y-4">
         <NadpisSekce
           uroven="podsekce"
-          titulek="Dnešní jídla"
+          titulek={jeDnesek ? 'Dnešní jídla' : `Jídla — ${den?.denNazev ?? ''}`}
           podtitulek="Postup přípravy najdeš pod tlačítkem Recept"
           ikona={<Flame className="w-4 h-4 text-amber-400" />}
         />
@@ -198,7 +277,7 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
         <div className="grid grid-cols-1 gap-3.5">
           {meals.map(meal => (
             <div
-              key={meal.id}
+              key={`${den?.datum}-${meal.activityKey ?? meal.id}`}
               className={`p-4 sm:p-5 rounded-3xl border transition-all ${
                 meal.completed
                   ? 'bg-karta/90 border-slate-800 hover:border-cyan-500/40'
@@ -208,13 +287,22 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 {/* Checkbox and Info */}
                 <div className="flex items-start sm:items-center gap-3.5 flex-1">
+                  {/* ODŠKRTÁVAT JDE JEN DNEŠEK — docs/DALSI_KROK.md 9.8,
+                      sekce Nedělat. Zvolená varianta: checkbox NEAKTIVNÍ,
+                      ne schovaný — při prohlížení jiného dne má zůstat
+                      vidět, co bylo splněno, a schovaný checkbox by navíc
+                      rozházel layout karty. Přepínač je na prohlížení;
+                      u návyků totéž vymáhá server (api/habits.js vrací 400
+                      na cokoli mimo dnešek). */}
                   <button
-                    onClick={() => onToggleMeal(meal.id)}
+                    onClick={jeDnesek ? () => onToggleMeal(meal) : undefined}
+                    disabled={!jeDnesek}
+                    title={jeDnesek ? undefined : 'Odškrtávat jde jen dnešní den'}
                     className={`w-6 h-6 rounded-xl border flex items-center justify-center transition-all shrink-0 mt-0.5 sm:mt-0 ${
                       meal.completed
                         ? 'bg-akcent-lime border-akcent-lime text-slate-950 shadow-[0_0_10px_var(--color-akcent-lime)]'
-                        : 'border-slate-700 bg-slate-900 text-transparent hover:border-slate-500'
-                    }`}
+                        : `border-slate-700 bg-slate-900 text-transparent ${jeDnesek ? 'hover:border-slate-500' : ''}`
+                    } ${jeDnesek ? '' : 'cursor-default opacity-60'}`}
                   >
                     <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
                   </button>

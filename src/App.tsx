@@ -1099,10 +1099,9 @@ function AppContent() {
         {/* TAB D: JÍDELNÍČEK & MAKRA */}
         {activeTab === 'jidelnicek' && (
           <NutritionSection
-            meals={meals}
+            weekMeals={weekMeals}
             shoppingItems={shoppingItems}
             onToggleShoppingItem={handleToggleShoppingItem}
-            currentCalories={totalCalories}
             targetCalories={preferences.dailyCalorieTarget}
             proteinPct={preferences.proteinRatioPercent}
             carbsPct={preferences.carbsRatioPercent}
@@ -1110,7 +1109,11 @@ function AppContent() {
             nesouladCile={nesoulad}
             onRegeneratePlan={handleRegeneratePlanForCurrentTarget}
             regenerujiPlan={regenerujiPlan}
-            onToggleMeal={handleToggleMeal}
+            // Týdenní varianta, ne handleToggleMeal(id): sekce od 9.8 ukazuje
+            // i jiné dny a `id` (catalog_id) není napříč týdnem unikátní —
+            // odškrtnutí míří přes planDay + activityKey a drží `meals`
+            // i `weekMeals` v souladu.
+            onToggleMeal={handleToggleWeekMeal}
             onSelectRecipe={(m) => setSelectedRecipeMeal(m)}
             onOpenWeeklyPlan={() => setIsMealModalOpen(true)}
             onOpenShoppingList={() => setIsShoppingModalOpen(true)}
@@ -1179,11 +1182,21 @@ function AppContent() {
         onToggleMeal={handleToggleWeekMeal}
       />
 
+      {/* ODŠKRTNOUT JDE JEN DNEŠNÍ JÍDLO — docs/DALSI_KROK.md 9.8. Recept si
+          od 9.8 jde otevřít i z jiného dne týdne, ale `handleToggleMeal`
+          hledá podle `id` v DNEŠNÍCH jídlech — a `catalog_id` není napříč
+          týdnem unikátní, takže by odškrtl dnešní jídlo se stejným receptem.
+          U nednešního jídla se callback nepředá a modal tlačítko schová. */}
       <RecipeModal
         meal={selectedRecipeMeal}
         isOpen={!!selectedRecipeMeal}
         onClose={() => setSelectedRecipeMeal(null)}
-        onToggleComplete={handleToggleMeal}
+        onToggleComplete={
+          selectedRecipeMeal?.planDay === undefined
+            || selectedRecipeMeal.planDay === weekMeals.find(d => d.jeDnes)?.meals[0]?.planDay
+            ? handleToggleMeal
+            : undefined
+        }
       />
 
       <ShoppingListModal

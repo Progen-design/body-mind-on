@@ -1,6 +1,7 @@
 // GET/POST /api/cron/translate-recipes — every 5 min while untranslated rows exist
 import { isCronAuthorized } from '../../lib/adminAuth.js';
 import { runCatalogRecipeTranslation } from '../../lib/spoonacular/catalogTranslate.js';
+import { runExerciseInstructionTranslation } from '../../lib/prekladPostupuCviku.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -33,12 +34,31 @@ export default async function handler(req, res) {
       });
     }
 
+    // POSTUPY CVIKŮ JEDOU STEJNOU LINKOU — docs/DALSI_KROK.md 9.9.
+    // Recepty mají přednost: cviky přijdou na řadu, jen když receptová dávka
+    // nic nepřeložila. Jeden běh cronu tak platí nejvýš jedno velké OpenAI
+    // volání a drží se v maxDuration 120 s (viz proč dávka 10 u receptů).
+    let cviky = null;
+    if (result.translated === 0) {
+      cviky = await runExerciseInstructionTranslation();
+      if (cviky.translated > 0 || cviky.remaining > 0 || cviky.errors) {
+        console.log('[cron/translate-recipes] exercise instructions', {
+          translated: cviky.translated,
+          remaining: cviky.remaining,
+          errors: cviky.errors,
+        });
+      }
+    }
+
     return res.status(200).json({
       ok: true,
       started_at: startedAt,
       translated: result.translated,
       remaining: result.remaining,
       errors: result.errors,
+      exercise_instructions: cviky
+        ? { translated: cviky.translated, remaining: cviky.remaining, errors: cviky.errors }
+        : undefined,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

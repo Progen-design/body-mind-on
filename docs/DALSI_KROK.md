@@ -119,7 +119,280 @@ nedaří dotáhnout objednávku.
 - **Nepouštěj se do `is_pantry_ingredient`.** Zjištění k tomu je v textu
   níž a je to samostatné rozhodnutí, ne součást téhle opravy.
 
-## 8.18 REGISTR CVIKŮ LŽE O NÁŘADÍ - DOMA BEZ VYBAVENÍ MŮŽE PADNOUT SHYB
+## 9.1 CÍLE VÝŽIVY NEBEROU OHLED NA DIETU ANI NA METABOLISMUS
+
+Změřeno 7. 9. 2026 na deseti čerstvých registracích přes produkční
+`POST /api/body-metrics` (stejná cesta jako formulář), profily se skutečným
+rozptylem: obě pohlaví, věk 22–64, BMI 19,6–35,5, pět diet, tři prostředí.
+
+### Co při tom vyšlo dobře - NESAHAT NA TO
+
+    kalorie plánu vs. cíl        98,4-103,8 %  u všech deseti
+    dietní soulad                0 porušení ze 175 jídel
+    tréninky - počet a dny       sedí 10/10
+    cviky se sériemi a ukázkou   170/170
+    struktura                    7 dní, 4-6 jídel podle cíle
+
+Plánovač trefuje KALORICKÝ cíl přesně a dietní bránu neobchází. Problém je
+v tom, JAKÝ cíl dostane zadaný.
+
+---
+
+### A) TUK JE VŽDY 28 % ENERGIE, I U NÍZKOSACHARIDOVÉ DIETY
+
+`lib/nutritionTargets.js`, `calculateNutritionTargets()`:
+
+```
+protein = váha × {2,0 nabírání | 1,8 redukce | 1,6 udržování}
+fat     = calories × 0,28 / 9        <- konstanta, dieta se nečte
+carbs   = zbytek energie
+```
+
+`diet_type` do výpočtu maker nevstupuje vůbec. Uživatel, který si zvolí
+**nízkosacharidovou dietu, dostane cíl 239 g sacharidů**, tedy 51 % energie
+ze sacharidů. To je proti smyslu té diety.
+
+Naměřený dopad (účet u07, low_carb): plánovač cíl trefit nemůže, protože
+z low_carb receptů 239 g sacharidů neposkládá. Výsledek za týden:
+
+    sacharidy  -66 %      tuky  +81 %      bílkoviny  +55 %
+
+**CO UDĚLAT:** makro rozpad musí znát `diet_type`. Pro `low_carb` nastav
+podíl sacharidů na 20-25 % energie a zbytek po bílkovinách dej do tuku.
+Ostatní diety (`vegetarian`, `gluten_free`, `lactose_free`) rozpad NEMĚNÍ -
+nejsou to makro diety, jejich cíl je správný (viz bod B2 níž).
+
+Konstantu 0,28 nenechávej zadrátovanou v těle funkce - pojmenuj podíly
+na jednom místě jako tabulku `dieta -> {sacharidy, tuk}` s výchozí větví.
+
+---
+
+### B1) KALORICKÝ CÍL SE POČÍTÁ Z VÁHY, NE Z METABOLISMU
+
+Tentýž soubor:
+
+```
+calories = váha × {28-300 redukce | 30 udržování | 32+200 nabírání}
+           × koeficient_aktivity   (velmi 1,08 / středně 1,0 / jinak 0,95)
+           + 100 při ≥5 trénincích
+```
+
+Výška, věk ani pohlaví do cíle NEVSTUPUJÍ. Vstupují jen do spodní hranice
+(`minimalniKalorickyCil`, max z 1200 ♀ / 1500 ♂ a 0,8 × BMR).
+
+Přitom `bmrMifflinStJeor()` je ve STEJNÉM souboru, je správně napsaná
+(ověřeno testem `lib/__tests__/calorieFloor.test.mjs`) a používá se výhradně
+na tu podlahu.
+
+Důsledek - naměřeno na profilech z testu, aktivita „středně":
+
+    profil                              cíl    TDEE   rozdíl
+    muž 27 l., 190 cm, 72 kg, nabírání  2504   2755   -251   <- hubnul by
+    žena 22 l., 158 cm, 50 kg, nabírání 1800   1886    -86   <- hubnula by
+    žena 57 l., 160 cm, 79 kg, redukce  1912   2083   -171   <- skoro nic
+    muž 27 l., 190 cm, 72 kg, redukce   1716   2755  -1039   <- moc agresivní
+
+Vzorec z váhy dává u štíhlých vysokých lidí OPAK toho, co si zvolili, a
+u zavalitých málo aktivních lidí příliš mírný deficit.
+
+**CO UDĚLAT:** odvoď cíl z TDEE, ne z váhy.
+
+```
+BMR  = bmrMifflinStJeor({weightKg, heightCm, age, gender})   // už existuje
+TDEE = BMR × koeficient_aktivity                             // už existuje
+redukce      = TDEE × 0,80
+udrzovani    = TDEE
+nabirani     = TDEE × 1,10
+```
+
+Procenta drž jako pojmenované konstanty, ne magická čísla v podmínce.
+
+TŘI VĚCI, KTERÉ MUSÍ ZŮSTAT:
+1. **Spodní hranice `minimalniKalorickyCil()` platí dál** a aplikuje se AŽ
+   NAKONEC, stejně jako dnes. Nesahej na ni.
+2. **Uložený `calories_target` má dál přednost.** Větev, která přebírá už
+   uloženou hodnotu (`!forceRecalculate && registrationCalories != null`),
+   zůstává beze změny - jinak by se všem stávajícím lidem cíl skokem změnil.
+   Nový vzorec se projeví jen u NOVÝCH registrací a při `forceRecalculate`.
+3. **Bonus +100 za ≥5 tréninků a jeho podmínka `cilOdvozen`** zůstávají.
+   Komentář u nich popisuje reálný incident ze 17.-18. 8., kdy se bonus
+   sčítal třikrát. Nerozbij to.
+
+BMR nejde spočítat bez výšky a věku - `bmrMifflinStJeor` v tom případě vrací
+`null`. Když se to stane, spadni na dnešní vzorec z váhy a zaloguj to.
+Nedohaduj výšku ani věk.
+
+---
+
+### B2) PLÁNOVAČ MÍJÍ MAKRA U OMEZENÝCH DIET - NEJDŘÍV MĚŘIT
+
+U vegetariánů a bezlepkové diety je CÍL správný, ale plán ho nesplní:
+
+    účet  dieta        bílkoviny  sacharidy  tuky
+    u03   vegetarián      -15 %      +5 %    +16 %
+    u10   vegetarián      -21 %      -9 %    +41 %
+    u04   bez lepku       +14 %     -33 %    +55 %
+    u05   bez laktózy      +8 %      -8 %    +11 %
+    bez diety           +2 až +12 %  ±6 %   -9 až +12 %
+
+Bez diety to sedí, s dietou se to rozjíždí a rozdíl pohltí tuk.
+
+**NEOPRAVUJ TO TEĎ.** Je to buď málo receptů v katalogu pro danou dietu,
+nebo váhy ve výběru - a z dat to dnes nejde rozlišit. Udělej jen měření:
+do logu `[catalog-resolve] complete` (lib/recipesCatalog.js) přidej, o kolik
+se výsledný den liší od cíle v každém ze tří maker, a kolik kandidátů bylo
+k dispozici po dietním filtru. Čísla vyhodnotíme, pak se rozhodne.
+
+---
+
+### C) NEPLATNÝ VSTUP SE TIŠE PŘEPÍŠE NA VÝCHOZÍ
+
+`POST /api/body-metrics` přijme neznámou hodnotu a mlčky dosadí výchozí:
+
+    goal:     cokoli mimo výčet          -> 'udrzovani'
+    activity: cokoli mimo výčet          -> koeficient 0,95
+    workout_days: den mimo 0-6           -> zahodí se bez hlášky
+
+Ověřeno: poslal jsem `goal='lose_weight'` a dostal plán na udržování;
+poslal jsem neděli jako `7` (formulář ji posílá jako `0`) a systém den
+zahodil a doplnil si místo něj pondělí.
+
+Přes formulář se to stát nemůže - `src/components/registrace/volby.ts`
+posílá správné hodnoty. Přes API ano, a tichá záměna je horší než chyba:
+uživatel dostane plán na jiný cíl, než o jaký požádal, a nikde se to
+nedozví.
+
+**CO UDĚLAT:** `lib/validation/onboardingSchema.js` už seznam `GOALS` má.
+Rozšiř validaci tak, aby neznámý `goal`, `activity` nebo den mimo rozsah
+vrátily 400 s konkrétní hláškou, ne aby se tiše nahradily. Formuláře se to
+nedotkne - ty posílají platné hodnoty.
+
+---
+
+### D) MODUL NÁVYKŮ SE NIKDY NEDOKONČÍ
+
+Odpověď registrace (diagnostika v těle odpovědi):
+
+    "required_modules":  ["nutrition", "training", "habits"]
+    "completed_modules": ["nutrition", "training"]
+
+Stejné u všech deseti registrací. Buď se `habits` nemá v `required_modules`
+vůbec objevit, nebo se má dokončovat a nedokončuje se. Zjisti které a sjednoť
+to - dnes to hlásí nedokončený stav u KAŽDÉ úspěšné registrace, takže se
+podle toho nedá poznat skutečný problém.
+
+---
+
+### E) SMAZÁNÍ ÚČTU NESMAŽE PLÁNY - CHYBÍ CIZÍ KLÍČ
+
+`ai_generated_plans.user_id` nemá cizí klíč na `auth.users`. Ověřeno:
+po smazání 16 testovacích účtů zůstalo v tabulce **32 osiřelých plánů**
+i s kalorickými cíli a údaji o těch lidech.
+
+`profiles`, `ai_tasks`, `memberships` i `workouts` mají `ON DELETE CASCADE`
+správně. `ai_generated_plans` na ten seznam nepatří omylem.
+
+Není to jen nepořádek - je to GDPR problém. „Smažte můj účet" dnes nesmaže
+plán, který o člověku ví váhu, cíl i jídelníček.
+
+**CO UDĚLAT:** migrace, která osiřelé řádky nejdřív smaže a pak přidá
+`FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE`.
+Zkontroluj přitom `api/delete-account.js` - jestli plány maže ručně, po
+přidání klíče je ta část zbytečná a má zmizet, ať nezůstanou dvě pravdy.
+
+Projdi i ostatní tabulky s `user_id` ze seznamu v `information_schema` a
+ověř, že žádná další cizí klíč nepostrádá. Co najdeš, zapiš do shrnutí -
+neopravuj to bez odsouhlasení, ať migrace nebobtná.
+
+---
+
+### POŘADÍ A ROZSAH
+
+Tři samostatné commity, ne jeden:
+
+    1. A + B1     lib/nutritionTargets.js + testy      (jeden soubor, jedno téma)
+    2. C + D      validace vstupu a modul návyků
+    3. E          migrace s cizím klíčem
+
+### NEDĚLAT
+
+- Neměň `minimalniKalorickyCil()`, `bmrMifflinStJeor()` ani konstanty
+  `MIN_KCAL_ZENA` / `MIN_KCAL_MUZ` / `MIN_PODIL_BMR`.
+- Neměň větev, která přebírá uložený `calories_target`.
+- Neopravuj B2 - jen měř.
+- Nesahej na dietní bránu ani na aktivační bránu receptů. Fungují.
+- Nespouštěj migraci. Píšeš jen soubor.
+- Neměř produkci. Všechna čísla výš jsou změřená, ber je jako zadání.
+
+## 7.1 APPKA A WEB NESDÍLEJÍ JEDINOU HODNOTU — A APPKA NEMÁ TOKENY
+
+> **Nedělá se teď.** Honza 31. 8.: vzhled má počkat, dokud systém nefunguje.
+> Zadání zůstává hotové a připravené, až na něj přijde řada.
+
+Změřeno 31. 8. 2026 porovnáním obou repozitářů.
+
+`bodyandmindon-web/app/globals.css` má nad tokeny tenhle komentář:
+
+> „Tokeny odečtené z app.bodyandmindon.cz — landing a appka jsou jeden produkt."
+
+Záměr tedy existuje a je zapsaný. Skutečnost mu neodpovídá:
+
+```
+                      web (landing)              appka
+pozadí                #070b18 navy-950          #08090d
+akcenty               #34d399 / #10b981         #39ff14 (134×)
+                      #a78bfa / #8b5cf6         #00f2fe  (94×)
+                      #14b8a6
+písmo                 Inter (next/font)         Plus Jakarta Sans
+                                                + JetBrains Mono
+typografická škála    --text-hero/h2/h3/lead    žádná
+                      (clamp, plynulá)
+vrstva tokenů         @theme, pojmenovaná       ŽÁDNÁ
+```
+
+Ani jedna hodnota není společná. Web má smaragdovou a fialovou, appka
+neonově zelenou a azurovou. Web má Inter, appka Plus Jakarta Sans.
+
+**Appka nemá vrstvu tokenů vůbec.** 356 výskytů natvrdo zapsaných hex barev
+v 35 z 60 souborů v `src/`. Změna odstínu je dnes hromadné hledání
+a nahrazování napříč komponentami — proto se to nikdy neudělá a proto se to
+rozešlo.
+
+### Pořadí prací: tokenizace PŘED jakoukoli změnou vzhledu
+
+První krok nemění ani jeden pixel. Vytáhnout 356 natvrdo psaných hodnot do
+pojmenované vrstvy (`@theme` v `src/index.css`, stejný tvar jako web) a
+komponenty přepsat na názvy. Rendrovaný výsledek musí zůstat bajt po bajtu
+stejný — to je věc, kterou lze otestovat.
+
+Teprve pak je změna palety úpravou deseti řádků, ne třiceti pěti souborů.
+
+**Rozhodnutí o tom, KTERÁ paleta vyhraje, je na Honzovi a v tomhle bodě se
+nedělá.** Tokenizace je stejně potřeba v obou případech.
+
+### Zadání
+
+1. Vytvoř `@theme` blok v `src/index.css` se všemi barvami, které appka
+   dnes používá. Pojmenuj je podle role, ne podle odstínu — `--color-akcent`,
+   `--color-pozadi-karta`, ne `--color-lime`. Role pozná i ten, kdo paletu
+   později vymění.
+2. Přepiš `src/` na tyhle názvy. Žádná změna vzhledu.
+3. Test, který drží obojí:
+   - v `src/` (mimo `index.css`) nezůstal žádný literál `#rrggbb`;
+   - seznam tokenů odpovídá barvám, které se v appce dnes používají.
+4. Vypiš, kolik hodnot vzniklo a která barva je použitá jen jednou nebo
+   dvakrát — to jsou kandidáti na překlep, ne na token (`#2bf5ff`,
+   `#50fa8f`, `#38ef7d`, `#0e1420`, `#0d1722`, `#0a0b0e`). U každé napiš,
+   jestli je to záměrná varianta, nebo omyl. Neslučuj je sám.
+
+Písmo v tomhle bodě neřeš — `index.html` načítá Plus Jakarta Sans
+a JetBrains Mono z Google Fonts, změna písma je samostatné rozhodnutí.
+
+---
+
+## Hotovo a nasazeno — NEŘEŠ ZNOVU
+
+### 8.18 - registr cviku prestal lhat o naradi (PR #156, 63bd520)
 
 Změřeno v produkci 6. 9. 2026 nad `exercise_asset_registry`: 225 řádků,
 209 s `usable_in_plan = true`.
@@ -220,7 +493,7 @@ Napiš JEDNU migraci, která opraví data v `exercise_asset_registry`:
 - Nespouštěj migraci. Píšeš jen soubor.
 - Neměř produkci. Čísla výš jsou změřená, ber je jako zadání.
 
-## 8.19 HLÍDKA KŘIČÍ CRITICAL NA NĚCO, CO FUNGUJE - A NEVÍME, PROČ PADÁ 90 % DÁVKY
+### 8.19 - hlidka prestala kricet critical (PR #157, a60535b)
 
 Změřeno v produkci 6. 9. 2026.
 
@@ -301,73 +574,6 @@ Nejdřív chci vidět čísla, pak se rozhodne, co se povolí.
 - Nespouštěj migraci. Píšeš jen soubor.
 - Neměř produkci. Čísla výš jsou změřená.
 
-## 7.1 APPKA A WEB NESDÍLEJÍ JEDINOU HODNOTU — A APPKA NEMÁ TOKENY
-
-> **Nedělá se teď.** Honza 31. 8.: vzhled má počkat, dokud systém nefunguje.
-> Zadání zůstává hotové a připravené, až na něj přijde řada.
-
-Změřeno 31. 8. 2026 porovnáním obou repozitářů.
-
-`bodyandmindon-web/app/globals.css` má nad tokeny tenhle komentář:
-
-> „Tokeny odečtené z app.bodyandmindon.cz — landing a appka jsou jeden produkt."
-
-Záměr tedy existuje a je zapsaný. Skutečnost mu neodpovídá:
-
-```
-                      web (landing)              appka
-pozadí                #070b18 navy-950          #08090d
-akcenty               #34d399 / #10b981         #39ff14 (134×)
-                      #a78bfa / #8b5cf6         #00f2fe  (94×)
-                      #14b8a6
-písmo                 Inter (next/font)         Plus Jakarta Sans
-                                                + JetBrains Mono
-typografická škála    --text-hero/h2/h3/lead    žádná
-                      (clamp, plynulá)
-vrstva tokenů         @theme, pojmenovaná       ŽÁDNÁ
-```
-
-Ani jedna hodnota není společná. Web má smaragdovou a fialovou, appka
-neonově zelenou a azurovou. Web má Inter, appka Plus Jakarta Sans.
-
-**Appka nemá vrstvu tokenů vůbec.** 356 výskytů natvrdo zapsaných hex barev
-v 35 z 60 souborů v `src/`. Změna odstínu je dnes hromadné hledání
-a nahrazování napříč komponentami — proto se to nikdy neudělá a proto se to
-rozešlo.
-
-### Pořadí prací: tokenizace PŘED jakoukoli změnou vzhledu
-
-První krok nemění ani jeden pixel. Vytáhnout 356 natvrdo psaných hodnot do
-pojmenované vrstvy (`@theme` v `src/index.css`, stejný tvar jako web) a
-komponenty přepsat na názvy. Rendrovaný výsledek musí zůstat bajt po bajtu
-stejný — to je věc, kterou lze otestovat.
-
-Teprve pak je změna palety úpravou deseti řádků, ne třiceti pěti souborů.
-
-**Rozhodnutí o tom, KTERÁ paleta vyhraje, je na Honzovi a v tomhle bodě se
-nedělá.** Tokenizace je stejně potřeba v obou případech.
-
-### Zadání
-
-1. Vytvoř `@theme` blok v `src/index.css` se všemi barvami, které appka
-   dnes používá. Pojmenuj je podle role, ne podle odstínu — `--color-akcent`,
-   `--color-pozadi-karta`, ne `--color-lime`. Role pozná i ten, kdo paletu
-   později vymění.
-2. Přepiš `src/` na tyhle názvy. Žádná změna vzhledu.
-3. Test, který drží obojí:
-   - v `src/` (mimo `index.css`) nezůstal žádný literál `#rrggbb`;
-   - seznam tokenů odpovídá barvám, které se v appce dnes používají.
-4. Vypiš, kolik hodnot vzniklo a která barva je použitá jen jednou nebo
-   dvakrát — to jsou kandidáti na překlep, ne na token (`#2bf5ff`,
-   `#50fa8f`, `#38ef7d`, `#0e1420`, `#0d1722`, `#0a0b0e`). U každé napiš,
-   jestli je to záměrná varianta, nebo omyl. Neslučuj je sám.
-
-Písmo v tomhle bodě neřeš — `index.html` načítá Plus Jakarta Sans
-a JetBrains Mono z Google Fonts, změna písma je samostatné rozhodnutí.
-
----
-
-## Hotovo a nasazeno — NEŘEŠ ZNOVU
 
 ### 8.17 - vlakninu pocita trigger (PR #150 + #151, e9346b8)
 

@@ -17,6 +17,7 @@ import {
 import { isStripeLegacyCheckoutAllowed } from '../../lib/stripeLegacyCheckout.js';
 import { mapStripeSubscriptionStatusToMembership } from '../../lib/stripeSubscriptionStatus.js';
 import { produceWeeklyTaskForUser } from '../../lib/weeklyPlanProducer.js';
+import { calendarDateIsoInPrague, addCalendarDaysIsoPrague } from '../../lib/czechCalendar.js';
 
 export const config = { api: { bodyParser: false } };
 
@@ -165,6 +166,99 @@ async function resolveTierFromCheckoutSession(stripe, session) {
  */
 async function finishSkipped(event, result, errorMessage = null) {
   await skipStripeEvent(event.id, result, errorMessage);
+}
+
+/**
+ * Sedm dní zdarma musí být opravdu sedm — docs/DALSI_KROK.md 9.7.
+ *
+ * PROBLÉM. Plán se vyrábí při registraci s `valid_from` = den registrace,
+ * ale odemyká se až checkoutem (registrace končí ve stavu `pending_payment`,
+ * trial drží Stripe přes `trial_period_days`). Kdo odemkne třetí den, dostal
+ * ze slíbených sedmi dní reálně čtyři; kdo odemkl po deseti dnech, odemykal
+ * plán, který už neplatil (změřeno 7. 9. 2026 na účtu, který se registroval
+ * 3. 8. a zaplatil 13. 8.).
+ *
+ * ŘEŠENÍ. Při odemčení se první plán POSUNE na den odemčení. Je to jen posun
+ * okna `valid_from`/`valid_until`, obsah se NEGENERUJE znovu — nové generování
+ * by uživateli vyměnilo jídelníček, na který se už mohl dívat v e-mailu.
+ *
+ * Posouvá se jen tehdy, když jsou splněné VŠECHNY podmínky:
+ *   - plán je aktivní a je to nejstarší plán uživatele (ten z registrace),
+ *   - `valid_from` je před dneškem (registrace a odemčení týž den = nic
+ *     se neděje, což je dnes většina účtů),
+ *   - uživatel na něm ještě nic neodškrtal.
+ *
+ * Poslední podmínka je opatrnost, ne nutnost: `daily_activity_completions`
+ * se váže na `plan_id` + `plan_day` (index dne v plánu), NE na kalendářní
+ * datum — ověřeno ve schématu. Posun oken tedy záznamy neosiří. Ale den 1
+ * by se přesunul na jiné datum a člověk, který si už něco odškrtal, by to
+ * viděl jinde, než to udělal. Radši mu plán necháme být.
+ *
+ * Kotva mřížky z bodu 9.6 (`valid_from` nejstaršího plánu) se tím u nového
+ * uživatele stává dnem odemčení — obě změny do sebe zapadají.
+ *
+ * Selhání se NESMÍ propsat do odpovědi: členství už je aktivní, Stripe čeká
+ * na 200 a opakovaný webhook by ho jen upsertoval znovu.
+ *
+ * @param {string} userId
+ * @param {string} eventId
+ * @returns {Promise<void>}
+ */
+async function prekotviPrvniPlanNaOdemceni(userId, eventId) {
+  try {
+    const dnes = calendarDateIsoInPrague(new Date());
+
+    const { data: plany, error: chybaPlanu } = await supabaseServer
+      .from('ai_generated_plans')
+      .select('id, valid_from, valid_until, is_active')
+      .eq('user_id', userId)
+      .order('valid_from', { ascending: true })
+      .limit(1);
+    if (chybaPlanu) throw new Error(`ai_generated_plans: ${chybaPlanu.message}`);
+
+    const prvni = (plany || [])[0];
+    if (!prvni) return;
+
+    const od = String(prvni.valid_from || '').split('T')[0];
+    if (!prvni.is_active || !od || od >= dnes) {
+      console.log('[webhooks/stripe] prekotveni preskoceno', {
+        event_id: eventId, user_id: userId, plan_id: prvni.id,
+        duvod: !prvni.is_active ? 'neaktivni' : 'uz sedi nebo je v budoucnu',
+        valid_from: od, dnes,
+      });
+      return;
+    }
+
+    const { count, error: chybaDokonceni } = await supabaseServer
+      .from('daily_activity_completions')
+      .select('id', { count: 'exact', head: true })
+      .eq('plan_id', prvni.id);
+    if (chybaDokonceni) throw new Error(`daily_activity_completions: ${chybaDokonceni.message}`);
+
+    if ((count ?? 0) > 0) {
+      console.log('[webhooks/stripe] prekotveni preskoceno — uzivatel uz ma odskrtano', {
+        event_id: eventId, user_id: userId, plan_id: prvni.id, dokonceni: count,
+      });
+      return;
+    }
+
+    const doIso = addCalendarDaysIsoPrague(dnes, 6);
+    const { error: chybaUpdate } = await supabaseServer
+      .from('ai_generated_plans')
+      .update({ valid_from: dnes, valid_until: doIso, updated_at: new Date().toISOString() })
+      .eq('id', prvni.id);
+    if (chybaUpdate) throw new Error(`update planu: ${chybaUpdate.message}`);
+
+    console.log('[webhooks/stripe] prvni plan prekotven na den odemceni', {
+      event_id: eventId, user_id: userId, plan_id: prvni.id,
+      z: `${od} - ${String(prvni.valid_until || '').split('T')[0]}`,
+      na: `${dnes} - ${doIso}`,
+    });
+  } catch (e) {
+    console.error('[webhooks/stripe] prekotveni prvniho planu selhalo', {
+      event_id: eventId, user_id: userId, error: e?.message || String(e),
+    });
+  }
 }
 
 /**
@@ -355,6 +449,18 @@ export default async function handler(req, res) {
           trial_ends_at: state.trialEndsAt,
           legacy_email_fallback: usedLegacyEmail,
         });
+
+        // ODEMČENÍ. Tady a nikde jinde — tenhle event je ten okamžik, kdy
+        // uživateli začíná sedm dní zdarma (docs/DALSI_KROK.md 9.7). Platí
+        // pro `trial` i `active`: se Stripe trialem přijde z checkoutu
+        // `trialing`, bez něj rovnou `active`.
+        //
+        // ZÁMĚRNĚ SE NEVOLÁ ve větvi `customer.subscription.updated` níž.
+        // Tamtudy vede přechod trialing → active o týden později, a to už
+        // odemčení není — plán by se posunul podruhé.
+        if (membershipStatus === 'active' || membershipStatus === 'trial') {
+          await prekotviPrvniPlanNaOdemceni(userId, event.id);
+        }
 
         if (membershipStatus === 'active') {
           await zaloziWeeklyUlohu(userId, event.id, tier);

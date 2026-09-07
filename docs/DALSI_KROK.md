@@ -480,6 +480,61 @@ Migrace musí být idempotentní a po sobě si ověřit, že
 
 ## 8.9 „NEZNÁMÁ SUROVINA", KTERÁ NENÍ NEZNÁMÁ — CHYBA JE V JEDNOTCE
 
+### MIGRACE JE APLIKOVANÁ (7. 9. 2026). ZBÝVÁ UŽ JEN JS.
+
+`20260903210000_nutrice_deli_neznamou_jednotku.sql` je venku z `_odlozene/`,
+aplikovaná a orazítkovaná. Funkce vrací `units_unmatched` navíc.
+
+**Blokace, kterou hlavička té migrace popisovala, neexistovala.** Stálo tam,
+že na funkcích visí view `system_health_alerts_zaklad` a bude to chtít
+opatrné DROP/CREATE pořadí. Změřeno v `pg_depend`: **na
+`compute_nutrition_for_ingredients` ani `compute_recipe_nutrition` nevisí
+žádný view.** Jediný objekt v DB, který je volá, je ta obalka sama.
+Stačilo `DROP` + `CREATE` obou v jedné transakci, 42P13 nikde. Poznámka
+v hlavičce byla opatrnost formulovaná jako fakt — proto se to čtyři dny
+neudělalo.
+
+### Kolik to dělá — CELÝ KATALOG, ne jeden losos
+
+Změřeno hned po aplikaci přes všech 1104 receptů:
+
+    receptu celkem                                   1104
+    nekompletnich                                     240
+      z toho slovnik NEZNA nazev  (ingredients)       188
+      z toho selhal PREVOD JEDNOTKY (units)           128
+
+**128 receptů dosud obviňovalo surovinu, která byla celou dobu v pořádku.**
+Namátkou z těch, co končily v `ingredients_unmatched`: `losos`, `avokádo`,
+`mozzarella`, `bílý jogurt`, `ovesné vločky`, `javorový sirup`, `citron`,
+`maliny`, `kečup`. Všechny jsou ve slovníku. Generátor si je při dalším
+pokusu zakazoval jako „tyhle suroviny neznám" a sám si zužoval prostor.
+
+Kontroly z migrace prošly: `losos` v `g` dál 2,1 kcal a `complete=true`,
+vymyšlená surovina zůstává v `ingredients_unmatched`, `T` a `t` se neslily,
+`kus` dává stejnou gramáž jako `''`/`ks` u všech testovaných surovin.
+
+Poznámka pro pořádek: původní měření z 3. 9. („losos v `kg` → null") už se
+nereprodukuje — `kg` i `kus` mezitím převod dostaly, takže losos dnes v obou
+projde. Rozdělení chyby tím ale neztrácí smysl, jak ukazuje těch 128 receptů.
+
+### Co zbývá — JEDINÉ MÍSTO V JS
+
+`lib/recipeGeneratorRun.js` má rozdělení už komentářově připravené
+(řádky ~363–379), ale poslední krok čeká:
+
+```js
+if (!n?.complete) {
+  // 8.9 (odloženo, viz supabase/migrations/_odlozene/20260903210000...):
+  // SQL zatím vrací jen `ingredients_unmatched`, ne `units_unmatched` —
+  // rozdělení na duvod 'neznama_jednotka' čeká na tu migraci.
+  return { ok: false, duvod: 'nutrice_neuplna', detail: n?.ingredients_unmatched || ['neznámé'] };
+}
+```
+
+Ten komentář už neplatí — migrace je venku. Zadání níž.
+
+---
+
 **Tohle je oprava mojí vlastní chybné diagnózy. Dvakrát jsem tvrdil, že
 generátor zahazuje recepty kvůli surovinám, které nejsou ve slovníku.
 Není to pravda a měření to vyvrací.**

@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from './components/Header';
 import { UserProfileCard } from './components/UserProfileCard';
-import { AICoachBanner } from './components/AICoachBanner';
 import { NavigationTabs, ActiveTab } from './components/NavigationTabs';
 import { QuickActionToolbar } from './components/QuickActionToolbar';
 import { OverviewBentoGrid } from './components/OverviewBentoGrid';
@@ -1015,10 +1014,15 @@ function AppContent() {
           />
         )}
 
-        {/* 4. AI Trenér TED Recommendation Banner */}
-        <AICoachBanner
-          tips={coachTips}
-        />
+        {/* AI TRENÉR TED — BANNER TU UŽ NENÍ. ZÁMĚRNĚ.
+            Stál mimo podmínku na záložku, takže uvítací zpráva
+            („Uvítání do programu") svítila na VŠECH pěti záložkách —
+            v Těle, v Jídelníčku, v Tréninku i v Apple Watch. Na profilu
+            se navíc zdvojovala s kartou TEDa v OverviewBentoGrid, která
+            dostává tytéž `coachTips`.
+            Zpráva má být jednou, na hlavní obrazovce — a tam je: karta
+            TEDa v bento mřížce profilu (řádek s `topCoachTip`).
+            Rozhodnutí Honzy 7. 9. 2026. */}
 
         {/* 6. Dynamic Content Based on Selected Tab */}
 

@@ -75,7 +75,72 @@ Jenže tím se kotva **přepíše natrvalo**. Tři dny výpadku producenta v srp
 posunuly celý cyklus z pondělí na čtvrtek — a od té doby ho každý další
 běh poctivě posouvá o 7 dní. Nic to nikdy nevrátí zpátky.
 
-### ROZHODNUTÍ HONZY 7. 9. 2026 — KOTVA JE REGISTRACE, NE PONDĚLÍ
+### DRUHÁ OPRAVA (7. 9. 2026): TEN PLÁN NENÍ ŠPATNĚ
+
+Honza doplnil, že cyklus je navázaný na **týden zdarma a placení od 8. dne**.
+To mění závěr celého bodu — dohledáno v kódu i v datech:
+
+- `membershipFromRegistration()` zakládá `status: 'pending_payment'`,
+  `trial_ends_at: null`. **Trial drží Stripe** (`trial_period_days = 7`
+  v `api/stripe/create-checkout-session.js`), a začíná až checkoutem.
+  Registrace plán vygeneruje, ale **zamčený**.
+- Honzova membership: `started_at = 2026-08-13 16:31`, tier START,
+  status active. Tedy odemkl 13. 8.
+
+A teď to podstatné. Cyklus od 13. 8. po sedmi dnech:
+
+    13. 8. -> 20. 8. -> 27. 8. -> 3. 9. -> 10. 9.
+
+**Plán 3.–9. 9., který v aplikaci je, na té mřížce přesně sedí.** Není
+posunutý o čtyři dny — je správně. Začíná ve čtvrtek proto, že Honza
+odemkl ve čtvrtek, a to je přesně to, co jeho vlastní pravidlo říká.
+
+Cyklus se 13. 8. nerozjel náhodou. Přeskočil na den, kdy začalo
+předplatné, protože do té doby žádný weekly plán vzniknout NESMĚL —
+`canRenewPlanForMembership` vrací u `pending_payment`
+`allowed: false`. Díra 10.–12. 8. tedy není výpadek producenta, ale
+zamčený účet. Doběhové pravidlo `max(valid_until + 1, dnešek)` pak
+kotvu srovnalo na den odemčení. Udělalo správnou věc.
+
+**Takže: měřením potvrzený stav je, že tenhle konkrétní plán je v pořádku
+a moje původní diagnóza byla dvakrát vedle.** Nejdřív jsem svaloval na
+`force_regenerate`, pak na výpadek producenta. Ani jedno.
+
+Změřeno na všech pěti neteestovacích účtech:
+
+    email                          registrace  predplatne  odstup  prvni plan
+    janprikopa@gmail.com           2026-08-03  2026-08-13   10 dnu  2026-08-03
+    vikyklajnik@gmail.com          2026-08-03  2026-08-03    0      2026-08-03
+    ondra.novak18@gmail.com        2026-08-14  2026-08-14    0      2026-08-14
+    ondranovak24@gmail.com         2026-08-21  2026-08-21    0      2026-08-21
+    ondrej.novak.trener@gmail.com  2026-09-03  2026-09-03    0      2026-09-03
+
+U čtyř z pěti je **registrace = odemčení = start plánu**, takže „7 dní od
+registrace" a „7 dní od začátku placeného týdne" je totéž. Odstup má
+jediný účet — Honzův, a to proto, že testoval.
+
+### CO Z TOHO ZBÝVÁ OPRAVIT
+
+Dvě věci, obě měřitelné, ani jedna urgentní:
+
+**1. Kotva se pořád může utrhnout.** Doběhové pravidlo bere `dnešek`,
+takže když producent zaspí u PLATÍCÍHO účtu (kde už plán vzniknout smí),
+cyklus se posune mimo mřížku předplatného a zůstane tam. 13. 8. to
+vyšlo dobře náhodou — kotva se trefila na den odemčení. Příště nemusí.
+Řešení je pořád stejné jako níž, jen se mřížka počítá z
+`memberships.started_at`, NE z `bm.created_at`: u Honzy jsou to různá data
+(3. 8. vs 13. 8.) a správné je to druhé, protože podle něj se i účtuje.
+
+**2. Plán vygenerovaný při registraci se dá „propásnout".** Vzniká
+s `valid_from` = den registrace, ale je zamčený do checkoutu. Kdo odemkne
+za 10 dní (jako Honza), odemyká plán, který už týden neplatí. Kdo odemkne
+třetí den, dostane ze slíbených 7 dní zdarma reálně 4. Slib v lifecycle
+e-mailu zní „prvních 7 dní zdarma, platíš až 8. den" — a ten se počítá od
+checkoutu, ne od registrace. **Čistá varianta: při přechodu na `active`
+plán překotvit na den odemčení.** Je to ale změna produktového chování
+a peněz se dotýká, takže čeká na Honzovo rozhodnutí, ne na Code.
+
+### PŮVODNÍ ROZHODNUTÍ HONZY 7. 9. 2026 — KOTVA JE REGISTRACE, NE PONDĚLÍ
 
 > „Pokud se registruji ve středu, tak to není pondělí, takže je potřeba ty
 > plány mít nastavené tak, že je to vždy 7 dní od dané registrace a ne od
@@ -125,10 +190,15 @@ přesně to, co kotvu rozbilo; alternativa „počkat na další cyklus" by
 nechala díru bez plánu. Krátký plán je z těch tří nejmenší zlo a další
 už zase sedí. **Napiš to do komentáře**, ať to za měsíc nikdo „neopraví".
 
-Zdroj data registrace: tentýž, ze kterého ho bere
-`initialPlanWeekRangeFromRegistration(bm)` → `bm.created_at`. Když chybí,
-chová se `computeTargetFrom` jako dosud (`max(valid_until + 1, dnešek)`) —
-bez kotvy není mřížku z čeho počítat a hádat se nemá.
+**Zdroj kotvy je `memberships.started_at`, NE `bm.created_at`.** Viz druhá
+oprava výš: u Honzy jsou to různá data (3. 8. registrace vs 13. 8. začátek
+předplatného) a správné je to druhé — podle něj běží placený cyklus i
+Stripe. U ostatních čtyř účtů se obě data shodují, takže na nich rozdíl
+vidět nebude; testuj proto i na tom rozdílu, ne jen na shodě.
+
+Když `started_at` chybí, chová se `computeTargetFrom` jako dosud
+(`max(valid_until + 1, dnešek)`) — bez kotvy není mřížku z čeho počítat
+a hádat se nemá.
 
 Pozor na `idempotency_key` (`weekly:<user>:<target_from>`) a
 `UNIQUE(user_id, target_from)`: hodnota `target_from` se změní, takže po

@@ -29,6 +29,77 @@
 
 ---
 
+## 9.7 SEDM DNÍ ZDARMA MUSÍ BÝT OPRAVDU SEDM
+
+Rozhodnutí Honzy 7. 9. 2026: **„potřebuji, aby při registraci měl opravdu
+7 dní zdarma."** Dnes to neplatí a je to měřitelné.
+
+### Co se děje
+
+    registrace  ->  membershipFromRegistration()  ->  status pending_payment
+                    plan se VYGENERUJE, valid_from = den registrace
+                    ale je ZAMCENY
+    checkout    ->  Stripe trial_period_days = 7  ->  webhook: status trial/active
+                    az tady zacina "7 dni zdarma"
+
+Plán se tedy vyrábí s kotvou v den registrace, ale odemyká se checkoutem.
+Kdo odemkne třetí den, dostane ze slíbených sedmi dní reálně čtyři.
+Honza odemkl po deseti dnech a odemykal plán, který už den neplatil
+(`valid_from 3. 8.`, `valid_until 9. 8.`, checkout 13. 8.).
+
+Slib je přitom napsaný v `lib/lifecycleEmailCopy.js`:
+
+> „Odemkneš je jedním klikem — prvních 7 dní zdarma, platíš až 8. den."
+
+Sedm dní se počítá od checkoutu (tak to má i Stripe), ale plán o tom neví.
+
+### Co udělat
+
+**Při přechodu členství na `trial` nebo `active` překotvit počáteční plán
+na den odemčení.** Tedy: `valid_from` = den, kdy webhook přepnul stav,
+`valid_until` = `valid_from + 6`. Obsah plánu se NEGENERUJE znovu — je to
+posun oken, ne nový plán. Uživatel dostane přesně těch 7 dní, které mu
+slibujeme.
+
+Místo je jasné: `api/webhooks/stripe.js` už po aktivaci zakládá weekly
+úlohu (funkce s komentářem „PROČ TADY. 13. 8. 2026 uživatel zaplatil
+v 16:31…"). Překotvení patří tam, do stejného kroku, se stejným
+pravidlem o chybách: **selhání se nesmí propsat do odpovědi webhooku**,
+Stripe čeká na 200.
+
+Podmínky, za kterých se překotvuje — všechny musí platit:
+
+- Plán je `is_active` a je to **první plán uživatele**
+  (`valid_from = min(valid_from)`), tedy ten z registrace.
+- Ještě se nepřekotvoval: `valid_from < den odemčení`. Když se uživatel
+  registruje a odemkne týž den (dnes 4 z 5 účtů), neděje se nic.
+- Uživatel na něm ještě nic neodškrtal. Když už má záznamy o splněných
+  jídlech nebo trénincích v tom okně, plán se **neposouvá** — posun by
+  mu rozhodil, co má hotové. Místo toho jen zaloguj a nech běžet
+  standardní weekly úlohu. Změř si, kde se dokončení jídel a tréninků
+  ukládá, a ověř, jestli se váže na datum, nebo na `plan_id`; podle toho
+  se ta podmínka píše. **Když to nejde spolehlivě zjistit, ZASTAV SE
+  a napiš to** místo abys hádal.
+
+### Jak to souvisí s 9.6
+
+Po téhle změně je `min(valid_from)` u nového uživatele **den odemčení**,
+což je přesně mřížka, kterou `computeTargetFrom` v bodu 9.6 potřebuje.
+Obě změny do sebe zapadají a mají jít spolu.
+
+### Nedělat
+
+- **Negenerovat plán znovu.** Je to posun `valid_from`/`valid_until`,
+  nic víc. Nové generování stojí čas i katalog a hlavně by uživateli
+  vyměnilo jídelníček, na který se už mohl dívat.
+- Nesahat na `trial_period_days` ani na nic ve Stripe. Sedm dní zdarma
+  drží Stripe a to je správně.
+- Neposouvat plán, který už není `is_active`, ani plán jiného než
+  prvního cyklu.
+- Neopravovat data existujících účtů. To udělám já.
+
+---
+
 ## 9.6 PLÁN MÁ BĚŽET 7 DNÍ OD REGISTRACE — DNES SE KOTVA POSOUVÁ PO VÝPADKU
 
 Změřeno 7. 9. 2026 na účtu janprikopa@gmail.com. Dnes je **pondělí**,
@@ -190,15 +261,46 @@ přesně to, co kotvu rozbilo; alternativa „počkat na další cyklus" by
 nechala díru bez plánu. Krátký plán je z těch tří nejmenší zlo a další
 už zase sedí. **Napiš to do komentáře**, ať to za měsíc nikdo „neopraví".
 
-**Zdroj kotvy je `memberships.started_at`, NE `bm.created_at`.** Viz druhá
-oprava výš: u Honzy jsou to různá data (3. 8. registrace vs 13. 8. začátek
-předplatného) a správné je to druhé — podle něj běží placený cyklus i
-Stripe. U ostatních čtyř účtů se obě data shodují, takže na nich rozdíl
-vidět nebude; testuj proto i na tom rozdílu, ne jen na shodě.
+### TŘETÍ OPRAVA (7. 9. 2026): KOTVA JE PRVNÍ PLÁN, NE body_metrics ANI membership
 
-Když `started_at` chybí, chová se `computeTargetFrom` jako dosud
-(`max(valid_until + 1, dnešek)`) — bez kotvy není mřížku z čeho počítat
-a hádat se nemá.
+Napsal jsem postupně tři různé zdroje kotvy. Ani jeden nebyl správně.
+Tenhle je, a je změřený:
+
+    email                    prvni plan  aktivni od  mrizka prvniho planu
+    janprikopa@gmail.com     03.08 (Po)  03.09 (Ct)  na 13.08 mrizce
+    ondra.novak18@gmail.com  14.08 (Pa)  05.09 (So)  melo byt 04.09  (+1)
+    ondranovak24@gmail.com   21.08 (Pa)  05.09 (So)  melo byt 04.09  (+1)
+    vikyklajnik@gmail.com    03.08 (Po)  05.09 (So)  melo byt 07.09  (-2)
+    ondrej.novak.trener@…    03.09 (Ct)  03.09 (Ct)  sedi
+
+**Tři z pěti účtů už jsou mimo svoji mřížku** a všechny tři skončily na
+5. 9. — to je otisk jednoho běhu producenta, který všem s propadlým plánem
+dosadil „dnešek". Není to tedy Honzova anomálie, je to systémové.
+
+Z toho plyne, čím kotva být NESMÍ:
+
+- **`bm.created_at` (ani nejstarší řádek).** `api/quick-weight.js` do
+  `body_metrics` opravdu `insert`uje (Code to našel správně), takže
+  nejnovější řádek je datum posledního vážení. Dnes má každý reálný účet
+  jen jeden řádek, takže by to zatím fungovalo — ale je to náhoda, ne
+  záruka.
+- **`memberships.started_at`.** Webhook ho přepisuje při KAŽDÉ změně
+  stavu: `if (status === 'active') row.started_at = now` i
+  `if (status === 'trial') row.started_at = now`
+  (`api/webhooks/stripe.js`). Až Stripe překlopí `trialing → active`,
+  kotva se posune. Dnes to vychází (trial je přesně 7 dní, takže den
+  v týdnu sedí), ale je to křehké a při jiné délce trialu se to rozjede.
+
+**Kotva je `valid_from` NEJSTARŠÍHO plánu uživatele** (`min(valid_from)`
+z `ai_generated_plans`). Je neměnná — datum minulého plánu už nikdo
+nepřepíše — a je to přesně ta mřížka, na které uživatel začal. Producent
+navíc `ai_generated_plans` už čte kvůli `valid_until`, takže **žádný
+dotaz do `body_metrics` není potřeba a `nactiRegistracniKotvy()` se ruší
+celá**; stačí do stávajícího selectu přidat `valid_from` a vzít z něj
+minimum na uživatele.
+
+Když kotva chybí (uživatel bez jediného plánu), chová se
+`computeTargetFrom` jako dosud (`max(valid_until + 1, dnešek)`).
 
 Pozor na `idempotency_key` (`weekly:<user>:<target_from>`) a
 `UNIQUE(user_id, target_from)`: hodnota `target_from` se změní, takže po

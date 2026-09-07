@@ -325,8 +325,30 @@ const ZKRATKY: Record<string, string> = {
   'Pátek': 'Pá', 'Sobota': 'So', 'Neděle': 'Ne'
 };
 
+/** Zkratka dne pro dlaždice pruhu dnů — stejný fallback jako `naTreninky`. */
+export function zkratkaDne(denNazev: string): string {
+  return ZKRATKY[String(denNazev)] || String(denNazev || '').slice(0, 2);
+}
+
 /** Kanonické pořadí dnů v týdnu — dny plánu chodí v pořadí API, ne Po–Ne. */
 const PORADI_DNU_V_TYDNU = ['Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota', 'Neděle'];
+
+/** Index dne pro řazení Po–Ne; neznámý název jde na konec — stejně jako v `naTreninky`. */
+export function poradiDneVTydnu(denNazev: string): number {
+  const i = PORADI_DNU_V_TYDNU.indexOf(String(denNazev));
+  return i === -1 ? PORADI_DNU_V_TYDNU.length : i;
+}
+
+/**
+ * Kroky provedení cviku z `instructions_cs` — jen neprázdné české řetězce,
+ * jinak undefined. UI při undefined nekreslí NIC: žádné „Postup není
+ * k dispozici", žádná angličtina (docs/DALSI_KROK.md 9.9).
+ */
+export function krokyPostupuCviku(hodnota: unknown): string[] | undefined {
+  if (!Array.isArray(hodnota)) return undefined;
+  const kroky = hodnota.map((k) => String(k ?? '').trim()).filter(Boolean);
+  return kroky.length > 0 ? kroky : undefined;
+}
 
 /**
  * caloriesBurned, restSec a targetMuscle generator NEVRACI. Zamerne se
@@ -373,6 +395,10 @@ export function naTreninky(plan: any): WorkoutDay[] {
         // z ExerciseDB, ale UI ji nikde nezobrazovalo — člověk viděl jen
         // název a musel si domýšlet, jak se cvik dělá.
         ukazkaUrl: String(e?.gif_url || e?.image_url || '') || undefined,
+        // POSTUP PROVEDENÍ (docs/DALSI_KROK.md 9.9). Doplňuje /api/profile
+        // z registru cviků (`instructions_cs`); jen neprázdné české kroky,
+        // jinak undefined — UI pak nekreslí nic, žádný náhradní text.
+        postup: krokyPostupuCviku(e?.instructions_cs),
         completed: false,
         planId,
         planDay,

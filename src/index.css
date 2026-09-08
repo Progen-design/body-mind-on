@@ -154,3 +154,51 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-scrollbar-thumb-hover);
 }
+
+/*
+ * TISK — Export & Tisk jídelníčku (ExportMealPlanModal.tsx).
+ *
+ * Dřív se tiskla celá appka (window.print() bez jediného @media print
+ * pravidla v src/) — navigace, záložky i tmavý překryv modálu, ne ten bílý
+ * dokument. Jeden tisknutelný uzel (#tiskovy-dokument) + tenhle blok, obě
+ * tlačítka ("Tisknout" i "Uložit jako PDF") jen otevřou tiskový dialog
+ * prohlížeče — žádný jsPDF, žádná nová závislost, žádná atrapa.
+ *
+ * Skrýt/ukázat přes `visibility`, ne `display: none`: potomek smí
+ * přepsat viditelnost zděděnou od skrytého předka zpátky na `visible`,
+ * takže zbytek appky (i modál kolem dokumentu) zmizí, ale dokument
+ * a jeho obsah zůstanou — bez složitých výjimek pro každý obalující prvek.
+ */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #tiskovy-dokument,
+  #tiskovy-dokument * {
+    visibility: visible;
+  }
+
+  #tiskovy-dokument {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: white;
+  }
+
+  /* Jedno jídlo se nesmí rozpadnout přes dvě stránky. */
+  #tiskovy-dokument .jidlo {
+    break-inside: avoid;
+  }
+
+  @page {
+    margin: 14mm;
+  }
+}

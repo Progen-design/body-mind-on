@@ -197,7 +197,7 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 transition-all active:scale-95"
           >
             <Download className="w-3.5 h-3.5 text-slate-400" />
-            <span>Stáhnout Jídelníček (PDF)</span>
+            <span>Jídelníček k tisku</span>
           </button>
         </div>
       </motion.div>

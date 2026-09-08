@@ -4,6 +4,7 @@ import { UserProfileCard } from './components/UserProfileCard';
 import { NavigationTabs, ActiveTab } from './components/NavigationTabs';
 import { OverviewBentoGrid } from './components/OverviewBentoGrid';
 import { ProfileSection } from './components/ProfileSection';
+import { PropojenaZarizeniSection } from './components/PropojenaZarizeniSection';
 import { TrialPaywallCard } from './components/TrialPaywallCard';
 import { BodyCompositionSection } from './components/BodyCompositionSection';
 import { NutritionSection } from './components/NutritionSection';
@@ -1032,38 +1033,43 @@ function AppContent() {
               slozeni={slozeni}
               birthDate={profilData?.user?.birth_date ?? null}
               registrovanOd={profilData?.user?.created_at ?? null}
-              posledniSynchronizace={posledniSynchronizaceHodinek}
-              onOpenWithingsSettings={() => setIsWithingsModalOpen(true)}
-              withingsPosledniStazeni={profilData?.withings_last_sync_at ?? null}
               nesouladCile={nesoulad}
               onRegeneratePlan={handleRegeneratePlanForCurrentTarget}
               regenerujiPlan={regenerujiPlan}
               onEditPreferences={() => setIsPreferencesModalOpen(true)}
-              onSyncAll={handleManualWithingsSync}
               onAddWeight={() => setIsAddRecordModalOpen(true)}
               onOpenWeightTab={() => setActiveTab('vaha')}
-              isSyncing={isSyncing}
             />
 
             <TrialPaywallCard plan={zamcenyPlan} />
 
             <OverviewBentoGrid
-              latestWeightRecord={latestRecord}
-              biometrics={biometrics}
               meals={meals}
-              todayWorkout={todayWorkout}
               habits={habits}
               badHabits={badHabits}
               preferences={preferences}
               pocetNakupu={shoppingItems.length}
               slozeni={slozeni}
               onSelectTab={setActiveTab}
-              onOpenWorkoutLogger={() => setIsWorkoutLoggerOpen(true)}
-              onOpenAddWeightModal={() => setIsAddRecordModalOpen(true)}
               onToggleMeal={handleToggleMeal}
               onToggleHabit={handleToggleHabit}
               onCompleteAllHabits={handleCompleteAllHabitsToday}
               onSelectRecipe={(meal) => setSelectedRecipeMeal(meal)}
+            />
+
+            {/* PROPOJENÁ ZAŘÍZENÍ ÚPLNĚ DOLE (9. 9. 2026).
+                Sekce byla součástí ProfileSection, tedy nad jídelníčkem.
+                Většina uživatelů žádné zařízení připojené nemá a viděla
+                uprostřed profilu dvě prázdné dlaždice dřív než to, kvůli
+                čemu do aplikace chodí. Samostatná komponenta je jediný
+                způsob, jak ji dostat pod bento mřížku. */}
+            <PropojenaZarizeniSection
+              slozeni={slozeni}
+              posledniSynchronizace={posledniSynchronizaceHodinek}
+              withingsPosledniStazeni={profilData?.withings_last_sync_at ?? null}
+              onOpenWithingsSettings={() => setIsWithingsModalOpen(true)}
+              onSyncAll={handleManualWithingsSync}
+              isSyncing={isSyncing}
             />
           </div>
         )}

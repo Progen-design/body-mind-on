@@ -3,26 +3,21 @@ import {
   Mail,
   Activity,
   Scale,
-  Watch,
   Sliders,
   Trophy,
   Flame,
   Calendar,
   ChevronRight,
-  RefreshCw,
-  Edit3,
-  AlertTriangle
+  Edit3
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { UserProfile, UserPreferences, WeightRecord, AppleWatchBiometrics, TelesneSlozeni } from '../types';
 import { hodnotaNeboPomlcka, kdyMereno, zmenaText, NesouladCile } from '../data/adaptery';
 import { denniMakra } from '../lib/makra';
-import { odstupHodin, odstupText } from '../lib/odstup';
 import { Avatar } from './Avatar';
 import { useAuth } from '../context/AuthContext';
 import { MembershipStatusBadge } from './MembershipStatusBadge';
 import { CalorieMismatchBanner } from './CalorieMismatchBanner';
-import { NabidkaPropojeni } from './NabidkaPropojeni';
 // `useTed` tu bylo kvůli kartě „AI trenér TED" mezi zařízeními. TED není
 // zařízení a stejná karta je v Bento gridu níž — v profilu byl dvakrát.
 
@@ -37,22 +32,14 @@ interface ProfileSectionProps {
   birthDate?: string | null;
   /** ISO datum registrace. null = řádek „Člen od" se nezobrazí. */
   registrovanOd?: string | null;
-  /** ISO čas posledního přijatého payloadu z Apple Health. null = zatím nic nedorazilo. */
-  posledniSynchronizace?: string | null;
-  /** ISO čas posledního stažení z Withings. null = server zatím nestahoval. */
-  withingsPosledniStazeni?: string | null;
   /** Cíl v preferencích ≠ cíl, na který je postavený plán. null = sedí. */
   nesouladCile?: NesouladCile | null;
   onRegeneratePlan?: () => void;
   regenerujiPlan?: boolean;
   onEditPreferences: () => void;
-  /** Otevře modal pro propojení Withings. Bez něj se u nepřipojené váhy nedá nic udělat. */
-  onOpenWithingsSettings?: () => void;
-  onSyncAll: () => void;
   onAddWeight: () => void;
   /** Přepne na záložku Tělo & Váha s grafem vývoje. */
   onOpenWeightTab: () => void;
-  isSyncing?: boolean;
 }
 
 export const ProfileSection: React.FC<ProfileSectionProps> = ({
@@ -63,17 +50,12 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   slozeni = null,
   birthDate = null,
   registrovanOd = null,
-  posledniSynchronizace = null,
-  withingsPosledniStazeni = null,
   nesouladCile = null,
   onRegeneratePlan,
   regenerujiPlan = false,
   onEditPreferences,
-  onOpenWithingsSettings,
-  onSyncAll,
   onAddWeight,
-  onOpenWeightTab,
-  isSyncing = false
+  onOpenWeightTab
 }) => {
   const { account, loggedInAt } = useAuth();
   const makra = denniMakra(preferences);
@@ -90,56 +72,6 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
     if (m < 0 || (m === 0 && dnes.getDate() < nar.getDate())) vek--;
     return vek >= 0 && vek < 130 ? vek : null;
   }, [birthDate]);
-
-  /**
-   * KDY NAPOSLED DORAZILA DÁVKA Z TELEFONU A JESTLI UŽ JE STARÁ.
-   *
-   * Apple Health se nedá stáhnout ze serveru — payload posílá iPhone. Když
-   * se odesílání v telefonu zastaví, aplikace to sama nepozná a tváří se,
-   * že je všechno v pořádku.
-   *
-   * PROČ PRÁVĚ DVANÁCT HODIN. Auto Export v telefonu odesílá po hodině,
-   * takže dvanáct hodin ticha znamená dvanáct zmeškaných pokusů v řadě —
-   * to už není výpadek Wi-Fi, ale zaseknuté odesílání. Kratší práh by
-   * hlásil poplach přes noc, kdy iOS aplikaci na pozadí běžně uspí.
-   *
-   * Změřeno 23. 8. 2026, než se frekvence zvedla: dávky chodily jednou
-   * denně v 17:58 a mezi 22. a 23. 8. byla mezera 27 hodin — mezitím
-   * proběhl trénink, o kterém aplikace nevěděla.
-   */
-  const HODIN_DO_ZASTARANI = 12;
-
-  /**
-   * ODSTUP SE POČÍTÁ, INTERVAL SE NETVRDÍ.
-   *
-   * Do 25. 8. 2026 karta psala „Odesílá tvůj iPhone každou hodinu" a u dat
-   * starých hodinu a půl svítil odznak „Aktuální". Změřeno 24. 8. 08:20:
-   * posledních 8 payloadů dorazilo mezi 23:07:00 a 23:08:08 — jedna dávka za
-   * 68 sekund, ne hodinová úloha. Pak devět hodin ticho. Žádnou pravidelnou
-   * frekvenci tedy tvrdit nemůžeme; víme jen, kdy dorazila poslední dávka.
-   *
-   * Proto odznak neříká verdikt („Aktuální"), ale naměřený odstup. Práh
-   * dvanácti hodin zůstává jediným místem, kde se soudí — tam už nejde
-   * o výpadek Wi-Fi, ale o zaseknuté odesílání.
-   */
-  const { zdraviPosledni, zdraviOdstup, zdraviZastarale } = React.useMemo(() => {
-    const iso = posledniSynchronizace || null;
-    const stariHodin = odstupHodin(iso);
-    if (stariHodin === null) {
-      return { zdraviPosledni: null, zdraviOdstup: '', zdraviZastarale: false };
-    }
-    return {
-      zdraviPosledni: iso,
-      zdraviOdstup: odstupText(iso),
-      zdraviZastarale: stariHodin > HODIN_DO_ZASTARANI,
-    };
-  }, [posledniSynchronizace]);
-
-  /** Kdy server naposled opravdu stahoval z Withings. Prázdno = nevíme. */
-  const withingsOdstup = React.useMemo(
-    () => odstupText(withingsPosledniStazeni),
-    [withingsPosledniStazeni],
-  );
 
   /** „2. 8. 2026" — datum registrace. Bez data se řádek nekreslí. */
   const clenOd = React.useMemo(() => {
@@ -452,171 +384,6 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             onRegenerate={onRegeneratePlan}
             regenerating={regenerujiPlan}
           />
-        )}
-      </div>
-
-      {/* PROPOJENÁ ZAŘÍZENÍ AŽ NA KONCI (9. 9. 2026).
-          Sekce seděla nad cíli a makry, ale pro uživatele není
-          směrodatná — většina žádné zařízení připojené nemá a viděla
-          tu jen dvě prázdné dlaždice. Data, která uživatel opravdu čte
-          (váha, BMI, cíle, makra), jsou teď nad ní. */}
-      {/* 3. Connected IoT Devices & Sync Status */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-povrch/90 border border-slate-800 shadow-xl space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-cyan-400">
-              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-white">Propojená chytrá zařízení &amp; Data</h3>
-              {/* „Obousměrný" přenos nebyl — data chodí ze zařízení k nám,
-                  zpátky se neposílá nic. */}
-              <p className="text-xs text-slate-400">Měření z Withings a Apple Health se stahují při synchronizaci</p>
-            </div>
-          </div>
-          <button
-            onClick={onSyncAll}
-            disabled={isSyncing}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-cyan-950/70 hover:bg-cyan-900/70 text-akcent-cyan border border-cyan-500/40 shadow-sm transition-all"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-            <span>{isSyncing ? 'Synchronizuji...' : 'Synchronizovat teď'}</span>
-          </button>
-        </div>
-
-        {/* DVĚ ZAŘÍZENÍ, NE TŘI.
-            Do 23. 8. 2026 tu byla jako třetí dlaždice karta „AI trenér TED".
-            TED není zařízení, nic nesynchronizuje a stejná karta je o kus níž
-            v sekci, která mu patří — v profilu tak byl dvakrát. */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-          {/* STAV ZAŘÍZENÍ SE ODVOZUJE Z DAT, KTERÁ OPRAVDU DORAZILA.
-              Do 23. 8. 2026 tu svítilo „Připojeno" u obou zařízení natvrdo —
-              každému uživateli, i tomu, který nikdy nic nepřipojil. K tomu
-              „Poslední vážení dnes 07:15" jako pevný text (skutečné měření
-              bylo 22. 8. v 17:35) a „HRV, Spánek & Tep živě", ačkoli data
-              chodí dávkově při synchronizaci, ne živě. */}
-          <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-cyan-950/50 border border-cyan-500/30 flex items-center justify-center text-akcent-cyan shrink-0">
-                  <Scale className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-bold text-slate-200">Withings Body Scan</div>
-                  <div className="text-[11px] text-slate-400">
-                    {slozeni
-                      ? `Poslední vážení ${kdyMereno(slozeni.measured_at)}`
-                      : 'Zatím žádné měření'}
-                  </div>
-                </div>
-              </div>
-              {slozeni && (
-                <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold text-akcent-lime bg-emerald-950/60 border border-emerald-500/30">
-                  Připojeno
-                </span>
-              )}
-            </div>
-            {/* KDY SERVER OPRAVDU STAHOVAL, NE JAK ČASTO HO TO MÁ NAPLÁNOVANÉ.
-                Do 25. 8. 2026 tu stálo „Stahuje se automaticky každou hodinu".
-                To je rozvrh cronu, ne záznam o tom, že proběhl — a když se
-                stahování zasekne, věta lže dál. `last_sync_at` je naměřený
-                fakt a řekne totéž, jen pravdivě. */}
-            <div className="text-[11px] text-emerald-400/90 mt-2 flex items-center gap-1.5">
-              <RefreshCw className="w-3 h-3 shrink-0" />
-              <span>
-                {withingsOdstup
-                  ? `Server naposled stahoval ${withingsOdstup}`
-                  : 'Stahuje server sám, zatím ale žádné stažení neproběhlo'}
-              </span>
-            </div>
-            {/* CESTA K PROPOJENÍ PŘÍMO TADY. Karta uměla říct „Zatím žádné
-                měření", ale ne co s tím — odkaz na propojení nebyl nikde
-                v profilu a uživatel musel uhodnout, že vede přes záložku
-                Tělo & Váha. */}
-            {!slozeni && onOpenWithingsSettings && (
-              <button
-                type="button"
-                onClick={onOpenWithingsSettings}
-                className="mt-3 w-full py-2 px-3 rounded-xl text-[11px] font-bold text-akcent-cyan bg-cyan-950/60 border border-cyan-500/40 hover:bg-cyan-900/60 transition-all active:scale-[0.99]"
-              >
-                Připojit Withings
-              </button>
-            )}
-          </div>
-
-          {/* APPLE HEALTH — DATA POSÍLÁ TELEFON, SERVER SI JE NEVYŽÁDÁ.
-              Apple neumožňuje číst HealthKit ze serveru, takže tenhle kanál
-              nejde automatizovat z naší strany; export musí spustit iPhone.
-              Změřeno 23. 8. 2026: payloady dorazily 20., 21. a 22. 8., vždy
-              jako shluk v jedné minutě — tedy ručně spuštěný export. Karta
-              proto říká stáří dat a upozorní, když je starší než den.
-              Dřív tu svítilo jen „Připojeno", což uklidňovalo i ve chvíli,
-              kdy dva dny nepřišlo nic. */}
-          <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-lime-950/50 border border-lime-500/30 flex items-center justify-center text-akcent-lime shrink-0">
-                  <Watch className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-bold text-slate-200">Apple Health</div>
-                  {/* Odstup je to podstatné, přesný čas jde vidět v titulku. */}
-                  <div className="text-[11px] text-slate-400" title={kdyMereno(zdraviPosledni)}>
-                    {zdraviPosledni
-                      ? `Poslední odeslání ${zdraviOdstup}`
-                      : 'Zatím žádná data z hodinek'}
-                  </div>
-                </div>
-              </div>
-              {/* ODZNAK UKAZUJE ODSTUP, NE VERDIKT.
-                  „Aktuální" u dat starých hodinu a půl bylo tvrzení navíc:
-                  opíralo se o předpoklad hodinového odesílání, který měření
-                  nepotvrdilo. Číslo si uživatel přebere sám. */}
-              {zdraviPosledni && (
-                <span
-                  className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                    zdraviZastarale
-                      ? 'text-amber-300 bg-amber-950/60 border-amber-500/40'
-                      : 'text-slate-300 bg-slate-800/80 border-slate-600/50'
-                  }`}
-                >
-                  {zdraviOdstup}
-                </span>
-              )}
-            </div>
-            <div className={`text-[11px] mt-2 flex items-start gap-1.5 ${zdraviZastarale ? 'text-amber-300' : 'text-slate-500'}`}>
-              {zdraviZastarale
-                ? <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
-                : <RefreshCw className="w-3 h-3 shrink-0 mt-0.5" />}
-              <span>
-                {/* ŽÁDNÁ FREKVENCE. Věta „Odesílá tvůj iPhone každou hodinu"
-                    tvrdila rozvrh, který měření nepotvrdilo — dávky chodí ve
-                    shlucích a devět hodinových slotů propadlo vcelku. Co platí
-                    pořád, je SMĚR: server si data vyžádat neumí. */}
-                {zdraviZastarale
-                  ? `Přes ${HODIN_DO_ZASTARANI} hodin nepřišlo nic. Odesílá iPhone, ne server — zkontroluj Auto Export v telefonu.`
-                  : 'Odesílá iPhone, server si data stáhnout nemůže'}
-              </span>
-            </div>
-            {/* U hodinek se nedá nabídnout tlačítko: Apple neumožňuje číst
-                HealthKit ze serveru, takže propojení spustí jedině telefon.
-                Místo tlačítka tedy aspoň říct, čím začít — dosud tu nebylo
-                nic a uživatel bez dat netušil, co má udělat. */}
-            {!zdraviPosledni && (
-              <div className="mt-3 p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
-                Data posílá iPhone, ne server. V aplikaci Health Auto Export
-                nastav odesílání na Body &amp; Mind ON a hodinky se přidají samy.
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Nabídka pomoci se ukáže, jen když aspoň jedno zařízení chybí —
-            komu obojí chodí, ten ji číst nepotřebuje. */}
-        {(!slozeni || !zdraviPosledni) && (
-          <div className="mt-3.5">
-            <NabidkaPropojeni kompaktni />
-          </div>
         )}
       </div>
 

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, ArrowRight, Check, Loader2, Sparkles } from 'lucide-react';
 import {
@@ -87,6 +87,16 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
     ],
     []
   );
+
+  // Text pod tlačítkem prosí „Nezavírej prosím stránku." — samotná prosba
+  // ale odchod nezastaví. Zavření karty uprostřed generování nechá účet
+  // založený a bez plánu, proto se přidává nativní potvrzení prohlížeče.
+  useEffect(() => {
+    if (!odesilam) return undefined;
+    const varuj = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', varuj);
+    return () => window.removeEventListener('beforeunload', varuj);
+  }, [odesilam]);
 
   /** Validace kroku. Kroky 1 a 2 pouzivaji stejnou logiku jako API - jedna pravda. */
   const chybyKroku = (k: number): Record<string, string> => {
@@ -431,6 +441,7 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
+        aria-busy={odesilam}
         className="w-full max-w-lg rounded-3xl bg-povrch/95 backdrop-blur-2xl border border-cyan-500/25 shadow-[0_8px_40px_rgba(0,0,0,0.6)] p-6 sm:p-8"
       >
         <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-1.5 select-none mb-1">
@@ -443,8 +454,17 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
 
         <Krokovac krok={krok} celkem={REGISTRATION_STEPS as number} nazev={KROKY[krok - 1]} />
 
+        {/* Během generování plánu se nesmí dát sáhnout na NIC — ani na chipy
+            návyků, ani na pole předchozích kroků. Samotné `disabled` na
+            tlačítkách nestačí: uživatel si mezitím překlikal návyky, které
+            už do právě odesílaného požadavku nemohly dojít, a viděl na
+            obrazovce jiný výběr, než jaký se doopravdy uložil.
+            <fieldset disabled> zablokuje celý podstrom nativně, včetně
+            prvků, které o `odesilam` vůbec nevědí. */}
         <motion.div key={krok} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.22 }}>
-          {obsah}
+          <fieldset disabled={odesilam} className="contents">
+            {obsah}
+          </fieldset>
         </motion.div>
 
         {stav && (
@@ -496,9 +516,18 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
         )}
 
         <div className="mt-5 pt-4 border-t border-slate-800">
+          {/* Odkaz pryč ze stránky fieldset nezablokuje — odchod uprostřed
+              generování by nechal účet bez plánu, proto se vypíná zvlášť. */}
           <a
             href="https://bodyandmindon.cz/"
-            className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-cyan-400 transition-colors"
+            aria-disabled={odesilam || undefined}
+            tabIndex={odesilam ? -1 : undefined}
+            onClick={(e) => { if (odesilam) e.preventDefault(); }}
+            className={`flex items-center gap-1.5 text-[11px] transition-colors ${
+              odesilam
+                ? 'text-slate-600 pointer-events-none'
+                : 'text-slate-400 hover:text-cyan-400'
+            }`}
           >
             <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
             <span>Zpět na hlavní stránku</span>

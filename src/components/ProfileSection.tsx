@@ -22,6 +22,7 @@ import { Avatar } from './Avatar';
 import { useAuth } from '../context/AuthContext';
 import { MembershipStatusBadge } from './MembershipStatusBadge';
 import { CalorieMismatchBanner } from './CalorieMismatchBanner';
+import { NabidkaPropojeni } from './NabidkaPropojeni';
 // `useTed` tu bylo kvůli kartě „AI trenér TED" mezi zařízeními. TED není
 // zařízení a stejná karta je v Bento gridu níž — v profilu byl dvakrát.
 
@@ -532,6 +533,14 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             )}
           </div>
         </div>
+
+        {/* Nabídka pomoci se ukáže, jen když aspoň jedno zařízení chybí —
+            komu obojí chodí, ten ji číst nepotřebuje. */}
+        {(!slozeni || !zdraviPosledni) && (
+          <div className="mt-3.5">
+            <NabidkaPropojeni kompaktni />
+          </div>
+        )}
       </div>
 
       {/* 5. Cíle stravování, Maker & Životosprávy */}

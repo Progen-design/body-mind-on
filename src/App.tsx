@@ -9,6 +9,7 @@ import { BodyCompositionSection } from './components/BodyCompositionSection';
 import { NutritionSection } from './components/NutritionSection';
 import { WorkoutSection } from './components/WorkoutSection';
 import { BiometricsSection } from './components/BiometricsSection';
+import { NabidkaPropojeni } from './components/NabidkaPropojeni';
 
 // Modals
 import { MealPlanModal } from './components/MealPlanModal';
@@ -1155,6 +1156,11 @@ function AppContent() {
                 >
                   Připojit hodinky
                 </button>
+              </div>
+            )}
+            {!zdravi.pripojeno && (
+              <div className="mt-4 text-left max-w-md mx-auto">
+                <NabidkaPropojeni />
               </div>
             )}
           </div>

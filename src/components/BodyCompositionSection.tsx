@@ -3,6 +3,7 @@ import { BodyStatsGrid } from './BodyStatsGrid';
 import { WeightChart } from './WeightChart';
 import { WithingsCard } from './WithingsCard';
 import { NadpisSekce } from './NadpisSekce';
+import { NabidkaPropojeni } from './NabidkaPropojeni';
 import { WeightRecord, TelesneSlozeni, SyncResult } from '../types';
 import { Plus, Scale, Sparkles, TrendingUp, Watch } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -115,12 +116,11 @@ export const BodyCompositionSection: React.FC<BodyCompositionSectionProps> = ({
                 ? 'Data z hodinek chodí přes Apple Health. Regeneraci, tep a spánek najdeš na záložce Regenerace & Spánek.'
                 : 'Tep, spánek a regeneraci bereme z Apple Health. V aplikaci Health Auto Export na iPhonu nastav odesílání na Body & Mind ON — hodinky, které do Health píšou, se přidají samy.'}
             </p>
-            {!zdraviPosledni && (
-              <p className="text-[11px] text-slate-500 mt-2">
-                Garmin, Polar ani Fitbit zatím napřímo nepodporujeme.
-              </p>
-            )}
           </div>
+        </div>
+        {/* Nabídka pomoci až pod obě karty — platí pro váhu i hodinky. */}
+        <div className="mt-4">
+          <NabidkaPropojeni />
         </div>
       </motion.div>
     </div>

@@ -1,44 +1,26 @@
 import React from 'react';
 import {
-  Scale,
-  TrendingUp,
-  Activity,
-  Heart,
-  Moon,
   Utensils,
   Dumbbell,
-  Clock,
   Flame,
   CheckCircle2,
   ChevronRight,
   ShoppingBag,
-  Plus,
-  Play,
-  Check,
-  Zap
+  Check
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import {
-  WeightRecord,
-  AppleWatchBiometrics,
   MealItem,
-  WorkoutDay,
   HabitItem,
   BadHabitItem,
   UserPreferences,
   TelesneSlozeni
 } from '../types';
 import { ActiveTab } from './NavigationTabs';
-import { hodnotaNeboPomlcka, kdyMereno, zmenaText } from '../data/adaptery';
 import { denniMakra } from '../lib/makra';
-import { jeNaplanovany } from '../lib/trenink';
-import { Vysvetlivka } from './Vysvetlivka';
 
 interface OverviewBentoGridProps {
-  latestWeightRecord: WeightRecord | null;
-  biometrics: AppleWatchBiometrics;
   meals: MealItem[];
-  todayWorkout: WorkoutDay;
   habits: HabitItem[];
   badHabits: BadHabitItem[];
   preferences: UserPreferences;
@@ -47,8 +29,6 @@ interface OverviewBentoGridProps {
   /** Z chytre vahy. null = blok slozeni se nezobrazi. */
   slozeni?: TelesneSlozeni | null;
   onSelectTab: (tab: ActiveTab) => void;
-  onOpenWorkoutLogger: () => void;
-  onOpenAddWeightModal: () => void;
   onToggleMeal: (id: string) => void;
   onToggleHabit: (id: string) => void;
   onCompleteAllHabits: () => void;
@@ -56,18 +36,13 @@ interface OverviewBentoGridProps {
 }
 
 export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
-  latestWeightRecord,
-  biometrics,
   meals,
-  todayWorkout,
   habits,
   badHabits,
   preferences,
   pocetNakupu = 0,
   slozeni = null,
   onSelectTab,
-  onOpenWorkoutLogger,
-  onOpenAddWeightModal,
   onToggleMeal,
   onToggleHabit,
   onCompleteAllHabits,
@@ -76,11 +51,6 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
   const currentCalories = meals.reduce((acc, m) => acc + (m.completed ? m.calories : 0), 0);
   const targetCalories = preferences.dailyCalorieTarget;
   const makra = denniMakra(preferences);
-  const completedExercises = todayWorkout?.exercises.filter(e => e.completed).length || 0;
-  const totalExercises = todayWorkout?.exercises.length || 0;
-  // V den volna nabízí "Spustit záznamník" trénink, který v plánu není —
-  // tlačítko proto přejmenuje na zápis mimo plán (docs/DALSI_KROK.md 6.11).
-  const maDnesTrenink = jeNaplanovany(todayWorkout);
   const completedHabitsCount = habits.filter(h => h.completed).length;
 
   return (
@@ -109,7 +79,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, delay: 0.1 }}
-        className="col-span-1 md:col-span-1 lg:col-span-2 relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-povrch/95 backdrop-blur-xl border border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col justify-between group hover:border-cyan-400/60 transition-all duration-300"
+        className="col-span-1 md:col-span-2 lg:col-span-3 relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-povrch/95 backdrop-blur-xl border border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col justify-between group hover:border-cyan-400/60 transition-all duration-300"
       >
         <div className="absolute -bottom-8 -right-8 w-36 h-36 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
 
@@ -248,243 +218,12 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
         </div>
       </motion.div>
 
-      {/* 
-        ========================================================================
-        KARTA 4: Dnešní trénink: Ramena & Triceps (col-span-1 md:col-span-1 lg:col-span-1)
-        Akční panel s tréninkovým plánem a spuštěním stopek
-        ========================================================================
-      */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, delay: 0.15 }}
-        className="col-span-1 md:col-span-1 lg:col-span-1 relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-povrch/95 backdrop-blur-xl border border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col justify-between group hover:border-cyan-400/60 transition-all duration-300"
-      >
-        <div className="absolute -bottom-8 -left-8 w-36 h-36 bg-lime-500/10 rounded-full blur-2xl pointer-events-none" />
-
-        <div>
-          {/* Header */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-lime-950/60 border border-lime-500/40 flex items-center justify-center text-akcent-lime">
-                <Dumbbell className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">
-                  Dnešní trénink
-                </h3>
-                {/* Zamereni chodi z planu. Natvrdo tu bylo "Hypertroficky split"
-                    i ve dnech, kdy se trenoval uplne jiny okruh. */}
-                {todayWorkout.focus && (
-                  <span className="text-[10px] text-emerald-400 font-semibold">{todayWorkout.focus}</span>
-                )}
-              </div>
-            </div>
-            {/* Den z planu, ne natvrdo "Ctvrtek" sedm dni v tydnu. */}
-            {todayWorkout.dayName && (
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-akcent-lime bg-emerald-950/60 border border-emerald-500/30">
-                {todayWorkout.dayName}
-              </span>
-            )}
-          </div>
-
-          {/* Title & Focus */}
-          <div className="mb-3">
-            <h4 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
-              {todayWorkout.title}
-            </h4>
-            <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">
-              {todayWorkout.focus}
-            </p>
-          </div>
-
-          {/* Badges: Duration & Calories */}
-          <div className="grid grid-cols-2 gap-2 mb-3.5">
-            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center gap-2">
-              <Clock className="w-3.5 h-3.5 text-cyan-400" />
-              <div>
-                <div className="text-[9px] text-slate-400 uppercase">Čas</div>
-                <div className="text-xs font-bold text-slate-100">{todayWorkout.durationMin} min</div>
-              </div>
-            </div>
-            {todayWorkout.caloriesBurned > 0 && (
-              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center gap-2">
-                <Flame className="w-3.5 h-3.5 text-orange-400" />
-                <div>
-                  <div className="text-[9px] text-slate-400 uppercase">Výdej</div>
-                  <div className="text-xs font-bold text-slate-100">~{todayWorkout.caloriesBurned} kcal</div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Progress bar */}
-          <div className="space-y-1.5 mb-4">
-            <div className="flex justify-between text-xs text-slate-400">
-              <span>Cviky</span>
-              <span className="font-bold text-akcent-lime">{completedExercises} z {totalExercises} hotovo</span>
-            </div>
-            <div className="h-2 w-full bg-slate-900 rounded-full overflow-hidden p-0.5 border border-slate-800">
-              <div
-                style={{ width: `${totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0}%` }}
-                className="h-full bg-gradient-to-r from-cyan-400 to-akcent-lime rounded-full shadow-[0_0_8px_var(--color-akcent-lime)] transition-all duration-300"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Action buttons */}
-        <div className="space-y-2 pt-1">
-          <button
-            onClick={onOpenWorkoutLogger}
-            className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-akcent-cyan to-akcent-lime hover:opacity-95 shadow-[0_0_15px_rgba(57,255,20,0.3)] flex items-center justify-center gap-2 transition-all active:scale-95"
-          >
-            {maDnesTrenink ? (
-              <>
-                <Play className="w-3.5 h-3.5 fill-current" />
-                <span>Spustit záznamník (Stopky)</span>
-              </>
-            ) : (
-              <>
-                <Plus className="w-3.5 h-3.5" />
-                <span>Zapsat trénink mimo plán</span>
-              </>
-            )}
-          </button>
-
-          <button
-            onClick={() => onSelectTab('trenink')}
-            className="w-full py-2 px-3 rounded-xl text-xs font-bold text-slate-300 bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center gap-1 transition-all"
-          >
-            <span>Zobrazit týdenní plán</span>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-          </button>
-        </div>
-      </motion.div>
-
-      {/* 
-        ========================================================================
-        HERO METRIKA 2: Skóre Regenerace & Apple Watch (lg:col-span-1)
-        Zvýrazněný vitální panel se živým biometrickým streamem
-        ========================================================================
-      */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, delay: 0.05 }}
-        className="col-span-1 md:col-span-2 lg:col-span-1 relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-povrch/95 backdrop-blur-xl border border-cyan-500/35 shadow-[0_10px_35px_rgba(0,0,0,0.55)] flex flex-col justify-between group hover:border-lime-400/60 transition-all duration-300"
-      >
-        <div className="absolute top-0 right-0 w-44 h-44 bg-lime-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div>
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-lime-950/70 border border-lime-500/40 flex items-center justify-center text-akcent-lime shadow-[0_0_12px_rgba(57,255,20,0.25)]">
-                <Activity className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight">
-                  Regenerace &amp; spánek
-                </h3>
-                {/* „Živý biometrický stream" nic neznamenalo — data chodí
-                    dávkově při synchronizaci, ne živě. */}
-                <span className="text-[10px] text-slate-400 font-semibold">Z Apple Health a chytré váhy</span>
-              </div>
-            </div>
-            {/* Odznak byl natvrdo „Ubrat intenzitu" pro každého a bez ohledu
-                na skóre. Stav ukazujeme jen tehdy, když ho server spočítal. */}
-            {biometrics.recoveryScore > 0 && biometrics.recoveryStatus && (
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-amber-300 bg-amber-950/60 border border-amber-500/40">
-                {biometrics.recoveryStatus}
-              </span>
-            )}
-          </div>
-
-          {/* Main Score 70/100 */}
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-900/70 border border-slate-800 mb-4">
-            <div>
-              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
-                Denní připravenost
-              </div>
-              {/* Bez skore se nekresli ani "/ 100" — "0 / 100" tvrdi nulovou
-                  pripravenost, coz je neco jineho nez "nemame dost dat". */}
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-                  {biometrics.recoveryScore > 0 ? biometrics.recoveryScore : '—'}
-                </span>
-                {biometrics.recoveryScore > 0 && (
-                  <span className="text-base font-bold text-slate-500">/ 100</span>
-                )}
-              </div>
-              {biometrics.recoveryScore <= 0 && (
-                <div className="text-[11px] text-slate-500 mt-0.5">
-                  Zatím málo dat na výpočet.
-                </div>
-              )}
-              {/* Stav ze serveru. Driv tu bylo natvrdo "Parasympaticka unava"
-                  a vedle odznak "70 % READY" — tri tvrzeni o temz skore,
-                  z toho dve vymyslena. */}
-              {biometrics.recoveryStatus && biometrics.recoveryScore > 0 && (
-                <div className="text-xs text-amber-300 font-semibold mt-0.5">
-                  {biometrics.recoveryStatus}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Sub Biometrics: HRV, Klidový tep, Spánek */}
-          <div className="grid grid-cols-3 gap-2 p-3 rounded-2xl bg-slate-900/80 border border-slate-800 mb-4">
-            <div>
-              <div className="text-[10px] text-slate-400 font-medium inline-flex items-center gap-1">
-                HRV
-                <Vysvetlivka pojem="hrv" />
-              </div>
-              <div className="text-sm sm:text-base font-bold text-amber-400 mt-0.5">
-                {hodnotaNeboPomlcka(biometrics.hrvMs > 0 ? biometrics.hrvMs : null, 'ms')}
-              </div>
-              {/* Baseline ze stejneho zdroje jako hodnota. Driv tu bylo
-                  natvrdo "B: 28 ms", na zalozce Regenerace "42,0 ms". */}
-              {biometrics.hrvBaselineMs > 0 && (
-                <div className="text-[10px] text-slate-500">
-                  Základna {hodnotaNeboPomlcka(biometrics.hrvBaselineMs, 'ms')}
-                </div>
-              )}
-            </div>
-            <div className="border-l border-slate-800 pl-2">
-              <div className="text-[10px] text-slate-400 font-medium inline-flex items-center gap-1">
-                Klid. tep
-                <Vysvetlivka pojem="klidovy_tep" />
-              </div>
-              <div className="text-sm sm:text-base font-bold text-white mt-0.5">
-                {hodnotaNeboPomlcka(biometrics.restingHrBpm > 0 ? biometrics.restingHrBpm : null, 'bpm', 0)}
-              </div>
-            </div>
-            <div className="border-l border-slate-800 pl-2">
-              <div className="text-[10px] text-slate-400 font-medium">Spánek</div>
-              <div className="text-sm sm:text-base font-bold text-akcent-cyan mt-0.5">
-                {biometrics.sleepDuration || '—'}
-              </div>
-              {/* ŽÁDNÁ EFEKTIVITA SPÁNKU. Dřív tu bylo natvrdo „92 %", pak
-                  podmínka `> 0` — jenže adaptér tam vždycky psal nulu, takže
-                  to byla mrtvá větev. Zdroj posílá `inBedEnd` 16:20, z čehož
-                  se efektivita ani spočítat nedá. Pole je pryč z typu i UI. */}
-            </div>
-          </div>
-        </div>
-
-        {/* Action to switch to Regenerace deep tab */}
-        <div className="pt-1">
-          <button
-            onClick={() => onSelectTab('regenerace')}
-            className="w-full py-2.5 px-3 rounded-xl text-xs font-bold text-emerald-300 bg-emerald-950/50 hover:bg-emerald-900/70 border border-emerald-500/40 hover:border-emerald-400 flex items-center justify-center gap-1.5 transition-all"
-          >
-            <span>Zobrazit regeneraci a spánek</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      </motion.div>
-
+      {/* KARTY „DNEŠNÍ TRÉNINK" A „REGENERACE & SPÁNEK" ODSTRANĚNY 9. 9. 2026.
+          Obojí má vlastní záložku v horní navigaci (Tréninkový plán,
+          Regenerace & Spánek), takže v profilu stály podruhé — a u člověka
+          bez připojených hodinek nebo ve dni volna ukazovaly jen pomlčky
+          a „Volno". Jídelníček tím dostal celou šířku mřížky.
+          Rozhodnutí Honzy 9. 9. 2026. */}
       {/* KARTA „AI Trenér TED" ODSTRANĚNA 8. 9. 2026.
           TED je v hlavičce jako tlačítko „Zeptat se TEDa" na každé záložce,
           takže karta v profilu byla druhý vstup do téhož chatu. Zprávy od

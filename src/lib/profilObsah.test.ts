@@ -22,6 +22,10 @@ function kod(text: string): string {
 }
 
 const PROFIL = kod(cti('../components/ProfileSection.tsx'));
+// Sekce zařízení se 9. 9. 2026 odstěhovala z ProfileSection do vlastní
+// komponenty, aby ji App mohl vykreslit až pod bento mřížkou. Pravidla
+// o Withings a Apple Health platí dál, jen se čtou odjinud.
+const ZARIZENI = kod(cti('../components/PropojenaZarizeniSection.tsx'));
 const BENTO = kod(cti('../components/OverviewBentoGrid.tsx'));
 const APP = kod(cti('../App.tsx'));
 const WORKOUT_LOGGER = kod(cti('../components/WorkoutLoggerModal.tsx'));
@@ -62,8 +66,8 @@ test('netvrdíme, že data chodí v reálném čase', () => {
 test('u Apple Health je vidět stáří dat, ne jen „Připojeno"', () => {
   // Export v telefonu se muze zastavit a aplikace to sama nepozna.
   // Zmereno 23. 8. 2026: posledni data 22. 8., mezitim probehl trenink.
-  assert.ok(PROFIL.includes('zdraviZastarale'), 'chybí kontrola stáří dat z hodinek');
-  assert.ok(PROFIL.includes('posledniSynchronizace'), 'profil nedostává čas poslední synchronizace');
+  assert.ok(ZARIZENI.includes('zdraviZastarale'), 'chybí kontrola stáří dat z hodinek');
+  assert.ok(ZARIZENI.includes('posledniSynchronizace'), 'sekce nedostává čas poslední synchronizace');
   assert.ok(APP.includes('posledniSynchronizace'), 'App čas poslední synchronizace nepředává');
 });
 
@@ -86,7 +90,7 @@ test('práh zastarání je jediné místo, kde se soudí', () => {
   // vypadku. Dvanact hodin ticha uz neni vypadek Wi-Fi, ale zaseknute
   // odesilani; kratsi prah by hlasil poplach pres noc, kdy iOS aplikaci
   // na pozadi bezne uspi.
-  const shoda = /HODIN_DO_ZASTARANI = (\d+)/.exec(PROFIL);
+  const shoda = /HODIN_DO_ZASTARANI = (\d+)/.exec(ZARIZENI);
   assert.ok(shoda, 'práh zastarání se nedá přečíst');
   const hodin = Number(shoda[1]);
   assert.ok(hodin <= 12, `práh ${hodin} h by schoval celodenní výpadek`);
@@ -97,11 +101,11 @@ test('rozdíl mezi zdroji je v UI vidět', () => {
   // Withings server stahuje sam, Apple Health posila iPhone. Kdyz to UI
   // nerekne, uzivatel ceka automatiku i tam, kde zadna neni.
   assert.ok(
-    /Server naposled stahoval|Stahuje server sám/.test(PROFIL),
+    /Server naposled stahoval|Stahuje server sám/.test(ZARIZENI),
     'u Withings chybí, že stahuje server'
   );
   assert.ok(
-    /iPhone/.test(PROFIL),
+    /iPhone/.test(ZARIZENI),
     'u Apple Health chybí, že data posílá telefon'
   );
 });
@@ -112,11 +116,11 @@ test('karty netvrdí frekvenci, kterou nikdo neměří', () => {
   // Pak devet hodin ticho. "Kazdou hodinu" je nastaveni, ne pozorovani,
   // a u Withings je to rozvrh cronu, ne zaznam o tom, ze probehl.
   assert.ok(
-    !/každou hodinu/.test(PROFIL),
+    !/každou hodinu/.test(ZARIZENI),
     'karta zase tvrdí hodinový interval místo naměřeného odstupu'
   );
   assert.ok(
-    /odstupText/.test(PROFIL),
+    /odstupText/.test(ZARIZENI),
     'karta nepočítá odstup od poslední dávky'
   );
 });
@@ -125,7 +129,7 @@ test('odznak u Apple Health ukazuje odstup, ne verdikt', () => {
   // "Aktualni" u dat starych hodinu a pul bylo tvrzeni navic — opiralo se
   // o predpoklad hodinoveho odesilani, ktery mereni nepotvrdilo.
   assert.ok(
-    !/>\s*Aktuální\s*</.test(PROFIL),
+    !/>\s*Aktuální\s*</.test(ZARIZENI),
     'odznak zase tvrdí „Aktuální" místo naměřeného odstupu'
   );
 });
@@ -147,25 +151,33 @@ test('nákupní seznam sedí u jídelníčku (Karta 3) — docs/DALSI_KROK.md 6.
   // tu čte surový soubor, ne sdílená stripnutá konstanta BENTO.
   const surovy = cti('../components/OverviewBentoGrid.tsx');
   const zacatekKarty3 = surovy.indexOf('KARTA 3');
-  const zacatekKarty4 = surovy.indexOf('KARTA 4');
-  assert.ok(zacatekKarty3 > -1 && zacatekKarty4 > -1, 'značky karet zmizely ze souboru');
+  assert.ok(zacatekKarty3 > -1, 'značka Karty 3 zmizela ze souboru');
 
   // kod() na výřezu, ne na celém souboru — markery karet jsou v komentářích
-  // a bez stripu by je nešlo najít.
-  const obsahKarty3 = kod(surovy.slice(zacatekKarty3, zacatekKarty4));
+  // a bez stripu by je nešlo najít. Karta 3 je od 9. 9. 2026 poslední
+  // v mřížce, takže výřez jde až do konce souboru.
+  const obsahKarty3 = kod(surovy.slice(zacatekKarty3));
 
   assert.ok(obsahKarty3.includes('Nákupní seznam'), 'Karta 3 nemá nákupní seznam');
   // Karta 6 (TED) byla 8. 9. 2026 odstraněna celá, viz test výš.
 });
 
-test('v den volna karta 4 nabízí zápis mimo plán, ne stopky pro neexistující trénink (docs/DALSI_KROK.md 6.11)', () => {
-  // "Spustit záznamník (Stopky)" dávalo smysl jen u naplánovaného tréninku.
-  // V den volna (DEN_BEZ_TRENINKU) muselo tlačítko dostat jiný text — jinak
-  // nabízelo nahrát trénink, který v plánu není.
-  assert.ok(BENTO.includes("from '../lib/trenink'"), 'Karta 4 nesahá na jeNaplanovany() z lib/trenink');
-  assert.ok(BENTO.includes('maDnesTrenink'), 'chybí rozlišení dne volna od naplánovaného tréninku');
-  assert.ok(BENTO.includes('Zapsat trénink mimo plán'), 'tlačítko v den volna nenabízí zápis mimo plán');
-  assert.ok(BENTO.includes('Spustit záznamník (Stopky)'), 'naplánovaný den ztratil původní text tlačítka');
+test('trénink a regenerace se v profilu nekreslí podruhé (rozhodnutí 9. 9. 2026)', () => {
+  // Obojí má vlastní záložku v horní navigaci, takže karty v profilu byly
+  // druhý vstup do téhož obsahu — a u člověka bez hodinek nebo ve dni volna
+  // ukazovaly jen pomlčky a „Volno".
+  assert.ok(!BENTO.includes('Dnešní trénink'), 'karta tréninku je zpátky v profilu');
+  assert.ok(!BENTO.includes('Regenerace &'), 'karta regenerace je zpátky v profilu');
+  assert.ok(!BENTO.includes('todayWorkout'), 'bento grid zase dostává dnešní trénink');
+
+  // Zápis tréninku mimo plán se odebráním karty nesmí ztratit — je na
+  // záložce Tréninkový plán, kam vede tlačítko v navigaci.
+  const workout = kod(cti('../components/WorkoutSection.tsx'));
+  assert.ok(workout.includes('onOpenWorkoutLogger'), 'záznamník tréninku není dosažitelný nikde');
+
+  const navigace = kod(cti('../components/NavigationTabs.tsx'));
+  assert.ok(navigace.includes("'trenink'"), 'záložka Tréninkový plán zmizela');
+  assert.ok(navigace.includes("'regenerace'"), 'záložka Regenerace & Spánek zmizela');
 });
 
 test('maPlan v App.tsx nepočítá dny volna jako důkaz existujícího plánu (docs/DALSI_KROK.md 8.14)', () => {

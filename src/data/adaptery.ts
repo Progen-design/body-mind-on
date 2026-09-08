@@ -366,6 +366,53 @@ export function krokyPostupuCviku(hodnota: unknown): string[] | undefined {
  * Výstup se navíc řadí Po–Ne, protože `struktura.days` chodí v pořadí, ve
  * kterém plán začíná (`valid_from`), ne nutně od pondělí.
  */
+/**
+ * Jeden cvik ze `structured_plan_json` -> `ExerciseItem`. Vytažené z
+ * `naTreninky()`, aby stejnou logiku mohla použít i odpověď
+ * POST /api/plan/exercise-variant (nová varianta se do `workouts` state
+ * v App.tsx dosadí bez opětovného načtení celého profilu).
+ *
+ * @param e syrový cvik z structured_plan_json (nebo `exercise` z odpovědi endpointu)
+ * @param i index cviku ve dni — jen pro fallback id a activityKey
+ * @param dateNeboFallback `d.date`, použije se ve fallback id, když cvik nemá canonical_key
+ */
+export function cvikZPlanu(e: any, i: number, dateNeboFallback: string, planId: string | null, planDay: number | undefined): ExerciseItem {
+  return {
+    id: String(e?.canonical_key || `${dateNeboFallback}-cvik-${i}`),
+    name: e?.display_name_cs || e?.name_cs || e?.name || 'Cvik',
+    sets: cislo(e?.sets),
+    reps: String(e?.reps ?? ''),
+    restSec: 0,
+    // Svalovou skupinu doplňuje /api/profile z `exercise_asset_registry`
+    // (viz lib/profile/svalyDoPlanu.js). Dřív tu byl prázdný řetězec,
+    // takže UI nemělo u cviku co zobrazit.
+    targetMuscle: svalCesky(e?.primary_muscle) ?? '',
+    // UKÁZKA PROVEDENÍ. Plán ji nese u každého cviku jako `gif_url`
+    // z ExerciseDB, ale UI ji nikde nezobrazovalo — člověk viděl jen
+    // název a musel si domýšlet, jak se cvik dělá.
+    ukazkaUrl: String(e?.gif_url || e?.image_url || '') || undefined,
+    // POSTUP PROVEDENÍ (docs/DALSI_KROK.md 9.9). Doplňuje /api/profile
+    // z registru cviků (`instructions_cs`); jen neprázdné české kroky,
+    // jinak undefined — UI pak nekreslí nic, žádný náhradní text.
+    postup: krokyPostupuCviku(e?.instructions_cs),
+    // OBTÍŽNOST + LEHČÍ/TĚŽŠÍ VARIANTA. Doplňuje /api/profile
+    // (lib/profile/svalyDoPlanu.js) i generátor plánu
+    // (lib/services/planOrchestratorResolve.js). Varianta se propisuje
+    // jen s párem klíč+název — samotný klíč bez názvu by tlačítko
+    // ve WorkoutSection nemělo jak popsat.
+    canonicalKey: e?.canonical_key ? String(e.canonical_key) : undefined,
+    obtiznost: String(e?.obtiznost || '') || undefined,
+    easierKey: (e?.easier_key && e?.easier_display_name_cs) ? String(e.easier_key) : undefined,
+    easierNazev: (e?.easier_key && e?.easier_display_name_cs) ? String(e.easier_display_name_cs) : undefined,
+    harderKey: (e?.harder_key && e?.harder_display_name_cs) ? String(e.harder_key) : undefined,
+    harderNazev: (e?.harder_key && e?.harder_display_name_cs) ? String(e.harder_display_name_cs) : undefined,
+    completed: false,
+    planId,
+    planDay,
+    activityKey: klicCviku(i)
+  };
+}
+
 export function naTreninky(plan: any): WorkoutDay[] {
   const struktura = strukturaPlanu(plan);
   const dny = struktura?.days;
@@ -381,29 +428,7 @@ export function naTreninky(plan: any): WorkoutDay[] {
     const maTrenink = !!(w && Array.isArray(w.exercises) && w.exercises.length > 0);
 
     const cviky: ExerciseItem[] = maTrenink
-      ? w.exercises.map((e: any, i: number) => ({
-        id: String(e?.canonical_key || `${d.date}-cvik-${i}`),
-        name: e?.display_name_cs || e?.name_cs || e?.name || 'Cvik',
-        sets: cislo(e?.sets),
-        reps: String(e?.reps ?? ''),
-        restSec: 0,
-        // Svalovou skupinu doplňuje /api/profile z `exercise_asset_registry`
-        // (viz lib/profile/svalyDoPlanu.js). Dřív tu byl prázdný řetězec,
-        // takže UI nemělo u cviku co zobrazit.
-        targetMuscle: svalCesky(e?.primary_muscle) ?? '',
-        // UKÁZKA PROVEDENÍ. Plán ji nese u každého cviku jako `gif_url`
-        // z ExerciseDB, ale UI ji nikde nezobrazovalo — člověk viděl jen
-        // název a musel si domýšlet, jak se cvik dělá.
-        ukazkaUrl: String(e?.gif_url || e?.image_url || '') || undefined,
-        // POSTUP PROVEDENÍ (docs/DALSI_KROK.md 9.9). Doplňuje /api/profile
-        // z registru cviků (`instructions_cs`); jen neprázdné české kroky,
-        // jinak undefined — UI pak nekreslí nic, žádný náhradní text.
-        postup: krokyPostupuCviku(e?.instructions_cs),
-        completed: false,
-        planId,
-        planDay,
-        activityKey: klicCviku(i)
-      }))
+      ? w.exercises.map((e: any, i: number) => cvikZPlanu(e, i, d.date, planId, planDay))
       : [];
 
     return {

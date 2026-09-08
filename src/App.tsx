@@ -1198,6 +1198,7 @@ function AppContent() {
         isOpen={isExportPdfOpen}
         onClose={() => setIsExportPdfOpen(false)}
         meals={meals}
+        exercises={todayWorkout.exercises}
         profile={displayedProfile}
       />
 

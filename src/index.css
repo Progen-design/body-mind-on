@@ -193,8 +193,9 @@
     background: white;
   }
 
-  /* Jedno jídlo se nesmí rozpadnout přes dvě stránky. */
-  #tiskovy-dokument .jidlo {
+  /* Jedno jídlo/cvik se nesmí rozpadnout přes dvě stránky. */
+  #tiskovy-dokument .jidlo,
+  #tiskovy-dokument .cvik {
     break-inside: avoid;
   }
 

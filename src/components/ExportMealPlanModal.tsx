@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, Download, Printer, FileText } from 'lucide-react';
 import { motion } from 'motion/react';
-import { MealItem, UserProfile } from '../types';
+import { ExerciseItem, MealItem, UserProfile } from '../types';
 import { datumCesky, dnesekPraha } from '../data/adaptery';
 import { postupProJidlo, soucetKcalPlanu } from '../lib/exportJidelnicku';
 
@@ -11,6 +11,9 @@ interface ExportMealPlanModalProps {
   /** Jídla dne, který se má vytisknout. Dnes vždy dnešek — App.tsx posílá
       `meals` (naJidla(plan)), ne den vybraný v přepínači záložek jídelníčku. */
   meals: MealItem[];
+  /** Cviky dnešního tréninku (App.tsx posílá todayWorkout.exercises). Prázdné
+      pole = žádná tréninková sekce v dokumentu — den volna není chyba. */
+  exercises?: ExerciseItem[];
   profile: UserProfile;
 }
 
@@ -18,6 +21,7 @@ export const ExportMealPlanModal: React.FC<ExportMealPlanModalProps> = ({
   isOpen,
   onClose,
   meals,
+  exercises = [],
   profile
 }) => {
   if (!isOpen) return null;
@@ -56,7 +60,7 @@ export const ExportMealPlanModal: React.FC<ExportMealPlanModalProps> = ({
             </div>
             <div>
               <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
-                Export &amp; Tisk jídelníčku (PDF)
+                Export &amp; Tisk jídelníčku a tréninku (PDF)
               </h3>
               <p className="text-xs text-slate-400">
                 Oficiální výživový plán Body &amp; Mind ON pro klienta {profile.name}
@@ -126,6 +130,33 @@ export const ExportMealPlanModal: React.FC<ExportMealPlanModalProps> = ({
                 );
               })}
             </div>
+
+            {/* Trénink dne — postup a obtížnost stejným vzorem jako u jídel:
+                bez kroků/obtížnosti se nekreslí nic, žádný placeholder.
+                Den volna (žádné cviky) sekci prostě nemá, není to chyba. */}
+            {exercises.length > 0 && (
+              <div className="pt-2 border-t border-slate-200 space-y-3">
+                <div className="text-xs font-extrabold text-slate-900">Trénink dne</div>
+                {exercises.map((ex) => (
+                  <div key={ex.id} className="cvik p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                    <div className="flex justify-between font-bold text-slate-900 text-xs mb-1">
+                      <span>{ex.name}</span>
+                      <span className="text-emerald-700">
+                        {ex.sets} × {ex.reps}
+                        {ex.obtiznost && ` · ${ex.obtiznost}`}
+                      </span>
+                    </div>
+                    {ex.postup && ex.postup.length > 0 && (
+                      <ol className="list-decimal list-inside mt-0.5 space-y-0.5 text-[11px] text-slate-600">
+                        {ex.postup.map((krok, idx) => (
+                          <li key={idx}>{krok}</li>
+                        ))}
+                      </ol>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Document Footer */}
             <div className="pt-2 border-t border-slate-200 text-[10px] text-slate-400 flex justify-between">

@@ -14,12 +14,21 @@ import {
   PlayCircle
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { WorkoutDay } from '../types';
+import { ExerciseItem, WorkoutDay } from '../types';
 import { dnesniTrenink, jeNaplanovany, vybranyTrenink } from '../lib/trenink';
 import { serieOpakovaniSlovy } from '../../lib/profile/treninkPopis.js';
+import { cvikZPlanu } from '../data/adaptery';
+import { apiFetch } from '../lib/api';
 import { Vysvetlivka } from './Vysvetlivka';
 import { NadpisSekce } from './NadpisSekce';
 import { PruhDnu } from './PruhDnu';
+
+/** level 'lehké'/'střední'/'těžké' -> barva badge. Cokoli jiného (neznámá hodnota) barvu nedostane. */
+function barvyObtiznosti(obtiznost: string): string {
+  if (obtiznost === 'lehké') return 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30';
+  if (obtiznost === 'těžké') return 'bg-rose-950/60 text-rose-300 border-rose-500/30';
+  return 'bg-amber-950/60 text-amber-300 border-amber-500/30';
+}
 
 interface WorkoutSectionProps {
   workouts: WorkoutDay[];
@@ -39,7 +48,48 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
   const [selectedDayName, setSelectedDayName] = useState<string | null>(null);
   // Otevřená ukázka provedení. Jedna naráz — animace z ExerciseDB mají
   // stovky kB a načítat je všechny zbytečně zdrží i vypadá to nepřehledně.
+  // Klíč je "dayName#index", ne ex.id — po záměně varianty (viz níž) se id
+  // cviku změní (nový canonical_key) a stabilní klíč podle pozice udrží
+  // rozbalený panel otevřený i po záměně.
   const [otevrenaUkazka, setOtevrenaUkazka] = useState<string | null>(null);
+
+  // ZÁMĚNA ZA LEHČÍ/TĚŽŠÍ VARIANTU (POST /api/plan/exercise-variant).
+  // Patch se drží lokálně podle "dayName#index", ne v globálním `workouts`
+  // stavu — appka ho stejně dostane napořadě při dalším načtení profilu,
+  // a tohle stačí na "přerenderuj den" ihned po kliknutí.
+  const [zamenaPodleKlice, setZamenaPodleKlice] = useState<Record<string, ExerciseItem>>({});
+  const [nacitaSeVarianta, setNacitaSeVarianta] = useState<string | null>(null);
+  const [chybaVariantyPodleKlice, setChybaVariantyPodleKlice] = useState<Record<string, string>>({});
+
+  const handleZamenitVariantu = async (klic: string, ex: ExerciseItem, smer: 'lehci' | 'tezsi') => {
+    if (ex.planId == null || ex.planDay == null || !ex.canonicalKey) return;
+    setNacitaSeVarianta(klic);
+    setChybaVariantyPodleKlice(prev => {
+      const dalsi = { ...prev };
+      delete dalsi[klic];
+      return dalsi;
+    });
+    try {
+      const odpoved = await apiFetch<{ exercise: any }>('/api/plan/exercise-variant', {
+        method: 'POST',
+        body: JSON.stringify({
+          plan_id: ex.planId,
+          day_index: ex.planDay,
+          canonical_key: ex.canonicalKey,
+          smer
+        })
+      });
+      const novy = cvikZPlanu(odpoved.exercise, 0, '', ex.planId ?? null, ex.planDay);
+      setZamenaPodleKlice(prev => ({ ...prev, [klic]: novy }));
+    } catch (chyba: any) {
+      setChybaVariantyPodleKlice(prev => ({
+        ...prev,
+        [klic]: chyba?.message || 'Nepodařilo se zaměnit cvik.'
+      }));
+    } finally {
+      setNacitaSeVarianta(null);
+    }
+  };
 
   const selectedWorkout = vybranyTrenink(workouts, selectedDayName);
   const todayWorkout = dnesniTrenink(workouts);
@@ -249,9 +299,15 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
 
         {/* Exercises Table / List */}
         <div className="space-y-3">
-          {selectedWorkout.exercises.map((ex, i) => (
+          {selectedWorkout.exercises.map((puvodniCvik, i) => {
+            // Klíč podle pozice, ne podle id — po záměně varianty se id (=
+            // canonical_key) změní, ale patch i rozbalený panel mají zůstat
+            // u téhož řádku.
+            const klic = `${selectedWorkout.dayName}#${i}`;
+            const ex = zamenaPodleKlice[klic] || puvodniCvik;
+            return (
             <div
-              key={ex.id}
+              key={klic}
               className={`rounded-2xl border transition-all ${
                 ex.completed
                   ? 'bg-emerald-950/20 border-emerald-500/30'
@@ -274,8 +330,16 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
                 </div>
 
                 <div>
-                  <h5 className={`text-sm font-bold ${ex.completed ? 'text-emerald-300 line-through' : 'text-slate-100'}`}>
-                    {i + 1}. {ex.name}
+                  <h5 className={`text-sm font-bold flex items-center gap-2 ${ex.completed ? 'text-emerald-300 line-through' : 'text-slate-100'}`}>
+                    <span>{i + 1}. {ex.name}</span>
+                    {/* BADGE OBTÍŽNOSTI. Z `level` v registru cviků (doplňuje
+                        /api/profile) — chybí u warmup/rest/cooldown a u cviků
+                        bez obtížnosti, pak se nekreslí nic. */}
+                    {ex.obtiznost && (
+                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border ${barvyObtiznosti(ex.obtiznost)}`}>
+                        {ex.obtiznost}
+                      </span>
+                    )}
                   </h5>
                   {/* ZÁPIS ROZEPSANÝ SLOVY.
                       „3 × 8–10" je jasné tomu, kdo posilovnu zná. Kdo v ní
@@ -312,10 +376,10 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setOtevrenaUkazka(otevrenaUkazka === ex.id ? null : ex.id);
+                      setOtevrenaUkazka(otevrenaUkazka === klic ? null : klic);
                     }}
                     className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold inline-flex items-center gap-1 transition-all ${
-                      otevrenaUkazka === ex.id
+                      otevrenaUkazka === klic
                         ? 'bg-cyan-950/70 border-cyan-500/50 text-akcent-cyan'
                         : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-cyan-500/40'
                     }`}
@@ -328,7 +392,7 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
               </div>
             </div>
 
-            {(ex.ukazkaUrl || (ex.postup?.length ?? 0) > 0) && otevrenaUkazka === ex.id && (
+            {(ex.ukazkaUrl || (ex.postup?.length ?? 0) > 0) && otevrenaUkazka === klic && (
               <div className="px-4 pb-4">
                 {ex.ukazkaUrl && (
                   <div className="rounded-xl overflow-hidden bg-slate-950 border border-slate-800">
@@ -357,10 +421,48 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
                   {serieOpakovaniSlovy(ex.sets, ex.reps)}
                   {ex.targetMuscle && ` • zabírá ${ex.targetMuscle}`}
                 </p>
+
+                {/* LEHČÍ/TĚŽŠÍ VARIANTA (POST /api/plan/exercise-variant).
+                    Tlačítko existuje jen s párem klíč+název — bez něj by
+                    mířilo na cvik, který se nedá popsat ani zobrazit. */}
+                {(ex.easierKey || ex.harderKey) && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {ex.easierKey && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleZamenitVariantu(klic, ex, 'lehci');
+                        }}
+                        disabled={nacitaSeVarianta === klic}
+                        className="px-2.5 py-1 rounded-xl border text-[11px] font-bold bg-slate-950 border-slate-800 text-emerald-300 hover:border-emerald-500/40 disabled:opacity-50 transition-all"
+                      >
+                        {nacitaSeVarianta === klic ? 'Měním…' : `Lehčí varianta: ${ex.easierNazev}`}
+                      </button>
+                    )}
+                    {ex.harderKey && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleZamenitVariantu(klic, ex, 'tezsi');
+                        }}
+                        disabled={nacitaSeVarianta === klic}
+                        className="px-2.5 py-1 rounded-xl border text-[11px] font-bold bg-slate-950 border-slate-800 text-rose-300 hover:border-rose-500/40 disabled:opacity-50 transition-all"
+                      >
+                        {nacitaSeVarianta === klic ? 'Měním…' : `Těžší varianta: ${ex.harderNazev}`}
+                      </button>
+                    )}
+                  </div>
+                )}
+                {chybaVariantyPodleKlice[klic] && (
+                  <p className="text-[11px] text-rose-400 mt-2">{chybaVariantyPodleKlice[klic]}</p>
+                )}
               </div>
             )}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

@@ -69,7 +69,15 @@ export const BodyCompositionSection: React.FC<BodyCompositionSectionProps> = ({
         onAddMeasurement={onAddMeasurement}
       />
 
-      {/* 3. Withings Sync & Device Info */}
+      {/* 3. PŘIPOJENÁ ZAŘÍZENÍ. Váha i hodinky pod jedním nadpisem — dokud
+          stály jako dvě nesouvisející karty na konci stránky, nebylo poznat,
+          že tohle je místo, kde se zařízení propojují. */}
+      <NadpisSekce
+        titulek="Připojená zařízení"
+        podtitulek="Odkud bereme měření. Víc zdrojů zatím nemáme — co neumíme, tu neslibujeme"
+        ikona={<Watch className="w-5 h-5 text-akcent-lime" />}
+      />
+
       <WithingsCard
         onSync={onSync}
         onOpenSettings={onOpenWithingsSettings}

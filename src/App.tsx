@@ -1129,13 +1129,34 @@ function AppContent() {
             onSync={handleManualWithingsSync}
           />
         ) : (
+          /* PRÁZDNÝ STAV NABÍZÍ CESTU DÁL. Dřív tu stála jen věta „Připoj
+             Apple Health" bez jediného odkazu — a mluvila výhradně o
+             hodinkách, přestože tep a spánek umí měřit i chytrá váha. */
           <div className="p-6 rounded-3xl bg-povrch border border-slate-800 text-center">
-            <p className="text-sm text-slate-300 mb-1">Zatím nemáme data z hodinek.</p>
-            <p className="text-xs text-slate-500">
+            <p className="text-sm text-slate-300 mb-1">Zatím nemáme naměřená data.</p>
+            <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
               {zdravi.pripojeno
-                ? 'Apple Watch jsou připojené, ale ještě nedorazilo první měření.'
-                : 'Připoj Apple Health a uvidíš tu regeneraci, tep a spánek.'}
+                ? 'Zařízení je připojené, ale ještě nedorazilo první měření.'
+                : 'Regeneraci, tep a spánek bereme z hodinek přes Apple Health a z chytré váhy Withings. Propoj aspoň jedno a uvidíš tu svoje čísla.'}
             </p>
+            {!zdravi.pripojeno && (
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsWithingsModalOpen(true)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-akcent-cyan bg-cyan-950/60 border border-cyan-500/40 hover:bg-cyan-900/60 transition-all active:scale-[0.99]"
+                >
+                  Připojit Withings
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('vaha')}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-300 bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all active:scale-[0.99]"
+                >
+                  Připojit hodinky
+                </button>
+              </div>
+            )}
           </div>
         ))}
 

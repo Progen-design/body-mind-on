@@ -6,6 +6,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { loadLocalEnv } from './audit-utils.mjs';
 import { classifyBetaUser } from '../lib/betaUserClassification.js';
+import { nactiVsechnyRadky } from '../lib/supabasePagination.js';
 
 loadLocalEnv();
 
@@ -42,11 +43,15 @@ async function loadUsers() {
 }
 
 async function loadEvents(since) {
-  let q = admin.from('product_events').select('user_id, event_name, created_at');
-  if (since) q = q.gte('created_at', since);
-  const { data, error } = await q;
-  if (error) throw error;
-  return data || [];
+  // Bez stránkování (naměřeno 9. 9. 2026): product_events má 1 061 řádků,
+  // takže tenhle report už dnes tiše počítal jen z prvních 1000 — přesně
+  // ten vzor, který useknul scripts/doplneni-postupu-receptu.mjs.
+  return nactiVsechnyRadky({
+    client: admin,
+    tabulka: 'product_events',
+    sloupce: 'user_id, event_name, created_at',
+    filtr: (dotaz) => (since ? dotaz.gte('created_at', since) : dotaz),
+  });
 }
 
 function uniqueUsers(events, names, userClass) {

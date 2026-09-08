@@ -2,6 +2,7 @@
 import { supabaseServer } from '../../lib/supabaseServer.js';
 import { POSITIVE_HABITS, NEGATIVE_HABITS } from '../../lib/habits.js';
 import { getRegistrationAnchoredWeek } from '../../lib/profileWeekRange.js';
+import { nactiVsechnyRadky } from '../../lib/supabasePagination.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -22,14 +23,20 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'Pouze trenér může zobrazit seznam klientů.' });
     }
 
-    // Uživatelé s alespoň jednou body_metrics (klienti ze START)
-    const { data: metricsRows, error: metricsErr } = await supabaseServer
-      .from('body_metrics')
-      .select('user_id, name, weight_kg, height_cm, program, created_at')
-      .not('user_id', 'is', null)
-      .order('created_at', { ascending: false });
-
-    if (metricsErr) {
+    // Uživatelé s alespoň jednou body_metrics (klienti ze START).
+    // Stránkované (naměřeno 9. 9. 2026): 35 řádků/16 uživatelů dnes
+    // neselhává, ale je to živá tabulka, která roste s každým vážením —
+    // stejný vzor, co jinde už jednou tiše useknul data na 1000 řádků.
+    let metricsRows;
+    try {
+      metricsRows = await nactiVsechnyRadky({
+        client: supabaseServer,
+        tabulka: 'body_metrics',
+        sloupce: 'user_id, name, weight_kg, height_cm, program, created_at',
+        poradi: { sloupec: 'created_at', ascending: false },
+        filtr: (dotaz) => dotaz.not('user_id', 'is', null),
+      });
+    } catch (metricsErr) {
       console.error('[trainer/clients] body_metrics:', metricsErr);
       return res.status(500).json({ error: 'Nepodařilo se načíst data', clients: [] });
     }

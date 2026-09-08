@@ -80,11 +80,16 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
     [data.goal, data.activity, data.stress]
   );
 
-  const vsechnyNavyky = useMemo(
-    () => [
-      ...POSITIVE_HABITS.map((h: any) => ({ value: h.id as string, label: `${h.emoji} ${h.label}` })),
-      ...NEGATIVE_HABITS.map((h: any) => ({ value: h.id as string, label: `${h.emoji} ${h.label}` }))
-    ],
+  // DVĚ SKUPINY, NE JEDEN SEZNAM. „Kvalitní spánek" a „Nedostatek spánku"
+  // stály vedle sebe bez rozlišení, stejně jako „Zdravá strava" a „Junk
+  // food" — dala se vybrat protichůdná dvojice a nebylo poznat, že jedno
+  // se buduje a druhé omezuje. Výběr zůstává jedno pole `navyky`.
+  const navykyKBudovani = useMemo(
+    () => POSITIVE_HABITS.map((h: any) => ({ value: h.id as string, label: `${h.emoji} ${h.label}` })),
+    []
+  );
+  const zlozvykyKOmezeni = useMemo(
+    () => NEGATIVE_HABITS.map((h: any) => ({ value: h.id as string, label: `${h.emoji} ${h.label}` })),
     []
   );
 
@@ -422,9 +427,22 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
           </p>
         </div>
       )}
-      <Vicenasobny popisek="Návyky, které chceš sledovat" hodnoty={navyky} volby={vsechnyNavyky}
+      <Vicenasobny popisek="Návyky, které chceš budovat" hodnoty={navyky} volby={navykyKBudovani}
         napoveda="Vyber aspoň jeden. Přidat další můžeš kdykoli v profilu."
-        onZmena={(v) => { setNavyky(v); setChyby((c) => ({ ...c, navyky: '' })); }} />
+        onZmena={(v) => {
+          // Výběr z jedné skupiny nesmí přepsat výběr z druhé — `Vicenasobny`
+          // vrací jen svoje hodnoty, takže se druhá skupina musí dopsat zpět.
+          const zDruhe = navyky.filter((h) => zlozvykyKOmezeni.some((z) => z.value === h));
+          setNavyky([...v.filter((h) => navykyKBudovani.some((n) => n.value === h)), ...zDruhe]);
+          setChyby((c) => ({ ...c, navyky: '' }));
+        }} />
+      <Vicenasobny popisek="Zlozvyky, které chceš omezit" hodnoty={navyky} volby={zlozvykyKOmezeni}
+        volitelne
+        onZmena={(v) => {
+          const zPrvni = navyky.filter((h) => navykyKBudovani.some((n) => n.value === h));
+          setNavyky([...zPrvni, ...v.filter((h) => zlozvykyKOmezeni.some((z) => z.value === h))]);
+          setChyby((c) => ({ ...c, navyky: '' }));
+        }} />
       <Chyba text={chyby.navyky} />
     </div>
   );

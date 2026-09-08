@@ -1,41 +1,34 @@
-import React, { useState } from 'react';
-import { X, Download, Printer, Check, FileText, Sparkles } from 'lucide-react';
+import React from 'react';
+import { X, Download, Printer, FileText } from 'lucide-react';
 import { motion } from 'motion/react';
 import { MealItem, UserProfile } from '../types';
 import { datumCesky, dnesekPraha } from '../data/adaptery';
+import { postupProJidlo, soucetKcalPlanu } from '../lib/exportJidelnicku';
 
 interface ExportMealPlanModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Jídla dne, který se má vytisknout. Dnes vždy dnešek — App.tsx posílá
+      `meals` (naJidla(plan)), ne den vybraný v přepínači záložek jídelníčku. */
   meals: MealItem[];
   profile: UserProfile;
-  totalCalories: number;
 }
 
 export const ExportMealPlanModal: React.FC<ExportMealPlanModalProps> = ({
   isOpen,
   onClose,
   meals,
-  profile,
-  totalCalories
+  profile
 }) => {
-  const [isExporting, setIsExporting] = useState(false);
-  const [downloaded, setDownloaded] = useState(false);
-
   if (!isOpen) return null;
 
+  // Obě tlačítka dělají totéž — otevřou tiskový dialog prohlížeče, kde je
+  // "Uložit jako PDF" jako cíl. Žádný jsPDF, žádná atrapa, jedna cesta.
   const handlePrint = () => {
     window.print();
   };
 
-  const handleDownloadPdf = () => {
-    setIsExporting(true);
-    setTimeout(() => {
-      setIsExporting(false);
-      setDownloaded(true);
-      setTimeout(() => setDownloaded(false), 3000);
-    }, 1200);
-  };
+  const planTotalKcal = soucetKcalPlanu(meals);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -81,7 +74,7 @@ export const ExportMealPlanModal: React.FC<ExportMealPlanModalProps> = ({
 
         {/* Printable Document Preview */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1">
-          <div className="p-5 rounded-2xl bg-white text-slate-900 shadow-xl border border-slate-200 text-xs space-y-4">
+          <div id="tiskovy-dokument" className="p-5 rounded-2xl bg-white text-slate-900 shadow-xl border border-slate-200 text-xs space-y-4">
             {/* Document Header */}
             <div className="flex items-start justify-between border-b pb-3 border-slate-200">
               <div>
@@ -94,24 +87,44 @@ export const ExportMealPlanModal: React.FC<ExportMealPlanModalProps> = ({
               </div>
               <div className="text-right text-[11px] text-slate-600">
                 <div className="font-bold text-slate-900">{profile.name}</div>
+                {/* `meals` je vždy dnešek (App.tsx posílá naJidla(plan), ne den
+                    z přepínače záložek jídelníčku) — datum dnešního dne je tu
+                    proto správně, ne natvrdo mimo to, co se skutečně tiskne. */}
                 <div>Datum: {datumCesky(dnesekPraha())}</div>
-                <div>Celkem: {totalCalories} kcal</div>
+                <div>Plán celkem: {planTotalKcal} kcal</div>
               </div>
             </div>
 
             {/* Meals Table in PDF preview */}
             <div className="space-y-3">
-              {meals.map((m, i) => (
-                <div key={m.id} className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                  <div className="flex justify-between font-bold text-slate-900 text-xs mb-1">
-                    <span>{m.type} ({m.time}) - {m.title}</span>
-                    <span className="text-emerald-700">{m.calories} kcal (B: {m.protein}g, S: {m.carbs}g, T: {m.fat}g)</span>
+              {meals.map((m) => {
+                const postup = postupProJidlo(m);
+                return (
+                  <div key={m.id} className="jidlo p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                    <div className="flex justify-between font-bold text-slate-900 text-xs mb-1">
+                      <span>{m.type} ({m.time}) - {m.title}</span>
+                      <span className="text-emerald-700">{m.calories} kcal (B: {m.protein}g, S: {m.carbs}g, T: {m.fat}g)</span>
+                    </div>
+                    <div className="text-[11px] text-slate-600">
+                      Suroviny: {m.ingredients.join(', ')}
+                    </div>
+                    {/* Bez receptu nebo bez kroků se nekreslí nic — žádné
+                        "Postup není k dispozici" (docs/DALSI_KROK.md 9.9). */}
+                    {postup && (
+                      <div className="text-[11px] text-slate-600 mt-1.5">
+                        {postup.prepTimeMin != null && (
+                          <div className="font-semibold text-slate-700">Příprava: {postup.prepTimeMin} min</div>
+                        )}
+                        <ol className="list-decimal list-inside mt-0.5 space-y-0.5">
+                          {postup.kroky.map((krok, idx) => (
+                            <li key={idx}>{krok}</li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
                   </div>
-                  <div className="text-[11px] text-slate-600">
-                    Suroviny: {m.ingredients.join(', ')}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Document Footer */}
@@ -123,41 +136,36 @@ export const ExportMealPlanModal: React.FC<ExportMealPlanModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 sm:p-5 border-t border-slate-800 bg-slate-900/40 flex items-center justify-between">
-          <button
-            onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 transition-all"
-          >
-            <Printer className="w-4 h-4 text-cyan-400" />
-            <span>Tisknout</span>
-          </button>
-
-          <div className="flex items-center gap-2">
+        <div className="p-4 sm:p-5 border-t border-slate-800 bg-slate-900/40 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
             <button
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+              onClick={handlePrint}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 transition-all"
             >
-              Zavřít
+              <Printer className="w-4 h-4 text-cyan-400" />
+              <span>Tisknout</span>
             </button>
 
-            <button
-              onClick={handleDownloadPdf}
-              disabled={isExporting}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 text-white shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95 disabled:opacity-50"
-            >
-              {downloaded ? (
-                <>
-                  <Check className="w-4 h-4 text-white" />
-                  <span>PDF staženo!</span>
-                </>
-              ) : (
-                <>
-                  <Download className={`w-4 h-4 ${isExporting ? 'animate-bounce' : ''}`} />
-                  <span>{isExporting ? 'Generuji PDF...' : 'Stáhnout PDF'}</span>
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+              >
+                Zavřít
+              </button>
+
+              <button
+                onClick={handlePrint}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 text-white shadow-[0_0_15px_rgba(57,255,20,0.3)] active:scale-95"
+              >
+                <Download className="w-4 h-4" />
+                <span>Uložit jako PDF</span>
+              </button>
+            </div>
           </div>
+          <p className="text-[11px] text-slate-500 text-right">
+            V tiskovém dialogu vyber cíl Uložit jako PDF.
+          </p>
         </div>
       </motion.div>
     </div>

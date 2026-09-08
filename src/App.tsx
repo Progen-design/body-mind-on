@@ -873,9 +873,6 @@ function AppContent() {
   const maPlan = meals.length > 0 || treninkoveDny(workouts).length > 0;
   const todayWorkout: WorkoutDay = dnesniTreninkPresne(workouts);
 
-  // Calculated macros
-  const totalCalories = meals.reduce((acc, m) => acc + (m.completed ? m.calories : 0), 0);
-
   // Pending habits
   const pendingHabitsCount = habits.filter(h => !h.completed).length;
 
@@ -1202,7 +1199,6 @@ function AppContent() {
         onClose={() => setIsExportPdfOpen(false)}
         meals={meals}
         profile={displayedProfile}
-        totalCalories={totalCalories}
       />
 
       <WeeklyWorkoutModal

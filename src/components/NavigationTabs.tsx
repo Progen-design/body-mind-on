@@ -40,7 +40,10 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
     { id: 'trenink', label: 'Tréninkový plán', icon: Dumbbell },
     // Odznak u regenerace byl natvrdo '70'. Skóre regenerace často vůbec
     // nemáme (backend hlásí „nedostatek dat"), takže tu žádné číslo nesvítí.
-    { id: 'regenerace', label: 'Apple Watch & Regenerace', icon: Activity }
+    // NE ZNAČKA ZAŘÍZENÍ, ALE OBSAH. Záložka se jmenovala „Apple Watch &
+  // Regenerace", jenže hodinky nemusí být od Applu — data chodí z Apple
+  // Health i z Withings a jméno záložky nemá slibovat konkrétní výrobek.
+  { id: 'regenerace', label: 'Regenerace & Spánek', icon: Activity }
   ];
 
   return (

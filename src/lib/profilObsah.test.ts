@@ -31,12 +31,17 @@ const BODY_STATS = kod(cti('../components/BodyStatsGrid.tsx'));
 const CALORIE_BANNER = kod(cti('../components/CalorieMismatchBanner.tsx'));
 const WEEKLY_WORKOUT_MODAL = kod(cti('../components/WeeklyWorkoutModal.tsx'));
 
-test('AI trenér TED je v profilu jen jednou', () => {
-  // TED byl jako dlaždice mezi zařízeními a zároveň jako vlastní karta níž.
-  // Není zařízení, nic nesynchronizuje — z karty zařízení proto zmizel.
+test('AI trenér TED není v profilu vůbec — vstup do chatu je v hlavičce', () => {
+  // Nejdřív byl TED jako dlaždice mezi zařízeními A jako vlastní karta níž.
+  // Dlaždice zmizela 23. 8. (není zařízení, nic nesynchronizuje), karta
+  // 8. 9.: tlačítko „Zeptat se TEDa" je v hlavičce na každé záložce, takže
+  // karta byla druhý vstup do téhož chatu — a zprávy od trenéra vznikají
+  // jen při registraci a po týdnu se skrývají, takže většinu času stála
+  // v profilu karta se jménem TEDa, ve které TED nebyl.
   assert.ok(!PROFIL.includes('AI trenér TED'), 'TED je zpátky mezi zařízeními');
   assert.ok(!PROFIL.includes('useTed'), 'ProfileSection zase sahá na TEDa');
-  assert.ok(BENTO.includes('AI Trenér TED'), 'karta TEDa musí v Bento gridu zůstat');
+  assert.ok(!BENTO.includes('AI Trenér TED'), 'karta TEDa je zpátky v Bento gridu');
+  assert.ok(!BENTO.includes('onAskTed'), 'Bento grid zase otevírá chat s TEDem');
 });
 
 test('prázdný štít členství se nevrátil', () => {
@@ -135,7 +140,7 @@ test('záložka Přehled je pryč a profil kreslí obojí', () => {
   );
 });
 
-test('nákupní seznam sedí u jídelníčku (Karta 3), ne u TEDa (Karta 6) — docs/DALSI_KROK.md 6.8', () => {
+test('nákupní seznam sedí u jídelníčku (Karta 3) — docs/DALSI_KROK.md 6.8', () => {
   // Karta 6 se hlavičkou hlásila jako "AI Trenér TED", ale zobrazovala pod
   // ní i nesouvisející nákupní seznam — rozpor mezi nadpisem a obsahem.
   // Značky karet jsou v JSX komentářích, které kod() odstraňuje, proto se
@@ -143,18 +148,14 @@ test('nákupní seznam sedí u jídelníčku (Karta 3), ne u TEDa (Karta 6) — 
   const surovy = cti('../components/OverviewBentoGrid.tsx');
   const zacatekKarty3 = surovy.indexOf('KARTA 3');
   const zacatekKarty4 = surovy.indexOf('KARTA 4');
-  const zacatekKarty6 = surovy.indexOf('KARTA 6');
-  assert.ok(zacatekKarty3 > -1 && zacatekKarty4 > -1 && zacatekKarty6 > -1, 'značky karet zmizely ze souboru');
+  assert.ok(zacatekKarty3 > -1 && zacatekKarty4 > -1, 'značky karet zmizely ze souboru');
 
   // kod() na výřezu, ne na celém souboru — markery karet jsou v komentářích
-  // a bez stripu by je nešlo najít; komentáře uvnitř výřezu ale nesmí
-  // ovlivnit test (např. tenhle komentář u Karty 6 sám "Nákupní seznam"
-  // zmiňuje jako historii, ne jako obsah).
+  // a bez stripu by je nešlo najít.
   const obsahKarty3 = kod(surovy.slice(zacatekKarty3, zacatekKarty4));
-  const obsahKarty6 = kod(surovy.slice(zacatekKarty6));
 
   assert.ok(obsahKarty3.includes('Nákupní seznam'), 'Karta 3 nemá nákupní seznam');
-  assert.ok(!obsahKarty6.includes('Nákupní seznam'), 'Karta 6 (TED) zase zobrazuje nákupní seznam');
+  // Karta 6 (TED) byla 8. 9. 2026 odstraněna celá, viz test výš.
 });
 
 test('v den volna karta 4 nabízí zápis mimo plán, ne stopky pro neexistující trénink (docs/DALSI_KROK.md 6.11)', () => {

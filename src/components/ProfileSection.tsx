@@ -45,6 +45,8 @@ interface ProfileSectionProps {
   onRegeneratePlan?: () => void;
   regenerujiPlan?: boolean;
   onEditPreferences: () => void;
+  /** Otevře modal pro propojení Withings. Bez něj se u nepřipojené váhy nedá nic udělat. */
+  onOpenWithingsSettings?: () => void;
   onSyncAll: () => void;
   onAddWeight: () => void;
   /** Přepne na záložku Tělo & Váha s grafem vývoje. */
@@ -66,6 +68,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   onRegeneratePlan,
   regenerujiPlan = false,
   onEditPreferences,
+  onOpenWithingsSettings,
   onSyncAll,
   onAddWeight,
   onOpenWeightTab,
@@ -448,6 +451,19 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                   : 'Stahuje server sám, zatím ale žádné stažení neproběhlo'}
               </span>
             </div>
+            {/* CESTA K PROPOJENÍ PŘÍMO TADY. Karta uměla říct „Zatím žádné
+                měření", ale ne co s tím — odkaz na propojení nebyl nikde
+                v profilu a uživatel musel uhodnout, že vede přes záložku
+                Tělo & Váha. */}
+            {!slozeni && onOpenWithingsSettings && (
+              <button
+                type="button"
+                onClick={onOpenWithingsSettings}
+                className="mt-3 w-full py-2 px-3 rounded-xl text-[11px] font-bold text-akcent-cyan bg-cyan-950/60 border border-cyan-500/40 hover:bg-cyan-900/60 transition-all active:scale-[0.99]"
+              >
+                Připojit Withings
+              </button>
+            )}
           </div>
 
           {/* APPLE HEALTH — DATA POSÍLÁ TELEFON, SERVER SI JE NEVYŽÁDÁ.
@@ -504,6 +520,16 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                   : 'Odesílá iPhone, server si data stáhnout nemůže'}
               </span>
             </div>
+            {/* U hodinek se nedá nabídnout tlačítko: Apple neumožňuje číst
+                HealthKit ze serveru, takže propojení spustí jedině telefon.
+                Místo tlačítka tedy aspoň říct, čím začít — dosud tu nebylo
+                nic a uživatel bez dat netušil, co má udělat. */}
+            {!zdraviPosledni && (
+              <div className="mt-3 p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
+                Data posílá iPhone, ne server. V aplikaci Health Auto Export
+                nastav odesílání na Body &amp; Mind ON a hodinky se přidají samy.
+              </div>
+            )}
           </div>
         </div>
       </div>

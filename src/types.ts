@@ -74,6 +74,19 @@ export interface ExerciseItem extends AktivitaPlanu {
    * angličtina (docs/DALSI_KROK.md 9.9).
    */
   postup?: string[];
+  /** canonical_key z registru — nutné pro POST /api/plan/exercise-variant (záměna za lehčí/těžší). */
+  canonicalKey?: string;
+  /**
+   * 'lehké' | 'střední' | 'těžké' — z `level` v registru cviků (doplňuje
+   * /api/profile). Chybí u warmup/rest/cooldown a u cviků bez obtížnosti.
+   */
+  obtiznost?: string;
+  /** canonical_key + český název lehčí varianty. Obojí, nebo nic — bez názvu by tlačítko nemělo co ukázat. */
+  easierKey?: string;
+  easierNazev?: string;
+  /** canonical_key + český název těžší varianty. Obojí, nebo nic. */
+  harderKey?: string;
+  harderNazev?: string;
   completed?: boolean;
 }
 

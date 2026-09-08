@@ -305,7 +305,36 @@ export default async function handler(req, res) {
       if (chybaRegistru) {
         console.error('[api/profile] svaly cviku:', chybaRegistru.message);
       } else {
-        plansData = doplnSvalyDoPlanu(plansData, radkyRegistru ?? []);
+        // canonical_key -> display_name_cs pro cviky v plánu.
+        const nazevMap = new Map(
+          (radkyRegistru ?? [])
+            .filter((r) => r?.canonical_key)
+            .map((r) => [r.canonical_key, r.display_name_cs || ''])
+        );
+
+        // DRUHÁ DÁVKA — jen pro variantu (easier_key/harder_key), která sama
+        // není mezi cviky v žádném plánu, takže první dávka o ní neví.
+        // Pořád jeden batch dotaz navíc, ne dotaz na cvik. Stejný vzor jako
+        // lib/services/planOrchestratorResolve.js resolveWorkouts().
+        const variantKlice = [...new Set(
+          (radkyRegistru ?? []).flatMap((r) => [r?.easier_key, r?.harder_key])
+        )].filter((k) => k && !nazevMap.has(k));
+
+        if (variantKlice.length > 0) {
+          const { data: variantRadky, error: chybaVariant } = await supabaseServer
+            .from('exercise_asset_registry')
+            .select('canonical_key, display_name_cs')
+            .in('canonical_key', variantKlice);
+          if (chybaVariant) {
+            console.error('[api/profile] varianty cviku:', chybaVariant.message);
+          } else {
+            for (const r of variantRadky ?? []) {
+              if (r?.canonical_key) nazevMap.set(r.canonical_key, r.display_name_cs || '');
+            }
+          }
+        }
+
+        plansData = doplnSvalyDoPlanu(plansData, radkyRegistru ?? [], nazevMap);
       }
     }
 

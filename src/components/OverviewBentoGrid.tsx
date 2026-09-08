@@ -94,129 +94,10 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
           BMI, datum mereni a odkaz na graf, ktere v ProfileSection chybely,
           se tam presunuly. */}
 
-      {/* 
-        ========================================================================
-        HERO METRIKA 2: Skóre Regenerace & Apple Watch (lg:col-span-1)
-        Zvýrazněný vitální panel se živým biometrickým streamem
-        ========================================================================
-      */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, delay: 0.05 }}
-        className="col-span-1 md:col-span-2 lg:col-span-1 relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-povrch/95 backdrop-blur-xl border border-cyan-500/35 shadow-[0_10px_35px_rgba(0,0,0,0.55)] flex flex-col justify-between group hover:border-lime-400/60 transition-all duration-300"
-      >
-        <div className="absolute top-0 right-0 w-44 h-44 bg-lime-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div>
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-lime-950/70 border border-lime-500/40 flex items-center justify-center text-akcent-lime shadow-[0_0_12px_rgba(57,255,20,0.25)]">
-                <Activity className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight">
-                  Regenerace &amp; spánek
-                </h3>
-                {/* „Živý biometrický stream" nic neznamenalo — data chodí
-                    dávkově při synchronizaci, ne živě. */}
-                <span className="text-[10px] text-slate-400 font-semibold">Z Apple Health a chytré váhy</span>
-              </div>
-            </div>
-            {/* Odznak byl natvrdo „Ubrat intenzitu" pro každého a bez ohledu
-                na skóre. Stav ukazujeme jen tehdy, když ho server spočítal. */}
-            {biometrics.recoveryScore > 0 && biometrics.recoveryStatus && (
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-amber-300 bg-amber-950/60 border border-amber-500/40">
-                {biometrics.recoveryStatus}
-              </span>
-            )}
-          </div>
-
-          {/* Main Score 70/100 */}
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-900/70 border border-slate-800 mb-4">
-            <div>
-              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
-                Denní připravenost
-              </div>
-              {/* Bez skore se nekresli ani "/ 100" — "0 / 100" tvrdi nulovou
-                  pripravenost, coz je neco jineho nez "nemame dost dat". */}
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-                  {biometrics.recoveryScore > 0 ? biometrics.recoveryScore : '—'}
-                </span>
-                {biometrics.recoveryScore > 0 && (
-                  <span className="text-base font-bold text-slate-500">/ 100</span>
-                )}
-              </div>
-              {biometrics.recoveryScore <= 0 && (
-                <div className="text-[11px] text-slate-500 mt-0.5">
-                  Zatím málo dat na výpočet.
-                </div>
-              )}
-              {/* Stav ze serveru. Driv tu bylo natvrdo "Parasympaticka unava"
-                  a vedle odznak "70 % READY" — tri tvrzeni o temz skore,
-                  z toho dve vymyslena. */}
-              {biometrics.recoveryStatus && biometrics.recoveryScore > 0 && (
-                <div className="text-xs text-amber-300 font-semibold mt-0.5">
-                  {biometrics.recoveryStatus}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Sub Biometrics: HRV, Klidový tep, Spánek */}
-          <div className="grid grid-cols-3 gap-2 p-3 rounded-2xl bg-slate-900/80 border border-slate-800 mb-4">
-            <div>
-              <div className="text-[10px] text-slate-400 font-medium inline-flex items-center gap-1">
-                HRV
-                <Vysvetlivka pojem="hrv" />
-              </div>
-              <div className="text-sm sm:text-base font-bold text-amber-400 mt-0.5">
-                {hodnotaNeboPomlcka(biometrics.hrvMs > 0 ? biometrics.hrvMs : null, 'ms')}
-              </div>
-              {/* Baseline ze stejneho zdroje jako hodnota. Driv tu bylo
-                  natvrdo "B: 28 ms", na zalozce Regenerace "42,0 ms". */}
-              {biometrics.hrvBaselineMs > 0 && (
-                <div className="text-[10px] text-slate-500">
-                  Základna {hodnotaNeboPomlcka(biometrics.hrvBaselineMs, 'ms')}
-                </div>
-              )}
-            </div>
-            <div className="border-l border-slate-800 pl-2">
-              <div className="text-[10px] text-slate-400 font-medium inline-flex items-center gap-1">
-                Klid. tep
-                <Vysvetlivka pojem="klidovy_tep" />
-              </div>
-              <div className="text-sm sm:text-base font-bold text-white mt-0.5">
-                {hodnotaNeboPomlcka(biometrics.restingHrBpm > 0 ? biometrics.restingHrBpm : null, 'bpm', 0)}
-              </div>
-            </div>
-            <div className="border-l border-slate-800 pl-2">
-              <div className="text-[10px] text-slate-400 font-medium">Spánek</div>
-              <div className="text-sm sm:text-base font-bold text-akcent-cyan mt-0.5">
-                {biometrics.sleepDuration || '—'}
-              </div>
-              {/* ŽÁDNÁ EFEKTIVITA SPÁNKU. Dřív tu bylo natvrdo „92 %", pak
-                  podmínka `> 0` — jenže adaptér tam vždycky psal nulu, takže
-                  to byla mrtvá větev. Zdroj posílá `inBedEnd` 16:20, z čehož
-                  se efektivita ani spočítat nedá. Pole je pryč z typu i UI. */}
-            </div>
-          </div>
-        </div>
-
-        {/* Action to switch to Regenerace deep tab */}
-        <div className="pt-1">
-          <button
-            onClick={() => onSelectTab('regenerace')}
-            className="w-full py-2.5 px-3 rounded-xl text-xs font-bold text-emerald-300 bg-emerald-950/50 hover:bg-emerald-900/70 border border-emerald-500/40 hover:border-emerald-400 flex items-center justify-center gap-1.5 transition-all"
-          >
-            <span>Zobrazit regeneraci a spánek</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      </motion.div>
-
+      {/* JÍDELNÍČEK A TRÉNINK NA PRVNÍM ŘÁDKU (9. 9. 2026).
+          Span 2 + span 1 vyplní všechny tři sloupce, takže obojí sedí vedle
+          sebe hned nahoře. Dřív tu začínala Regenerace (span 1), čímž se
+          široký jídelníček zalomil na druhý řádek a trénink spadl pod něj. */}
       {/* 
         ========================================================================
         KARTA 3: Jídelníček & Makra dnes (col-span-1 md:col-span-1 lg:col-span-2)
@@ -481,6 +362,128 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
         </div>
       </motion.div>
 
+      {/* 
+        ========================================================================
+        HERO METRIKA 2: Skóre Regenerace & Apple Watch (lg:col-span-1)
+        Zvýrazněný vitální panel se živým biometrickým streamem
+        ========================================================================
+      */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.05 }}
+        className="col-span-1 md:col-span-2 lg:col-span-1 relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-povrch/95 backdrop-blur-xl border border-cyan-500/35 shadow-[0_10px_35px_rgba(0,0,0,0.55)] flex flex-col justify-between group hover:border-lime-400/60 transition-all duration-300"
+      >
+        <div className="absolute top-0 right-0 w-44 h-44 bg-lime-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div>
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-lime-950/70 border border-lime-500/40 flex items-center justify-center text-akcent-lime shadow-[0_0_12px_rgba(57,255,20,0.25)]">
+                <Activity className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight">
+                  Regenerace &amp; spánek
+                </h3>
+                {/* „Živý biometrický stream" nic neznamenalo — data chodí
+                    dávkově při synchronizaci, ne živě. */}
+                <span className="text-[10px] text-slate-400 font-semibold">Z Apple Health a chytré váhy</span>
+              </div>
+            </div>
+            {/* Odznak byl natvrdo „Ubrat intenzitu" pro každého a bez ohledu
+                na skóre. Stav ukazujeme jen tehdy, když ho server spočítal. */}
+            {biometrics.recoveryScore > 0 && biometrics.recoveryStatus && (
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-amber-300 bg-amber-950/60 border border-amber-500/40">
+                {biometrics.recoveryStatus}
+              </span>
+            )}
+          </div>
+
+          {/* Main Score 70/100 */}
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-900/70 border border-slate-800 mb-4">
+            <div>
+              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
+                Denní připravenost
+              </div>
+              {/* Bez skore se nekresli ani "/ 100" — "0 / 100" tvrdi nulovou
+                  pripravenost, coz je neco jineho nez "nemame dost dat". */}
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+                  {biometrics.recoveryScore > 0 ? biometrics.recoveryScore : '—'}
+                </span>
+                {biometrics.recoveryScore > 0 && (
+                  <span className="text-base font-bold text-slate-500">/ 100</span>
+                )}
+              </div>
+              {biometrics.recoveryScore <= 0 && (
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  Zatím málo dat na výpočet.
+                </div>
+              )}
+              {/* Stav ze serveru. Driv tu bylo natvrdo "Parasympaticka unava"
+                  a vedle odznak "70 % READY" — tri tvrzeni o temz skore,
+                  z toho dve vymyslena. */}
+              {biometrics.recoveryStatus && biometrics.recoveryScore > 0 && (
+                <div className="text-xs text-amber-300 font-semibold mt-0.5">
+                  {biometrics.recoveryStatus}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Sub Biometrics: HRV, Klidový tep, Spánek */}
+          <div className="grid grid-cols-3 gap-2 p-3 rounded-2xl bg-slate-900/80 border border-slate-800 mb-4">
+            <div>
+              <div className="text-[10px] text-slate-400 font-medium inline-flex items-center gap-1">
+                HRV
+                <Vysvetlivka pojem="hrv" />
+              </div>
+              <div className="text-sm sm:text-base font-bold text-amber-400 mt-0.5">
+                {hodnotaNeboPomlcka(biometrics.hrvMs > 0 ? biometrics.hrvMs : null, 'ms')}
+              </div>
+              {/* Baseline ze stejneho zdroje jako hodnota. Driv tu bylo
+                  natvrdo "B: 28 ms", na zalozce Regenerace "42,0 ms". */}
+              {biometrics.hrvBaselineMs > 0 && (
+                <div className="text-[10px] text-slate-500">
+                  Základna {hodnotaNeboPomlcka(biometrics.hrvBaselineMs, 'ms')}
+                </div>
+              )}
+            </div>
+            <div className="border-l border-slate-800 pl-2">
+              <div className="text-[10px] text-slate-400 font-medium inline-flex items-center gap-1">
+                Klid. tep
+                <Vysvetlivka pojem="klidovy_tep" />
+              </div>
+              <div className="text-sm sm:text-base font-bold text-white mt-0.5">
+                {hodnotaNeboPomlcka(biometrics.restingHrBpm > 0 ? biometrics.restingHrBpm : null, 'bpm', 0)}
+              </div>
+            </div>
+            <div className="border-l border-slate-800 pl-2">
+              <div className="text-[10px] text-slate-400 font-medium">Spánek</div>
+              <div className="text-sm sm:text-base font-bold text-akcent-cyan mt-0.5">
+                {biometrics.sleepDuration || '—'}
+              </div>
+              {/* ŽÁDNÁ EFEKTIVITA SPÁNKU. Dřív tu bylo natvrdo „92 %", pak
+                  podmínka `> 0` — jenže adaptér tam vždycky psal nulu, takže
+                  to byla mrtvá větev. Zdroj posílá `inBedEnd` 16:20, z čehož
+                  se efektivita ani spočítat nedá. Pole je pryč z typu i UI. */}
+            </div>
+          </div>
+        </div>
+
+        {/* Action to switch to Regenerace deep tab */}
+        <div className="pt-1">
+          <button
+            onClick={() => onSelectTab('regenerace')}
+            className="w-full py-2.5 px-3 rounded-xl text-xs font-bold text-emerald-300 bg-emerald-950/50 hover:bg-emerald-900/70 border border-emerald-500/40 hover:border-emerald-400 flex items-center justify-center gap-1.5 transition-all"
+          >
+            <span>Zobrazit regeneraci a spánek</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </motion.div>
 
       {/* KARTA „AI Trenér TED" ODSTRANĚNA 8. 9. 2026.
           TED je v hlavičce jako tlačítko „Zeptat se TEDa" na každé záložce,

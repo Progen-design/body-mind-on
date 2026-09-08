@@ -383,6 +383,83 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
         </div>
       )}
 
+      {/* 5. Cíle stravování, Maker & Životosprávy */}
+      <div className="p-5 sm:p-6 rounded-3xl bg-povrch/90 border border-slate-800 shadow-xl space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
+              <Sliders className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white">Nastavené denní cíle &amp; Makroživiny</h3>
+              {/* Odkud se hodnoty berou. „Makroživiny" samo o sobě nikomu
+                  neřekne, že jde o rozdělení denních kalorií mezi bílkoviny,
+                  sacharidy a tuky, ani že podle toho vzniká jídelníček. */}
+              <p className="text-xs text-slate-400">
+                Denní příjem rozdělený mezi bílkoviny, sacharidy a tuky — podle toho se skládá tvůj jídelníček
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onEditPreferences}
+            className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1"
+          >
+            <span>Změnit hodnoty</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* JEN TO, CO SI UŽIVATEL NASTAVIL.
+            Do 23. 8. 2026 tu vedle kalorií svítily „Pitný režim 3,5 L“ a
+            „Cíl spánku 8h 00m“ — obojí natvrdo z makety v4. Žádné takové
+            pole v preferencích neexistuje, nikdo si je nezadal a nic je
+            neměří. Stejně tak popisky „Lehký přebytek (+150 kcal)“
+            a „~1,0 g / kg svalů“ — dopočet, který nikdo nespočítal.
+            Místo nich jsou tu všechna čtyři makra ze stejného zdroje,
+            ze kterého se staví jídelníček. */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* Kalorie */}
+          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+            <span className="text-xs text-slate-400 block mb-1">Denní kalorie</span>
+            <span className="text-xl font-bold text-white">{preferences.dailyCalorieTarget} kcal</span>
+          </div>
+
+          {/* Makra ze sdíleného `denniMakra` — stejný výpočet jako v dlaždici
+              Jídelníček níž, aby se ta dvě čísla nemohla rozejít. */}
+          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+            <span className="text-xs text-slate-400 block mb-1">Bílkoviny ({makra.bilkoviny.procenta} %)</span>
+            <span className="text-xl font-bold text-makro-bilkoviny">{makra.bilkoviny.gramy} g</span>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+            <span className="text-xs text-slate-400 block mb-1">Sacharidy ({makra.sacharidy.procenta} %)</span>
+            <span className="text-xl font-bold text-amber-400">{makra.sacharidy.gramy} g</span>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+            <span className="text-xs text-slate-400 block mb-1">Tuky ({makra.tuky.procenta} %)</span>
+            <span className="text-xl font-bold text-fuchsia-400">{makra.tuky.gramy} g</span>
+          </div>
+        </div>
+
+        {/* Plán je otisk cíle v okamžiku generování — po změně cíle (např.
+            oprava výšky, 6.5) se sám nepřegeneruje. Watchdog to hlásí
+            (`calorie_target_mismatch`), tady to VIDÍ i uživatel
+            (docs/DALSI_KROK.md 7.2a). */}
+        {nesouladCile && onRegeneratePlan && (
+          <CalorieMismatchBanner
+            nesoulad={nesouladCile}
+            onRegenerate={onRegeneratePlan}
+            regenerating={regenerujiPlan}
+          />
+        )}
+      </div>
+
+      {/* PROPOJENÁ ZAŘÍZENÍ AŽ NA KONCI (9. 9. 2026).
+          Sekce seděla nad cíli a makry, ale pro uživatele není
+          směrodatná — většina žádné zařízení připojené nemá a viděla
+          tu jen dvě prázdné dlaždice. Data, která uživatel opravdu čte
+          (váha, BMI, cíle, makra), jsou teď nad ní. */}
       {/* 3. Connected IoT Devices & Sync Status */}
       <div className="p-5 sm:p-6 rounded-3xl bg-povrch/90 border border-slate-800 shadow-xl space-y-4">
         <div className="flex items-center justify-between">
@@ -540,78 +617,6 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           <div className="mt-3.5">
             <NabidkaPropojeni kompaktni />
           </div>
-        )}
-      </div>
-
-      {/* 5. Cíle stravování, Maker & Životosprávy */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-povrch/90 border border-slate-800 shadow-xl space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
-              <Sliders className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-white">Nastavené denní cíle &amp; Makroživiny</h3>
-              {/* Odkud se hodnoty berou. „Makroživiny" samo o sobě nikomu
-                  neřekne, že jde o rozdělení denních kalorií mezi bílkoviny,
-                  sacharidy a tuky, ani že podle toho vzniká jídelníček. */}
-              <p className="text-xs text-slate-400">
-                Denní příjem rozdělený mezi bílkoviny, sacharidy a tuky — podle toho se skládá tvůj jídelníček
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onEditPreferences}
-            className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1"
-          >
-            <span>Změnit hodnoty</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* JEN TO, CO SI UŽIVATEL NASTAVIL.
-            Do 23. 8. 2026 tu vedle kalorií svítily „Pitný režim 3,5 L“ a
-            „Cíl spánku 8h 00m“ — obojí natvrdo z makety v4. Žádné takové
-            pole v preferencích neexistuje, nikdo si je nezadal a nic je
-            neměří. Stejně tak popisky „Lehký přebytek (+150 kcal)“
-            a „~1,0 g / kg svalů“ — dopočet, který nikdo nespočítal.
-            Místo nich jsou tu všechna čtyři makra ze stejného zdroje,
-            ze kterého se staví jídelníček. */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {/* Kalorie */}
-          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <span className="text-xs text-slate-400 block mb-1">Denní kalorie</span>
-            <span className="text-xl font-bold text-white">{preferences.dailyCalorieTarget} kcal</span>
-          </div>
-
-          {/* Makra ze sdíleného `denniMakra` — stejný výpočet jako v dlaždici
-              Jídelníček níž, aby se ta dvě čísla nemohla rozejít. */}
-          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <span className="text-xs text-slate-400 block mb-1">Bílkoviny ({makra.bilkoviny.procenta} %)</span>
-            <span className="text-xl font-bold text-makro-bilkoviny">{makra.bilkoviny.gramy} g</span>
-          </div>
-
-          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <span className="text-xs text-slate-400 block mb-1">Sacharidy ({makra.sacharidy.procenta} %)</span>
-            <span className="text-xl font-bold text-amber-400">{makra.sacharidy.gramy} g</span>
-          </div>
-
-          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <span className="text-xs text-slate-400 block mb-1">Tuky ({makra.tuky.procenta} %)</span>
-            <span className="text-xl font-bold text-fuchsia-400">{makra.tuky.gramy} g</span>
-          </div>
-        </div>
-
-        {/* Plán je otisk cíle v okamžiku generování — po změně cíle (např.
-            oprava výšky, 6.5) se sám nepřegeneruje. Watchdog to hlásí
-            (`calorie_target_mismatch`), tady to VIDÍ i uživatel
-            (docs/DALSI_KROK.md 7.2a). */}
-        {nesouladCile && onRegeneratePlan && (
-          <CalorieMismatchBanner
-            nesoulad={nesouladCile}
-            onRegenerate={onRegeneratePlan}
-            regenerating={regenerujiPlan}
-          />
         )}
       </div>
 

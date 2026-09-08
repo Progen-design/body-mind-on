@@ -49,6 +49,7 @@ import {
   zavolejModel,
   odhadniVstupniTokeny,
   smiPrepsatPostup,
+  nactiVsechnyRecepty,
   DOPLNENI_MODEL,
 } from '../lib/plan/doplneniPostupuReceptu.js';
 
@@ -63,15 +64,7 @@ const limit = limitArg ? Number.parseInt(limitArg.slice('--limit='.length), 10) 
 const VYCHOZI_LIMIT = 200;
 
 async function nactiKandidaty() {
-  let dotaz = supabaseServer
-    .from('recipes_catalog')
-    .select('id, name_cs, ingredients, instructions_cs, source')
-    .order('id', { ascending: true });
-  if (zdrojFiltr) dotaz = dotaz.eq('source', zdrojFiltr);
-
-  const { data, error } = await dotaz;
-  if (error) throw new Error(`recipes_catalog: ${error.message}`);
-  return data || [];
+  return nactiVsechnyRecepty({ client: supabaseServer, zdrojFiltr });
 }
 
 /**

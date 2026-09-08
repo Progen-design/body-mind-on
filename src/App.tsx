@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Header } from './components/Header';
 import { UserProfileCard } from './components/UserProfileCard';
 import { NavigationTabs, ActiveTab } from './components/NavigationTabs';
-import { QuickActionToolbar } from './components/QuickActionToolbar';
 import { OverviewBentoGrid } from './components/OverviewBentoGrid';
 import { ProfileSection } from './components/ProfileSection';
 import { TrialPaywallCard } from './components/TrialPaywallCard';
@@ -980,22 +979,13 @@ function AppContent() {
           onOpenMenu={() => setIsMenuOpen(true)}
           onCloseMenu={() => setIsMenuOpen(false)}
           onSelectTab={setActiveTab}
+          onOpenPreferences={() => setIsPreferencesModalOpen(true)}
         />
 
-        {/* 2. Navigace a rychlé akce — hned pod hlavičkou, ať jsou po ruce
-               bez scrollování. */}
+        {/* 2. Navigace — hned pod hlavičkou, ať je po ruce bez scrollování. */}
         <NavigationTabs
           activeTab={activeTab}
           onSelectTab={setActiveTab}
-        />
-
-        <QuickActionToolbar
-          onLogWorkout={() => setIsWorkoutLoggerOpen(true)}
-          onEditPreferences={() => setIsPreferencesModalOpen(true)}
-          onSyncAll={handleManualWithingsSync}
-          onAskTed={() => zeptejSeTeda()}
-          onAddWeight={() => setIsAddRecordModalOpen(true)}
-          isSyncing={isSyncing}
         />
 
         {/* 3. Karta uživatele.

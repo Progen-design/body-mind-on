@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Check, LogOut, Menu, Repeat, Sparkles, X } from 'lucide-react';
+import { Check, LogOut, Menu, Repeat, Sliders, Sparkles, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useTed } from '../context/TedContext';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Avatar } from './Avatar';
 
@@ -11,16 +12,20 @@ interface HeaderProps {
   isMenuOpen: boolean;
   onCloseMenu: () => void;
   onSelectTab?: (tab: any) => void;
+  /** Otevře modál s preferencemi — Header sám o preferencích nic neví. */
+  onOpenPreferences: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenMenu,
   isMenuOpen,
   onCloseMenu,
-  onSelectTab
+  onSelectTab,
+  onOpenPreferences
 }) => {
   const { account, logout } = useAuth();
   const { showToast } = useToast();
+  const { zeptejSe, dostupny: tedDostupny } = useTed();
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
   const handleConfirmLogout = () => {
@@ -53,6 +58,18 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Action buttons */}
       <div className="flex items-center gap-2 sm:gap-3">
+
+        {/* Zeptat se TEDa — mimo TedProvider (dostupny === false) se nekreslí vůbec. */}
+        {tedDostupny && (
+          <button
+            onClick={() => zeptejSe()}
+            className="flex items-center gap-2 px-2.5 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-cyan-950/70 hover:bg-cyan-900/70 text-akcent-cyan border border-cyan-500/40 hover:border-cyan-400 shadow-[0_0_12px_rgba(0,242,254,0.25)] transition-all active:scale-95"
+            aria-label="Zeptat se TEDa"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-akcent-cyan shrink-0" />
+            <span className="hidden sm:inline">Zeptat se TEDa</span>
+          </button>
+        )}
 
         {/* Přihlášený uživatel — klikem otevře menu s přepnutím profilu */}
         {account && (
@@ -166,6 +183,24 @@ export const Header: React.FC<HeaderProps> = ({
                       <span>{item.label}</span>
                     </button>
                   ))}
+                </div>
+
+                {/* Nastavení — dřív součást lišty rychlých akcí nad obsahem,
+                    teď žije jen tady v zásuvce. */}
+                <div className="mt-6 space-y-1.5">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-3">
+                    Nastavení
+                  </div>
+                  <button
+                    onClick={() => {
+                      onCloseMenu();
+                      onOpenPreferences();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-900/80 border border-transparent hover:border-slate-800 text-xs font-semibold transition-all text-left"
+                  >
+                    <Sliders className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span>Upravit preference</span>
+                  </button>
                 </div>
 
                 {/* SEKCE „INTEGRACE & ZAŘÍZENÍ" JE PRYČ — BYLA CELÁ VYMYŠLENÁ.

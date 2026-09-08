@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  User,
   Mail,
   Activity,
   Scale,
@@ -21,7 +20,6 @@ import { denniMakra } from '../lib/makra';
 import { odstupHodin, odstupText } from '../lib/odstup';
 import { Avatar } from './Avatar';
 import { useAuth } from '../context/AuthContext';
-import { NadpisSekce } from './NadpisSekce';
 import { MembershipStatusBadge } from './MembershipStatusBadge';
 import { CalorieMismatchBanner } from './CalorieMismatchBanner';
 // `useTed` tu bylo kvůli kartě „AI trenér TED" mezi zařízeními. TED není
@@ -165,12 +163,6 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <NadpisSekce
-        titulek="Můj profil & cíle"
-        podtitulek="Účet, tělesné údaje, cíle a připojená zařízení"
-        ikona={<User className="w-5 h-5 text-akcent-cyan" />}
-      />
-
       {/* 1. Main Profile Hero Header Card */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}

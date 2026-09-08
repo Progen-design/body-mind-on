@@ -119,7 +119,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
   return (
     <div className="space-y-6">
       <NadpisSekce
-        titulek="Apple Watch & regenerace"
+        titulek="Regenerace & spánek"
         podtitulek="Co hodinky a chytrá váha naměřily — bez dopočtů, které vypadají jako měření"
         ikona={<Watch className="w-5 h-5 text-akcent-lime" />}
       />
@@ -145,7 +145,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
           </span>
         </div>
 
-        {/* Apple Watch Status */}
+        {/* Stav hodinek */}
         <div className="flex items-center justify-between p-4 rounded-2xl bg-karta/90 border border-slate-800/80 shadow-md">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-950/60 border border-emerald-500/30 flex items-center justify-center text-akcent-lime">
@@ -384,7 +384,7 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
               Historické trendy &amp; Biometrické grafy
             </h3>
             <p className="text-xs text-slate-400">
-              Přehled za posledních 7–30 dní synchronizovaných z Apple Watch &amp; Withings
+              Přehled za posledních 7–30 dní z hodinek a chytré váhy
             </p>
           </div>
 
@@ -568,13 +568,13 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
       )}
 
 
-      {/* Tréninky z Apple Watch Table */}
+      {/* Tréninky z hodinek */}
       <div className="rounded-3xl p-5 sm:p-6 bg-karta/90 border border-slate-800 shadow-xl">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Watch className="w-5 h-5 text-akcent-lime" />
             <h3 className="text-base font-bold text-white">
-              Zaznamenané tréninky z Apple Watch
+              Zaznamenané tréninky z hodinek
             </h3>
           </div>
           <span className="text-xs text-slate-400 font-medium">

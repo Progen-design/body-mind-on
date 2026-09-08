@@ -11,8 +11,6 @@ import {
   Flame,
   CheckCircle2,
   ChevronRight,
-  Sparkles,
-  Brain,
   ShoppingBag,
   Plus,
   Play,
@@ -27,7 +25,6 @@ import {
   WorkoutDay,
   HabitItem,
   BadHabitItem,
-  CoachTip,
   UserPreferences,
   TelesneSlozeni
 } from '../types';
@@ -44,7 +41,6 @@ interface OverviewBentoGridProps {
   todayWorkout: WorkoutDay;
   habits: HabitItem[];
   badHabits: BadHabitItem[];
-  coachTips: CoachTip[];
   preferences: UserPreferences;
   /** Pocet polozek nakupniho seznamu. */
   pocetNakupu?: number;
@@ -52,8 +48,6 @@ interface OverviewBentoGridProps {
   slozeni?: TelesneSlozeni | null;
   onSelectTab: (tab: ActiveTab) => void;
   onOpenWorkoutLogger: () => void;
-  /** Otevře chat s TEDem. Karta trenéra ho nabídne, když nemá co ukázat. */
-  onAskTed: () => void;
   onOpenAddWeightModal: () => void;
   onToggleMeal: (id: string) => void;
   onToggleHabit: (id: string) => void;
@@ -68,13 +62,11 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
   todayWorkout,
   habits,
   badHabits,
-  coachTips,
   preferences,
   pocetNakupu = 0,
   slozeni = null,
   onSelectTab,
   onOpenWorkoutLogger,
-  onAskTed,
   onOpenAddWeightModal,
   onToggleMeal,
   onToggleHabit,
@@ -90,7 +82,6 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
   // tlačítko proto přejmenuje na zápis mimo plán (docs/DALSI_KROK.md 6.11).
   const maDnesTrenink = jeNaplanovany(todayWorkout);
   const completedHabitsCount = habits.filter(h => h.completed).length;
-  const topCoachTip = coachTips[0];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 auto-rows-auto">
@@ -126,7 +117,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
               </div>
               <div>
                 <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight">
-                  Regenerace &amp; Watch
+                  Regenerace &amp; spánek
                 </h3>
                 {/* „Živý biometrický stream" nic neznamenalo — data chodí
                     dávkově při synchronizaci, ne živě. */}
@@ -220,7 +211,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
             onClick={() => onSelectTab('regenerace')}
             className="w-full py-2.5 px-3 rounded-xl text-xs font-bold text-emerald-300 bg-emerald-950/50 hover:bg-emerald-900/70 border border-emerald-500/40 hover:border-emerald-400 flex items-center justify-center gap-1.5 transition-all"
           >
-            <span>Zobrazit Apple Watch analýzu</span>
+            <span>Zobrazit regeneraci a spánek</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
@@ -491,61 +482,11 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
       </motion.div>
 
 
-      {/* 
-        ========================================================================
-        KARTA 6: AI Trenér TED (col-span-1 md:col-span-2 lg:col-span-1)
-        Kompaktní informativní blok s AI doporučením. Soupis k nákupu odsud
-        putoval na Kartu 3 — patří k jídelníčku, ne k TEDovi, a ředil
-        jediné místo, kde je TED vidět (docs/DALSI_KROK.md 6.8).
-        ========================================================================
-      */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, delay: 0.25 }}
-        className="col-span-1 md:col-span-2 lg:col-span-1 relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-povrch/95 backdrop-blur-xl border border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col justify-between"
-      >
-        <div>
-          {/* Header */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-purple-950/60 border border-purple-500/40 flex items-center justify-center text-purple-400">
-                <Brain className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">AI Trenér TED</h3>
-              </div>
-            </div>
-          </div>
-
-          {/* Zpráva od trenéra, nebo pozvánka do chatu.
-              Zprávy zatím vznikají jen při registraci a po týdnu se skrývají
-              jako zastaralé, takže tenhle blok byl většinu času prázdný —
-              karta se jménem TEDa, ve které nebyl TED. */}
-          {topCoachTip ? (
-            <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 mb-3">
-              <div className="text-xs font-bold text-slate-100 mb-1">{topCoachTip.headline}</div>
-              <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
-                {topCoachTip.content}
-              </p>
-            </div>
-          ) : (
-            <button
-              onClick={onAskTed}
-              className="w-full text-left p-3.5 rounded-2xl bg-slate-900/80 hover:bg-slate-900 border border-slate-800 hover:border-cyan-500/40 mb-3 transition-all"
-            >
-              <div className="text-xs font-bold text-slate-100 mb-1 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-akcent-cyan" />
-                <span>Zeptej se TEDa</span>
-              </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Odpoví na tvůj plán, trénink i naměřená data. Vidí jen tvůj profil.
-              </p>
-            </button>
-          )}
-        </div>
-
-      </motion.div>
+      {/* KARTA „AI Trenér TED" ODSTRANĚNA 8. 9. 2026.
+          TED je v hlavičce jako tlačítko „Zeptat se TEDa" na každé záložce,
+          takže karta v profilu byla druhý vstup do téhož chatu. Zprávy od
+          trenéra navíc vznikají jen při registraci a po týdnu se skrývají —
+          většinu času tu tedy stála karta se jménem TEDa, ve které nebyl. */}
     </div>
   );
 };

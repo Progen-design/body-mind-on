@@ -1032,6 +1032,7 @@ function AppContent() {
               birthDate={profilData?.user?.birth_date ?? null}
               registrovanOd={profilData?.user?.created_at ?? null}
               posledniSynchronizace={posledniSynchronizaceHodinek}
+              onOpenWithingsSettings={() => setIsWithingsModalOpen(true)}
               withingsPosledniStazeni={profilData?.withings_last_sync_at ?? null}
               nesouladCile={nesoulad}
               onRegeneratePlan={handleRegeneratePlanForCurrentTarget}
@@ -1052,13 +1053,11 @@ function AppContent() {
               todayWorkout={todayWorkout}
               habits={habits}
               badHabits={badHabits}
-              coachTips={coachTips}
               preferences={preferences}
               pocetNakupu={shoppingItems.length}
               slozeni={slozeni}
               onSelectTab={setActiveTab}
               onOpenWorkoutLogger={() => setIsWorkoutLoggerOpen(true)}
-              onAskTed={() => zeptejSeTeda()}
               onOpenAddWeightModal={() => setIsAddRecordModalOpen(true)}
               onToggleMeal={handleToggleMeal}
               onToggleHabit={handleToggleHabit}
@@ -1080,6 +1079,7 @@ function AppContent() {
             onAddMeasurement={() => setIsAddRecordModalOpen(true)}
             onSync={handleManualWithingsSync}
             onOpenWithingsSettings={() => setIsWithingsModalOpen(true)}
+            zdraviPosledni={zdravi.posledniSync}
           />
         )}
 

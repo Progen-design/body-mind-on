@@ -4,7 +4,7 @@ import { WeightChart } from './WeightChart';
 import { WithingsCard } from './WithingsCard';
 import { NadpisSekce } from './NadpisSekce';
 import { WeightRecord, TelesneSlozeni, SyncResult } from '../types';
-import { Plus, Scale, Sparkles, TrendingUp } from 'lucide-react';
+import { Plus, Scale, Sparkles, TrendingUp, Watch } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface BodyCompositionSectionProps {
@@ -17,6 +17,8 @@ interface BodyCompositionSectionProps {
   slozeni?: TelesneSlozeni | null;
   /** Vlastní odhad appky (Mifflin–St Jeor). null = nemáme z čeho spočítat. */
   vlastniBmrKcal?: number | null;
+  /** ISO čas posledního payloadu z Apple Health. null = zatím nic nedorazilo. */
+  zdraviPosledni?: string | null;
   onAddMeasurement: () => void;
   onSync: () => Promise<SyncResult | null>;
   onOpenWithingsSettings: () => void;
@@ -29,6 +31,7 @@ export const BodyCompositionSection: React.FC<BodyCompositionSectionProps> = ({
   withingsLastSyncedAt,
   slozeni = null,
   vlastniBmrKcal = null,
+  zdraviPosledni = null,
   onAddMeasurement,
   onSync,
   onOpenWithingsSettings
@@ -73,6 +76,45 @@ export const BodyCompositionSection: React.FC<BodyCompositionSectionProps> = ({
         hasConnection={hasWithingsConnection}
         lastSyncedAt={withingsLastSyncedAt}
       />
+
+      {/* 4. HODINKY. Sekce nabízela k propojení jedině váhu, takže kdo přišel
+          s hodinkami, nenašel k nim nic. Tlačítko tu být nemůže: Apple
+          neumožňuje číst HealthKit ze serveru, takže odesílání spustí jedině
+          telefon. Karta proto říká, čím začít, a nesmí slibovat značky,
+          které appka neumí — dnes chodí data z Apple Health a z Withings,
+          odjinud ne. */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="rounded-3xl p-5 sm:p-6 bg-povrch/95 border border-slate-800 shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+      >
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-lime-950/50 border border-lime-500/30 flex items-center justify-center text-akcent-lime shrink-0">
+            <Watch className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-sm sm:text-base font-bold text-white">Hodinky &amp; náramky</h3>
+              {!zdraviPosledni && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-amber-300 bg-amber-950/60 border border-amber-500/40">
+                  Nepřipojeno
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+              {zdraviPosledni
+                ? 'Data z hodinek chodí přes Apple Health. Regeneraci, tep a spánek najdeš na záložce Regenerace & Spánek.'
+                : 'Tep, spánek a regeneraci bereme z Apple Health. V aplikaci Health Auto Export na iPhonu nastav odesílání na Body & Mind ON — hodinky, které do Health píšou, se přidají samy.'}
+            </p>
+            {!zdraviPosledni && (
+              <p className="text-[11px] text-slate-500 mt-2">
+                Garmin, Polar ani Fitbit zatím napřímo nepodporujeme.
+              </p>
+            )}
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 };

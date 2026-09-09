@@ -116,7 +116,7 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Denní příjem &amp; Makronutrienty{' '}
+                Zaznamenáno z jídelníčku{' '}
                 <Vysvetlivka pojem="makroziviny" />
               </span>
               {/* „Fáze: Čistá hypertrofie" byla natvrdo pro každého bez ohledu
@@ -131,7 +131,7 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
                 kcal / cíl {targetCalories.toLocaleString('cs-CZ')} kcal
               </span>
               <span className="text-xs font-bold text-akcent-cyan bg-cyan-950/60 px-2.5 py-1 rounded-full border border-cyan-500/30">
-                Zbývá {Math.max(0, targetCalories - souhrn.kcalSnedeno)} kcal
+                {meals.filter(meal => meal.completed).length} z {meals.length} jídel zaznamenáno
               </span>
             </div>
           </div>
@@ -296,6 +296,8 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
                       na cokoli mimo dnešek). */}
                   <button
                     onClick={jeDnesek ? () => onToggleMeal(meal) : undefined}
+                    aria-label={`${meal.completed ? 'Zrušit záznam jídla' : 'Označit jako snědené'}: ${meal.title}`}
+                    aria-pressed={meal.completed}
                     disabled={!jeDnesek}
                     title={jeDnesek ? undefined : 'Odškrtávat jde jen dnešní den'}
                     className={`w-6 h-6 rounded-xl border flex items-center justify-center transition-all shrink-0 mt-0.5 sm:mt-0 ${

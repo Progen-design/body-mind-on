@@ -188,6 +188,26 @@ const CAS_JIDLA: Record<MealItem['type'], string> = {
   'Večeře': '18:30'
 };
 
+/**
+ * POŘADÍ JÍDEL BĚHEM DNE.
+ *
+ * Řadit podle `CAS_JIDLA` nejde: časy jsou psané bez nuly na začátku, takže
+ * řetězcové porovnání dá `'7:30' > '10:00'` a snídaně skončí až za večeří.
+ * Pořadí je proto vlastní seznam, ne odvozenina z textu.
+ */
+const PORADI_JIDLA: MealItem['type'][] = [
+  'Snídaně',
+  'Dopolední svačina',
+  'Oběd',
+  'Odpolední svačina',
+  'Večeře',
+];
+
+function poradiJidla(typ: MealItem['type']): number {
+  const i = PORADI_JIDLA.indexOf(typ);
+  return i === -1 ? PORADI_JIDLA.length : i;
+}
+
 function typJidla(apiTyp: string, poradiSvaciny: number): MealItem['type'] {
   switch (String(apiTyp || '').toLowerCase()) {
     case 'breakfast': return 'Snídaně';
@@ -282,7 +302,9 @@ function mealyDne(struktura: any, den: any, planId: string | null): MealItem[] {
             : []),
       recipe: naRecept(recept)
     } as MealItem;
-  });
+  // Klíče aktivit vznikají PŘED řazením z původního indexu v plánu.
+  // Pořadí zobrazení tak nikdy nezmění, které jídlo se odškrtává.
+  }).sort((a: MealItem, b: MealItem) => poradiJidla(a.type) - poradiJidla(b.type));
 }
 
 /** Jeden den týdenního jídelníčku — docs/DALSI_KROK.md 8.14. */

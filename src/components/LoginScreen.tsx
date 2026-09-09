@@ -175,7 +175,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           </a>
           <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
             <ShieldCheck className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-            <span>Přihlášení běží přes Supabase Auth. Heslo se nikam neukládá.</span>
+            <span>Pro přístup ke svému plánu se přihlas e-mailem a heslem.</span>
           </div>
         </div>
       </motion.div>

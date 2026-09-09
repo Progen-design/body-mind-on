@@ -22,6 +22,7 @@ import { apiFetch } from '../lib/api';
 import { Vysvetlivka } from './Vysvetlivka';
 import { NadpisSekce } from './NadpisSekce';
 import { PruhDnu } from './PruhDnu';
+import { ZmenitDnesniTrenink } from './ZmenitDnesniTrenink';
 
 /** level 'lehké'/'střední'/'těžké' -> barva badge. Cokoli jiného (neznámá hodnota) barvu nedostane. */
 function barvyObtiznosti(obtiznost: string): string {
@@ -35,13 +36,16 @@ interface WorkoutSectionProps {
   onToggleExercise: (dayName: string, exerciseId: string) => void;
   onOpenWorkoutLogger: () => void;
   onOpenWeeklyModal: () => void;
+  /** Trénink dne se změnil na serveru — načti plán znovu. */
+  onPlanZmenen: () => void;
 }
 
 export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
   workouts,
   onToggleExercise,
   onOpenWorkoutLogger,
-  onOpenWeeklyModal
+  onOpenWeeklyModal,
+  onPlanZmenen
 }) => {
   // null = uzivatel zatim nic nevybral, vybrany den se odvodi z dat.
   // Ulozeny nazev dne by po pregenerovani planu ukazoval na neexistujici den.
@@ -52,6 +56,12 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
   // cviku změní (nový canonical_key) a stabilní klíč podle pozice udrží
   // rozbalený panel otevřený i po záměně.
   const [otevrenaUkazka, setOtevrenaUkazka] = useState<string | null>(null);
+
+  // ZMĚNA DNEŠNÍHO TRÉNINKU (9. 9. 2026). Endpointy replace-today,
+  // confirm-replacement a restore-today byly hotové od začátku, ale
+  // v aplikaci na ně nevedlo tlačítko — „mám jen 15 minut" nešlo řešit
+  // jinak než trénink vynechat.
+  const [zmenaOtevrena, setZmenaOtevrena] = useState(false);
 
   // ZÁMĚNA ZA LEHČÍ/TĚŽŠÍ VARIANTU (POST /api/plan/exercise-variant).
   // Patch se drží lokálně podle "dayName#index", ne v globálním `workouts`
@@ -198,6 +208,19 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
             <Play className="w-4 h-4 fill-white" />
             <span>Spustit záznam tréninku</span>
           </button>
+
+          {/* Změna se nabízí jen u dnešního nesplněného tréninku — server
+              odmítne jak den bez tréninku (400), tak už odcvičený (409),
+              a nabízet tlačítko, které skončí chybou, nemá smysl. */}
+          {maDnesTrenink && todayWorkout.isToday && !todayWorkout.isCompleted
+            && todayWorkout.planId && todayWorkout.planDay != null && (
+            <button
+              onClick={() => setZmenaOtevrena(true)}
+              className="px-4 py-3 rounded-2xl text-xs font-bold text-akcent-cyan bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-500/40 transition-all"
+            >
+              Nemám tolik času
+            </button>
+          )}
 
           <button
             onClick={onOpenWeeklyModal}
@@ -465,6 +488,16 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
           })}
         </div>
       </div>
+
+      {zmenaOtevrena && todayWorkout.planId && todayWorkout.planDay != null && (
+        <ZmenitDnesniTrenink
+          planId={todayWorkout.planId}
+          planDayIndex={todayWorkout.planDay}
+          puvodniNazev={todayWorkout.title}
+          onZavrit={() => setZmenaOtevrena(false)}
+          onZmeneno={onPlanZmenen}
+        />
+      )}
     </div>
   );
 };

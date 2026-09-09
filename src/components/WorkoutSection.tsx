@@ -11,7 +11,8 @@ import {
   Award,
   ChevronRight,
   Sparkles,
-  PlayCircle
+  PlayCircle,
+  Repeat
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ExerciseItem, WorkoutDay } from '../types';
@@ -98,6 +99,50 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
       }));
     } finally {
       setNacitaSeVarianta(null);
+    }
+  };
+
+  // VÝMĚNA CVIKU ZA JINÝ (POST /api/plan-replace-workout-exercise).
+  //
+  // Lehčí/těžší varianta výš řeší OBTÍŽNOST téhož pohybu. Tohle řeší jiný
+  // případ: cvik člověk dělat nechce nebo nemůže (rameno, koleno, zabraný
+  // stroj) a chce za něj náhradu — jiný pohyb na tutéž partii.
+  //
+  // Endpoint byl hotový od začátku, ale nevedlo na něj tlačítko: v `src/`
+  // na něj nebyl jediný odkaz, takže funkce existovala jen na serveru.
+  //
+  // Na rozdíl od varianty tahle výměna MĚNÍ PLÁN NA SERVERU (přepíše se
+  // `structured_plan_json` i `plan_html`), proto se po ní volá
+  // `onPlanZmenen()` — lokální patch by se rozešel se zbytkem appky,
+  // třeba s odškrtáváním a s tím, co vidí TED.
+  const [vymenaKlic, setVymenaKlic] = useState<string | null>(null);
+  const [chybaVymenyPodleKlice, setChybaVymenyPodleKlice] = useState<Record<string, string>>({});
+
+  const handleVymenitCvik = async (klic: string, ex: ExerciseItem) => {
+    if (ex.planId == null || ex.planDay == null || ex.poziceVPlanu == null) return;
+    setVymenaKlic(klic);
+    setChybaVymenyPodleKlice(prev => {
+      const dalsi = { ...prev };
+      delete dalsi[klic];
+      return dalsi;
+    });
+    try {
+      await apiFetch('/api/plan-replace-workout-exercise', {
+        method: 'POST',
+        body: JSON.stringify({
+          plan_id: ex.planId,
+          day_slot_index: ex.planDay,
+          exercise_index: ex.poziceVPlanu
+        })
+      });
+      onPlanZmenen();
+    } catch (chyba: any) {
+      setChybaVymenyPodleKlice(prev => ({
+        ...prev,
+        [klic]: chyba?.message || 'Nepodařilo se cvik vyměnit.'
+      }));
+    } finally {
+      setVymenaKlic(null);
     }
   };
 
@@ -480,6 +525,37 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
                 )}
                 {chybaVariantyPodleKlice[klic] && (
                   <p className="text-[11px] text-rose-400 mt-2">{chybaVariantyPodleKlice[klic]}</p>
+                )}
+
+                {/* CVIČIT NĚCO JINÉHO. Vlastní řádek, ne vedle variant:
+                    lehčí/těžší mění obtížnost TÉHOŽ pohybu, tohle vymění
+                    pohyb za jiný na tutéž partii. Míchat je do jedné řady
+                    by svádělo k tomu, brát „jiný cvik" jako třetí stupeň
+                    obtížnosti.
+                    Podmínka je na `poziceVPlanu`: bez ní nemá požadavek
+                    adresu a poslat ho naslepo by přepsalo cizí cvik. */}
+                {ex.poziceVPlanu != null && ex.planId && ex.planDay != null && (
+                  <div className="mt-3 pt-3 border-t border-slate-800/70">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleVymenitCvik(klic, ex);
+                      }}
+                      disabled={vymenaKlic === klic}
+                      className="px-2.5 py-1 rounded-xl border text-[11px] font-bold bg-slate-950 border-slate-800 text-slate-300 hover:border-cyan-500/40 disabled:opacity-50 inline-flex items-center gap-1 transition-all"
+                      title="Nahradit tenhle cvik jiným na stejnou partii"
+                    >
+                      <Repeat className="w-3.5 h-3.5" />
+                      <span>{vymenaKlic === klic ? 'Hledám náhradu…' : 'Cvičit něco jiného'}</span>
+                    </button>
+                    <p className="text-[11px] text-slate-500 mt-1.5">
+                      Vymění cvik za jiný na stejnou partii a uloží to do plánu.
+                    </p>
+                  </div>
+                )}
+                {chybaVymenyPodleKlice[klic] && (
+                  <p className="text-[11px] text-rose-400 mt-2">{chybaVymenyPodleKlice[klic]}</p>
                 )}
               </div>
             )}

@@ -32,7 +32,8 @@ import { LoginScreen } from './components/LoginScreen';
 // Kontexty, perzistence a synchronizace
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { StartRegistrace } from './components/registrace/StartRegistrace';
-import { naviguj, useCesta } from './routing';
+import { CESTY_REGISTRACE, jePlatnaCesta, naviguj, useCesta } from './routing';
+import { StrankaNeexistuje } from './components/StrankaNeexistuje';
 import { useProfilData } from './hooks/useProfilData';
 import { useZdravotniData } from './hooks/useZdravotniData';
 import { naBiometrii, maZdravotniData, naSkupinyMetrik, naSpanek } from './data/adapteryZdravi';
@@ -881,9 +882,16 @@ function AppContent() {
   // Pending habits
   const pendingHabitsCount = habits.filter(h => !h.completed).length;
 
+  // Neznama cesta dostane 404 bez ohledu na prihlaseni — driv vercel.json
+  // prepisoval vsechno mimo /api/ na index.html a SPA to nekontrolovala,
+  // takze i /gdpr nebo /cokoliv vracelo 200 s prihlasenou aplikaci.
+  if (!jePlatnaCesta(cesta)) {
+    return <StrankaNeexistuje />;
+  }
+
   // Odhlášený uživatel vidí výběr profilu místo aplikace.
   // Registrace je verejna - bezi i bez prihlaseni.
-  if (cesta === '/start' || cesta === '/register' || cesta === '/signup') {
+  if ((CESTY_REGISTRACE as readonly string[]).includes(cesta)) {
     return (
       <StartRegistrace
         onHotovo={(kam) => naviguj(kam)}

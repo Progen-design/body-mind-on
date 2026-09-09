@@ -19,6 +19,7 @@ import { runAgent } from '../lib/runAgent.js';
 import { namerenaData } from '../lib/coachChatKontext.js';
 import {
   DENNI_LIMIT_ZPRAV,
+  MAX_TOKENU_ODPOVEDI,
   HISTORIE_DO_KONTEXTU,
   SLUG_CHATU,
   historieProKontext,
@@ -143,6 +144,10 @@ export default async function handler(req, res) {
           historie,
           namerena_data: mereni,
         },
+        // Instrukci „nejvýš tři věty" model neuhlídá spolehlivě. Tvrdý strop
+        // dlouhou odpověď utne a drží náklad — výstupní tokeny jsou u mini
+        // modelu čtyřikrát dražší než vstupní.
+        maxOutputTokens: MAX_TOKENU_ODPOVEDI,
         taskType: 'coach_chat',
       });
     } catch (err) {

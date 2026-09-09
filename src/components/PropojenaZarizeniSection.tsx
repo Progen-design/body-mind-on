@@ -4,6 +4,7 @@ import { TelesneSlozeni } from '../types';
 import { kdyMereno } from '../data/adaptery';
 import { odstupHodin, odstupText } from '../lib/odstup';
 import { NabidkaPropojeni } from './NabidkaPropojeni';
+import { PripojitHodinky } from './PripojitHodinky';
 
 /**
  * PROPOJENÁ CHYTRÁ ZAŘÍZENÍ & DATA.
@@ -195,12 +196,12 @@ export const PropojenaZarizeniSection: React.FC<PropojenaZarizeniSectionProps> =
           </div>
           {/* U hodinek se nedá nabídnout tlačítko: Apple neumožňuje číst
               HealthKit ze serveru, takže propojení spustí jedině telefon. */}
-          {!zdraviPosledni && (
-            <div className="mt-3 p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
-              Data posílá iPhone, ne server. V aplikaci Health Auto Export
-              nastav odesílání na Body &amp; Mind ON a hodinky se přidají samy.
-            </div>
-          )}
+          {/* CESTA K PROPOJENÍ, NE JEN RADA (9. 9. 2026).
+              Do teď tu stála věta „nastav odesílání v Health Auto Export",
+              jenže bez adresy a bez klíče se to nastavit nedá — návod tedy
+              popisoval krok, který uživatel nemohl udělat. `PripojitHodinky`
+              klíč vyrobí a adresu ukáže. */}
+          {!zdraviPosledni && <PripojitHodinky />}
         </div>
       </div>
 

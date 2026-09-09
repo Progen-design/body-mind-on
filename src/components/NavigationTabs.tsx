@@ -34,7 +34,7 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
     icon: React.ComponentType<{ className?: string }>;
     badge?: number | string;
   }[] = [
-    { id: 'profil', label: 'Můj profil', icon: User },
+    { id: 'profil', label: 'Dnes', icon: User },
     { id: 'vaha', label: 'Tělo & Váha', icon: Scale },
     { id: 'jidelnicek', label: 'Jídelníček & Makra', icon: Utensils },
     { id: 'trenink', label: 'Tréninkový plán', icon: Dumbbell },
@@ -56,6 +56,7 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
           return (
             <button
               key={tab.id}
+              aria-current={isActive ? 'page' : undefined}
               onClick={() => onSelectTab(tab.id)}
               className={`relative flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 select-none ${
                 isActive

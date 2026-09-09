@@ -1025,22 +1025,20 @@ function AppContent() {
             — regenerace, jídlo, trénink, TED (OverviewBentoGrid). */}
         {activeTab === 'profil' && (
           <div className="space-y-4 sm:space-y-6">
-            <ProfileSection
-              profile={displayedProfile}
-              preferences={preferences}
-              latestWeightRecord={latestRecord}
-              biometrics={biometrics}
-              slozeni={slozeni}
-              birthDate={profilData?.user?.birth_date ?? null}
-              registrovanOd={profilData?.user?.created_at ?? null}
-              nesouladCile={nesoulad}
-              onRegeneratePlan={handleRegeneratePlanForCurrentTarget}
-              regenerujiPlan={regenerujiPlan}
-              onEditPreferences={() => setIsPreferencesModalOpen(true)}
-              onAddWeight={() => setIsAddRecordModalOpen(true)}
-              onOpenWeightTab={() => setActiveTab('vaha')}
-            />
-
+            <section aria-label="Dnešní přehled" className="rounded-3xl border border-slate-800 bg-povrch p-5 sm:p-6">
+              <h2 className="text-2xl font-bold text-white">Tvůj dnešní plán</h2>
+              <p className="mt-2 text-sm leading-relaxed text-slate-300">
+                {todayWorkout.exercises.length > 0
+                  ? `${todayWorkout.title}${todayWorkout.durationMin > 0 ? ` · ${todayWorkout.durationMin} min` : ''}${todayWorkout.isCompleted ? ' · zaznamenáno' : ''}`
+                  : todayWorkout.dayName ? 'Dnes máš v tréninkovém plánu volno.' : 'Na dnešek tu zatím nemáš trénink.'}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button type="button" onClick={() => setActiveTab('trenink')} className="min-h-11 rounded-xl border border-cyan-500/40 bg-cyan-950/60 px-4 text-sm font-semibold text-cyan-300">
+                  {todayWorkout.exercises.length > 0 ? 'Otevřít dnešní trénink' : 'Prohlédnout tréninkový plán'}
+                </button>
+                <button type="button" onClick={() => setIsPreferencesModalOpen(true)} className="min-h-11 rounded-xl border border-slate-700 px-4 text-sm text-slate-300">Upravit cíle a preference</button>
+              </div>
+            </section>
             <TrialPaywallCard plan={zamcenyPlan} />
 
             <OverviewBentoGrid
@@ -1055,6 +1053,22 @@ function AppContent() {
               onToggleHabit={handleToggleHabit}
               onCompleteAllHabits={handleCompleteAllHabitsToday}
               onSelectRecipe={(meal) => setSelectedRecipeMeal(meal)}
+            />
+
+            <ProfileSection
+              profile={displayedProfile}
+              preferences={preferences}
+              latestWeightRecord={latestRecord}
+              biometrics={biometrics}
+              slozeni={slozeni}
+              birthDate={profilData?.user?.birth_date ?? null}
+              registrovanOd={profilData?.user?.created_at ?? null}
+              nesouladCile={nesoulad}
+              onRegeneratePlan={handleRegeneratePlanForCurrentTarget}
+              regenerujiPlan={regenerujiPlan}
+              onEditPreferences={() => setIsPreferencesModalOpen(true)}
+              onAddWeight={() => setIsAddRecordModalOpen(true)}
+              onOpenWeightTab={() => setActiveTab('vaha')}
             />
 
             {/* PROPOJENÁ ZAŘÍZENÍ ÚPLNĚ DOLE (9. 9. 2026).
@@ -1122,6 +1136,7 @@ function AppContent() {
             onToggleExercise={handleToggleExercise}
             onOpenWorkoutLogger={() => setIsWorkoutLoggerOpen(true)}
             onOpenWeeklyModal={() => setIsWeeklyWorkoutModalOpen(true)}
+            onPlanZmenen={znovuNacistProfil}
           />
         )}
 
@@ -1141,6 +1156,8 @@ function AppContent() {
              hodinkách, přestože tep a spánek umí měřit i chytrá váha. */
           <div className="p-6 rounded-3xl bg-povrch border border-slate-800 text-center">
             <p className="text-sm text-slate-300 mb-1">Zatím nemáme naměřená data.</p>
+            <p className="text-sm text-slate-300 mb-4">Jídelníček a trénink můžeš používat i bez hodinek. Měření je volitelné.</p>
+            <button type="button" onClick={() => setActiveTab('profil')} className="mb-4 min-h-11 rounded-xl border border-slate-700 px-4 text-sm text-slate-200">Zpět na dnešní plán</button>
             <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
               {zdravi.pripojeno
                 ? 'Zařízení je připojené, ale ještě nedorazilo první měření.'

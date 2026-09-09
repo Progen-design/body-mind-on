@@ -6,12 +6,13 @@ import { useToast } from '../context/ToastContext';
 import { useTed } from '../context/TedContext';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Avatar } from './Avatar';
+import type { ActiveTab } from './NavigationTabs';
 
 interface HeaderProps {
   onOpenMenu: () => void;
   isMenuOpen: boolean;
   onCloseMenu: () => void;
-  onSelectTab?: (tab: any) => void;
+  onSelectTab?: (tab: ActiveTab) => void;
   /** Otevře modál s preferencemi — Header sám o preferencích nic neví. */
   onOpenPreferences: () => void;
 }
@@ -164,14 +165,13 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-3">
                     Navigace &amp; Přehled
                   </div>
-                  {[
-                    { id: 'dnes', label: 'Hlavní přehled (Bento Grid)' },
-                    { id: 'profil', label: 'Můj Profil & Cíle' },
+                  {([
+                    { id: 'profil', label: 'Dnes' },
                     { id: 'vaha', label: 'Tělesné složení & Váha' },
                     { id: 'jidelnicek', label: 'Jídelníček, recepty & nákup' },
                     { id: 'trenink', label: 'Tréninkový plán & Stopky' },
-                    { id: 'regenerace', label: 'Apple Watch & Regenerace' }
-                  ].map(item => (
+                    { id: 'regenerace', label: 'Regenerace & Spánek' }
+                  ] satisfies { id: ActiveTab; label: string }[]).map(item => (
                     <button
                       key={item.id}
                       onClick={() => {

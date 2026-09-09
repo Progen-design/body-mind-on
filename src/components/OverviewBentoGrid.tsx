@@ -94,7 +94,7 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
                 <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">
                   Jídelníček &amp; Makra dnes
                 </h3>
-                <span className="text-[10px] text-slate-400">Kalorická bilance a suroviny</span>
+                <span className="text-sm text-slate-400">Zaznamenáno z jídelníčku</span>
               </div>
             </div>
             <button
@@ -117,11 +117,14 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
               </span>
             </div>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold text-akcent-lime bg-emerald-950/60 border border-emerald-500/30">
-              {Math.round((currentCalories / targetCalories) * 100)} % splněno
+              {meals.filter(meal => meal.completed).length} z {meals.length} jídel zaznamenáno
             </span>
           </div>
 
           {/* Segmented Macro Bar */}
+          <p className="mb-4 text-sm leading-relaxed text-slate-400">
+            Počítáme jen jídla označená jako snědená. Nezapsané jídlo neznamená, že jsi nejedl/a.
+          </p>
           <div className="space-y-1.5 mb-4">
             <div className="flex items-center gap-1.5 h-2.5 w-full rounded-full overflow-hidden p-0.5 bg-slate-900 border border-slate-800">
               <div style={{ width: `${preferences.proteinRatioPercent}%` }} className="h-full rounded-full bg-makro-bilkoviny shadow-[0_0_8px_var(--color-makro-bilkoviny)]" />
@@ -160,7 +163,9 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
                 <div className="flex items-center gap-2.5">
                   <button
                     onClick={() => onToggleMeal(meal.id)}
-                    className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${
+                    aria-label={`${meal.completed ? 'Zrušit záznam jídla' : 'Označit jako snědené'}: ${meal.title}`}
+                    aria-pressed={meal.completed}
+                    className={`w-10 h-10 shrink-0 rounded-lg border flex items-center justify-center transition-all ${
                       meal.completed
                         ? 'bg-akcent-lime border-akcent-lime text-slate-950 font-bold'
                         : 'border-slate-700 bg-slate-800'

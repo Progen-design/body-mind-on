@@ -7,6 +7,8 @@
  */
 import { supabaseServer } from '../../lib/supabaseServer.js';
 import { swapWorkoutExerciseVariant } from '../../lib/planExerciseVariant.js';
+import { startProgramEnvironment } from '../../lib/workoutStartProgram.js';
+import { hasAnyExclusions, applyExclusions } from '../../lib/trainingExclusions.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -75,6 +77,25 @@ export default async function handler(req, res) {
       { dayIndex, canonicalKey, smer },
       bodyMetrics
     );
+
+    // Vyloučení cviků (lib/trainingExclusions.js). Lehčí/těžší varianta je
+    // pořád TENTÝŽ pohybový vzor (dřep zůstává dřep, easier_key/harder_key
+    // se nikdy nepoužívá jako náhrada při vyloučení) — takže když je i sama
+    // nově dosazená varianta mezi vyloučenými, swap se odmítá celý, nic
+    // jiného se za ni nedosazuje.
+    if (hasAnyExclusions(bodyMetrics?.training_exclusions)) {
+      const envKey = startProgramEnvironment(bodyMetrics);
+      const day = structured.days[dayIndex];
+      const exerciseIdx = day?.workout?.exercises?.indexOf(result.exercise) ?? -1;
+      const { days: checkedDays } = applyExclusions([day], bodyMetrics?.training_exclusions, envKey);
+      const checkedKey = exerciseIdx >= 0 ? checkedDays[0]?.workout?.exercises?.[exerciseIdx]?.canonical_key : null;
+      if (checkedKey !== result.exercise?.canonical_key) {
+        return res.status(409).json({
+          ok: false,
+          error: 'Tahle varianta je mezi tvými vyloučenými cviky.',
+        });
+      }
+    }
 
     const { error: updateErr } = await supabaseServer
       .from('ai_generated_plans')

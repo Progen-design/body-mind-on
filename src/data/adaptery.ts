@@ -23,6 +23,7 @@ import {
   parseTrainingEnvironment,
   parseTrainingEnvironmentDetail
 } from '../../lib/trainingEnvironment.js';
+import { normalizeTrainingExclusions } from '../../lib/trainingExclusions.js';
 import { naradiTreninku, svalCesky, zamereniTreninku } from '../../lib/profile/treninkPopis.js';
 import type {
   BadHabitItem, CoachTip, ExerciseItem, HabitItem, MealItem, RecipeDetail, ShoppingItem,
@@ -624,6 +625,11 @@ export interface NastaveniProfilu {
   training_environment: string;
   available_equipment: string[];
   training_environment_detail: string;
+  // Vyloučení cviků a pohybových vzorů — RAW hodnoty z
+  // `body_metrics.training_exclusions.patterns/.muscles`
+  // (lib/trainingExclusions.js), ne chipy z UI.
+  training_exclusion_patterns: string[];
+  training_exclusion_muscles: string[];
   selected_habits: string[];
   goal_weight_kg: string;
   height_cm: string;
@@ -666,6 +672,8 @@ export function naNastaveniProfilu(odpoved: ProfilOdpoved): NastaveniProfilu {
     training_environment: text(parseTrainingEnvironment(bm)),
     available_equipment: parseAvailableEquipment(bm) || [],
     training_environment_detail: text(parseTrainingEnvironmentDetail(bm)),
+    training_exclusion_patterns: normalizeTrainingExclusions(bm.training_exclusions).patterns,
+    training_exclusion_muscles: normalizeTrainingExclusions(bm.training_exclusions).muscles,
     selected_habits: (odpoved?.user_habits || []).map((h) => h.habit_id),
     goal_weight_kg: text(odpoved?.user?.goal_weight_kg),
     height_cm: text(odpoved?.user?.height_cm ?? bm.height_cm)

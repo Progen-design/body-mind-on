@@ -22,6 +22,7 @@ import {
 // `START_VARIANT_PRICE_LABEL` je formát se stejnými mezerami kolem lomítka,
 // jaké má web ("599 Kč / měsíc") — bod 8.7 chce text doslova z webu.
 import { TRIAL_DAYS, START_VARIANT_PRICE_LABEL } from '@lib/pricing';
+import { ODKAZ_PODMINKY, ODKAZ_GDPR } from '@lib/pravniOdkazy.js';
 import { useKontrolaEmailu } from '../../hooks/useKontrolaEmailu';
 import { Krokovac, Pole, Vicenasobny, Vyber, Popisek, Chyba } from './prvky';
 import { AKTIVITA, CIL, CHYTRA_VAHA, DIETA, DNY, FREKVENCE, KROKY, POHLAVI, STRES, TYP_PRACE } from './volby';
@@ -59,6 +60,15 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
   const [stav, setStav] = useState<{ typ: 'chyba' | 'ok'; text: string } | null>(null);
   const [odesilam, setOdesilam] = useState(false);
   const [overuji, setOveruji] = useState(false);
+  // SOUHLAS SE ZAHÁJENÍM PLNĚNÍ A SE ZPRACOVÁNÍM ZDRAVOTNÍCH ÚDAJŮ.
+  //
+  // Dvě věci, jedno zaškrtnutí, protože obojí je podmínka téhož kroku:
+  // bez souhlasu se zahájením plnění před uplynutím 14denní lhůty se nesmí
+  // začít generovat plán (§ 1837 obč. zák., bod 10 obchodních podmínek),
+  // a tělesné složení, spánek a tep jsou zvláštní kategorie podle čl. 9
+  // GDPR, kterou nepokryje „plnění smlouvy" — potřebuje VÝSLOVNÝ souhlas.
+  // Do teď se nesbíral ani jeden.
+  const [souhlas, setSouhlas] = useState(false);
 
   // Dostupnost e-mailu se hlida uz pri psani.
   const stavEmailu = useKontrolaEmailu(data.email);
@@ -121,8 +131,13 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
       if (data.workout_days.length < 1) e.workout_days = 'Vyber alespoň jeden tréninkový den.';
       return e;
     }
-    if (k === 5 && navyky.length === 0) {
-      return { navyky: 'Vyber aspoň jeden návyk, se kterým chceš začít.' };
+    if (k === 5) {
+      const e: Record<string, string> = {};
+      if (navyky.length === 0) e.navyky = 'Vyber aspoň jeden návyk, se kterým chceš začít.';
+      // Bez tohohle by šlo účet založit i bez souhlasu — a plán se generuje
+      // hned po odeslání, tedy uvnitř lhůty pro odstoupení.
+      if (!souhlas) e.souhlas = 'Bez souhlasu ti plán nemůžeme začít připravovat.';
+      return e;
     }
     return {};
   };
@@ -460,6 +475,33 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
           setChyby((c) => ({ ...c, navyky: '' }));
         }} />
       <Chyba text={chyby.navyky} />
+
+      {/* Odkazy vedou na VEŘEJNÝ web, ne do appky: právní texty musí být
+          čitelné bez přihlášení a bez JavaScriptu. `target="_blank"`, aby
+          si člověk vyplněnou registraci nesmazal odchodem ze stránky. */}
+      <label className="flex gap-3 p-3.5 rounded-2xl bg-slate-900/70 border border-slate-800 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={souhlas}
+          onChange={(e) => {
+            setSouhlas(e.target.checked);
+            setChyby((c) => ({ ...c, souhlas: '' }));
+          }}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-cyan-500"
+        />
+        <span className="text-xs leading-relaxed text-slate-300">
+          Souhlasím s{' '}
+          <a href={ODKAZ_PODMINKY} target="_blank" rel="noreferrer"
+            className="text-cyan-300 underline underline-offset-2">obchodními podmínkami</a>
+          {' '}a se{' '}
+          <a href={ODKAZ_GDPR} target="_blank" rel="noreferrer"
+            className="text-cyan-300 underline underline-offset-2">zpracováním osobních údajů</a>
+          {' '}včetně údajů o zdravotním stavu (váha, tělesné složení, spánek, tep).
+          Chci, aby plán začal vznikat hned — beru na vědomí, že tím zaniká
+          právo na odstoupení od smlouvy do 14 dnů.
+        </span>
+      </label>
+      <Chyba text={chyby.souhlas} />
     </div>
   );
 

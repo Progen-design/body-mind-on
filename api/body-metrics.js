@@ -31,6 +31,7 @@ import {
 import { deleteAuthUserBestEffort } from '../lib/authHelpers.js';
 import { membershipFromRegistration, shouldPreserveMembership } from '../lib/membershipRegistration.js';
 import { isTierCheckoutEnabled } from '../lib/salesFeatureFlags.js';
+import { zapisSouhlasy } from '../lib/souhlasy.js';
 
 /** Vercel Hobby = 60s. Krátký poll; last-resort hned po execute, ne až na konci handleru. */
 const PLAN_WAIT_TIMEOUT_MS = 8000;
@@ -88,6 +89,15 @@ export default async function handler(req, res) {
     }
 
     payload.user_id = auth.userId;
+
+    // SOUHLASY SE ZAPISUJI HNED PO VZNIKU UCTU, PRED generovanim planu.
+    //
+    // Poradi neni kosmetika: souhlas se zahajenim plneni je duvod, proc se
+    // plan smi zacit delat uvnitr 14denni lhuty. Zaznam o nem tedy nesmi
+    // vzniknout az potom. Registracni formular bez zaskrtnuti neodesle,
+    // takze se sem doda jen platny pripad.
+    await zapisSouhlasy(payload.user_id, { zdroj: 'registrace' });
+
     const loginPassword = auth.loginPassword;
     const existingAccount = false;
     const userChosePassword = auth.userChosePassword;

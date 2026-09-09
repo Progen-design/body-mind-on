@@ -17,6 +17,7 @@ import { createSupabaseUserClient } from '../lib/supabaseUserClient.js';
 import { requireActiveMembership } from '../lib/membershipHelpers.js';
 import { runAgent } from '../lib/runAgent.js';
 import { namerenaData } from '../lib/coachChatKontext.js';
+import { dnesniPlan } from '../lib/coachChatPlanDnes.js';
 import {
   DENNI_LIMIT_ZPRAV,
   MAX_TOKENU_ODPOVEDI,
@@ -124,6 +125,21 @@ export default async function handler(req, res) {
 
     const historie = historieProKontext((historieRaw || []).reverse());
 
+    // DNESNI PLAN JDE DO KONTEXTU ZVLAST, ne jen jako HTML v `buildAgentContext`.
+    //
+    // Overeno naostro 9. 9. 2026: TED na otazku „proc mam dnes zrovna tenhle
+    // trenink" odpovedel, ze plan pro dnesek nevidi — HTML se do kontextu vejde
+    // jen z casti a dnesek casto spadne do odriznute pulky. `dnesniPlan()` bere
+    // tataz data ze `structured_plan_json`, vybere z nich dnesek a posle jen
+    // nazvy cviku a jidel: stovky tokenu misto tisicu.
+    let planDnes = null;
+    try {
+      planDnes = await dnesniPlan(user.id);
+    } catch (err) {
+      // Bez planu TED rekne, ze ho nevidi. To je porad lepsi nez pad chatu.
+      console.error('[coach-chat] dnesni plan:', err?.message || err);
+    }
+
     let mereni = {};
     try {
       mereni = await namerenaData(user.id);
@@ -143,6 +159,9 @@ export default async function handler(req, res) {
           kontext: kotva,
           historie,
           namerena_data: mereni,
+          // Klic chybi uplne, kdyz plan pro dnesek nemame — prazdna struktura
+          // svadi model k tomu, aby si ji vyplnil.
+          ...(planDnes ? { dnesni_plan: planDnes } : {}),
         },
         // Instrukci „nejvýš tři věty" model neuhlídá spolehlivě. Tvrdý strop
         // dlouhou odpověď utne a drží náklad — výstupní tokeny jsou u mini

@@ -87,6 +87,17 @@ export interface ExerciseItem extends AktivitaPlanu {
   /** canonical_key + český název těžší varianty. Obojí, nebo nic. */
   harderKey?: string;
   harderNazev?: string;
+  /**
+   * POZICE CVIKU V `structured_plan_json.days[].workout.exercises`.
+   *
+   * POST /api/plan-replace-workout-exercise adresuje cvik pořadím v tomhle
+   * poli, ne klíčem — dva stejné cviky v jednom dni by podle klíče nešly
+   * rozlišit. Dnes se seznam vykresluje 1:1, takže by šlo poslat i index
+   * z `map()`, jenže ten přestane sedět v okamžiku, kdy se do výpisu přidá
+   * filtr nebo řazení, a záměna by pak tiše přepsala JINÝ cvik. Proto se
+   * pozice z plánu nese s cvikem.
+   */
+  poziceVPlanu?: number;
   completed?: boolean;
 }
 

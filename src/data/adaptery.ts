@@ -431,6 +431,10 @@ export function cvikZPlanu(e: any, i: number, dateNeboFallback: string, planId: 
     completed: false,
     planId,
     planDay,
+    // Pozice v `workout.exercises` — adresa pro záměnu cviku
+    // (POST /api/plan-replace-workout-exercise). Viz komentář u
+    // `poziceVPlanu` v src/types.ts.
+    poziceVPlanu: i,
     activityKey: klicCviku(i)
   };
 }

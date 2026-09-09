@@ -8,6 +8,7 @@ import { isValidHabitId, invalidHabitIds, POSITIVE_HABITS } from '../lib/habits.
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getFrequencyDayRange } from '../lib/preferenceConstants.js';
 import { enqueueAIEvent, triggerImmediateDecision } from '../lib/aiEvents.js';
 import { mergeTrainingEnvironmentIntoNotes } from '../lib/trainingEnvironment.js';
+import { normalizeTrainingExclusions } from '../lib/trainingExclusions.js';
 import { dietTypeRejectionReason } from '../lib/dietOptions.js';
 import {
   buildCalorieTargetBodyMetricsPatch,
@@ -107,6 +108,23 @@ export default async function handler(req, res) {
       );
     }
 
+    // Vyloučení cviků a pohybových vzorů — stejný princip jako
+    // training_environment/available_equipment výš: dvě samostatná pole
+    // z klienta (viz src/data/adaptery.ts NastaveniProfilu), server je
+    // spojí do jednoho jsonb sloupce. normalizeTrainingExclusions() nikdy
+    // nespadne a neplatné hodnoty tiše vyřadí, takže tu není co validovat
+    // do chybové odpovědi navíc.
+    if (b.training_exclusion_patterns !== undefined || b.training_exclusion_muscles !== undefined) {
+      updates.training_exclusions = normalizeTrainingExclusions({
+        patterns: b.training_exclusion_patterns ?? latest.training_exclusions?.patterns,
+        muscles: b.training_exclusion_muscles ?? latest.training_exclusions?.muscles,
+        exercise_keys: latest.training_exclusions?.exercise_keys,
+        contraindications: latest.training_exclusions?.contraindications,
+        source: 'profile',
+        updated_at: new Date().toISOString(),
+      });
+    }
+
     const effectiveFrequency = normalizeFrequency(
       updates.freq_choice ?? b.freq_choice ?? b.frequency ?? latest.freq_choice
     );
@@ -156,7 +174,7 @@ export default async function handler(req, res) {
         /does not exist|neexistuje|column.*not found/i.test(updateErr.message)
       );
       if (updateErr && columnMissing) {
-        const optionalCols = ['foods_to_avoid', 'dietary_restrictions', 'workout_days'];
+        const optionalCols = ['foods_to_avoid', 'dietary_restrictions', 'workout_days', 'training_exclusions'];
         for (const col of optionalCols) {
           if (col in toUpdate) {
             delete toUpdate[col];

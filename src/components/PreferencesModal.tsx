@@ -4,7 +4,9 @@ import { motion } from 'motion/react';
 import { getFrequencyDayRange } from '@lib/preferenceConstants.js';
 import { POSITIVE_HABITS, NEGATIVE_HABITS } from '@lib/habits.js';
 import { TRAINING_ENVIRONMENT_OPTIONS, EQUIPMENT_OPTIONS } from '@lib/trainingEnvironment.js';
+import { startProgramEnvironment } from '@lib/workoutStartProgram.js';
 import { Pole, Popisek, Chyba, Vyber, Vicenasobny } from './registrace/prvky';
+import { TreninkovaOmezeni } from './registrace/TreninkovaOmezeni.tsx';
 import { AKTIVITA, CIL, DIETA, DNY, FREKVENCE, STRES, TYP_PRACE } from './registrace/volby';
 import { NastaveniProfilu } from '../data/adaptery';
 // Meze sdilene s api/updateHeightCm.js, at klient i server rikaji totez.
@@ -52,6 +54,7 @@ const POLE_S_REGENERACI: (keyof NastaveniProfilu)[] = [
   'goal', 'activity', 'stress_level', 'occupation', 'frequency', 'workout_days',
   'diet_type', 'dietary_restrictions', 'foods_to_avoid',
   'training_environment', 'available_equipment', 'training_environment_detail',
+  'training_exclusion_patterns', 'training_exclusion_muscles',
   'selected_habits'
 ];
 
@@ -295,6 +298,20 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
             <Pole id="training_environment_detail" popisek="Popiš, kde a s čím cvičíš"
               value={data.training_environment_detail} chyba={chyby.training_environment_detail}
               onChange={(e) => zmen('training_environment_detail', e.target.value)} />
+          )}
+
+          {data.training_environment && (
+            <TreninkovaOmezeni
+              prostredi={startProgramEnvironment({
+                training_environment: data.training_environment,
+                available_equipment: data.available_equipment
+              }) as 'gym' | 'home_equipment' | 'home_bodyweight'}
+              vybranePatterny={data.training_exclusion_patterns}
+              vybranePartie={data.training_exclusion_muscles}
+              generujeSe={uklada}
+              onZmenaPatternu={(v) => zmen('training_exclusion_patterns', v)}
+              onZmenaPartii={(v) => zmen('training_exclusion_muscles', v)}
+            />
           )}
 
           <Vicenasobny popisek="Návyky, které chceš sledovat" hodnoty={data.selected_habits}

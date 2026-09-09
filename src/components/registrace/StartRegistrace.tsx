@@ -10,6 +10,8 @@ import { getFrequencyDayRange } from '@lib/preferenceConstants.js';
 import { REGISTRATION_STEPS } from '@lib/registrationRules.js';
 import { POSITIVE_HABITS, NEGATIVE_HABITS, getSuggestedHabits } from '@lib/habits.js';
 import { TRAINING_ENVIRONMENT_OPTIONS, EQUIPMENT_OPTIONS } from '@lib/trainingEnvironment.js';
+import { startProgramEnvironment } from '@lib/workoutStartProgram.js';
+import { TreninkovaOmezeni } from './TreninkovaOmezeni.tsx';
 import { supabase } from '@lib/supabaseClient.js';
 import {
   fetchRegistrationEmailAvailable,
@@ -35,6 +37,11 @@ type Formular = {
   training_environment: string; training_environment_detail: string;
   available_equipment: string[]; diet_type: string; dietary_restrictions: string;
   foods_to_avoid: string; notes: string; program: string; devices: string[];
+  // Vyloučení cviků a pohybových vzorů — RAW hodnoty pro
+  // training_exclusions (viz lib/trainingExclusions.js), stejný princip
+  // jako foods_to_avoid: dvě samostatná pole, server je spojí do jednoho
+  // sloupce (stejně jako training_environment + available_equipment).
+  training_exclusion_patterns: string[]; training_exclusion_muscles: string[];
 };
 
 const PRAZDNY: Formular = {
@@ -44,7 +51,8 @@ const PRAZDNY: Formular = {
   goal: '', frequency: '', workout_days: [],
   training_environment: '', training_environment_detail: '',
   available_equipment: [], diet_type: '', dietary_restrictions: '',
-  foods_to_avoid: '', notes: '', program: 'START', devices: []
+  foods_to_avoid: '', notes: '', program: 'START', devices: [],
+  training_exclusion_patterns: [], training_exclusion_muscles: []
 };
 
 interface Props {
@@ -410,6 +418,20 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
           volby={EQUIPMENT_OPTIONS as any} volitelne
           napoveda="Podle toho vybereme cviky, které opravdu uděláš."
           onZmena={(v) => zmen('available_equipment', v)} />
+      )}
+
+      {data.training_environment && (
+        <TreninkovaOmezeni
+          prostredi={startProgramEnvironment({
+            training_environment: data.training_environment,
+            available_equipment: data.available_equipment
+          }) as 'gym' | 'home_equipment' | 'home_bodyweight'}
+          vybranePatterny={data.training_exclusion_patterns}
+          vybranePartie={data.training_exclusion_muscles}
+          generujeSe={odesilam}
+          onZmenaPatternu={(v) => zmen('training_exclusion_patterns', v)}
+          onZmenaPartii={(v) => zmen('training_exclusion_muscles', v)}
+        />
       )}
     </div>
   );

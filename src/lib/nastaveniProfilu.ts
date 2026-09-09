@@ -20,6 +20,8 @@ export const PRAZDNE_NASTAVENI: NastaveniProfilu = {
   training_environment: '',
   available_equipment: [],
   training_environment_detail: '',
+  training_exclusion_patterns: [],
+  training_exclusion_muscles: [],
   selected_habits: [],
   goal_weight_kg: '',
   height_cm: ''

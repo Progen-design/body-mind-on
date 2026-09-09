@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, ArrowRight, Check, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Loader2 } from 'lucide-react';
 import {
   getStep1FieldErrors,
   getStep2FieldErrors,
@@ -8,7 +8,6 @@ import {
 } from '@lib/registration/registrationStepValidation.js';
 import { getFrequencyDayRange } from '@lib/preferenceConstants.js';
 import { REGISTRATION_STEPS } from '@lib/registrationRules.js';
-import { POSITIVE_HABITS, NEGATIVE_HABITS, getSuggestedHabits } from '@lib/habits.js';
 import { TRAINING_ENVIRONMENT_OPTIONS, EQUIPMENT_OPTIONS } from '@lib/trainingEnvironment.js';
 import { startProgramEnvironment } from '@lib/workoutStartProgram.js';
 import { TreninkovaOmezeni } from './TreninkovaOmezeni.tsx';
@@ -63,7 +62,6 @@ interface Props {
 export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni }) => {
   const [krok, setKrok] = useState(1);
   const [data, setData] = useState<Formular>(PRAZDNY);
-  const [navyky, setNavyky] = useState<string[]>([]);
   const [chyby, setChyby] = useState<Record<string, string>>({});
   const [stav, setStav] = useState<{ typ: 'chyba' | 'ok'; text: string } | null>(null);
   const [odesilam, setOdesilam] = useState(false);
@@ -93,23 +91,11 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
 
   const maxDnu = useMemo(() => getFrequencyDayRange(data.frequency).max as number, [data.frequency]);
 
-  const doporucene = useMemo(
-    () => getSuggestedHabits({ goal: data.goal, activity: data.activity, stress: data.stress }) as string[],
-    [data.goal, data.activity, data.stress]
-  );
-
-  // DVĚ SKUPINY, NE JEDEN SEZNAM. „Kvalitní spánek" a „Nedostatek spánku"
-  // stály vedle sebe bez rozlišení, stejně jako „Zdravá strava" a „Junk
-  // food" — dala se vybrat protichůdná dvojice a nebylo poznat, že jedno
-  // se buduje a druhé omezuje. Výběr zůstává jedno pole `navyky`.
-  const navykyKBudovani = useMemo(
-    () => POSITIVE_HABITS.map((h: any) => ({ value: h.id as string, label: `${h.emoji} ${h.label}` })),
-    []
-  );
-  const zlozvykyKOmezeni = useMemo(
-    () => NEGATIVE_HABITS.map((h: any) => ({ value: h.id as string, label: `${h.emoji} ${h.label}` })),
-    []
-  );
+  // NÁVYKY SE TU UŽ NEVYBÍRAJÍ (9. 9. 2026). Výběr byl povinný, přestože
+  // stejný seznam je v profilu nepovinný, a stál na posledním kroku před
+  // založením účtu. Sadu zakládá server (`seedHabitIdsForRegistration`
+  // v lib/habits.js) podle cíle, aktivity a stresu — uživatel si ji doladí
+  // v profilu, kde jde návyk kdykoli přidat i odebrat.
 
   // Text pod tlačítkem prosí „Nezavírej prosím stránku." — samotná prosba
   // ale odchod nezastaví. Zavření karty uprostřed generování nechá účet
@@ -141,7 +127,6 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
     }
     if (k === 5) {
       const e: Record<string, string> = {};
-      if (navyky.length === 0) e.navyky = 'Vyber aspoň jeden návyk, se kterým chceš začít.';
       // Bez tohohle by šlo účet založit i bez souhlasu — a plán se generuje
       // hned po odeslání, tedy uvnitř lhůty pro odstoupení.
       if (!souhlas) e.souhlas = 'Bez souhlasu ti plán nemůžeme začít připravovat.';
@@ -215,7 +200,8 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
       const odpoved = await fetch('/api/body-metrics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, selected_habits: navyky })
+        // `selected_habits` se schválně neposílá — sadu založí server.
+        body: JSON.stringify(data)
       });
 
       const text = await odpoved.text();
@@ -464,40 +450,11 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
         <p className="text-xs text-slate-400">
           Dostaneš osobní jídelníček a tréninkový plán, které se každý týden upravují podle tvého vývoje.
         </p>
+        <p className="text-xs text-slate-400 mt-1.5">
+          Návyky k sledování ti nastavíme podle cíle a aktivity — změnit si je můžeš kdykoli v profilu.
+        </p>
         <div className="mt-2">{podminkaTrialu}</div>
       </div>
-      {doporucene.length > 0 && (
-        <div className="p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex gap-2.5">
-          <Sparkles className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-          <p className="text-xs text-slate-300">
-            Podle tvého cíle a aktivity dávají smysl hlavně tyhle:{' '}
-            <span className="text-cyan-300 font-semibold">
-              {doporucene
-                .map((id) => [...POSITIVE_HABITS, ...NEGATIVE_HABITS].find((h: any) => h.id === id)?.label)
-                .filter(Boolean)
-                .join(', ')}
-            </span>
-          </p>
-        </div>
-      )}
-      <Vicenasobny popisek="Návyky, které chceš budovat" hodnoty={navyky} volby={navykyKBudovani}
-        napoveda="Vyber aspoň jeden. Přidat další můžeš kdykoli v profilu."
-        onZmena={(v) => {
-          // Výběr z jedné skupiny nesmí přepsat výběr z druhé — `Vicenasobny`
-          // vrací jen svoje hodnoty, takže se druhá skupina musí dopsat zpět.
-          const zDruhe = navyky.filter((h) => zlozvykyKOmezeni.some((z) => z.value === h));
-          setNavyky([...v.filter((h) => navykyKBudovani.some((n) => n.value === h)), ...zDruhe]);
-          setChyby((c) => ({ ...c, navyky: '' }));
-        }} />
-      <Vicenasobny popisek="Zlozvyky, které chceš omezit" hodnoty={navyky} volby={zlozvykyKOmezeni}
-        volitelne
-        onZmena={(v) => {
-          const zPrvni = navyky.filter((h) => navykyKBudovani.some((n) => n.value === h));
-          setNavyky([...zPrvni, ...v.filter((h) => zlozvykyKOmezeni.some((z) => z.value === h))]);
-          setChyby((c) => ({ ...c, navyky: '' }));
-        }} />
-      <Chyba text={chyby.navyky} />
-
       {/* Odkazy vedou na VEŘEJNÝ web, ne do appky: právní texty musí být
           čitelné bez přihlášení a bez JavaScriptu. `target="_blank"`, aby
           si člověk vyplněnou registraci nesmazal odchodem ze stránky. */}

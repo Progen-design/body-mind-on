@@ -6,6 +6,7 @@ import { OverviewBentoGrid } from './components/OverviewBentoGrid';
 import { ProfileSection } from './components/ProfileSection';
 import { PropojenaZarizeniSection } from './components/PropojenaZarizeniSection';
 import { DenniCheckin } from './components/DenniCheckin';
+import { DnesniPrehled } from './components/DnesniPrehled';
 import { TrialPaywallCard } from './components/TrialPaywallCard';
 import { BodyCompositionSection } from './components/BodyCompositionSection';
 import { NutritionSection } from './components/NutritionSection';
@@ -1026,20 +1027,17 @@ function AppContent() {
             — regenerace, jídlo, trénink, TED (OverviewBentoGrid). */}
         {activeTab === 'profil' && (
           <div className="space-y-4 sm:space-y-6">
-            <section aria-label="Dnešní přehled" className="rounded-3xl border border-slate-800 bg-povrch p-5 sm:p-6">
-              <h2 className="text-2xl font-bold text-white">Tvůj dnešní plán</h2>
-              <p className="mt-2 text-sm leading-relaxed text-slate-300">
-                {todayWorkout.exercises.length > 0
-                  ? `${todayWorkout.title}${todayWorkout.durationMin > 0 ? ` · ${todayWorkout.durationMin} min` : ''}${todayWorkout.isCompleted ? ' · zaznamenáno' : ''}`
-                  : todayWorkout.dayName ? 'Dnes máš v tréninkovém plánu volno.' : 'Na dnešek tu zatím nemáš trénink.'}
-              </p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button type="button" onClick={() => setActiveTab('trenink')} className="min-h-11 rounded-xl border border-cyan-500/40 bg-cyan-950/60 px-4 text-sm font-semibold text-cyan-300">
-                  {todayWorkout.exercises.length > 0 ? 'Otevřít dnešní trénink' : 'Prohlédnout tréninkový plán'}
-                </button>
-                <button type="button" onClick={() => setIsPreferencesModalOpen(true)} className="min-h-11 rounded-xl border border-slate-700 px-4 text-sm text-slate-300">Upravit cíle a preference</button>
-              </div>
-            </section>
+            {/* DNEŠEK PODLE ZÁZNAMŮ, NE PODLE ODŠKRTÁVÁNÍ (9. 9. 2026).
+                Karta bere stav dne z `GET /api/stats/adherence` nad DB funkcí
+                `get_daily_adherence()` — ten endpoint existoval, ale UI ho
+                nevolalo a počítalo si vlastní číslo z odškrtnutých položek.
+                Neodškrtnuté jídlo teď znamená „nevíme", ne „nesnědl". */}
+            <DnesniPrehled
+              todayWorkout={todayWorkout}
+              pocetJidelVPlanu={meals.length}
+              onSelectTab={setActiveTab}
+              onOpenPreferences={() => setIsPreferencesModalOpen(true)}
+            />
             <TrialPaywallCard plan={zamcenyPlan} />
 
             <OverviewBentoGrid

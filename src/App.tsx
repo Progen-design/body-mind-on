@@ -7,6 +7,7 @@ import { ProfileSection } from './components/ProfileSection';
 import { PropojenaZarizeniSection } from './components/PropojenaZarizeniSection';
 import { DenniCheckin } from './components/DenniCheckin';
 import { DnesniPrehled } from './components/DnesniPrehled';
+import { ProfilHlavicka } from './components/ProfilHlavicka';
 import { TrialPaywallCard } from './components/TrialPaywallCard';
 import { BodyCompositionSection } from './components/BodyCompositionSection';
 import { NutritionSection } from './components/NutritionSection';
@@ -1027,6 +1028,18 @@ function AppContent() {
             — regenerace, jídlo, trénink, TED (OverviewBentoGrid). */}
         {activeTab === 'profil' && (
           <div className="space-y-4 sm:space-y-6">
+            {/* KDO JE PŘIHLÁŠENÝ JE PRVNÍ ÚDAJ NA STRÁNCE (9. 9. 2026).
+                Hlavička byla součástí ProfileSection, tedy až pod dneškem
+                a jídelníčkem — přitom je to jediné místo, kde je vidět, čí
+                plán se zobrazuje. */}
+            <ProfilHlavicka
+              profile={displayedProfile}
+              preferences={preferences}
+              birthDate={profilData?.user?.birth_date ?? null}
+              registrovanOd={profilData?.user?.created_at ?? null}
+              onEditPreferences={() => setIsPreferencesModalOpen(true)}
+            />
+
             {/* DNEŠEK PODLE ZÁZNAMŮ, NE PODLE ODŠKRTÁVÁNÍ (9. 9. 2026).
                 Karta bere stav dne z `GET /api/stats/adherence` nad DB funkcí
                 `get_daily_adherence()` — ten endpoint existoval, ale UI ho
@@ -1060,8 +1073,6 @@ function AppContent() {
               latestWeightRecord={latestRecord}
               biometrics={biometrics}
               slozeni={slozeni}
-              birthDate={profilData?.user?.birth_date ?? null}
-              registrovanOd={profilData?.user?.created_at ?? null}
               nesouladCile={nesoulad}
               onRegeneratePlan={handleRegeneratePlanForCurrentTarget}
               regenerujiPlan={regenerujiPlan}

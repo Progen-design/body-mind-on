@@ -9,6 +9,7 @@ import {
   sha256HexAppleHealthKey,
 } from '../../../lib/appleHealthKey.js';
 import { supabaseServer } from '../../../lib/supabaseServer.js';
+import { adresaProIngest } from '../../../lib/health/ingestUrl.js';
 
 async function createConnection(userId, deviceLabel = 'iPhone') {
   const now = new Date().toISOString();
@@ -64,6 +65,7 @@ export default async function handler(req, res) {
         ok: true,
         connection: created.connection,
         api_key: created.api_key,
+        ingest_url: adresaProIngest(),
         message: created.message,
       });
     }
@@ -111,6 +113,7 @@ export default async function handler(req, res) {
         ok: true,
         connection: created.connection,
         api_key: created.api_key,
+        ingest_url: adresaProIngest(),
         warning: 'Nový klíč byl vytvořen, ale starý se nepodařilo zrušit. Můžeš mít krátce dva aktivní klíče.',
         message: created.message,
       });
@@ -120,6 +123,7 @@ export default async function handler(req, res) {
       ok: true,
       connection: created.connection,
       api_key: created.api_key,
+      ingest_url: adresaProIngest(),
       message: created.message,
     });
   } catch (err) {

@@ -246,8 +246,26 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
     }
   };
 
+  /**
+   * PODMÍNKA TRIALU JE VIDĚT OD PRVNÍHO KROKU.
+   *
+   * Text stál jen v kroku 5, těsně před založením účtu — člověk vyplnil
+   * čtyři obrazovky a teprve pak se dozvěděl, že po sedmi dnech se platí.
+   * Věta je doslova stejná jako v kroku 5, aby si dvě místa nemohla
+   * odporovat.
+   */
+  const podminkaTrialu = (
+    <p className="text-xs text-slate-400">
+      {TRIAL_DAYS} dní zdarma, pak {START_VARIANT_PRICE_LABEL}. První platba{' '}
+      {TRIAL_DAYS + 1}. den. Zrušit můžeš kdykoli v profilu.
+    </p>
+  );
+
   const krok1 = (
     <div className="space-y-4">
+      <div className="p-3.5 rounded-2xl bg-slate-900/70 border border-slate-800">
+        {podminkaTrialu}
+      </div>
       <Pole id="name" popisek="Jméno" value={data.name} chyba={chyby.name}
         autoComplete="name" placeholder="Jak ti máme říkat"
         onChange={(e) => zmen('name', e.target.value)} />
@@ -409,9 +427,7 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
         <p className="text-xs text-slate-400">
           Dostaneš osobní jídelníček a tréninkový plán, které se každý týden upravují podle tvého vývoje.
         </p>
-        <p className="text-xs text-slate-400 mt-2">
-          {TRIAL_DAYS} dní zdarma, pak {START_VARIANT_PRICE_LABEL}. První platba {TRIAL_DAYS + 1}. den. Zrušit můžeš kdykoli v profilu.
-        </p>
+        <div className="mt-2">{podminkaTrialu}</div>
       </div>
       {doporucene.length > 0 && (
         <div className="p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex gap-2.5">

@@ -88,4 +88,6 @@ export const CHYTRA_VAHA: readonly Volba[] = [
   { value: 'other', label: 'Jinou značku' }
 ];
 
-export const KROKY = ['Účet', 'Tělo', 'Trénink', 'Strava', 'Návyky'] as const;
+// Poslední krok se od 9. 9. 2026 jmenuje „Souhlas" — návyky se v registraci
+// nevybírají, zbyl na něm jen přehled a zaškrtnutí podmínek a GDPR.
+export const KROKY = ['Účet', 'Tělo', 'Trénink', 'Strava', 'Souhlas'] as const;

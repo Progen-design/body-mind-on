@@ -5,6 +5,7 @@ import { NavigationTabs, ActiveTab } from './components/NavigationTabs';
 import { OverviewBentoGrid } from './components/OverviewBentoGrid';
 import { ProfileSection } from './components/ProfileSection';
 import { PropojenaZarizeniSection } from './components/PropojenaZarizeniSection';
+import { DenniCheckin } from './components/DenniCheckin';
 import { TrialPaywallCard } from './components/TrialPaywallCard';
 import { BodyCompositionSection } from './components/BodyCompositionSection';
 import { NutritionSection } from './components/NutritionSection';
@@ -1070,6 +1071,13 @@ function AppContent() {
               onAddWeight={() => setIsAddRecordModalOpen(true)}
               onOpenWeightTab={() => setActiveTab('vaha')}
             />
+
+            {/* DENNÍ CHECK-IN (9. 9. 2026). `GET/POST /api/daily-checkin`
+                existoval od začátku i s číselníkem důvodů, ale UI ho nikdy
+                nezavolalo — tabulka `daily_checkins` měla nula řádků. Karta
+                sedí pod dneškem: ptáme se až potom, co uživatel viděl, co
+                ho dnes čekalo. */}
+            <DenniCheckin onSelectTab={setActiveTab} />
 
             {/* PROPOJENÁ ZAŘÍZENÍ ÚPLNĚ DOLE (9. 9. 2026).
                 Sekce byla součástí ProfileSection, tedy nad jídelníčkem.

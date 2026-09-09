@@ -5,6 +5,7 @@ import { NavigationTabs, ActiveTab } from './components/NavigationTabs';
 import { OverviewBentoGrid } from './components/OverviewBentoGrid';
 import { ProfileSection } from './components/ProfileSection';
 import { PropojenaZarizeniSection } from './components/PropojenaZarizeniSection';
+import { UcetASpravaSection } from './components/UcetASpravaSection';
 import { DenniCheckin } from './components/DenniCheckin';
 import { DnesniPrehled } from './components/DnesniPrehled';
 import { ProfilHlavicka } from './components/ProfilHlavicka';
@@ -1110,6 +1111,14 @@ function AppContent() {
               onSyncAll={handleManualWithingsSync}
               isSyncing={isSyncing}
             />
+
+            {/* ÚČET A PŘEDPLATNÉ ÚPLNĚ NAKONEC (9. 9. 2026).
+                Obchodní podmínky (body 9 a 11) slibují zrušení předplatného
+                i smazání účtu „v profilu" — do teď ani jedno nešlo najít:
+                /api/delete-account existoval, ale nevedl na něj odkaz,
+                a zrušení předplatného nebylo vůbec. Sekce patří na konec:
+                je to něco, co člověk hledá jednou za čas, ne denně. */}
+            <UcetASpravaSection />
           </div>
         )}
 

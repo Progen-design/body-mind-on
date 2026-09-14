@@ -96,14 +96,22 @@ export default async function handler(req, res) {
       source: 'plan_replace_meal',
     });
 
+    // ODPOVĚĎ NESE JEN TO, CO KLIENT POUŽIJE.
+    //
+    // Do 15. 9. 2026 se tu vracel i `structured_plan_json` (celý týden) a
+    // `plan_html` (jeho HTML render) — změřeno na produkci: odpověď 111,7 kB,
+    // ačkoli klient čekal na plán znovu celý přes GET /api/profile hned
+    // potom a z týhle odpovědi nikdy nic nečetl. Do DB se oba sloupce dál
+    // zapisují (update výš) — pryč jde jen to, co se posílá po drátě klientovi.
     return res.status(200).json({
       ok: true,
       meal: result.meal,
       previous_title: result.previous_title,
       new_title: result.new_title,
       day_kcal: result.day_kcal,
-      structured_plan_json: result.structuredPlan,
-      plan_html: result.planHtml,
+      plan_id: planId,
+      day_slot_index: daySlotIndex,
+      meal_index: mealIndex,
     });
   } catch (err) {
     const code = String(err?.message || '');

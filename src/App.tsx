@@ -195,16 +195,27 @@ function AppContent() {
     const noveTydenniJidla = naJidlaTydne(plan).map((den) => ({ ...den, meals: pouzijDokonceni(den.meals, 'meal', hotove) }));
     setWeekMeals(noveTydenniJidla);
 
-    // RESYNC RECIPEMODALU PO ZÁMĚNĚ JÍDLA — viz cekaNaZamenuJidlaRef výš.
-    // Hledá se v `noveTydenniJidla`, ne v odpovědi /api/plan-replace-meal:
-    // jediný zdroj pravdy pro tvar MealItem je tenhle adaptér, druhá cesta
-    // ze samostatné odpovědi endpointu by se s ním časem rozešla.
+    // POJISTKA PO ZÁMĚNĚ JÍDLA (RecipeModal vykresluje nové jídlo hned
+    // z odpovědi endpointu, tohle běží až potom na pozadí) — viz
+    // cekaNaZamenuJidlaRef výš. Hledá se v `noveTydenniJidla`, ne v odpovědi
+    // /api/plan-replace-meal: jediný zdroj pravdy pro tvar MealItem je tenhle
+    // adaptér, druhá cesta ze samostatné odpovědi endpointu by se s ním
+    // časem rozešla.
     if (cekaNaZamenuJidlaRef.current) {
-      const cerstveJidlo = najdiJidloPodleSouradnic(noveTydenniJidla, cekaNaZamenuJidlaRef.current);
+      const cekaNa = cekaNaZamenuJidlaRef.current;
       cekaNaZamenuJidlaRef.current = null;
-      // null zavře modal (RecipeModal na `!meal` vrací null) — plán se mezitím
-      // přegeneroval a na těch souřadnicích už nic není.
-      setSelectedRecipeMeal(cerstveJidlo);
+      // Aplikuj jen tehdy, když si uživatel mezitím neotevřel jiné jídlo —
+      // jinak by pojistka po doběhnutí přenačtení přepsala modal, který mezi
+      // tím ukazuje něco úplně jiného.
+      const modalPoradUkazujeTutoZamenu = selectedRecipeMeal
+        && selectedRecipeMeal.planId === cekaNa.planId
+        && selectedRecipeMeal.planDay === cekaNa.planDay
+        && selectedRecipeMeal.poziceVPlanu === cekaNa.poziceVPlanu;
+      if (modalPoradUkazujeTutoZamenu) {
+        // null zavře modal (RecipeModal na `!meal` vrací null) — plán se
+        // mezitím přegeneroval a na těch souřadnicích už nic není.
+        setSelectedRecipeMeal(najdiJidloPodleSouradnic(noveTydenniJidla, cekaNa));
+      }
     }
     setWorkouts(pouzijDokonceniTreninku(naTreninky(plan), hotove));
     setHabits(naNavyky(profilData.user_habits, dnesniNavyky(profilData.habit_logs_progress)));
@@ -1293,7 +1304,13 @@ function AppContent() {
             ? handleToggleMeal
             : undefined
         }
-        onPlanZmenen={(souradnice) => {
+        onPlanZmenen={(noveJidlo, souradnice) => {
+          // OKAMŽITĚ, bez čekání na přenačtení — noveJidlo je poskládané
+          // z odpovědi endpointu (RecipeModal, jidloZPlanu).
+          setSelectedRecipeMeal(noveJidlo);
+          // Přenačtení profilu běží dál na pozadí, jen jako pojistka: kdyby
+          // se něco v `weekMeals` rozešlo (dopočet kalorií, jiné jídlo v
+          // seznamu dne), resync níž ho po doběhnutí srovná. UI na něj nečeká.
           cekaNaZamenuJidlaRef.current = souradnice;
           znovuNacistProfil();
         }}

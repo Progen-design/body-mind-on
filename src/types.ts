@@ -53,6 +53,17 @@ export interface MealItem extends AktivitaPlanu {
   completed: boolean;
   ingredients: string[];
   recipe?: RecipeDetail;
+  /**
+   * POZICE JÍDLA V `structured_plan_json.days[].meals`.
+   *
+   * POST /api/plan-replace-meal adresuje jídlo pořadím v tomhle poli
+   * (`meal_index`), ne typem — dvě svačiny ve stejném dni by podle typu
+   * nešly rozlišit. Stejný důvod a stejný vzor jako `poziceVPlanu`
+   * u ExerciseItem výš: index se bere PŘED řazením podle typu jídla
+   * (viz `mealyDne` v src/data/adaptery.ts), jinak by se pozice rozešla
+   * s pořadím na serveru a záměna by potichu přepsala jiné jídlo.
+   */
+  poziceVPlanu?: number;
 }
 
 export interface ExerciseItem extends AktivitaPlanu {

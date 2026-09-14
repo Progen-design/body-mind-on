@@ -296,6 +296,11 @@ function mealyDne(struktura: any, den: any, planId: string | null): MealItem[] {
       planId,
       planDay,
       activityKey: mealActivityKey(m, i),
+      // Pozice v `day.meals` — adresa pro záměnu jídla
+      // (POST /api/plan-replace-meal). Musí vzniknout PŘED řazením níž,
+      // stejně jako activityKey — viz komentář u `poziceVPlanu`
+      // v src/types.ts.
+      poziceVPlanu: i,
       ingredients: Array.isArray(m?.shopping_ingredient_lines)
         ? m.shopping_ingredient_lines.map(String)
         : (Array.isArray(recept.ingredients)

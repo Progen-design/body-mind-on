@@ -1,22 +1,62 @@
-import React from 'react';
-import { X, Clock, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Clock, CheckCircle2, Repeat } from 'lucide-react';
 import { motion } from 'motion/react';
 import { MealItem } from '../types';
+import { apiFetch } from '../lib/api';
 
 interface RecipeModalProps {
   meal: MealItem | null;
   isOpen: boolean;
   onClose: () => void;
   onToggleComplete?: (id: string) => void;
+  /** Jídlo se změnilo na serveru (záměna) — načti plán znovu. Stejný vzor jako WorkoutSection. */
+  onPlanZmenen: () => void;
 }
 
 export const RecipeModal: React.FC<RecipeModalProps> = ({
   meal,
   isOpen,
   onClose,
-  onToggleComplete
+  onToggleComplete,
+  onPlanZmenen
 }) => {
+  // ZÁMĚNA JÍDLA (POST /api/plan-replace-meal). Endpoint existoval od
+  // začátku, ale UI na něj nevedlo — viz bývalý komentář níž u receptu.
+  //
+  // Na rozdíl od odškrtnutí (jen lokální/dnešní stav) tahle záměna MĚNÍ PLÁN
+  // NA SERVERU (přepíše se `structured_plan_json` i `plan_html`), proto se
+  // po ní volá `onPlanZmenen()` — stejný důvod jako u výměny cviku ve
+  // WorkoutSection. Modal se pak zavírá, protože zobrazené `meal` je po
+  // záměně zastaralé a nemá se jak samo přerenderovat (na rozdíl od
+  // WorkoutSection, kde karta cviku žije podle pozice, ne podle identity).
+  const [meniSe, setMeniSe] = useState(false);
+  const [chybaZmeny, setChybaZmeny] = useState<string | null>(null);
+
   if (!isOpen || !meal) return null;
+
+  const handleZmenitJidlo = async () => {
+    if (meal.planId == null || meal.planDay == null || meal.poziceVPlanu == null) return;
+    setMeniSe(true);
+    setChybaZmeny(null);
+    try {
+      await apiFetch('/api/plan-replace-meal', {
+        method: 'POST',
+        body: JSON.stringify({
+          plan_id: meal.planId,
+          day_slot_index: meal.planDay,
+          meal_index: meal.poziceVPlanu
+        })
+      });
+      onPlanZmenen();
+      onClose();
+    } catch (chyba: any) {
+      // 409 NO_ALTERNATIVE / DAY_KCAL_OUT_OF_TOLERANCE nesou hotovou českou
+      // hlášku — zobrazuje se přesně tak, jak přišla, nic se nepřepisuje.
+      setChybaZmeny(chyba?.message || 'Nepodařilo se jídlo vyměnit.');
+    } finally {
+      setMeniSe(false);
+    }
+  };
 
   // Žádný náhradní recept. Dřív tu stály čtyři věty („Připravte si všechny
   // čerstvé suroviny podle gramáže." …), které se ukázaly u každého jídla bez
@@ -134,12 +174,16 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
 
           {/* Pryc "Nutricni tip AI Trenera" a "Mozne alternativy a zameny".
               Obojí bylo jednou vetou natvrdo pro vsechna jidla a v databazi pro
-              ne neni zadne pole. Zameny jidel resi api/plan-replace-meal.js,
-              az na nej UI napojime (Etapa 4). */}
+              ne neni zadne pole. Zamena jidla (api/plan-replace-meal.js) je
+              tlacitko "Dat si neco jineho" v patičce niz. */}
+
+          {chybaZmeny && (
+            <p className="text-xs text-rose-400">{chybaZmeny}</p>
+          )}
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 sm:p-5 border-t border-slate-800 bg-slate-900/40 flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-t border-slate-800 bg-slate-900/40 flex flex-wrap items-center justify-between gap-2">
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-800/80 transition-all"
@@ -147,22 +191,40 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
             Zavřít
           </button>
 
-          {onToggleComplete && (
-            <button
-              onClick={() => {
-                onToggleComplete(meal.id);
-                onClose();
-              }}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                meal.completed
-                  ? 'bg-slate-800 text-slate-300 border border-slate-700'
-                  : 'bg-gradient-to-r from-emerald-600 to-cyan-600 text-white shadow-[0_0_15px_rgba(57,255,20,0.3)]'
-              }`}
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>{meal.completed ? 'Označit jako nesnědeno' : 'Označit jako snědeno (+ ' + meal.calories + ' kcal)'}</span>
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {/* DÁT SI NĚCO JINÉHO (POST /api/plan-replace-meal). Podmínka je
+                na `poziceVPlanu`: bez ní nemá požadavek adresu a poslat ho
+                naslepo by přepsalo cizí jídlo. Seed data v initialData.ts
+                ho nemají, takže tlačítko u ukázkových dat nikdy neuvidí. */}
+            {meal.planId != null && meal.planDay != null && meal.poziceVPlanu != null && (
+              <button
+                onClick={handleZmenitJidlo}
+                disabled={meniSe}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 bg-slate-950 border border-slate-800 hover:border-cyan-500/40 disabled:opacity-50 transition-all"
+                title="Nahradit tohle jídlo jiným ze stejného typu"
+              >
+                <Repeat className="w-3.5 h-3.5" />
+                <span>{meniSe ? 'Hledám náhradu…' : 'Dát si něco jiného'}</span>
+              </button>
+            )}
+
+            {onToggleComplete && (
+              <button
+                onClick={() => {
+                  onToggleComplete(meal.id);
+                  onClose();
+                }}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  meal.completed
+                    ? 'bg-slate-800 text-slate-300 border border-slate-700'
+                    : 'bg-gradient-to-r from-emerald-600 to-cyan-600 text-white shadow-[0_0_15px_rgba(57,255,20,0.3)]'
+                }`}
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{meal.completed ? 'Označit jako nesnědeno' : 'Označit jako snědeno (+ ' + meal.calories + ' kcal)'}</span>
+              </button>
+            )}
+          </div>
         </div>
       </motion.div>
     </div>

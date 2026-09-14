@@ -5,6 +5,7 @@
 import { supabaseServer } from '../lib/supabaseServer.js';
 import { replaceMealInStructuredPlan } from '../lib/planMealReplace.js';
 import { recordProductEvent } from '../lib/recordProductEvent.js';
+import { requireActiveMembership } from '../lib/membershipHelpers.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -18,6 +19,11 @@ export default async function handler(req, res) {
 
     const { data: { user }, error: userErr } = await supabaseServer.auth.getUser(token);
     if (userErr || !user) return res.status(401).json({ ok: false, error: 'Neplatná session' });
+
+    const membershipCheck = await requireActiveMembership(user.id);
+    if (!membershipCheck.allowed) {
+      return res.status(membershipCheck.status || 403).json({ ok: false, error: membershipCheck.error });
+    }
 
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {};
     const planId = body.plan_id;

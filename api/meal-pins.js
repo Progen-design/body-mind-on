@@ -1,5 +1,6 @@
 // /api/meal-pins.js – GET načtení pinů, POST add/remove
 import { supabaseServer } from '../lib/supabaseServer.js';
+import { requireActiveMembership } from '../lib/membershipHelpers.js';
 
 const MAX_MEAL_TEXT_LEN = 200;
 
@@ -39,6 +40,11 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
+      const membershipCheck = await requireActiveMembership(userId);
+      if (!membershipCheck.allowed) {
+        return res.status(membershipCheck.status || 403).json({ error: membershipCheck.error });
+      }
+
       const b = req.body || {};
       const action = b.action;
       const mealType = (b.meal_type || '').trim();

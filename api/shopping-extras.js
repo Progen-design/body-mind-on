@@ -1,6 +1,7 @@
 // Vlastni polozky nakupniho seznamu. Odvozena cast seznamu se pocita
 // z jidelnicku, tady jsou jen veci, ktere si uzivatel dopsal sam.
 import { supabaseServer } from '../lib/supabaseServer.js';
+import { requireActiveMembership } from '../lib/membershipHelpers.js';
 
 const KATEGORIE = [
   'Maso & Ryby',
@@ -22,6 +23,13 @@ async function uzivatel(req) {
 export default async function handler(req, res) {
   const user = await uzivatel(req);
   if (!user) return res.status(401).json({ error: 'Nejste přihlášen' });
+
+  if (req.method !== 'GET') {
+    const membershipCheck = await requireActiveMembership(user.id);
+    if (!membershipCheck.allowed) {
+      return res.status(membershipCheck.status || 403).json({ error: membershipCheck.error });
+    }
+  }
 
   try {
     if (req.method === 'GET') {

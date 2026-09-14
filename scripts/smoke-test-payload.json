@@ -14,5 +14,6 @@
   "program": "START",
   "workout_days": [1, 3, 5],
   "training_environment": "gym",
-  "smart_scale_choice": "none"
+  "smart_scale_choice": "none",
+  "souhlasy": ["obchodni_podminky", "zdravotni_udaje"]
 }

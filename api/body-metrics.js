@@ -62,7 +62,7 @@ export default async function handler(req, res) {
       return res.status(parsed.status).json({ error: parsed.error });
     }
 
-    const { payload, password, birthDateRaw, smartScaleBody } = parsed;
+    const { payload, password, birthDateRaw, smartScaleBody, souhlasy } = parsed;
 
     const normalizedProgram = String(payload.program || 'START').toUpperCase();
     if ((normalizedProgram === 'ON_CLUB' || normalizedProgram === 'VIP') && !isTierCheckoutEnabled(normalizedProgram)) {
@@ -94,9 +94,16 @@ export default async function handler(req, res) {
     //
     // Poradi neni kosmetika: souhlas se zahajenim plneni je duvod, proc se
     // plan smi zacit delat uvnitr 14denni lhuty. Zaznam o nem tedy nesmi
-    // vzniknout az potom. Registracni formular bez zaskrtnuti neodesle,
-    // takze se sem doda jen platny pripad.
-    await zapisSouhlasy(payload.user_id, { zdroj: 'registrace' });
+    // vzniknout az potom.
+    //
+    // `druhy: souhlasy` NENÍ kosmetika ani duplicita s parseAndValidateRegistrationBody:
+    // tam se jen OVĚŘUJE, že request nese platné souhlasy (a odmítá se bez nich
+    // 400 dřív, než vznikne účet) — tady se teprve DOKLÁDÁ, co se odsouhlasilo,
+    // řádkem v souhlasy_uzivatelu. Do 14. 9. 2026 se sem `druhy` vůbec neposílalo
+    // (komentář tvrdil „bez zaškrtnutí se sem nedostaneš“, což endpoint sám
+    // nijak nevymáhal) — zapisSouhlasy() pak brala svůj starý výchozí seznam
+    // a zapsala oba druhy i k holému POSTu bez jakéhokoli souhlasu.
+    await zapisSouhlasy(payload.user_id, { zdroj: 'registrace', druhy: souhlasy });
 
     const loginPassword = auth.loginPassword;
     const existingAccount = false;

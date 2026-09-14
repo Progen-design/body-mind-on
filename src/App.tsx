@@ -1268,6 +1268,7 @@ function AppContent() {
             ? handleToggleMeal
             : undefined
         }
+        onPlanZmenen={znovuNacistProfil}
       />
 
       <ShoppingListModal

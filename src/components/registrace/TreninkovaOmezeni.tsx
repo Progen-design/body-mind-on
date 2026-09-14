@@ -5,6 +5,8 @@ import {
   chipyNaPatterny,
   patternyNaChipy,
   textZbyvajicichCviku,
+  jeVyberExtremni,
+  TEXT_VAROVANI_EXTREMNI_VYBER,
 } from '../../data/treninkovaOmezeni.ts';
 import { planExclusionCoverage } from '@lib/trainingExclusions.js';
 import { MUSCLE_GROUP_IDS, getMuscleGroupLabel } from '@lib/muscleGroupLabels.js';
@@ -78,6 +80,12 @@ export const TreninkovaOmezeni: React.FC<TreninkovaOmezeniProps> = ({
       </div>
 
       <p className="text-[11px] text-slate-500">{textZbyvajicichCviku(pokryti.remaining, zbyvaNaVybranePartie)}</p>
+
+      {jeVyberExtremni(pokryti.remaining) && (
+        <p role="alert" className="text-[11px] text-amber-400">
+          {TEXT_VAROVANI_EXTREMNI_VYBER}
+        </p>
+      )}
 
       <p className="text-[11px] text-slate-600">
         Slouží k úpravě plánu. Nenahrazuje vyšetření u lékaře.

@@ -1,0 +1,72 @@
+[
+  {
+    "canonical_key": "bench_press",
+    "fed_id": "Barbell_Bench_Press_-_Medium_Grip",
+    "shoda": "rucni_vyber"
+  },
+  {
+    "canonical_key": "calf_raise",
+    "fed_id": "Standing_Dumbbell_Calf_Raise",
+    "shoda": "rucni_vyber"
+  },
+  {
+    "canonical_key": "deadlift",
+    "fed_id": "Barbell_Deadlift",
+    "shoda": "rucni_vyber"
+  },
+  {
+    "canonical_key": "dumbbell_row",
+    "fed_id": "One-Arm_Dumbbell_Row",
+    "shoda": "rucni_vyber"
+  },
+  {
+    "canonical_key": "farmer_carry",
+    "fed_id": "Farmers_Walk",
+    "shoda": "rucni_vyber"
+  },
+  {
+    "canonical_key": "hamstring_curl",
+    "fed_id": "Lying_Leg_Curls",
+    "shoda": "rucni_vyber"
+  },
+  {
+    "canonical_key": "chest_press",
+    "fed_id": "Leverage_Chest_Press",
+    "shoda": "rucni_vyber"
+  },
+  {
+    "canonical_key": "lat_pulldown",
+    "fed_id": "Wide-Grip_Lat_Pulldown",
+    "shoda": "rucni_vyber"
+  },
+  {
+    "canonical_key": "lateral_raise",
+    "fed_id": "Side_Lateral_Raise",
+    "shoda": "rucni_vyber"
+  },
+  {
+    "canonical_key": "lunges",
+    "fed_id": "Bodyweight_Walking_Lunge",
+    "shoda": "rucni_vyber"
+  },
+  {
+    "canonical_key": "mountain_climber",
+    "fed_id": "Mountain_Climbers",
+    "shoda": "rucni_vyber"
+  },
+  {
+    "canonical_key": "pull_up",
+    "fed_id": "Pullups",
+    "shoda": "rucni_vyber"
+  },
+  {
+    "canonical_key": "pushup",
+    "fed_id": "Pushups",
+    "shoda": "rucni_vyber"
+  },
+  {
+    "canonical_key": "squat",
+    "fed_id": "Bodyweight_Squat",
+    "shoda": "rucni_vyber"
+  }
+]

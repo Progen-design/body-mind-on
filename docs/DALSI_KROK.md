@@ -29,6 +29,197 @@
 
 ---
 
+## 9.12 KATALOG CVIKŮ: VLASTNÍ ANIMACE MÍSTO HOTLINKOVANÝCH GIFŮ
+
+### CÍL
+
+Katalog cviků přechází z hotlinkovaných GIFů static.exercisedb.dev na vlastní
+dvousnímkové WebP animace z free-exercise-db (Unlicense), hostované v Supabase
+Storage. Důvod: současných 28 animací je © Gym Visual, používáme je bez licence
+v placeném SaaS. usable_in_plan je dnes 227/230, protože trigger už médium
+nevyžaduje. Důvod téhle změny je licenční (28 animací © Gym Visual bez licence
+v placeném SaaS) plus UX — cvik s animací je srozumitelnější. Rozpočet: 0 Kč.
+
+### PRAVIDLA
+
+- supabase db push zakázaný. Migrace píšeš jako soubor, aplikuje je Claude v Coworku.
+- Necommituješ sám, ani na přímý pokyn.
+- Neměříš produkci, čísla dostaneš.
+
+(Totéž říká i „Pravidla, která platí nade vším" výš — psáno sem znovu, ať je
+tenhle bod čitelný samostatně.)
+
+### FÁZE 0 — INVENTURA (jen čtení, pak STOP)
+
+1. Obnov mapování canonical_key → free-exercise-db id. Není v těle migrace
+   20260908230000_jen_animace.sql (ta jen nuluje image_url/wger_exercise_image_url
+   a maže easier_key/harder_key mířící na cvik bez gifu) — skutečný zdroj je
+   sloupec exercise_asset_registry.external_id, který zapisuje
+   lib/exerciseImportRun.js při importu.
+2. Ke každému z 230 klíčů zjisti, jestli má protějšek se DVĚMA fotkami.
+3. Vrať: kolik má dvě fotky / jednu / žádnou, pokrytí primary_muscle a
+   equipment_class, a zvlášť co se stane s ~30 klíči, které generátor reálně
+   používá (lib/seeds/pohyboveVzoryCviku.js, PROGRESSION_BY_EXERCISE, zmrazená
+   pole START programu).
+
+Dál nepokračuj, dokud čísla neschválím.
+
+### FÁZE 0 — VÝSLEDEK (schváleno 9. 9. 2026)
+
+Reálný rozsah generátoru je 35 klíčů (ne ~30) — sjednocení
+`pohyboveVzoryCviku.js` (33) ∪ `PROGRESSION_BY_EXERCISE` (přidává `deadlift`,
+`lateral_raise`) ∪ zmrazená pole START programu. Shoda s free-exercise-db
+napříč všemi 230: 183 jistých přes `external_id`, 11 jistých přes přesný
+název, 33 s víc kandidáty (nutný ruční výběr), 3 úplně bez kandidáta
+(`bulgarian_squat`, `burpee`, `jumping_jack`).
+
+### ROZSAH FÁZÍ 1–3 (schváleno 9. 9. 2026)
+
+Nedělá se všech 230. Rozsah:
+
+- **A) 193 jistých shod** (194 mínus `machine_bicep_curl` — shoda je formálně
+  jistá, ale zdrojový snímek ve free-exercise-db je vadný, ukazuje tlak nad
+  hlavu, ne bicepsový zdvih) → generuje a nahrává automat (FÁZE 1+2).
+- **B) 20 položek ruční výběr** — 19 klíčů generátoru s víc kandidáty
+  (`bench_press`, `calf_raise`, `deadlift`, `dumbbell_romanian_deadlift`,
+  `dumbbell_row`, `farmer_carry`, `glute_bridge`, `hamstring_curl`,
+  `chest_press`, `lat_pulldown`, `lateral_raise`, `lunges`,
+  `mountain_climber`, `overhead_press`, `plank_side`, `pull_up`, `pushup`,
+  `squat`, `tricep_extension`) + `machine_bicep_curl` (vadný snímek, ne
+  víc kandidátů, ale patří do stejného ručního výběru) → HTML mřížka,
+  výběr dělá Honza, export jako JSON mapování.
+- **C) 14 zbylých kandidátů mimo generátor** → odloženo, zapsáno jako
+  otevřené v dokumentaci (FÁZE 6), nikdo je teď nevidí.
+- **D) `burpee`, `jumping_jack`, `bulgarian_squat`** → bez kandidáta v
+  datasetu, zůstávají bez média s českým postupem. Neřeší se.
+
+Migrace ve FÁZI 3 maže odkazy na static.exercisedb.dev, exercisedb.dev a
+wger u VŠECH 230 cviků bez výjimky, i u těch, které v tomhle kole náhradu
+nedostanou (skupiny C a D) — to je hlavní důvod celé změny, není volitelné.
+
+Pořadí: 1) oprava zadání, 2) FÁZE 1+2 pro skupinu A, 3) HTML mřížka pro
+skupinu B, 4) teprve pak FÁZE 3 (migrace) s kompletním mapováním A+B.
+
+### FÁZE 1 — GENERÁTOR
+
+scripts/generuj_animace_cviku.py, navazuje na scripts/ukazka_animace.py.
+Výstup build/exercise-media/<canonical_key>.webp: šířka 640 px, 700 ms/snímek,
+nekonečná smyčka, quality=80, method=6, cíl ≤60 kB.
+Idempotentní, --dry-run a --only <klic>, nespadne na první chybě, na konci
+souhrn + seznam selhání. build/ do .gitignore.
+
+### FÁZE 2 — UPLOAD
+
+Bucket exercise-media (veřejný pro čtení, zápis jen service_role, vytvořit
+migrací ne klikáním). Cesta cviky/<canonical_key>.webp, content-type image/webp,
+cache-control public, max-age=31536000, immutable, upsert true.
+Klíč ze SUPABASE_SERVICE_ROLE_KEY v env, nikdy natvrdo.
+
+### FÁZE 3 — MIGRACE REGISTRU
+
+Jedna migrace 2026MMDDHHMMSS_vlastni_animace_cviku.sql:
+- nové sloupce media_source, media_license, media_updated_at
+- UPDATE gif_url na Storage URL
+- vymazat VŠECHNY odkazy na static.exercisedb.dev, exercisedb.dev a wger ze
+  všech tří sloupců, bez výjimky
+- image_url a wger_exercise_image_url nechat prázdné
+
+usable_in_plan nenastavuj ručně, přepočítá ho trigger
+enforce_exercise_registry_rules(). Vrať mi SQL na ověření počtů před/po.
+Ověř v kódu, že média se berou z registru a ne ze structured_plan_json:
+doplnSvalyDoPlanu, lib/profile/svalyDoPlanu.js, applyExclusions(),
+POST /api/plan/exercise-variant, tisk PDF. Kde neplatí, oprav.
+
+### FÁZE 4 — VIZUÁLNÍ KONTROLA
+
+Připrav generátor HTML mřížky podle claude_BMON_KONTROLA_OBRAZKU_CVIKU.md
+(5 sloupců, object-fit contain, python -m http.server). Kontrolu dělám já.
+Pravidlo: obrázek smí u cviku zůstat jen když ukazuje tentýž pohyb, jaký
+popisuje český postup. Podobný cvik se nedosazuje. machine_bicep_curl měl vadný
+snímek přímo ve zdrojových datech — SQL to nenajde.
+
+### FÁZE 5 — VARIANTY
+
+Přepáruj easier_key/harder_key na rozšířený katalog. RUČNĚ, ne plošně —
+odvozování podle nářadí už jednou selhalo. Navrhni dvojice, schválím, pak
+migrace. Hlídej slepé uličky, z cíle musí vést cesta zpátky.
+
+### FÁZE 6 — DOKUMENTACE
+
+Přepiš claude_BMON_MEDIA_CVIKU_LICENCE.md: nový zdroj, kde média leží, kolik
+cviků zůstalo bez média. Zapiš vědomě přijaté riziko s datem: Unlicense kryje
+repo a strukturu, řetězec práv k fotkám je mlhavější než README naznačuje.
+
+### PŘEDPOKLAD
+
+7 cviků bez obrázku (dips, jumping_jack, step_up, cable_row, bicep_curl,
+tricep_extension, machine_bicep_curl) z katalogu nevyhazuj. Čtyři přišly
+o snímek proto, že byl špatný, ne že chyběl.
+
+### PŘED NASAZENÍM
+
+tsc --noEmit, eslint bez errors, test:unit + test:src, build zelený.
+Advisory check security a performance na nový bucket.
+Pořadí: migrace → deploy. Prázdné gif_url musí kód přežít.
+
+### STAV K 14. 9. 2026 — FÁZE 1–3 a 6 hotové, FÁZE 4 OTEVŘENÁ, FÁZE 5 čeká
+
+FÁZE 1+2 (generátor, upload): 207/230 cviků má vlastní WebP animaci v bucketu
+`exercise-media` (193 skupina A + 14 skupina B). Kvalita doladěna na 60 po
+měření (cíl průměr <45 kB, max ≤80 kB — 60 dává 34,7 kB / 79,1 kB).
+
+FÁZE 3 (migrace registru): aplikována jako
+`supabase/migrations/20260913232254_vlastni_animace_cviku.sql`. V DB je od
+tohoto nasazení 0 odkazů na exercisedb.dev/wger.de ve všech třech sloupcích,
+207/230 má Storage animaci, `usable_in_plan` 227/230.
+
+Migrace ale nestačila — `lib/exerciseRegistryMedia.js` mělo natvrdo zapsané
+`TRUSTED_EXERCISE_GIF_BY_KEY`/`TRUSTED_EXTENDED_GIF_BY_KEY`, které
+`mergeWithTrustedRegistryMedia()` aplikuje na KAŽDOU cestu ke klientovi i do
+zápisu (generování plánu, výměna cviku, `POST /api/plan/exercise-variant`).
+Oprava proběhla ve dvou kolech:
+
+1. **První kolo (13.–14. 9. 2026):** vyřazeno 22 klíčů, které mezitím dostaly
+   vlastní Storage animaci. **Neúplné** — 11 klíčů bez vlastní animace
+   (`overhead_press`, `tricep_extension`, `plank_side`, `warmup`, `cooldown`,
+   `rest`, `burpee`, `glute_bridge`, `hammer_curl`, `cable_row`, `hip_thrust`)
+   ve slovnících zůstalo, takže v DB bylo 0 odkazů na Gym Visual, ale uživatel
+   jich pořád viděl 11 — migrace vypadala hotová, licenční problém nebyl.
+2. **Druhé kolo (14. 9. 2026, po ověření v produkci):** oba slovníky
+   vyprázdněny úplně, `exercisedbGifUrl()` smazána. Těchhle 11 cviků zůstává
+   bez média — přijatelný stav, `usable_in_plan` ho nevyžaduje. Přejmenováno
+   `isTrustedExercisedbGifUrl()` → `isTrustedExerciseMediaUrl()`, uznává
+   jen vlastní Storage URL, `static.exercisedb.dev` už ne. `getRequiredCanonicalKeys()`
+   smazána (nic ji nevolalo, s prázdnou mapou by vracela `[]`). Prošlo se
+   všech 8 volajících (`api/verify-exercise-registry.js`,
+   `scripts/verify-exercise-registry.mjs`,
+   `scripts/verify-plan-quality-invariants.mjs`,
+   `scripts/verify-workout-publishable-gate.mjs`, `lib/planDataIntegrity.js`,
+   `lib/planQualityMetrics.js`, `lib/exerciseEnrichment.js`,
+   `lib/__tests__/exerciseRegistryCoverage.test.mjs`) — opraveno pravidlo, ne
+   fingované testovací klíče: gate/metriky už nefabrikují gif_url pro cvik bez
+   animace, `api/verify-exercise-registry.js` přestal ověřovat pevný seznam
+   a ověřuje všech 207 řádků s reálnou Storage animací přímo z DB.
+
+FÁZE 4 (vizuální kontrola) — OTEVŘENÁ, NEPROBĚHLA. Honza vizuálně prošel jen
+20 kandidátů skupiny B v `scripts/vyber_animaci_skupina_b.html`. Zbylých 193
+animací skupiny A (jistá shoda přes `external_id`/přesný název) nikdo
+vizuálně nezkontroloval — a to je přesně množina, kde se dřív našel
+`machine_bicep_curl` s vadným snímkem přímo ve zdrojových datech (formální
+shoda klíče sedí, obrázek ukazuje jiný cvik). Animace už jsou živé
+v produkci (migrace `20260913232254`), takže případný další takový případ
+mezi těmi 193 teď vidí přímo uživatel v aplikaci, ne jen tabulka v DB.
+Samostatný soubor `claude_BMON_KONTROLA_OBRAZKU_CVIKU.md`, na který tenhle
+bod odkazoval, v repu nikdy neexistoval.
+
+FÁZE 6 (dokumentace): napsána nově jako
+`docs/claude_BMON_MEDIA_CVIKU_LICENCE.md` — v repu taky neexistovala,
+přestože na ni tenhle bod odkazoval.
+
+FÁZE 5 (varianty, easier_key/harder_key) — neřešeno, čeká na zadání.
+
+---
+
 ## 9.10 TED ODMÍTÁ ODPOVĚDĚT, I KDYŽ DATA MÁ — CHYBA JE V PROMPTU
 
 Honza 7. 9. 2026 poslal konverzaci uživatele `ondra.novak18@gmail.com`:

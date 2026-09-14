@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Clock, CheckCircle2, Repeat } from 'lucide-react';
 import { motion } from 'motion/react';
 import { MealItem } from '../types';
@@ -9,8 +9,14 @@ interface RecipeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onToggleComplete?: (id: string) => void;
-  /** Jídlo se změnilo na serveru (záměna) — načti plán znovu. Stejný vzor jako WorkoutSection. */
-  onPlanZmenen: () => void;
+  /**
+   * Jídlo se změnilo na serveru (záměna) — přenačti plán. Na rozdíl od
+   * WorkoutSection dostává souřadnice právě zaměněného jídla: App.tsx si je
+   * uloží a po doběhnutí přenačtení sám dohledá čerstvé jídlo na týž pozici
+   * (src/data/adaptery.ts, najdiJidloPodleSouradnic) a přepíše jím
+   * `selectedRecipeMeal` — proto modal nezavíráme tady, viz handleZmenitJidlo.
+   */
+  onPlanZmenen: (souradnice: { planId: string; planDay: number; poziceVPlanu: number }) => void;
 }
 
 export const RecipeModal: React.FC<RecipeModalProps> = ({
@@ -23,37 +29,52 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
   // ZÁMĚNA JÍDLA (POST /api/plan-replace-meal). Endpoint existoval od
   // začátku, ale UI na něj nevedlo — viz bývalý komentář níž u receptu.
   //
-  // Na rozdíl od odškrtnutí (jen lokální/dnešní stav) tahle záměna MĚNÍ PLÁN
-  // NA SERVERU (přepíše se `structured_plan_json` i `plan_html`), proto se
-  // po ní volá `onPlanZmenen()` — stejný důvod jako u výměny cviku ve
-  // WorkoutSection. Modal se pak zavírá, protože zobrazené `meal` je po
-  // záměně zastaralé a nemá se jak samo přerenderovat (na rozdíl od
-  // WorkoutSection, kde karta cviku žije podle pozice, ne podle identity).
+  // MODAL SE PO ÚSPĚCHU NEZAVÍRÁ. Dřív se zavíral s odůvodněním, že zobrazené
+  // `meal` je po záměně zastaralé a nemá se jak samo přerenderovat — to byla
+  // pravda o tehdejším zapojení (RecipeModal neznal souřadnice mimo `meal`
+  // prop), ne důvod modal zavírat. `onPlanZmenen()` nevrací promise (jen
+  // bumpne počítadlo v useProfilData) — nedá se na čerstvá data počkat
+  // awaitem tady. Místo toho `meniSe` zůstává `true` (tlačítko drží „Hledám
+  // náhradu…", obsah je vizuálně neaktivní) až do chvíle, kdy App.tsx po
+  // doběhnutí přenačtení dosadí do `meal` prop čerstvé jídlo se stejnými
+  // souřadnicemi — efekt níž na tu změnu zareaguje a `meniSe` vypne. Když
+  // App.tsx žádné jídlo na těch souřadnicích nenajde (plán se mezitím
+  // přegeneroval), pošle `meal: null` a modal se zavře sám (`!meal` výš) —
+  // to je jediný případ, kdy se má zavřít.
   const [meniSe, setMeniSe] = useState(false);
   const [chybaZmeny, setChybaZmeny] = useState<string | null>(null);
+
+  // Jakmile prop `meal` doopravdy dorazí jiný (nové jídlo po záměně, nebo
+  // uživatel otevřel jiné jídlo), „Hledám náhradu…" končí. Na chybu se tohle
+  // nevztahuje — ta meniSe vypíná sama v catch bloku, protože po chybě žádné
+  // nové `meal` nepřijde.
+  useEffect(() => {
+    setMeniSe(false);
+  }, [meal]);
 
   if (!isOpen || !meal) return null;
 
   const handleZmenitJidlo = async () => {
     if (meal.planId == null || meal.planDay == null || meal.poziceVPlanu == null) return;
+    const souradnice = { planId: meal.planId, planDay: meal.planDay, poziceVPlanu: meal.poziceVPlanu };
     setMeniSe(true);
     setChybaZmeny(null);
     try {
       await apiFetch('/api/plan-replace-meal', {
         method: 'POST',
         body: JSON.stringify({
-          plan_id: meal.planId,
-          day_slot_index: meal.planDay,
-          meal_index: meal.poziceVPlanu
+          plan_id: souradnice.planId,
+          day_slot_index: souradnice.planDay,
+          meal_index: souradnice.poziceVPlanu
         })
       });
-      onPlanZmenen();
-      onClose();
+      onPlanZmenen(souradnice);
     } catch (chyba: any) {
       // 409 NO_ALTERNATIVE / DAY_KCAL_OUT_OF_TOLERANCE nesou hotovou českou
       // hlášku — zobrazuje se přesně tak, jak přišla, nic se nepřepisuje.
+      // Modal zůstává otevřený na PŮVODNÍM jídle, ne prázdný — hláška bez
+      // kontextu, k čemu se vztahuje, je k ničemu.
       setChybaZmeny(chyba?.message || 'Nepodařilo se jídlo vyměnit.');
-    } finally {
       setMeniSe(false);
     }
   };
@@ -104,7 +125,14 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1 text-slate-200">
+        {/* Během záměny vizuálně neaktivní (opacity + pointer-events-none) —
+            ať není vidět blik starého jídla, než dorazí přenačtená data
+            (viz handleZmenitJidlo výš). */}
+        <div
+          className={`p-5 sm:p-6 overflow-y-auto space-y-6 flex-1 text-slate-200 transition-opacity ${
+            meniSe ? 'opacity-40 pointer-events-none' : ''
+          }`}
+        >
           {/* Quick Metrics Bar (Calories & Macros) */}
           <div className="grid grid-cols-4 gap-2.5 p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 text-center">
             <div>

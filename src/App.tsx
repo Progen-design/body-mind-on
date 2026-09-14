@@ -40,7 +40,7 @@ import { useZdravotniData } from './hooks/useZdravotniData';
 import { naBiometrii, maZdravotniData, naSkupinyMetrik, naSpanek } from './data/adapteryZdravi';
 import type { NastaveniProfilu, NesouladCile } from './data/adaptery';
 import {
-  dnesekPraha, dnesniNavyky, mnozinaDokonceni, naJidla, naJidlaTydne, naNakupniSeznam, naNavyky,
+  dnesekPraha, dnesniNavyky, mnozinaDokonceni, naJidla, naJidlaTydne, najdiJidloPodleSouradnic, naNakupniSeznam, naNavyky,
   hodnotaNeboPomlcka, naNastaveniProfilu, naPreference, naProfil, naTelesneSlozeni, naTreninky, naVazeni,
   naZlozvyky, naZpravyTrenera, naZamcenyPlan, nesouladCile, pouzijDokonceni,
   pouzijDokonceniTreninku, vekZDataNarozeni, vyberPlan
@@ -192,9 +192,20 @@ function AppContent() {
     // kazdem nacteni tvarilo, ze uzivatel dnes nic nesplnil.
     const hotove = mnozinaDokonceni(profilData.daily_activity_completions);
     setMeals(pouzijDokonceni(naJidla(plan), 'meal', hotove));
-    setWeekMeals(
-      naJidlaTydne(plan).map((den) => ({ ...den, meals: pouzijDokonceni(den.meals, 'meal', hotove) }))
-    );
+    const noveTydenniJidla = naJidlaTydne(plan).map((den) => ({ ...den, meals: pouzijDokonceni(den.meals, 'meal', hotove) }));
+    setWeekMeals(noveTydenniJidla);
+
+    // RESYNC RECIPEMODALU PO ZÁMĚNĚ JÍDLA — viz cekaNaZamenuJidlaRef výš.
+    // Hledá se v `noveTydenniJidla`, ne v odpovědi /api/plan-replace-meal:
+    // jediný zdroj pravdy pro tvar MealItem je tenhle adaptér, druhá cesta
+    // ze samostatné odpovědi endpointu by se s ním časem rozešla.
+    if (cekaNaZamenuJidlaRef.current) {
+      const cerstveJidlo = najdiJidloPodleSouradnic(noveTydenniJidla, cekaNaZamenuJidlaRef.current);
+      cekaNaZamenuJidlaRef.current = null;
+      // null zavře modal (RecipeModal na `!meal` vrací null) — plán se mezitím
+      // přegeneroval a na těch souřadnicích už nic není.
+      setSelectedRecipeMeal(cerstveJidlo);
+    }
     setWorkouts(pouzijDokonceniTreninku(naTreninky(plan), hotove));
     setHabits(naNavyky(profilData.user_habits, dnesniNavyky(profilData.habit_logs_progress)));
     // Seznam = polozky spocitane z jidelnicku + to, co si uzivatel dopsal sam.
@@ -343,6 +354,14 @@ function AppContent() {
   const [isShoppingModalOpen, setIsShoppingModalOpen] = useState(false);
   const [isExportPdfOpen, setIsExportPdfOpen] = useState(false);
   const [selectedRecipeMeal, setSelectedRecipeMeal] = useState<MealItem | null>(null);
+  // ZÁMĚNA JÍDLA V RECIPEMODALU ČEKÁ NA RESYNC (POST /api/plan-replace-meal).
+  // Endpoint nevrací nic, na co by RecipeModal mohl počkat awaitem — jen
+  // spustí `znovuNacistProfil()`. Souřadnice právě zaměněného jídla se tu
+  // uloží, a jakmile efekt níž (po `profilData`) postaví čerstvý `weekMeals`,
+  // dohledá se v něm podle nich nové jídlo a `selectedRecipeMeal` se jím
+  // přepíše. `ref`, ne state: nemá se čím re-renderovat, jen ho čte tentýž
+  // efekt, který beztak běží po každé změně `profilData`.
+  const cekaNaZamenuJidlaRef = useRef<{ planId: string; planDay: number; poziceVPlanu: number } | null>(null);
 
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -1261,14 +1280,23 @@ function AppContent() {
       <RecipeModal
         meal={selectedRecipeMeal}
         isOpen={!!selectedRecipeMeal}
-        onClose={() => setSelectedRecipeMeal(null)}
+        onClose={() => {
+          // Zruš i případnou čekající záměnu — jinak by po ručním zavření
+          // modal za chvíli sám znovu naskočil s čerstvým jídlem, jakmile by
+          // dorazilo přenačtení z rozjeté záměny.
+          cekaNaZamenuJidlaRef.current = null;
+          setSelectedRecipeMeal(null);
+        }}
         onToggleComplete={
           selectedRecipeMeal?.planDay === undefined
             || selectedRecipeMeal.planDay === weekMeals.find(d => d.jeDnes)?.meals[0]?.planDay
             ? handleToggleMeal
             : undefined
         }
-        onPlanZmenen={znovuNacistProfil}
+        onPlanZmenen={(souradnice) => {
+          cekaNaZamenuJidlaRef.current = souradnice;
+          znovuNacistProfil();
+        }}
       />
 
       <ShoppingListModal

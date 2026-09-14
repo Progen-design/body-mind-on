@@ -348,6 +348,46 @@ export function naJidla(plan: any): MealItem[] {
   return naJidlaTydne(plan).find((d) => d.jeDnes)?.meals ?? [];
 }
 
+/**
+ * Najde jídlo v ČERSTVÉM týdenním seznamu podle souřadnic
+ * (planId + planDay + poziceVPlanu), ne podle obsahu — ten se po záměně
+ * (POST /api/plan-replace-meal) změní, souřadnice ne.
+ *
+ * Používá RecipeModal přes App.tsx: endpoint nevrací nic, na co by šlo čekat
+ * napřímo (`onPlanZmenen` jen spustí přenačtení profilu), takže se čerstvé
+ * jídlo dohledává až v seznamu, který postaví TENTÝŽ adaptér
+ * (`naJidlaTydne`) po doběhnutí — ne z odpovědi endpointu zvlášť. Druhá
+ * cesta ke stejným datům by se rozešla s adaptérem při první změně tvaru dat.
+ *
+ * `null` na vstupu i výstupu je legitimní: chybějící souřadnice nebo jídlo,
+ * které v čerstvém seznamu už není (plán se mezitím přegeneroval), obojí
+ * znamená „nic k zobrazení" — volající to má vzít jako pokyn modal zavřít.
+ */
+export function najdiJidloPodleSouradnic(
+  tyden: TydenniDenJidel[],
+  souradnice: {
+    planId?: string | null;
+    planDay?: number | null;
+    poziceVPlanu?: number | null;
+  }
+): MealItem | null {
+  const { planId, planDay, poziceVPlanu } = souradnice;
+  if (planId == null || planDay == null || poziceVPlanu == null) return null;
+
+  for (const den of tyden) {
+    for (const jidlo of den.meals) {
+      if (
+        jidlo.planId === planId
+        && jidlo.planDay === planDay
+        && jidlo.poziceVPlanu === poziceVPlanu
+      ) {
+        return jidlo;
+      }
+    }
+  }
+  return null;
+}
+
 const ZKRATKY: Record<string, string> = {
   'Pondělí': 'Po', 'Úterý': 'Út', 'Středa': 'St', 'Čtvrtek': 'Čt',
   'Pátek': 'Pá', 'Sobota': 'So', 'Neděle': 'Ne'

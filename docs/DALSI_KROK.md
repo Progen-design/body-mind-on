@@ -162,7 +162,7 @@ tsc --noEmit, eslint bez errors, test:unit + test:src, build zelený.
 Advisory check security a performance na nový bucket.
 Pořadí: migrace → deploy. Prázdné gif_url musí kód přežít.
 
-### STAV K 14. 9. 2026 — FÁZE 1–3 a 6 hotové, FÁZE 4 OTEVŘENÁ, FÁZE 5 čeká
+### STAV K 14. 9. 2026 — FÁZE 1–4 a 6 hotové, FÁZE 5 čeká
 
 FÁZE 1+2 (generátor, upload): 207/230 cviků má vlastní WebP animaci v bucketu
 `exercise-media` (193 skupina A + 14 skupina B). Kvalita doladěna na 60 po
@@ -201,16 +201,22 @@ Oprava proběhla ve dvou kolech:
    animace, `api/verify-exercise-registry.js` přestal ověřovat pevný seznam
    a ověřuje všech 207 řádků s reálnou Storage animací přímo z DB.
 
-FÁZE 4 (vizuální kontrola) — OTEVŘENÁ, NEPROBĚHLA. Honza vizuálně prošel jen
-20 kandidátů skupiny B v `scripts/vyber_animaci_skupina_b.html`. Zbylých 193
-animací skupiny A (jistá shoda přes `external_id`/přesný název) nikdo
-vizuálně nezkontroloval — a to je přesně množina, kde se dřív našel
-`machine_bicep_curl` s vadným snímkem přímo ve zdrojových datech (formální
-shoda klíče sedí, obrázek ukazuje jiný cvik). Animace už jsou živé
-v produkci (migrace `20260913232254`), takže případný další takový případ
-mezi těmi 193 teď vidí přímo uživatel v aplikaci, ne jen tabulka v DB.
+FÁZE 4 (vizuální kontrola) — HOTOVO 14. 9. 2026, BEZ NÁLEZU. Honza prošel
+všech 193 animací skupiny A v `scripts/kontrola_animaci_skupina_a.html`
+(mřížka 5 sloupců, český název pod obrázkem, verdikt SEDÍ/NESEDÍ) a
+neoznačil ani jednu jako nesedící. Skupinu B (20 kandidátů) prošel dřív
+v `scripts/vyber_animaci_skupina_b.html`. Zkontrolováno je tedy všech 207
+živých animací, žádná se nemaže.
+
+Proč se to muselo projít okem: `machine_bicep_curl` měl vadný snímek přímo
+ve zdrojových datech — formální shoda klíče přes `external_id` seděla,
+obrázek ukazoval jiný cvik. SQL tenhle druh chyby nenajde a animace už jsou
+živé v produkci (migrace `20260913232254`), takže by to viděl přímo uživatel.
+Po tomhle průchodu je jistota, že mezi 193 klíči skupiny A žádný další
+takový případ není.
+
 Samostatný soubor `claude_BMON_KONTROLA_OBRAZKU_CVIKU.md`, na který tenhle
-bod odkazoval, v repu nikdy neexistoval.
+bod původně odkazoval, v repu nikdy neexistoval — nahradila ho ta mřížka.
 
 FÁZE 6 (dokumentace): napsána nově jako
 `docs/claude_BMON_MEDIA_CVIKU_LICENCE.md` — v repu taky neexistovala,

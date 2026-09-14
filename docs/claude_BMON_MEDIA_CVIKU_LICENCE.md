@@ -92,17 +92,23 @@ povinnosti a bez blokujícího rizika u konkrétního fotografa. Pokud se objev�
 konkrétní nárok k jedné fotce, řešit smazáním dané animace (`gif_url = NULL`
 pro daný `canonical_key`), ne plošnou revizí zdroje.
 
+## Vizuální kontrola — hotová, bez nálezu
+
+Všech **207** živých animací prošlo okem: 20 kandidátů skupiny B při výběru
+(`scripts/vyber_animaci_skupina_b.html`) a 193 animací skupiny A dne
+14. 9. 2026 v `scripts/kontrola_animaci_skupina_a.html`. Ani jedna nebyla
+označená jako nesedící, žádná se proto nemaže.
+
+Kontrola okem byla nutná, protože formální shoda klíče nestačí:
+`machine_bicep_curl` měl vadný snímek přímo ve zdrojových datech — shoda přes
+`external_id` seděla, obrázek ukazoval jiný cvik. Takovou chybu SQL nenajde
+a animace jsou živé v produkci (migrace `20260913232254`), takže by ji viděl
+přímo uživatel. Viz `docs/DALSI_KROK.md` 9.12.
+
 ## Otevřené body
 
-- **FÁZE 4 (vizuální kontrola) neproběhla pro skupinu A.** Honza vizuálně
-  prošel jen 20 kandidátů skupiny B (`scripts/vyber_animaci_skupina_b.html`).
-  Zbylých 193 animací skupiny A (jistá shoda přes `external_id`/přesný
-  název) nikdo vizuálně nezkontroloval — a to je přesně množina, kde se dřív
-  našel `machine_bicep_curl` s vadným snímkem přímo ve zdrojových datech
-  (formální shoda klíče seděla, obrázek ukazoval jiný cvik). Animace jsou už
-  živé v produkci (migrace `20260913232254`), takže případný další takový
-  případ mezi těmi 193 teď vidí přímo uživatel v aplikaci, ne jen tabulka
-  v DB. Viz `docs/DALSI_KROK.md` 9.12.
+- **FÁZE 5 (varianty `easier_key`/`harder_key`)** — přepárování na rozšířený
+  katalog, ručně a se schválením dvojic. Neřešeno.
 
 ## Kde hledat dál
 

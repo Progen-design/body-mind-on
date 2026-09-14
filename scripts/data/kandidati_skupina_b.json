@@ -1,0 +1,2089 @@
+[
+  {
+    "canonical_key": "bench_press",
+    "nazev_cs": "Bench press",
+    "postup_cs": [
+      "Lehni si na lavici, chodidla pevně na zemi, záda i hlavu opřená o podložku.",
+      "Úchop veď o něco šíř než ramena, činku sundej ze stojanu nad hrudník.",
+      "Nadechni se, spusť činku k hrudníku za 2 sekundy, lokty drž asi 45° od těla.",
+      "Jakmile se činka lehce dotkne hrudníku, zastav se.",
+      "Vydechni a zatlač činku zpátky nahoru do napnutých paží.",
+      "Lopatky drž po celou dobu stažené k sobě a zadek na lavici."
+    ],
+    "poznamka": null,
+    "kandidati": [
+      {
+        "fed_id": "Barbell_Bench_Press_-_Medium_Grip",
+        "nazev": "Barbell Bench Press - Medium Grip",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press_-_Medium_Grip/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Barbell_Guillotine_Bench_Press",
+        "nazev": "Barbell Guillotine Bench Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Guillotine_Bench_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Guillotine_Bench_Press/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Barbell_Incline_Bench_Press_-_Medium_Grip",
+        "nazev": "Barbell Incline Bench Press - Medium Grip",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Incline_Bench_Press_-_Medium_Grip/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Incline_Bench_Press_-_Medium_Grip/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Bench_Press_-_Powerlifting",
+        "nazev": "Bench Press - Powerlifting",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bench_Press_-_Powerlifting/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bench_Press_-_Powerlifting/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Bench_Press_-_With_Bands",
+        "nazev": "Bench Press - With Bands",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bench_Press_-_With_Bands/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bench_Press_-_With_Bands/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Bench_Press_with_Chains",
+        "nazev": "Bench Press with Chains",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bench_Press_with_Chains/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bench_Press_with_Chains/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Close-Grip_Barbell_Bench_Press",
+        "nazev": "Close-Grip Barbell Bench Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Barbell_Bench_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Barbell_Bench_Press/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Decline_Barbell_Bench_Press",
+        "nazev": "Decline Barbell Bench Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Barbell_Bench_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Barbell_Bench_Press/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Decline_Dumbbell_Bench_Press",
+        "nazev": "Decline Dumbbell Bench Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Dumbbell_Bench_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Dumbbell_Bench_Press/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Dumbbell_Bench_Press",
+        "nazev": "Dumbbell Bench Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bench_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bench_Press/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Dumbbell_Bench_Press_with_Neutral_Grip",
+        "nazev": "Dumbbell Bench Press with Neutral Grip",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bench_Press_with_Neutral_Grip/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bench_Press_with_Neutral_Grip/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Hammer_Grip_Incline_DB_Bench_Press",
+        "nazev": "Hammer Grip Incline DB Bench Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hammer_Grip_Incline_DB_Bench_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hammer_Grip_Incline_DB_Bench_Press/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Machine_Bench_Press",
+        "nazev": "Machine Bench Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Bench_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Bench_Press/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "One_Arm_Dumbbell_Bench_Press",
+        "nazev": "One Arm Dumbbell Bench Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Arm_Dumbbell_Bench_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Arm_Dumbbell_Bench_Press/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Reverse_Band_Bench_Press",
+        "nazev": "Reverse Band Bench Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Band_Bench_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Band_Bench_Press/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Reverse_Triceps_Bench_Press",
+        "nazev": "Reverse Triceps Bench Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Triceps_Bench_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Triceps_Bench_Press/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Smith_Machine_Bench_Press",
+        "nazev": "Smith Machine Bench Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Bench_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Bench_Press/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Smith_Machine_Close-Grip_Bench_Press",
+        "nazev": "Smith Machine Close-Grip Bench Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Close-Grip_Bench_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Close-Grip_Bench_Press/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Smith_Machine_Incline_Bench_Press",
+        "nazev": "Smith Machine Incline Bench Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Incline_Bench_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Incline_Bench_Press/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Wide-Grip_Barbell_Bench_Press",
+        "nazev": "Wide-Grip Barbell Bench Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Barbell_Bench_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Barbell_Bench_Press/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Wide-Grip_Decline_Barbell_Bench_Press",
+        "nazev": "Wide-Grip Decline Barbell Bench Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Decline_Barbell_Bench_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Decline_Barbell_Bench_Press/1.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "canonical_key": "calf_raise",
+    "nazev_cs": "Zvedání na špičky",
+    "postup_cs": [
+      "Postav se na špičky na okraj schodu nebo podložky, paty ve vzduchu.",
+      "Drž se opory pro rovnováhu, chodidla na šířku boků.",
+      "Nadechni se a zvedni se co nejvýš na špičky.",
+      "Nahoře se na chvíli zastav a stiskni lýtka.",
+      "Vydechni a spouštěj paty pomalu pod úroveň schodu, dokud neucítíš protažení.",
+      "Kolena drž po celou dobu mírně napnutá, nekrč je."
+    ],
+    "poznamka": null,
+    "kandidati": [
+      {
+        "fed_id": "Barbell_Seated_Calf_Raise",
+        "nazev": "Barbell Seated Calf Raise",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Seated_Calf_Raise/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Seated_Calf_Raise/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Calf_Raise_On_A_Dumbbell",
+        "nazev": "Calf Raise On A Dumbbell",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Calf_Raise_On_A_Dumbbell/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Calf_Raise_On_A_Dumbbell/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Calf_Raises_-_With_Bands",
+        "nazev": "Calf Raises - With Bands",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Calf_Raises_-_With_Bands/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Calf_Raises_-_With_Bands/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Donkey_Calf_Raises",
+        "nazev": "Donkey Calf Raises",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Donkey_Calf_Raises/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Donkey_Calf_Raises/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Dumbbell_Seated_One-Leg_Calf_Raise",
+        "nazev": "Dumbbell Seated One-Leg Calf Raise",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Seated_One-Leg_Calf_Raise/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Seated_One-Leg_Calf_Raise/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Rocking_Standing_Calf_Raise",
+        "nazev": "Rocking Standing Calf Raise",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rocking_Standing_Calf_Raise/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rocking_Standing_Calf_Raise/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Seated_Calf_Raise",
+        "nazev": "Seated Calf Raise",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Calf_Raise/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Calf_Raise/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Smith_Machine_Calf_Raise",
+        "nazev": "Smith Machine Calf Raise",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Calf_Raise/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Calf_Raise/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Smith_Machine_Reverse_Calf_Raises",
+        "nazev": "Smith Machine Reverse Calf Raises",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Reverse_Calf_Raises/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Reverse_Calf_Raises/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Standing_Barbell_Calf_Raise",
+        "nazev": "Standing Barbell Calf Raise",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Barbell_Calf_Raise/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Barbell_Calf_Raise/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Standing_Calf_Raises",
+        "nazev": "Standing Calf Raises",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Calf_Raises/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Calf_Raises/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Standing_Dumbbell_Calf_Raise",
+        "nazev": "Standing Dumbbell Calf Raise",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Dumbbell_Calf_Raise/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Dumbbell_Calf_Raise/1.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "canonical_key": "deadlift",
+    "nazev_cs": "Mrtvý tah",
+    "postup_cs": [
+      "Postav se k čince, chodidla na šířku boků, holeně u tyče.",
+      "Ohni se v bocích a kolenou, uchop tyč o něco šíř než nohy, paže napnuté.",
+      "Nadechni se, napni záda do rovné polohy, hrudník mírně vytoč vpřed.",
+      "Zatlač přes paty a zvedej tyč podél holení do vzpřímeného stoje.",
+      "Boky a ramena zvedej zároveň, záda nesmí kulatit.",
+      "Vydechni nahoře, pak spouštěj tyč zpět stejnou cestou dolů."
+    ],
+    "poznamka": null,
+    "kandidati": [
+      {
+        "fed_id": "Axle_Deadlift",
+        "nazev": "Axle Deadlift",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Axle_Deadlift/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Axle_Deadlift/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Barbell_Deadlift",
+        "nazev": "Barbell Deadlift",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Deadlift/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Deadlift/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Cable_Deadlifts",
+        "nazev": "Cable Deadlifts",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Deadlifts/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Deadlifts/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Car_Deadlift",
+        "nazev": "Car Deadlift",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Car_Deadlift/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Car_Deadlift/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Clean_Deadlift",
+        "nazev": "Clean Deadlift",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Clean_Deadlift/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Clean_Deadlift/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Deadlift_with_Bands",
+        "nazev": "Deadlift with Bands",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Deadlift_with_Bands/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Deadlift_with_Bands/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Deadlift_with_Chains",
+        "nazev": "Deadlift with Chains",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Deadlift_with_Chains/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Deadlift_with_Chains/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Deficit_Deadlift",
+        "nazev": "Deficit Deadlift",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Deficit_Deadlift/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Deficit_Deadlift/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Kettlebell_One-Legged_Deadlift",
+        "nazev": "Kettlebell One-Legged Deadlift",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_One-Legged_Deadlift/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_One-Legged_Deadlift/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Leverage_Deadlift",
+        "nazev": "Leverage Deadlift",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Deadlift/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Deadlift/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "One-Arm_Side_Deadlift",
+        "nazev": "One-Arm Side Deadlift",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Side_Deadlift/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Side_Deadlift/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Reverse_Band_Deadlift",
+        "nazev": "Reverse Band Deadlift",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Band_Deadlift/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Band_Deadlift/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Reverse_Band_Sumo_Deadlift",
+        "nazev": "Reverse Band Sumo Deadlift",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Band_Sumo_Deadlift/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Band_Sumo_Deadlift/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Rickshaw_Deadlift",
+        "nazev": "Rickshaw Deadlift",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rickshaw_Deadlift/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rickshaw_Deadlift/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Romanian_Deadlift",
+        "nazev": "Romanian Deadlift",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Romanian_Deadlift_from_Deficit",
+        "nazev": "Romanian Deadlift from Deficit",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift_from_Deficit/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift_from_Deficit/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Smith_Machine_Stiff-Legged_Deadlift",
+        "nazev": "Smith Machine Stiff-Legged Deadlift",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Stiff-Legged_Deadlift/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Stiff-Legged_Deadlift/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Snatch_Deadlift",
+        "nazev": "Snatch Deadlift",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Snatch_Deadlift/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Snatch_Deadlift/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Stiff-Legged_Barbell_Deadlift",
+        "nazev": "Stiff-Legged Barbell Deadlift",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Stiff-Legged_Barbell_Deadlift/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Stiff-Legged_Barbell_Deadlift/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Stiff-Legged_Dumbbell_Deadlift",
+        "nazev": "Stiff-Legged Dumbbell Deadlift",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Stiff-Legged_Dumbbell_Deadlift/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Stiff-Legged_Dumbbell_Deadlift/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Sumo_Deadlift",
+        "nazev": "Sumo Deadlift",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sumo_Deadlift/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sumo_Deadlift/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Sumo_Deadlift_with_Bands",
+        "nazev": "Sumo Deadlift with Bands",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sumo_Deadlift_with_Bands/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sumo_Deadlift_with_Bands/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Sumo_Deadlift_with_Chains",
+        "nazev": "Sumo Deadlift with Chains",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sumo_Deadlift_with_Chains/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sumo_Deadlift_with_Chains/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Trap_Bar_Deadlift",
+        "nazev": "Trap Bar Deadlift",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Trap_Bar_Deadlift/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Trap_Bar_Deadlift/1.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "canonical_key": "dumbbell_romanian_deadlift",
+    "nazev_cs": "Rumunský mrtvý tah s jednoručkami",
+    "postup_cs": [
+      "Postav se, chodidla na šířku boků, v každé ruce jedna činka před stehny.",
+      "Kolena nech mírně pokrčená po celou dobu cviku.",
+      "Nadechni se a posouvej boky vzad, trup se sklápí vpřed, činky kloužou podél nohou.",
+      "Spouštěj se, dokud neucítíš tah v zadní straně stehen, záda drž rovná.",
+      "Vydechni a zatlač boky vpřed zpět do vzpřímeného stoje.",
+      "Ramena drž stažená, činky těsně u nohou."
+    ],
+    "poznamka": null,
+    "kandidati": [
+      {
+        "fed_id": "Romanian_Deadlift",
+        "nazev": "Romanian Deadlift",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Romanian_Deadlift_from_Deficit",
+        "nazev": "Romanian Deadlift from Deficit",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift_from_Deficit/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift_from_Deficit/1.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "canonical_key": "dumbbell_row",
+    "nazev_cs": "Přítahy s jednoručkou",
+    "postup_cs": [
+      "Polož jedno koleno a stejnou ruku na lavici, druhá noha pevně na zemi.",
+      "Záda drž rovná a rovnoběžná se zemí, v druhé ruce drž činku volně dolů.",
+      "Nadechni se a přitáhni činku k boku, loket veď těsně podél těla.",
+      "V horní poloze stáhni lopatku k páteři.",
+      "Vydechni a spouštěj činku zpět dolů do napnuté paže.",
+      "Trup drž nehybný, netoč se za paží."
+    ],
+    "poznamka": null,
+    "kandidati": [
+      {
+        "fed_id": "Bent_Over_Two-Dumbbell_Row",
+        "nazev": "Bent Over Two-Dumbbell Row",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Two-Dumbbell_Row/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Two-Dumbbell_Row/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Bent_Over_Two-Dumbbell_Row_With_Palms_In",
+        "nazev": "Bent Over Two-Dumbbell Row With Palms In",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Two-Dumbbell_Row_With_Palms_In/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Two-Dumbbell_Row_With_Palms_In/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Dumbbell_Incline_Row",
+        "nazev": "Dumbbell Incline Row",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Incline_Row/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Incline_Row/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Dumbbell_One-Arm_Upright_Row",
+        "nazev": "Dumbbell One-Arm Upright Row",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_One-Arm_Upright_Row/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_One-Arm_Upright_Row/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "One-Arm_Dumbbell_Row",
+        "nazev": "One-Arm Dumbbell Row",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Dumbbell_Row/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Dumbbell_Row/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Standing_Dumbbell_Upright_Row",
+        "nazev": "Standing Dumbbell Upright Row",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Dumbbell_Upright_Row/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Dumbbell_Upright_Row/1.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "canonical_key": "farmer_carry",
+    "nazev_cs": "Farmer carry",
+    "postup_cs": [
+      "Postav se mezi dvě činky nebo kettlebelly, chodidla na šířku boků.",
+      "Podřepni, uchop zátěž v obou rukou, záda drž rovná.",
+      "Zatlač přes paty a napřimuj se do vzpřímeného stoje se zátěží podél těla.",
+      "Ramena drž stažená dozadu a dolů, hruď mírně vypnutá.",
+      "Vykroč a jdi vpřed pevným, kontrolovaným krokem, paže nech viset volně.",
+      "Zátěž drž pevně po celou vzdálenost, netoč se do stran."
+    ],
+    "poznamka": null,
+    "kandidati": [
+      {
+        "fed_id": "Farmers_Walk",
+        "nazev": "Farmer's Walk",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Farmers_Walk/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Farmers_Walk/1.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "canonical_key": "glute_bridge",
+    "nazev_cs": "Gluteální most",
+    "postup_cs": [
+      "Lehni si na záda, kolena pokrčená, chodidla na šířku boků blízko hýždí.",
+      "Paže polož volně podél těla, dlaněmi dolů.",
+      "Nadechni se, napni břicho a zatlač přes paty boky vzhůru.",
+      "Nahoře stiskni hýždě, tělo od kolen po ramena tvoří rovnou linii.",
+      "Vydechni nahoře, pak spouštěj boky zpět dolů pod kontrolou.",
+      "Dolní záda drž po celou dobu neutrální, nepropínej se do prohnutí."
+    ],
+    "poznamka": null,
+    "kandidati": [
+      {
+        "fed_id": "Barbell_Glute_Bridge",
+        "nazev": "Barbell Glute Bridge",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Glute_Bridge/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Glute_Bridge/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Single_Leg_Glute_Bridge",
+        "nazev": "Single Leg Glute Bridge",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single_Leg_Glute_Bridge/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single_Leg_Glute_Bridge/1.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "canonical_key": "hamstring_curl",
+    "nazev_cs": "Zakopávání vleže",
+    "postup_cs": [
+      "Lehni si na břicho do stroje, polštáře opři o kotníky, kolena těsně za okrajem podložky.",
+      "Uchop madla po stranách, boky drž přitisknuté k podložce.",
+      "Nadechni se a pokrč kolena, přitáhni patu k hýždím.",
+      "Nahoře se na chvíli zastav a stiskni zadní stranu stehen.",
+      "Vydechni a spouštěj zátěž zpět dolů pod kontrolou.",
+      "Boky drž po celou dobu na podložce, nezvedej je."
+    ],
+    "poznamka": null,
+    "kandidati": [
+      {
+        "fed_id": "Ball_Leg_Curl",
+        "nazev": "Ball Leg Curl",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ball_Leg_Curl/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ball_Leg_Curl/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Lying_Leg_Curls",
+        "nazev": "Lying Leg Curls",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Leg_Curls/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Leg_Curls/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Seated_Leg_Curl",
+        "nazev": "Seated Leg Curl",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Leg_Curl/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Leg_Curl/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Standing_Leg_Curl",
+        "nazev": "Standing Leg Curl",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Leg_Curl/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Leg_Curl/1.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "canonical_key": "chest_press",
+    "nazev_cs": "Chest press",
+    "postup_cs": [
+      "Nastav sedačku tak, aby madla byla v úrovni hrudníku.",
+      "Sedni si, záda opři o opěrku, chodidla pevně na zemi.",
+      "Nadechni se, uchop madla a lokty drž mírně pod úrovní ramen.",
+      "Vydechni a zatlač madla vpřed do téměř napnutých paží, lokty nezamykej.",
+      "Nadechni se a pomalu, po 2 sekundách, se vrať do výchozí polohy.",
+      "Lopatky drž stažené k opěrce, ramena netahej nahoru k uším."
+    ],
+    "poznamka": null,
+    "kandidati": [
+      {
+        "fed_id": "Cable_Chest_Press",
+        "nazev": "Cable Chest Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Chest_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Chest_Press/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Incline_Cable_Chest_Press",
+        "nazev": "Incline Cable Chest Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Cable_Chest_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Cable_Chest_Press/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Leverage_Chest_Press",
+        "nazev": "Leverage Chest Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Chest_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Chest_Press/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Leverage_Decline_Chest_Press",
+        "nazev": "Leverage Decline Chest Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Decline_Chest_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Decline_Chest_Press/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Leverage_Incline_Chest_Press",
+        "nazev": "Leverage Incline Chest Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Incline_Chest_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Incline_Chest_Press/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Standing_Cable_Chest_Press",
+        "nazev": "Standing Cable Chest Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Cable_Chest_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Cable_Chest_Press/1.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "canonical_key": "lat_pulldown",
+    "nazev_cs": "Stahování na kladce",
+    "postup_cs": [
+      "Sedni si ke kladce, stehna zaklesni pod polstrování.",
+      "Uchop tyč nadhmatem o něco šíř než ramena.",
+      "Nadechni se a stáhni tyč k horní části hrudníku, lokty táhni dolů a mírně vzad.",
+      "V dolní poloze stáhni lopatky k sobě, hrudník mírně vypni.",
+      "Vydechni a nech tyč pomalu stoupat zpět do napnutých paží.",
+      "Trup drž vzpřímený, nezaklánej se dozadu."
+    ],
+    "poznamka": null,
+    "kandidati": [
+      {
+        "fed_id": "Close-Grip_Front_Lat_Pulldown",
+        "nazev": "Close-Grip Front Lat Pulldown",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Front_Lat_Pulldown/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Front_Lat_Pulldown/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Full_Range-Of-Motion_Lat_Pulldown",
+        "nazev": "Full Range-Of-Motion Lat Pulldown",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Full_Range-Of-Motion_Lat_Pulldown/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Full_Range-Of-Motion_Lat_Pulldown/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "One_Arm_Lat_Pulldown",
+        "nazev": "One Arm Lat Pulldown",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Arm_Lat_Pulldown/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Arm_Lat_Pulldown/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Wide-Grip_Lat_Pulldown",
+        "nazev": "Wide-Grip Lat Pulldown",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/1.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "canonical_key": "lateral_raise",
+    "nazev_cs": "Rozpažky",
+    "postup_cs": [
+      "Postav se, chodidla na šířku boků, v každé ruce jedna činka podél těla.",
+      "Lokty nech mírně pokrčené po celou dobu cviku.",
+      "Nadechni se a zvedej paže do stran, dokud nejsou v úrovni ramen.",
+      "Nahoře se na chvíli zastav, zápěstí drž mírně níž než lokty.",
+      "Vydechni a spouštěj paže pomalu zpět dolů podél těla.",
+      "Trupem se nehoupej, pohyb veď jen rameny."
+    ],
+    "poznamka": null,
+    "kandidati": [
+      {
+        "fed_id": "Cable_Seated_Lateral_Raise",
+        "nazev": "Cable Seated Lateral Raise",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Seated_Lateral_Raise/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Seated_Lateral_Raise/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Dumbbell_Lying_One-Arm_Rear_Lateral_Raise",
+        "nazev": "Dumbbell Lying One-Arm Rear Lateral Raise",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lying_One-Arm_Rear_Lateral_Raise/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lying_One-Arm_Rear_Lateral_Raise/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Dumbbell_Lying_Rear_Lateral_Raise",
+        "nazev": "Dumbbell Lying Rear Lateral Raise",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lying_Rear_Lateral_Raise/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lying_Rear_Lateral_Raise/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Lateral_Raise_-_With_Bands",
+        "nazev": "Lateral Raise - With Bands",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lateral_Raise_-_With_Bands/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lateral_Raise_-_With_Bands/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Lying_One-Arm_Lateral_Raise",
+        "nazev": "Lying One-Arm Lateral Raise",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_One-Arm_Lateral_Raise/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_One-Arm_Lateral_Raise/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "One-Arm_Incline_Lateral_Raise",
+        "nazev": "One-Arm Incline Lateral Raise",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Incline_Lateral_Raise/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Incline_Lateral_Raise/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Seated_Side_Lateral_Raise",
+        "nazev": "Seated Side Lateral Raise",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Side_Lateral_Raise/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Side_Lateral_Raise/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Side_Lateral_Raise",
+        "nazev": "Side Lateral Raise",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lateral_Raise/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lateral_Raise/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Side_Laterals_to_Front_Raise",
+        "nazev": "Side Laterals to Front Raise",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Laterals_to_Front_Raise/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Laterals_to_Front_Raise/1.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "canonical_key": "lunges",
+    "nazev_cs": "Výpady",
+    "postup_cs": [
+      "Postav se vzpřímeně, chodidla na šířku boků, ruce volně podél těla nebo v bok.",
+      "Nadechni se a udělej jednou nohou dlouhý krok vpřed.",
+      "Spouštěj se, dokud zadní koleno skoro nedosáhne země, přední koleno nad kotníkem.",
+      "Trup drž vzpřímený, váhu drž na přední patě.",
+      "Vydechni a odraz se přes přední patu zpět do stoje.",
+      "Kroky střídej na obě nohy stejnoměrně."
+    ],
+    "poznamka": null,
+    "kandidati": [
+      {
+        "fed_id": "Barbell_Lunge",
+        "nazev": "Barbell Lunge",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Lunge/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Lunge/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Barbell_Walking_Lunge",
+        "nazev": "Barbell Walking Lunge",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Walking_Lunge/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Walking_Lunge/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Bodyweight_Walking_Lunge",
+        "nazev": "Bodyweight Walking Lunge",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bodyweight_Walking_Lunge/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bodyweight_Walking_Lunge/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Crossover_Reverse_Lunge",
+        "nazev": "Crossover Reverse Lunge",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Crossover_Reverse_Lunge/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Crossover_Reverse_Lunge/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Dumbbell_Lunges",
+        "nazev": "Dumbbell Lunges",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lunges/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lunges/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Dumbbell_Rear_Lunge",
+        "nazev": "Dumbbell Rear Lunge",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Rear_Lunge/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Rear_Lunge/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Elevated_Back_Lunge",
+        "nazev": "Elevated Back Lunge",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Elevated_Back_Lunge/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Elevated_Back_Lunge/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Kettlebell_Turkish_Get-Up_Lunge_style",
+        "nazev": "Kettlebell Turkish Get-Up (Lunge style)",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Turkish_Get-Up_Lunge_style/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Turkish_Get-Up_Lunge_style/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Lunge_Pass_Through",
+        "nazev": "Lunge Pass Through",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lunge_Pass_Through/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lunge_Pass_Through/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Lunge_Sprint",
+        "nazev": "Lunge Sprint",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lunge_Sprint/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lunge_Sprint/1.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "canonical_key": "mountain_climber",
+    "nazev_cs": "Mountain climber",
+    "postup_cs": [
+      "Zaujmi vzpor ležmo, dlaně pod rameny, tělo v jedné přímce.",
+      "Napni břicho, ať se boky neprohýbají ani nezvedají.",
+      "Nadechni se a přitáhni jedno koleno k hrudníku, druhou nohu nech nataženou.",
+      "Vydechni a vrať nohu zpět, ve stejném rytmu vystřídej druhou nohou.",
+      "Boky drž po celou dobu v jedné výšce, netrč zadkem nahoru.",
+      "Tempo zrychluj jen tak, aby si udržel kontrolu nad polohou boků."
+    ],
+    "poznamka": null,
+    "kandidati": [
+      {
+        "fed_id": "Mountain_Climbers",
+        "nazev": "Mountain Climbers",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Mountain_Climbers/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Mountain_Climbers/1.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "canonical_key": "overhead_press",
+    "nazev_cs": "Tlaky nad hlavu",
+    "postup_cs": [
+      "Postav se, chodidla na šířku boků, činku drž v úrovni ramen, dlaně vpřed.",
+      "Napni břicho a hýždě, ať se dolní záda neprohýbá.",
+      "Nadechni se a zatlač činku svisle nad hlavu do napnutých paží.",
+      "Hlavu mírně provlékni pod činkou, jakmile prochází kolem obličeje.",
+      "Vydechni nahoře, pak spouštěj činku zpět dolů k ramenům pod kontrolou.",
+      "Zápěstí drž rovně nad lokty po celou dobu pohybu."
+    ],
+    "poznamka": null,
+    "kandidati": [
+      {
+        "fed_id": "Smith_Machine_Overhead_Shoulder_Press",
+        "nazev": "Smith Machine Overhead Shoulder Press",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Overhead_Shoulder_Press/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Overhead_Shoulder_Press/1.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "canonical_key": "plank_side",
+    "nazev_cs": "Boční prkno",
+    "postup_cs": [
+      "Lehni si na bok, opři se o jedno předloktí přímo pod ramenem.",
+      "Nohy natáhni jednu na druhou, tělo tvoří rovnou linii od hlavy k patám.",
+      "Napni bok a boky zvedni ze země, druhou ruku dej na bok nebo nataž nahoru.",
+      "Boky drž zvednuté, netoč trupem dopředu ani dozadu.",
+      "Dýchej klidně a plynule po celou dobu výdrže.",
+      "Po odcvičeném čase vyměň stranu."
+    ],
+    "poznamka": null,
+    "kandidati": [
+      {
+        "fed_id": "Push_Up_to_Side_Plank",
+        "nazev": "Push Up to Side Plank",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push_Up_to_Side_Plank/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push_Up_to_Side_Plank/1.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "canonical_key": "pull_up",
+    "nazev_cs": "Shyby / Přítahy",
+    "postup_cs": [
+      "Uchop hrazdu nadhmatem o něco šíř než ramena, tělo nech volně viset.",
+      "Napni břicho a hýždě, nohy zkřiž nebo drž rovně.",
+      "Nadechni se a přitáhni se nahoru, dokud se brada nedostane nad hrazdu.",
+      "Lokty táhni dolů a mírně vzad, ramena drž dole od uší.",
+      "Vydechni a spouštěj se zpět dolů do napnutých paží pod kontrolou.",
+      "Trup drž nehybný, nekopej nohama ani se nehoupej."
+    ],
+    "poznamka": null,
+    "kandidati": [
+      {
+        "fed_id": "Band_Assisted_Pull-Up",
+        "nazev": "Band Assisted Pull-Up",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Band_Assisted_Pull-Up/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Band_Assisted_Pull-Up/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Pullups",
+        "nazev": "Pullups",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pullups/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pullups/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Rocky_Pull-Ups_Pulldowns",
+        "nazev": "Rocky Pull-Ups/Pulldowns",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rocky_Pull-Ups_Pulldowns/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rocky_Pull-Ups_Pulldowns/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Scapular_Pull-Up",
+        "nazev": "Scapular Pull-Up",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Scapular_Pull-Up/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Scapular_Pull-Up/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Seated_Two-Arm_Palms-Up_Low-Pulley_Wrist_Curl",
+        "nazev": "Seated Two-Arm Palms-Up Low-Pulley Wrist Curl",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Two-Arm_Palms-Up_Low-Pulley_Wrist_Curl/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Two-Arm_Palms-Up_Low-Pulley_Wrist_Curl/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "V-Bar_Pullup",
+        "nazev": "V-Bar Pullup",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/V-Bar_Pullup/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/V-Bar_Pullup/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Weighted_Pull_Ups",
+        "nazev": "Weighted Pull Ups",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Weighted_Pull_Ups/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Weighted_Pull_Ups/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Wide-Grip_Rear_Pull-Up",
+        "nazev": "Wide-Grip Rear Pull-Up",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Rear_Pull-Up/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Rear_Pull-Up/1.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "canonical_key": "pushup",
+    "nazev_cs": "Kliky",
+    "postup_cs": [
+      "Zaujmi vzpor ležmo, dlaně o něco šíř než ramena, tělo v jedné přímce od hlavy k patám.",
+      "Napni břicho a hýždě, ať se boky neprohýbají ani nezvedají.",
+      "Nadechni se a spouštěj tělo dolů, lokty svírej asi 45° od těla.",
+      "Zastav se, jakmile je hrudník pár centimetrů nad zemí.",
+      "Vydechni a zatlač se zpět nahoru do napnutých paží.",
+      "Bradu drž mírně přitaženou, hlavu neklop dolů ani nezaklánej."
+    ],
+    "poznamka": null,
+    "kandidati": [
+      {
+        "fed_id": "Clock_Push-Up",
+        "nazev": "Clock Push-Up",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Clock_Push-Up/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Clock_Push-Up/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Close-Grip_Push-Up_off_of_a_Dumbbell",
+        "nazev": "Close-Grip Push-Up off of a Dumbbell",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Push-Up_off_of_a_Dumbbell/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Push-Up_off_of_a_Dumbbell/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Decline_Push-Up",
+        "nazev": "Decline Push-Up",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Push-Up/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Push-Up/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Handstand_Push-Ups",
+        "nazev": "Handstand Push-Ups",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Handstand_Push-Ups/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Handstand_Push-Ups/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Incline_Push-Up",
+        "nazev": "Incline Push-Up",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Incline_Push-Up_Close-Grip",
+        "nazev": "Incline Push-Up Close-Grip",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up_Close-Grip/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up_Close-Grip/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Incline_Push-Up_Depth_Jump",
+        "nazev": "Incline Push-Up Depth Jump",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up_Depth_Jump/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up_Depth_Jump/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Incline_Push-Up_Medium",
+        "nazev": "Incline Push-Up Medium",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up_Medium/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up_Medium/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Incline_Push-Up_Reverse_Grip",
+        "nazev": "Incline Push-Up Reverse Grip",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up_Reverse_Grip/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up_Reverse_Grip/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Incline_Push-Up_Wide",
+        "nazev": "Incline Push-Up Wide",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up_Wide/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up_Wide/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Plyo_Kettlebell_Pushups",
+        "nazev": "Plyo Kettlebell Pushups",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plyo_Kettlebell_Pushups/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plyo_Kettlebell_Pushups/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Plyo_Push-up",
+        "nazev": "Plyo Push-up",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plyo_Push-up/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plyo_Push-up/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Push-Up_Wide",
+        "nazev": "Push-Up Wide",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Up_Wide/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Up_Wide/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Push-Ups_-_Close_Triceps_Position",
+        "nazev": "Push-Ups - Close Triceps Position",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Ups_-_Close_Triceps_Position/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Ups_-_Close_Triceps_Position/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Push-Ups_With_Feet_Elevated",
+        "nazev": "Push-Ups With Feet Elevated",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Ups_With_Feet_Elevated/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Ups_With_Feet_Elevated/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Push-Ups_With_Feet_On_An_Exercise_Ball",
+        "nazev": "Push-Ups With Feet On An Exercise Ball",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Ups_With_Feet_On_An_Exercise_Ball/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Ups_With_Feet_On_An_Exercise_Ball/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Push_Up_to_Side_Plank",
+        "nazev": "Push Up to Side Plank",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push_Up_to_Side_Plank/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push_Up_to_Side_Plank/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Pushups",
+        "nazev": "Pushups",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pushups/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pushups/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Pushups_Close_and_Wide_Hand_Positions",
+        "nazev": "Pushups (Close and Wide Hand Positions)",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pushups_Close_and_Wide_Hand_Positions/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pushups_Close_and_Wide_Hand_Positions/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Single-Arm_Push-Up",
+        "nazev": "Single-Arm Push-Up",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single-Arm_Push-Up/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single-Arm_Push-Up/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Suspended_Push-Up",
+        "nazev": "Suspended Push-Up",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Suspended_Push-Up/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Suspended_Push-Up/1.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "canonical_key": "squat",
+    "nazev_cs": "Dřepy",
+    "postup_cs": [
+      "Postav se, chodidla na šířku ramen, špičky mírně vytočené ven.",
+      "Nadechni se, napni břicho a začni ohýbat kolena a boky zároveň.",
+      "Spouštěj se, dokud nejsou stehna aspoň rovnoběžná se zemí.",
+      "Kolena drž ve směru špiček, záda rovná, hruď mířící vpřed.",
+      "Vydechni a zatlač se zpět nahoru přes paty do vzpřímeného stoje.",
+      "Váhu drž po celé chodidle, paty se nesmí zvedat."
+    ],
+    "poznamka": null,
+    "kandidati": [
+      {
+        "fed_id": "Barbell_Full_Squat",
+        "nazev": "Barbell Full Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Full_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Full_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Barbell_Hack_Squat",
+        "nazev": "Barbell Hack Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Hack_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Hack_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Barbell_Side_Split_Squat",
+        "nazev": "Barbell Side Split Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Side_Split_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Side_Split_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Barbell_Squat",
+        "nazev": "Barbell Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Barbell_Squat_To_A_Bench",
+        "nazev": "Barbell Squat To A Bench",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat_To_A_Bench/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat_To_A_Bench/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Bodyweight_Squat",
+        "nazev": "Bodyweight Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bodyweight_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bodyweight_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Box_Squat",
+        "nazev": "Box Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Box_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Box_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Box_Squat_with_Bands",
+        "nazev": "Box Squat with Bands",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Box_Squat_with_Bands/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Box_Squat_with_Bands/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Box_Squat_with_Chains",
+        "nazev": "Box Squat with Chains",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Box_Squat_with_Chains/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Box_Squat_with_Chains/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Chair_Squat",
+        "nazev": "Chair Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chair_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chair_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Dumbbell_Squat",
+        "nazev": "Dumbbell Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Dumbbell_Squat_To_A_Bench",
+        "nazev": "Dumbbell Squat To A Bench",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Squat_To_A_Bench/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Squat_To_A_Bench/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Frankenstein_Squat",
+        "nazev": "Frankenstein Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Frankenstein_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Frankenstein_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Freehand_Jump_Squat",
+        "nazev": "Freehand Jump Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Freehand_Jump_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Freehand_Jump_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Front_Barbell_Squat",
+        "nazev": "Front Barbell Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Barbell_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Barbell_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Front_Barbell_Squat_To_A_Bench",
+        "nazev": "Front Barbell Squat To A Bench",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Barbell_Squat_To_A_Bench/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Barbell_Squat_To_A_Bench/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Front_Squat_Clean_Grip",
+        "nazev": "Front Squat (Clean Grip)",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Squat_Clean_Grip/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Squat_Clean_Grip/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Front_Squats_With_Two_Kettlebells",
+        "nazev": "Front Squats With Two Kettlebells",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Squats_With_Two_Kettlebells/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Squats_With_Two_Kettlebells/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Goblet_Squat",
+        "nazev": "Goblet Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Goblet_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Goblet_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Hack_Squat",
+        "nazev": "Hack Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hack_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hack_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Jefferson_Squats",
+        "nazev": "Jefferson Squats",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Jefferson_Squats/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Jefferson_Squats/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Jerk_Dip_Squat",
+        "nazev": "Jerk Dip Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Jerk_Dip_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Jerk_Dip_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Kettlebell_Pistol_Squat",
+        "nazev": "Kettlebell Pistol Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Pistol_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Pistol_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Kettlebell_Turkish_Get-Up_Squat_style",
+        "nazev": "Kettlebell Turkish Get-Up (Squat style)",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Turkish_Get-Up_Squat_style/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Turkish_Get-Up_Squat_style/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Kneeling_Jump_Squat",
+        "nazev": "Kneeling Jump Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kneeling_Jump_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kneeling_Jump_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Kneeling_Squat",
+        "nazev": "Kneeling Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kneeling_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kneeling_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Lying_Machine_Squat",
+        "nazev": "Lying Machine Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Machine_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Machine_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Narrow_Stance_Hack_Squats",
+        "nazev": "Narrow Stance Hack Squats",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Narrow_Stance_Hack_Squats/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Narrow_Stance_Hack_Squats/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Narrow_Stance_Squats",
+        "nazev": "Narrow Stance Squats",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Narrow_Stance_Squats/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Narrow_Stance_Squats/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Olympic_Squat",
+        "nazev": "Olympic Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Olympic_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Olympic_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "One-Arm_Overhead_Kettlebell_Squats",
+        "nazev": "One-Arm Overhead Kettlebell Squats",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Overhead_Kettlebell_Squats/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Overhead_Kettlebell_Squats/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "One_Leg_Barbell_Squat",
+        "nazev": "One Leg Barbell Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Leg_Barbell_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Leg_Barbell_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Overhead_Squat",
+        "nazev": "Overhead Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Overhead_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Overhead_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Plie_Dumbbell_Squat",
+        "nazev": "Plie Dumbbell Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plie_Dumbbell_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plie_Dumbbell_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Reverse_Band_Box_Squat",
+        "nazev": "Reverse Band Box Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Band_Box_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Band_Box_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Reverse_Band_Power_Squat",
+        "nazev": "Reverse Band Power Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Band_Power_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Band_Power_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Single-Leg_High_Box_Squat",
+        "nazev": "Single-Leg High Box Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single-Leg_High_Box_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single-Leg_High_Box_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Sit_Squats",
+        "nazev": "Sit Squats",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sit_Squats/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sit_Squats/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Smith_Machine_Pistol_Squat",
+        "nazev": "Smith Machine Pistol Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Pistol_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Pistol_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Smith_Machine_Squat",
+        "nazev": "Smith Machine Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Smith_Single-Leg_Split_Squat",
+        "nazev": "Smith Single-Leg Split Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Single-Leg_Split_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Single-Leg_Split_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Speed_Box_Squat",
+        "nazev": "Speed Box Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Speed_Box_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Speed_Box_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Speed_Squats",
+        "nazev": "Speed Squats",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Speed_Squats/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Speed_Squats/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Split_Squat_with_Dumbbells",
+        "nazev": "Split Squat with Dumbbells",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Split_Squat_with_Dumbbells/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Split_Squat_with_Dumbbells/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Split_Squats",
+        "nazev": "Split Squats",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Split_Squats/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Split_Squats/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Squat_Jerk",
+        "nazev": "Squat Jerk",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Squat_Jerk/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Squat_Jerk/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Squat_with_Bands",
+        "nazev": "Squat with Bands",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Squat_with_Bands/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Squat_with_Bands/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Squat_with_Chains",
+        "nazev": "Squat with Chains",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Squat_with_Chains/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Squat_with_Chains/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Squat_with_Plate_Movers",
+        "nazev": "Squat with Plate Movers",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Squat_with_Plate_Movers/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Squat_with_Plate_Movers/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Squats_-_With_Bands",
+        "nazev": "Squats - With Bands",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Squats_-_With_Bands/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Squats_-_With_Bands/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Suspended_Split_Squat",
+        "nazev": "Suspended Split Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Suspended_Split_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Suspended_Split_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Weighted_Jump_Squat",
+        "nazev": "Weighted Jump Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Weighted_Jump_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Weighted_Jump_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Weighted_Sissy_Squat",
+        "nazev": "Weighted Sissy Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Weighted_Sissy_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Weighted_Sissy_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Weighted_Squat",
+        "nazev": "Weighted Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Weighted_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Weighted_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Wide_Stance_Barbell_Squat",
+        "nazev": "Wide Stance Barbell Squat",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide_Stance_Barbell_Squat/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide_Stance_Barbell_Squat/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Zercher_Squats",
+        "nazev": "Zercher Squats",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Zercher_Squats/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Zercher_Squats/1.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "canonical_key": "tricep_extension",
+    "nazev_cs": "Tricepsové tlaky",
+    "postup_cs": [
+      "Postav se čelem ke kladce, uchop lano nebo tyč nadhmatem.",
+      "Lokty přitiskni k tělu a drž je nehybně po celou dobu cviku.",
+      "Nadechni se a zatlač kladku dolů do napnutých paží.",
+      "V dolní poloze na chvíli stiskni triceps.",
+      "Vydechni a nech kladku pomalu stoupat zpět, lokty pořád u těla.",
+      "Trup drž vzpřímený, nezaklánej se dozadu."
+    ],
+    "poznamka": null,
+    "kandidati": [
+      {
+        "fed_id": "Cable_Incline_Triceps_Extension",
+        "nazev": "Cable Incline Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Incline_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Incline_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Cable_Lying_Triceps_Extension",
+        "nazev": "Cable Lying Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Lying_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Lying_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Cable_One_Arm_Tricep_Extension",
+        "nazev": "Cable One Arm Tricep Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_One_Arm_Tricep_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_One_Arm_Tricep_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Cable_Rope_Overhead_Triceps_Extension",
+        "nazev": "Cable Rope Overhead Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Rope_Overhead_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Rope_Overhead_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Decline_Dumbbell_Triceps_Extension",
+        "nazev": "Decline Dumbbell Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Dumbbell_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Dumbbell_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Decline_EZ_Bar_Triceps_Extension",
+        "nazev": "Decline EZ Bar Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_EZ_Bar_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_EZ_Bar_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Dumbbell_One-Arm_Triceps_Extension",
+        "nazev": "Dumbbell One-Arm Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_One-Arm_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_One-Arm_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Dumbbell_Tricep_Extension_-Pronated_Grip",
+        "nazev": "Dumbbell Tricep Extension -Pronated Grip",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Tricep_Extension_-Pronated_Grip/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Tricep_Extension_-Pronated_Grip/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Incline_Barbell_Triceps_Extension",
+        "nazev": "Incline Barbell Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Barbell_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Barbell_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Kettlebell_Overhead_Triceps_Extension",
+        "nazev": "Kettlebell Overhead Triceps Extension",
+        "obrazky": []
+      },
+      {
+        "fed_id": "Kneeling_Cable_Triceps_Extension",
+        "nazev": "Kneeling Cable Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kneeling_Cable_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kneeling_Cable_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Low_Cable_Triceps_Extension",
+        "nazev": "Low Cable Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Low_Cable_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Low_Cable_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Lying_Close-Grip_Barbell_Triceps_Extension_Behind_The_Head",
+        "nazev": "Lying Close-Grip Barbell Triceps Extension Behind The Head",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Close-Grip_Barbell_Triceps_Extension_Behind_The_Head/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Close-Grip_Barbell_Triceps_Extension_Behind_The_Head/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Lying_Dumbbell_Tricep_Extension",
+        "nazev": "Lying Dumbbell Tricep Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Dumbbell_Tricep_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Dumbbell_Tricep_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Machine_Triceps_Extension",
+        "nazev": "Machine Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "One_Arm_Pronated_Dumbbell_Triceps_Extension",
+        "nazev": "One Arm Pronated Dumbbell Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Arm_Pronated_Dumbbell_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Arm_Pronated_Dumbbell_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "One_Arm_Supinated_Dumbbell_Triceps_Extension",
+        "nazev": "One Arm Supinated Dumbbell Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Arm_Supinated_Dumbbell_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Arm_Supinated_Dumbbell_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Seated_Bent-Over_One-Arm_Dumbbell_Triceps_Extension",
+        "nazev": "Seated Bent-Over One-Arm Dumbbell Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Bent-Over_One-Arm_Dumbbell_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Bent-Over_One-Arm_Dumbbell_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Seated_Bent-Over_Two-Arm_Dumbbell_Triceps_Extension",
+        "nazev": "Seated Bent-Over Two-Arm Dumbbell Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Bent-Over_Two-Arm_Dumbbell_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Bent-Over_Two-Arm_Dumbbell_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Sled_Overhead_Triceps_Extension",
+        "nazev": "Sled Overhead Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sled_Overhead_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sled_Overhead_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Standing_Bent-Over_One-Arm_Dumbbell_Triceps_Extension",
+        "nazev": "Standing Bent-Over One-Arm Dumbbell Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Bent-Over_One-Arm_Dumbbell_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Bent-Over_One-Arm_Dumbbell_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Standing_Bent-Over_Two-Arm_Dumbbell_Triceps_Extension",
+        "nazev": "Standing Bent-Over Two-Arm Dumbbell Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Bent-Over_Two-Arm_Dumbbell_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Bent-Over_Two-Arm_Dumbbell_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Standing_Dumbbell_Triceps_Extension",
+        "nazev": "Standing Dumbbell Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Dumbbell_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Dumbbell_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Standing_Low-Pulley_One-Arm_Triceps_Extension",
+        "nazev": "Standing Low-Pulley One-Arm Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Low-Pulley_One-Arm_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Low-Pulley_One-Arm_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Standing_One-Arm_Dumbbell_Triceps_Extension",
+        "nazev": "Standing One-Arm Dumbbell Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_One-Arm_Dumbbell_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_One-Arm_Dumbbell_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Standing_Overhead_Barbell_Triceps_Extension",
+        "nazev": "Standing Overhead Barbell Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Overhead_Barbell_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Overhead_Barbell_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Standing_Towel_Triceps_Extension",
+        "nazev": "Standing Towel Triceps Extension",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Towel_Triceps_Extension/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Towel_Triceps_Extension/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Triceps_Overhead_Extension_with_Rope",
+        "nazev": "Triceps Overhead Extension with Rope",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Overhead_Extension_with_Rope/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Overhead_Extension_with_Rope/1.jpg"
+        ]
+      }
+    ]
+  },
+  {
+    "canonical_key": "machine_bicep_curl",
+    "nazev_cs": "Bicepsový zdvih na stroji",
+    "postup_cs": [
+      "Nastav sedadlo na vhodnou výšku a vyber zátěž. Polož horní paže na opěrky a chyť madla. Toto je výchozí pozice.",
+      "Proveď pohyb ohnutím loktů a přitahováním předloktí k horní paži.",
+      "Vydrž v horní poloze a pak pomalu vrať zátěž do výchozí pozice.",
+      "Nevracej zátěž úplně na dorazy, dokud není série dokončena, aby bylo napětí ve svalech."
+    ],
+    "poznamka": "Vyřazeno z automatu: shoda je jistá (Machine_Bicep_Curl), ale zdrojový snímek ukazuje tlak nad hlavu, ne bicepsový zdvih.",
+    "kandidati": [
+      {
+        "fed_id": "Dumbbell_Alternate_Bicep_Curl",
+        "nazev": "Dumbbell Alternate Bicep Curl",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Alternate_Bicep_Curl/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Alternate_Bicep_Curl/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Dumbbell_Bicep_Curl",
+        "nazev": "Dumbbell Bicep Curl",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bicep_Curl/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bicep_Curl/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Incline_Inner_Biceps_Curl",
+        "nazev": "Incline Inner Biceps Curl",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Inner_Biceps_Curl/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Inner_Biceps_Curl/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Machine_Bicep_Curl",
+        "nazev": "Machine Bicep Curl",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Bicep_Curl/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Bicep_Curl/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Seated_Dumbbell_Inner_Biceps_Curl",
+        "nazev": "Seated Dumbbell Inner Biceps Curl",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Dumbbell_Inner_Biceps_Curl/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Dumbbell_Inner_Biceps_Curl/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Standing_Biceps_Cable_Curl",
+        "nazev": "Standing Biceps Cable Curl",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Biceps_Cable_Curl/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Biceps_Cable_Curl/1.jpg"
+        ]
+      },
+      {
+        "fed_id": "Standing_Inner-Biceps_Curl",
+        "nazev": "Standing Inner-Biceps Curl",
+        "obrazky": [
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Inner-Biceps_Curl/0.jpg",
+          "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Inner-Biceps_Curl/1.jpg"
+        ]
+      }
+    ]
+  }
+]

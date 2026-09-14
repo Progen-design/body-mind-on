@@ -1,45 +1,28 @@
 /**
- * Ověří funkčnost všech trusted ExerciseDB GIF URL (lokální CI / před deployem).
- * Usage: node scripts/verify-exercise-registry.mjs
+ * TRUSTED_EXERCISE_GIF_BY_KEY a TRUSTED_EXTENDED_GIF_BY_KEY (lib/exerciseRegistryMedia.js)
+ * jsou od 14. 9. 2026 natrvalo prázdné (docs/DALSI_KROK.md 9.12) — nezbyl žádný
+ * natvrdo daný fallback GIF k ověření. Tenhle skript proto nemá co dělat;
+ * nahrazuje ho scripts/audit-exercise-registry-urls.mjs, který kontroluje HEAD
+ * status VŠECH řádků exercise_asset_registry (ne jen natvrdo daný seznam).
+ * Usage: node scripts/audit-exercise-registry-urls.mjs
  */
 import {
   TRUSTED_EXERCISE_GIF_BY_KEY,
   TRUSTED_EXTENDED_GIF_BY_KEY,
 } from '../lib/exerciseRegistryMedia.js';
-import {
-  fetchWithTimeout,
-  FETCH_TIMEOUT,
-  formatFetchError,
-} from './lib/fetchWithTimeout.mjs';
 
-async function headOk(url) {
-  try {
-    const res = await fetchWithTimeout(url, { method: 'HEAD', redirect: 'follow' }, FETCH_TIMEOUT.GET);
-    return res.ok;
-  } catch (err) {
-    console.error(formatFetchError(err, url));
-    return false;
-  }
-}
+const keyCount =
+  Object.keys(TRUSTED_EXERCISE_GIF_BY_KEY).length +
+  Object.keys(TRUSTED_EXTENDED_GIF_BY_KEY).length;
 
-let failed = 0;
-
-console.log('Canonical exercises:');
-for (const [key, url] of Object.entries(TRUSTED_EXERCISE_GIF_BY_KEY)) {
-  const ok = await headOk(url);
-  console.log(`  ${ok ? '✅' : '❌'} ${key}`);
-  if (!ok) failed += 1;
-}
-
-console.log('\nExtended exercises:');
-for (const [key, url] of Object.entries(TRUSTED_EXTENDED_GIF_BY_KEY)) {
-  const ok = await headOk(url);
-  console.log(`  ${ok ? '✅' : '❌'} ${key}`);
-  if (!ok) failed += 1;
-}
-
-if (failed > 0) {
-  console.error(`\n❌ ${failed} broken GIF URL(s)`);
+if (keyCount > 0) {
+  console.error(
+    `❌ TRUSTED_EXERCISE_GIF_BY_KEY/TRUSTED_EXTENDED_GIF_BY_KEY mají ${keyCount} klíč(ů), ale měly by být natrvalo prázdné (docs/DALSI_KROK.md 9.12) — tenhle skript už nekontroluje jejich obsah. Použij scripts/audit-exercise-registry-urls.mjs.`
+  );
   process.exit(1);
 }
-console.log('\n✅ All trusted exercise GIF URLs OK');
+
+console.log(
+  '✅ TRUSTED_EXERCISE_GIF_BY_KEY i TRUSTED_EXTENDED_GIF_BY_KEY jsou prázdné, jak mají být. '
+  + 'Skutečná kontrola médií je v scripts/audit-exercise-registry-urls.mjs.'
+);

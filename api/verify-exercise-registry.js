@@ -1,13 +1,16 @@
 /**
  * GET /api/verify-exercise-registry
- * Ověří, že všechny povinné canonical cviky mají funkční GIF (ExerciseDB) v DB i v kódu.
+ * Ověří funkční média (vlastní Storage animace) canonical cviků v DB i v kódu.
+ *
+ * TRUSTED_EXERCISE_GIF_BY_KEY a TRUSTED_EXTENDED_GIF_BY_KEY jsou od 14. 9. 2026
+ * natrvalo prázdné (docs/DALSI_KROK.md 9.12) — už neexistuje seznam „povinných"
+ * cviků s natvrdo daným fallbackem. Endpoint proto místo pevného seznamu ověří
+ * VŠECH 207 cviků, co mají v registru vlastní Storage animaci.
  */
 import { supabaseServer } from '../lib/supabaseServer.js';
 import {
-  TRUSTED_EXERCISE_GIF_BY_KEY,
-  TRUSTED_EXTENDED_GIF_BY_KEY,
   assertRegistryRowHasDisplayableMedia,
-  isTrustedExercisedbGifUrl,
+  isTrustedExerciseMediaUrl,
   mergeWithTrustedRegistryMedia,
 } from '../lib/exerciseRegistryMedia.js';
 
@@ -27,49 +30,34 @@ export default async function handler(req, res) {
   }
 
   try {
-    const codeChecks = [];
-    for (const [key, url] of Object.entries(TRUSTED_EXERCISE_GIF_BY_KEY)) {
-      const ok = isTrustedExercisedbGifUrl(url) && (await headOk(url));
-      codeChecks.push({ canonical_key: key, url, ok });
-    }
-    const codeOk = codeChecks.every((c) => c.ok);
-
     const { data: rows, error } = await supabaseServer
       .from('exercise_asset_registry')
       .select('canonical_key, display_name_cs, gif_url, image_url, trust_level')
       .eq('trust_level', 'exact')
-      .in('canonical_key', Object.keys(TRUSTED_EXERCISE_GIF_BY_KEY));
+      .not('gif_url', 'is', null);
 
     if (error) throw error;
 
-    const byKey = new Map((rows || []).map((r) => [r.canonical_key, r]));
     const dbChecks = [];
-
-    for (const key of Object.keys(TRUSTED_EXERCISE_GIF_BY_KEY)) {
-      const row = byKey.get(key);
-      const merged = row ? mergeWithTrustedRegistryMedia(key, row) : null;
-      const hasMedia = merged ? assertRegistryRowHasDisplayableMedia(key, merged) : false;
-      const gifOk = merged?.gif_url ? await headOk(merged.gif_url) : false;
+    for (const row of rows || []) {
+      const merged = mergeWithTrustedRegistryMedia(row.canonical_key, row);
+      const hasMedia = assertRegistryRowHasDisplayableMedia(row.canonical_key, merged);
+      const isOwnStorage = Boolean(merged.gif_url && isTrustedExerciseMediaUrl(merged.gif_url));
+      const gifOk = merged.gif_url ? await headOk(merged.gif_url) : false;
       dbChecks.push({
-        canonical_key: key,
-        in_db: Boolean(row),
-        gif_url: merged?.gif_url || null,
+        canonical_key: row.canonical_key,
+        gif_url: merged.gif_url || null,
+        is_own_storage: isOwnStorage,
         gif_http_ok: gifOk,
-        ok: hasMedia && gifOk,
+        ok: hasMedia && isOwnStorage && gifOk,
       });
     }
 
     const dbOk = dbChecks.every((c) => c.ok);
-    const extendedKeys = Object.keys(TRUSTED_EXTENDED_GIF_BY_KEY);
-    const extendedCodeOk = (await Promise.all(
-      extendedKeys.map(async (key) => headOk(TRUSTED_EXTENDED_GIF_BY_KEY[key]))
-    )).every(Boolean);
 
-    return res.status(codeOk && dbOk && extendedCodeOk ? 200 : 503).json({
-      ok: codeOk && dbOk && extendedCodeOk,
-      code_trusted_gifs: { ok: codeOk, checks: codeChecks },
-      db_canonical_gifs: { ok: dbOk, checks: dbChecks },
-      extended_code_gifs: { ok: extendedCodeOk, keys: extendedKeys.length },
+    return res.status(dbOk ? 200 : 503).json({
+      ok: dbOk,
+      db_storage_gifs: { ok: dbOk, count: dbChecks.length, checks: dbChecks },
     });
   } catch (err) {
     console.error('[verify-exercise-registry]', err);

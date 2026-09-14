@@ -94,3 +94,34 @@ function sklonovatCviky(pocet: number): string {
   if (abs >= 2 && abs <= 4) return 'cviky';
   return 'cviků';
 }
+
+/**
+ * Práh pro živé varování PŘED odesláním (krok 3 registrace i profil).
+ *
+ * NENÍ TO POČET VYBRANÝCH VZORŮ/PARTIÍ — je to hranice na `remaining`
+ * z `planExclusionCoverage()`, tedy na živě dopočítaném počtu zbývajících
+ * cviků, ne na tom, KOLIK chipů uživatel zaškrtl. Dva vzory se stejným
+ * počtem chipů můžou mít úplně jiný dopad (`core` v gymu smázne 2 cviky,
+ * `squat` jich smázne 2 taky, ale kombinace s dalšími se liší) — počet
+ * chipů proto nikdy nešel použít jako spolehlivý risk signál.
+ *
+ * ZMĚŘENO 10. 9. 2026 nad reálným `planExclusionCoverage()`
+ * (lib/trainingExclusions.js), ne odhadem:
+ *   gym:              7 vzorů → remaining 3 (na hraně, bez varování),
+ *                      8 vzorů → remaining 1 (pod prahem),
+ *                      8 vzorů + 3 partie → remaining 1.
+ *   home_equipment:   10 vzorů → remaining 3, 11 vzorů → remaining 0.
+ *   home_bodyweight:  10 vzorů → remaining 3, 11 vzorů → remaining 0.
+ * Třída "méně než 3 zbývající cviky" napříč všemi třemi prostředími
+ * odpovídá stavu, kdy už nejde poskládat ani jeden běžný pětiprvkový den
+ * bez opakování cviku — odtud konstanta níž, ne z počtu chipů.
+ */
+export const PRAH_VAROVANI_ZBYVAJICICH_CVIKU = 3;
+
+/** @param zbyvaCelkem `remaining` z `planExclusionCoverage()` pro aktuální výběr */
+export function jeVyberExtremni(zbyvaCelkem: number): boolean {
+  return zbyvaCelkem < PRAH_VAROVANI_ZBYVAJICICH_CVIKU;
+}
+
+export const TEXT_VAROVANI_EXTREMNI_VYBER =
+  'Při tomhle výběru budou některé dny hodně krátké nebo se cvik bude opakovat. Plán se stejně vytvoří, jen bude chudší.';

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<title>Skupina B — ruční výběr animací</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, "Segoe UI", sans-serif; margin: 0; padding: 24px; background: #0b0d12; color: #e6e8eb; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p.uvod { color: #9aa1ab; font-size: 13px; margin: 0 0 24px; max-width: 900px; }
+  .cvik { border: 1px solid #2a2f3a; border-radius: 12px; padding: 16px; margin-bottom: 20px; background: #12151c; }
+  .cvik.vyplneno { border-color: #3fb950; }
+  .hlavicka { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .hlavicka h2 { font-size: 16px; margin: 0; }
+  .hlavicka code { color: #79c0ff; font-size: 12px; }
+  .poznamka { color: #f0883e; font-size: 12px; margin: 6px 0 0; }
+  ol.postup { font-size: 12px; color: #c9d1d9; margin: 8px 0 14px; padding-left: 18px; }
+  .kandidati { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  label.kandidat { display: block; cursor: pointer; border: 2px solid #2a2f3a; border-radius: 8px; padding: 6px; text-align: center; background: #0b0d12; }
+  label.kandidat:hover { border-color: #58a6ff; }
+  label.kandidat.zadny { border-style: dashed; }
+  input[type=radio] { margin-right: 4px; }
+  input[type=radio]:checked + span { color: #3fb950; font-weight: 600; }
+  label.kandidat:has(input:checked) { border-color: #3fb950; background: #0f1f14; }
+  .kandidat img { width: 100%; height: 90px; object-fit: contain; background: #1c2129; border-radius: 4px; margin-bottom: 4px; }
+  .kandidat .jmeno { font-size: 10px; color: #9aa1ab; display: block; word-break: break-word; }
+  .lista { position: sticky; top: 0; z-index: 5; background: #0b0d12; padding: 12px 0; margin-bottom: 8px; border-bottom: 1px solid #2a2f3a; display: flex; gap: 12px; align-items: center; }
+  button { background: #238636; color: white; border: none; border-radius: 6px; padding: 8px 14px; font-size: 13px; cursor: pointer; }
+  button:hover { background: #2ea043; }
+  .stav { font-size: 12px; color: #9aa1ab; }
+  textarea { width: 100%; height: 220px; background: #0b0d12; color: #79c0ff; border: 1px solid #2a2f3a; border-radius: 8px; font-family: monospace; font-size: 12px; padding: 10px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="lista">
+  <button id="exportuj">Exportovat JSON</button>
+  <span class="stav" id="stav"></span>
+</div>
+<h1>Skupina B — ruční výběr animací (20 položek)</h1>
+<p class="uvod">
+  19 klíčů generátoru s víc kandidáty + <code>machine_bicep_curl</code> (vyřazen
+  z automatu kvůli vadnému zdrojovému snímku). U každého cviku zkontroluj, jestli
+  obrázek ukazuje TENTÝŽ pohyb, jaký popisuje český postup vedle. Klikni na
+  vyhovující obrázek, nebo nech „Žádný z nabízených" — podobný cvik se nedosazuje.
+  Až budeš hotový, klikni „Exportovat JSON" a pošli mi obsah textového pole.
+</p>
+<div id="cviky"></div>
+
+<script>
+async function nacti() {
+  const odpoved = await fetch('data/kandidati_skupina_b.json');
+  return odpoved.json();
+}
+
+function pocetVyplnenych() {
+  return document.querySelectorAll('.cvik.vyplneno').length;
+}
+
+function aktualizujStav() {
+  const celkem = document.querySelectorAll('.cvik').length;
+  document.getElementById('stav').textContent = `Vybráno: ${pocetVyplnenych()} / ${celkem}`;
+}
+
+function vytvorRadek(radek) {
+  const el = document.createElement('div');
+  el.className = 'cvik';
+  el.dataset.klic = radek.canonical_key;
+
+  const hlavicka = document.createElement('div');
+  hlavicka.className = 'hlavicka';
+  hlavicka.innerHTML = `<h2>${radek.nazev_cs}</h2><code>${radek.canonical_key}</code>`;
+  el.appendChild(hlavicka);
+
+  if (radek.poznamka) {
+    const p = document.createElement('p');
+    p.className = 'poznamka';
+    p.textContent = radek.poznamka;
+    el.appendChild(p);
+  }
+
+  const postup = document.createElement('ol');
+  postup.className = 'postup';
+  for (const krok of radek.postup_cs) {
+    const li = document.createElement('li');
+    li.textContent = krok;
+    postup.appendChild(li);
+  }
+  el.appendChild(postup);
+
+  const grid = document.createElement('div');
+  grid.className = 'kandidati';
+
+  for (const k of radek.kandidati) {
+    const label = document.createElement('label');
+    label.className = 'kandidat';
+    const img = document.createElement('img');
+    img.src = k.obrazky[0] || '';
+    img.loading = 'lazy';
+    img.alt = k.nazev;
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = radek.canonical_key;
+    radio.value = k.fed_id;
+    radio.addEventListener('change', () => {
+      el.classList.add('vyplneno');
+      aktualizujStav();
+    });
+    const jmeno = document.createElement('span');
+    jmeno.className = 'jmeno';
+    jmeno.textContent = k.nazev;
+    label.appendChild(radio);
+    label.appendChild(document.createElement('br'));
+    label.appendChild(img);
+    label.appendChild(jmeno);
+    grid.appendChild(label);
+  }
+
+  // "Žádný z nabízených" — vždy k dispozici, i když jsou všichni kandidáti špatně.
+  const zadnyLabel = document.createElement('label');
+  zadnyLabel.className = 'kandidat zadny';
+  const zadnyRadio = document.createElement('input');
+  zadnyRadio.type = 'radio';
+  zadnyRadio.name = radek.canonical_key;
+  zadnyRadio.value = '__zadny__';
+  zadnyRadio.addEventListener('change', () => {
+    el.classList.add('vyplneno');
+    aktualizujStav();
+  });
+  const zadnyText = document.createElement('span');
+  zadnyText.textContent = 'Žádný z nabízených (zůstane bez animace)';
+  zadnyLabel.appendChild(zadnyRadio);
+  zadnyLabel.appendChild(document.createElement('br'));
+  zadnyLabel.appendChild(zadnyText);
+  grid.appendChild(zadnyLabel);
+
+  el.appendChild(grid);
+  return el;
+}
+
+function exportuj(data) {
+  const vysledek = [];
+  for (const radek of data) {
+    const zvolene = document.querySelector(`input[name="${radek.canonical_key}"]:checked`);
+    vysledek.push({
+      canonical_key: radek.canonical_key,
+      fed_id: zvolene && zvolene.value !== '__zadny__' ? zvolene.value : null,
+    });
+  }
+  let ta = document.getElementById('vystup');
+  if (!ta) {
+    ta = document.createElement('textarea');
+    ta.id = 'vystup';
+    document.body.insertBefore(ta, document.getElementById('cviky'));
+  }
+  ta.value = JSON.stringify(vysledek, null, 2);
+  ta.select();
+}
+
+nacti().then((data) => {
+  const kontejner = document.getElementById('cviky');
+  for (const radek of data) {
+    kontejner.appendChild(vytvorRadek(radek));
+  }
+  aktualizujStav();
+  document.getElementById('exportuj').addEventListener('click', () => exportuj(data));
+});
+</script>
+</body>
+</html>

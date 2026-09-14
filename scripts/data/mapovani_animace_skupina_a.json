@@ -1,0 +1,967 @@
+[
+  {
+    "canonical_key": "ab_crunch_machine",
+    "fed_id": "Ab_Crunch_Machine",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "alternate_hammer_curl",
+    "fed_id": "Alternate_Hammer_Curl",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "alternate_incline_dumbbell_curl",
+    "fed_id": "Alternate_Incline_Dumbbell_Curl",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "alternating_cable_shoulder_press",
+    "fed_id": "Alternating_Cable_Shoulder_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "alternating_floor_press",
+    "fed_id": "Alternating_Floor_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "alternating_hang_clean",
+    "fed_id": "Alternating_Hang_Clean",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "alternating_kettlebell_press",
+    "fed_id": "Alternating_Kettlebell_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "alternating_kettlebell_row",
+    "fed_id": "Alternating_Kettlebell_Row",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "back_flyes_with_bands",
+    "fed_id": "Back_Flyes_-_With_Bands",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "band_good_morning",
+    "fed_id": "Band_Good_Morning",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "band_skull_crusher",
+    "fed_id": "Band_Skull_Crusher",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "barbell_ab_rollout",
+    "fed_id": "Barbell_Ab_Rollout",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "barbell_ab_rollout_on_knees",
+    "fed_id": "Barbell_Ab_Rollout_-_On_Knees",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "barbell_bench_press_medium_grip",
+    "fed_id": "Barbell_Bench_Press_-_Medium_Grip",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "barbell_curl",
+    "fed_id": "Barbell_Curl",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "barbell_full_squat",
+    "fed_id": "Barbell_Full_Squat",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "barbell_glute_bridge",
+    "fed_id": "Barbell_Glute_Bridge",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "barbell_hack_squat",
+    "fed_id": "Barbell_Hack_Squat",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "barbell_hip_thrust",
+    "fed_id": "Barbell_Hip_Thrust",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "barbell_incline_bench_press_medium_grip",
+    "fed_id": "Barbell_Incline_Bench_Press_-_Medium_Grip",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "barbell_incline_shoulder_raise",
+    "fed_id": "Barbell_Incline_Shoulder_Raise",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "barbell_lunge",
+    "fed_id": "Barbell_Lunge",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "barbell_rear_delt_row",
+    "fed_id": "Barbell_Rear_Delt_Row",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "barbell_seated_calf_raise",
+    "fed_id": "Barbell_Seated_Calf_Raise",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "barbell_shoulder_press",
+    "fed_id": "Barbell_Shoulder_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "barbell_side_bend",
+    "fed_id": "Barbell_Side_Bend",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "barbell_squat",
+    "fed_id": "Barbell_Squat",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "barbell_walking_lunge",
+    "fed_id": "Barbell_Walking_Lunge",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "bench_dips",
+    "fed_id": "Bench_Dips",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "bench_jump",
+    "fed_id": "Bench_Jump",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "bench_press_with_bands",
+    "fed_id": "Bench_Press_-_With_Bands",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "bent_knee_hip_raise",
+    "fed_id": "Bent-Knee_Hip_Raise",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "bent_over_barbell_row",
+    "fed_id": "Bent_Over_Barbell_Row",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "bent_over_dumbbell_rear_delt_raise_with_head_on_bench",
+    "fed_id": "Bent_Over_Dumbbell_Rear_Delt_Raise_With_Head_On_Bench",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "bent_over_one_arm_long_bar_row",
+    "fed_id": "Bent_Over_One-Arm_Long_Bar_Row",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "bent_over_row",
+    "fed_id": "Bent_Over_Barbell_Row",
+    "shoda": "nazev"
+  },
+  {
+    "canonical_key": "bicep_curl",
+    "fed_id": "Dumbbell_Bicep_Curl",
+    "shoda": "nazev"
+  },
+  {
+    "canonical_key": "bodyweight_squat",
+    "fed_id": "Bodyweight_Squat",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "cable_chest_press",
+    "fed_id": "Cable_Chest_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "cable_crossover",
+    "fed_id": "Cable_Crossover",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "cable_crunch",
+    "fed_id": "Cable_Crunch",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "cable_hammer_curls_rope_attachment",
+    "fed_id": "Cable_Hammer_Curls_-_Rope_Attachment",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "cable_hip_adduction",
+    "fed_id": "Cable_Hip_Adduction",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "cable_incline_pushdown",
+    "fed_id": "Cable_Incline_Pushdown",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "cable_incline_triceps_extension",
+    "fed_id": "Cable_Incline_Triceps_Extension",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "cable_internal_rotation",
+    "fed_id": "Cable_Internal_Rotation",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "cable_lying_triceps_extension",
+    "fed_id": "Cable_Lying_Triceps_Extension",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "cable_one_arm_tricep_extension",
+    "fed_id": "Cable_One_Arm_Tricep_Extension",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "cable_preacher_curl",
+    "fed_id": "Cable_Preacher_Curl",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "cable_reverse_crunch",
+    "fed_id": "Cable_Reverse_Crunch",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "cable_rope_overhead_triceps_extension",
+    "fed_id": "Cable_Rope_Overhead_Triceps_Extension",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "cable_seated_crunch",
+    "fed_id": "Cable_Seated_Crunch",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "cable_seated_lateral_raise",
+    "fed_id": "Cable_Seated_Lateral_Raise",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "cable_shoulder_press",
+    "fed_id": "Cable_Shoulder_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "calf_press",
+    "fed_id": "Calf_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "calf_press_on_the_leg_press_machine",
+    "fed_id": "Calf_Press_On_The_Leg_Press_Machine",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "calf_raise_on_a_dumbbell",
+    "fed_id": "Calf_Raise_On_A_Dumbbell",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "calf_raises_with_bands",
+    "fed_id": "Calf_Raises_-_With_Bands",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "chin_up",
+    "fed_id": "Chin-Up",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "clean",
+    "fed_id": "Clean",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "clean_deadlift",
+    "fed_id": "Clean_Deadlift",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "close_grip_barbell_bench_press",
+    "fed_id": "Close-Grip_Barbell_Bench_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "close_grip_dumbbell_press",
+    "fed_id": "Close-Grip_Dumbbell_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "close_grip_ez_bar_curl",
+    "fed_id": "Close-Grip_EZ_Bar_Curl",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "close_grip_ez_bar_curl_with_band",
+    "fed_id": "Close-Grip_EZ-Bar_Curl_with_Band",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "close_grip_ez_bar_press",
+    "fed_id": "Close-Grip_EZ-Bar_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "close_grip_standing_barbell_curl",
+    "fed_id": "Close-Grip_Standing_Barbell_Curl",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "concentration_curls",
+    "fed_id": "Concentration_Curls",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "cross_over_with_bands",
+    "fed_id": "Cross_Over_-_With_Bands",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "crunch_hands_overhead",
+    "fed_id": "Crunch_-_Hands_Overhead",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "dead_bug",
+    "fed_id": "Dead_Bug",
+    "shoda": "nazev"
+  },
+  {
+    "canonical_key": "decline_barbell_bench_press",
+    "fed_id": "Decline_Barbell_Bench_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "decline_close_grip_bench_to_skull_crusher",
+    "fed_id": "Decline_Close-Grip_Bench_To_Skull_Crusher",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "decline_dumbbell_bench_press",
+    "fed_id": "Decline_Dumbbell_Bench_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "decline_dumbbell_flyes",
+    "fed_id": "Decline_Dumbbell_Flyes",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "decline_dumbbell_triceps_extension",
+    "fed_id": "Decline_Dumbbell_Triceps_Extension",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "decline_ez_bar_triceps_extension",
+    "fed_id": "Decline_EZ_Bar_Triceps_Extension",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "decline_smith_press",
+    "fed_id": "Decline_Smith_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "dip_machine",
+    "fed_id": "Dip_Machine",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "double_kettlebell_alternating_hang_clean",
+    "fed_id": "Double_Kettlebell_Alternating_Hang_Clean",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "double_kettlebell_jerk",
+    "fed_id": "Double_Kettlebell_Jerk",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "double_kettlebell_push_press",
+    "fed_id": "Double_Kettlebell_Push_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "double_kettlebell_windmill",
+    "fed_id": "Double_Kettlebell_Windmill",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "double_leg_butt_kick",
+    "fed_id": "Double_Leg_Butt_Kick",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "dumbbell_bench_press",
+    "fed_id": "Dumbbell_Bench_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "dumbbell_bench_press_with_neutral_grip",
+    "fed_id": "Dumbbell_Bench_Press_with_Neutral_Grip",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "dumbbell_clean",
+    "fed_id": "Dumbbell_Clean",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "dumbbell_flyes",
+    "fed_id": "Dumbbell_Flyes",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "dumbbell_incline_row",
+    "fed_id": "Dumbbell_Incline_Row",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "dumbbell_incline_shoulder_raise",
+    "fed_id": "Dumbbell_Incline_Shoulder_Raise",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "dumbbell_lunges",
+    "fed_id": "Dumbbell_Lunges",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "dumbbell_press",
+    "fed_id": "Dumbbell_Shoulder_Press",
+    "shoda": "nazev"
+  },
+  {
+    "canonical_key": "dumbbell_raise",
+    "fed_id": "Dumbbell_Raise",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "dumbbell_seated_box_jump",
+    "fed_id": "Dumbbell_Seated_Box_Jump",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "dumbbell_seated_one_leg_calf_raise",
+    "fed_id": "Dumbbell_Seated_One-Leg_Calf_Raise",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "dumbbell_side_bend",
+    "fed_id": "Dumbbell_Side_Bend",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "dumbbell_squat",
+    "fed_id": "Dumbbell_Squat",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "dumbbell_squat_to_a_bench",
+    "fed_id": "Dumbbell_Squat_To_A_Bench",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "dumbbell_tricep_extension_pronated_grip",
+    "fed_id": "Dumbbell_Tricep_Extension_-Pronated_Grip",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "external_rotation",
+    "fed_id": "External_Rotation",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "external_rotation_with_band",
+    "fed_id": "External_Rotation_with_Band",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "external_rotation_with_cable",
+    "fed_id": "External_Rotation_with_Cable",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "ez_bar_curl",
+    "fed_id": "EZ-Bar_Curl",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "face_pull",
+    "fed_id": "Face_Pull",
+    "shoda": "nazev"
+  },
+  {
+    "canonical_key": "front_raise_and_pullover",
+    "fed_id": "Front_Raise_And_Pullover",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "glute_kickback",
+    "fed_id": "Glute_Kickback",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "goblet_squat",
+    "fed_id": "Goblet_Squat",
+    "shoda": "nazev"
+  },
+  {
+    "canonical_key": "good_morning",
+    "fed_id": "Good_Morning",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "hack_squat",
+    "fed_id": "Hack_Squat",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "hanging_bar_good_morning",
+    "fed_id": "Hanging_Bar_Good_Morning",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "hip_extension_with_bands",
+    "fed_id": "Hip_Extension_with_Bands",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "incline_bench_pull",
+    "fed_id": "Incline_Bench_Pull",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "incline_cable_chest_press",
+    "fed_id": "Incline_Cable_Chest_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "incline_push_up",
+    "fed_id": "Incline_Push-Up",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "incline_push_up_close_grip",
+    "fed_id": "Incline_Push-Up_Close-Grip",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "incline_push_up_medium",
+    "fed_id": "Incline_Push-Up_Medium",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "incline_push_up_reverse_grip",
+    "fed_id": "Incline_Push-Up_Reverse_Grip",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "incline_push_up_wide",
+    "fed_id": "Incline_Push-Up_Wide",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "internal_rotation_with_band",
+    "fed_id": "Internal_Rotation_with_Band",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "kettlebell_arnold_press",
+    "fed_id": "Kettlebell_Arnold_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "kettlebell_hang_clean",
+    "fed_id": "Kettlebell_Hang_Clean",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "kettlebell_one_legged_deadlift",
+    "fed_id": "Kettlebell_One-Legged_Deadlift",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "kettlebell_pistol_squat",
+    "fed_id": "Kettlebell_Pistol_Squat",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "kettlebell_seated_press",
+    "fed_id": "Kettlebell_Seated_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "kettlebell_windmill",
+    "fed_id": "Kettlebell_Windmill",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "kneeling_cable_crunch_with_alternating_oblique_twists",
+    "fed_id": "Kneeling_Cable_Crunch_With_Alternating_Oblique_Twists",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "kneeling_high_pulley_row",
+    "fed_id": "Kneeling_High_Pulley_Row",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "kneeling_jump_squat",
+    "fed_id": "Kneeling_Jump_Squat",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "kneeling_single_arm_high_pulley_row",
+    "fed_id": "Kneeling_Single-Arm_High_Pulley_Row",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "kneeling_squat",
+    "fed_id": "Kneeling_Squat",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "lateral_raise_with_bands",
+    "fed_id": "Lateral_Raise_-_With_Bands",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "leg_press",
+    "fed_id": "Leg_Press",
+    "shoda": "nazev"
+  },
+  {
+    "canonical_key": "leverage_chest_press",
+    "fed_id": "Leverage_Chest_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "leverage_deadlift",
+    "fed_id": "Leverage_Deadlift",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "leverage_decline_chest_press",
+    "fed_id": "Leverage_Decline_Chest_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "leverage_incline_chest_press",
+    "fed_id": "Leverage_Incline_Chest_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "leverage_shoulder_press",
+    "fed_id": "Leverage_Shoulder_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "low_cable_crossover",
+    "fed_id": "Low_Cable_Crossover",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "lying_close_grip_bar_curl_on_high_pulley",
+    "fed_id": "Lying_Close-Grip_Bar_Curl_On_High_Pulley",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "lying_leg_curls",
+    "fed_id": "Lying_Leg_Curls",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "machine_shoulder_military_press",
+    "fed_id": "Machine_Shoulder_Military_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "machine_triceps_extension",
+    "fed_id": "Machine_Triceps_Extension",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "middle_back_shrug",
+    "fed_id": "Middle_Back_Shrug",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "one_arm_dumbbell_row",
+    "fed_id": "One-Arm_Dumbbell_Row",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "one_arm_high_pulley_cable_side_bends",
+    "fed_id": "One-Arm_High-Pulley_Cable_Side_Bends",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "one_arm_kettlebell_clean",
+    "fed_id": "One-Arm_Kettlebell_Clean",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "one_arm_kettlebell_floor_press",
+    "fed_id": "One-Arm_Kettlebell_Floor_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "one_arm_kettlebell_row",
+    "fed_id": "One-Arm_Kettlebell_Row",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "one_arm_long_bar_row",
+    "fed_id": "One-Arm_Long_Bar_Row",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "one_arm_overhead_kettlebell_squats",
+    "fed_id": "One-Arm_Overhead_Kettlebell_Squats",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "one_legged_cable_kickback",
+    "fed_id": "One-Legged_Cable_Kickback",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "plank",
+    "fed_id": "Plank",
+    "shoda": "nazev"
+  },
+  {
+    "canonical_key": "power_clean",
+    "fed_id": "Power_Clean",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "push_up_to_side_plank",
+    "fed_id": "Push_Up_to_Side_Plank",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "push_up_wide",
+    "fed_id": "Push-Up_Wide",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "push_ups_with_feet_elevated",
+    "fed_id": "Push-Ups_With_Feet_Elevated",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "reverse_cable_curl",
+    "fed_id": "Reverse_Cable_Curl",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "reverse_machine_flyes",
+    "fed_id": "Reverse_Machine_Flyes",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "romanian_deadlift",
+    "fed_id": "Romanian_Deadlift",
+    "shoda": "nazev"
+  },
+  {
+    "canonical_key": "russian_twist",
+    "fed_id": "Russian_Twist",
+    "shoda": "nazev"
+  },
+  {
+    "canonical_key": "seated_barbell_twist",
+    "fed_id": "Seated_Barbell_Twist",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "seated_bent_over_one_arm_dumbbell_triceps_extension",
+    "fed_id": "Seated_Bent-Over_One-Arm_Dumbbell_Triceps_Extension",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "seated_calf_raise",
+    "fed_id": "Seated_Calf_Raise",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "seated_leg_curl",
+    "fed_id": "Seated_Leg_Curl",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "seated_triceps_press",
+    "fed_id": "Seated_Triceps_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "shoulder_press_with_bands",
+    "fed_id": "Shoulder_Press_-_With_Bands",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "single_arm_cable_crossover",
+    "fed_id": "Single-Arm_Cable_Crossover",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "single_leg_butt_kick",
+    "fed_id": "Single_Leg_Butt_Kick",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "single_leg_glute_bridge",
+    "fed_id": "Single_Leg_Glute_Bridge",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "single_leg_leg_extension",
+    "fed_id": "Single-Leg_Leg_Extension",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "smith_incline_shoulder_raise",
+    "fed_id": "Smith_Incline_Shoulder_Raise",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "smith_machine_bent_over_row",
+    "fed_id": "Smith_Machine_Bent_Over_Row",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "smith_machine_calf_raise",
+    "fed_id": "Smith_Machine_Calf_Raise",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "smith_machine_close_grip_bench_press",
+    "fed_id": "Smith_Machine_Close-Grip_Bench_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "smith_machine_hip_raise",
+    "fed_id": "Smith_Machine_Hip_Raise",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "smith_machine_one_arm_upright_row",
+    "fed_id": "Smith_Machine_One-Arm_Upright_Row",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "smith_machine_overhead_shoulder_press",
+    "fed_id": "Smith_Machine_Overhead_Shoulder_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "smith_machine_reverse_calf_raises",
+    "fed_id": "Smith_Machine_Reverse_Calf_Raises",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "smith_machine_squat",
+    "fed_id": "Smith_Machine_Squat",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "smith_machine_stiff_legged_deadlift",
+    "fed_id": "Smith_Machine_Stiff-Legged_Deadlift",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "smith_single_leg_split_squat",
+    "fed_id": "Smith_Single-Leg_Split_Squat",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "split_squat_with_dumbbells",
+    "fed_id": "Split_Squat_with_Dumbbells",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "squats_with_bands",
+    "fed_id": "Squats_-_With_Bands",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "standing_barbell_calf_raise",
+    "fed_id": "Standing_Barbell_Calf_Raise",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "standing_biceps_cable_curl",
+    "fed_id": "Standing_Biceps_Cable_Curl",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "standing_dumbbell_calf_raise",
+    "fed_id": "Standing_Dumbbell_Calf_Raise",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "standing_leg_curl",
+    "fed_id": "Standing_Leg_Curl",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "standing_long_jump",
+    "fed_id": "Standing_Long_Jump",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "standing_military_press",
+    "fed_id": "Standing_Military_Press",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "standing_overhead_barbell_triceps_extension",
+    "fed_id": "Standing_Overhead_Barbell_Triceps_Extension",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "stiff_legged_dumbbell_deadlift",
+    "fed_id": "Stiff-Legged_Dumbbell_Deadlift",
+    "shoda": "external_id"
+  },
+  {
+    "canonical_key": "superman",
+    "fed_id": "Superman",
+    "shoda": "nazev"
+  },
+  {
+    "canonical_key": "two_arm_kettlebell_row",
+    "fed_id": "Two-Arm_Kettlebell_Row",
+    "shoda": "external_id"
+  }
+]

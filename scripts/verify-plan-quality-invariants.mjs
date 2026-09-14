@@ -14,8 +14,7 @@ import {
   computePlanQualityMetrics,
 } from '../lib/planQualityMetrics.js';
 import {
-  isTrustedExercisedbGifUrl,
-  resolveTrustedGifForCanonicalKey,
+  isTrustedExerciseMediaUrl,
 } from '../lib/exerciseRegistryMedia.js';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
@@ -60,9 +59,14 @@ function buildSamplePlan() {
       workout: isWorkout
         ? {
             exercises: [
-              { canonical_key: 'squat', name_cs: 'Dřepy', sets: 5, reps: '10', gif_url: null },
+              // Od 14. 9. 2026 jsou TRUSTED_EXERCISE_GIF_BY_KEY i
+              // TRUSTED_EXTENDED_GIF_BY_KEY (lib/exerciseRegistryMedia.js) natrvalo
+              // prázdné — gate už nikomu nic nepatchuje. tricep_extension/hip_thrust/
+              // plank_side tu zůstávají bez gif_url záměrně: cvik bez animace smí
+              // do plánu (docs/DALSI_KROK.md 9.12).
+              { canonical_key: 'tricep_extension', name_cs: 'Tricepsový zdvih', sets: 5, reps: '10', gif_url: null },
               { canonical_key: 'hip_thrust', name_cs: 'Hip thrust', sets: 6, reps: '12', gif_url: null },
-              { canonical_key: 'plank', name_cs: 'Prkno', sets: 3, duration_sec: 45, gif_url: null },
+              { canonical_key: 'plank_side', name_cs: 'Boční prkno', sets: 3, duration_sec: 45, gif_url: null },
             ],
           }
         : null,
@@ -95,25 +99,31 @@ check(
 );
 
 let setsViolation = false;
-let gifViolation = false;
+let staleHotlinkViolation = false;
 for (const day of plan.days) {
   for (const ex of day?.workout?.exercises || []) {
     const key = String(ex.canonical_key || '').toLowerCase();
     if (['warmup', 'cooldown', 'rest', 'stretch'].includes(key)) continue;
     if (Number(ex.sets) > MAX_PUBLISHABLE_WORKOUT_SETS) setsViolation = true;
-    const registryGif = resolveTrustedGifForCanonicalKey(key);
-    if (registryGif && !isTrustedExercisedbGifUrl(ex.gif_url)) gifViolation = true;
+    // Gate už žádný gif_url nefabrikuje (TRUSTED_*_GIF_BY_KEY jsou prázdné,
+    // docs/DALSI_KROK.md 9.12) — cvik bez animace je v pořádku. Co pořád platí:
+    // pokud gif_url existuje, nesmí to být zastaralý odkaz na Gym Visual/wger.
+    if (ex.gif_url && !isTrustedExerciseMediaUrl(ex.gif_url)) staleHotlinkViolation = true;
   }
 }
 check('žádný publishable cvik nemá víc než 4 série', !setsViolation);
-check('canonical cviky mají trusted GIF po gate', !gifViolation);
+check('žádný cvik nemá gif_url mimo vlastní Storage (žádný Gym Visual/wger)', !staleHotlinkViolation);
 check(
   'kcal dny v toleranci ±10 %',
   metrics.daily_kcal_out_of_tolerance_count === 0,
   `out=${metrics.daily_kcal_out_of_tolerance_count}`
 );
 check('quality metrics sets_over=0 po gate', metrics.sets_over_publishable_limit_count === 0);
-check('quality metrics missing_gif=0 po gate', metrics.missing_gif_count === 0);
+check(
+  'quality metrics missing_gif počítá cviky bez média, nezastaví gate (9 z fixture)',
+  metrics.missing_gif_count === 9,
+  `missing_gif_count=${metrics.missing_gif_count}`
+);
 
 const pipelineSrc = readFileSync(resolve(process.cwd(), 'lib/unifiedPlanPipeline.js'), 'utf8');
 check('pipeline volá logPlanQualityEvent', pipelineSrc.includes('logPlanQualityEvent'));

@@ -267,6 +267,66 @@ function naRecept(recept: any): RecipeDetail | undefined {
   };
 }
 
+/**
+ * Jedno jídlo ze `structured_plan_json` -> `MealItem`. Vytažené z `mealyDne`,
+ * aby stejnou logiku mohla použít i odpověď POST /api/plan-replace-meal —
+ * RecipeModal po záměně vykresluje nové jídlo hned z odpovědi endpointu, ne
+ * až po znovunačtení celého profilu, a nemá to dělat druhou cestou, jak
+ * poskládat MealItem (ta by se s tímhle mapperem časem rozešla). Stejný vzor
+ * jako `cvikZPlanu` o kus níž.
+ *
+ * `typ` (český `MealItem['type']`) se PŘEDÁVÁ, ne dopočítává tady: rozlišení
+ * dopolední/odpolední svačiny závisí na pořadí MEZI VŠEMI jídly dne (viz
+ * čítač `svaciny` v `mealyDne`), což jedno izolované jídlo z odpovědi
+ * endpointu neví. Záměna ale nemění pozici jídla ve dni, takže volající
+ * (RecipeModal) vždy zná správný typ z jídla, které se nahrazuje.
+ *
+ * @param m syrové jídlo z structured_plan_json (nebo `meal` z odpovědi endpointu)
+ * @param typ český typ jídla — stejný, jaký mělo jídlo na týž pozici PŘED záměnou
+ * @param i pozice jídla v `day.meals` — pro `poziceVPlanu`, `activityKey` a fallback `id`
+ * @param dateNeboFallback `den.date`, použije se ve fallback id, když jídlo nemá catalog_id/recipe_id
+ */
+export function jidloZPlanu(
+  m: any,
+  typ: MealItem['type'],
+  i: number,
+  dateNeboFallback: string,
+  planId: string | null,
+  planDay: number | undefined
+): MealItem {
+  const recept = m?.recipe || {};
+  return {
+    // POZOR: `catalog_id` NENÍ napříč týdnem unikátní (recept smí patřit
+    // do jídelníčku 2× týdně, docs/DALSI_KROK.md 8.14) — jako klíč napříč
+    // dny (React key, cíl odškrtávání) proto slouží dvojice
+    // `planDay` + `activityKey` z `MealItem`, ne tohle `id`. Tohle `id`
+    // zůstává jedinečné jen v rámci jednoho dne.
+    id: String(m?.catalog_id ?? m?.recipe_id ?? `${dateNeboFallback}-${i}`),
+    type: typ,
+    time: CAS_JIDLA[typ],
+    title: m?.display_name_cs || m?.name_cs || recept.title_cs || recept.title || 'Jídlo',
+    calories: cislo(m?.kcal),
+    protein: cislo(m?.protein_g),
+    carbs: cislo(m?.carbs_g),
+    fat: cislo(m?.fat_g),
+    completed: false,
+    planId,
+    planDay,
+    activityKey: mealActivityKey(m, i),
+    // Pozice v `day.meals` — adresa pro záměnu jídla
+    // (POST /api/plan-replace-meal). Musí vzniknout PŘED řazením v
+    // `mealyDne`, stejně jako activityKey — viz komentář u `poziceVPlanu`
+    // v src/types.ts.
+    poziceVPlanu: i,
+    ingredients: Array.isArray(m?.shopping_ingredient_lines)
+      ? m.shopping_ingredient_lines.map(String)
+      : (Array.isArray(recept.ingredients)
+          ? recept.ingredients.map((s: any) => String(s?.original || s?.name || ''))
+          : []),
+    recipe: naRecept(recept)
+  };
+}
+
 /** Jídla jednoho dne plánu — sdílené jádro `naJidla()` i `naJidlaTydne()`. */
 function mealyDne(struktura: any, den: any, planId: string | null): MealItem[] {
   if (!den || !Array.isArray(den.meals)) return [];
@@ -277,37 +337,7 @@ function mealyDne(struktura: any, den: any, planId: string | null): MealItem[] {
   return den.meals.map((m: any, i: number) => {
     const jeSvacina = String(m?.type).toLowerCase() === 'snack';
     const typ = typJidla(m?.type, jeSvacina ? svaciny++ : 0);
-    const recept = m?.recipe || {};
-    return {
-      // POZOR: `catalog_id` NENÍ napříč týdnem unikátní (recept smí patřit
-      // do jídelníčku 2× týdně, docs/DALSI_KROK.md 8.14) — jako klíč napříč
-      // dny (React key, cíl odškrtávání) proto slouží dvojice
-      // `planDay` + `activityKey` z `MealItem`, ne tohle `id`. Tohle `id`
-      // zůstává jedinečné jen v rámci jednoho dne.
-      id: String(m?.catalog_id ?? m?.recipe_id ?? `${den.date}-${i}`),
-      type: typ,
-      time: CAS_JIDLA[typ],
-      title: m?.display_name_cs || m?.name_cs || recept.title_cs || recept.title || 'Jídlo',
-      calories: cislo(m?.kcal),
-      protein: cislo(m?.protein_g),
-      carbs: cislo(m?.carbs_g),
-      fat: cislo(m?.fat_g),
-      completed: false,
-      planId,
-      planDay,
-      activityKey: mealActivityKey(m, i),
-      // Pozice v `day.meals` — adresa pro záměnu jídla
-      // (POST /api/plan-replace-meal). Musí vzniknout PŘED řazením níž,
-      // stejně jako activityKey — viz komentář u `poziceVPlanu`
-      // v src/types.ts.
-      poziceVPlanu: i,
-      ingredients: Array.isArray(m?.shopping_ingredient_lines)
-        ? m.shopping_ingredient_lines.map(String)
-        : (Array.isArray(recept.ingredients)
-            ? recept.ingredients.map((s: any) => String(s?.original || s?.name || ''))
-            : []),
-      recipe: naRecept(recept)
-    } as MealItem;
+    return jidloZPlanu(m, typ, i, den.date, planId, planDay);
   // Klíče aktivit vznikají PŘED řazením z původního indexu v plánu.
   // Pořadí zobrazení tak nikdy nezmění, které jídlo se odškrtává.
   }).sort((a: MealItem, b: MealItem) => poradiJidla(a.type) - poradiJidla(b.type));

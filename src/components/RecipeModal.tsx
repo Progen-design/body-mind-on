@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { X, Clock, CheckCircle2, Repeat } from 'lucide-react';
 import { motion } from 'motion/react';
 import { MealItem } from '../types';
+import { jidloZPlanu } from '../data/adaptery';
 import { apiFetch } from '../lib/api';
 
 interface RecipeModalProps {
@@ -10,13 +11,19 @@ interface RecipeModalProps {
   onClose: () => void;
   onToggleComplete?: (id: string) => void;
   /**
-   * Jídlo se změnilo na serveru (záměna) — přenačti plán. Na rozdíl od
-   * WorkoutSection dostává souřadnice právě zaměněného jídla: App.tsx si je
-   * uloží a po doběhnutí přenačtení sám dohledá čerstvé jídlo na týž pozici
-   * (src/data/adaptery.ts, najdiJidloPodleSouradnic) a přepíše jím
-   * `selectedRecipeMeal` — proto modal nezavíráme tady, viz handleZmenitJidlo.
+   * Jídlo se zaměnilo na serveru. `noveJidlo` je poskládané rovnou z odpovědi
+   * POST /api/plan-replace-meal (přes sdílený `jidloZPlanu`, stejný mapper
+   * jako `mealyDne`) — App.tsx ho má hned vykreslit, bez čekání na
+   * znovunačtení profilu. `souradnice` je pojistka pro to znovunačtení, které
+   * pak běží na pozadí: až doběhne, App.tsx si přes `najdiJidloPodleSouradnic`
+   * ověří/doplní čerstvá data ze skutečného zdroje pravdy (adaptér nad
+   * `structured_plan_json`), pro případ, že by se odpověď endpointu a plán
+   * v DB v něčem rozešly.
    */
-  onPlanZmenen: (souradnice: { planId: string; planDay: number; poziceVPlanu: number }) => void;
+  onPlanZmenen: (
+    noveJidlo: MealItem,
+    souradnice: { planId: string; planDay: number; poziceVPlanu: number }
+  ) => void;
 }
 
 export const RecipeModal: React.FC<RecipeModalProps> = ({
@@ -29,25 +36,18 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
   // ZÁMĚNA JÍDLA (POST /api/plan-replace-meal). Endpoint existoval od
   // začátku, ale UI na něj nevedlo — viz bývalý komentář níž u receptu.
   //
-  // MODAL SE PO ÚSPĚCHU NEZAVÍRÁ. Dřív se zavíral s odůvodněním, že zobrazené
-  // `meal` je po záměně zastaralé a nemá se jak samo přerenderovat — to byla
-  // pravda o tehdejším zapojení (RecipeModal neznal souřadnice mimo `meal`
-  // prop), ne důvod modal zavírat. `onPlanZmenen()` nevrací promise (jen
-  // bumpne počítadlo v useProfilData) — nedá se na čerstvá data počkat
-  // awaitem tady. Místo toho `meniSe` zůstává `true` (tlačítko drží „Hledám
-  // náhradu…", obsah je vizuálně neaktivní) až do chvíle, kdy App.tsx po
-  // doběhnutí přenačtení dosadí do `meal` prop čerstvé jídlo se stejnými
-  // souřadnicemi — efekt níž na tu změnu zareaguje a `meniSe` vypne. Když
-  // App.tsx žádné jídlo na těch souřadnicích nenajde (plán se mezitím
-  // přegeneroval), pošle `meal: null` a modal se zavře sám (`!meal` výš) —
-  // to je jediný případ, kdy se má zavřít.
+  // MODAL SE PO ÚSPĚCHU NEZAVÍRÁ A NEČEKÁ NA ZNOVUNAČTENÍ PROFILU. Nové jídlo
+  // se poskládá rovnou z odpovědi endpointu (`jidloZPlanu`) a vykreslí hned —
+  // endpoint od 15. 9. 2026 vrací jen zaměněné jídlo a jeho souřadnice, ne
+  // celý týden (dřív 111,7 kB, klient z toho stejně nic nečetl). Přenačtení
+  // profilu (`onPlanZmenen` → App.tsx) běží dál, ale na pozadí, jen jako
+  // pojistka pro najdiJidloPodleSouradnic — UI na něj nečeká.
   const [meniSe, setMeniSe] = useState(false);
   const [chybaZmeny, setChybaZmeny] = useState<string | null>(null);
 
   // Jakmile prop `meal` doopravdy dorazí jiný (nové jídlo po záměně, nebo
-  // uživatel otevřel jiné jídlo), „Hledám náhradu…" končí. Na chybu se tohle
-  // nevztahuje — ta meniSe vypíná sama v catch bloku, protože po chybě žádné
-  // nové `meal` nepřijde.
+  // uživatel otevřel jiné jídlo), „Hledám náhradu…" končí, kdyby ještě běželo.
+  // Na chybu se tohle nevztahuje — ta meniSe vypíná sama v catch bloku.
   useEffect(() => {
     setMeniSe(false);
   }, [meal]);
@@ -57,10 +57,11 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
   const handleZmenitJidlo = async () => {
     if (meal.planId == null || meal.planDay == null || meal.poziceVPlanu == null) return;
     const souradnice = { planId: meal.planId, planDay: meal.planDay, poziceVPlanu: meal.poziceVPlanu };
+    const puvodniTyp = meal.type;
     setMeniSe(true);
     setChybaZmeny(null);
     try {
-      await apiFetch('/api/plan-replace-meal', {
+      const odpoved = await apiFetch<{ meal: any }>('/api/plan-replace-meal', {
         method: 'POST',
         body: JSON.stringify({
           plan_id: souradnice.planId,
@@ -68,7 +69,27 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
           meal_index: souradnice.poziceVPlanu
         })
       });
-      onPlanZmenen(souradnice);
+      // `puvodniTyp` (ne dopočítaný): pozice ve dni se záměnou nemění, takže
+      // typ (a u svačiny i pořadí dopolední/odpolední) zůstává stejný jako
+      // u jídla, které se nahrazuje — viz komentář u jidloZPlanu.
+      const noveJidlo: MealItem = {
+        ...jidloZPlanu(
+          odpoved.meal,
+          puvodniTyp,
+          souradnice.poziceVPlanu,
+          meal.id,
+          souradnice.planId,
+          souradnice.planDay
+        ),
+        // jidloZPlanu vrací vždy completed:false (odškrtnutí je overlay, co
+        // dělá až volající — pouzijDokonceni v App.tsx, po znovunačtení).
+        // Dokud to znovunačtení na pozadí nedoběhne, přebírá se stav ze
+        // stejné pozice PŘED záměnou — activityKey se záměnou nemění, takže
+        // „splněno" dnešního slotu se nemá zapomenout jen proto, že se
+        // vykresluje dřív, než dorazí čerstvý přehled.
+        completed: meal.completed
+      };
+      onPlanZmenen(noveJidlo, souradnice);
     } catch (chyba: any) {
       // 409 NO_ALTERNATIVE / DAY_KCAL_OUT_OF_TOLERANCE nesou hotovou českou
       // hlášku — zobrazuje se přesně tak, jak přišla, nic se nepřepisuje.

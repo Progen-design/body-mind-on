@@ -24,6 +24,9 @@ import {
 // jaké má web ("599 Kč / měsíc") — bod 8.7 chce text doslova z webu.
 import { TRIAL_DAYS, START_VARIANT_PRICE_LABEL } from '@lib/pricing';
 import { ODKAZ_PODMINKY, ODKAZ_GDPR } from '@lib/pravniOdkazy.js';
+// Z konstant, ne z '@lib/souhlasy.js' — ten importuje supabaseServer a natáhl
+// by serverový modul do klientského bundlu. Viz lib/souhlasyKonstanty.js.
+import { DRUHY_SOUHLASU } from '@lib/souhlasyKonstanty.js';
 import { useKontrolaEmailu } from '../../hooks/useKontrolaEmailu';
 import { Krokovac, Pole, Vicenasobny, Vyber, Popisek, Chyba } from './prvky';
 import { AKTIVITA, CIL, CHYTRA_VAHA, DIETA, DNY, FREKVENCE, KROKY, POHLAVI, STRES, TYP_PRACE } from './volby';
@@ -201,7 +204,16 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // `selected_habits` se schválně neposílá — sadu založí server.
-        body: JSON.stringify(data)
+        //
+        // `souhlasy`: explicitní pole druhů (ze sdíleného DRUHY_SOUHLASU,
+        // ne holé `true`) — ze serveru je pak vidět, S ČÍM přesně člověk
+        // souhlasil, ne jen že něco odklikl. `souhlas` výš je jedno
+        // zaškrtnutí pro oba druhy najednou (viz komentář u stavu),
+        // takže se posílají oba, nebo žádný — nikdy podmnožina.
+        body: JSON.stringify({
+          ...data,
+          souhlasy: souhlas ? DRUHY_SOUHLASU : []
+        })
       });
 
       const text = await odpoved.text();

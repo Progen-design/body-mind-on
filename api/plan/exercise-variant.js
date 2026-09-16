@@ -125,13 +125,19 @@ export default async function handler(req, res) {
       to: result.new_title,
     });
 
+    // ODPOVĚĎ NESE JEN TO, CO KLIENT POUŽIJE.
+    //
+    // Do 16. 9. 2026 se tu vracel i `structured_plan_json` (celý týden) a
+    // `plan_html` (jeho HTML render) — naměřeno na produkci: odpověď
+    // 115,3 kB, ačkoli WorkoutSection.tsx čte z odpovědi jen `exercise`.
+    // Stejná bloat jako u plan-replace-meal.js před #232 (tam 111,7 kB ->
+    // 2,0 kB). Do DB se oba sloupce dál zapisují (update výš) — pryč jde
+    // jen to, co se posílá po drátě klientovi.
     return res.status(200).json({
       ok: true,
       exercise: result.exercise,
       previous_title: result.previous_title,
       new_title: result.new_title,
-      structured_plan_json: result.structuredPlan,
-      plan_html: result.planHtml,
     });
   } catch (err) {
     const code = String(err?.message || '').split(':')[0].trim();

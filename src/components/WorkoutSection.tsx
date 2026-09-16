@@ -65,15 +65,19 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
   const [zmenaOtevrena, setZmenaOtevrena] = useState(false);
 
   // ZÁMĚNA ZA LEHČÍ/TĚŽŠÍ VARIANTU (POST /api/plan/exercise-variant).
-  // Patch se drží lokálně podle "dayName#index", ne v globálním `workouts`
-  // stavu — appka ho stejně dostane napořadě při dalším načtení profilu,
-  // a tohle stačí na "přerenderuj den" ihned po kliknutí.
+  // Patch se drží lokálně podle "dayName#index", aby se den přerenesloval
+  // hned po kliknutí bez čekání na znovunačtení profilu — stejný vzor jako
+  // u záměny jídla (PR 232, RecipeModal). Endpoint ale mění plán i na
+  // serveru, takže se pod tím pořád volá `onPlanZmenen()` (níž): bez něj by
+  // globální `workouts` zůstal starý, a po remountu komponenty nebo
+  // přenačtení profilu odjinud by se lokální patch ztratil a UI by na
+  // chvíli ukázalo PŮVODNÍ cvik (PROMPT_PRO_CODE.md, bod A2).
   const [zamenaPodleKlice, setZamenaPodleKlice] = useState<Record<string, ExerciseItem>>({});
   const [nacitaSeVarianta, setNacitaSeVarianta] = useState<string | null>(null);
   const [chybaVariantyPodleKlice, setChybaVariantyPodleKlice] = useState<Record<string, string>>({});
 
   const handleZamenitVariantu = async (klic: string, ex: ExerciseItem, smer: 'lehci' | 'tezsi') => {
-    if (ex.planId == null || ex.planDay == null || !ex.canonicalKey) return;
+    if (ex.planId == null || ex.planDay == null || !ex.canonicalKey || ex.poziceVPlanu == null) return;
     setNacitaSeVarianta(klic);
     setChybaVariantyPodleKlice(prev => {
       const dalsi = { ...prev };
@@ -90,8 +94,15 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
           smer
         })
       });
-      const novy = cvikZPlanu(odpoved.exercise, 0, '', ex.planId ?? null, ex.planDay);
+      // Skutečná pozice cviku v dni, ne natvrdo 0 (PROMPT_PRO_CODE.md A1) —
+      // `ex.poziceVPlanu` je stejná adresa, kterou už spolehlivě používá
+      // `handleVymenitCvik` níž pro POST /api/plan-replace-workout-exercise.
+      // Natvrdo 0 posílalo odškrtnutí i výměnu cviku vždycky na cvik #0.
+      const novy = cvikZPlanu(odpoved.exercise, ex.poziceVPlanu, '', ex.planId ?? null, ex.planDay);
       setZamenaPodleKlice(prev => ({ ...prev, [klic]: novy }));
+      // DB má nový cvik uložený už teď (exercise-variant.js) — přenačtení
+      // pustit na pozadí jako pojistku, ne čekat na něj (vzor z PR 232).
+      onPlanZmenen();
     } catch (chyba: any) {
       setChybaVariantyPodleKlice(prev => ({
         ...prev,

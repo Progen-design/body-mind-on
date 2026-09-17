@@ -1,15 +1,22 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Scale, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { CHYBA_VAHY, overVahu } from '../../lib/vahaMeze.js';
+import { CHYBA_VAHY, MAX_VAHA_KG, MIN_VAHA_KG, overVahu } from '../../lib/vahaMeze.js';
 
 interface AddMeasurementModalProps {
   isOpen: boolean;
   onClose: () => void;
   /** Uloží váhu na server. Vrací true při úspěchu. */
   onSave: (vahaKg: number) => Promise<boolean>;
-  /** Poslední naměřená váha — jen jako nápověda v poli, nepředvyplňuje se. */
+  /** Poslední naměřená váha — předvyplní pole při každém otevření modálu
+   *  (naformátovaná s desetinnou čárkou); text je označený, ať se dá rovnou
+   *  přepsat. */
   latestWeight?: number | null;
+}
+
+/** "82.5" -> "82,5" — stejný zápis, jaký uživatel vidí v grafu vývoje. */
+function formatVahu(kg: number): string {
+  return String(kg).replace('.', ',');
 }
 
 /**
@@ -32,6 +39,16 @@ export const AddMeasurementModal: React.FC<AddMeasurementModalProps> = ({
   const [weight, setWeight] = useState('');
   const [chyba, setChyba] = useState<string | null>(null);
   const [uklada, setUklada] = useState(false);
+
+  // PŘEDVYPLNĚNÍ PŘI OTEVŘENÍ. Komponenta se při zavření nerozmontuje (`if
+  // (!isOpen) return null` níž), takže `useState('')` by prefill nastavil
+  // jen napoprvé. Efekt na `isOpen` ho zopakuje při každém dalším otevření —
+  // i po předchozím "Zrušit" nebo úspěšném uložení jiné hodnoty.
+  useEffect(() => {
+    if (!isOpen) return;
+    setWeight(latestWeight != null ? formatVahu(latestWeight) : '');
+    setChyba(null);
+  }, [isOpen, latestWeight]);
 
   if (!isOpen) return null;
 
@@ -105,6 +122,8 @@ export const AddMeasurementModal: React.FC<AddMeasurementModalProps> = ({
               id="vaha-kg"
               type="number"
               step="0.1"
+              min={MIN_VAHA_KG}
+              max={MAX_VAHA_KG}
               inputMode="decimal"
               autoFocus
               required
@@ -114,12 +133,21 @@ export const AddMeasurementModal: React.FC<AddMeasurementModalProps> = ({
                 setWeight(e.target.value);
                 if (chyba) setChyba(null);
               }}
-              placeholder={latestWeight ? `Naposledy ${String(latestWeight).replace('.', ',')}` : ''}
+              onFocus={(e) => e.target.select()}
               className={`w-full bg-slate-900/90 border focus:outline-none rounded-xl px-3 py-2.5 text-sm font-bold text-white shadow-inner disabled:opacity-60 ${
                 chyba ? 'border-red-500/60' : 'border-slate-700 focus:border-akcent-cyan'
               }`}
             />
-            {chyba && <p className="text-[11px] text-red-400 mt-1.5">{chyba}</p>}
+            {/* Rozsah je trvalá nápověda, ne až chyba po odeslání — uživatel
+                ho vidí, než vůbec něco pokazí. Při chybě ji nahradí konkrétní
+                hláška (nese totéž číslo, ale i důvod, proč se to nepovedlo). */}
+            {chyba ? (
+              <p className="text-[11px] text-red-400 mt-1.5">{chyba}</p>
+            ) : (
+              <p className="text-[11px] text-slate-500 mt-1.5">
+                Zadej váhu mezi {MIN_VAHA_KG} a {MAX_VAHA_KG} kg.
+              </p>
+            )}
           </div>
 
           <div className="pt-2 flex items-center justify-end gap-2.5">

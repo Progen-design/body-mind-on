@@ -34,13 +34,19 @@ function check(label, ok, detail = '') {
   else { failed += 1; console.error(`FAIL ${label}${detail ? ` — ${detail}` : ''}`); }
 }
 
-const planViewer = fs.readFileSync(path.join(ROOT, '_legacy-next/components/PlanViewer.js'), 'utf8');
 const exerciseMediaApi = fs.readFileSync(path.join(ROOT, 'api/exercise-media.js'), 'utf8');
 const confirmApi = fs.readFileSync(path.join(ROOT, 'api/workout/confirm-replacement.js'), 'utf8');
 const replaceLib = fs.readFileSync(path.join(ROOT, 'lib/workoutTodayReplace.js'), 'utf8');
+// PROMPT_UKLID.md (2026-09-17) — `_legacy-next/components/PlanViewer.js`
+// smazán v Bloku 1. Architektura se v `src/` posunula: klient (WorkoutSection.tsx)
+// už médium nefetchuje sám přes canonical_key (`fetchExerciseMediaFromApi`) —
+// `src/data/adaptery.ts` ho předává hotové jako `ukazkaUrl` (`gif_url` z API),
+// takže canonical-key-based identita a name-integrity guard žijí server-side,
+// tedy v `api/exercise-media.js`, `lib/workoutTodayReplace.js` a
+// `api/workout/confirm-replacement.js` — kontrolováno dole beze změny.
+const workoutSection = fs.readFileSync(path.join(ROOT, 'src/components/WorkoutSection.tsx'), 'utf8');
 
 console.log('--- canonical ID as primary identity ---');
-check('PlanViewer modal loads media by canonical_key', /canonicalKey/.test(planViewer) && /fetchExerciseMediaFromApi/.test(planViewer));
 check('exercise-media API accepts canonical_key', /canonical_key/.test(exerciseMediaApi));
 check('workout replace passes canonicalKey to resolveExercise', /canonicalKey/.test(replaceLib));
 check('confirm normalizes exercise display from canonical', /normalizeExerciseDisplayFromCanonical/.test(confirmApi));
@@ -97,8 +103,11 @@ check('wrong Dřepy pair detected', validateWorkoutExerciseIntegrity(dupWorkout)
 
 console.log('\n--- image / placeholder UX ---');
 check('placeholder copy defined', EXERCISE_MEDIA_PLACEHOLDER_CS.includes('není k dispozici'));
-check('PlanViewer shows placeholder when no media', planViewer.includes('EXERCISE_MEDIA_PLACEHOLDER_CS'));
-check('PlanViewer blocks media on name mismatch', /exerciseDisplayNameMatchesCanonical/.test(planViewer));
+// Živý ekvivalent (viz src/data/postupCviku.test.ts, opraveno v téže větvi
+// úklidu): cvik bez ukazkaUrl nesmí zůstat s prázdným místem po obrázku —
+// popisek i ikona musí odpovídat tomu, co se doopravdy otevře.
+check('WorkoutSection větví popisek/ikonu podle ukazkaUrl, ne natvrdo', /ex\.ukazkaUrl\s*\?/.test(workoutSection));
+check('WorkoutSection nekreslí prázdné místo bez ukazkaUrl ani postupu', /\(ex\.ukazkaUrl \|\| \(ex\.postup\?\.length/.test(workoutSection));
 
 console.log('\n--- workout replacement ID preservation ---');
 const previewWorkout = {

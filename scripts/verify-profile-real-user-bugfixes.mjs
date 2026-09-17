@@ -1,7 +1,17 @@
 #!/usr/bin/env node
 /**
- * Ověření P1 profile real-user bugfix pack.
+ * Ověření P1 profile real-user bugfix pack — živá lib/api vrstva.
  *   node scripts/verify-profile-real-user-bugfixes.mjs
+ *
+ * PROMPT_UKLID.md (2026-09-17) — původní skript mířil hlavně na
+ * `_legacy-next/pages/profil.js`, `.../PlanViewer.js` a
+ * `.../PreferencesOverlay.jsx` (smazané v Bloku 1): navigace, accordion
+ * stav, konkrétní JSX handler jména (performMealSwap, performOpenExercise…)
+ * a texty formuláře preferencí, které v `src/` nemají odpovídající
+ * ekvivalent (appka je záložková, ne accordion nad jedním PlanViewerem —
+ * ověřeno greppem, 0 zásahů). Zůstává, co mířilo na živé `api/`/`lib/`
+ * soubory. Přenosová (dýchání/tempo) data existují a testují se; jejich
+ * VYKRESLENÍ ve WorkoutSection.tsx neexistuje — pinováno jako GAP.
  */
 import fs from 'fs';
 import path from 'path';
@@ -15,67 +25,20 @@ function fail(msg) { console.log(`FAIL ${msg}`); failed += 1; }
 function ok(msg) { console.log(`OK ${msg}`); }
 function check(label, cond) { if (cond) ok(label); else fail(label); }
 
-const profil = fs.readFileSync(path.join(root, '_legacy-next/pages/profil.js'), 'utf8');
-const planViewer = fs.readFileSync(path.join(root, '_legacy-next/components/PlanViewer.js'), 'utf8');
-const prefs = fs.readFileSync(path.join(root, '_legacy-next/components/profile/PreferencesOverlay.jsx'), 'utf8');
 const planReplaceApi = fs.readFileSync(path.join(root, 'api/plan-replace-meal.js'), 'utf8');
 const planReplaceLib = fs.readFileSync(path.join(root, 'lib/planMealReplace.js'), 'utf8');
 const exerciseInstructions = fs.readFileSync(path.join(root, 'lib/exerciseInstructions.js'), 'utf8');
 const bodyBirth = fs.readFileSync(path.join(root, 'lib/bodyMetricsBirthDate.js'), 'utf8');
 const profileBodyApi = fs.readFileSync(path.join(root, 'api/profile-body-data.js'), 'utf8');
-const packageJson = fs.readFileSync(path.join(root, 'package.json'), 'utf8');
+const workoutSection = fs.readFileSync(path.join(root, 'src/components/WorkoutSection.tsx'), 'utf8');
 
-console.log('--- A: profile navigation ---');
-const navBlock = profil.match(/profile-quick-nav--plan-sections[\s\S]*?<\/nav>/)?.[0] || '';
-const navTargets = [
-  "getElementById('profile-today-heading')",
-  "getElementById('profile-today-meals')",
-  "getElementById('profile-today-workout')",
-  "getElementById('plan-nakupni-seznam')",
-  'openPreferencesWorkspace',
-];
-check('plan nav has distinct section targets', navTargets.every((t) => navBlock.includes(t)));
-check('no duplicate Můj plán + Tréninkový plán to same anchor', !(
-  profil.includes("Můj plán</button>") && profil.includes('Tréninkový plán</button>')
-  && profil.match(/Můj plán[\s\S]{0,120}getElementById\('muj-plan'\)/)
-  && profil.match(/Tréninkový plán[\s\S]{0,120}getElementById\('muj-plan'\)/)
-));
-check('todayFirstLayout hides legacy plan-nav', planViewer.includes('!todayFirstLayout') && planViewer.includes('plan-nav'));
-
-console.log('\n--- B: local meal replacement ---');
-check('PlanViewer uses plan-replace-meal API', planViewer.includes("'/api/plan-replace-meal'"));
-check('PlanViewer sends day_slot_index', planViewer.includes('day_slot_index'));
-check('today swap calls performMealSwap directly', planViewer.includes('performMealSwap'));
-check('today recipe calls performOpenRecipe directly', /onRecipeClick=\{[\s\S]*?performOpenRecipe\(di, mi\)/.test(planViewer));
-check('today pin calls performPinMealForNextWeek directly', /onPinClick=\{[\s\S]*?performPinMealForNextWeek\(di, mi\)/.test(planViewer));
-check('performOpenRecipe helper exists', planViewer.includes('const performOpenRecipe ='));
-check('performPinMealForNextWeek helper exists', planViewer.includes('const performPinMealForNextWeek ='));
-check('buildMealActionContext shared helper', planViewer.includes('const buildMealActionContext ='));
-const todayRecipeHandler = planViewer.match(/onRecipeClick=\{[\s\S]*?\}\s*onSwapClick=/)?.[0] || '';
-const todayPinHandler = planViewer.match(/onPinClick=\{[\s\S]*?\}\s*isMealPinned=/)?.[0] || '';
-check('today onRecipeClick does not use recipeOpenHandlersRef', !todayRecipeHandler.includes('recipeOpenHandlersRef'));
-check('today onPinClick does not use pinOpenHandlersRef', !todayPinHandler.includes('pinOpenHandlersRef'));
-check('today exercise calls performOpenExercise directly', /onExerciseClick=\{[\s\S]*?performOpenExercise\(di, xi/.test(planViewer));
-check('performOpenExercise helper exists', planViewer.includes('const performOpenExercise ='));
-check('buildExerciseActionContext shared helper', planViewer.includes('const buildExerciseActionContext ='));
-// `onScrollToMeals` zmizel se souhrnnými kartami (20. 8. 2026); handler
-// dnešního cviku končí u `onScrollToWeek`.
-const todayExerciseHandler = planViewer.match(/onExerciseClick=\{[\s\S]*?\}\s*onScrollToWeek=/)?.[0] || '';
-check('today onExerciseClick does not use exerciseOpenHandlersRef', !todayExerciseHandler.includes('exerciseOpenHandlersRef'));
-check('no exerciseOpenHandlersRef ref', !planViewer.includes('exerciseOpenHandlersRef'));
-check('weekly exercise button uses performOpenExercise', planViewer.includes('onClick={() => performOpenExercise(di, xi)}'));
-check('today exercise excludes rest entries', planViewer.includes('performOpenExercise(di, xi, { excludeRest: true })'));
+console.log('--- local meal replacement ---');
 check('replace API uses local replaceMealInStructuredPlan', planReplaceApi.includes('replaceMealInStructuredPlan'));
 check('replace API does not call Spoonacular/OpenAI', !planReplaceApi.match(/spoonacular|openai/i));
 check('planMealReplace uses day slot index', planReplaceLib.includes('daySlotIndex'));
 check('no rate-limit copy for NO_ALTERNATIVE', planReplaceApi.includes('Teď nemáme vhodnou náhradu'));
 
-console.log('\n--- C: include next week feedback ---');
-check('pin confirmation copy updated', planViewer.includes('Uloženo. Tohle jídlo budeme preferovat v dalších plánech.'));
-
-console.log('\n--- D: exercise breathing/tempo ---');
-check('exercise modal renders Dýchání', planViewer.includes('<strong>Dýchání:</strong>'));
-check('exercise modal renders Tempo', planViewer.includes('<strong>Tempo:</strong>'));
+console.log('\n--- exercise breathing/tempo data ---');
 for (const key of ['squat', 'lunges', 'pushup', 'plank', 'superman', 'glute_bridge', 'mountain_climber', 'plank_side', 'russian_twist']) {
   const block = exerciseInstructions.match(new RegExp(`${key}:\\s*\\{[\\s\\S]*?\\n\\s*\\},`));
   if (!block) { fail(`exercise guide missing ${key}`); continue; }
@@ -84,32 +47,12 @@ for (const key of ['squat', 'lunges', 'pushup', 'plank', 'superman', 'glute_brid
   if (!text.includes('tempo:')) fail(`${key} missing tempo`);
 }
 ok('core exercises have breathing + tempo data');
+check('GAP: WorkoutSection nevykresluje dýchání ani tempo (data existují, UI je nemá)', !/Dýchání|Tempo:/.test(workoutSection));
 
-console.log('\n--- E: single save CTA ---');
-const ulozitCount = (prefs.match(/Uložit změny/g) || []).length;
-const headerUlozit = prefs.includes("headerActions") && prefs.match(/headerActions[\s\S]*?Uložit/);
-check('PreferencesOverlay has Uložit změny CTA', prefs.includes('Uložit změny'));
-check('no duplicate header Uložit + footer Uložit změny', !headerUlozit && ulozitCount >= 1);
-
-console.log('\n--- F: body data edit ---');
+console.log('\n--- body data edit ---');
 check('body metrics birth date helper', bodyBirth.includes('calculateAgeFromBirthDate'));
 check('profile-body-data API exists', profileBodyApi.includes('birth_date'));
-check('preferences form has weight field', prefs.includes('weight_kg'));
-check('preferences form has height field', prefs.includes('height_cm'));
-check('preferences form has birth_date field', prefs.includes('birth_date'));
-check('age derived in overlay', prefs.includes('calculateAgeFromBirthDate'));
-check('birth date hint copy', prefs.includes('Věk dopočítáme automaticky podle data narození'));
 check('body save does not regen plan', profileBodyApi.includes('plan_regenerated: false'));
-
-console.log('\n--- G: single-open day accordion ---');
-check('accordion uses single Set slot', planViewer.includes('return new Set([di])'));
-check('today default expanded via effect', planViewer.includes('setExpandedDayCards(new Set(ti >= 0 ? [ti] : [0]))'));
-check('isDayExpanded only from expandedDayCards when todayFirst', planViewer.includes('expandedDayCards.has(di)'));
-
-console.log('\n--- H: mobile UX ---');
-check('first-action-banner hidden when plan exists', profil.includes('showReadyBanner && !currentPlan'));
-check('profil page constrains overflow on mobile', profil.includes('overflow-x') || profil.includes('max-width: 100%'));
-check('npm script verify:profile-real-user-bugfixes', packageJson.includes('"verify:profile-real-user-bugfixes"'));
 
 console.log(failed ? `\nRESULT: FAIL (${failed})` : '\nRESULT: PASS');
 process.exit(failed ? 1 : 0);

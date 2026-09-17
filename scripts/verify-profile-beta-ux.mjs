@@ -11,10 +11,6 @@ import { loadLocalEnv } from './audit-utils.mjs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import {
-  getHabitDisplayLabel,
-  HABIT_LABELS,
-} from '../lib/habitLabels.js';
-import {
   normalizeMuscleGroupSelection,
   MAX_SPECIFIC_MUSCLE_GROUPS,
 } from '../lib/muscleGroupLabels.js';
@@ -37,72 +33,35 @@ function read(rel) {
   return readFileSync(resolve(ROOT, rel), 'utf8');
 }
 
-const betaToday = read('_legacy-next/components/beta/BetaTodaySection.js');
-const habitTracker = read('_legacy-next/components/HabitTracker.js');
-const checkin = read('_legacy-next/components/beta/DailyCheckinPanel.js');
-const todayPanels = read('_legacy-next/components/profile/ProfileTodayPanels.js');
+// PROMPT_UKLID.md (2026-09-17) — velký úklid tohohle skriptu, ne jen
+// smazání _legacy-next řádků:
+//
+// 1) `lib/habitLabels.js` (HABIT_LABELS/getHabitDisplayLabel) má dnes v celém
+//    repu JEDINÉHO konzumenta — tenhle skript (ověřeno greppem). Živá appka
+//    štítky návyků bere z `lib/habits.js`'s POSITIVE_HABITS/NEGATIVE_HABITS,
+//    které mají JINÝ text (`training` → "Trénink", ne "Pohyb nebo trénink";
+//    `healthy_diet` → "Zdravá strava", ne "Vyvážené stravování"). Dvě různé
+//    mapování téhož, jedno mrtvé — kontroly přepsány na to živé.
+// 2) BetaTodaySection/DailyCheckinPanel/BetaFeedbackButton — celá "beta"
+//    sekce dnes v src/ neexistuje (ověřeno greppem), žádný živý ekvivalent.
+// 3) WorkoutChangeModal — potvrzeno na dvou místech (`ZmenitDnesniTrenink.tsx`
+//    vlastním komentářem i tady), že se tenhle modal NIKDY nepostavil. Živý
+//    modal je jednodušší (presety, ne SVG diagram s portálem/scroll-lockem/
+//    focus-trapem) a jeho wiring se ověřuje v
+//    verify-workout-muscle-selection.mjs a verify-workout-replacement-actions.mjs
+//    — tady by šlo jen o duplicitu nebo o kontrolu neexistujících detailů.
 const dailyActivation = read('api/daily-activation.js');
-const modal = read('_legacy-next/components/workout/WorkoutChangeModal.jsx');
-const setupLib = read('lib/workoutTrainingSetup.js');
+const habitsLib = read('lib/habits.js');
 const allowlist = read('lib/productEventAllowlist.js');
-const migration = read('supabase/migrations/20260713200000_workout_replacements.sql');
+// `20260713200000_workout_replacements.sql` neexistuje — historie migrací
+// byla squashnuta do baseline (stejný nález jako u verify-paid-membership-gate.mjs).
+const migration = read('supabase/migrations/20260714180000_baseline_schema.sql');
 
-check('habit label training', HABIT_LABELS.training === 'Pohyb nebo trénink');
-check('habit label healthy_diet', HABIT_LABELS.healthy_diet === 'Vyvážené stravování');
-check('habit label quality_sleep', HABIT_LABELS.quality_sleep === 'Kvalitní spánek');
-check('raw training not shown in BetaTodaySection', !betaToday.includes('<span>{hid}</span>'));
-check('habits removed from BetaTodaySection', !betaToday.includes('NÁVYKY') && !betaToday.includes("activity_type: 'habit'"));
+check('habit label training (živý zdroj lib/habits.js)', /training'[\s\S]{0,60}label:\s*'Trénink'/.test(habitsLib));
+check('habit label healthy_diet (živý zdroj lib/habits.js)', /healthy_diet'[\s\S]{0,60}label:\s*'Zdravá strava'/.test(habitsLib));
+check('habit label quality_sleep (živý zdroj lib/habits.js)', /quality_sleep'[\s\S]{0,60}label:\s*'Kvalitní spánek'/.test(habitsLib));
 check('daily-activation rejects habit writes', dailyActivation.includes("activityType === 'habit'") && dailyActivation.includes('habit_logs'));
-check('getHabitDisplayLabel used in HabitTracker', habitTracker.includes('getHabitDisplayLabel'));
-check('shared HabitUiProgressBar in HabitTracker', habitTracker.includes('HabitUiProgressBar'));
-check('czech labels in mapping', getHabitDisplayLabel('training') === 'Pohyb nebo trénink');
-check('fallback readable label', getHabitDisplayLabel('custom_habit') === 'Custom Habit');
-
-const feedbackCount = (betaToday.match(/<BetaFeedbackButton/g) || []).length
-  + (checkin.match(/<BetaFeedbackButton/g) || []).length;
-check('single feedback button in Dnes section', feedbackCount === 1);
-check('feedback below check-in', betaToday.indexOf('DailyCheckinPanel') < betaToday.indexOf('BetaFeedbackButton'));
-
-check('optimistic completions state', betaToday.includes('setOptimistic'));
-check('optimistic toggle apply', betaToday.includes('applyOptimisticToggle'));
-check('rollback error message', betaToday.includes('Změnu se nepodařilo uložit'));
-check('per-item pending spinner', betaToday.includes('pendingKeys') && betaToday.includes('HabitUiCheckboxRow'));
-check('success path updates without full reload', betaToday.includes('setCompletions((prev)') && betaToday.includes('setOptimistic(null)'));
-
-check('change workout button', todayPanels.includes('Změnit dnešní trénink'));
-check('restore original button', todayPanels.includes('Obnovit původní trénink'));
-check('workout modal wired', todayPanels.includes('WorkoutChangeModal'));
-check('hidden when workout completed', todayPanels.includes('!workoutCompleted'));
-
-check('muscle body map SVG', modal.includes('muscle-body-svg'));
-check('muscle chips', modal.includes('wcm-chip'));
-check('full_body chip', modal.includes('Celé tělo'));
-check('muscle selection rules lib', modal.includes('workoutMuscleGroupRules'));
-check('quick presets', modal.includes('Rychlý výběr'));
-check('clear selection button', modal.includes('Zrušit výběr'));
-check('location options', setupLib.includes('Venku') && modal.includes('LOCATION_OPTIONS'));
-check('equipment options separate', modal.includes('Jaké máš vybavení') && modal.includes('EQUIPMENT_OPTIONS'));
-check('duration options', modal.includes('DURATION_OPTS') && modal.includes('{m} minut'));
-check('intensity options', modal.includes('Střední'));
-check('preview step', modal.includes('Použít tento trénink'));
-check('regen limit UI', modal.includes('Zbývá') || modal.includes('zbývá'));
-
-check('modal portal to body', modal.includes('createPortal') && modal.includes('document.body'));
-check('fixed overlay viewport', modal.includes('position: fixed') && modal.includes('inset: 0'));
-check('modal not absolute in profile', !todayPanels.includes('wcm-overlay'));
-check('scroll lock preserves scrollY', modal.includes('scrollY') && modal.includes('window.scrollTo'));
-check('scroll lock captured on pointerdown', todayPanels.includes('onPointerDown') && todayPanels.includes('scrollLockYRef'));
-check('scroll lock captured on mousedown', todayPanels.includes('onMouseDown') && todayPanels.includes('captureScrollForModal'));
-check('body scroll lock fixed', modal.includes("body.style.position = 'fixed'"));
-check('focus trap Tab', modal.includes("event.key !== 'Tab'"));
-check('Escape closes modal', modal.includes("event.key === 'Escape'"));
-check('focus return ref', modal.includes('returnFocusRef') && todayPanels.includes('returnFocusRef'));
-check('desktop center max width', modal.includes('max-width: 760px') && modal.includes('align-items: center'));
-check('mobile bottom sheet', modal.includes('align-items: flex-end') && modal.includes('90dvh'));
-check('sticky CTA footer', modal.includes('wcm-actions') && modal.includes('safe-area-inset-bottom'));
-check('loading stays in modal', modal.includes('Připravujeme alternativní trénink') && modal.includes("setStep('preview')"));
-check('confirm without reload', !modal.includes('location.reload') && todayPanels.includes('onWorkoutPlanUpdated'));
-check('restore without reload', !todayPanels.includes('location.reload') && todayPanels.includes('handleRestoreOriginal'));
+check('streaky se u návyků nepočítají (viz naNavyky komentář)', !/streakDays\s*[:=]/.test(read('src/data/adaptery.ts')));
 
 const fullOnly = normalizeMuscleGroupSelection(['full_body', 'chest']);
 check('full_body clears others', fullOnly.ok && fullOnly.normalized.join() === 'full_body');
@@ -125,8 +84,8 @@ check('regeneration limit constant', MAX_REGENERATIONS_PER_DAY === 2);
 check('canRegenerateToday', canRegenerateToday(1) && !canRegenerateToday(2));
 
 check('workout events in allowlist', allowlist.includes('workout_change_opened'));
-check('migration RLS enabled', migration.includes('ENABLE ROW LEVEL SECURITY'));
-check('migration no public insert', !migration.includes('FOR INSERT TO public'));
+check('migration RLS enabled', migration.includes('ALTER TABLE "public"."workout_replacements" ENABLE ROW LEVEL SECURITY'));
+check('migration no public insert', !new RegExp('workout_replacements[\\s\\S]{0,300}FOR INSERT TO public').test(migration));
 check('replace-today API exists', read('api/workout/replace-today.js').includes('replace-today'));
 check('confirm API exists', read('api/workout/confirm-replacement.js').includes('confirm-replacement'));
 check('restore API exists', read('api/workout/restore-today.js').includes('restore-today'));

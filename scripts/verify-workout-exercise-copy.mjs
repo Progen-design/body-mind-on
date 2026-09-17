@@ -20,8 +20,6 @@ function read(rel) {
   return readFileSync(join(ROOT, rel), 'utf8');
 }
 
-const todayPanels = read('_legacy-next/components/profile/ProfileTodayPanels.js');
-const planViewer = read('_legacy-next/components/PlanViewer.js');
 const instructionsSrc = read('lib/exerciseInstructions.js');
 
 const lungeDisplay = formatExerciseSetsRepsDisplay({ sets: 5, reps: '10 per leg' });
@@ -40,8 +38,15 @@ check('výpady obsahují krok a střídání nohou', /krok|stříd/i.test(String
 check('dřepy obsahují sednutí/obě nohy', /sed|obě nohy/i.test(String(squatGuide?.how || '')), squatGuide?.how || '');
 
 check('exercise modal texty pro dřepy a výpady nejsou identické', /squat:/.test(instructionsSrc) && /lunges:/.test(instructionsSrc));
-check('ProfileTodayPanels používá jednotný formatter', /formatExerciseSetsRepsDisplay/.test(todayPanels));
-check('PlanViewer používá jednotný formatter', /formatExerciseSetsRepsDisplay/.test(planViewer));
+// PROMPT_UKLID.md (2026-09-17) — `_legacy-next/components/profile/ProfileTodayPanels.js`
+// a `_legacy-next/components/PlanViewer.js` smazány v Bloku 1. Ověřeno
+// greppem: `formatExerciseSetsRepsDisplay` (lib/planDataIntegrity.js) nemá
+// dnes žádného konzumenta v src/ — funkce zůstává a testuje se výš (řádky
+// 27–32), ale živá appka série/opakování formátuje jinudy, přes
+// `serieOpakovaniSlovy` (lib/profile/treninkPopis.js), které "na každou
+// nohu" nepřekládá, jen předá text tak, jak přijde z dat cviku. Kontrola
+// "jednotný formatter napříč komponentami" tak nemá co ověřit — smazána,
+// ne vymyšlena.
 
 if (failed > 0) {
   console.error(`\n${failed} CHECK(S) FAILED`);

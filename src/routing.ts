@@ -20,6 +20,23 @@ export function jePlatnaCesta(cesta: string): boolean {
   return (PLATNE_CESTY as readonly string[]).includes(cesta);
 }
 
+/**
+ * `?redirect=` z URL smí vést jen na vlastní cestu, nikdy ven — jinak je to
+ * otevřený redirect (přihlásíš se a `naviguj()` tě přes `kam.startsWith('http')`
+ * pošle na cizí doménu). Kontroluje se ZDE, na hranici čtení parametru, ne
+ * v `naviguj()` — ten smí navigovat na `http(s)` i jinde (např. platba),
+ * jen ne na hodnotu, kterou útočník vloží do odkazu na přihlášení.
+ *
+ * `//cizi-domena.cz` je „relativní k protokolu“ a prohlížeč ho vezme jako
+ * cizí origin stejně jako `http://…` — samotné `startsWith('/')` by ho
+ * pustilo, proto se kontroluje zvlášť.
+ */
+export function bezpecnyRedirect(hodnota: string | null | undefined, vychozi: string = CESTA_PROFIL): string {
+  if (!hodnota) return vychozi;
+  if (!hodnota.startsWith('/') || hodnota.startsWith('//')) return vychozi;
+  return hodnota;
+}
+
 export function naviguj(kam: string) {
   if (kam.startsWith('http')) {
     window.location.href = kam;

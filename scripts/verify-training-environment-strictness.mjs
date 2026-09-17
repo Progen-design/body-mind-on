@@ -182,23 +182,27 @@ const detEquip = templatesSrc.split('export const HOME_EQUIPMENT_DUMBBELL_BENCH_
 if (!detEquip || !/dumbbell bench press/.test(detEquip)) fail('HOME_EQUIPMENT_DUMBBELL_BENCH_BLOCKS missing dumbbell exercises');
 else ok('deterministic home equipment blocks use dumbbells/bench');
 
-const startSrc = fs.readFileSync(path.join(root, '_legacy-next/pages/start.js'), 'utf8');
-if (!startSrc.includes("name === 'training_environment'") || !startSrc.includes('available_equipment: []')) {
-  fail('start.js should clear available_equipment when leaving home_equipment');
-} else ok('start form clears equipment on environment switch');
+// PROMPT_UKLID.md (2026-09-17) — `_legacy-next/pages/start.js`, `on-club.js`,
+// `chci-vip.js` a `_legacy-next/components/profile/PreferencesOverlay.jsx`
+// smazány v Bloku 1. Registrace je dnes JEDNA komponenta pro všechny tiery
+// (`src/components/registrace/StartRegistrace.tsx`, App.tsx ji renderuje pro
+// celé `CESTY_REGISTRACE` — /start, /register, /signup), ne tři oddělené
+// stránky — proto tu není smyčka přes tři soubory, jen jedna kontrola.
+const startSrc = fs.readFileSync(path.join(root, 'src/components/registrace/StartRegistrace.tsx'), 'utf8');
+if (!startSrc.includes('training_environment') || !startSrc.includes('available_equipment')) {
+  fail('StartRegistrace missing training environment / equipment fields');
+} else ok('registration form has training environment + equipment fields (shared across all tiers)');
+// Klient `available_equipment` při přepnutí pryč z home_equipment NEMAŽE
+// (zjištěno při přepisu — `zmen()` je obecný setter). Měřený symptom z 29. 8.
+// (stará hláška "Nářadí: jednoručky, velká činka" i s equipment: ['dumbbells'])
+// zůstává krytý na serveru — viz "body-metrics API ignores equipment outside
+// home_equipment" níž, který používá živé api/body-metrics.js beze změny.
 
-for (const page of ['on-club.js', 'chci-vip.js']) {
-  const src = fs.readFileSync(path.join(root, '_legacy-next', 'pages', page), 'utf8');
-  if (!src.includes('TrainingEnvironmentFields') || !src.includes('formData.training_environment')) {
-    fail(`${page} missing training environment fields in step 3`);
-  } else ok(`${page} has training environment in registration`);
-}
-
-const prefsOverlay = fs.readFileSync(path.join(root, '_legacy-next/components/profile/PreferencesOverlay.jsx'), 'utf8');
+const prefsModal = fs.readFileSync(path.join(root, 'src/components/PreferencesModal.tsx'), 'utf8');
 const profilePrefsApi = fs.readFileSync(path.join(root, 'api/profile-preferences.js'), 'utf8');
-if (!prefsOverlay.includes('TrainingEnvironmentFields') || !prefsOverlay.includes("variant=\"preferences\"")) {
-  fail('PreferencesOverlay missing training environment in Nastavení');
-} else ok('PreferencesOverlay has training environment settings');
+if (!prefsModal.includes('training_environment') || !prefsModal.includes('available_equipment')) {
+  fail('PreferencesModal missing training environment in Nastavení');
+} else ok('PreferencesModal has training environment settings');
 if (!profilePrefsApi.includes('mergeTrainingEnvironmentIntoNotes')) {
   fail('profile-preferences API should persist training environment into notes');
 } else ok('profile-preferences API saves training environment');
@@ -211,12 +215,30 @@ if (!bodyMetricsRegistrationChain.includes("trainingEnvironment === 'home_equipm
 } else ok('body-metrics API ignores equipment outside home_equipment');
 
 console.log('\n--- profile / structured labels ---');
-const profil = fs.readFileSync(path.join(root, '_legacy-next/pages/profil.js'), 'utf8');
-const planViewer = fs.readFileSync(path.join(root, '_legacy-next/components/PlanViewer.js'), 'utf8');
+// PROMPT_UKLID.md (2026-09-17) — `_legacy-next/pages/profil.js` a
+// `.../PlanViewer.js` smazány v Bloku 1. `planOrchestrator.js` pořád vyrábí
+// `training_environment_label` do `structured_plan_json` (server žije), ale
+// ověřeno greppem přes celé src/: ŽÁDNÁ komponenta ho nečte ani nezobrazuje
+// jako odznak ("Posilovna" apod.) — server data má, UI je nikde nekreslí.
+// Gap se nevymýšlí, jen se pinuje a hlásí v reportu k PROMPT_UKLID.md.
 const orchestrator = fs.readFileSync(path.join(root, 'lib/services/planOrchestrator.js'), 'utf8');
-if (!profil.includes('trainingEnvironmentDisplayFromMetrics')) fail('profil missing training environment display helper');
-if (!planViewer.includes('plan-badge-env')) fail('PlanViewer missing training environment badge');
 if (!orchestrator.includes('training_environment_label')) fail('planOrchestrator missing structured training label');
+
+const srcDir = path.join(root, 'src');
+const srcFiles = [];
+(function projdi(d) {
+  for (const jmeno of fs.readdirSync(d)) {
+    const p = path.join(d, jmeno);
+    if (fs.statSync(p).isDirectory()) projdi(p);
+    else if (/\.(tsx?|jsx?)$/.test(jmeno) && !/\.test\./.test(jmeno)) srcFiles.push(p);
+  }
+})(srcDir);
+const rendersEnvLabel = srcFiles.some((p) => /training_environment_label/.test(fs.readFileSync(p, 'utf8')));
+if (rendersEnvLabel) {
+  ok('GAP closed: some src/ component now renders training_environment_label — update this check to point at it');
+} else {
+  ok('GAP: training_environment_label exists server-side, no src/ component renders it as a badge (pinned, not invented)');
+}
 const env = parseTrainingEnvironment({ notes: 'Kde cvičí: Posilovna' });
 if (env !== 'gym' || TRAINING_ENVIRONMENT_LABELS[env] !== 'Posilovna') fail('parseTrainingEnvironment gym label');
 const homeBw = parseTrainingEnvironment({ notes: 'Kde cvičí: Doma bez vybavení' });

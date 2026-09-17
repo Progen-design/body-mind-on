@@ -75,26 +75,20 @@ const planCta = getPlanEmailCtaUrl();
 check('getPlanEmailCtaUrl obsahuje login?redirect=/profil', /\/login\?redirect=.*profil/i.test(planCta), planCta);
 check('getDefaultLoginUrl === login redirect profil', getDefaultLoginUrl() === getLoginRedirectToProfileUrl());
 
-const loginJs = read('_legacy-next/pages/login.js');
-check('login default redirect /profil', loginJs.includes(": '/profil'"));
-check('login plan access headline', loginJs.includes('Přihlas se a otevři svůj plán'));
-check('login plan access text', loginJs.includes('Tvůj plán už je připravený'));
-
-const profilJs = read('_legacy-next/pages/profil.js');
-check('profil auth redirect s query', profilJs.includes("router.replace('/login?redirect=/profil')"));
-
-const startJs = read('_legacy-next/pages/start.js');
-check('start session guard → profil', startJs.includes("router.replace('/profil')") && startJs.includes('getSession'));
-check('start login hint', startJs.includes('Přihlas se a otevři svůj plán'));
-check('start login link redirect', startJs.includes('/login?redirect=/profil'));
-
-const registerJs = read('_legacy-next/pages/register.js');
-check('register session guard → profil', registerJs.includes("router.replace('/profil')"));
-check('register bez plan → login', registerJs.includes("router.replace('/login?redirect=/profil')"));
-
-const middlewareJs = read('middleware.js');
-check('middleware / → login redirect', middlewareJs.includes("new URL('/login?redirect=/profil'"));
-check('middleware / nevede na /start', !middlewareJs.includes("new URL('/start'"));
+// PROMPT_UKLID.md (2026-09-17) — `_legacy-next/pages/{login,profil,start,
+// register}.js` smazány v Bloku 1; `middleware.js` (Next.js) už vůbec
+// neexistuje — nahradilo ho `middleware.ts` (Vercel Routing Middleware), ale
+// to řeší JINOU věc (marketing vs. app host), ne login-redirect.
+//
+// Architektura auth guardu se v SPA úplně proměnila: stránkové
+// `router.replace('/login?redirect=/profil')` na více místech nahradilo
+// jedno klientské větvení v `src/App.tsx` — `if (!isAuthenticated)` (řádek
+// 943) vyrenderuje login inline, žádný druhý URL redirect pro už přihlášené
+// neexistuje (viz i komentář v lib/__tests__/planEmailCta.test.mjs).
+// Bezpečné `?redirect=` už hlídá `bezpecnyRedirect()` — otestováno zvlášť
+// v src/routing.test.ts a lib/__tests__/planEmailCta.test.mjs, tady by šlo
+// jen o duplicitu nebo o kontrolu textů/souborů, co v SPA nemají obdobu.
+check('bezpecnyRedirect a auth guard mají vlastní pokrytí jinde (routing.test.ts, planEmailCta.test.mjs)', true);
 
 if (failed > 0) process.exit(1);
 console.log('ALL CHECKS PASS');

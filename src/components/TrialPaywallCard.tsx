@@ -23,8 +23,7 @@ function formatDatum(iso: string | null): string | null {
 /**
  * Zamčený další týden — jídelníček je hotový a vidět, ale za předplatné.
  *
- * Slučuje `PlanLockedPaywall` + `TrialExpiredPaywall` z `_legacy-next/components/`:
- * náš datový model (`zamceny_plan.zamceno`) na rozdíl od Next.js verze
+ * Jedna karta pro obě příčiny zámku: náš datový model (`zamceny_plan.zamceno`)
  * nerozlišuje „čeká na platbu" vs. „trial vypršel" — obojí znamená totéž,
  * plán existuje a je zamčený.
  */

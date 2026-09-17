@@ -1,7 +1,4 @@
 #!/usr/bin/env node
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import {
   calculateCaloriesFromMacros,
   getMacroCalorieDelta,
@@ -14,9 +11,6 @@ import {
 import { buildSimpleStartMealSkeleton } from '../lib/services/simpleMealPlannerAgent.js';
 import { resolveSimpleStartLocalSlot } from '../lib/startSimpleMealFilter.js';
 import { planMealTypeToWeightKey, slotTargetKcal } from '../lib/nutrition/portionScaling.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.join(__dirname, '..');
 
 let failed = 0;
 function fail(msg) { console.log(`FAIL ${msg}`); failed += 1; }
@@ -71,9 +65,11 @@ const gateFail = passesMacroKcalGate(1200, 42, 112, 35);
 if (gateFail) fail('1200 vs 931 must fail gate');
 else ok('passesMacroKcalGate rejects bad row');
 
-const macroChart = fs.readFileSync(path.join(root, '_legacy-next/components/MacroRatioChart.js'), 'utf8');
-if (!macroChart.includes('getMacroCalorieDelta')) fail('MacroRatioChart missing delta integration');
-else ok('MacroRatioChart shows macro/kcal status');
+// PROMPT_UKLID.md (2026-09-17) — `_legacy-next/components/MacroRatioChart.js`
+// smazán v Bloku 1. Živý ekvivalent (graf poměru maker s kcal/delta stavem)
+// v `src/` neexistuje — ověřeno greppem přes `getMacroCalorieDelta` a
+// `macroKcalConsistency` (0 zásahů mimo testy). Kontrola dole je jádro
+// pravidla a zůstává v plném rozsahu.
 
 console.log('\n--- START meals no ERROR delta ---');
 const skeleton = buildSimpleStartMealSkeleton({

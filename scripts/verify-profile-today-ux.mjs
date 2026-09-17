@@ -1,7 +1,16 @@
 #!/usr/bin/env node
 /**
- * Statická kontrola today-first UX profilu.
- *   node scripts/verify-profile-today-ux.mjs
+ * Statická kontrola: recipe modal má suroviny a postup.
+ *
+ * PROMPT_UKLID.md (2026-09-17) — zbytek tohohle skriptu mířil na
+ * `_legacy-next/pages/profil.js` a tři komponenty pod
+ * `_legacy-next/components/profile/*` — celý "today-first accordion" layout
+ * (kompaktní dnešek + rozbalitelný týden v jednom PlanViewer), který živá
+ * appka nemá: `src/` je záložková navigace (NavigationTabs.tsx), ne
+ * accordion nad jedním velkým plánem. Žádný živý ekvivalent pro accordion-
+ * specifické kontroly (todayFirstLayout, plan-day-today-compact, weeklyPlanOpen
+ * atd.) neexistuje. Jediná kontrola, co mířila na živý soubor
+ * (lib/mealRecipeDisplay.js), zůstává.
  */
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
@@ -21,93 +30,7 @@ function read(relPath) {
   return readFileSync(resolve(process.cwd(), relPath), 'utf8');
 }
 
-const profil = read('_legacy-next/pages/profil.js');
-const planViewer = read('_legacy-next/components/PlanViewer.js');
-const todayPanels = read('_legacy-next/components/profile/ProfileTodayPanels.js');
-const dayMealsPanel = read('_legacy-next/components/profile/ProfileDayMealsPanel.js');
-const packageJson = read('package.json');
-
-check('profil importuje ProfileTodayPanels přes PlanViewer', planViewer.includes("import ProfileTodayPanels from './profile/ProfileTodayPanels'"));
-check('PlanViewer má prop todayFirstLayout', planViewer.includes('todayFirstLayout'));
-check('profil předává todayFirstLayout', profil.includes('todayFirstLayout'));
-check('profil předává program do PlanViewer', profil.includes('program={program}'));
-check('profil předává trainingEnvironmentLabel', profil.includes('trainingEnvironmentLabelFromMetrics'));
-
-check('sekce „Dnešní plán“', todayPanels.includes('Dnešní plán'));
-check('lead text dnešního plánu', todayPanels.includes('Tvůj dnešní plán je připravený.'));
-check('sekce „Dnešní jídla“', todayPanels.includes('Dnešní jídla'));
-check('sekce „Dnešní trénink“', todayPanels.includes('Dnešní trénink'));
-check('dnešní jídla renderuje sdílený ProfileDayMealsPanel', todayPanels.includes('ProfileDayMealsPanel'));
-check('CTA Recept u dnešních jídel', dayMealsPanel.includes('profile-today-recipe-btn') && dayMealsPanel.includes('Recept'));
-check('CTA Nahradit jiným u dnešních jídel', dayMealsPanel.includes('Nahradit jiným'));
-check('CTA Zahrnout od dalšího týdne u dnešních jídel', dayMealsPanel.includes('Zahrnout od dalšího týdne'));
-check('CTA Jak cvik provést', todayPanels.includes('Jak cvik provést'));
-check('typ prostředí v tréninku', todayPanels.includes('profile-today-env-badge') || todayPanels.includes('profile-today-workout-env'));
-check('meal completion checkbox', dayMealsPanel.includes('showMealCompletion') && dayMealsPanel.includes('Splněno'));
-check('workout fallback checkbox', todayPanels.includes('Dokončil/a jsem dnešní trénink'));
-check('workout auto from watch', todayPanels.includes('Trénink splněn (Apple Watch)'));
-check('daily activation hook', todayPanels.includes('useDailyActivation'));
-check('auto daily adherence status', todayPanels.includes('DailyAdherenceStatus') && !todayPanels.includes('Jak se ti dnes plán dařil'));
-check('daily adherence component', read('_legacy-next/components/profile/DailyAdherenceStatus.js').includes('Dnešek:'));
-check('progress bar dne', todayPanels.includes('HabitUiProgressBar'));
-check('habit tracker restored in profil', profil.includes("import HabitTracker") && profil.includes('denni-navyky'));
-check('MacroRatioChart v dnešních jídlech', dayMealsPanel.includes('MacroRatioChart'));
-check('MacroRatioChart v PlanViewer u jídel', planViewer.includes('MacroRatioChart'));
-check('denní makro graf v today hero', todayPanels.includes('Jídlo dnes') && todayPanels.includes('MacroRatioChart'));
-
-check('týdenní accordion Celý týdenní plán', planViewer.includes('Celý týdenní plán'));
-check('odkaz Celý týdenní jídelníček', todayPanels.includes('Celý týdenní jídelníček'));
-check('tlačítko Rozbalit týden', planViewer.includes('Rozbalit týden'));
-check('týdenní plán lze sbalit', planViewer.includes('weeklyPlanOpen'));
-
-// Dnešní den se v týdenním přehledu nesmí duplikovat jako plné jídelní karty
-check(
-  'dnešní den v týdnu jen kompaktní stav',
-  /todayFirstLayout && day\.isToday \? \(/.test(planViewer) && planViewer.includes('plan-day-today-compact')
-);
-check('kompaktní stav odkazuje na Dnešní plán', planViewer.includes('Dnešní detail máš nahoře v sekci'));
-check('kompaktní stav má CTA zpět nahoru', planViewer.includes('Přejít na Dnešní plán') && planViewer.includes("getElementById('profile-today-heading')"));
-
-const mujPlanIdx = profil.indexOf('id="muj-plan"');
-const programVariantsIdx = profil.indexOf('<ProgramVariantsSection');
-const programContinuationIdx = profil.indexOf('<ProgramContinuationPanel');
-const continuationUpsellIdx = profil.indexOf('<ProfileContinuationUpsell');
-const bubblesEndIdx = profil.indexOf('{/* konec profile-bubbles */}');
-check('profil neobsahuje ProgramVariantsSection', programVariantsIdx < 0);
-check('profil neobsahuje ProgramContinuationPanel', programContinuationIdx < 0);
-check('profil neobsahuje ProfileContinuationUpsell', continuationUpsellIdx < 0);
-check('profil bez sales textu "Vyber si další krok"', !todayPanels.includes('Vyber si další krok'));
-check('profil bez sales CTA "Pokračovat ve STARTU"', !todayPanels.includes('Pokračovat ve STARTU'));
-
-const todayHeadingIdx = planViewer.indexOf('ProfileTodayPanels');
-const jidelnicekIdx = planViewer.indexOf('id="plan-jidelnicek"');
-check('today panely před týdenním jídelníčkem', todayHeadingIdx >= 0 && jidelnicekIdx > todayHeadingIdx);
-
-check('recept modal má tělo s obsahem', planViewer.includes('plan-recipe-modal-body'));
-check('recept modal má tlačítko Zavřít', planViewer.includes('aria-label="Zavřít"'));
 check('mealRecipeDisplay má suroviny a postup', read('lib/mealRecipeDisplay.js').includes('ingredients_cs') && read('lib/mealRecipeDisplay.js').includes('instructions_cs'));
 
-check('cvik modal Jak na to', planViewer.includes('Jak na to:'));
-check('cvik modal Na co si dát pozor', planViewer.includes('Na co si dát pozor:'));
-check('cvik modal Lehčí varianta', planViewer.includes('Lehčí varianta:'));
-const exerciseModalStart = planViewer.indexOf('{exerciseHintModal && typeof document');
-const exerciseModalChunk = exerciseModalStart >= 0 ? planViewer.slice(exerciseModalStart, exerciseModalStart + 6000) : '';
-check(
-  'cvik modal obsahuje sérii i instrukční blok',
-  exerciseModalChunk.includes('Série / opakování')
-    && exerciseModalChunk.includes('renderExerciseInstructionBlock')
-);
-
-check('CTA Nahradit jiným v týdenním plánu', planViewer.includes('Nahradit jiným'));
-check('CTA Zahrnout od dalšího týdne v týdenním plánu', planViewer.includes('Zahrnout od dalšího týdne'));
-
-const badFixedWidths = (todayPanels.match(/width:\s*(\d{4,})px/g) || [])
-  .filter((w) => !w.includes('100'));
-check('mobilní today CSS bez extrémních fixed width', badFixedWidths.length === 0, badFixedWidths.join(', ') || 'none');
-check('today root overflow-x hidden', todayPanels.includes('overflow-x: hidden'));
-check('modaly používají min(…, calc(100vw', planViewer.includes('calc(100vw - 24px)'));
-
-check('npm script verify:profile-today-ux', packageJson.includes('"verify:profile-today-ux"'));
-
-console.log(failed ? `\n${failed} CHECK(S) FAILED` : '\nALL CHECKS PASS');
-process.exit(failed ? 1 : 0);
+if (failed > 0) process.exit(1);
+console.log('ALL CHECKS PASS');

@@ -46,7 +46,19 @@ function read(rel) {
   return readFileSync(join(ROOT, rel), 'utf8');
 }
 
-const modal = read('_legacy-next/components/workout/WorkoutChangeModal.jsx');
+// PROMPT_UKLID.md (2026-09-17) — `_legacy-next/components/workout/WorkoutChangeModal.jsx`
+// smazán v Bloku 1. Nebyla to jen mrtvá cesta kódu — živá `src/components/
+// ZmenitDnesniTrenink.tsx` má ve vlastním komentáři: "Pravidla výběru partií
+// (lib/workoutMuscleGroupRules.js) mají v hlavičce napsáno 'modal změny
+// tréninku' — ten modal se ale nikdy nepostavil... Tohle je on." Ten modal byl
+// SVG diagram těla s klikacím highlightingem partií (isBodyZoneHighlighted,
+// getSvgZonesForMuscle, getRecommendedBodyView). Živá appka jede jednodušší
+// cestou — presety tlačítek, žádný SVG diagram — záměrně, ne regresí.
+// Kontroly níž, které testovaly SVG-diagram wiring, jsou přepsané na to, co
+// `ZmenitDnesniTrenink.tsx` doopravdy dělá; čistá pravidla výběru partií
+// (lib/workoutMuscleGroupRules.js funkce) zůstávají beze změny — jsou to
+// exportované funkce, platí bez ohledu na to, jestli je UI dnes všechny volá.
+const modal = read('src/components/ZmenitDnesniTrenink.tsx');
 const api = read('api/workout/replace-today.js');
 const generator = read('lib/workoutTodayReplace.js');
 
@@ -73,8 +85,8 @@ check('11 core back view guidance', getMuscleVisibilityGuidance(['core'], 'back'
 check('12 back front view guidance', getMuscleVisibilityGuidance(['back'], 'front')?.suggestedView === 'back');
 
 // Location / equipment separation
-check('13 no equipment not in location', !modal.includes('no_equipment') && !modal.includes('LOCATION_OPTS'));
-check('14 separate location and equipment state', modal.includes('trainingLocation') && modal.includes('equipmentLevel'));
+check('13 location and equipment are separate option lists, not one merged set', modal.includes('LOCATION_OPTIONS') && modal.includes('EQUIPMENT_OPTIONS') && !modal.includes('no_equipment'));
+check('14 separate location and equipment state', /const \[misto, setMisto\]/.test(modal) && /const \[vybaveni, setVybaveni\]/.test(modal));
 check('15 gym defaults full_gym', DEFAULT_EQUIPMENT_BY_LOCATION.gym === 'full_gym');
 check('16 home defaults basic', DEFAULT_EQUIPMENT_BY_LOCATION.home === 'basic');
 check('17 outdoor defaults bodyweight', DEFAULT_EQUIPMENT_BY_LOCATION.outdoor === 'bodyweight');
@@ -90,11 +102,12 @@ check('19 server rejects unknown location', !normalizeTrainingSetupInput({ train
   || normalizeTrainingSetupInput({ training_location: 'moon', equipment_level: 'basic' }).error);
 check('20 server rejects unknown equipment', !normalizeTrainingSetupInput({ training_location: 'gym', equipment_level: 'spaceship' }).ok);
 check('21 legacy location payload compatible', normalizeTrainingSetupInput({ location: 'no_equipment' }).equipment_level === 'bodyweight');
-check('22 modal no horizontal scroll risk', modal.includes('overflow-y: auto') && modal.includes('max-width: 100%'));
+check('22 modal no horizontal scroll risk', modal.includes('overflow-y-auto') && modal.includes('w-full'));
 
-check('modal uses getRecommendedBodyView', modal.includes('getRecommendedBodyView'));
-check('modal visibility guidance UI', modal.includes('getMuscleVisibilityGuidance') && modal.includes('wcm-view-guidance'));
-check('modal body zone highlight', modal.includes('isBodyZoneHighlighted'));
+// SVG diagram (getRecommendedBodyView, getMuscleVisibilityGuidance,
+// isBodyZoneHighlighted) patřilo k modalu, který se nikdy nepostavil — viz
+// komentář výš. ZmenitDnesniTrenink.tsx jede přes presety, ne SVG highlighting,
+// takže tahle trojice kontrol nemá co ověřovat a byla smazána, ne vymyšlena.
 check('api training_location payload', api.includes('training_location') && api.includes('equipment_level'));
 check('setup lib imported in api', api.includes('normalizeTrainingSetupInput'));
 
@@ -149,9 +162,10 @@ check('60 min allows full legs', validateMuscleSelection({
   durationMinutes: 60,
 }).valid);
 
-// 15–16 UI wiring
-check('disabled chips aria-disabled', modal.includes('aria-disabled') && modal.includes('.wcm-chip.disabled'));
-check('SVG and chips share isMuscleHighlighted', modal.includes('isMuscleHighlighted') && modal.includes('validateMuscleSelection'));
+// 15–16 UI wiring — presety jsou tlačítka s aria-pressed (toggle), ne
+// klikací SVG zóny s aria-disabled; validateMuscleSelection se volá
+// server-side (viz "20–22 server" níž), ne v UI přímo.
+check('preset/location/equipment buttons use aria-pressed for toggle state', (modal.match(/aria-pressed=/g) || []).length >= 3);
 
 // 17–19 presets
 const legsPreset = RECOMMENDED_PRESETS.find((p) => p.id === 'legs');
@@ -173,9 +187,10 @@ check('server ignores spoofed client category', generator.includes('clientCatego
 // 23 balanced full body generator
 check('full_body balanced generator', generator.includes('pickBalancedFullBody'));
 
-// 24 static cleanup hint
-check('modal reset selection button', modal.includes('Zrušit výběr') && modal.includes('clearSelection'));
-check('modal quick presets', modal.includes('Rychlý výběr') && modal.includes('RECOMMENDED_PRESETS'));
+// 24 presety — žádné samostatné tlačítko "Zrušit výběr": je to single-select
+// přes RECOMMENDED_PRESETS (klik na jiný preset = výběr, ne přidej/odeber
+// jednotlivou partii), takže mazací tlačítko nemá co dělat.
+check('presets rendered from shared RECOMMENDED_PRESETS, not a local copy', modal.includes('RECOMMENDED_PRESETS.filter') || modal.includes('RECOMMENDED_PRESETS.find'));
 
 // API integration (optional if server up)
 async function testApiRejection() {

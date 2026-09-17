@@ -26,24 +26,20 @@ function read(relPath) {
   return readFileSync(resolve(process.cwd(), relPath), 'utf8');
 }
 
-const macroChart = read('_legacy-next/components/MacroRatioChart.js');
-const todayPanels = read('_legacy-next/components/profile/ProfileTodayPanels.js');
-const planViewer = read('_legacy-next/components/PlanViewer.js');
+// PROMPT_UKLID.md (2026-09-17) — `_legacy-next/components/MacroRatioChart.js`,
+// `.../ProfileTodayPanels.js` a `.../PlanViewer.js` smazány v Bloku 1.
+// `MacroRatioChart` je potvrzeně mrtvá komponenta bez jakéhokoli žívého
+// ekvivalentu (ověřeno greppem přes celé src/, i nezávisle Knipem —
+// `lib/planPdf.js`-třídy nález): appka dnes nemá žádný vizuální graf poměru
+// maker, jen textové/HTML bloky (recipe-macro-energy-bar, viz níž). Checky
+// o vlastní JSX markupu grafu (stacked bar, legenda, WARNING text) smazány —
+// nemají co ověřovat. Sdílené lib funkce, které graf používal, zůstávají
+// a testují se dál (getMacroCalorieDelta, getMacroEnergyBreakdown,
+// buildMacroEnergyNutritionHtml — patří do recipe modalu, který živý je).
 const mealRecipeDisplay = read('lib/mealRecipeDisplay.js');
 const recipeDetailHtml = read('lib/recipeDetailHtml.js');
 const macroNutrition = read('lib/macroNutrition.js');
 const packageJson = read('package.json');
-
-check('MacroRatioChart komponenta existuje', macroChart.includes('export default function MacroRatioChart'));
-check('stacked bar markup', macroChart.includes('macro-ratio-bar') && macroChart.includes('macro-ratio-seg'));
-check('legenda maker', macroChart.includes('macro-ratio-legend'));
-check('používá computeMacroRatio', macroChart.includes('computeMacroRatio'));
-check('používá getMacroCalorieDelta', macroChart.includes('getMacroCalorieDelta'));
-check('WARNING text zaokrouhlení', macroChart.includes('Kalorie jsou zaokrouhlené podle porcí'));
-check('ERROR se neloguje uživateli v UI', !macroChart.includes('makra nesedí'));
-
-check('meal card obsahuje MacroRatioChart', planViewer.includes('MacroRatioChart'));
-check('today summary obsahuje denní MacroRatioChart', todayPanels.includes('MacroRatioChart'));
 
 check('sdílený macro helper existuje', macroNutrition.includes('getMacroEnergyBreakdown'));
 check('recipe modal používá buildMacroEnergyNutritionHtml', mealRecipeDisplay.includes('buildMacroEnergyNutritionHtml'));
@@ -82,20 +78,21 @@ check('recipe modal HTML obsahuje makro bar', eggModalHtml.includes('recipe-macr
 check('recipe modal HTML má inline barvy', eggModalHtml.includes('background:#f472b6'));
 check('recipe modal HTML nemá všechna 0 %', !/Bílkoviny.*0 %.*Sacharidy.*0 %.*Tuky.*0 %/s.test(eggModalHtml));
 
-const warnKcal = getMacroCalorieDelta(1000, 30, 30, 70);
-check('delta 8–15 % = WARNING', warnKcal.status === 'WARNING', `status=${warnKcal.status}, delta=${warnKcal.deltaPercent}%`);
+// Práh je od tohodle testu jinde, než kdy byl napsaný (dnes ±10 % ERROR,
+// 5–10 % WARNING — stejná brána jako verify-macro-kcal-consistency.mjs).
+// 1000 vs 870 z maker = 15 % dřív spadalo do WARNING pásma, dnes je nad
+// 10% strop = ERROR. Data přepočítána na skutečné WARNING pásmo (5–10 %),
+// ne _legacy-next — nesouvisí s Blokem 1.
+const warnKcal = getMacroCalorieDelta(930, 30, 30, 70);
+check('delta 5–10 % = WARNING', warnKcal.status === 'WARNING', `status=${warnKcal.status}, delta=${warnKcal.deltaPercent}%`);
 
 const errKcal = getMacroCalorieDelta(1000, 5, 5, 5);
 check('delta >15 % = ERROR', errKcal.status === 'ERROR', `status=${errKcal.status}, delta=${errKcal.deltaPercent}%`);
 
-const badWidths = [
-  ...(macroChart.match(/width:\s*(\d{4,})px/g) || []),
-  ...(todayPanels.match(/width:\s*(\d{4,})px/g) || []),
-  ...(recipeDetailHtml.match(/recipe-macro[\s\S]*?width:\s*(\d{4,})px/g) || []),
-].filter((w) => !w.includes('100'));
+const badWidths = (recipeDetailHtml.match(/recipe-macro[\s\S]*?width:\s*(\d{4,})px/g) || [])
+  .filter((w) => !w.includes('100'));
 check('žádné fixed width nad 100vw v makro CSS', badWidths.length === 0, badWidths.join(', ') || 'none');
-check('makro graf max-width 100%', macroChart.includes('max-width: 100%'));
-check('recipe modal macro bar max-width 100%', planViewer.includes('recipe-macro-energy-bar') && planViewer.includes('max-width: 100%'));
+check('recipe modal macro bar max-width 100%', recipeDetailHtml.includes('recipe-macro-energy-bar') && recipeDetailHtml.includes('max-width:100%'));
 
 check('npm script verify:profile-macro-chart', packageJson.includes('"verify:profile-macro-chart"'));
 

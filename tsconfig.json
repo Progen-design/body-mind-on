@@ -29,7 +29,6 @@
   "exclude": [
     "node_modules",
     "dist",
-    "_legacy-next",
     "tools",
     "**/*.test.ts",
     "**/*.test.tsx"

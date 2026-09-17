@@ -1,23 +1,30 @@
 #!/usr/bin/env node
 /**
- * Ověření footer legal odkazů (Obchodní podmínky, GDPR).
+ * Ověření odkazů na právní texty (Obchodní podmínky, GDPR).
+ *
+ * PROMPT_UKLID.md (2026-09-17) — přepsáno z `_legacy-next/components/Footer.js`
+ * (mrtvá Next.js komponenta, appka footer se stránkami /obchodni-podminky a
+ * /gdpr už nemá) na živý zdroj pravdy `lib/pravniOdkazy.js`. Architektura se
+ * změnila, ne jen soubor: podmínky a GDPR dnes žijí na veřejném webu
+ * (bodyandmindon.cz), appka je SPA a interní /obchodni-podminky by vracelo
+ * jen prázdnou skořápku nebo 404 — viz komentář přímo v pravniOdkazy.js.
+ * Odkazy v appce (src/components/UcetASpravaSection.tsx) na ně jen míří.
  *
  * Statické kontroly (vždy):
- *   - Footer odkazuje na app-local /obchodni-podminky a /gdpr
- *   - stránky pages/obchodni-podminky.js a pages/gdpr.js existují
+ *   - lib/pravniOdkazy.js má absolutní URL na bodyandmindon.cz (ne SPA cestu)
+ *   - UcetASpravaSection.tsx oba odkazy používá a otevírá v novém okně
  *
- * Runtime kontroly (jen s --runtime, po deployi):
- *   - BASE_URL/obchodni-podminky a BASE_URL/gdpr vrací HTTP 200
+ * Runtime kontroly (jen s --runtime):
+ *   - marketing web skutečně vrací HTTP 200 na obou URL
  *
  * Spuštění:
  *   npm run verify:footer-legal-links
- *   BASE_URL=https://app.bodyandmindon.cz node scripts/verify-footer-legal-links.mjs --runtime
+ *   node scripts/verify-footer-legal-links.mjs --runtime
  */
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
 
 const ROOT = process.cwd();
-const BASE_URL = (process.env.BASE_URL || 'https://app.bodyandmindon.cz').replace(/\/$/, '');
 const RUNTIME = process.argv.includes('--runtime');
 
 let failed = 0;
@@ -31,27 +38,24 @@ function check(label, ok, detail = '') {
   console.error(`FAIL ${label}${detail ? ` — ${detail}` : ''}`);
 }
 
-console.log('--- Static footer legal link checks ---');
-const footer = readFileSync(join(ROOT, '_legacy-next', 'components', 'Footer.js'), 'utf8');
+console.log('--- Static legal link checks ---');
+const odkazy = readFileSync(join(ROOT, 'lib', 'pravniOdkazy.js'), 'utf8');
+const ucet = readFileSync(join(ROOT, 'src', 'components', 'UcetASpravaSection.tsx'), 'utf8');
 
-check('footer odkazuje na /obchodni-podminky', /href="\/obchodni-podminky"/.test(footer));
-check('footer odkazuje na /gdpr', /href="\/gdpr"/.test(footer));
-check('footer bez odkazu na main-site obchodni-podminky', !/bodyandmindon\.cz\/obchodni-podminky|\$\{main\}\/obchodni-podminky/.test(footer));
-check('footer bez odkazu na main-site gdpr', !/bodyandmindon\.cz\/gdpr|\$\{main\}\/gdpr/.test(footer));
-check('footer má kontakt mailto', /mailto:info@bodyandmindon\.cz/.test(footer));
+check('ODKAZ_PODMINKY míří na veřejný web, ne na SPA cestu', /ODKAZ_PODMINKY\s*=\s*`?\$\{WEB\}\/obchodni-podminky/.test(odkazy) || /ODKAZ_PODMINKY\s*=\s*.https:\/\/bodyandmindon\.cz\/obchodni-podminky/.test(odkazy));
+check('ODKAZ_GDPR míří na veřejný web, ne na SPA cestu', /ODKAZ_GDPR\s*=\s*`?\$\{WEB\}\/gdpr/.test(odkazy) || /ODKAZ_GDPR\s*=\s*.https:\/\/bodyandmindon\.cz\/gdpr/.test(odkazy));
 
-check('stránka pages/obchodni-podminky.js existuje', existsSync(join(ROOT, '_legacy-next', 'pages', 'obchodni-podminky.js')));
-check('stránka pages/gdpr.js existuje', existsSync(join(ROOT, '_legacy-next', 'pages', 'gdpr.js')));
+check('appka odkazy nepočítá znovu, bere je z lib/pravniOdkazy.js', ucet.includes("from '@lib/pravniOdkazy.js'"));
+check('odkaz na podmínky se otevírá v novém okně', /href=\{ODKAZ_PODMINKY\}[^>]*target="_blank"/.test(ucet));
+check('odkaz na GDPR se otevírá v novém okně', /href=\{ODKAZ_GDPR\}[^>]*target="_blank"/.test(ucet));
 
-const podminkyPage = readFileSync(join(ROOT, '_legacy-next', 'pages', 'obchodni-podminky.js'), 'utf8');
-const gdprPage = readFileSync(join(ROOT, '_legacy-next', 'pages', 'gdpr.js'), 'utf8');
-check('obchodni-podminky má český obsah', /Obchodní podmínky/.test(podminkyPage));
-check('gdpr má český obsah', /osobních údajů/.test(gdprPage));
+const WEB_URL_MATCH = odkazy.match(/const WEB = '([^']+)'/);
+const WEB_URL = WEB_URL_MATCH ? WEB_URL_MATCH[1] : 'https://bodyandmindon.cz';
 
 if (RUNTIME) {
   console.log('--- Runtime legal link checks ---');
   for (const path of ['/obchodni-podminky', '/gdpr']) {
-    const url = `${BASE_URL}${path}`;
+    const url = `${WEB_URL}${path}`;
     try {
       const res = await fetch(url, { redirect: 'manual' });
       check(`${url} vrací 200`, res.status === 200, `HTTP ${res.status}`);
@@ -60,7 +64,7 @@ if (RUNTIME) {
     }
   }
 } else {
-  console.log('(runtime kontroly přeskočeny — spusť s --runtime po deployi)');
+  console.log('(runtime kontroly přeskočeny — spusť s --runtime)');
 }
 
 console.log(failed ? `\n${failed} CHECK(S) FAILED` : '\nALL CHECKS PASS');

@@ -16,11 +16,16 @@ function fail(msg) { console.log(`FAIL ${msg}`); failed += 1; }
 function ok(msg) { console.log(`OK ${msg}`); }
 
 console.log('--- workout replacement wiring ---');
-const planViewer = fs.readFileSync(path.join(root, '_legacy-next/components/PlanViewer.js'), 'utf8');
+// PROMPT_UKLID.md (2026-09-17) — `_legacy-next/components/PlanViewer.js`
+// smazán v Bloku 1. Živý ekvivalent je `src/components/WorkoutSection.tsx`'s
+// `handleVymenitCvik` — má ve vlastním komentáři přesně tenhle nález:
+// "Endpoint byl hotový od začátku, ale nevedlo na něj tlačítko: v src/ na něj
+// nebyl jediný odkaz, takže funkce existovala jen na serveru." Dnes už vede.
+const workoutSection = fs.readFileSync(path.join(root, 'src/components/WorkoutSection.tsx'), 'utf8');
 const api = fs.readFileSync(path.join(root, 'api/plan-replace-workout-exercise.js'), 'utf8');
-if (!planViewer.includes("'/api/plan-replace-workout-exercise'")) fail('PlanViewer missing plan-replace-workout-exercise API call');
-if (!planViewer.includes('performExerciseSwap')) fail('PlanViewer missing performExerciseSwap');
-if (!planViewer.includes('Nahradit jiným')) fail('PlanViewer missing Nahradit jiným for exercises');
+if (!workoutSection.includes("'/api/plan-replace-workout-exercise'")) fail('WorkoutSection missing plan-replace-workout-exercise API call');
+if (!workoutSection.includes('handleVymenitCvik')) fail('WorkoutSection missing handleVymenitCvik handler');
+if (!workoutSection.includes('Cvičit něco jiného')) fail('WorkoutSection missing replace-exercise button label');
 if (!api.includes('replaceWorkoutExerciseInStructuredPlan')) fail('API missing replaceWorkoutExerciseInStructuredPlan');
 if (!api.includes('structured_plan_json')) fail('API missing DB persistence');
 else ok('replace button + API + DB persistence wired');

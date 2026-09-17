@@ -29,6 +29,16 @@ interface PropojenaZarizeniSectionProps {
   onOpenWithingsSettings?: () => void;
   onSyncAll: () => void;
   isSyncing?: boolean;
+  /**
+   * `profilData.show_withings_section` z `/api/profile` (lib/withingsProfileVisibility.js).
+   * Withings je volitelný modul, defaultně skrytý — dlaždici nabízíme jen
+   * tomu, kdo o ni projevil zájem (registrace, preference, nebo už je
+   * připojený). PROMPT_UKLID.md (2026-09-17) Blok 4 fix #2: `api/profile.js`
+   * tuhle hodnotu počítal od začátku, `src/` ji jen nikdy nečetlo — dlaždice
+   * se ukazovala úplně všem. Apple Health dlaždice tím není dotčená, nemá
+   * ekvivalentní opt-in kontrakt.
+   */
+  zobrazitWithings: boolean;
 }
 
 /**
@@ -45,7 +55,8 @@ export const PropojenaZarizeniSection: React.FC<PropojenaZarizeniSectionProps> =
   withingsPosledniStazeni = null,
   onOpenWithingsSettings,
   onSyncAll,
-  isSyncing = false
+  isSyncing = false,
+  zobrazitWithings
 }) => {
   // ODSTUP SE POČÍTÁ, INTERVAL SE NETVRDÍ.
   //
@@ -100,10 +111,11 @@ export const PropojenaZarizeniSection: React.FC<PropojenaZarizeniSectionProps> =
       {/* DVĚ ZAŘÍZENÍ, NE TŘI.
           Do 23. 8. 2026 tu byla jako třetí dlaždice karta „AI trenér TED".
           TED není zařízení a nic nesynchronizuje. */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+      <div className={`grid grid-cols-1 gap-3.5 ${zobrazitWithings ? 'md:grid-cols-2' : ''}`}>
         {/* STAV ZAŘÍZENÍ SE ODVOZUJE Z DAT, KTERÁ OPRAVDU DORAZILA.
             Do 23. 8. 2026 tu svítilo „Připojeno" u obou zařízení natvrdo —
             každému uživateli, i tomu, který nikdy nic nepřipojil. */}
+        {zobrazitWithings && (
         <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
@@ -148,6 +160,7 @@ export const PropojenaZarizeniSection: React.FC<PropojenaZarizeniSectionProps> =
             </button>
           )}
         </div>
+        )}
 
         {/* APPLE HEALTH — DATA POSÍLÁ TELEFON, SERVER SI JE NEVYŽÁDÁ.
             Apple neumožňuje číst HealthKit ze serveru, takže tenhle kanál

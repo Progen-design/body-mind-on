@@ -100,26 +100,28 @@ async function ensureLocalServer() {
 }
 
 console.log('--- Static Withings section checks ---');
-const withingsSection = read('_legacy-next/components/profile/WithingsBodyDevelopmentSection.js');
-const withingsCard = read('_legacy-next/components/profile/WithingsProfileCard.js');
+// PROMPT_UKLID.md (2026-09-17) Blok 2 — `_legacy-next/components/profile/
+// WithingsBodyDevelopmentSection.js` a `.../WithingsProfileCard.js` smazány
+// v Bloku 1. GAP z Bloku 2 (gating funkce chyběla v src/) uzavřen v Bloku 4
+// fixu #2: `api/profile.js` počítal `show_withings_section` (přes
+// `shouldShowWithingsSection()`) od začátku, teď ho `App.tsx` čte a posílá
+// do `PropojenaZarizeniSection` jako `zobrazitWithings` — dlaždice Withings
+// (i tlačítko na záložce Regenerace) se kreslí, jen když je `true`.
+const appTsxSrc = read('src/App.tsx');
+const propojenaZarizeni = read('src/components/PropojenaZarizeniSection.tsx');
 const latestApi = read('api/withings/latest.js');
 const packageJson = read('package.json');
 
-check('WithingsProfileCard re-export', withingsCard.includes('WithingsBodyDevelopmentSection'));
-check('section hidden without visibility', withingsSection.includes('if (!sectionVisible) return null'));
-check('shouldShowWithingsSection gating', withingsSection.includes('shouldShowWithingsSection'));
-check('shouldShowWithingsConnectUi gating', withingsSection.includes('shouldShowWithingsConnectUi'));
-check('inline section class', withingsSection.includes('withings-body-dev'));
-check('Tělesný vývoj heading', withingsSection.includes('Tělesný vývoj'));
-check('Připojit Withings CTA', withingsSection.includes('Připojit Withings'));
-check('unified gradient on CTA', withingsSection.includes('#0EA5E9 0%, #A78BFA 100%'));
-check('CTA min-height 44px', withingsSection.includes('min-height: 44px'));
-check('no technical OAuth text in JSX', !withingsSection.includes('klientské údaje') && !withingsSection.includes('OAuth není nakonfigurován'));
+check('App.tsx čte show_withings_section z /api/profile', appTsxSrc.includes('profilData?.show_withings_section'));
+check('App.tsx posílá gate do PropojenaZarizeniSection jako zobrazitWithings', /zobrazitWithings=\{profilData\?\.show_withings_section/.test(appTsxSrc));
+check('Withings tlačítko na záložce Regenerace je za gatem, ne pro všechny', /show_withings_section === true &&[\s\S]{0,450}Připojit Withings/.test(appTsxSrc));
+check('PropojenaZarizeniSection kreslí Withings dlaždici jen když zobrazitWithings', /\{zobrazitWithings && \(/.test(propojenaZarizeni) && propojenaZarizeni.includes('Withings Body Scan'));
+check('Apple Health dlaždice není za withings gatem (nemá vlastní opt-in kontrakt)', !/zobrazitWithings[\s\S]{0,400}Apple Health/.test(propojenaZarizeni));
 check('latest API exposes configured', latestApi.includes('isWithingsOAuthConfigured') && latestApi.includes('configured'));
 check('npm script verify:withings-widget-ux', packageJson.includes('"verify:withings-widget-ux"'));
 
-const mobileBlock = withingsSection.split('@media (max-width: 640px)')[1] || '';
-check('mobile CSS bez fixed width >100vw', !mobileBlock.match(/width:\s*(4[3-9]\d|[5-9]\d{2}|\d{4,})px/));
+// Živá komponenta je Tailwind (md: breakpointy), ne vlastní `@media` blok —
+// tahle kontrola mířila na CSS techniku, kterou src/ vůbec nepoužívá.
 
 async function ensureWithingsOptIn(supabase) {
   const { data: listed } = await supabase.auth.admin.listUsers({ page: 1, perPage: 200 });

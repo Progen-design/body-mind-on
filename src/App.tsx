@@ -33,7 +33,7 @@ import { LoginScreen } from './components/LoginScreen';
 // Kontexty, perzistence a synchronizace
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { StartRegistrace } from './components/registrace/StartRegistrace';
-import { CESTY_REGISTRACE, jePlatnaCesta, naviguj, useCesta } from './routing';
+import { CESTY_REGISTRACE, bezpecnyRedirect, jePlatnaCesta, naviguj, useCesta } from './routing';
 import { StrankaNeexistuje } from './components/StrankaNeexistuje';
 import { useProfilData } from './hooks/useProfilData';
 import { useZdravotniData } from './hooks/useZdravotniData';
@@ -943,7 +943,7 @@ function AppContent() {
   if (!isAuthenticated) {
     return (
       <LoginScreen
-        redirectTo={parametry.get('redirect') || '/profil'}
+        redirectTo={bezpecnyRedirect(parametry.get('redirect'))}
         predvyplnenyEmail={parametry.get('email') || ''}
         poRegistraci={parametry.get('registered') === '1'}
         onPrejitNaRegistraci={() => naviguj('/start')}
@@ -1140,6 +1140,7 @@ function AppContent() {
               onOpenWithingsSettings={() => setIsWithingsModalOpen(true)}
               onSyncAll={handleManualWithingsSync}
               isSyncing={isSyncing}
+              zobrazitWithings={profilData?.show_withings_section === true}
             />
 
             {/* ÚČET A PŘEDPLATNÉ ÚPLNĚ NAKONEC (9. 9. 2026).
@@ -1225,17 +1226,25 @@ function AppContent() {
             <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
               {zdravi.pripojeno
                 ? 'Zařízení je připojené, ale ještě nedorazilo první měření.'
-                : 'Regeneraci, tep a spánek bereme z hodinek přes Apple Health a z chytré váhy Withings. Propoj aspoň jedno a uvidíš tu svoje čísla.'}
+                : profilData?.show_withings_section === true
+                  ? 'Regeneraci, tep a spánek bereme z hodinek přes Apple Health a z chytré váhy Withings. Propoj aspoň jedno a uvidíš tu svoje čísla.'
+                  : 'Regeneraci, tep a spánek bereme z hodinek přes Apple Health. Propoj je a uvidíš tu svoje čísla.'}
             </p>
             {!zdravi.pripojeno && (
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setIsWithingsModalOpen(true)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-akcent-cyan bg-cyan-950/60 border border-cyan-500/40 hover:bg-cyan-900/60 transition-all active:scale-[0.99]"
-                >
-                  Připojit Withings
-                </button>
+                {/* Withings je volitelný modul, defaultně skrytý (lib/
+                    withingsProfileVisibility.js, PROMPT_UKLID.md 2026-09-17
+                    Blok 4 fix #2) — kdo o něj neprojevil zájem, tlačítko
+                    tu nenabízíme. */}
+                {profilData?.show_withings_section === true && (
+                  <button
+                    type="button"
+                    onClick={() => setIsWithingsModalOpen(true)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-akcent-cyan bg-cyan-950/60 border border-cyan-500/40 hover:bg-cyan-900/60 transition-all active:scale-[0.99]"
+                  >
+                    Připojit Withings
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setActiveTab('vaha')}

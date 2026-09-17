@@ -72,6 +72,14 @@ export interface ProfilOdpoved {
    * odznak „Online" natvrdo v JSX a svítil i účtu bez jediného zařízení.
    */
   has_withings_connection?: boolean;
+  /**
+   * `shouldShowWithingsSection()` z `lib/withingsProfileVisibility.js`,
+   * spočítané serverem. Withings je volitelný modul, defaultně skrytý —
+   * `api/profile.js` tohle počítal od začátku (PROMPT_UKLID.md 2026-09-17
+   * Blok 4 fix #2), `src/` to jen nikdy nečetlo, takže se dlaždice ukazovala
+   * úplně všem bez ohledu na zájem.
+   */
+  show_withings_section?: boolean;
 }
 
 /** Radek `ai_messages` (agent_slug = 'coach'), jak ho vraci /api/profile. */

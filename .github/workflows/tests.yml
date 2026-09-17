@@ -22,3 +22,19 @@ jobs:
       - run: npm run test:src
       # ESLint driv kontroloval jediny soubor (lib/mail.js).
       - run: npm run lint:ci
+      # PROMPT_UKLID.md (2026-09-17) Blok 3 — stejne kroky jako npm run check,
+      # aby se CI a lokalni gate nerozeply znovu.
+      - run: npm run lint:copy
+      # Knip hlasi (25 nepouzitych souboru + stovky exportu, predchazejici
+      # dluh mimo rozsah tohohle uklidu) ale neblokuje — --no-exit-code.
+      # Ostry, blokujici pruchod je `npm run lint:dead` bez flagu, rucne.
+      - run: npm run lint:dead -- --no-exit-code
+      # Skupina A z docs/BRANY_KVALITY.md — bez site/service_role/prohlizece,
+      # dnes zelene; nova polozka pribyva jen po zapisu do te tabulky.
+      - run: npm run verify:ci-gates
+      # BUILD A TYPECHECK ZPATKY (17. 9. 2026). Blok 3 sjednotil `check` s CI,
+      # ale pri tom z `check` vypadl `npm run build`, ktery tam predtim byl,
+      # a typecheck v CI nikdy nebezel. Chyba v typech nebo v buildu by tak
+      # prosla az na Vercel — tedy po mergi do main, kde uz je pozde.
+      - run: npm run typecheck
+      - run: npm run build

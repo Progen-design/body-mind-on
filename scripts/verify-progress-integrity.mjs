@@ -2,10 +2,22 @@
 /**
  * Ověření integrity modulu Progres – žádné modelované váhy ani kcal→tuk.
  * npm run verify:progress-integrity
+ *
+ * PROMPT_UKLID.md (2026-09-17) — GAP, větší než detail. Celá "Progress"
+ * analytická sekce (`_legacy-next/components/profile/ProfileProgressSection.js`:
+ * váhový graf s trendem, souhrn aktivity po obdobích, cílová linka) nemá
+ * v `src/` ŽÁDNÝ ekvivalent — ověřeno greppem přes `computeActivitySummary`,
+ * `getPeriodBounds`, `buildMeasuredWeightChart`, `normalizeMeasurementPoints`
+ * (0 zásahů mimo tenhle skript a jeho testy). Živý `src/components/
+ * WeightChart.tsx` jede úplně jinou, jednodušší cestou (`WeightRecord` typ
+ * přímo z `adaptery.ts`), NE přes `lib/progressIntegrity.js` — a nezávisle
+ * ověřeno, že si znovu nezavedl to, kvůli čemu `progressIntegrity.js`
+ * vznikl (žádné "kg tuku", žádný BodyFigure/silhouette, žádný
+ * KCAL_PER_KG_BODY_FAT). Bezpečnostní vlastnost tedy drží, i když
+ * přes jiný, netestovaný kód. `lib/progressIntegrity.js` samo zůstává
+ * a testuje se dál — je to čistá funkce, platí bez ohledu na to, jestli ji
+ * dnes něco volá. Pinováno jako GAP, ne vymyšleno.
  */
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import {
   normalizeMeasurementPoints,
   buildMeasuredWeightChart,
@@ -14,6 +26,9 @@ import {
   validateMeasurementInput,
   getPeriodBounds,
 } from '../lib/progressIntegrity.js';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 let failed = 0;
@@ -27,21 +42,19 @@ function read(rel) {
   return readFileSync(join(ROOT, rel), 'utf8');
 }
 
-const profil = read('_legacy-next/pages/profil.js');
-const progressSection = read('_legacy-next/components/profile/ProfileProgressSection.js');
-const progressModel = read('lib/progressModel.js');
-const migration = read('supabase/migrations/20260713210000_body_measurements.sql');
+// `20260713210000_body_measurements.sql` neexistuje — squashnuto do baseline
+// (stejný nález jako verify-paid-membership-gate.mjs / verify-profile-beta-ux.mjs).
+const migration = read('supabase/migrations/20260714180000_baseline_schema.sql');
 const bodyApi = read('api/body-measurements.js');
 const profileApi = read('api/profile.js');
+const weightChart = read('src/components/WeightChart.tsx');
+const adapteryTs = read('src/data/adaptery.ts');
 
-// 1–4 UI: no fat model, habit grams, modeled weight, silhouette
-check('1 no kcal→kg fat in progress UI', !progressSection.includes('kg tuku') && !profil.includes('estimatedKgLostTotal'));
-check('2 no modeled weight lines in profil progress', !profil.includes('Z tréninků') && !profil.includes('S návyky'));
-check('3 habit weight heuristic not in progress section', !progressSection.includes('habitWeightCorrection') && !progressSection.includes('HABIT_ADJ'));
-check('4 silhouette removed from profil UI', !profil.includes('<BodyFigure') && !profil.includes('body-figures-row'));
+check('GAP: žádná src/ komponenta nevolá progressIntegrity.js', !weightChart.includes('progressIntegrity') && !adapteryTs.includes('progressIntegrity'));
+check('GAP: živý WeightChart přesto nemá kcal→kg tuku fabulaci', !weightChart.includes('kg tuku') && !weightChart.includes('KCAL_PER_KG_BODY_FAT'));
+check('GAP: živý WeightChart nemá siluetu/BodyFigure', !weightChart.includes('BodyFigure') && !weightChart.includes('body-figures-row'));
 
-// 5–7 measurements source
-check('5 weight chart uses progressIntegrity', profil.includes('buildMeasuredWeightChart') && profil.includes('normalizeMeasurementPoints'));
+// 5–7 measurements source (živé api/lib, ne _legacy-next)
 check('6 measurement has date field in model', migration.includes('measured_at'));
 check('7 measurement has source field', migration.includes('source') && bodyApi.includes("source: 'manual'"));
 
@@ -60,7 +73,6 @@ const chart = buildMeasuredWeightChart([
   { weight_kg: 79, date: '2026-01-08', source: 'manual', measured_at: '2026-01-08' },
 ]);
 check('10 chart only measured points', chart.length === 2 && !chart.some((p) => p.source === 'estimated'));
-check('11 goal line labeled in progress section', progressSection.includes('cílová hmotnost'));
 
 // 12 period filter
 const todayKey = new Date().toISOString().slice(0, 10);
@@ -75,18 +87,23 @@ const act7 = computeActivitySummary({
 });
 check('12 period 7d filters workouts', act7.completedWorkouts === 1);
 
-// 13–15 activity integrity
+// 13, 15 activity integrity
+// Datum bylo natvrdo 2026-07-01/02 — mimo "posledních 30 dní" od jakéhokoli
+// dnešku po srpnu 2026. Relativní k Date.now(), jako period-filter test výš.
+// Dva různé dny schválně (workout den + zvlášť den dokončení), jinak by
+// spadly na stejný den a activeDays vyšlo 1 misto 2.
+const workoutKey = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
+const completionKey = new Date(Date.now() - 5 * 86400000).toISOString().slice(0, 10);
 const act = computeActivitySummary({
   periodId: '30',
   userCreatedAt: '2026-01-01',
-  workouts: [{ workout_date: '2026-07-01', duration_min: 30 }],
+  workouts: [{ workout_date: workoutKey, duration_min: 30 }],
   dailyCompletions: [
-    { activity_type: 'workout', completed_at: '2026-07-02T10:00:00Z' },
-    { activity_type: 'meal', completed_at: '2026-07-02T11:00:00Z' },
+    { activity_type: 'workout', completed_at: `${completionKey}T10:00:00Z` },
+    { activity_type: 'meal', completed_at: `${completionKey}T11:00:00Z` },
   ],
 });
 check('13 active days from real activities', act.activeDays === 2);
-check('14 planned vs completed separate', progressSection.includes('plánovaných tréninků'));
 check('15 only logged workouts counted', act.completedWorkouts === 1);
 
 // 16–17 privacy
@@ -97,19 +114,6 @@ check('17 body API scoped to user', bodyApi.includes('user_id') && bodyApi.inclu
 const badWeight = validateMeasurementInput({ weight_kg: 5 });
 const good = validateMeasurementInput({ weight_kg: 75, measured_at: '2026-07-01' });
 check('18 server validates ranges', !badWeight.ok && good.ok);
-
-// 19 no diagnosis copy
-check('19 no guaranteed progress copy', !progressSection.includes('hubneš') && !progressSection.includes('garantovan'));
-check('20 empty states present', progressSection.includes('Zatím nemáme dostatek skutečných měření'));
-
-// no workout estimated chart fallback
-check('extra no estimated chart fallback', !profil.includes("chartWeightSource = 'estimated'") && !profil.includes('workoutEstimatedChartData'));
-
-// kcal secondary label
-check('extra kcal secondary label', progressSection.includes('Orientační odhad energetického výdeje'));
-
-// progressModel still exists but not used for weight display in profil
-check('extra progressModel not imported for weight in profil', !profil.includes('KCAL_PER_KG_BODY_FAT'));
 
 // period bounds all
 const allBounds = getPeriodBounds('all', '2026-01-01T00:00:00Z');

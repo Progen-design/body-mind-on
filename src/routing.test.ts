@@ -13,7 +13,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { CESTY_REGISTRACE, CESTA_PRIHLASENI, CESTA_PROFIL, PLATNE_CESTY, jePlatnaCesta } from './routing.ts';
+import { CESTY_REGISTRACE, CESTA_PRIHLASENI, CESTA_PROFIL, PLATNE_CESTY, jePlatnaCesta, bezpecnyRedirect } from './routing.ts';
 
 const cti = (p: string) => readFileSync(new URL(p, import.meta.url), 'utf8');
 
@@ -63,4 +63,21 @@ test('PLATNE_CESTY obsahuje presne ocekavanou mnozinu — zadna navic, zadna chy
     [...PLATNE_CESTY].sort(),
     ['/', '/login', '/profil', '/register', '/signup', '/start'].sort()
   );
+});
+
+// PROMPT_UKLID.md (2026-09-17) — `naviguj()` udělá `window.location.href = kam`
+// pro cokoli, co začíná `http`. `?redirect=` z URL na `/login` je uživatelský
+// vstup, takže bez tohohle filtru je to otevřený redirect: `/login?redirect=
+// http://zly.cz` by po přihlášení poslalo prohlížeč na cizí doménu.
+test('bezpecnyRedirect: pustí jen vlastní cesty, cizí URL a protokol-relativní // nahradí výchozí', () => {
+  assert.equal(bezpecnyRedirect('/plan'), '/plan');
+  assert.equal(bezpecnyRedirect(null), CESTA_PROFIL);
+  assert.equal(bezpecnyRedirect(undefined), CESTA_PROFIL);
+  assert.equal(bezpecnyRedirect(''), CESTA_PROFIL);
+  assert.equal(bezpecnyRedirect('http://zly.cz'), CESTA_PROFIL);
+  assert.equal(bezpecnyRedirect('https://zly.cz'), CESTA_PROFIL);
+  assert.equal(bezpecnyRedirect('//zly.cz'), CESTA_PROFIL, 'protokol-relativní // je taky cizí origin');
+  assert.equal(bezpecnyRedirect('profil-bez-lomitka'), CESTA_PROFIL);
+  assert.equal(bezpecnyRedirect('/plan', '/jina-vychozi'), '/plan');
+  assert.equal(bezpecnyRedirect(null, '/jina-vychozi'), '/jina-vychozi');
 });

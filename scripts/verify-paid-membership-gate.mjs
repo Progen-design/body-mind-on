@@ -46,8 +46,20 @@ function check(label, ok, detail = '') {
 const bodyMetricsSrc = readFileSync(join(ROOT, 'api/body-metrics.js'), 'utf8');
 const webhookSrc = readFileSync(join(ROOT, 'api/webhooks/stripe.js'), 'utf8');
 const checkoutSrc = readFileSync(join(ROOT, 'api/stripe/create-checkout-session.js'), 'utf8');
-const statusMigration = readFileSync(join(ROOT, 'supabase/migrations/20260712121000_membership_status_contract.sql'), 'utf8');
-const profilSrc = readFileSync(join(ROOT, '_legacy-next/pages/profil.js'), 'utf8');
+// PROMPT_UKLID.md (2026-09-17) — `20260712121000_membership_status_contract.sql`
+// už neexistuje jako samostatný soubor. Historie migrací byla v jednu chvíli
+// squashnuta do `20260714180000_baseline_schema.sql` (ověřeno: obsahuje
+// `memberships_status_check` CHECK a komentář "Canonical membership
+// lifecycle"), takže kontrolujeme DNEŠNÍ CHECK constraint proti baseline,
+// ne historický soubor, který se do baseline promítl.
+const statusMigration = readFileSync(join(ROOT, 'supabase/migrations/20260714180000_baseline_schema.sql'), 'utf8');
+// PROMPT_UKLID.md (2026-09-17) — `_legacy-next/pages/profil.js` smazán
+// v Bloku 1. Živý ekvivalent (src/data/adaptery.ts's naProfil()) dnes vůbec
+// nesrovnává string na 'canceled' — vše mimo 'active'/'trial' spadá do
+// jedné větve 'PAUZOVÁNO' (viz komentář u naProfil). Pozitivní "uses
+// canceled spelling" tak nemá co kontrolovat; zůstává jen obrana proti
+// návratu překlepu 'cancelled' (dvě L), který byl původní chybou.
+const adapteryTs = readFileSync(join(ROOT, 'src/data/adaptery.ts'), 'utf8');
 const helpersSrc = readFileSync(join(ROOT, 'lib/membershipHelpers.js'), 'utf8');
 
 check('body-metrics uses membershipFromRegistration', bodyMetricsSrc.includes('membershipFromRegistration'));
@@ -62,15 +74,17 @@ check('webhook rejects missing user_id by default', webhookSrc.includes('skipped
 check('webhook rejects missing expected_tier', webhookSrc.includes('skipped_no_expected_tier'));
 check('legacy checkout gated by env flag', webhookSrc.includes('isStripeLegacyCheckoutAllowed'));
 check('legacy checkout default off', isStripeLegacyCheckoutAllowed() === false);
-check('runtime no membership status cancelled', !helpersSrc.includes("'cancelled'") && !profilSrc.includes("membershipStatus === 'cancelled'"));
-check('runtime uses canceled spelling', helpersSrc.includes("'canceled'") && profilSrc.includes("membershipStatus === 'canceled'"));
+check('runtime no membership status cancelled', !helpersSrc.includes("'cancelled'") && !adapteryTs.includes("'cancelled'"));
+check('runtime uses canceled spelling', helpersSrc.includes("'canceled'"));
 
 const allowedStatuses = ['trial', 'pending_payment', 'active', 'past_due', 'canceled', 'expired'];
 for (const st of allowedStatuses) {
   check(`DB contract allows ${st}`, statusMigration.includes(`'${st}'`));
 }
-check('DB contract migrates cancelled → canceled', statusMigration.includes("status = 'cancelled'") && statusMigration.includes("SET status = 'canceled'"));
-check('DB contract forbids cancelled in CHECK', !statusMigration.includes("'cancelled'") || statusMigration.includes("WHERE status = 'cancelled'"));
+// Jednorázová UPDATE `cancelled -> canceled` byla historický krok, dnes
+// zaniklý v baseline (žádné řádky s překlepem už neexistují) — kontroluje se
+// jen to, co pořád platí: CHECK constraint nikde nepovoluje 'cancelled'.
+check('memberships CHECK constraint forbids cancelled', !/memberships_status_check[\s\S]{0,400}'cancelled'/.test(statusMigration));
 
 const startedAt = '2026-07-01T10:00:00.000Z';
 

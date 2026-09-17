@@ -101,10 +101,13 @@ check(
   `got ${breakfastDisplay.calories}`,
 );
 
-const todayPanels = readFileSync(resolve(process.cwd(), '_legacy-next/components/profile/ProfileTodayPanels.js'), 'utf8');
+// PROMPT_UKLID.md (2026-09-17) — `_legacy-next/components/profile/ProfileTodayPanels.js`
+// smazán v Bloku 1. Ověřeno greppem: `resolveDayCalorieTarget`/`sumDayNutrition`
+// nemají dnes žádného konzumenta v src/ — živá appka denní součet kalorií
+// počítá inline (`OverviewBentoGrid.tsx`'s `meals.reduce(...)`), ne přes
+// tenhle sdílený helper. Funkce samy zůstávají a testují se výš (řádky
+// 68–95); kontrola "komponenta používá sdílený helper" nemá dnes co ověřit.
 const mealDisplayModel = readFileSync(resolve(process.cwd(), 'lib/mealDisplayModel.js'), 'utf8');
-check('ProfileTodayPanels uses resolveDayCalorieTarget', todayPanels.includes('resolveDayCalorieTarget'));
-check('ProfileTodayPanels uses shared sumDayNutrition', todayPanels.includes('sumDayNutrition'));
 check('mealDisplayModel preserves planned nutrition for library', mealDisplayModel.includes('plannedNutrition'));
 
 const modalHtml = buildMealRecipeModalHtml(scaledModel);

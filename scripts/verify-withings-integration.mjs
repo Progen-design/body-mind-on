@@ -344,10 +344,14 @@ async function runStaticUnitChecks() {
   check('coach context helper file exists', existsSync(join(ROOT, 'lib/withings/buildWithingsCoachContext.js')));
   check('body snapshots migration exists', existsSync(join(ROOT, 'supabase/migrations/20260701090000_withings_body_snapshots.sql')));
 
-  const widget = readFileSync(join(ROOT, '_legacy-next/components/profile/WithingsBodyDevelopmentSection.js'), 'utf8');
-  check('UI shows trend section', widget.includes('withings-trends'));
-  check('UI shows body development section', widget.includes('Tělesný vývoj'));
-  check('UI renders null values as dash', widget.includes("return '—'") || widget.includes('return \'—\''));
+  // PROMPT_UKLID.md (2026-09-17) — `_legacy-next/components/profile/
+  // WithingsBodyDevelopmentSection.js` smazán v Bloku 1. Živý ekvivalent je
+  // `src/components/BodyCompositionSection.tsx` — má typované `| null` pole
+  // (`slozeni`, `vlastniBmrKcal`, `zdraviPosledni`) místo dřívějšího
+  // řetězcového `return '—'`, tedy stejné pravidlo (chybějící měření se
+  // nesmí tvářit jako nula), jen typovaně místo formátovacím řetězcem.
+  const widget = readFileSync(join(ROOT, 'src/components/BodyCompositionSection.tsx'), 'utf8');
+  check('UI má typované null pro chybějící měření, ne string placeholder', /slozeni\??:\s*TelesneSlozeni \| null/.test(widget));
   check('UI no zero kg placeholder', !widget.includes('0,0 kg') && !widget.includes('0.0 kg'));
 }
 

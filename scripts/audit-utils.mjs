@@ -5,11 +5,21 @@ import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 
 /**
- * Load .env.local then .env into process.env (without logging values).
+ * Load .env.local, then .env.production.local, then .env into process.env
+ * (without logging values).
+ *
+ * PROMPT_UKLID.md (2026-09-17) Blok 4 fix #1 — `.env.local` má
+ * `STRIPE_SECRET_KEY=""` (prázdný řetězec, ne chybějící klíč), takže
+ * `verify:paid-path` padal v preflightu, přestože skutečný `sk_test_` klíč
+ * leží v `.env.production.local` — ten ale v seznamu souborů vůbec nebyl.
+ * Prázdná hodnota se v `process.env` nepočítá za "nastavenou" (viz
+ * `jePrazdna` níž), takže se hledá dál v pořadí; `.env.production.local`
+ * teď v tom pořadí je.
  * @param {string} root
  */
 export function loadLocalEnv(root = process.cwd()) {
-  for (const rel of ['.env.local', '.env']) {
+  const jePrazdna = (hodnota) => hodnota == null || String(hodnota).trim() === '';
+  for (const rel of ['.env.local', '.env.production.local', '.env']) {
     const path = join(root, rel);
     if (!existsSync(path)) continue;
     const raw = readFileSync(path, 'utf8');
@@ -19,7 +29,7 @@ export function loadLocalEnv(root = process.cwd()) {
       const eq = trimmed.indexOf('=');
       if (eq <= 0) continue;
       const key = trimmed.slice(0, eq).trim();
-      if (process.env[key] != null && String(process.env[key]).trim() !== '') continue;
+      if (!jePrazdna(process.env[key])) continue;
       let val = trimmed.slice(eq + 1).trim();
       if (
         (val.startsWith('"') && val.endsWith('"')) ||
@@ -27,6 +37,7 @@ export function loadLocalEnv(root = process.cwd()) {
       ) {
         val = val.slice(1, -1);
       }
+      if (jePrazdna(val)) continue;
       process.env[key] = val;
     }
   }

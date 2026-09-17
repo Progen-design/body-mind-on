@@ -52,12 +52,33 @@ const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (url && key) {
   const admin = createClient(url, key, { auth: { persistSession: false } });
 
+  // PROMPT_UKLID.md (2026-09-17) Blok 4 fix #3 — tenhle skript vytváří až tři
+  // syntetické účty (uid, otherUser, genUid) napříč vnořenými bloky. Dřív měl
+  // úklid jednotlivě rozeseté po kódu bez try/finally — jakákoli neočekávaná
+  // výjimka (timeout na fetch, síťová chyba) uprostřed běhu je nechala viset
+  // v produkční databázi. `createdUserIds` sbírá KAŽDÉ id hned po vytvoření;
+  // finally na konci uklidí všechny, i ty, co má svůj vlastní cleanupUser()
+  // volaný dřív — druhé zavolání na už smazaného uživatele je neškodné no-op.
+  // Existující účty se nikdy nemažou — jen id vytvořená tímhle skriptem.
+  const createdUserIds = [];
+
   async function cleanupUser(userId) {
     await admin.from('workout_replacements').delete().eq('user_id', userId);
     await admin.from('ai_generated_plans').delete().eq('user_id', userId);
     await admin.from('memberships').delete().eq('user_id', userId);
     await admin.auth.admin.deleteUser(userId);
   }
+
+  async function cleanupAllTracked() {
+    for (const id of createdUserIds) {
+      try { await cleanupUser(id); } catch { /* best effort, viz report v konzoli */ }
+    }
+  }
+
+  process.once('SIGINT', async () => { await cleanupAllTracked(); process.exit(130); });
+  process.once('SIGTERM', async () => { await cleanupAllTracked(); process.exit(143); });
+
+  try {
 
   const email = `info+restore-verify-${Date.now()}@bodyandmindon.cz`;
   const password = randomBytes(16).toString('base64url');
@@ -66,6 +87,7 @@ if (url && key) {
     app_metadata: { synthetic_test_user: true },
   });
   const uid = created.user.id;
+  createdUserIds.push(uid);
   const now = new Date().toISOString();
 
   await admin.from('memberships').upsert({
@@ -242,6 +264,7 @@ if (url && key) {
       email_confirm: true,
       app_metadata: { synthetic_test_user: true },
     });
+    if (otherUser?.user?.id) createdUserIds.push(otherUser.user.id);
     await admin.from('memberships').upsert({
       user_id: otherUser.user.id, tier: 'START', status: 'trial',
       started_at: now, trial_ends_at: new Date(Date.now() + 7 * 864e5).toISOString(), updated_at: now,
@@ -277,6 +300,7 @@ if (url && key) {
       app_metadata: { synthetic_test_user: true },
     });
     const genUid = genUser.user.id;
+    createdUserIds.push(genUid);
     const genNow = new Date().toISOString();
     await admin.from('memberships').upsert({
       user_id: genUid, tier: 'START', status: 'trial',
@@ -322,6 +346,12 @@ if (url && key) {
     }
     await cleanupUser(genUid);
     }
+  }
+
+  } finally {
+    // Bezpečnostní síť navíc k cleanupUser() volaným výš v kódu — kryje
+    // i cestu, kde nahoře selže neočekávanou výjimkou dřív, než se tam dostane.
+    await cleanupAllTracked();
   }
 } else {
   check('integration tests', true, 'skipped — no supabase env');

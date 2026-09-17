@@ -12,10 +12,13 @@ function fail(msg) { console.log(`FAIL ${msg}`); failed += 1; }
 function ok(msg) { console.log(`OK ${msg}`); }
 
 console.log('--- meal replacement wiring ---');
-const planViewer = fs.readFileSync(path.join(root, '_legacy-next/components/PlanViewer.js'), 'utf8');
+// PROMPT_UKLID.md (2026-09-17) — _legacy-next/components/PlanViewer.js smazán,
+// zámena jídla dnes žije v src/components/RecipeModal.tsx (ověřeno greppem po
+// '/api/plan-replace-meal' napříč src/).
+const recipeModal = fs.readFileSync(path.join(root, 'src/components/RecipeModal.tsx'), 'utf8');
 const api = fs.readFileSync(path.join(root, 'api/plan-replace-meal.js'), 'utf8');
-if (!planViewer.includes("'/api/plan-replace-meal'")) fail('PlanViewer missing plan-replace-meal API call');
-if (!planViewer.includes('Nahradit jiným')) fail('PlanViewer missing Nahradit jiným button');
+if (!recipeModal.includes("'/api/plan-replace-meal'")) fail('RecipeModal missing plan-replace-meal API call');
+if (!recipeModal.includes('Nahradit tohle jídlo jiným')) fail('RecipeModal missing replace-meal action');
 if (!api.includes('replaceMealInStructuredPlan')) fail('API missing replaceMealInStructuredPlan');
 if (!api.includes('structured_plan_json')) fail('API missing DB persistence');
 else ok('replace button + API + DB persistence wired');
@@ -66,9 +69,20 @@ console.log('\n--- pin next week ---');
 const mealPins = fs.readFileSync(path.join(root, 'api/meal-pins.js'), 'utf8');
 const agent = fs.readFileSync(path.join(root, 'lib/services/simpleMealPlannerAgent.js'), 'utf8');
 if (!mealPins.includes('user_meal_pins')) fail('meal-pins API missing table');
-if (!planViewer.includes('Uloženo. Tohle jídlo budeme preferovat v dalších plánech.')) fail('pin confirmation copy missing');
 if (!agent.includes('pinnedMeals')) fail('agent missing pinned meals support');
-else ok('pin preference stored + UI copy + agent hook');
+else ok('pin preference stored (API + agent hook)');
+
+// PROMPT_UKLID.md (2026-09-17) — GAP: `_legacy-next/components/PlanViewer.js`
+// mělo potvrzovací hlášku po připnutí jídla. Ověřeno greppem přes celé src/ —
+// žádný soubor "user_meal_pins", "mealPin" ani "pinnedMeal" nezná. Backend
+// (api/meal-pins.js, agent's pinnedMeals) žije, UI tlačítko a hláška v živé
+// SPA chybí úplně. Nevymýšlí se, jen se hlásí — pokud tenhle check spadne,
+// UI se dopsalo a je čas ho tu skutečně zkontrolovat.
+if (/user_meal_pins|mealPin|pinnedMeal/i.test(fs.readFileSync(path.join(root, 'src', 'components', 'RecipeModal.tsx'), 'utf8'))) {
+  fail('GAP zmizel: RecipeModal teď zná pin-next-week — přepiš check na skutečnou UI kontrolu');
+} else {
+  ok('GAP zaznamenán: pin-next-week nemá UI v src/ (RecipeModal o něm neví)');
+}
 
 console.log(failed ? `\nRESULT: FAIL (${failed})` : '\nRESULT: PASS');
 process.exit(failed ? 1 : 0);

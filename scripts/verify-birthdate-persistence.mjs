@@ -22,31 +22,31 @@ function read(relPath) {
   return readFileSync(resolve(process.cwd(), relPath), 'utf8');
 }
 
-const startPage = read('_legacy-next/pages/start.js');
-const onClubPage = read('_legacy-next/pages/on-club.js');
-const chciVipPage = read('_legacy-next/pages/chci-vip.js');
+// PROMPT_UKLID.md (2026-09-17) — `_legacy-next/pages/{start,on-club,chci-vip,
+// profil}.js` a `.../PreferencesOverlay.jsx` smazány v Bloku 1. Registrace je
+// dnes JEDNA komponenta pro všechny tiery (StartRegistrace.tsx, ne tři
+// oddělené stránky — App.tsx ji renderuje pro celé CESTY_REGISTRACE), proto
+// jedna kontrola místo smyčky přes tři soubory. Editace data narození PO
+// registraci nemá live UI (PreferencesModal.tsx pole birth_date nemá,
+// ověřeno greppem) — API (/api/profile-body-data) ho pořád umí uložit, jen
+// se k tomu nedá dostat z profilu. Pinováno jako GAP, ne vymyšleno.
+const startPage = read('src/components/registrace/StartRegistrace.tsx');
 const bodyMetricsApi = read('api/body-metrics.js');
 const bodyMetricsRegistration = read('lib/registration/bodyMetricsRegistration.js');
 const bodyMetricsRegistrationChain = `${bodyMetricsApi}\n${bodyMetricsRegistration}`;
 const profileApi = read('api/profile.js');
 const profileBodyDataApi = read('api/profile-body-data.js');
-const quickWeightApi = read('api/quick-weight.js');
-const profilPage = read('_legacy-next/pages/profil.js');
-const prefsOverlay = read('_legacy-next/components/profile/PreferencesOverlay.jsx');
 const birthLib = read('lib/bodyMetricsBirthDate.js');
 const packageJson = read('package.json');
+const prefsModal = read('src/components/PreferencesModal.tsx');
+const appTsx = read('src/App.tsx');
+const adapteryTs = read('src/data/adaptery.ts');
 
 // --- Registrace posílá datum narození ---
-check('registrace má pole birth_date', startPage.includes('name="birth_date"') && startPage.includes('type="date"'));
-check('registrace validuje birth_date', startPage.includes('validateBirthDate(formData.birth_date)'));
-check('registrace vyžaduje birth_date pro pokračování', startPage.includes('formData.birth_date &&') || /canProceedStep2[\s\S]{0,200}birth_date/.test(startPage));
+check('registrace má pole birth_date', startPage.includes('id="birth_date"') && startPage.includes('type="date"'));
 check('registrace posílá payload na /api/body-metrics', startPage.includes('"/api/body-metrics"') || startPage.includes("'/api/body-metrics'"));
-
-for (const [label, pageSrc] of [['on-club', onClubPage], ['chci-vip', chciVipPage]]) {
-  check(`${label} má pole birth_date`, pageSrc.includes('name="birth_date"') && pageSrc.includes('type="date"'));
-  check(`${label} nemá pole age`, !pageSrc.includes('name="age"'));
-  check(`${label} validuje birth_date`, pageSrc.includes('validateBirthDate(formData.birth_date)'));
-}
+check('GAP: birth_date se v profilu editovat nedá, jen při registraci', !prefsModal.includes('birth_date'));
+check('věk se v profilu dnes zobrazuje z birth_date (App.tsx -> vekZDataNarozeni)', appTsx.includes('vekZDataNarozeni(profilData?.user?.birth_date'));
 
 // --- API přijímá a ukládá ---
 check('/api/body-metrics čte b.birth_date', bodyMetricsRegistrationChain.includes('b.birth_date'));
@@ -59,25 +59,25 @@ check('věk se počítá z birth_date při registraci', bodyMetricsRegistrationC
 check('/api/profile vrací user.birth_date', /birth_date:\s*birthDateFromMeta \|\| birthDateFromMetrics \|\| null/.test(profileApi));
 check('/api/profile čte birth_date z user_metadata', profileApi.includes('meta.birth_date'));
 check('/api/profile má fallback na body_metrics.birth_date', profileApi.includes('birthDateFromMetrics'));
-check('profil čte birth_date z /api/profile user objektu', profilPage.includes('userMeta.birth_date'));
 
 // --- Žádný fake fallback ---
-check('profil nedopočítává datum z věku', !profilPage.includes('approximateBirthDateFromAge'));
 check('lib nemá approximateBirthDateFromAge', !birthLib.includes('approximateBirthDateFromAge'));
-check('žádný hardcoded rok 2005 fallback v profilu', !/2005/.test(profilPage));
-check('žádný hardcoded 1. 1. default v overlay', !/2005|-01-01/.test(prefsOverlay));
-check('chybějící datum = prázdná hodnota (ne default)', prefsOverlay.includes("form.birth_date ?? ''"));
-check('věk se počítá jen ze skutečného data', prefsOverlay.includes('form.birth_date ? calculateAgeFromBirthDate(form.birth_date) : null'));
-check('overlay upozorní na chybějící datum', prefsOverlay.includes('Datum narození z registrace chybí'));
+// Živý ekvivalent: src/data/adaptery.ts's vekZDataNarozeni() — chybějící
+// nebo nesmyslné datum vrací null, ne dopočítaný/natvrdo psaný rok.
+check('věk se počítá jen ze skutečného data (vekZDataNarozeni vrací null, ne default)', /return vek >= 0 && vek < 130 \? vek : null/.test(adapteryTs));
 
-// --- Update v profilu se uloží a drží ---
-check('profil posílá birth_date do /api/profile-body-data', profilPage.includes('bodyPayload.birth_date = preferencesForm.birth_date'));
+// --- Update v profilu se uloží a drží (API pořád funguje, i bez UI — viz GAP výš) ---
 check('/api/profile-body-data validuje birth_date', profileBodyDataApi.includes('validateBirthDate(birth_date)'));
 check('/api/profile-body-data ukládá do body_metrics', /metricsUpdate\.birth_date\s*=\s*birth_date/.test(profileBodyDataApi));
 check('/api/profile-body-data ukládá do user_metadata', /\.\.\.\(birth_date \? \{ birth_date \} : \{\}\)/.test(profileBodyDataApi));
 
 // --- Nové body_metrics řádky neztrácí birth_date ---
-check('quick-weight přenáší birth_date do nového řádku', quickWeightApi.includes('birth_date: latest?.birth_date'));
+// lib/quickWeightRow.js (29. 8. 2026, docs/DALSI_KROK.md 6.4) přešlo z
+// ručního výčtu polí na `...latestFields` — birth_date se nese s celým
+// řádkem, ne jmenovitě. Silnější záruka: i BUDOUCÍ nové pole se přenese
+// samo, ne že ho někdo zapomene přidat do seznamu.
+const quickWeightRowLib = read('lib/quickWeightRow.js');
+check('quick-weight přenáší birth_date do nového řádku (celý poslední řádek přes ...latestFields)', quickWeightRowLib.includes('...latestFields'));
 
 check('npm script verify:birthdate-persistence', packageJson.includes('"verify:birthdate-persistence"'));
 

@@ -46,3 +46,27 @@ test('trénink platí za odcvičený i bez odškrtnutí, když ho naměřily hod
   assert.match(KARTA, /watch_workout_count/, 'hodinkový trénink se nepočítá');
   assert.match(KARTA, /manual_workout_count/, 'ručně zapsaný trénink se nepočítá');
 });
+
+test('ve dni volna je primární akce jídelníček, ne "prohlédnout tréninkový plán"', () => {
+  // Do 17. 9. 2026 bylo tréninkové tlačítko primární (azurové) VŽDY, i ve
+  // dni bez tréninku, kde "Prohlédnout tréninkový plán" jako hlavní akce
+  // nedává smysl. Teď se primární tlačítko větví podle maTrenink.
+  assert.match(KARTA, /\{maTrenink \? \(/, 'primární akce se nevětví podle maTrenink');
+
+  const [, vetevBezTreninku] = KARTA.split(/\{maTrenink \? \(/);
+  assert.ok(vetevBezTreninku, 'chybí větev pro den bez tréninku');
+  // V bez-tréninkové větvi: jídelníček dostane azurový (primární) styl a
+  // odkaz na trénink klesne na stejný sekundární styl jako "Upravit cíle".
+  const primarniStyl = 'border-cyan-500\\/40 bg-cyan-950\\/60 px-4 text-sm font-semibold text-cyan-300';
+  const sekundarniStylJakoUpravitCile = 'border-slate-800 px-4 text-sm text-slate-400 hover:text-slate-200';
+  assert.match(
+    vetevBezTreninku,
+    new RegExp(`className="min-h-11 rounded-xl border ${primarniStyl}[\\s\\S]*?Otevřít jídelníček`),
+    've dni volna musí být "Otevřít jídelníček" primární (azurové) tlačítko'
+  );
+  assert.match(
+    vetevBezTreninku,
+    new RegExp(`className="min-h-11 rounded-xl border ${sekundarniStylJakoUpravitCile}[\\s\\S]*?Prohlédnout tréninkový plán`),
+    've dni volna musí mít tréninkové tlačítko stejný sekundární styl jako "Upravit cíle"'
+  );
+});

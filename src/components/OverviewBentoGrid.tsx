@@ -161,17 +161,24 @@ export const OverviewBentoGrid: React.FC<OverviewBentoGridProps> = ({
                 className="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800 flex items-center justify-between hover:border-slate-700 transition-all"
               >
                 <div className="flex items-center gap-2.5">
+                  {/* NEZAŠKRTNUTÝ STAV MUSÍ VYPADAT JAKO OVLÁDACÍ PRVEK, NE
+                      JAKO ROZBITÝ OBRÁZEK. Do 17. 9. 2026 tu bez zaškrtnutí
+                      nebylo nic — prázdný čtverec bez ikony a s hranatějším
+                      rohem než zbytek appky. Vzor je stejný checkbox jako
+                      u cviku ve WorkoutSection.tsx (`rounded-xl` + ikona
+                      uvnitř), jen s viditelným obrysem místo `text-transparent`
+                      — jinak by ikona zmizela úplně stejně jako předtím. */}
                   <button
                     onClick={() => onToggleMeal(meal.id)}
                     aria-label={`${meal.completed ? 'Zrušit záznam jídla' : 'Označit jako snědené'}: ${meal.title}`}
                     aria-pressed={meal.completed}
-                    className={`w-10 h-10 shrink-0 rounded-lg border flex items-center justify-center transition-all ${
+                    className={`w-10 h-10 shrink-0 rounded-xl border flex items-center justify-center transition-all ${
                       meal.completed
                         ? 'bg-akcent-lime border-akcent-lime text-slate-950 font-bold'
-                        : 'border-slate-700 bg-slate-800'
+                        : 'border-slate-700 bg-slate-800 text-slate-600 hover:text-slate-400 hover:border-slate-600'
                     }`}
                   >
-                    {meal.completed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
                   </button>
                   <div>
                     <span className={`text-xs font-bold block ${meal.completed ? 'line-through text-slate-500' : 'text-slate-200'}`}>

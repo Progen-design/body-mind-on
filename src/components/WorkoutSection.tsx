@@ -12,7 +12,8 @@ import {
   ChevronRight,
   Sparkles,
   PlayCircle,
-  Repeat
+  Repeat,
+  ListOrdered
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ExerciseItem, WorkoutDay } from '../types';
@@ -450,7 +451,12 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
                     aby seznam zůstal přehledný a animace se nenačítaly
                     všechny naráz. Od 9.9 je pod obrázkem i slovní postup
                     (`postup` z registru cviků) — tlačítko se proto ukazuje
-                    i cviku, který má jen kroky bez média. */}
+                    i cviku, který má jen kroky bez média.
+
+                    POPISEK A IKONA SEDÍ NA TO, CO SE DOOPRAVDY OTEVŘE. Do
+                    17. 9. 2026 tu bylo natvrdo „Jak na to" + PlayCircle i pro
+                    cvik bez `ukazkaUrl` — otevřel se jen textový postup, žádná
+                    animace, takže tlačítko slibovalo něco, co nedodalo. */}
                 {(ex.ukazkaUrl || (ex.postup?.length ?? 0) > 0) && (
                   <button
                     onClick={(e) => {
@@ -462,10 +468,10 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
                         ? 'bg-cyan-950/70 border-cyan-500/50 text-akcent-cyan'
                         : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-cyan-500/40'
                     }`}
-                    title="Ukázat provedení cviku"
+                    title={ex.ukazkaUrl ? 'Ukázat provedení cviku' : 'Zobrazit postup cviku krok za krokem'}
                   >
-                    <PlayCircle className="w-3.5 h-3.5" />
-                    <span>Jak na to</span>
+                    {ex.ukazkaUrl ? <PlayCircle className="w-3.5 h-3.5" /> : <ListOrdered className="w-3.5 h-3.5" />}
+                    <span>{ex.ukazkaUrl ? 'Jak na to' : 'Postup krok za krokem'}</span>
                   </button>
                 )}
               </div>

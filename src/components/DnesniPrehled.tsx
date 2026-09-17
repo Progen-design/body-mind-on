@@ -162,22 +162,50 @@ export const DnesniPrehled: React.FC<Props> = ({
         )}
       </div>
 
+      {/* PRIMÁRNÍ AKCE PODLE TOHO, JESTLI JE DNES TRÉNINK.
+          Ve dni volna je „Prohlédnout tréninkový plán" jako primární
+          (azurové) tlačítko nesmysl — není co dnes cvičit. Primární akcí je
+          pak jídelníček, tréninkové tlačítko klesá na stejný sekundární
+          styl jako „Upravit cíle". Když trénink dnes je, pořadí a styly
+          zůstávají beze změny. */}
       <div className="mt-4 flex flex-wrap gap-2.5">
-        <button
-          type="button"
-          onClick={() => onSelectTab('trenink')}
-          className="min-h-11 rounded-xl border border-cyan-500/40 bg-cyan-950/60 px-4 text-sm font-semibold text-cyan-300 hover:bg-cyan-900/60 transition-all inline-flex items-center gap-1.5"
-        >
-          <span>{maTrenink ? 'Otevřít dnešní trénink' : 'Prohlédnout tréninkový plán'}</span>
-          <ChevronRight className="w-4 h-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => onSelectTab('jidelnicek')}
-          className="min-h-11 rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-300 hover:border-slate-500 transition-all"
-        >
-          Otevřít jídelníček
-        </button>
+        {maTrenink ? (
+          <>
+            <button
+              type="button"
+              onClick={() => onSelectTab('trenink')}
+              className="min-h-11 rounded-xl border border-cyan-500/40 bg-cyan-950/60 px-4 text-sm font-semibold text-cyan-300 hover:bg-cyan-900/60 transition-all inline-flex items-center gap-1.5"
+            >
+              <span>Otevřít dnešní trénink</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelectTab('jidelnicek')}
+              className="min-h-11 rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-300 hover:border-slate-500 transition-all"
+            >
+              Otevřít jídelníček
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => onSelectTab('jidelnicek')}
+              className="min-h-11 rounded-xl border border-cyan-500/40 bg-cyan-950/60 px-4 text-sm font-semibold text-cyan-300 hover:bg-cyan-900/60 transition-all inline-flex items-center gap-1.5"
+            >
+              <span>Otevřít jídelníček</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelectTab('trenink')}
+              className="min-h-11 rounded-xl border border-slate-800 px-4 text-sm text-slate-400 hover:text-slate-200 transition-all"
+            >
+              Prohlédnout tréninkový plán
+            </button>
+          </>
+        )}
         <button
           type="button"
           onClick={onOpenPreferences}

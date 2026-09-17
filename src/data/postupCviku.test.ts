@@ -120,3 +120,21 @@ test('karta cviku kreslí postup pod obrázkem, sbalený v „Jak na to"', () =>
   // Seznam se kreslí jen když kroky jsou — bez nich nic, žádný náhradní text.
   assert.match(workoutSection, /\{ex\.postup && ex\.postup\.length > 0 && \(/);
 });
+
+test('tlačítko „Jak na to" slibuje jen to, co doopravdy otevře — bez ukazkaUrl jiný popisek i ikona', () => {
+  // Cvik bez média (ex.ukazkaUrl undefined) otevírá jen textový postup, ne
+  // animaci. Do 17. 9. 2026 tam bylo natvrdo „Jak na to" + PlayCircle i pro
+  // takový cvik — popisek a ikona slibovaly něco, co se neotevřelo.
+  const KOREN = path.join(import.meta.dirname, '..', '..');
+  const workoutSection = fs.readFileSync(path.join(KOREN, 'src', 'components', 'WorkoutSection.tsx'), 'utf8');
+
+  // S médiem: „Jak na to" + PlayCircle.
+  assert.match(workoutSection, /ex\.ukazkaUrl \? 'Jak na to' : 'Postup krok za krokem'/);
+  assert.match(workoutSection, /ex\.ukazkaUrl \? <PlayCircle className="w-3\.5 h-3\.5" \/> : <ListOrdered className="w-3\.5 h-3\.5" \/>/);
+  // Ikona pro variantu bez média musí být jiná než PlayCircle, ne jen jiný text.
+  assert.match(workoutSection, /ListOrdered/);
+
+  // Bez média se nekreslí žádný prázdný obrázkový box — sekce s <img> zůstává
+  // podmíněná na ex.ukazkaUrl, ne na otevření panelu samotném.
+  assert.match(workoutSection, /\{ex\.ukazkaUrl && \(\s*<div className="rounded-xl overflow-hidden bg-slate-950 border border-slate-800">/);
+});

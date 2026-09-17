@@ -1,128 +1,150 @@
-# Zadání: kaloricky vědomý scheduler (PR 2 + PR 3 dohromady)
+# Zadání: zavřít kalorické díry v pásmu, kde jsou reální uživatelé
 
 Datum: 2026-09-17
-Stav v repu: PR 2 (vysokokalorické varianty) je **v working tree, nekomitnutý**. Nekomituj ho
-samostatně — jde ven až s tímhle.
+Větev: `feat/vysokokaloricke-porce` — tvoje rozdělaná práce (PR 2 + kaloricky vědomý
+scheduler + horní pojistka v add-loopu) v working tree **zůstává**. Tohle na ni navazuje.
 
-## Proč se to slučuje
+**Rozsah je schválně úzký.** Vegan pack, cíle nad 2400 kcal, přepočet maker u starých
+receptů a chybějící Spoonacular recepty se teď NEŘEŠÍ — je to na potom. Cílem je, aby
+gate byly zelené a pásmo 1386–2400 kcal fungovalo.
 
-Ověřil jsem PR 2 nezávisle plnou pipeline (`buildSimpleStartMealSkeleton` →
-`resolveSimpleStartLocalSlot` → `fillDayCaloriesByAddingLibraryMeals`) na profilech
-1600–3841 kcal. Výsledek:
+---
 
-Vysoké cíle (2000–3841, 49 dní) se zlepšily:
-- dní pod −15 % cíle: 3 → **1**
-- jídel s multiplikátorem mimo 0,85–1,15: 186 → **157**
+## Proč to ještě není hotové
 
-Nízké cíle (1600–2400, 35 dní) se rozbily:
-- dní nad +15 % cíle: 1 → **6**
-- nejhorší den: +17 % → **+45 %**
-
-Konkrétně, cíl 1600 kcal, den 4:
+Poslední FAIL (`verify-start-meal-variability`, 1800 kcal den 5: 2109 nad stropem 2070)
+není vada logiky. Rozebral jsem ten den až na sloty:
 
 ```
-lunch    Těstoviny s kuřetem, velká porce   1009 kcal
-dinner   Těstoviny s kuřetem                 640 kcal
-                                    celkem  2323 kcal na cíl 1600  (+45 %)
+breakfast  cíl 360   Vejce s pečivem a zeleninou      439 kcal ×0.98
+lunch      cíl 504   Rýže s vejcem a zeleninou        515 kcal ×0.95
+dinner     cíl 432   Tvarohová miska                  431 kcal ×1.03
+snack      cíl 252   Proteinový nápoj a banán         374 kcal ×0.89
+snack      cíl 252   Ovesné vločky s tvarohem         415 kcal ×0.86
+                                  součet 2174 → po zmenšení 2109, strop 2070
 ```
 
-Příčina: `pickTemplateForSlot` rotuje pozičně `(dayIndex*5 + mi*3 + offset) % pool.length`
-a kalorie neřeší vůbec. Dokud byla nejtěžší šablona 640 kcal, nevadilo to. S šablonou
-za 1009 kcal to vadí.
+Obě svačiny jsou o ~100 kcal větší, než slot unese. Na cíl 252 kcal se z 11 svačin
+ve `standard` poolu vejdou do pásma 0,85–1,15 jen **tři** (220, 233, 260). Ostatních
+osm má 320–480. Při `MAX_MEAL_USES_PER_WEEK = 2` to dá 6 použití na týden, ale týden
+potřebuje **14 svačinových slotů**. Od třetího dne je skupina 1 i 2 prázdná,
+`pickTemplateForSlot` propadne na `if (candidates.length) return take(candidates)` —
+kalorii neznající větev — a na slot 252 dá jídlo za 480.
 
-Umístění nových šablon na začátek polí byl správný instinkt (držet
-`verify-start-meal-variability` zelený), ale je to ladění pozičního hashe — přesunulo to
-rozbití z profilu, který ten skript testuje (2700 kcal), na profily, které netestuje.
-Po tomhle PR má být pozice v poli bezvýznamná. Ten komentář o pozici u šablon smaž.
+Změřil jsem celý prostor. V pásmu, které nás teď zajímá:
 
-## A. Kaloricky vědomý výběr šablony
+- **`standard`, svačiny pod 2400 kcal** — na 1600 sedí **0 z 11**, na 1800 tři, na
+  2000–2400 dvě. Týká se **23 z 30 uživatelů** (14 bez vybrané diety plus low_carb,
+  lactose_free, gluten_free, other), cíle od 1524 kcal.
+- **`vegetarian`, celé pásmo pod 2400** — pool má 5 snídaní, 7 svačin, **4 obědy,
+  4 večeře**. Týká se **7 z 30 uživatelů**, cíle **1386–2320 kcal**. Druhá největší
+  skupina.
 
-`pickTemplateForSlot(pool, dayIndex, mi, exclusions, mealType, usedCounts)` dostane navíc
-`slotTarget` (kcal pro ten slot; volající ho už má z `slotTargetKcal`).
+Nejnižší reálný cíl je **1386 kcal**, tedy svačinový slot kolem 139 kcal. Nejmenší
+svačina v jakémkoli poolu má 220.
 
-Pro každou šablonu spočítej potřebný multiplikátor:
+---
 
-```js
-const needed = slotTarget / templateKcal;
-```
+## A. Propadová větev nesmí díru zakrývat
 
-Tolerance se bere **z `START_MIN_SCALE` / `START_MAX_SCALE`** v
-`lib/nutrition/portionScaling.js`, ne z natvrdo napsané 1.15. Tři skupiny:
+`pickTemplateForSlot` v `lib/services/simpleMealPlannerAgent.js`. Když jsou skupina 1
+i 2 prázdné:
 
-1. **`needed` v `[START_MIN_SCALE, START_MAX_SCALE]`** — sedne přesně. Primární skupina.
-2. **`needed > START_MAX_SCALE`** — šablona je na slot malá. Přijatelné jako záloha:
-   den skončí pod cílem, což je poctivé, a `fillDayCaloriesByAddingLibraryMeals` dokáže
-   přidat jídlo.
-3. **`needed < START_MIN_SCALE`** — šablona je na slot velká. **Nikdy nevybírat.**
-   Zmenšit pod 0,85 se nesmí, takže by jídlo cíl přestřelilo — přesně případ +45 % výš.
+1. Postav kandidáty znovu **bez omezení `MAX_MEAL_USES_PER_WEEK`** a projeď je stejným
+   kalorickým dělením. Třetí opakování sedící svačiny je lepší než den o 17 % vedle.
+2. Když je i pak skupina 1 i 2 prázdná, vezmi kandidáta s **nejmenšími kaloriemi**
+   (nejmenší přestřelení), ne prvního v rotaci.
 
-Pořadí: zkus skupinu 1, při prázdné skupinu 2. Skupina 3 se nepoužije nikdy. Když jsou
-1 i 2 prázdné (nemělo by nastat), vrať `null` a nech volajícího propadnout na dosavadní
-cestu — **žádné tiché propadnutí na `pool[0]`**, ten komentář na řádku ~247 platí dál.
+Tohle řazení je **jen v degenerované větvi**, ne v normální cestě — dvoucyklus z #237,
+který opravovalo #238, tím nevzniká. Napiš to do komentáře, ať to někdo příště
+nezobecní.
 
-## B. Rotace uvnitř skupiny zůstává poziční
+Test, který přišpendlí mechanismus: pool, kde po vyčerpání limitu nezbude sedící
+kandidát, nesmí vrátit jídlo mimo pásmo, když existuje sedící po uvolnění limitu.
 
-Ve vybrané skupině rotuj **stejným pozičním vzorcem** nad odfiltrovaným seznamem.
-**Neřaď podle toho, co sedne nejlíp** — sortování podle nejmenší odchylky je přesně to,
-co v #237 zafixovalo dvoucyklus a co #238 opravovalo. Kandidáti se filtrují, ne řadí.
+---
 
-`MAX_MEAL_USES_PER_WEEK` a `MIN_DISTINCT_BY_TYPE` nech, jak jsou, a aplikuj je až
-na odfiltrovaném seznamu.
+## B. Gate na pokrytí poolu
 
-## C. Stejný základ jídla dvakrát za den
+Nový skript `scripts/verify-start-template-coverage.mjs`. Bez něj se díry vrátí jinde
+a budeme je zase lovit po jedné.
 
-Samostatná vada, kterou kalorické filtrování nevyřeší: den 4 dostal „Těstoviny s kuřetem,
-velká porce" na obědě a „Těstoviny s kuřetem" na večeři. `MIN_DISTINCT_BY_TYPE` hlídá
-rozmanitost v rámci typu, takže duplikace napříč typy propadne.
+Pro každý pack, typ jídla a cíl spočítá:
 
-Přidej `baseDishKey(title)` — normalizovaný název bez velikostní přípony
-(`, velká porce` a podobné). V rámci jednoho dne nevybírej šablonu, jejíž `baseDishKey`
-už ten den padl. **Měkké omezení**: když by to skupinu vyprázdnilo, pusť to a vezmi
-duplikát — lepší duplikát než `null`.
+- `mealsPerDay` z `resolveMealsPerDay`, sloty z `mealSlotTypes`
+- cíl slotu ze `slotTargetKcal`
+- kolik šablon má `slotTarget / templateBaseKcal` v `[START_MIN_SCALE, START_MAX_SCALE]`
+- potřebu na týden = (počet slotů toho typu za den) × 7
+- kapacitu = sedících šablon × `MAX_MEAL_USES_PER_WEEK`
 
-## D. Gate skripty — chybí nízké cíle
+Rozsah teď:
 
-Tohle je důvod, proč to zelené testy nezachytily. Testují jen:
+- **FAIL** pro `standard` a `vegetarian` na cílech `[1400, 1600, 1800, 2000, 2200, 2400]`
+- **jen výpis, ne FAIL** pro vyšší cíle a pro `vegan` — ať je vidět, jak na tom jsme,
+  ale ať to teď neblokuje
 
-- `verify-start-calorie-consistency.mjs` — 3300, 2200, 3300 bez sýra
-- `verify-start-meal-variability.mjs` — 2700
+Výstup ať je tabulka: pack, cíl, typ, cíl slotu, sedí/pool, potřeba, kapacita, chybí.
+Konstanty ber importem (`START_MIN_SCALE`, `START_MAX_SCALE`, `MAX_MEAL_USES_PER_WEEK`),
+ne přepisem — `MAX_MEAL_USES_PER_WEEK` kvůli tomu vyexportuj. Přidej skript do
+`package.json`.
 
-Žádný profil pod 2200 kcal. Přitom hubnutí a udržování v pásmu 1600–2200 je největší
-segment. Doplň:
+Rozšíření rozsahu na vyšší cíle a vegany je připravené na potom — nech to
+zakomentované nebo za konstantou, ať se to dá zapnout jedním řádkem.
 
-1. Do `verify-start-calorie-consistency.mjs` profily **1600, 1800, 2000** kcal
-   (`goal: 'hubnuti'`, `weight_kg: 80`).
-2. V témže skriptu zpřísni horní kontrolu: dnes je `sum > round(dayTarget*1.15) + 50`.
-   Ta rezerva 50 kcal tam nemá co dělat — srovnávej proti `round(dayTarget * 1.15)`.
-   Nahlas, kolik FAILů z toho zpřísnění vyjde, ať vím, co je nové a co jen odhalené.
-3. Do `verify-start-meal-variability.mjs` přidej druhý profil na **1800** kcal.
-4. Unit test, který přišpendlí mechanismus: šablona za 1009 kcal se **nesmí** vybrat
-   pro slot s cílem odpovídajícím dni 1600 kcal. Ne konkrétní názvy jídel — mechanismus,
-   ať test přežije přidání dalších receptů.
-5. Unit test na `baseDishKey`: „Těstoviny s kuřetem" a „Těstoviny s kuřetem, velká porce"
-   mají stejný klíč.
+---
 
-## E. Co nechat být
+## C. Doplnit šablony a recepty, dokud není gate z bodu B zelený
 
-- Makra 6 nových receptů jsem přepočítal, Atwater drží přesně u všech šesti. Neměň je.
-- `MIN_DISTINCT_BY_TYPE`, `MAX_MEAL_USES_PER_WEEK` — beze změny.
-- Neřeš makra 30 starších receptů, které Atwateru nesedí (nejhorší −8,8 %). To je
-  samostatný PR, mám ho v plánu.
-- Migrace párování cviků — samostatný PR, migraci pouštím já.
+Jen pásmo 1400–2400 kcal, packy `standard` a `vegetarian`. Podle měření je potřeba
+zhruba tolik (ale řiď se gatem, ne mým odhadem):
 
-## F. Co nahlásit
+- `standard` svačiny **130–330 kcal** — nejpalčivější, chybí ~6
+- `standard` snídaně kolem **300–400 kcal** — chybí ~2
+- `vegetarian` svačiny **130–330 kcal** — chybí ~6
+- `vegetarian` snídaně, obědy a večeře v pásmu odpovídajícím cílům do 2400 — chybí
+  ~2 snídaně, ~3 obědy, ~4 večeře
 
-- `npm run test:unit`, `test:src`, typecheck, lint, lint:copy, build
-- `verify-start-calorie-consistency` — počet FAILů, a rozpad: co ubylo díky
-  kalorickému schedulingu a co přibylo díky zpřísnění o těch 50 kcal
-- `verify-start-meal-variability`, `verify-start-templates-catalog`,
-  `verify-dietary-exclusions`, `verify-meal-replacement-actions`
-- Tabulku odchylek dne od cíle pro profily 1600, 1800, 2000, 2200, 2400, 2800, 3300,
-  3600, 3841 — všech 7 dní, plná pipeline včetně honesty fill. Chci vidět, že žádný
-  den není nad +15 % a kolik dní zůstává pod −15 %.
+Pravidla pro každou položku, bez výjimky:
 
-## G. Pravidla
+- Šablona v `START_MEAL_TEMPLATES` **a zároveň** knihovní recept
+  v `lib/simpleStartRecipeLibrary.js` se **stejným názvem** a správným `meal_type`.
+  Šablona bez receptu je přesně díra z PR 1.
+- `calories` se musí přesně rovnat `4*protein_g + 4*carbs_g + 9*fat_g`. Makra
+  dopočítej ze surovin, ne od oka.
+- Skutečná česká jídla z běžně dostupných surovin. **Ne varianty téhož** — dvě
+  velikosti jednoho jídla nepomůžou, `MIN_DISTINCT_BY_TYPE` je stejně odfiltruje.
+- Kroky přípravy jako pole (`instructions`), ne slepený string — to byla chyba #234.
+- Ve vegetariánském packu žádné maso a ryby. Ověř přes `verify-dietary-exclusions`,
+  nespoléhej na oko.
+
+---
+
+## D. Co musí platit, než to nahlásíš
+
+- `verify-start-template-coverage` — **PASS** v rozsahu z bodu B
+- `verify-start-meal-variability` — **PASS**, rozšiř o profil **1400 kcal** a o jeden
+  **vegetariánský** profil
+- `verify-start-calorie-consistency` — nahlas počet FAILů (teď 37) a rozpad na
+  „mult outside" vs „far above target". Cíl je **nula „far above target"**; počet
+  „mult outside" ať jde dolů, nemusí být nula
+- `verify-dietary-exclusions`, `verify-start-templates-catalog`,
+  `verify-meal-replacement-actions` — PASS
+- `test:unit`, `test:src`, typecheck, lint, lint:copy, build
+
+A tabulka odchylky dne od cíle pro profily 1400, 1600, 1800, 2000, 2200, 2400 — všech
+7 dní, plná pipeline včetně honesty fillu, zvlášť pro `standard` a `vegetarian`. Žádný
+den nesmí být nad +15 %.
+
+Do `docs/AUDIT_PORCE_VYSOKE_KCAL_2026-09-17.md` dopiš, co se doplnilo, a připoj mapu
+pokrytí po změně včetně toho, co zůstává rozbité nad 2400 a u veganů — ať je jasné,
+co je odložené a ne zapomenuté.
+
+---
+
+## E. Pravidla
 
 - **Nekomituj, neotvírej PR, neměř produkci, nepouštěj migrace.** Nahlas a čekej.
-- Dokumentaci ber jako součást změny: `docs/AUDIT_PORCE_VYSOKE_KCAL_2026-09-17.md`
-  v working tree rozšiř o kalorický scheduling, ať to je jeden souvislý zápis.
+- Nerozšiřuj rozsah. Vegan, cíle nad 2400, makra starých receptů a chybějící
+  Spoonacular recepty teď ne — jsou to samostatné kusy na potom.
+- Když narazíš na něco, co odporuje tomuhle zadání, řekni to — u „Jak na to" i
+  u add-loopu jsi měl pravdu ty a já se mýlil. Radši spor než tiché obejití.

@@ -25,7 +25,6 @@
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
 import {
   PREP_TIME_MODEL,
   PREP_TIME_TEMPERATURE,
@@ -53,7 +52,6 @@ const supabase = createClient(
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
 );
-const openai = new OpenAI({ apiKey: String(process.env.OPENAI_API_KEY || '').trim() });
 
 const args = process.argv.slice(2);
 const rezim = args.includes('--calibrate') ? 'calibrate'
@@ -180,7 +178,13 @@ for (const [i, r] of recepty.entries()) {
   }
 
   try {
-    const odhad = await estimatePrepTime(openai, vstup);
+    const odhad = await estimatePrepTime(vstup, {
+      purpose: rezim === 'calibrate' ? 'prep_time_calibration' : 'prep_time_estimate',
+      // Skript hned níž zapisuje vlastní, bohatší řádek do ai_runs (recipe_id,
+      // result.active_minutes atd., na kterém stojí --rescore) — volejModel()
+      // by jinak zapsal druhý, řidší řádek za totéž volání.
+      record: false,
+    });
     cenaCelkem += odhad.cost_usd;
     vstupTok += odhad.usage.input_tokens;
     vystupTok += odhad.usage.output_tokens;

@@ -29,6 +29,10 @@ jobs:
       # dluh mimo rozsah tohohle uklidu) ale neblokuje — --no-exit-code.
       # Ostry, blokujici pruchod je `npm run lint:dead` bez flagu, rucne.
       - run: npm run lint:dead -- --no-exit-code
+      # PROMPT_NAKLADY_AI.md (2026-09-18) — jedina cesta k modelu OpenAI je
+      # volejModel() z lib/openai.js; bez tyhle brany by se ucetnictvi zase
+      # dalo tise obejit vlastnim klientem.
+      - run: npm run verify:openai-uctovani
       # Skupina A z docs/BRANY_KVALITY.md — bez site/service_role/prohlizece,
       # dnes zelene; nova polozka pribyva jen po zapisu do te tabulky.
       - run: npm run verify:ci-gates

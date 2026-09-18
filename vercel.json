@@ -48,7 +48,7 @@
     },
     {
       "path": "/api/cron/translate-recipes",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 * * * *"
     },
     {
       "path": "/api/ai/run-scheduler",

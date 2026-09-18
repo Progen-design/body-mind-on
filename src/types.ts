@@ -321,6 +321,16 @@ export interface ZamcenyPlan {
   dailyCalories: number | null;
   /** Jídla prvního dne — ukázka, na kterou se dá kouknout přes paywall. */
   ukazkaJidel: { typ: string; nazev: string; kcal: number | null }[];
+  /**
+   * Táž jídla jako `ukazkaJidel`, ale jako plnohodnotné `MealItem` —
+   * `structured_plan_json` zamčeného plánu nese kompletní recept (suroviny,
+   * postup), server ho posílá celý (api/profile.js). PROMPT_UX_DNES.md
+   * bod B: jídla v „Tvůj další týden" musí jít rozkliknout do detailu
+   * receptu stejně jako dnešní. `planId` je schválně `null` — je to ukázka
+   * budoucího týdne, ne dnešní plán, a záměna/odškrtnutí (RecipeModal) se na
+   * něj nesmí vázat.
+   */
+  jidlaPrvnihoDne: MealItem[];
   zamceno: boolean;
   /** Které tiery se dají koupit. Server rozhoduje (`isTierCheckoutEnabled`), ne klient. */
   dostupneTiery: ('START' | 'ON_CLUB' | 'VIP')[];

@@ -47,6 +47,28 @@ export const START_FEATURES = [
 
 export const VIP_PRICE_LABEL = '5 990–6 990 Kč / měsíc';
 
+/**
+ * Poslední odrážka nabídky START — vždy dole, sundává riziko z rozhodnutí
+ * (PROMPT_UX_DNES.md bod C). ON Club dostává stejnou větu doplněnou ke svým
+ * odrážkám, ne vlastní text — riziko je stejné u obou tierů.
+ */
+export const CANCEL_ANYTIME_LINE = 'Zrušíš kdykoli. Ve zkušebním období neplatíš nic.';
+
+/**
+ * Důvody ke koupi, ne výčet funkcí (PROMPT_UX_DNES.md bod C). `START_FEATURES`
+ * výš zůstává výčet toho, co appka umí — používá ho onboarding/marketing.
+ * Tohle je samostatný text pro prodejní karty (Dnes, Účet a předplatné), ať
+ * se úpravou jednoho textu nerozjede druhý.
+ */
+export const START_REASONS = [
+  'Jídelníček i trénink podle tvých čísel, ne obecná tabulka',
+  'Každý týden se plán přepočítá podle toho, jak ti šel ten minulý',
+  'Jídlo, které ti nesedí, vyměníš jedním klikem — kalorie dne zůstanou sedět',
+  'Nákupní seznam se poskládá sám z tvého jídelníčku',
+  'TED odpovídá na tvůj konkrétní plán, ne obecně',
+  CANCEL_ANYTIME_LINE,
+];
+
 export const PRICING = [
   {
     id: 'start',

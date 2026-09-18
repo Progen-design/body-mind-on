@@ -3,6 +3,8 @@ import { CreditCard, Trash2, ShieldAlert } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { NadpisSekce } from './NadpisSekce';
+import { PredplatneNabidka } from './PredplatneNabidka';
+import type { ZamcenyPlan } from '../types';
 import { ODKAZ_PODMINKY, ODKAZ_GDPR } from '@lib/pravniOdkazy.js';
 
 /**
@@ -25,7 +27,16 @@ import { ODKAZ_PODMINKY, ODKAZ_GDPR } from '@lib/pravniOdkazy.js';
  */
 const SLOVO_POTVRZENI = 'SMAZAT';
 
-export const UcetASpravaSection: React.FC = () => {
+interface UcetASpravaSectionProps {
+  /**
+   * Plné srovnání START/ON Club/VIP se kreslí jen tady a v úzkém countdown
+   * pruhu pod hlavičkou (PROMPT_UX_DNES.md bod A.8 + C) — nikde jinde. null
+   * nebo odemčený plán = nic k prodeji, PredplatneNabidka se nezobrazí.
+   */
+  plan?: ZamcenyPlan | null;
+}
+
+export const UcetASpravaSection: React.FC<UcetASpravaSectionProps> = ({ plan = null }) => {
   // Po smazání účtu nesmí zůstat platná session — appka by chvíli ukazovala
   // data účtu, který už neexistuje, a další požadavek by skončil 401.
   const { logout } = useAuth();
@@ -88,6 +99,14 @@ export const UcetASpravaSection: React.FC = () => {
         podtitulek="Zrušení předplatného, smazání účtu a právní dokumenty"
         ikona={<CreditCard className="w-5 h-5 text-slate-400" />}
       />
+
+      {/* PLNÉ SROVNÁNÍ TIERŮ — jen když je co prodávat (viz komentář u props). */}
+      {plan?.zamceno && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-karta/90 border border-slate-800">
+          <h4 className="text-sm font-bold text-slate-100 mb-3">Odemknout členství</h4>
+          <PredplatneNabidka plan={plan} />
+        </div>
+      )}
 
       {/* ZRUŠENÍ PŘEDPLATNÉHO */}
       <div className="p-4 sm:p-5 rounded-2xl bg-karta/90 border border-slate-800">

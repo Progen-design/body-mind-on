@@ -2,14 +2,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Header } from './components/Header';
 import { UserProfileCard } from './components/UserProfileCard';
 import { NavigationTabs, ActiveTab } from './components/NavigationTabs';
-import { OverviewBentoGrid } from './components/OverviewBentoGrid';
-import { ProfileSection } from './components/ProfileSection';
 import { PropojenaZarizeniSection } from './components/PropojenaZarizeniSection';
 import { UcetASpravaSection } from './components/UcetASpravaSection';
 import { DenniCheckin } from './components/DenniCheckin';
 import { DnesniPrehled } from './components/DnesniPrehled';
 import { ProfilHlavicka } from './components/ProfilHlavicka';
+import { TrialCountdownStrip } from './components/TrialCountdownStrip';
 import { TrialPaywallCard } from './components/TrialPaywallCard';
+import { NakupniSeznamVstup } from './components/NakupniSeznamVstup';
 import { BodyCompositionSection } from './components/BodyCompositionSection';
 import { NutritionSection } from './components/NutritionSection';
 import { WorkoutSection } from './components/WorkoutSection';
@@ -365,6 +365,20 @@ function AppContent() {
   const [isShoppingModalOpen, setIsShoppingModalOpen] = useState(false);
   const [isExportPdfOpen, setIsExportPdfOpen] = useState(false);
   const [selectedRecipeMeal, setSelectedRecipeMeal] = useState<MealItem | null>(null);
+  // JÍDLO Z „TVŮJ DALŠÍ TÝDEN" (TrialPaywallCard, PROMPT_UX_DNES.md bod B).
+  // Vlastní stav, ne `selectedRecipeMeal` — to jídlo patří k BUDOUCÍMU
+  // zamčenému plánu, ne k dnešku. Sdílet jeden stav by riskovalo, že
+  // `onToggleComplete`/záměna v RecipeModal omylem zasáhnou dnešní jídlo se
+  // stejným `catalog_id` (recept smí být v obou plánech). `planId: null`
+  // (adaptery.ts) navíc modalu samo schová tlačítko záměny.
+  const [nahledZamcenehoJidla, setNahledZamcenehoJidla] = useState<MealItem | null>(null);
+  // ÚZKÝ PRODEJNÍ PRUH → „Účet a předplatné" (PROMPT_UX_DNES.md bod A.2/C).
+  // Tlačítko na pruhu nekupuje rovnou — nabídka je víc tierů a pruh nemá
+  // prostor je rozlišit, jen odscrolluje na plné srovnání níž.
+  const ucetSekceRef = useRef<HTMLDivElement | null>(null);
+  const scrollNaPredplatne = useCallback(() => {
+    ucetSekceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
   // ZÁMĚNA JÍDLA V RECIPEMODALU ČEKÁ NA RESYNC (POST /api/plan-replace-meal).
   // Endpoint nevrací nic, na co by RecipeModal mohl počkat awaitem — jen
   // spustí `znovuNacistProfil()`. Souřadnice právě zaměněného jídla se tu
@@ -760,6 +774,27 @@ function AppContent() {
     }
   };
 
+  /**
+   * ZAŠKRTNOUT/ODŠKRTNOUT VŠE — JEDNO DÁVKOVÉ VOLÁNÍ (PROMPT_UX_DNES.md bod E.1).
+   *
+   * Většina položek (odvozené z jídelníčku, `id` tvaru "nakup-N") nemá v DB
+   * žádný řádek — jejich zaškrtnutí je jen lokální stav, viz komentář
+   * u `handleToggleShoppingItem`. Server se týkají jen vlastní položky
+   * (`user_shopping_extras`); ty se dřív ukládaly jednotlivě, jedna PATCH
+   * na položku — u 59 vlastních položek 59 requestů. Server teď umí totéž
+   * jedním PATCH s polem `ids` (api/shopping-extras.js).
+   */
+  const handleToggleAllShoppingItems = (checked: boolean) => {
+    setShoppingItems(prev => prev.map(item => ({ ...item, checked })));
+    const idsNaServer = shoppingItems.filter(item => !item.id.startsWith('nakup-')).map(item => item.id);
+    if (idsNaServer.length > 0) {
+      apiFetch('/api/shopping-extras', {
+        method: 'PATCH',
+        body: JSON.stringify({ ids: idsNaServer, checked })
+      }).catch(() => {});
+    }
+  };
+
   const handleAddShoppingItem = async (item: ShoppingItem) => {
     try {
       const { item: ulozena } = await apiFetch<{ item: ShoppingItem }>('/api/shopping-extras', {
@@ -1049,28 +1084,29 @@ function AppContent() {
             Stál mimo podmínku na záložku, takže uvítací zpráva
             („Uvítání do programu") svítila na VŠECH pěti záložkách —
             v Těle, v Jídelníčku, v Tréninku i v Apple Watch. Na profilu
-            se navíc zdvojovala s kartou TEDa v OverviewBentoGrid, která
-            dostává tytéž `coachTips`.
+            se navíc zdvojovala s kartou TEDa v bento mřížce (dnes součást
+            DnesniPrehled), která dostává tytéž `coachTips`.
             Zpráva má být jednou, na hlavní obrazovce — a tam je: karta
             TEDa v bento mřížce profilu (řádek s `topCoachTip`).
             Rozhodnutí Honzy 7. 9. 2026. */}
 
         {/* 6. Dynamic Content Based on Selected Tab */}
 
-        {/* TAB A: MŮJ PROFIL — ÚČET, CÍLE A DNEŠEK NA JEDNOM MÍSTĚ.
-            Do 23. 8. 2026 tu byly záložky dvě: „Přehled" a „Můj Profil".
-            Obě ukazovaly tutéž váhu, tentýž tělesný tuk i svalovou hmotu,
-            obě měly kartu s fotkou a jménem — a makra dokonce rozdílně
-            (Přehled 103 g bílkovin, Profil 184 g za týchž 34 %). Uživatel
-            měl dvě místa, kde hledat totéž. Teď jde profil odshora dolů:
-            kdo jsem a jaké mám cíle (ProfileSection), pak co je dnes
-            — regenerace, jídlo, trénink, TED (OverviewBentoGrid). */}
+        {/* TAB A: DNES — CO MÁM DNESKA DĚLAT, JEDNA OTÁZKA.
+            PROMPT_UX_DNES.md (18. 9. 2026): pořadí sekcí přeskládané podle
+            pravidla „Dnes odpovídá na jedinou otázku — co mám dneska dělat".
+            Referenční hodnoty (cíle, historie váhy, zařízení, účet) patří do
+            svých záložek, prodej nepatří doprostřed. `ProfileSection` zmizelo
+            celé — „Aktuální váha / Cílová hmotnost" se přestěhovala do Tělo
+            & Váha (BodyStatsGrid), „Nastavené denní cíle & Makroživiny" do
+            Jídelníček & Makra (NutritionSection); obojí tam už dřív
+            duplicitně bydlelo. `OverviewBentoGrid` zmizelo taky — jeho
+            jídelní část se sloučila do DnesniPrehled, nákupní seznam dostal
+            vlastní jednořádkový vstup (NakupniSeznamVstup). */}
         {activeTab === 'profil' && (
           <div className="space-y-4 sm:space-y-6">
-            {/* KDO JE PŘIHLÁŠENÝ JE PRVNÍ ÚDAJ NA STRÁNCE (9. 9. 2026).
-                Hlavička byla součástí ProfileSection, tedy až pod dneškem
-                a jídelníčkem — přitom je to jediné místo, kde je vidět, čí
-                plán se zobrazuje. */}
+            {/* 1. HLAVIČKA — kdo je přihlášený, jediné místo, kde je vidět,
+                čí plán se zobrazuje. */}
             <ProfilHlavicka
               profile={displayedProfile}
               preferences={preferences}
@@ -1079,60 +1115,50 @@ function AppContent() {
               onEditPreferences={() => setIsPreferencesModalOpen(true)}
             />
 
-            {/* DNEŠEK PODLE ZÁZNAMŮ, NE PODLE ODŠKRTÁVÁNÍ (9. 9. 2026).
-                Karta bere stav dne z `GET /api/stats/adherence` nad DB funkcí
+            {/* 2. ÚZKÝ PRODEJNÍ PRUH — jediný prodej v horní části stránky,
+                jen countdown + tlačítko na plné srovnání dole v Účtu. */}
+            <TrialCountdownStrip
+              zamceno={zamcenyPlan?.zamceno === true}
+              trialDniDoKonce={displayedProfile.trialDniDoKonce ?? null}
+              onOtevritPredplatne={scrollNaPredplatne}
+            />
+
+            {/* 3. DNEŠEK — kcal/makra, všechna dnešní jídla, trénink.
+                Bere stav dne z `GET /api/stats/adherence` nad DB funkcí
                 `get_daily_adherence()` — ten endpoint existoval, ale UI ho
                 nevolalo a počítalo si vlastní číslo z odškrtnutých položek.
-                Neodškrtnuté jídlo teď znamená „nevíme", ne „nesnědl". */}
+                Neodškrtnuté jídlo znamená „nevíme", ne „nesnědl". */}
             <DnesniPrehled
               todayWorkout={todayWorkout}
-              pocetJidelVPlanu={meals.length}
+              meals={meals}
+              preferences={preferences}
+              onToggleMeal={handleToggleMeal}
+              onSelectRecipe={(meal) => setSelectedRecipeMeal(meal)}
               onSelectTab={setActiveTab}
               onOpenPreferences={() => setIsPreferencesModalOpen(true)}
-            />
-            <TrialPaywallCard plan={zamcenyPlan} />
-
-            <OverviewBentoGrid
-              meals={meals}
-              habits={habits}
-              badHabits={badHabits}
-              preferences={preferences}
-              pocetNakupu={shoppingItems.length}
-              slozeni={slozeni}
-              onSelectTab={setActiveTab}
-              onToggleMeal={handleToggleMeal}
-              onToggleHabit={handleToggleHabit}
-              onCompleteAllHabits={handleCompleteAllHabitsToday}
-              onSelectRecipe={(meal) => setSelectedRecipeMeal(meal)}
-            />
-
-            <ProfileSection
-              profile={displayedProfile}
-              preferences={preferences}
-              latestWeightRecord={latestRecord}
-              biometrics={biometrics}
-              slozeni={slozeni}
               nesouladCile={nesoulad}
               onRegeneratePlan={handleRegeneratePlanForCurrentTarget}
               regenerujiPlan={regenerujiPlan}
-              onEditPreferences={() => setIsPreferencesModalOpen(true)}
-              onAddWeight={() => setIsAddRecordModalOpen(true)}
-              onOpenWeightTab={() => setActiveTab('vaha')}
             />
 
-            {/* DENNÍ CHECK-IN (9. 9. 2026). `GET/POST /api/daily-checkin`
-                existoval od začátku i s číselníkem důvodů, ale UI ho nikdy
-                nezavolalo — tabulka `daily_checkins` měla nula řádků. Karta
-                sedí pod dneškem: ptáme se až potom, co uživatel viděl, co
-                ho dnes čekalo. */}
+            {/* 4. JAK TI DNEŠEK SEDĚL — uzavření dne, hned po něm. */}
             <DenniCheckin onSelectTab={setActiveTab} />
 
-            {/* PROPOJENÁ ZAŘÍZENÍ ÚPLNĚ DOLE (9. 9. 2026).
-                Sekce byla součástí ProfileSection, tedy nad jídelníčkem.
-                Většina uživatelů žádné zařízení připojené nemá a viděla
-                uprostřed profilu dvě prázdné dlaždice dřív než to, kvůli
-                čemu do aplikace chodí. Samostatná komponenta je jediný
-                způsob, jak ji dostat pod bento mřížku. */}
+            {/* 5. NÁKUPNÍ SEZNAM — jednořádkový vstup, otevře modál. */}
+            <NakupniSeznamVstup
+              pocetPolozek={shoppingItems.length}
+              onOpen={() => setIsShoppingModalOpen(true)}
+            />
+
+            {/* 6. TVŮJ DALŠÍ TÝDEN — sbalená ukázka bez cen, rozbalí se na klik. */}
+            <TrialPaywallCard
+              plan={zamcenyPlan}
+              onSelectRecipe={(meal) => setNahledZamcenehoJidla(meal)}
+            />
+
+            {/* 7. PROPOJENÁ ZAŘÍZENÍ — beze změny pořadí (9. 9. 2026:
+                většina uživatelů žádné připojené nemá, patří pod to, kvůli
+                čemu do aplikace chodí). */}
             <PropojenaZarizeniSection
               slozeni={slozeni}
               posledniSynchronizace={posledniSynchronizaceHodinek}
@@ -1143,13 +1169,13 @@ function AppContent() {
               zobrazitWithings={profilData?.show_withings_section === true}
             />
 
-            {/* ÚČET A PŘEDPLATNÉ ÚPLNĚ NAKONEC (9. 9. 2026).
-                Obchodní podmínky (body 9 a 11) slibují zrušení předplatného
-                i smazání účtu „v profilu" — do teď ani jedno nešlo najít:
-                /api/delete-account existoval, ale nevedl na něj odkaz,
-                a zrušení předplatného nebylo vůbec. Sekce patří na konec:
-                je to něco, co člověk hledá jednou za čas, ne denně. */}
-            <UcetASpravaSection />
+            {/* 8. ÚČET A PŘEDPLATNÉ — úplně nakonec, obsahuje i plné
+                srovnání START/ON Club/VIP (bod C), cíl pruhu i tlačítka
+                „Odemknout" v „Tvůj další týden". `ref` je cíl scrollu
+                z TrialCountdownStrip výš. */}
+            <div ref={ucetSekceRef}>
+              <UcetASpravaSection plan={zamcenyPlan} />
+            </div>
           </div>
         )}
 
@@ -1162,6 +1188,8 @@ function AppContent() {
             withingsLastSyncedAt={profilData?.withings_last_sync_at ?? null}
             slozeni={slozeni}
             vlastniBmrKcal={vlastniBmrKcal}
+            targetWeightKg={preferences.targetWeightKg}
+            onEditPreferences={() => setIsPreferencesModalOpen(true)}
             onAddMeasurement={() => setIsAddRecordModalOpen(true)}
             onSync={handleManualWithingsSync}
             onOpenWithingsSettings={() => setIsWithingsModalOpen(true)}
@@ -1179,6 +1207,8 @@ function AppContent() {
             proteinPct={preferences.proteinRatioPercent}
             carbsPct={preferences.carbsRatioPercent}
             fatPct={preferences.fatRatioPercent}
+            preferences={preferences}
+            onEditPreferences={() => setIsPreferencesModalOpen(true)}
             nesouladCile={nesoulad}
             onRegeneratePlan={handleRegeneratePlanForCurrentTarget}
             regenerujiPlan={regenerujiPlan}
@@ -1331,6 +1361,19 @@ function AppContent() {
         items={shoppingItems}
         onToggleItem={handleToggleShoppingItem}
         onAddItem={handleAddShoppingItem}
+        onToggleAll={handleToggleAllShoppingItems}
+      />
+
+      {/* JÍDLO Z „TVŮJ DALŠÍ TÝDEN" — samostatná instance, viz komentář
+          u `nahledZamcenehoJidla` výš. Bez tlačítka „Dát si něco jiného"
+          (planId je null, RecipeModal ho samo schová) a bez odškrtávání
+          (onToggleComplete se nepředává vůbec) — je to ukázka, ne dnešní
+          jídlo. */}
+      <RecipeModal
+        meal={nahledZamcenehoJidla}
+        isOpen={!!nahledZamcenehoJidla}
+        onClose={() => setNahledZamcenehoJidla(null)}
+        onPlanZmenen={() => {}}
       />
 
       <ExportMealPlanModal

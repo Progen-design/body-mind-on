@@ -627,6 +627,49 @@ test('zamceny plan preda konkretni jidla prvniho dne a stav zamku', async () => 
   assert.equal(plan?.ukazkaJidel[0].kcal, 500);
 });
 
+test('zamceny plan nese i plnohodnotna MealItem pro rozkliknuti receptu (PROMPT_UX_DNES.md bod B)', async () => {
+  const { naZamcenyPlan } = await import('./adaptery.ts');
+
+  const plan = naZamcenyPlan({
+    zamceny_plan: {
+      valid_from: '2026-09-01',
+      valid_until: '2026-09-07',
+      daily_calories: 2400,
+      macros: null,
+      zamceno: true,
+      structured_plan_json: {
+        days: [
+          {
+            date: '2026-09-01',
+            meals: [
+              {
+                type: 'breakfast',
+                kcal: 500,
+                protein_g: 20,
+                carbs_g: 60,
+                fat_g: 10,
+                display_name_cs: 'Ovesná kaše',
+                recipe: { title_cs: 'Ovesná kaše', instructions_cs: ['Uvař ovesné vločky.'] },
+                shopping_ingredient_lines: ['100 g ovesných vloček']
+              }
+            ]
+          }
+        ]
+      }
+    }
+  } as never);
+
+  assert.equal(plan?.jidlaPrvnihoDne.length, 1);
+  const jidlo = plan?.jidlaPrvnihoDne[0];
+  assert.equal(jidlo?.title, 'Ovesná kaše');
+  assert.equal(jidlo?.calories, 500);
+  assert.equal(jidlo?.ingredients.length, 1);
+  assert.equal(jidlo?.recipe?.instructions.length, 1);
+  // planId schválně null — RecipeModal podle něj schovává tlačítko záměny
+  // a App.tsx musí jídlo otevřít bez odškrtávání (je to ukázka, ne dnešek).
+  assert.equal(jidlo?.planId, null);
+});
+
 test('chybejici dostupne_tiery spadne na START, ne na prazdny paywall', async () => {
   const { naZamcenyPlan } = await import('./adaptery.ts');
 

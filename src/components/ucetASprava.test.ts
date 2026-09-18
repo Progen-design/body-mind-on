@@ -27,7 +27,9 @@ const SMAZANI = cti('api/delete-account.js');
 
 test('sekce je v profilu vykreslená — jinak na ni nikdo nenarazí', () => {
   assert.match(APP, /import \{ UcetASpravaSection \}/, 'App komponentu neimportuje');
-  assert.match(APP, /<UcetASpravaSection\s*\/>/, 'App sekci nekreslí');
+  // PROMPT_UX_DNES.md bod A.8/C: sekce od 18. 9. 2026 dostává `plan`
+  // (plné srovnání tierů uvnitř), takže tag už není bezatributový.
+  assert.match(APP, /<UcetASpravaSection[\s/>]/, 'App sekci nekreslí');
 });
 
 test('zrušení předplatného volá endpoint, který opravdu existuje', () => {

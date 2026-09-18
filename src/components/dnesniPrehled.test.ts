@@ -1,8 +1,12 @@
 // Dnešek se bere ze záznamů, ne z odškrtávání.
 //
 // Přehled dřív počítal „splněno" z odškrtnutých plánovaných jídel a
-// neodškrtnuté vydával za nesnědené. `GET /api/stats/adherence` nad DB funkcí
+// neodškrtnuté vydával za nesnědené. `GET /api/stats/adherence` nad DB funkci
 // `get_daily_adherence()` přitom existoval a UI ho nevolalo.
+//
+// PROMPT_UX_DNES.md (18. 9. 2026): karta pohltila i jídelní část dřívějšího
+// `OverviewBentoGrid.tsx` (odsud i test na zaškrtávátko jídla, dřív
+// overviewBentoGrid.test.ts) — obě ukazovaly „dnešek" na dvou místech.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -13,16 +17,15 @@ const cti = (p: string) => fs.readFileSync(path.join(KOREN, p), 'utf8');
 
 const KARTA = cti('src/components/DnesniPrehled.tsx');
 const APP = cti('src/App.tsx');
-const BENTO = cti('src/components/OverviewBentoGrid.tsx');
 
 test('karta dneška je nahoře a bere data ze serveru', () => {
   assert.match(APP, /<DnesniPrehled/, 'App kartu nekreslí');
   assert.match(KARTA, /'\/api\/stats\/adherence'/, 'karta nevolá adherence');
-  // Profil má začínat dneškem, ne profilem — jinak se člověk k dnešku
-  // musí prokousat přes osobní údaje.
+  // Dnes má začínat dneškem hned pod hlavičkou a prodejním pruhem, ne až
+  // pod „Účtem a předplatným" na konci stránky.
   assert.ok(
-    APP.indexOf('<DnesniPrehled') < APP.indexOf('<ProfileSection'),
-    'dnešek není nad profilem'
+    APP.indexOf('<DnesniPrehled') < APP.indexOf('<UcetASpravaSection'),
+    'dnešek není nad účtem a předplatným'
   );
 });
 
@@ -30,8 +33,8 @@ test('neodškrtnuté jídlo znamená „nevíme", ne „nesnědl"', () => {
   assert.match(KARTA, /zaznamenáno/, 'chybí rozlišení zaznamenaného od plánovaného');
   assert.match(KARTA, /nevíme, jestli jsi jedl/, 'chybí přiznání chybějícího záznamu');
   assert.ok(
-    !/% splněno/.test(BENTO),
-    'bento zase tvrdí procento splnění z odškrtnutých položek'
+    !/% splněno/.test(KARTA),
+    'karta zase tvrdí procento splnění z odškrtnutých položek'
   );
 });
 
@@ -69,4 +72,29 @@ test('ve dni volna je primární akce jídelníček, ne "prohlédnout tréninkov
     new RegExp(`className="min-h-11 rounded-xl border ${sekundarniStylJakoUpravitCile}[\\s\\S]*?Prohlédnout tréninkový plán`),
     've dni volna musí mít tréninkové tlačítko stejný sekundární styl jako "Upravit cíle"'
   );
+});
+
+test('zaškrtávátko jídla kreslí ikonu v OBOU stavech, ne jen po odškrtnutí', () => {
+  // Dřív `{meal.completed && <Check .../>}` — nezaškrtnutý stav byl bez
+  // jediného SVG, tedy bez jakéhokoli vizuálního náznaku ovládacího prvku.
+  assert.ok(
+    !/\{meal\.completed && <Check/.test(KARTA),
+    'ikona se pořád kreslí jen po zaškrtnutí — nezaškrtnutý stav zůstane prázdný'
+  );
+  assert.match(KARTA, /<Check className="w-3\.5 h-3\.5 stroke-\[3\]" \/>/, 'ikona checku chybí úplně');
+});
+
+test('nezaškrtnutý stav má viditelnou barvu ikony, ne text-transparent, a kulatější tvar', () => {
+  const [, ostatek] = KARTA.split('onToggleMeal(meal.id)');
+  assert.ok(ostatek, 'tlačítko pro odškrtnutí jídla chybí');
+  const blokTridy = ostatek.slice(0, 700);
+
+  assert.match(blokTridy, /rounded-xl/, 'tvar musí být kulatější (rounded-xl), ne rounded-lg');
+  assert.ok(!/rounded-lg/.test(blokTridy), 'starý hranatější rounded-lg tu nesmí zůstat');
+  assert.match(
+    blokTridy,
+    /border-slate-700 bg-slate-800 text-slate-600/,
+    'nezaškrtnutý stav musí mít viditelnou (ne transparentní) barvu ikony'
+  );
+  assert.ok(!/text-transparent/.test(blokTridy), 'ikona nesmí být schovaná přes text-transparent');
 });

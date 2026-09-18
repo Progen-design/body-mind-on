@@ -20,6 +20,9 @@ interface BodyCompositionSectionProps {
   vlastniBmrKcal?: number | null;
   /** ISO čas posledního payloadu z Apple Health. null = zatím nic nedorazilo. */
   zdraviPosledni?: string | null;
+  /** PROMPT_UX_DNES.md bod D — cíl přesunutý sem z Dnes, viz BodyStatsGrid. */
+  targetWeightKg?: number;
+  onEditPreferences?: () => void;
   onAddMeasurement: () => void;
   onSync: () => Promise<SyncResult | null>;
   onOpenWithingsSettings: () => void;
@@ -33,6 +36,8 @@ export const BodyCompositionSection: React.FC<BodyCompositionSectionProps> = ({
   slozeni = null,
   vlastniBmrKcal = null,
   zdraviPosledni = null,
+  targetWeightKg = 0,
+  onEditPreferences,
   onAddMeasurement,
   onSync,
   onOpenWithingsSettings
@@ -61,6 +66,8 @@ export const BodyCompositionSection: React.FC<BodyCompositionSectionProps> = ({
         currentRecord={currentRecord}
         slozeni={slozeni}
         vlastniBmrKcal={vlastniBmrKcal}
+        targetWeightKg={targetWeightKg}
+        onEditPreferences={onEditPreferences}
         onAddMeasurement={onAddMeasurement}
       />
 

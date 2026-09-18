@@ -11,6 +11,13 @@ interface BodyStatsGridProps {
   slozeni: TelesneSlozeni | null;
   /** Vlastní odhad appky (Mifflin–St Jeor) vedle Withings čísla — docs/DALSI_KROK.md 7.2g. */
   vlastniBmrKcal?: number | null;
+  /**
+   * PROMPT_UX_DNES.md bod D — dřív byla cílová hmotnost na Dnes, kam
+   * nepatřila (duplikovala se s aktuální váhou, kterou tahle karta ukazuje
+   * dávno). 0/chybí = cíl není nastavený, karta nabídne, kde ho zadat.
+   */
+  targetWeightKg?: number;
+  onEditPreferences?: () => void;
   onAddMeasurement: () => void;
 }
 
@@ -76,9 +83,15 @@ export const BodyStatsGrid: React.FC<BodyStatsGridProps> = ({
   currentRecord,
   slozeni,
   vlastniBmrKcal = null,
+  targetWeightKg = 0,
+  onEditPreferences,
   onAddMeasurement
 }) => {
   const merenoText = slozeni ? kdyMereno(slozeni.measured_at) : '';
+  const maCil = targetWeightKg > 0;
+  const rozdilKg = maCil && currentRecord?.weight != null
+    ? Math.round((currentRecord.weight - targetWeightKg) * 10) / 10
+    : null;
 
   return (
     <div className="space-y-3.5 sm:space-y-4">
@@ -108,6 +121,40 @@ export const BodyStatsGrid: React.FC<BodyStatsGridProps> = ({
             </div>
             <div className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mt-1">
               {hodnotaNeboPomlcka(currentRecord?.weight, 'kg')}
+            </div>
+
+            {/* CÍLOVÁ VÁHA JAKO POSTUP, NE JAKO DRUHÉ ČÍSLO (PROMPT_UX_DNES.md
+                bod D). Aktuální váha je hned nad tímhle blokem — cíl a rozdíl
+                stojí vedle ní, ne na jiné záložce. */}
+            <div className="mt-3 pt-3 border-t border-slate-800/70">
+              {maCil ? (
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="text-slate-400">
+                    Cíl <strong className="text-white font-bold">{targetWeightKg.toString().replace('.', ',')} kg</strong>
+                  </span>
+                  {rozdilKg !== null && (
+                    <span className={`inline-flex items-center gap-1 font-bold ${rozdilKg === 0 ? 'text-akcent-lime' : 'text-amber-300'}`}>
+                      {rozdilKg === 0
+                        ? 'Cíl splněn'
+                        : (
+                          <>
+                            {rozdilKg > 0 ? <TrendingDown className="w-3.5 h-3.5" /> : <TrendingUp className="w-3.5 h-3.5" />}
+                            {Math.abs(rozdilKg).toString().replace('.', ',')} kg do cíle
+                          </>
+                        )}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                onEditPreferences && (
+                  <button
+                    onClick={onEditPreferences}
+                    className="text-xs text-cyan-300 font-semibold hover:text-cyan-200 transition-colors"
+                  >
+                    Nastavit cíl
+                  </button>
+                )
+              )}
             </div>
           </div>
         </motion.div>

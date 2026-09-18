@@ -156,18 +156,22 @@
 }
 
 /*
- * TISK — Export & Tisk jídelníčku (ExportMealPlanModal.tsx).
+ * TISK — Export & Tisk jídelníčku (ExportMealPlanModal.tsx) a nákupní
+ * seznam (ShoppingListModal.tsx, PROMPT_UX_DNES.md bod E.2).
  *
  * Dřív se tiskla celá appka (window.print() bez jediného @media print
  * pravidla v src/) — navigace, záložky i tmavý překryv modálu, ne ten bílý
- * dokument. Jeden tisknutelný uzel (#tiskovy-dokument) + tenhle blok, obě
- * tlačítka ("Tisknout" i "Uložit jako PDF") jen otevřou tiskový dialog
- * prohlížeče — žádný jsPDF, žádná nová závislost, žádná atrapa.
+ * dokument. Tisknutelné uzly (#tiskovy-dokument, #tiskovy-nakupni-seznam)
+ * + tenhle blok, tlačítka jen otevřou tiskový dialog prohlížeče — žádný
+ * jsPDF, žádná nová závislost, žádná atrapa.
  *
  * Skrýt/ukázat přes `visibility`, ne `display: none`: potomek smí
  * přepsat viditelnost zděděnou od skrytého předka zpátky na `visible`,
  * takže zbytek appky (i modál kolem dokumentu) zmizí, ale dokument
  * a jeho obsah zůstanou — bez složitých výjimek pro každý obalující prvek.
+ * `#tiskovy-nakupni-seznam` má navíc na obrazovce `hidden` (Tailwind), ať
+ * netáhne dvojitý obsah do scrollovatelného modálu — `print:block` mu
+ * `display` vrátí přesně pro tenhle blok.
  */
 @media print {
   body * {
@@ -175,11 +179,14 @@
   }
 
   #tiskovy-dokument,
-  #tiskovy-dokument * {
+  #tiskovy-dokument *,
+  #tiskovy-nakupni-seznam,
+  #tiskovy-nakupni-seznam * {
     visibility: visible;
   }
 
-  #tiskovy-dokument {
+  #tiskovy-dokument,
+  #tiskovy-nakupni-seznam {
     position: absolute;
     top: 0;
     left: 0;
@@ -193,9 +200,10 @@
     background: white;
   }
 
-  /* Jedno jídlo/cvik se nesmí rozpadnout přes dvě stránky. */
+  /* Jedno jídlo/cvik/kategorie nákupu se nesmí rozpadnout přes dvě stránky. */
   #tiskovy-dokument .jidlo,
-  #tiskovy-dokument .cvik {
+  #tiskovy-dokument .cvik,
+  #tiskovy-nakupni-seznam .polozka-kategorie {
     break-inside: avoid;
   }
 

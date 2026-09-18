@@ -942,6 +942,7 @@ export function naZamcenyPlan(odpoved: ProfilOdpoved): ZamcenyPlan | null {
   const jidla = Array.isArray(prvniDen?.meals) ? prvniDen.meals : [];
 
   let svaciny = 0;
+  let svaciny2 = 0;
   return {
     validFrom: z.valid_from,
     validUntil: z.valid_until,
@@ -954,6 +955,16 @@ export function naZamcenyPlan(odpoved: ProfilOdpoved): ZamcenyPlan | null {
         nazev: m?.display_name_cs || m?.name_cs || recept.title_cs || recept.title || 'Jídlo',
         kcal: cislo(m?.kcal),
       };
+    }),
+    // Stejná jídla jako `ukazkaJidel` výš, ale plnohodnotná `MealItem` přes
+    // sdílený `jidloZPlanu` — RecipeModal je pak umí otevřít stejně jako
+    // dnešní jídla (PROMPT_UX_DNES.md bod B). `planId: null` schválně:
+    // je to ukázka BUDOUCÍHO týdne, RecipeModal podle `planId` rozhoduje
+    // o tlačítku záměny/odškrtnutí a to sem nepatří.
+    jidlaPrvnihoDne: jidla.map((m: any, i: number) => {
+      const jeSvacina = String(m?.type).toLowerCase() === 'snack';
+      const typ = typJidla(m?.type, jeSvacina ? svaciny2++ : 0);
+      return jidloZPlanu(m, typ, i, prvniDen?.date || 'zamceny-plan', null, undefined);
     }),
     zamceno: z.zamceno !== false,
     // Prázdný paywall je horší než špatný — nesmí vzniknout stav bez jediné

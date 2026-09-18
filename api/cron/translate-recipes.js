@@ -1,4 +1,6 @@
-// GET/POST /api/cron/translate-recipes — every 5 min while untranslated rows exist
+// GET/POST /api/cron/translate-recipes — hourly (PROMPT_NAKLADY_AI.md
+// 2026-09-18: bylo každých 5 minut / 288× denně, fronta se přitom plní jen
+// jednou denně přes /api/cron/import-spoonacular — hodina stačí s rezervou).
 import { isCronAuthorized } from '../../lib/adminAuth.js';
 import { supabaseServer } from '../../lib/supabaseServer.js';
 import { runCatalogRecipeTranslation, countRemainingUntranslated } from '../../lib/spoonacular/catalogTranslate.js';

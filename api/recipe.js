@@ -1,5 +1,5 @@
 // /api/recipe.js – vygeneruje recept pro jídlo (když v plánu chybí)
-import { openai } from '../lib/openai.js';
+import { volejModel } from '../lib/openai.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -37,7 +37,8 @@ Důležité: všechny suroviny a postup musí být výhradně na jednu porci. Ne
     : `Napiš stručný recept na 1 porci pro toto jídlo: ${dish}`;
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await volejModel({
+      purpose: 'recept_na_pozadani',
       model: 'gpt-4o-mini',
       temperature: 0.4,
       max_tokens: 450,

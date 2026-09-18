@@ -34,7 +34,6 @@
  *
  * NESPOUŠTĚT proti produkci bez výslovného svolení — ani s --dry-run.
  */
-import OpenAI from 'openai';
 import { supabaseServer } from '../lib/supabaseServer.js';
 import { posudPostup } from '../lib/plan/kvalitaPostupu.js';
 import {
@@ -149,8 +148,6 @@ async function main() {
   const jednotlive = podLatkou.filter((r) => r.source !== SKUPINOVY_ZDROJ);
   const skupiny = seskupPodleNazvu(skupinove);
 
-  const openai = dryRun ? null : new OpenAI({ apiKey: String(process.env.OPENAI_API_KEY || '').trim() });
-
   let zapsano = 0;
   let odhadovanychTokenu = 0;
   let volaniModelu = 0;
@@ -168,7 +165,7 @@ async function main() {
       continue;
     }
 
-    let metoda = (await zavolejModel(openai, vstupMetoda)).kroky;
+    let metoda = (await zavolejModel(vstupMetoda)).kroky;
     volaniModelu += 1;
 
     /** @type {Array<{id:number, name_cs:string, ingredients:unknown}>} */
@@ -187,7 +184,7 @@ async function main() {
     }
 
     if (potrebujiRetry.length) {
-      metoda = (await zavolejModel(openai, vstupMetoda)).kroky;
+      metoda = (await zavolejModel(vstupMetoda)).kroky;
       volaniModelu += 1;
       for (const varianta of potrebujiRetry) {
         const kroky = vlozGramaze(metoda, varianta.ingredients);
@@ -217,7 +214,7 @@ async function main() {
     let posledniDuvody = [];
     let zapsanoTenhle = false;
     for (let pokus = 1; pokus <= 2 && !zapsanoTenhle; pokus += 1) {
-      const { kroky } = await zavolejModel(openai, vstup);
+      const { kroky } = await zavolejModel(vstup);
       volaniModelu += 1;
       const posudek = posudPostup({ kroky, suroviny: recept.ingredients, nazev: recept.name_cs });
       const rozhodnuti = rozhodniOZapisu(posudek, recept.instructions_cs, kroky);

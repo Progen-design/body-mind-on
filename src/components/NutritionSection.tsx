@@ -10,6 +10,7 @@ import {
   CalendarDays,
   Flame,
   Sparkles,
+  Sliders,
   Plus
 } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -17,9 +18,10 @@ import { Vysvetlivka } from './Vysvetlivka';
 import { NadpisSekce } from './NadpisSekce';
 import { CalorieMismatchBanner } from './CalorieMismatchBanner';
 import { PruhDnu } from './PruhDnu';
-import { MealItem, ShoppingItem } from '../types';
+import { MealItem, ShoppingItem, UserPreferences } from '../types';
 import { NesouladCile, zkratkaDne } from '../data/adaptery';
 import type { TydenniDenJidel } from '../data/adaptery';
+import { denniMakra } from '../lib/makra';
 import {
   pocetJidelSlovy,
   seradDnyPoNe,
@@ -41,6 +43,14 @@ interface NutritionSectionProps {
   proteinPct: number;
   carbsPct: number;
   fatPct: number;
+  /**
+   * PROMPT_UX_DNES.md bod A — „Nastavené denní cíle & Makroživiny" se
+   * přestěhovalo sem z Dnes (ProfileSection). Celý objekt, ne jednotlivá
+   * pole výš: `denniMakra()` potřebuje i uložené gramy (`proteinTargetG`
+   * apod.), ne jen zaokrouhlené procento.
+   */
+  preferences: UserPreferences;
+  onEditPreferences?: () => void;
   /** Cíl v preferencích ≠ cíl, na který je postavený plán. null = sedí. */
   nesouladCile?: NesouladCile | null;
   onRegeneratePlan?: () => void;
@@ -66,6 +76,8 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
   proteinPct,
   carbsPct,
   fatPct,
+  preferences,
+  onEditPreferences,
   nesouladCile = null,
   onRegeneratePlan,
   regenerujiPlan = false,
@@ -91,6 +103,7 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
   const jeDnesek = den?.jeDnes ?? false;
   const prohlizisJinyDenNezDnes = !!den && !den.jeDnes;
 
+  const makra = denniMakra(preferences);
   const kNakupu = shoppingItems.filter(i => !i.checked).length;
   // Sbalený stav jako výchozí — docs/DALSI_KROK.md 8.14. 63 položek pod sebou
   // odtlačilo zbytek profilu mimo obrazovku; počet v hlavičce (`zbývá X z Y`)
@@ -213,6 +226,57 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
           regenerating={regenerujiPlan}
         />
       )}
+
+      {/* NASTAVENÉ DENNÍ CÍLE & MAKROŽIVINY (PROMPT_UX_DNES.md bod A).
+          Přestěhováno z Dnes (ProfileSection) — duplikovalo se s pruhem
+          výš, který ukazuje SNĚZENÉ makra dneška, ne nastavený cíl. Tohle
+          je konfigurace („kdybys sněd/a přesně cíl, tolik gramů to je"),
+          proto stejný výpočet (`denniMakra`) jako karta Dnešek, jen s
+          nastaveným cílem místo dnešního součtu. CalorieMismatchBanner se
+          nekreslí podruhé — ten už je výš. */}
+      <div className="p-5 sm:p-6 rounded-3xl bg-povrch/90 border border-slate-800 shadow-xl space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
+              <Sliders className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white">Nastavené denní cíle &amp; Makroživiny</h3>
+              <p className="text-xs text-slate-400">
+                Denní příjem rozdělený mezi bílkoviny, sacharidy a tuky — podle toho se skládá tvůj jídelníček
+              </p>
+            </div>
+          </div>
+          {onEditPreferences && (
+            <button
+              onClick={onEditPreferences}
+              className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1"
+            >
+              <span>Změnit hodnoty</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+            <span className="text-xs text-slate-400 block mb-1">Denní kalorie</span>
+            <span className="text-xl font-bold text-white">{targetCalories} kcal</span>
+          </div>
+          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+            <span className="text-xs text-slate-400 block mb-1">Bílkoviny ({makra.bilkoviny.procenta} %)</span>
+            <span className="text-xl font-bold text-makro-bilkoviny">{makra.bilkoviny.gramy} g</span>
+          </div>
+          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+            <span className="text-xs text-slate-400 block mb-1">Sacharidy ({makra.sacharidy.procenta} %)</span>
+            <span className="text-xl font-bold text-amber-400">{makra.sacharidy.gramy} g</span>
+          </div>
+          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+            <span className="text-xs text-slate-400 block mb-1">Tuky ({makra.tuky.procenta} %)</span>
+            <span className="text-xl font-bold text-fuchsia-400">{makra.tuky.gramy} g</span>
+          </div>
+        </div>
+      </div>
 
       {/* Pruh dnů Po–Ne — stejné záložky jako u tréninku (docs/DALSI_KROK.md
           9.8), kreslí je sdílený PruhDnu. Místo „60m / ✓" nese dlaždice kcal

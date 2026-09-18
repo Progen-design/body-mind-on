@@ -62,6 +62,23 @@ export default async function handler(req, res) {
 
     if (req.method === 'PATCH') {
       const telo = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+
+      // DÁVKOVÉ „ZAŠKRTNOUT VŠE" (PROMPT_UX_DNES.md bod E.1) — pole `ids`
+      // místo jednoho `id`. Bez toho by „zaškrtnout vše" u N vlastních
+      // položek poslalo N jednotlivých PATCH requestů.
+      if (Array.isArray(telo.ids)) {
+        const ids = telo.ids.map(String).filter(Boolean);
+        if (ids.length === 0) return res.status(400).json({ error: 'Chybí id položek.' });
+
+        const { error } = await supabaseServer
+          .from('user_shopping_extras')
+          .update({ checked: telo.checked === true })
+          .in('id', ids)
+          .eq('user_id', user.id);
+        if (error) throw new Error(error.message);
+        return res.status(200).json({ ok: true });
+      }
+
       const id = String(telo.id || '');
       if (!id) return res.status(400).json({ error: 'Chybí id položky.' });
 

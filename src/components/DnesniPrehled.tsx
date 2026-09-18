@@ -1,10 +1,23 @@
 import React from 'react';
-import { Utensils, Dumbbell, Activity, ChevronRight } from 'lucide-react';
+import { Dumbbell, Activity, ChevronRight, Check } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import type { ActiveTab } from './NavigationTabs';
-import type { WorkoutDay } from '../types';
+import type { MealItem, UserPreferences, WorkoutDay } from '../types';
+import type { NesouladCile } from '../data/adaptery';
+import { denniMakra } from '../lib/makra';
+import { CalorieMismatchBanner } from './CalorieMismatchBanner';
+import { RadekJidlaGrid } from './RadekJidlaGrid';
 
-// CO MĚ DNES ČEKÁ A CO UŽ MÁM ZA SEBOU.
+// DNEŠEK — CO MĚ ČEKÁ A CO UŽ MÁM ZA SEBOU, JEDNA KARTA.
+//
+// PROMPT_UX_DNES.md (18. 9. 2026): sloučeno z `DnesniPrehled` (tenhle soubor,
+// dřív jen souhrn „Jídla 0 z 6", trénink, pohyb) a jídelní části
+// `OverviewBentoGrid` (dřív samostatná karta s kcal/makro pruhem a výřezem
+// tří jídel z pěti). Obě ukazovaly „dnešek", jen na dvou různých místech
+// stránky a s dvojicí téměř totožných nadpisů („Jídla — 0 z 6 zaznamenáno"
+// / „0 z 6 jídel zaznamenáno") — a mezi nima seděl prodej příštího týdne.
+// Jedna karta, jedno místo, žádný výřez: dřív se ukazovaly jen 3 z 5 jídel
+// s poznámkou „Zobrazeny 3 z 5" — teď je vidět celý dnešní jídelníček.
 //
 // TŘI STAVY, NE DVA. Přehled dřív počítal „splněno" z odškrtnutých
 // plánovaných jídel a neodškrtnuté vydával za nesnědené. Neodškrtnuté ale
@@ -15,9 +28,9 @@ import type { WorkoutDay } from '../types';
 // Proto se ukazují jen když opravdu dorazily, a nikdy se nedopočítávají
 // z plánu.
 //
-// Zdroj je `GET /api/stats/adherence` nad DB funkcí `get_daily_adherence()`.
-// Endpoint existoval, ale UI ho nevolalo a počítalo si vlastní číslo
-// z odškrtnutých položek.
+// Zdroj adherence je `GET /api/stats/adherence` nad DB funkcí
+// `get_daily_adherence()`. Endpoint existoval, ale UI ho nevolalo a
+// počítalo si vlastní číslo z odškrtnutých položek.
 
 interface Adherence {
   planovanych_jidel: number;
@@ -31,10 +44,16 @@ interface Adherence {
 
 interface Props {
   todayWorkout: WorkoutDay;
-  /** Kolik jídel je dnes v plánu — než dorazí adherence ze serveru. */
-  pocetJidelVPlanu: number;
+  meals: MealItem[];
+  preferences: UserPreferences;
+  onToggleMeal: (id: string) => void;
+  onSelectRecipe: (meal: MealItem) => void;
   onSelectTab: (tab: ActiveTab) => void;
   onOpenPreferences: () => void;
+  /** Cíl v preferencích ≠ cíl, na který je postavený plán. null = sedí. */
+  nesouladCile?: NesouladCile | null;
+  onRegeneratePlan?: () => void;
+  regenerujiPlan?: boolean;
 }
 
 function Radek({
@@ -64,9 +83,15 @@ function Radek({
 
 export const DnesniPrehled: React.FC<Props> = ({
   todayWorkout,
-  pocetJidelVPlanu,
+  meals,
+  preferences,
+  onToggleMeal,
+  onSelectRecipe,
   onSelectTab,
   onOpenPreferences,
+  nesouladCile = null,
+  onRegeneratePlan,
+  regenerujiPlan = false,
 }) => {
   const [stav, setStav] = React.useState<Adherence | null>(null);
 
@@ -86,7 +111,7 @@ export const DnesniPrehled: React.FC<Props> = ({
   }, []);
 
   const maTrenink = todayWorkout.exercises.length > 0;
-  const planovanychJidel = stav?.planovanych_jidel || pocetJidelVPlanu;
+  const planovanychJidel = stav?.planovanych_jidel || meals.length;
   const zaznamenanychJidel = stav?.splnenych_jidel ?? 0;
   const chybiZaznam = Math.max(0, planovanychJidel - zaznamenanychJidel);
 
@@ -101,13 +126,17 @@ export const DnesniPrehled: React.FC<Props> = ({
 
   const pohybMin = stav?.pohyb_min ?? 0;
 
+  const currentCalories = meals.reduce((acc, m) => acc + (m.completed ? m.calories : 0), 0);
+  const targetCalories = preferences.dailyCalorieTarget;
+  const makra = denniMakra(preferences);
+
   return (
     <section
       aria-label="Dnešní přehled"
       className="rounded-3xl border border-slate-800 bg-povrch p-5 sm:p-6"
     >
       <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-        Co tě dnes čeká
+        Dnešek
       </h2>
       <p className="mt-1 text-sm text-slate-400">
         {maTrenink
@@ -117,22 +146,87 @@ export const DnesniPrehled: React.FC<Props> = ({
             : 'Na dnešek tu zatím nemáš trénink.'}
       </p>
 
-      <div className="mt-4">
-        <Radek
-          ikona={<Utensils className="w-4 h-4" />}
-          popisek="Jídla"
-          hodnota={
-            planovanychJidel > 0
-              ? `${zaznamenanychJidel} z ${planovanychJidel} zaznamenáno`
-              : 'Zatím bez jídelníčku'
-          }
-          poznamka={
-            chybiZaznam > 0
-              ? `U ${chybiZaznam} zatím nevíme, jestli jsi jedl`
-              : undefined
-          }
-        />
+      {/* KCAL A MAKRA — SLOUČENO Z OverviewBentoGrid (18. 9. 2026). */}
+      <div className="mt-4 flex items-baseline justify-between gap-3">
+        <div>
+          <span className="text-2xl sm:text-3xl font-extrabold text-white">
+            {currentCalories.toLocaleString('cs-CZ')}
+          </span>
+          <span className="text-xs text-slate-400 font-medium ml-1.5">
+            / cíl {targetCalories.toLocaleString('cs-CZ')} kcal
+          </span>
+        </div>
+        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold text-akcent-lime bg-emerald-950/60 border border-emerald-500/30 shrink-0">
+          {meals.filter((m) => m.completed).length} z {meals.length} jídel zaznamenáno
+        </span>
+      </div>
+      <p className="mt-2 text-xs text-slate-400 leading-relaxed">
+        Počítáme jen jídla označená jako snědená. Nezapsané jídlo neznamená, že jsi nejedl/a.
+      </p>
+      <div className="mt-2.5 space-y-1.5">
+        <div className="flex items-center gap-1.5 h-2.5 w-full rounded-full overflow-hidden p-0.5 bg-slate-900 border border-slate-800">
+          <div style={{ width: `${preferences.proteinRatioPercent}%` }} className="h-full rounded-full bg-makro-bilkoviny shadow-[0_0_8px_var(--color-makro-bilkoviny)]" />
+          <div style={{ width: `${preferences.carbsRatioPercent}%` }} className="h-full rounded-full bg-makro-sacharidy shadow-[0_0_8px_var(--color-makro-sacharidy)]" />
+          <div style={{ width: `${preferences.fatRatioPercent}%` }} className="h-full rounded-full bg-makro-tuky shadow-[0_0_8px_var(--color-makro-tuky)]" />
+        </div>
+        <div className="flex items-center justify-between text-xs font-semibold px-0.5">
+          <span className="text-makro-bilkoviny">B {makra.bilkoviny.procenta} % ({makra.bilkoviny.gramy} g)</span>
+          <span className="text-makro-sacharidy">S {makra.sacharidy.procenta} % ({makra.sacharidy.gramy} g)</span>
+          <span className="text-makro-tuky">T {makra.tuky.procenta} % ({makra.tuky.gramy} g)</span>
+        </div>
+      </div>
 
+      {/* Plán je otisk cíle v okamžiku generování — po změně cíle se sám
+          nepřegeneruje. Stejný banner jako v jídelníčku, ať nesoulad vidí
+          i tady, kde cíl nastavuje (docs/DALSI_KROK.md 7.2a). */}
+      {nesouladCile && onRegeneratePlan && (
+        <div className="mt-4">
+          <CalorieMismatchBanner
+            nesoulad={nesouladCile}
+            onRegenerate={onRegeneratePlan}
+            regenerating={regenerujiPlan}
+          />
+        </div>
+      )}
+
+      {/* VŠECHNA DNEŠNÍ JÍDLA, ŽÁDNÝ VÝŘEZ (PROMPT_UX_DNES.md bod A.3).
+          Do 18. 9. 2026 tu byl `meals.slice(0, 3)` s poznámkou „Zobrazeny 3 z
+          5 jídel" — karta tvrdila 1338 kcal proti cíli 2634, jako by třetina
+          dne chyběla. */}
+      {meals.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {meals.map((meal) => (
+            <div
+              key={meal.id}
+              className="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800 flex items-center gap-2.5 hover:border-slate-700 transition-all"
+            >
+              <button
+                onClick={() => onToggleMeal(meal.id)}
+                aria-label={`${meal.completed ? 'Zrušit záznam jídla' : 'Označit jako snědené'}: ${meal.title}`}
+                aria-pressed={meal.completed}
+                className={`w-10 h-10 shrink-0 rounded-xl border flex items-center justify-center transition-all ${
+                  meal.completed
+                    ? 'bg-akcent-lime border-akcent-lime text-slate-950 font-bold'
+                    : 'border-slate-700 bg-slate-800 text-slate-600 hover:text-slate-400 hover:border-slate-600'
+                }`}
+              >
+                <Check className="w-3.5 h-3.5 stroke-[3]" />
+              </button>
+
+              <RadekJidlaGrid typ={meal.type} nazev={meal.title} kcal={meal.calories} odskrtnuto={meal.completed} />
+
+              <button
+                onClick={() => onSelectRecipe(meal)}
+                className="shrink-0 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 px-2.5 py-1 rounded-lg bg-cyan-950/40 border border-cyan-500/30"
+              >
+                Recept
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-4">
         <Radek
           ikona={<Dumbbell className="w-4 h-4" />}
           popisek="Trénink"
@@ -159,6 +253,12 @@ export const DnesniPrehled: React.FC<Props> = ({
             hodnota={`${pohybMin} min`}
             poznamka="Naměřeno hodinkami"
           />
+        )}
+
+        {chybiZaznam > 0 && (
+          <p className="mt-2.5 text-[11px] text-slate-500">
+            U {chybiZaznam} {chybiZaznam === 1 ? 'jídla' : 'jídel'} zatím nevíme, jestli jsi jedl
+          </p>
         )}
       </div>
 

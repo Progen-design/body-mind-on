@@ -1,9 +1,10 @@
 /**
- * CO SMÍ A NESMÍ BÝT V PROFILU.
+ * CO SMÍ A NESMÍ BÝT V PROFILU / NA DNES.
  *
  * Po sloučení záložek Přehled a Můj profil se do jedné stránky sešlo všechno,
  * takže duplicity a nepravdivá tvrzení jsou najednou vidět vedle sebe.
- * Tenhle test hlídá, co se 23. 8. 2026 opravovalo, ať se to nevrátí.
+ * Tenhle test hlídá, co se 23. 8. 2026 opravovalo, ať se to nevrátí — a od
+ * 18. 9. 2026 (PROMPT_UX_DNES.md) i přeskládané pořadí sekcí na Dnes.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -21,12 +22,15 @@ function kod(text: string): string {
     .join('\n');
 }
 
-const PROFIL = kod(cti('../components/ProfileSection.tsx'));
+// PROMPT_UX_DNES.md (18. 9. 2026): ProfileSection a OverviewBentoGrid zmizely
+// úplně — sloučily a přestěhovaly se, viz App.tsx komentář u
+// `activeTab === 'profil'`. KARTA je jejich nástupce: dnešní souhrn a
+// jídelníček dneška v jedné kartě.
+const KARTA = kod(cti('../components/DnesniPrehled.tsx'));
 // Sekce zařízení se 9. 9. 2026 odstěhovala z ProfileSection do vlastní
 // komponenty, aby ji App mohl vykreslit až pod bento mřížkou. Pravidla
 // o Withings a Apple Health platí dál, jen se čtou odjinud.
 const ZARIZENI = kod(cti('../components/PropojenaZarizeniSection.tsx'));
-const BENTO = kod(cti('../components/OverviewBentoGrid.tsx'));
 const APP = kod(cti('../App.tsx'));
 const WORKOUT_LOGGER = kod(cti('../components/WorkoutLoggerModal.tsx'));
 const NUTRITION = kod(cti('../components/NutritionSection.tsx'));
@@ -34,30 +38,22 @@ const WITHINGS_CARD = kod(cti('../components/WithingsCard.tsx'));
 const BODY_STATS = kod(cti('../components/BodyStatsGrid.tsx'));
 const CALORIE_BANNER = kod(cti('../components/CalorieMismatchBanner.tsx'));
 const WEEKLY_WORKOUT_MODAL = kod(cti('../components/WeeklyWorkoutModal.tsx'));
+const NAVIGACE = kod(cti('../components/NavigationTabs.tsx'));
 
-test('AI trenér TED není v profilu vůbec — vstup do chatu je v hlavičce', () => {
+test('AI trenér TED není v Dnešku vůbec — vstup do chatu je v hlavičce', () => {
   // Nejdřív byl TED jako dlaždice mezi zařízeními A jako vlastní karta níž.
   // Dlaždice zmizela 23. 8. (není zařízení, nic nesynchronizuje), karta
   // 8. 9.: tlačítko „Zeptat se TEDa" je v hlavičce na každé záložce, takže
   // karta byla druhý vstup do téhož chatu — a zprávy od trenéra vznikají
   // jen při registraci a po týdnu se skrývají, takže většinu času stála
   // v profilu karta se jménem TEDa, ve které TED nebyl.
-  assert.ok(!PROFIL.includes('AI trenér TED'), 'TED je zpátky mezi zařízeními');
-  assert.ok(!PROFIL.includes('useTed'), 'ProfileSection zase sahá na TEDa');
-  assert.ok(!BENTO.includes('AI Trenér TED'), 'karta TEDa je zpátky v Bento gridu');
-  assert.ok(!BENTO.includes('onAskTed'), 'Bento grid zase otevírá chat s TEDem');
-});
-
-test('prázdný štít členství se nevrátil', () => {
-  // `profile.membershipPlan` se plní z user_metadata.membership_plan, kam
-  // nikdo nezapisuje — v UI zbyla ikona štítu bez textu.
-  assert.ok(!PROFIL.includes('membershipPlan'), 'prázdný tarif je zpátky v profilu');
-  assert.ok(!PROFIL.includes('ShieldCheck'), 'ikona štítu bez obsahu je zpátky');
+  assert.ok(!KARTA.includes('AI Trenér TED'), 'karta TEDa je zpátky v Dnešku');
+  assert.ok(!KARTA.includes('onAskTed'), 'Dnešek zase otevírá chat s TEDem');
 });
 
 test('netvrdíme, že data chodí v reálném čase', () => {
   // Withings se stahuje jednou za hodinu, Apple Health posílá iPhone.
-  for (const [jmeno, zdroj] of [['App', APP], ['profil', PROFIL], ['bento', BENTO]] as const) {
+  for (const [jmeno, zdroj] of [['App', APP], ['Dnešek', KARTA], ['zařízení', ZARIZENI]] as const) {
     assert.ok(!/v re[áa]ln[ée]m [čc]ase/i.test(zdroj), `${jmeno}: „v reálném čase" je zpátky`);
     assert.ok(!/Tep [žz]iv[ěe]|HRV.*[žz]iv[ěe]/i.test(zdroj), `${jmeno}: „živě" je zpátky`);
   }
@@ -134,50 +130,33 @@ test('odznak u Apple Health ukazuje odstup, ne verdikt', () => {
   );
 });
 
-test('záložka Přehled je pryč a profil kreslí obojí', () => {
-  const navigace = kod(cti('../components/NavigationTabs.tsx'));
-  assert.ok(!navigace.includes("'dnes'"), 'záložka Přehled je zpátky');
+test('záložka Přehled je pryč a Dnes je jedna sloučená karta, ne ProfileSection/OverviewBentoGrid (PROMPT_UX_DNES.md)', () => {
+  assert.ok(!NAVIGACE.includes("'dnes'"), 'záložka Přehled je zpátky');
   assert.ok(!APP.includes("activeTab === 'dnes'"), 'App zase vetví na Přehled');
+  assert.ok(APP.includes('<DnesniPrehled'), 'Dnes nekreslí sloučenou kartu');
   assert.ok(
-    APP.includes('<ProfileSection') && APP.includes('<OverviewBentoGrid'),
-    'profil musí kreslit ProfileSection i OverviewBentoGrid'
+    !APP.includes('<ProfileSection') && !APP.includes('<OverviewBentoGrid'),
+    'ProfileSection/OverviewBentoGrid se vrátily — obě se 18. 9. 2026 sloučily do DnesniPrehled a rozstěhovaly do vlastních záložek'
   );
 });
 
-test('nákupní seznam sedí u jídelníčku (Karta 3) — docs/DALSI_KROK.md 6.8', () => {
-  // Karta 6 se hlavičkou hlásila jako "AI Trenér TED", ale zobrazovala pod
-  // ní i nesouvisející nákupní seznam — rozpor mezi nadpisem a obsahem.
-  // Značky karet jsou v JSX komentářích, které kod() odstraňuje, proto se
-  // tu čte surový soubor, ne sdílená stripnutá konstanta BENTO.
-  const surovy = cti('../components/OverviewBentoGrid.tsx');
-  const zacatekKarty3 = surovy.indexOf('KARTA 3');
-  assert.ok(zacatekKarty3 > -1, 'značka Karty 3 zmizela ze souboru');
-
-  // kod() na výřezu, ne na celém souboru — markery karet jsou v komentářích
-  // a bez stripu by je nešlo najít. Karta 3 je od 9. 9. 2026 poslední
-  // v mřížce, takže výřez jde až do konce souboru.
-  const obsahKarty3 = kod(surovy.slice(zacatekKarty3));
-
-  assert.ok(obsahKarty3.includes('Nákupní seznam'), 'Karta 3 nemá nákupní seznam');
-  // Karta 6 (TED) byla 8. 9. 2026 odstraněna celá, viz test výš.
+test('nákupní seznam na Dnes je vlastní jednořádkový vstup, ne schovaný pod jídelníčkem (PROMPT_UX_DNES.md bod A.5)', () => {
+  assert.ok(APP.includes('<NakupniSeznamVstup'), 'App na Dnes nekreslí NakupniSeznamVstup');
+  assert.ok(!KARTA.includes('Nákupní seznam'), 'nákupní seznam se vrátil dovnitř karty Dnešek');
 });
 
-test('trénink a regenerace se v profilu nekreslí podruhé (rozhodnutí 9. 9. 2026)', () => {
-  // Obojí má vlastní záložku v horní navigaci, takže karty v profilu byly
-  // druhý vstup do téhož obsahu — a u člověka bez hodinek nebo ve dni volna
-  // ukazovaly jen pomlčky a „Volno".
-  assert.ok(!BENTO.includes('Dnešní trénink'), 'karta tréninku je zpátky v profilu');
-  assert.ok(!BENTO.includes('Regenerace &'), 'karta regenerace je zpátky v profilu');
-  assert.ok(!BENTO.includes('todayWorkout'), 'bento grid zase dostává dnešní trénink');
+test('trénink se v Dnešku ukazuje jen jako stavový řádek, ne jako druhá plná karta (rozhodnutí 9. 9. 2026)', () => {
+  // Trénink má vlastní záložku v horní navigaci — Dnešek smí ukázat jen
+  // stav (odcvičeno/čeká/volno), ne vypsat celý trénink podruhé.
+  assert.ok(!KARTA.includes('Dnešní trénink'), 'karta tréninku je zpátky v Dnešku');
+  assert.ok(!KARTA.includes('Regenerace &'), 'karta regenerace je zpátky v Dnešku');
 
   // Zápis tréninku mimo plán se odebráním karty nesmí ztratit — je na
   // záložce Tréninkový plán, kam vede tlačítko v navigaci.
-  const workout = kod(cti('../components/WorkoutSection.tsx'));
-  assert.ok(workout.includes('onOpenWorkoutLogger'), 'záznamník tréninku není dosažitelný nikde');
-
-  const navigace = kod(cti('../components/NavigationTabs.tsx'));
-  assert.ok(navigace.includes("'trenink'"), 'záložka Tréninkový plán zmizela');
-  assert.ok(navigace.includes("'regenerace'"), 'záložka Regenerace & Spánek zmizela');
+  const WORKOUT_SECTION = kod(cti('../components/WorkoutSection.tsx'));
+  assert.ok(WORKOUT_SECTION.includes('onOpenWorkoutLogger'), 'záznamník tréninku není dosažitelný nikde');
+  assert.ok(NAVIGACE.includes("'trenink'"), 'záložka Tréninkový plán zmizela');
+  assert.ok(NAVIGACE.includes("'regenerace'"), 'záložka Regenerace & Spánek zmizela');
 });
 
 test('maPlan v App.tsx nepočítá dny volna jako důkaz existujícího plánu (docs/DALSI_KROK.md 8.14)', () => {
@@ -211,22 +190,39 @@ test('WorkoutLoggerModal s prázdným todayWorkout vypadá jako záměr, ne jako
   );
 });
 
-test('Karta 3 neříká "Všechna jídla" nad výřezem tří z pěti (docs/DALSI_KROK.md 7.2c)', () => {
-  // meals.slice(0, 3) pod nadpisem "Všechna jídla" ukazovalo 1338 kcal proti
-  // cíli 2634 — vypadalo to, že třetina dne chybí. Nadpis lhal o tom, co je
-  // pod ním; teď je pravdivý nadpis navigace + počet zobrazených jídel.
-  assert.ok(!BENTO.includes('Všechna jídla'), 'nadpis "Všechna jídla" nad výřezem se vrátil');
-  assert.ok(BENTO.includes('Otevřít jídelníček'), 'chybí pravdivý navigační odkaz na Kartě 3');
-  assert.ok(BENTO.includes('meals.length > 3'), 'chybí podmínka pro zobrazení počtu jídel jen když se opravdu ořezávají');
-  assert.ok(BENTO.includes('Zobrazeny 3 z'), 'chybí přiznání, že karta ukazuje jen výřez');
+test('Dnešek ukazuje VŠECHNA dnešní jídla, ne jen výřez tří z pěti (PROMPT_UX_DNES.md bod A.3)', () => {
+  // Do 18. 9. 2026 tu byl `meals.slice(0, 3)` s poznámkou „Zobrazeny 3 z 5
+  // jídel" — karta tvrdila 1338 kcal proti cíli 2634, jako by třetina dne
+  // chyběla (docs/DALSI_KROK.md 7.2c). Celá výseč se od 18. 9. 2026 zrušila.
+  assert.ok(!KARTA.includes('Všechna jídla'), 'nadpis "Všechna jídla" nad výřezem se vrátil');
+  assert.ok(!/meals\.slice\(0,\s*3\)/.test(KARTA), 'meals se zase ořezávají na tři');
+  assert.ok(!KARTA.includes('Zobrazeny 3 z'), 'přiznání výřezu je zpátky — celý seznam se přece nemá ořezávat');
+  assert.ok(/meals\.map\(/.test(KARTA), 'Dnešek nemapuje celé pole meals');
 });
 
-test('nesoulad cíle vs. plánu je vidět na profilu i v jídelníčku (docs/DALSI_KROK.md 7.2a)', () => {
+test('zarovnání jídel: štítek, název (1fr) a kcal v gridu, ne ve flexu za sebou (PROMPT_UX_DNES.md bod B)', () => {
+  const GRID = kod(cti('../components/RadekJidlaGrid.tsx'));
+  assert.ok(GRID.includes('grid-cols-[1fr_auto]'), 'chybí mobilní 2sloupcový grid (obsah/kcal)');
+  assert.ok(GRID.includes('sm:grid-cols-[6rem_1fr_auto]'), 'chybí desktopový 3sloupcový grid štítek/název/kcal');
+  assert.ok(KARTA.includes('RadekJidlaGrid'), 'Dnešek nepoužívá sdílený grid pro řádek jídla');
+  const PAYWALL = kod(cti('../components/TrialPaywallCard.tsx'));
+  assert.ok(PAYWALL.includes('RadekJidlaGrid'), '„Tvůj další týden" nepoužívá sdílený grid pro řádek jídla');
+});
+
+test('jídla v „Tvůj další týden" jdou rozkliknout do detailu receptu (PROMPT_UX_DNES.md bod B)', () => {
+  const PAYWALL = kod(cti('../components/TrialPaywallCard.tsx'));
+  assert.ok(PAYWALL.includes('onSelectRecipe'), 'karta nedostává onSelectRecipe');
+  assert.ok(/onClick=\{.*onSelectRecipe\(jidlo\)/.test(PAYWALL), 'klik na jídlo neotevírá recept');
+  const ADAPTERY = cti('../data/adaptery.ts');
+  assert.ok(ADAPTERY.includes('jidlaPrvnihoDne'), 'ZamcenyPlan nenese plnohodnotná MealItem pro paywall');
+});
+
+test('nesoulad cíle vs. plánu je vidět v Dnešku i v jídelníčku (docs/DALSI_KROK.md 7.2a)', () => {
   // Watchdog `calorie_target_mismatch` detekci má, ale nikdo interní alert
   // nečte. Uživatel musí nesoulad vidět na obou místech, odkud se s cílem
-  // pracuje — na profilu (kde cíl nastavuje) i v jídelníčku (kde se podle
+  // pracuje — v Dnešku (kde cíl nastavuje) i v jídelníčku (kde se podle
   // něj skládá jídlo) — ne jen na jednom z nich.
-  assert.ok(PROFIL.includes('CalorieMismatchBanner'), 'profil nezobrazuje banner nesouladu cíle');
+  assert.ok(KARTA.includes('CalorieMismatchBanner'), 'Dnešek nezobrazuje banner nesouladu cíle');
   assert.ok(NUTRITION.includes('CalorieMismatchBanner'), 'jídelníček nezobrazuje banner nesouladu cíle');
   assert.ok(APP.includes('nesouladCile('), 'App.tsx nepočítá nesoulad cíle přes sdílenou funkci');
   assert.ok(
@@ -281,4 +277,15 @@ test('appka vedle Withings BMR ukazuje i vlastní výpočet, ne ho schovává (d
   assert.ok(BODY_STATS.includes('slozeni.basal_metabolic_rate'), 'Withings BMR zmizel z dlaždice');
   assert.ok(BODY_STATS.includes('vlastniBmrKcal'), 'appka nemá vlastní BMR pro porovnání vedle Withings čísla');
   assert.ok(APP.includes('bmrMifflinStJeor'), 'App.tsx nepočítá vlastní BMR přes sdílený vzorec');
+});
+
+test('cílová hmotnost je na Tělo & Váha, ne na Dnes (PROMPT_UX_DNES.md bod D)', () => {
+  assert.ok(BODY_STATS.includes('targetWeightKg'), 'BodyStatsGrid nedostává cílovou hmotnost');
+  assert.ok(BODY_STATS.includes('rozdilKg'), 'chybí dopočet rozdílu aktuální vs. cílová váha');
+  assert.ok(!KARTA.includes('Cílová hmotnost'), 'cílová hmotnost je pořád i na Dnes — duplicita se měla odstranit');
+});
+
+test('nastavené denní cíle & makroživiny jsou v jídelníčku, ne na Dnes (PROMPT_UX_DNES.md bod A)', () => {
+  assert.ok(NUTRITION.includes('Nastavené denní cíle'), 'jídelníček neukazuje nastavený cíl kalorií a maker');
+  assert.ok(!KARTA.includes('Nastavené denní cíle'), 'cíle a makra jsou pořád i na Dnes — duplicita se měla odstranit');
 });

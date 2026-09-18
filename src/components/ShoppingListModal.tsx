@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Check, Plus, ShoppingBag, Copy, CheckCheck, Trash2, Filter } from 'lucide-react';
+import { X, Check, Plus, ShoppingBag, Copy, CheckCheck, Trash2, Filter, Printer, CheckSquare, Square } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShoppingItem } from '../types';
 
@@ -10,6 +10,8 @@ interface ShoppingListModalProps {
   onToggleItem: (id: string) => void;
   onAddItem: (item: ShoppingItem) => void;
   onDeleteItem?: (id: string) => void;
+  /** PROMPT_UX_DNES.md bod E.1 — jedno dávkové volání, ne jedno PATCH na položku. */
+  onToggleAll?: (checked: boolean) => void;
 }
 
 export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
@@ -18,7 +20,8 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
   items,
   onToggleItem,
   onAddItem,
-  onDeleteItem
+  onDeleteItem,
+  onToggleAll
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('Vše');
   const [newItemName, setNewItemName] = useState('');
@@ -36,6 +39,20 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
     : items.filter(it => it.category === selectedCategory);
 
   const completedCount = items.filter(i => i.checked).length;
+  const vseZaskrtnuto = items.length > 0 && completedCount === items.length;
+
+  // Obě tlačítka dělají totéž — otevřou tiskový dialog prohlížeče, kde je
+  // "Uložit jako PDF" jako cíl. Stejný vzor jako ExportMealPlanModal.tsx:
+  // žádný jsPDF, žádná nová závislost (PROMPT_UX_DNES.md bod E.2).
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // Kategorie po sobě, v pořadí definovaném `categories` výš (bez „Vše").
+  const podleKategorii = categories
+    .filter(cat => cat !== 'Vše')
+    .map(cat => ({ nazev: cat, polozky: items.filter(it => it.category === cat) }))
+    .filter(skupina => skupina.polozky.length > 0);
 
   const handleCopyList = () => {
     const text = items
@@ -98,6 +115,26 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {onToggleAll && items.length > 0 && (
+              <button
+                onClick={() => onToggleAll(!vseZaskrtnuto)}
+                className="p-2 rounded-xl text-slate-300 hover:text-white bg-slate-900 border border-slate-800 flex items-center gap-1.5 text-xs font-semibold"
+                title={vseZaskrtnuto ? 'Odškrtnout všechny položky' : 'Zaškrtnout všechny položky'}
+              >
+                {vseZaskrtnuto ? <CheckSquare className="w-4 h-4 text-akcent-lime" /> : <Square className="w-4 h-4 text-cyan-400" />}
+                <span className="hidden sm:inline">{vseZaskrtnuto ? 'Odškrtnout vše' : 'Zaškrtnout vše'}</span>
+              </button>
+            )}
+
+            <button
+              onClick={handlePrint}
+              className="p-2 rounded-xl text-slate-300 hover:text-white bg-slate-900 border border-slate-800 flex items-center gap-1.5 text-xs font-semibold"
+              title="Tisk / uložit jako PDF"
+            >
+              <Printer className="w-4 h-4 text-cyan-400" />
+              <span className="hidden sm:inline">Tisk / PDF</span>
+            </button>
+
             <button
               onClick={handleCopyList}
               className="p-2 rounded-xl text-slate-300 hover:text-white bg-slate-900 border border-slate-800 flex items-center gap-1.5 text-xs font-semibold"
@@ -114,6 +151,30 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
               <X className="w-5 h-5" />
             </button>
           </div>
+        </div>
+
+        {/* TISKOVÝ DOKUMENT — mimo obrazovku, vidí ho jen @media print
+            (src/index.css). Kategorie s množstvím, bez zaškrtávátek,
+            navigace a tlačítek (PROMPT_UX_DNES.md bod E.2). */}
+        <div id="tiskovy-nakupni-seznam" className="hidden print:block p-5 bg-white text-slate-900 text-xs space-y-4">
+          <div className="text-base font-extrabold tracking-tight text-slate-950 flex items-center gap-1 border-b pb-3 border-slate-200">
+            <span>BODY &amp; MIND</span>
+            <span className="text-emerald-600">ON</span>
+            <span className="ml-auto text-xs font-normal text-slate-600">Nákupní seznam</span>
+          </div>
+          {podleKategorii.map(skupina => (
+            <div key={skupina.nazev} className="polozka-kategorie">
+              <div className="text-xs font-extrabold text-slate-900 mb-1.5">{skupina.nazev}</div>
+              <ul className="space-y-1">
+                {skupina.polozky.map(item => (
+                  <li key={item.id} className="flex justify-between border-b border-slate-100 pb-1">
+                    <span>{item.name}</span>
+                    <span className="text-slate-600">{item.amount}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
         {/* Categories Bar */}

@@ -396,7 +396,11 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
             >
             <div
               onClick={() => onToggleExercise(selectedWorkout.dayName, ex.id)}
-              className="p-4 cursor-pointer flex items-center justify-between gap-3"
+              /* MOBIL: SVISLÉ ROZVRŽENÍ POD `sm` (PROMPT_UX_DNES.md bod F).
+                 Vodorovný flex bez zalomení tlačil odznak "4 × 6–8" a "Jak na
+                 to" do tří řádků na úzkých telefonech. Pod `sm` jde název +
+                 partie na celou šířku a pod tím řádek odznak + tlačítko. */
+              className="p-4 cursor-pointer flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
             >
               <div className="flex items-center gap-3.5">
                 <div
@@ -463,13 +467,15 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
                       e.stopPropagation();
                       setOtevrenaUkazka(otevrenaUkazka === klic ? null : klic);
                     }}
-                    className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold inline-flex items-center gap-1 transition-all ${
+                    className={`shrink-0 whitespace-nowrap px-2.5 py-1 rounded-xl border text-[11px] font-bold inline-flex items-center gap-1 transition-all ${
                       otevrenaUkazka === klic
                         ? 'bg-cyan-950/70 border-cyan-500/50 text-akcent-cyan'
                         : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-cyan-500/40'
                     }`}
                     title={ex.ukazkaUrl ? 'Ukázat provedení cviku' : 'Zobrazit postup cviku krok za krokem'}
                   >
+                    {/* whitespace-nowrap + shrink-0 na tlačítku výš: nesmí se
+                        lámat ani zúžit, ať na 360 px pořád nese celý text. */}
                     {ex.ukazkaUrl ? <PlayCircle className="w-3.5 h-3.5" /> : <ListOrdered className="w-3.5 h-3.5" />}
                     <span>{ex.ukazkaUrl ? 'Jak na to' : 'Postup krok za krokem'}</span>
                   </button>

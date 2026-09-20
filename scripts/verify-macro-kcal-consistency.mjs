@@ -11,6 +11,7 @@ import {
 import { buildSimpleStartMealSkeleton } from '../lib/services/simpleMealPlannerAgent.js';
 import { resolveSimpleStartLocalSlot } from '../lib/startSimpleMealFilter.js';
 import { planMealTypeToWeightKey, slotTargetKcal } from '../lib/nutrition/portionScaling.js';
+import { SIMPLE_START_RECIPES } from '../lib/simpleStartRecipeLibrary.js';
 
 let failed = 0;
 function fail(msg) { console.log(`FAIL ${msg}`); failed += 1; }
@@ -88,6 +89,22 @@ for (const day of skeleton.meal_plan.days || []) {
 }
 if (errorMeals > 0) fail(`${errorMeals} START meals with ERROR macro/kcal delta`);
 else ok('no START skeleton meal has ERROR macro/kcal delta');
+
+console.log('\n--- SIMPLE_START_RECIPES: calories musí přesně sedět na Atwater ---');
+// PROMPT_PRO_CODE.md bod D (2026-09-17). Volnější ±10% gate výš je pro
+// katalogové recepty (Spoonacular), kde přesná shoda není reálná. Knihovna
+// START receptů je ale naše vlastní data — tady žádná tolerance nemá co
+// dělat, `calories` musí přesně rovnat 4*protein_g + 4*carbs_g + 9*fat_g.
+// 34 z 63 receptů to do tohohle PR nesplňovalo (nejhorší -8,8 %).
+let atwaterMismatches = 0;
+for (const r of SIMPLE_START_RECIPES) {
+  const computed = 4 * (Number(r.protein_g) || 0) + 4 * (Number(r.carbs_g) || 0) + 9 * (Number(r.fat_g) || 0);
+  if (computed !== Number(r.calories)) {
+    fail(`"${r.title}": calories ${r.calories} != 4*${r.protein_g}+4*${r.carbs_g}+9*${r.fat_g} = ${computed}`);
+    atwaterMismatches += 1;
+  }
+}
+if (atwaterMismatches === 0) ok(`all ${SIMPLE_START_RECIPES.length} SIMPLE_START_RECIPES entries are Atwater-exact`);
 
 console.log(failed ? `\nRESULT: FAIL (${failed})` : '\nRESULT: PASS');
 process.exit(failed ? 1 : 0);

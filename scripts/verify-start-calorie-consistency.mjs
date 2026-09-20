@@ -70,7 +70,13 @@ function checkPlan(label, bodyMetrics) {
     }
     const maxInvented = Math.round(dayTarget * 0.95);
     // Achieved may be under target — that is honest. Must never exceed max via invented scale.
-    if (sum > Math.round(dayTarget * 1.15) + 50) {
+    // PROMPT_PRO_CODE.md PR 2+3 bod D.2 (2026-09-17): dřív `+ 50` rezerva —
+    // ta neměla oporu v ničem, jen schovávala přestřelení blízko 15% stropu.
+    // Bez ní tenhle skript odhalil, že `fillDayCaloriesByAddingLibraryMeals`
+    // dorovnává CELÝM jídlem, ne po částech, takže občas přestřelí o pár
+    // desítek kcal na nízkých cílech (1600-2000) — viz report v
+    // docs/AUDIT_PORCE_VYSOKE_KCAL_2026-09-17.md, sekce "Zpřísnění kontroly".
+    if (sum > Math.round(dayTarget * 1.15)) {
       fail(`${label} day ${day.day_index}: sum ${sum} far above target ${dayTarget}`);
     }
     if (day.honesty.under_target && sum >= maxInvented) {
@@ -102,6 +108,28 @@ checkPlan('cheese excluded 3300', {
   diet_type: 'standard',
   meals_per_day: 4,
   foods_to_avoid: 'sýr',
+});
+// PROMPT_PRO_CODE.md PR 2+3 bod D.1 (2026-09-17). Žádný profil pod 2200 kcal
+// tu nebyl, přitom hubnutí a udržování v pásmu 1600-2200 je největší
+// segment produkce — přesně tam se PR 2 (bez kalorického schedulingu)
+// rozbilo (den +45 % nad cíl).
+checkPlan('1600 kcal', {
+  goal: 'hubnuti',
+  weight_kg: 80,
+  calories_target: 1600,
+  diet_type: 'standard',
+});
+checkPlan('1800 kcal', {
+  goal: 'hubnuti',
+  weight_kg: 80,
+  calories_target: 1800,
+  diet_type: 'standard',
+});
+checkPlan('2000 kcal', {
+  goal: 'hubnuti',
+  weight_kg: 80,
+  calories_target: 2000,
+  diet_type: 'standard',
 });
 
 if (failed) {

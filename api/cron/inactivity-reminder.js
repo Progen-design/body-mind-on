@@ -75,6 +75,14 @@ export default async function handler(req, res) {
     for (const m of (clenstvi || []).slice(0, DAVKA)) {
       const { data: prof } = await supabaseServer
         .from('profiles').select('email, name, created_at').eq('id', m.user_id).maybeSingle();
+      // JMÉNO DYNAMICKY z `body_metrics.name` (zdroj pravdy — tam ho zapisuje
+      // registrace, stejně ho čte pozdrav v appce). `profiles.name` bývá prázdné; nekopíruje
+      // se tam, aby nevznikly dvě verze jména. Viz rozhodnutí 21. 9. 2026.
+      const { data: bmJmeno } = await supabaseServer
+        .from('body_metrics').select('name')
+        .eq('user_id', m.user_id).not('name', 'is', null).neq('name', '')
+        .order('created_at', { ascending: false }).limit(1).maybeSingle();
+      const jmenoUzivatele = bmJmeno?.name || prof?.name || null;
       const email = prof?.email;
       // Testovací účty nikdy — smoke testy jinak rozešlou poštu na example.com.
       if (!email || isTestAccountEmail(email)) { stats.preskoceno += 1; pridej('testovaci_nebo_bez_emailu'); continue; }
@@ -108,7 +116,7 @@ export default async function handler(req, res) {
       }
 
       const { subject, text } = textPripominky({
-        jmeno: prof?.name ?? null,
+        jmeno: jmenoUzivatele,
         dnuBezAktivity: rozhodnuti.dnuBezAktivity,
         ctaUrl: getPlanEmailCtaUrl(),
       });

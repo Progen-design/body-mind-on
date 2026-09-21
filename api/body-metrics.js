@@ -364,19 +364,9 @@ export default async function handler(req, res) {
       }
     }
 
-    // JMÉNO DO `profiles.name` (PROMPT_DNES_WOW.md). Trigger `handle_new_user`
-    // zakládá řádek jen s (id, email), jméno z registrace končilo výhradně
-    // v `body_metrics.name` — cron `inactivity-reminder` čte `profiles.name`,
-    // takže e-maily chodily bez oslovení. Přepisuje se jen prázdné jméno,
-    // ať znovu vyplněný dotazník nepřebije, co si člověk později upravil.
-    if (payload.user_id && typeof payload.name === 'string' && payload.name.trim()) {
-      const { error: jmenoErr } = await supabaseServer
-        .from('profiles')
-        .update({ name: payload.name.trim(), updated_at: new Date().toISOString() })
-        .eq('id', payload.user_id)
-        .or('name.is.null,name.eq.');
-      if (jmenoErr) console.warn('[body-metrics] profiles.name:', jmenoErr.message);
-    }
+    // JMÉNO SE DO `profiles.name` NEKOPÍRUJE (21. 9. 2026). Zdroj pravdy je
+    // `body_metrics.name`; pozdrav v appce i cron `inactivity-reminder` ho čtou
+    // dynamicky odtud, takže změna jména se projeví všude bez synchronizace.
 
     // Uložit tier členství do tabulky memberships.
     //

@@ -100,3 +100,10 @@ test('řádek TEDa NENÍ součástí hero — je to samostatná komponenta (bod 
     'pořadí musí být hero → TED → osa dne'
   );
 });
+
+test('kroužek tréninku se plní podle odškrtnutých cviků, Hotovo až po všech (21. 9. 2026)', () => {
+  assert.match(HERO, /export function podilTreninku/, 'chybí podíl odcvičených cviků');
+  assert.match(HERO, /filter\(\(c\) => c\.completed\)\.length \/ cviky\.length/, 'podíl se nepočítá z cviků');
+  assert.match(HERO, /podil=\{podilTrenink\}/, 'kroužek nebere podíl cviků');
+  assert.match(HERO, /podilTreninku\(todayWorkout, stav\) >= 1/, 'Hotovo nesmí svítit před posledním cvikem');
+});

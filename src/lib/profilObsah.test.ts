@@ -26,7 +26,7 @@ function kod(text: string): string {
 // úplně — sloučily a přestěhovaly se, viz App.tsx komentář u
 // `activeTab === 'profil'`. KARTA je jejich nástupce: dnešní souhrn a
 // jídelníček dneška v jedné kartě.
-const KARTA = kod(cti('../components/DnesniPrehled.tsx'));
+const KARTA = kod(cti('../components/CasovaOsaDne.tsx'));
 // Sekce zařízení se 9. 9. 2026 odstěhovala z ProfileSection do vlastní
 // komponenty, aby ji App mohl vykreslit až pod bento mřížkou. Pravidla
 // o Withings a Apple Health platí dál, jen se čtou odjinud.
@@ -133,7 +133,7 @@ test('odznak u Apple Health ukazuje odstup, ne verdikt', () => {
 test('záložka Přehled je pryč a Dnes je jedna sloučená karta, ne ProfileSection/OverviewBentoGrid (PROMPT_UX_DNES.md)', () => {
   assert.ok(!NAVIGACE.includes("'dnes'"), 'záložka Přehled je zpátky');
   assert.ok(!APP.includes("activeTab === 'dnes'"), 'App zase vetví na Přehled');
-  assert.ok(APP.includes('<DnesniPrehled'), 'Dnes nekreslí sloučenou kartu');
+  assert.ok(APP.includes('<DnesObrazovka'), 'Dnes nekreslí sloučenou obrazovku');
   assert.ok(
     !APP.includes('<ProfileSection') && !APP.includes('<OverviewBentoGrid'),
     'ProfileSection/OverviewBentoGrid se vrátily — obě se 18. 9. 2026 sloučily do DnesniPrehled a rozstěhovaly do vlastních záložek'
@@ -141,7 +141,8 @@ test('záložka Přehled je pryč a Dnes je jedna sloučená karta, ne ProfileSe
 });
 
 test('nákupní seznam na Dnes je vlastní jednořádkový vstup, ne schovaný pod jídelníčkem (PROMPT_UX_DNES.md bod A.5)', () => {
-  assert.ok(APP.includes('<NakupniSeznamVstup'), 'App na Dnes nekreslí NakupniSeznamVstup');
+  // Od 21. 9. 2026 je nákupní seznam dlaždice v Nástrojích (DnesObrazovka).
+  assert.ok(cti('../components/DnesObrazovka.tsx').includes("nazev: 'Nákupní seznam'"), 'Dnes nemá dlaždici Nákupní seznam');
   assert.ok(!KARTA.includes('Nákupní seznam'), 'nákupní seznam se vrátil dovnitř karty Dnešek');
 });
 
@@ -204,7 +205,6 @@ test('zarovnání jídel: štítek, název (1fr) a kcal v gridu, ne ve flexu za 
   const GRID = kod(cti('../components/RadekJidlaGrid.tsx'));
   assert.ok(GRID.includes('grid-cols-[1fr_auto]'), 'chybí mobilní 2sloupcový grid (obsah/kcal)');
   assert.ok(GRID.includes('sm:grid-cols-[6rem_1fr_auto]'), 'chybí desktopový 3sloupcový grid štítek/název/kcal');
-  assert.ok(KARTA.includes('RadekJidlaGrid'), 'Dnešek nepoužívá sdílený grid pro řádek jídla');
   const PAYWALL = kod(cti('../components/TrialPaywallCard.tsx'));
   assert.ok(PAYWALL.includes('RadekJidlaGrid'), '„Tvůj další týden" nepoužívá sdílený grid pro řádek jídla');
 });

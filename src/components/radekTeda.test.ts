@@ -9,8 +9,10 @@ const cti = (p: string) => fs.readFileSync(path.join(KOREN, p), 'utf8');
 
 const RADEK = cti('src/components/RadekTeda.tsx');
 
-test('bez zprávy se řádek vůbec nekreslí', () => {
-  assert.match(RADEK, /if \(!tip\) return null;/, 'chybí guard na prázdné tips');
+test('bez zprávy a bez chatu se karta vůbec nekreslí; bez chatu nemá tlačítko', () => {
+  assert.match(RADEK, /if \(!tip && !dostupny\) return null;/, 'chybí guard na prázdné tips bez chatu');
+  assert.match(RADEK, /\{dostupny && \(/, 'tlačítko se kreslí, i když chat neexistuje');
+  assert.match(RADEK, /Napsat TEDovi/, 'chybí tlačítko Napsat TEDovi');
 });
 
 test('žádné nové volání AI — jen existující coachTips a otevření chatu', () => {
@@ -21,5 +23,5 @@ test('žádné nové volání AI — jen existující coachTips a otevření cha
   const importRadky = RADEK.split('\n').filter((r) => r.trim().startsWith('import'));
   assert.ok(!importRadky.some((r) => /openai/i.test(r)), 'importuje OpenAI klienta přímo místo otevření existujícího chatu');
   assert.match(RADEK, /useTed/, 'chybí napojení na CoachChatModal přes TedContext');
-  assert.match(RADEK, /zeptejSe\(\)/, 'tlačítko Zeptat se nevolá zeptejSe()');
+  assert.match(RADEK, /zeptejSe\(\)/, 'tlačítko nevolá zeptejSe()');
 });

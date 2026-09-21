@@ -17,6 +17,7 @@ const PAYWALL = cti('src/components/TrialPaywallCard.tsx');
 const NABIDKA = cti('src/components/PredplatneNabidka.tsx');
 const UCET = cti('src/components/UcetASpravaSection.tsx');
 const APP = cti('src/App.tsx');
+const DNES = cti('src/components/DnesObrazovka.tsx');
 
 test('úzký pruh nemá karty ani ceny, jen countdown a tlačítko', () => {
   assert.ok(!STRIP.includes('PRICING'), 'pruh sahá na ceníkovou tabulku');
@@ -40,7 +41,7 @@ test('plné srovnání tierů žije jen v PredplatneNabidka, ne rozeseté v Tria
 
 test('PredplatneNabidka je vykreslená jen na dvou místech — Účet a úzký pruh', () => {
   assert.ok(UCET.includes('<PredplatneNabidka'), 'Účet a předplatné neukazuje plné srovnání');
-  assert.ok(APP.includes('<TrialCountdownStrip'), 'App nekreslí úzký prodejní pruh');
+  assert.ok(DNES.includes('<TrialCountdownStrip'), 'Dnes nekreslí úzký prodejní pruh');
   assert.ok(APP.includes('<UcetASpravaSection'), 'App nekreslí Účet a předplatné');
   // Karta „Tvůj další týden" sama žádné PredplatneNabidka nekreslí — ceny
   // tam nepatří (bod C: „na dvou místech a nikde jinde"). Hledá se JSX

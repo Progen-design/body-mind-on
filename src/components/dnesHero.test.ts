@@ -9,14 +9,17 @@ const cti = (p: string) => fs.readFileSync(path.join(KOREN, p), 'utf8');
 
 const HERO = cti('src/components/DnesHero.tsx');
 const APP = cti('src/App.tsx');
+const DNES = cti('src/components/DnesObrazovka.tsx');
 
-test('hero je nahoře na Dnes a bere adherenci ze serveru', () => {
-  assert.match(APP, /<DnesHero/, 'App hero nekreslí');
-  assert.match(HERO, /'\/api\/stats\/adherence'/, 'hero nevolá adherenci');
+test('hero je nahoře na Dnes a adherenci ze serveru bere DnesObrazovka', () => {
+  assert.match(APP, /<DnesObrazovka/, 'App obrazovku Dnes nekreslí');
+  assert.match(DNES, /<DnesHero/, 'DnesObrazovka hero nekreslí');
+  assert.match(DNES, /'\/api\/stats\/adherence'/, 'DnesObrazovka nevolá adherenci');
   assert.ok(
-    APP.indexOf("activeTab === 'profil'") < APP.indexOf('<DnesHero'),
-    'hero není uvnitř větve pro záložku Dnes'
+    APP.indexOf("activeTab === 'profil'") < APP.indexOf('<DnesObrazovka'),
+    'Dnes není uvnitř větve pro záložku Dnes'
   );
+  assert.ok(DNES.indexOf('<DnesHero') < DNES.indexOf('<RadekTeda'), 'hero musí být nad TEDem');
 });
 
 test('trénink v ukazateli platí za odcvičený i bez odškrtnutí, když ho naměřily hodinky', () => {
@@ -28,15 +31,32 @@ test('ukazatel Trénink ve dni volna nabídne nejbližší další trénink', ()
   assert.match(HERO, /najdiNejblizsiTrenink/, 'chybí dohledání nejbližšího tréninku pro den volna');
 });
 
-test('kroužek kalorií má aria-label se skutečnou hodnotou', () => {
-  const zacatek = HERO.indexOf('function KruhKcal');
-  assert.ok(zacatek > -1, 'KruhKcal chybí');
-  const blok = HERO.slice(zacatek, zacatek + 900);
-  assert.match(blok, /aria-label=\{`Snědeno/, 'kroužek nemá popisný aria-label se snědenými kaloriemi');
+test('tři kroužky jsou tlačítka s aria-label se skutečnými čísly', () => {
+  assert.match(HERO, /ProgresniKruh/, 'hero nekreslí kroužky');
+  assert.match(HERO, /ariaLabel=\{`Jídlo: snědeno/, 'kroužek jídla nemá aria-label se snědenými kaloriemi');
+  assert.match(HERO, /Trénink: hotovo/, 'kroužek tréninku nemá aria-label se stavem');
+  assert.match(HERO, /Váha: /, 'kroužek váhy nemá aria-label');
+  assert.match(HERO, /<button[\s\S]{0,120}aria-label=\{ariaLabel\}/, 'ukazatel není <button> s aria-label');
 });
 
-test('pruh pokroku váhy má aria-label s procenty, ne jen vizuální pruh', () => {
-  assert.match(HERO, /aria-label=\{`Pokrok k cílové váze/, 'pruh pokroku váhy nemá aria-label');
+test('kliknutí na kroužek otevře příslušnou záložku', () => {
+  assert.match(HERO, /onSelectTab\('jidelnicek'\)/);
+  assert.match(HERO, /onSelectTab\('trenink'\)/);
+  assert.match(HERO, /onSelectTab\('vaha'\)/);
+});
+
+test('kroužek se plní animací a respektuje prefers-reduced-motion', () => {
+  const KRUH = cti('src/components/ProgresniKruh.tsx');
+  assert.match(KRUH, /useReducedMotion/, 'kroužek nerespektuje prefers-reduced-motion');
+  assert.match(KRUH, /duration: bezPohybu \? 0 : 0\.4/, 'animace má být do 400 ms a bez pohybu okamžitá');
+});
+
+test('primární akce sedí přímo v hero pod větou o stavu dne, ne v samostatném rámečku', () => {
+  assert.ok(!/p-4 rounded-2xl border border-cyan-500\/25/.test(HERO), 'akce je zase v samostatném rámečku');
+  assert.ok(
+    HERO.indexOf('{vetaStavu}') < HERO.indexOf('onClick={spustDalsiKrok}'),
+    'tlačítko není pod větou o stavu dne'
+  );
 });
 
 test('„Další krok" je skutečné tlačítko, ne klikací div', () => {
@@ -62,18 +82,21 @@ test('den programu používá src/lib/denProgramu.ts', () => {
   assert.match(HERO, /Den \{denN\} tvého programu/, 'chybí věta „Den N tvého programu"');
 });
 
-test('„Jak ti máme říkat?" se ukazuje jen dokud profil.preferredAddress není vyplněné', () => {
-  assert.match(HERO, /!profile\.preferredAddress/, 'nudge se neřídí prázdným profile.preferredAddress');
-  assert.match(HERO, /Jak ti máme říkat\?/, 'chybí text výzvy');
+test('pole „Jak ti máme říkat?" v hero už není (přestěhovalo se do Účtu)', () => {
+  assert.ok(!/Jak ti máme říkat\?/.test(HERO), 'výzva je zpátky v hero');
+  assert.ok(!/onSavePreferredAddress/.test(HERO), 'hero pořád ukládá oslovení');
+  const UCET = cti('src/components/UcetASpravaSection.tsx');
+  assert.match(UCET, /Jak ti máme říkat\?/, 'Účet oslovení needituje');
+  assert.match(UCET, /onSavePreferredAddress/, 'Účet oslovení neukládá přes handler z App');
 });
 
-test('řádek TEDa NENÍ součástí hero — je to samostatná komponenta (bod 2 zadání)', () => {
-  assert.ok(!/<RadekTeda/.test(HERO), 'hero vykresluje RadekTeda sám, ten patří vedle něj v App.tsx');
-  assert.ok(!/\bcoachTips\b/.test(HERO), 'hero pořád dostává coachTips — ty teď patří RadekTeda');
-  assert.match(APP, /<RadekTeda/, 'App RadekTeda nekreslí');
+test('řádek TEDa NENÍ součástí hero — je to samostatná komponenta (bod B zadání)', () => {
+  assert.ok(!/<RadekTeda/.test(HERO), 'hero vykresluje RadekTeda sám');
+  assert.ok(!/\bcoachTips\b/.test(HERO), 'hero pořád dostává coachTips — ty patří RadekTeda');
+  assert.match(DNES, /<RadekTeda/, 'DnesObrazovka RadekTeda nekreslí');
   assert.ok(
-    APP.indexOf('<DnesHero') < APP.indexOf('<RadekTeda')
-    && APP.indexOf('<RadekTeda') < APP.indexOf('<DnesniPrehled'),
-    'pořadí musí být hero → řádek TEDa → Jídla dnes'
+    DNES.indexOf('<DnesHero') < DNES.indexOf('<RadekTeda')
+    && DNES.indexOf('<RadekTeda') < DNES.indexOf('<CasovaOsaDne'),
+    'pořadí musí být hero → TED → osa dne'
   );
 });

@@ -4,13 +4,9 @@ import { UserProfileCard } from './components/UserProfileCard';
 import { NavigationTabs, ActiveTab } from './components/NavigationTabs';
 import { PropojenaZarizeniSection } from './components/PropojenaZarizeniSection';
 import { UcetASpravaSection } from './components/UcetASpravaSection';
-import { DenniCheckin } from './components/DenniCheckin';
-import { DnesniPrehled } from './components/DnesniPrehled';
-import { DnesHero } from './components/DnesHero';
-import { RadekTeda } from './components/RadekTeda';
-import { TrialCountdownStrip } from './components/TrialCountdownStrip';
+import { DnesObrazovka } from './components/DnesObrazovka';
+import { DnesSkeleton } from './components/DnesSkeleton';
 import { TrialPaywallCard } from './components/TrialPaywallCard';
-import { NakupniSeznamVstup } from './components/NakupniSeznamVstup';
 import { BodyCompositionSection } from './components/BodyCompositionSection';
 import { NutritionSection } from './components/NutritionSection';
 import { WorkoutSection } from './components/WorkoutSection';
@@ -250,6 +246,15 @@ function AppContent() {
    * odpojeny Withings.
    */
   const monthRecords = weightRecords['1M'] ?? [];
+
+  /** `completed_at` dokončených aktivit — série dní v „Tvoje cesta". */
+  const dokonceniISO = useMemo(
+    () =>
+      (profilData?.daily_activity_completions ?? [])
+        .map((d) => d.completed_at)
+        .filter((c): c is string => typeof c === 'string' && c.length > 0),
+    [profilData]
+  );
   const latestRecord: WeightRecord | null = monthRecords.length > 0
     ? monthRecords[monthRecords.length - 1]
     : null;
@@ -312,9 +317,9 @@ function AppContent() {
   }, [regenerujiPlan, showToast, znovuNacistProfil]);
 
   /**
-   * „Jak ti máme říkat?" — PROMPT_DNES_HERO.md. Ukládá se přímo v 5. pádu,
-   * appka neskloňuje. Po úspěchu znovu načte profil, ať `preferredAddress`
-   * přestane být prázdné a nenápadná výzva v hero zmizí sama.
+   * „Jak ti máme říkat?" — ukládá se přímo v 5. pádu, tak jak to člověk napsal.
+   * Pole je v Účtu (karta Profil), ne v hero (PROMPT_DNES_WOW.md). Po úspěchu
+   * se profil znovu načte a pozdrav se přepíše.
    */
   const handleSavePreferredAddress = useCallback(async (hodnota: string) => {
     try {
@@ -391,13 +396,6 @@ function AppContent() {
   // stejným `catalog_id` (recept smí být v obou plánech). `planId: null`
   // (adaptery.ts) navíc modalu samo schová tlačítko záměny.
   const [nahledZamcenehoJidla, setNahledZamcenehoJidla] = useState<MealItem | null>(null);
-  // ÚZKÝ PRODEJNÍ PRUH → „Účet a předplatné" (PROMPT_UX_DNES.md bod A.2/C).
-  // Tlačítko na pruhu nekupuje rovnou — nabídka je víc tierů a pruh nemá
-  // prostor je rozlišit, jen odscrolluje na plné srovnání níž.
-  const ucetSekceRef = useRef<HTMLDivElement | null>(null);
-  const scrollNaPredplatne = useCallback(() => {
-    ucetSekceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
   // ZÁMĚNA JÍDLA V RECIPEMODALU ČEKÁ NA RESYNC (POST /api/plan-replace-meal).
   // Endpoint nevrací nic, na co by RecipeModal mohl počkat awaitem — jen
   // spustí `znovuNacistProfil()`. Souřadnice právě zaměněného jídla se tu
@@ -1010,9 +1008,10 @@ function AppContent() {
   // ze uzivatel zadny nema.
   if (nacitamProfil) {
     return (
-      <div className="min-h-screen bg-pozadi flex flex-col items-center justify-center gap-3">
-        <div className="w-8 h-8 rounded-full border-2 border-slate-800 border-t-akcent-lime animate-spin" />
-        <p className="text-xs text-slate-500">Načítám tvůj plán…</p>
+      <div className="min-h-screen bg-pozadi">
+        <div className="w-full max-w-2xl lg:max-w-5xl mx-auto px-3.5 sm:px-6 py-3.5 sm:py-6">
+          <DnesSkeleton />
+        </div>
       </div>
     );
   }
@@ -1114,94 +1113,53 @@ function AppContent() {
 
         {/* 6. Dynamic Content Based on Selected Tab */}
 
-        {/* TAB A: DNES — CO MÁM DNESKA DĚLAT, JEDNA OTÁZKA.
-            PROMPT_DNES_HERO.md (21. 9. 2026): `ProfilHlavicka` (e-mail,
-            „Člen od", věk, výška — údaje, které nikdo denně nepotřebuje)
-            nahradil hero „Tvůj den" (`DnesHero`): pozdrav, den programu, tři
-            ukazatele (jídlo/trénink/váha) a JEDNA primární akce
-            (`src/lib/dalsiKrok.ts`). Identita se přestěhovala do menu
-            v hlavičce a do nové karty „Profil" v Účtu — nic se nemaže.
-            `DnesniPrehled` zůstal jen na seznam dnešních jídel („Jídla
-            dnes") — kcal/makra/trénink teď ukazuje hero, ať se totéž číslo
-            nekreslí dvakrát. Řádek TEDa je od teď samostatná sekce
-            (`RadekTeda`), ne součást hero karty (zadání ho vypisuje jako
-            vlastní bod). `TrialCountdownStrip` se přestěhoval z hned pod
-            hlavičku na místo pod „Jídla dnes". */}
+        {/* TAB A: DNES — PROMPT_DNES_WOW.md. Celou obrazovku skládá
+            `DnesObrazovka` (hero s kroužky, TED, časová osa dne, Tvoje cesta,
+            nástroje). Karta „Jak ti dnešek seděl?" (`DenniCheckin`) se z Dnes
+            odebrala; komponenta, API ani tabulka `daily_checkins` zůstávají
+            (čtou je cron a `dailyAdherenceSync`). */}
         {activeTab === 'profil' && (
-          <div className="space-y-4 sm:space-y-6">
-            {/* 1. HERO „TVŮJ DEN" — kdo je přihlášený, jak na tom dnes je
-                a co má udělat teď. */}
-            <DnesHero
-              profile={displayedProfile}
-              registrovanOd={profilData?.user?.created_at ?? null}
-              todayWorkout={todayWorkout}
-              workouts={workouts}
-              meals={meals}
-              targetCalories={preferences.dailyCalorieTarget}
-              weightRecords={monthRecords}
-              targetWeightKg={preferences.targetWeightKg}
-              onSelectTab={setActiveTab}
-              onToggleMeal={handleToggleMeal}
-              onOpenWeightModal={() => setIsAddRecordModalOpen(true)}
-              onSavePreferredAddress={handleSavePreferredAddress}
-            />
-
-            {/* 2. ŘÁDEK TEDA — jedna zpráva z existujících coachTips, žádné
-                nové volání OpenAI (stálo by peníze při každém načtení Dnes).
-                Bez zprávy se nekreslí vůbec. */}
-            <RadekTeda tips={coachTips} />
-
-            {/* 3. JÍDLA DNES — všechna dnešní jídla, žádný výřez. Stav dne
-                (kcal, trénink) už ukazuje hero výš. */}
-            <DnesniPrehled
-              meals={meals}
-              preferences={preferences}
-              onToggleMeal={handleToggleMeal}
-              onSelectRecipe={(meal) => setSelectedRecipeMeal(meal)}
-              nesouladCile={nesoulad}
-              onRegeneratePlan={handleRegeneratePlanForCurrentTarget}
-              regenerujiPlan={regenerujiPlan}
-            />
-
-            {/* 5. ÚZKÝ PRODEJNÍ PRUH — přesunuto sem pod „Jídla dnes"
-                (PROMPT_DNES_HERO.md bod 5). Jediný prodej nad Účtem, jen
-                countdown + tlačítko na plné srovnání dole. */}
-            <TrialCountdownStrip
-              zamceno={zamcenyPlan?.zamceno === true}
-              trialDniDoKonce={displayedProfile.trialDniDoKonce ?? null}
-              onOtevritPredplatne={scrollNaPredplatne}
-            />
-
-            {/* 4. ZBYTEK BEZE ZMĚNY POŘADÍ: Jak ti dnešek seděl → Nákupní
-                seznam → Tvůj další týden → Propojená zařízení → Účet
-                a předplatné. */}
-            <DenniCheckin onSelectTab={setActiveTab} />
-
-            <NakupniSeznamVstup
-              pocetPolozek={shoppingItems.length}
-              onOpen={() => setIsShoppingModalOpen(true)}
-            />
-
-            <TrialPaywallCard
-              plan={zamcenyPlan}
-              onSelectRecipe={(meal) => setNahledZamcenehoJidla(meal)}
-            />
-
-            <PropojenaZarizeniSection
-              slozeni={slozeni}
-              posledniSynchronizace={posledniSynchronizaceHodinek}
-              withingsPosledniStazeni={profilData?.withings_last_sync_at ?? null}
-              onOpenWithingsSettings={() => setIsWithingsModalOpen(true)}
-              onSyncAll={handleManualWithingsSync}
-              isSyncing={isSyncing}
-              zobrazitWithings={profilData?.show_withings_section === true}
-            />
-
-            {/* Obsahuje i plné srovnání START/ON Club/VIP, cíl pruhu i
-                tlačítka „Odemknout" v „Tvůj další týden" (`ref`), a novou
-                kartu „Profil" (jméno, e-mail, člen od, věk, výška —
-                z bývalé ProfilHlavicka). */}
-            <div ref={ucetSekceRef}>
+          <DnesObrazovka
+            profile={displayedProfile}
+            registrovanOd={profilData?.user?.created_at ?? null}
+            todayWorkout={todayWorkout}
+            workouts={workouts}
+            meals={meals}
+            weekMeals={weekMeals}
+            preferences={preferences}
+            weightRecords={monthRecords}
+            dokonceniISO={dokonceniISO}
+            coachTips={coachTips}
+            polozekNakupu={shoppingItems.length}
+            nesouladCile={nesoulad}
+            onRegeneratePlan={handleRegeneratePlanForCurrentTarget}
+            regenerujiPlan={regenerujiPlan}
+            zamcenyPlan={zamcenyPlan}
+            posledniSynchronizaceZarizeni={posledniSynchronizaceHodinek}
+            withingsPosledniStazeni={profilData?.withings_last_sync_at ?? null}
+            onSelectTab={setActiveTab}
+            onToggleMeal={handleToggleMeal}
+            onSelectRecipe={(meal) => setSelectedRecipeMeal(meal)}
+            onOpenWeightModal={() => setIsAddRecordModalOpen(true)}
+            onOpenShopping={() => setIsShoppingModalOpen(true)}
+            panelTyden={
+              <TrialPaywallCard
+                plan={zamcenyPlan}
+                onSelectRecipe={(meal) => setNahledZamcenehoJidla(meal)}
+              />
+            }
+            panelZarizeni={
+              <PropojenaZarizeniSection
+                slozeni={slozeni}
+                posledniSynchronizace={posledniSynchronizaceHodinek}
+                withingsPosledniStazeni={profilData?.withings_last_sync_at ?? null}
+                onOpenWithingsSettings={() => setIsWithingsModalOpen(true)}
+                onSyncAll={handleManualWithingsSync}
+                isSyncing={isSyncing}
+                zobrazitWithings={profilData?.show_withings_section === true}
+              />
+            }
+            panelUcet={
               <UcetASpravaSection
                 plan={zamcenyPlan}
                 profile={displayedProfile}
@@ -1209,9 +1167,10 @@ function AppContent() {
                 birthDate={profilData?.user?.birth_date ?? null}
                 registrovanOd={profilData?.user?.created_at ?? null}
                 onEditPreferences={() => setIsPreferencesModalOpen(true)}
+                onSavePreferredAddress={handleSavePreferredAddress}
               />
-            </div>
-          </div>
+            }
+          />
         )}
 
         {/* TAB C: TĚLO & VÁHA (WITHINGS BODY SCAN) */}

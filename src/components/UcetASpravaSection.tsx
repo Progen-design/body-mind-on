@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { CreditCard, Trash2, ShieldAlert } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { CreditCard, Trash2, ShieldAlert, Mail, Calendar, Edit3 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { NadpisSekce } from './NadpisSekce';
 import { PredplatneNabidka } from './PredplatneNabidka';
-import type { ZamcenyPlan } from '../types';
+import { Avatar } from './Avatar';
+import { MembershipStatusBadge } from './MembershipStatusBadge';
+import type { UserPreferences, UserProfile, ZamcenyPlan } from '../types';
 import { ODKAZ_PODMINKY, ODKAZ_GDPR } from '@lib/pravniOdkazy.js';
 
 /**
@@ -34,12 +36,46 @@ interface UcetASpravaSectionProps {
    * nebo odemčený plán = nic k prodeji, PredplatneNabidka se nezobrazí.
    */
   plan?: ZamcenyPlan | null;
+  /**
+   * PROMPT_DNES_HERO.md — karta „Profil" (jméno, e-mail, člen od, věk,
+   * výška) přebírá identitu z bývalé `ProfilHlavicka.tsx`, kterou na Dnes
+   * nahradil hero. Nic se nemaže, jen se to stěhuje sem a do menu v hlavičce.
+   */
+  profile: UserProfile;
+  preferences: UserPreferences;
+  birthDate?: string | null;
+  registrovanOd?: string | null;
+  onEditPreferences: () => void;
 }
 
-export const UcetASpravaSection: React.FC<UcetASpravaSectionProps> = ({ plan = null }) => {
-  // Po smazání účtu nesmí zůstat platná session — appka by chvíli ukazovala
-  // data účtu, který už neexistuje, a další požadavek by skončil 401.
-  const { logout } = useAuth();
+export const UcetASpravaSection: React.FC<UcetASpravaSectionProps> = ({
+  plan = null,
+  profile,
+  preferences,
+  birthDate = null,
+  registrovanOd = null,
+  onEditPreferences,
+}) => {
+  const { account, logout } = useAuth();
+
+  // Věk a „Člen od" — stejný výpočet jako dřív ProfilHlavicka.tsx.
+  const vekLet = useMemo(() => {
+    const t = Date.parse(String(birthDate || ''));
+    if (!Number.isFinite(t)) return null;
+    const nar = new Date(t);
+    const dnes = new Date();
+    let vek = dnes.getFullYear() - nar.getFullYear();
+    const m = dnes.getMonth() - nar.getMonth();
+    if (m < 0 || (m === 0 && dnes.getDate() < nar.getDate())) vek--;
+    return vek >= 0 && vek < 130 ? vek : null;
+  }, [birthDate]);
+
+  const clenOd = useMemo(() => {
+    const t = Date.parse(String(registrovanOd || ''));
+    if (!Number.isFinite(t)) return null;
+    return new Date(t).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' });
+  }, [registrovanOd]);
+
   const [rusim, setRusim] = useState(false);
   const [zruseniStav, setZruseniStav] = useState<{ typ: 'ok' | 'chyba'; text: string } | null>(null);
   const [ptamSeNaZruseni, setPtamSeNaZruseni] = useState(false);
@@ -102,6 +138,62 @@ export const UcetASpravaSection: React.FC<UcetASpravaSectionProps> = ({ plan = n
         podtitulek="Členství, zrušení předplatného a smazání účtu"
         ikona={<CreditCard className="w-5 h-5 text-slate-400" />}
       />
+
+      {/* PROFIL — jméno, e-mail, člen od, věk, výška. Přestěhováno z
+          bývalé ProfilHlavicka.tsx (PROMPT_DNES_HERO.md): na Dnes ji
+          nahradil hero „Tvůj den", který denní identitu nepotřebuje. */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-karta/90 border border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <Avatar
+              jmeno={account?.name || profile.name}
+              src={account?.avatarUrl || profile.avatarUrl}
+              className="w-14 h-14 rounded-2xl bg-slate-900 shrink-0"
+              textClassName="text-lg"
+            />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="text-sm font-bold text-slate-100">{account?.name || profile.name}</h4>
+                <MembershipStatusBadge status={profile.status} trialDniDoKonce={profile.trialDniDoKonce} variant="card" />
+              </div>
+              {account?.email && (
+                <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5 min-w-0">
+                  <Mail className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                  <span className="truncate">{account.email}</span>
+                </p>
+              )}
+              <div className="flex items-center gap-2.5 text-xs text-slate-400 mt-1.5 flex-wrap">
+                {clenOd && (
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                    Člen od {clenOd}
+                  </span>
+                )}
+                {vekLet !== null && (
+                  <>
+                    {clenOd && <span aria-hidden="true">·</span>}
+                    <span>Věk: <strong className="text-slate-200">{vekLet} let</strong></span>
+                  </>
+                )}
+                {preferences.currentHeightCm > 0 && (
+                  <>
+                    {(clenOd || vekLet !== null) && <span aria-hidden="true">·</span>}
+                    <span>Výška: <strong className="text-slate-200">{preferences.currentHeightCm} cm</strong></span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={onEditPreferences}
+            className="shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 hover:border-cyan-500/50 transition-all active:scale-95"
+          >
+            <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Upravit cíle</span>
+          </button>
+        </div>
+      </div>
 
       {/* PLNÉ SROVNÁNÍ TIERŮ — jen když je co prodávat (viz komentář u props). */}
       {plan?.zamceno && (

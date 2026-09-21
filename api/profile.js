@@ -136,7 +136,7 @@ export default async function handler(req, res) {
         .eq('user_id', userId)
         .gte('log_date', weekStartStr)
         .lte('log_date', weekEndStr),
-      supabaseServer.from('profiles').select('avatar_url, daily_email').eq('id', userId).maybeSingle(),
+      supabaseServer.from('profiles').select('avatar_url, daily_email, preferred_address').eq('id', userId).maybeSingle(),
       supabaseServer
         .from('ai_messages')
         .select('id, title, content, created_at, task_type')
@@ -636,6 +636,10 @@ export default async function handler(req, res) {
         name: meta.name || null,
         avatar_url: profileRow?.avatar_url || null,
         daily_email: profileRow?.daily_email !== false,
+        // PROMPT_DNES_HERO.md — oslovení pro pozdrav na hero „Tvůj den",
+        // uložené přímo v 5. pádu (appka neskloňuje). NULL = pole
+        // nevyplněné, pozdrav jméno vynechá (src/lib/pozdrav.ts).
+        preferred_address: profileRow?.preferred_address || null,
         start_weight_kg: meta.start_weight_kg != null ? Number(meta.start_weight_kg) : null,
         goal_weight_kg: meta.goal_weight_kg != null ? Number(meta.goal_weight_kg) : null,
         height_cm: heightCm,

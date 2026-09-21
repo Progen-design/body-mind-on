@@ -6,7 +6,8 @@ import { PropojenaZarizeniSection } from './components/PropojenaZarizeniSection'
 import { UcetASpravaSection } from './components/UcetASpravaSection';
 import { DenniCheckin } from './components/DenniCheckin';
 import { DnesniPrehled } from './components/DnesniPrehled';
-import { ProfilHlavicka } from './components/ProfilHlavicka';
+import { DnesHero } from './components/DnesHero';
+import { RadekTeda } from './components/RadekTeda';
 import { TrialCountdownStrip } from './components/TrialCountdownStrip';
 import { TrialPaywallCard } from './components/TrialPaywallCard';
 import { NakupniSeznamVstup } from './components/NakupniSeznamVstup';
@@ -309,6 +310,24 @@ function AppContent() {
       setRegenerujiPlan(false);
     }
   }, [regenerujiPlan, showToast, znovuNacistProfil]);
+
+  /**
+   * „Jak ti máme říkat?" — PROMPT_DNES_HERO.md. Ukládá se přímo v 5. pádu,
+   * appka neskloňuje. Po úspěchu znovu načte profil, ať `preferredAddress`
+   * přestane být prázdné a nenápadná výzva v hero zmizí sama.
+   */
+  const handleSavePreferredAddress = useCallback(async (hodnota: string) => {
+    try {
+      await apiFetch('/api/profile-settings', {
+        method: 'PATCH',
+        body: JSON.stringify({ preferred_address: hodnota })
+      });
+      znovuNacistProfil();
+      return true;
+    } catch {
+      return false;
+    }
+  }, [znovuNacistProfil]);
 
   /**
    * Vlastní odhad bazálního metabolismu appky (Mifflin–St Jeor), ze stejných
@@ -1056,6 +1075,9 @@ function AppContent() {
           onCloseMenu={() => setIsMenuOpen(false)}
           onSelectTab={setActiveTab}
           onOpenPreferences={() => setIsPreferencesModalOpen(true)}
+          birthDate={profilData?.user?.birth_date ?? null}
+          registrovanOd={profilData?.user?.created_at ?? null}
+          heightCm={preferences.currentHeightCm}
         />
 
         {/* 2. Navigace — hned pod hlavičkou, ať je po ruce bez scrollování. */}
@@ -1093,72 +1115,78 @@ function AppContent() {
         {/* 6. Dynamic Content Based on Selected Tab */}
 
         {/* TAB A: DNES — CO MÁM DNESKA DĚLAT, JEDNA OTÁZKA.
-            PROMPT_UX_DNES.md (18. 9. 2026): pořadí sekcí přeskládané podle
-            pravidla „Dnes odpovídá na jedinou otázku — co mám dneska dělat".
-            Referenční hodnoty (cíle, historie váhy, zařízení, účet) patří do
-            svých záložek, prodej nepatří doprostřed. `ProfileSection` zmizelo
-            celé — „Aktuální váha / Cílová hmotnost" se přestěhovala do Tělo
-            & Váha (BodyStatsGrid), „Nastavené denní cíle & Makroživiny" do
-            Jídelníček & Makra (NutritionSection); obojí tam už dřív
-            duplicitně bydlelo. `OverviewBentoGrid` zmizelo taky — jeho
-            jídelní část se sloučila do DnesniPrehled, nákupní seznam dostal
-            vlastní jednořádkový vstup (NakupniSeznamVstup). */}
+            PROMPT_DNES_HERO.md (21. 9. 2026): `ProfilHlavicka` (e-mail,
+            „Člen od", věk, výška — údaje, které nikdo denně nepotřebuje)
+            nahradil hero „Tvůj den" (`DnesHero`): pozdrav, den programu, tři
+            ukazatele (jídlo/trénink/váha) a JEDNA primární akce
+            (`src/lib/dalsiKrok.ts`). Identita se přestěhovala do menu
+            v hlavičce a do nové karty „Profil" v Účtu — nic se nemaže.
+            `DnesniPrehled` zůstal jen na seznam dnešních jídel („Jídla
+            dnes") — kcal/makra/trénink teď ukazuje hero, ať se totéž číslo
+            nekreslí dvakrát. Řádek TEDa je od teď samostatná sekce
+            (`RadekTeda`), ne součást hero karty (zadání ho vypisuje jako
+            vlastní bod). `TrialCountdownStrip` se přestěhoval z hned pod
+            hlavičku na místo pod „Jídla dnes". */}
         {activeTab === 'profil' && (
           <div className="space-y-4 sm:space-y-6">
-            {/* 1. HLAVIČKA — kdo je přihlášený, jediné místo, kde je vidět,
-                čí plán se zobrazuje. */}
-            <ProfilHlavicka
+            {/* 1. HERO „TVŮJ DEN" — kdo je přihlášený, jak na tom dnes je
+                a co má udělat teď. */}
+            <DnesHero
               profile={displayedProfile}
-              preferences={preferences}
-              birthDate={profilData?.user?.birth_date ?? null}
               registrovanOd={profilData?.user?.created_at ?? null}
-              onEditPreferences={() => setIsPreferencesModalOpen(true)}
+              todayWorkout={todayWorkout}
+              workouts={workouts}
+              meals={meals}
+              targetCalories={preferences.dailyCalorieTarget}
+              weightRecords={monthRecords}
+              targetWeightKg={preferences.targetWeightKg}
+              onSelectTab={setActiveTab}
+              onToggleMeal={handleToggleMeal}
+              onOpenWeightModal={() => setIsAddRecordModalOpen(true)}
+              onSavePreferredAddress={handleSavePreferredAddress}
             />
 
-            {/* 2. ÚZKÝ PRODEJNÍ PRUH — jediný prodej v horní části stránky,
-                jen countdown + tlačítko na plné srovnání dole v Účtu. */}
+            {/* 2. ŘÁDEK TEDA — jedna zpráva z existujících coachTips, žádné
+                nové volání OpenAI (stálo by peníze při každém načtení Dnes).
+                Bez zprávy se nekreslí vůbec. */}
+            <RadekTeda tips={coachTips} />
+
+            {/* 3. JÍDLA DNES — všechna dnešní jídla, žádný výřez. Stav dne
+                (kcal, trénink) už ukazuje hero výš. */}
+            <DnesniPrehled
+              meals={meals}
+              preferences={preferences}
+              onToggleMeal={handleToggleMeal}
+              onSelectRecipe={(meal) => setSelectedRecipeMeal(meal)}
+              nesouladCile={nesoulad}
+              onRegeneratePlan={handleRegeneratePlanForCurrentTarget}
+              regenerujiPlan={regenerujiPlan}
+            />
+
+            {/* 5. ÚZKÝ PRODEJNÍ PRUH — přesunuto sem pod „Jídla dnes"
+                (PROMPT_DNES_HERO.md bod 5). Jediný prodej nad Účtem, jen
+                countdown + tlačítko na plné srovnání dole. */}
             <TrialCountdownStrip
               zamceno={zamcenyPlan?.zamceno === true}
               trialDniDoKonce={displayedProfile.trialDniDoKonce ?? null}
               onOtevritPredplatne={scrollNaPredplatne}
             />
 
-            {/* 3. DNEŠEK — kcal/makra, všechna dnešní jídla, trénink.
-                Bere stav dne z `GET /api/stats/adherence` nad DB funkcí
-                `get_daily_adherence()` — ten endpoint existoval, ale UI ho
-                nevolalo a počítalo si vlastní číslo z odškrtnutých položek.
-                Neodškrtnuté jídlo znamená „nevíme", ne „nesnědl". */}
-            <DnesniPrehled
-              todayWorkout={todayWorkout}
-              meals={meals}
-              preferences={preferences}
-              onToggleMeal={handleToggleMeal}
-              onSelectRecipe={(meal) => setSelectedRecipeMeal(meal)}
-              onSelectTab={setActiveTab}
-              onOpenPreferences={() => setIsPreferencesModalOpen(true)}
-              nesouladCile={nesoulad}
-              onRegeneratePlan={handleRegeneratePlanForCurrentTarget}
-              regenerujiPlan={regenerujiPlan}
-            />
-
-            {/* 4. JAK TI DNEŠEK SEDĚL — uzavření dne, hned po něm. */}
+            {/* 4. ZBYTEK BEZE ZMĚNY POŘADÍ: Jak ti dnešek seděl → Nákupní
+                seznam → Tvůj další týden → Propojená zařízení → Účet
+                a předplatné. */}
             <DenniCheckin onSelectTab={setActiveTab} />
 
-            {/* 5. NÁKUPNÍ SEZNAM — jednořádkový vstup, otevře modál. */}
             <NakupniSeznamVstup
               pocetPolozek={shoppingItems.length}
               onOpen={() => setIsShoppingModalOpen(true)}
             />
 
-            {/* 6. TVŮJ DALŠÍ TÝDEN — sbalená ukázka bez cen, rozbalí se na klik. */}
             <TrialPaywallCard
               plan={zamcenyPlan}
               onSelectRecipe={(meal) => setNahledZamcenehoJidla(meal)}
             />
 
-            {/* 7. PROPOJENÁ ZAŘÍZENÍ — beze změny pořadí (9. 9. 2026:
-                většina uživatelů žádné připojené nemá, patří pod to, kvůli
-                čemu do aplikace chodí). */}
             <PropojenaZarizeniSection
               slozeni={slozeni}
               posledniSynchronizace={posledniSynchronizaceHodinek}
@@ -1169,12 +1197,19 @@ function AppContent() {
               zobrazitWithings={profilData?.show_withings_section === true}
             />
 
-            {/* 8. ÚČET A PŘEDPLATNÉ — úplně nakonec, obsahuje i plné
-                srovnání START/ON Club/VIP (bod C), cíl pruhu i tlačítka
-                „Odemknout" v „Tvůj další týden". `ref` je cíl scrollu
-                z TrialCountdownStrip výš. */}
+            {/* Obsahuje i plné srovnání START/ON Club/VIP, cíl pruhu i
+                tlačítka „Odemknout" v „Tvůj další týden" (`ref`), a novou
+                kartu „Profil" (jméno, e-mail, člen od, věk, výška —
+                z bývalé ProfilHlavicka). */}
             <div ref={ucetSekceRef}>
-              <UcetASpravaSection plan={zamcenyPlan} />
+              <UcetASpravaSection
+                plan={zamcenyPlan}
+                profile={displayedProfile}
+                preferences={preferences}
+                birthDate={profilData?.user?.birth_date ?? null}
+                registrovanOd={profilData?.user?.created_at ?? null}
+                onEditPreferences={() => setIsPreferencesModalOpen(true)}
+              />
             </div>
           </div>
         )}

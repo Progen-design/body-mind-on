@@ -312,6 +312,12 @@ export interface UserProfile {
   subtitle?: string;
   /** Kolik dní zbývá do konce trialu. null = uživatel v trialu není. */
   trialDniDoKonce?: number | null;
+  /**
+   * „Jak ti máme říkat?" — text PŘÍMO V 5. PÁDU, jak si ho uživatel sám
+   * napsal (appka neskloňuje). null/prázdné = pole není vyplněné, pozdrav
+   * jméno nepoužije vůbec (PROMPT_DNES_HERO.md, src/lib/pozdrav.ts).
+   */
+  preferredAddress?: string | null;
 }
 
 /** Zamčený týden — co uživatel dostane, když zaplatí. */

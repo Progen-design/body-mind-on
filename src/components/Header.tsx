@@ -15,6 +15,14 @@ interface HeaderProps {
   onSelectTab?: (tab: ActiveTab) => void;
   /** Otevře modál s preferencemi — Header sám o preferencích nic neví. */
   onOpenPreferences: () => void;
+  /**
+   * PROMPT_DNES_HERO.md — e-mail, „Člen od", věk a výška se přestěhovaly
+   * sem z `ProfilHlavicka` (zrušená, hero na Dnes je nahradil). Nic se
+   * nemaže, jen se to teď kreslí v menu pod avatarem.
+   */
+  birthDate?: string | null;
+  registrovanOd?: string | null;
+  heightCm?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -22,12 +30,33 @@ export const Header: React.FC<HeaderProps> = ({
   isMenuOpen,
   onCloseMenu,
   onSelectTab,
-  onOpenPreferences
+  onOpenPreferences,
+  birthDate = null,
+  registrovanOd = null,
+  heightCm = 0,
 }) => {
   const { account, logout } = useAuth();
   const { showToast } = useToast();
   const { zeptejSe, dostupny: tedDostupny } = useTed();
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+
+  // Věk z data narození — stejný výpočet jako dřív ProfilHlavicka.tsx.
+  const vekLet = React.useMemo(() => {
+    const t = Date.parse(String(birthDate || ''));
+    if (!Number.isFinite(t)) return null;
+    const nar = new Date(t);
+    const dnes = new Date();
+    let vek = dnes.getFullYear() - nar.getFullYear();
+    const m = dnes.getMonth() - nar.getMonth();
+    if (m < 0 || (m === 0 && dnes.getDate() < nar.getDate())) vek--;
+    return vek >= 0 && vek < 130 ? vek : null;
+  }, [birthDate]);
+
+  const clenOd = React.useMemo(() => {
+    const t = Date.parse(String(registrovanOd || ''));
+    if (!Number.isFinite(t)) return null;
+    return new Date(t).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' });
+  }, [registrovanOd]);
 
   const handleConfirmLogout = () => {
     setIsLogoutDialogOpen(false);
@@ -158,6 +187,26 @@ export const Header: React.FC<HeaderProps> = ({
                       </div>
                     </div>
 
+                    {/* ČLEN OD, VĚK, VÝŠKA — z bývalé ProfilHlavicka.tsx
+                        (PROMPT_DNES_HERO.md). Chybějící hodnota se
+                        nezobrazí, žádná natvrdo psaná náhrada. */}
+                    {(clenOd || vekLet !== null || heightCm > 0) && (
+                      <div className="px-3 flex items-center gap-2.5 text-[11px] text-slate-500 flex-wrap">
+                        {clenOd && <span>Člen od {clenOd}</span>}
+                        {vekLet !== null && (
+                          <>
+                            {clenOd && <span aria-hidden="true">·</span>}
+                            <span>{vekLet} let</span>
+                          </>
+                        )}
+                        {heightCm > 0 && (
+                          <>
+                            {(clenOd || vekLet !== null) && <span aria-hidden="true">·</span>}
+                            <span>{heightCm} cm</span>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 

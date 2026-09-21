@@ -51,6 +51,8 @@ export interface ProfilOdpoved {
     height_cm: number | null; goal_weight_kg: number | null; birth_date: string | null;
     /** Datum registrace. `api/profile.js` ho vracelo, jen tenhle typ o něm nevěděl. */
     created_at?: string | null;
+    /** „Jak ti máme říkat?" — `profiles.preferred_address`, PROMPT_DNES_HERO.md. */
+    preferred_address?: string | null;
   };
   body_metrics?: any[];
   user_habits?: { habit_id: string; is_positive: boolean; sort_order: number }[];
@@ -922,7 +924,8 @@ export function naProfil(odpoved: ProfilOdpoved): UserProfile {
     avatarUrl: odpoved.user?.avatar_url || '',
     membershipPlan: NAZVY_PROGRAMU[program] || program,
     nextConsultationDate: '',
-    subtitle: bm.goal ? String(bm.goal) : undefined
+    subtitle: bm.goal ? String(bm.goal) : undefined,
+    preferredAddress: odpoved.user?.preferred_address || null,
   };
 }
 

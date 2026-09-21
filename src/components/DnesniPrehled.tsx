@@ -195,13 +195,33 @@ export const DnesniPrehled: React.FC<Props> = ({
           dne chyběla. */}
       {meals.length > 0 && (
         <div className="mt-4 space-y-2">
+          {/* CELÝ ŘÁDEK OTEVÍRÁ RECEPT (PROMPT_UX_DOLADENI.md bod A).
+              Na 390 px zbylo na název jen ~90 px useknutých `truncate`m —
+              „Ovesná kaš…", nikdo si nepřečetl, co má jíst. `div role="button"`,
+              ne `<button>`: uvnitř je skutečné tlačítko (zaškrtávátko) a
+              vnořený `<button>` v `<button>` je nevalidní HTML. Zaškrtávátko
+              samo dělá jinou akci (odškrtnutí), proto `stopPropagation`. */}
           {meals.map((meal) => (
             <div
               key={meal.id}
-              className="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800 flex items-center gap-2.5 hover:border-slate-700 transition-all"
+              role="button"
+              tabIndex={0}
+              onClick={() => onSelectRecipe(meal)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onSelectRecipe(meal);
+                }
+              }}
+              aria-label={`Otevřít recept: ${meal.title}`}
+              className="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800 flex items-center gap-2.5 hover:border-slate-700 transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
             >
               <button
-                onClick={() => onToggleMeal(meal.id)}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleMeal(meal.id);
+                }}
                 aria-label={`${meal.completed ? 'Zrušit záznam jídla' : 'Označit jako snědené'}: ${meal.title}`}
                 aria-pressed={meal.completed}
                 className={`w-10 h-10 shrink-0 rounded-xl border flex items-center justify-center transition-all ${
@@ -215,9 +235,18 @@ export const DnesniPrehled: React.FC<Props> = ({
 
               <RadekJidlaGrid typ={meal.type} nazev={meal.title} kcal={meal.calories} odskrtnuto={meal.completed} />
 
+              {/* Pod `sm` schované — celý řádek dělá totéž, tlačítko by na
+                  úzkém displeji jen ukrajovalo místo názvu. Na desktopu
+                  zůstává jako vizuální nápověda, ne druhá akce — proto
+                  `stopPropagation`, ne vlastní `onSelectRecipe` (dvě volání
+                  téhož by nic nerozbila, ale je to zbytečné). */}
               <button
-                onClick={() => onSelectRecipe(meal)}
-                className="shrink-0 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 px-2.5 py-1 rounded-lg bg-cyan-950/40 border border-cyan-500/30"
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelectRecipe(meal);
+                }}
+                className="hidden sm:inline-flex shrink-0 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 px-2.5 py-1 rounded-lg bg-cyan-950/40 border border-cyan-500/30"
               >
                 Recept
               </button>
@@ -263,11 +292,12 @@ export const DnesniPrehled: React.FC<Props> = ({
       </div>
 
       {/* PRIMÁRNÍ AKCE PODLE TOHO, JESTLI JE DNES TRÉNINK.
-          Ve dni volna je „Prohlédnout tréninkový plán" jako primární
-          (azurové) tlačítko nesmysl — není co dnes cvičit. Primární akcí je
-          pak jídelníček, tréninkové tlačítko klesá na stejný sekundární
-          styl jako „Upravit cíle". Když trénink dnes je, pořadí a styly
-          zůstávají beze změny. */}
+          PROMPT_UX_DOLADENI.md bod B — Honza výslovně: „když je tam
+          prohlédnout si tréninkový plán i když ho daný den nemám, je
+          blbost." PR 241 tlačítko ve dni volna jen zdegradovalo na
+          sekundární styl, pořád tam ale bylo. Řádek „Trénink — Dnes volno"
+          výš už tu informaci nese a záložka Tréninkový plán je o kus výš
+          v navigaci — tlačítko se ve dni volna nekreslí vůbec. */}
       <div className="mt-4 flex flex-wrap gap-2.5">
         {maTrenink ? (
           <>
@@ -288,23 +318,14 @@ export const DnesniPrehled: React.FC<Props> = ({
             </button>
           </>
         ) : (
-          <>
-            <button
-              type="button"
-              onClick={() => onSelectTab('jidelnicek')}
-              className="min-h-11 rounded-xl border border-cyan-500/40 bg-cyan-950/60 px-4 text-sm font-semibold text-cyan-300 hover:bg-cyan-900/60 transition-all inline-flex items-center gap-1.5"
-            >
-              <span>Otevřít jídelníček</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => onSelectTab('trenink')}
-              className="min-h-11 rounded-xl border border-slate-800 px-4 text-sm text-slate-400 hover:text-slate-200 transition-all"
-            >
-              Prohlédnout tréninkový plán
-            </button>
-          </>
+          <button
+            type="button"
+            onClick={() => onSelectTab('jidelnicek')}
+            className="min-h-11 rounded-xl border border-cyan-500/40 bg-cyan-950/60 px-4 text-sm font-semibold text-cyan-300 hover:bg-cyan-900/60 transition-all inline-flex items-center gap-1.5"
+          >
+            <span>Otevřít jídelníček</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
         )}
         <button
           type="button"

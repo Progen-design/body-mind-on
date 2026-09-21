@@ -50,27 +50,35 @@ test('trénink platí za odcvičený i bez odškrtnutí, když ho naměřily hod
   assert.match(KARTA, /manual_workout_count/, 'ručně zapsaný trénink se nepočítá');
 });
 
-test('ve dni volna je primární akce jídelníček, ne "prohlédnout tréninkový plán"', () => {
-  // Do 17. 9. 2026 bylo tréninkové tlačítko primární (azurové) VŽDY, i ve
-  // dni bez tréninku, kde "Prohlédnout tréninkový plán" jako hlavní akce
-  // nedává smysl. Teď se primární tlačítko větví podle maTrenink.
+test('ve dni volna je jediná primární akce jídelníček, "Prohlédnout tréninkový plán" tam vůbec není', () => {
+  // PROMPT_UX_DOLADENI.md bod B — Honza výslovně: „když je tam prohlédnout
+  // si tréninkový plán i když ho daný den nemám, je blbost." Do 21. 9. 2026
+  // tam tlačítko pořád bylo, jen jako sekundární styl (#241). Řádek
+  // „Trénink — Dnes volno" už informaci nese, tlačítko se nekreslí vůbec.
   assert.match(KARTA, /\{maTrenink \? \(/, 'primární akce se nevětví podle maTrenink');
 
-  const [, vetevBezTreninku] = KARTA.split(/\{maTrenink \? \(/);
-  assert.ok(vetevBezTreninku, 'chybí větev pro den bez tréninku');
-  // V bez-tréninkové větvi: jídelníček dostane azurový (primární) styl a
-  // odkaz na trénink klesne na stejný sekundární styl jako "Upravit cíle".
-  const primarniStyl = 'border-cyan-500\\/40 bg-cyan-950\\/60 px-4 text-sm font-semibold text-cyan-300';
-  const sekundarniStylJakoUpravitCile = 'border-slate-800 px-4 text-sm text-slate-400 hover:text-slate-200';
+  const [, zaTernary] = KARTA.split(/\{maTrenink \? \(/);
+  assert.ok(zaTernary, 'chybí větev pro den bez tréninku');
+  const [, vetevBezTreninku] = zaTernary.split(') : (');
+  assert.ok(vetevBezTreninku, 'chybí oddělená větev pro den bez tréninku ") : ("');
+  // Hranice větve: "Upravit cíle" sedí až za celým ternárním výrazem jako
+  // další sourozenec, ne uvnitř ní — spolehlivější než hledat ")}", který se
+  // shoduje už uvnitř `onClick={() => onSelectTab('jidelnicek')}`.
+  const konecVetve = vetevBezTreninku.indexOf('Upravit cíle');
+  const blokBezTreninku = vetevBezTreninku.slice(0, konecVetve > -1 ? konecVetve : undefined);
+
   assert.match(
-    vetevBezTreninku,
-    new RegExp(`className="min-h-11 rounded-xl border ${primarniStyl}[\\s\\S]*?Otevřít jídelníček`),
-    've dni volna musí být "Otevřít jídelníček" primární (azurové) tlačítko'
+    blokBezTreninku,
+    /Otevřít jídelníček/,
+    've dni volna musí zůstat tlačítko "Otevřít jídelníček"'
   );
-  assert.match(
-    vetevBezTreninku,
-    new RegExp(`className="min-h-11 rounded-xl border ${sekundarniStylJakoUpravitCile}[\\s\\S]*?Prohlédnout tréninkový plán`),
-    've dni volna musí mít tréninkové tlačítko stejný sekundární styl jako "Upravit cíle"'
+  assert.ok(
+    !/Prohlédnout tréninkový plán/.test(blokBezTreninku),
+    've dni volna se tlačítko "Prohlédnout tréninkový plán" vrátilo — Honza ho chtěl pryč úplně, ne jen degradovat na sekundární styl'
+  );
+  assert.ok(
+    !KARTA.includes('Prohlédnout tréninkový plán'),
+    'text "Prohlédnout tréninkový plán" je zpátky někde v komponentě'
   );
 });
 

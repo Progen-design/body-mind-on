@@ -62,7 +62,11 @@ export const CANCEL_ANYTIME_LINE = 'Zrušíš kdykoli. Ve zkušebním období ne
  */
 export const START_REASONS = [
   'Jídelníček i trénink podle tvých čísel, ne obecná tabulka',
-  'Každý týden se plán přepočítá podle toho, jak ti šel ten minulý',
+  // PROMPT_UX_DOLADENI.md bod E — „podle toho, jak ti šel ten minulý" byl
+  // slib, který appka neplní. Týdenní přepočet (lib/weeklyWeightRecalc.js)
+  // jede podle sedmidenního mediánu odvozené váhy, ne podle adherence:
+  // denní check-in, odškrtaná jídla ani odcvičené tréninky do něj nevstupují.
+  'Každý týden se kalorie přepočítají podle tvé aktuální váhy',
   'Jídlo, které ti nesedí, vyměníš jedním klikem — kalorie dne zůstanou sedět',
   'Nákupní seznam se poskládá sám z tvého jídelníčku',
   'TED odpovídá na tvůj konkrétní plán, ne obecně',
@@ -88,7 +92,14 @@ export const PRICING = [
       'Napojení chytrého zařízení — nastavení zdarma',
       'VŠE ze START +',
       'Komunita a automatika',
-      'AI trenér TED 24/7 (brzy)',
+      // PROMPT_UX_DOLADENI.md bod D — „AI trenér TED 24/7 (brzy)" tvrdilo
+      // dvě nepravdy: TED není „brzy", je živý (Header.tsx, TedContext.tsx —
+      // `dostupny: true` bez podmínky), a není to rozdíl ON Clubu proti
+      // STARTu — `api/coach-chat.js` (`requireActiveMembership`) i
+      // `lib/membershipHelpers.js` (`isAccessAllowed`) TEDa nijak
+      // tier-specificky nerozlišují, START ho má úplně stejně
+      // (`START_REASONS` ho ostatně slibuje taky). Odrážka šla pryč — je to
+      // beze zbytku „VŠE ze START +" o dva řádky výš, ne zvláštní přínos.
       'Každý měsíc živě s Ondrou — ptej se na trénink, jídlo a motivaci',
     ],
     cta: { label: 'Připojit se k ON Clubu', href: '/on-club' },

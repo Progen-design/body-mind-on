@@ -20,6 +20,11 @@ interface Props {
  * Sdílené mezi „Dnešek" (DnesniPrehled) a „Tvůj další týden" (TrialPaywallCard) —
  * dřív měla jen druhá jmenovaná ten flex bug, ale obě places ukazují
  * stejný typ řádku a mají zarovnávat stejně.
+ *
+ * PROMPT_UX_DOLADENI.md bod A (21. 9. 2026) — na 390 px zbylo na název
+ * s `truncate` jen ~90 px („Ovesná kaš…", „Kuře s rýži…"), nešlo přečíst,
+ * co je k jídlu. Pod `sm` se název zalomí na dva řádky (`line-clamp-2`),
+ * na desktopu zůstává jednořádkový `truncate` — tam je místa dost.
  */
 export const RadekJidlaGrid: React.FC<Props> = ({ typ, nazev, kcal, odskrtnuto = false }) => (
   <div className="min-w-0 flex-1 grid grid-cols-[1fr_auto] sm:grid-cols-[6rem_1fr_auto] gap-x-3 gap-y-0.5 items-center">
@@ -27,7 +32,7 @@ export const RadekJidlaGrid: React.FC<Props> = ({ typ, nazev, kcal, odskrtnuto =
       {typ}
     </span>
     <span
-      className={`col-start-1 row-start-2 sm:row-start-1 sm:col-start-2 text-sm font-bold truncate ${
+      className={`col-start-1 row-start-2 sm:row-start-1 sm:col-start-2 text-sm font-bold leading-snug line-clamp-2 sm:truncate ${
         odskrtnuto ? 'line-through text-slate-500' : 'text-slate-200'
       }`}
     >

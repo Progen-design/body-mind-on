@@ -96,7 +96,10 @@ export const UcetASpravaSection: React.FC<UcetASpravaSectionProps> = ({ plan = n
     <div className="space-y-4">
       <NadpisSekce
         titulek="Účet a předplatné"
-        podtitulek="Zrušení předplatného, smazání účtu a právní dokumenty"
+        // PROMPT_UX_DOLADENI.md bod F — sekce od PROMPT_UX_DNES.md (18. 9.)
+        // začíná výběrem členství (PredplatneNabidka výš), ale podtitulek
+        // o něm mlčel — Honza nabídku přehlédl a myslel si, že tam není.
+        podtitulek="Členství, zrušení předplatného a smazání účtu"
         ikona={<CreditCard className="w-5 h-5 text-slate-400" />}
       />
 

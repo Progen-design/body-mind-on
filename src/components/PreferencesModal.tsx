@@ -2,7 +2,6 @@ import React, { useMemo, useRef, useState } from 'react';
 import { X, Sliders, Loader2, AlertTriangle, Mail } from 'lucide-react';
 import { motion } from 'motion/react';
 import { getFrequencyDayRange } from '@lib/preferenceConstants.js';
-import { POSITIVE_HABITS, NEGATIVE_HABITS } from '@lib/habits.js';
 import { TRAINING_ENVIRONMENT_OPTIONS, EQUIPMENT_OPTIONS } from '@lib/trainingEnvironment.js';
 import { startProgramEnvironment } from '@lib/workoutStartProgram.js';
 import { Pole, Popisek, Chyba, Vyber, Vicenasobny } from './registrace/prvky';
@@ -54,13 +53,7 @@ const POLE_S_REGENERACI: (keyof NastaveniProfilu)[] = [
   'goal', 'activity', 'stress_level', 'occupation', 'frequency', 'workout_days',
   'diet_type', 'dietary_restrictions', 'foods_to_avoid',
   'training_environment', 'available_equipment', 'training_environment_detail',
-  'training_exclusion_patterns', 'training_exclusion_muscles',
-  'selected_habits'
-];
-
-const VOLBY_NAVYKU = [
-  ...POSITIVE_HABITS.map((h: any) => ({ value: String(h.id), label: `${h.emoji ?? ''} ${h.label}`.trim() })),
-  ...NEGATIVE_HABITS.map((h: any) => ({ value: String(h.id), label: `${h.emoji ?? ''} ${h.label}`.trim() }))
+  'training_exclusion_patterns', 'training_exclusion_muscles'
 ];
 
 function stejne(a: unknown, b: unknown): boolean {
@@ -313,11 +306,6 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
               onZmenaPartii={(v) => zmen('training_exclusion_muscles', v)}
             />
           )}
-
-          <Vicenasobny popisek="Návyky, které chceš sledovat" hodnoty={data.selected_habits}
-            volby={VOLBY_NAVYKU} volitelne
-            napoveda="Odznačením návyk přestaneš sledovat; zapsané dny zůstanou."
-            onZmena={(v) => zmen('selected_habits', v)} />
 
           {/* Jde jinam nez zbytek — /api/profile-settings, bez regenerace planu. */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-800">

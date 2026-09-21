@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dalsiKrok } from './dalsiKrok.ts';
+import { dalsiKrok, datumDneCesky } from './dalsiKrok.ts';
 
 const RANO = new Date('2026-09-21T06:00:00Z'); // 08:00 Praha
 const VECER = new Date('2026-09-21T18:00:00Z'); // 20:00 Praha
@@ -16,7 +16,7 @@ test('větev 1 — trénink dnes a neodcvičený má přednost přede vším', (
     },
     RANO
   );
-  assert.deepEqual(vysledek, { typ: 'trenink', label: 'Začít trénink Trénink A' });
+  assert.deepEqual(vysledek, { typ: 'trenink', label: 'Začít trénink A' });
 });
 
 test('zbývá jídlo, jehož čas teprve přijde — NENÍ „splněný", ukáže další jídlo bez akce', () => {
@@ -124,4 +124,17 @@ test('den bez plánu večer, po vážení, skončí na "hotovo", ne na pádu', (
     VECER
   );
   assert.deepEqual(vysledek, { typ: 'hotovo', label: 'Dnešek máš splněný.' });
+});
+
+test('název tréninku, který sám začíná „Trénink", se v tlačítku neopakuje', () => {
+  const zaklad = { maTrenink: true, treninkHotovy: false, meals: [], vazilSeDnes: false };
+  assert.equal(dalsiKrok({ ...zaklad, treninkNazev: 'Trénink A' }, RANO).label, 'Začít trénink A');
+  assert.equal(dalsiKrok({ ...zaklad, treninkNazev: 'trénink B' }, RANO).label, 'Začít trénink B');
+  assert.equal(dalsiKrok({ ...zaklad, treninkNazev: 'Nohy a zadek' }, RANO).label, 'Začít trénink Nohy a zadek');
+  assert.equal(dalsiKrok({ ...zaklad, treninkNazev: 'Trénink' }, RANO).label, 'Začít trénink');
+});
+
+test('datum v hero: den velkým, měsíc malým písmenem', () => {
+  assert.equal(datumDneCesky(new Date('2026-09-21T09:00:00Z')), 'Pondělí 21. září');
+  assert.equal(datumDneCesky(new Date('2026-03-04T09:00:00Z')), 'Středa 4. března');
 });

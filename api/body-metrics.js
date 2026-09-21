@@ -14,7 +14,6 @@ import {
   releasePlanEmailSendClaim,
 } from '../lib/taskExecutors.js';
 import { sendPlanEmail } from '../lib/mail.js';
-import { isValidHabitId, POSITIVE_HABITS, seedHabitIdsForRegistration } from '../lib/habits.js';
 import { enqueueAIEvent, triggerImmediateDecision } from '../lib/aiEvents.js';
 import { writeOnboardingEvent } from '../lib/onboardingMetrics.js';
 import { recordProductEvent } from '../lib/recordProductEvent.js';
@@ -395,39 +394,23 @@ export default async function handler(req, res) {
             status: membership.status,
             started_at: membership.started_at,
             trial_ends_at: membership.trial_ends_at,
-            notes: `Registrace přes ${program} formulář — čeká na aktivaci předplatného`,
+            notes: membership.status === 'trial'
+              ? `Registrace přes ${program} formulář — 7denní trial`
+              : `Registrace přes ${program} formulář — čeká na aktivaci předplatného`,
             updated_at: new Date().toISOString(),
           }], { onConflict: 'user_id' });
         if (memErr) {
           console.warn('[body-metrics] memberships upsert:', memErr.message);
         } else {
-          console.info('[body-metrics] membership created (pending_payment)', `user_id=${payload.user_id}`);
+          console.info(`[body-metrics] membership created (${membership.status})`, `user_id=${payload.user_id}`);
         }
       }
     }
 
-    // NÁVYKY SE PŘI REGISTRACI UŽ NEVYBÍRAJÍ — krok 5 zůstal jen na souhlasu
-    // (9. 9. 2026). Kdyby se tím `user_habits` nechalo prázdné, nový účet má
-    // prázdnou záložku Návyky a TED přijde o kontext, který mu dává
-    // `loadUserHabitsForCoach` — proto server sadu založí sám.
-    // Když klient seznam pošle (jiné rozhraní, testy), má jeho výběr přednost.
-    if (payload.user_id) {
-      const zvolene = Array.isArray(b.selected_habits) && b.selected_habits.length > 0
-        ? b.selected_habits
-          .filter((id) => typeof id === 'string' && isValidHabitId(id.trim()))
-          .map((id) => String(id).trim())
-        : seedHabitIdsForRegistration(payload);
-      const validHabits = zvolene.map((id, i) => ({
-        user_id: payload.user_id,
-        habit_id: id,
-        is_positive: POSITIVE_HABITS.some((p) => p.id === id),
-        sort_order: i,
-      }));
-      if (validHabits.length > 0) {
-        const { error: uhErr } = await supabaseServer.from('user_habits').insert(validHabits);
-        if (uhErr) console.warn('[body-metrics] user_habits insert:', uhErr.message);
-      }
-    }
+    // NÁVYKY SE PŘI REGISTRACI NEZAKLÁDAJÍ (21. 9. 2026). Záložka Návyky byla
+    // odstraněna a web je neslibuje; `user_habits` zůstává jen jako historická
+    // data existujících účtů (nemazat — to je samostatné rozhodnutí).
+    // `selected_habits` v těle požadavku se ignoruje.
 
     const successMsg = 'Údaje byly úspěšně uloženy a plán byl odeslán na e-mail. V e-mailu najdeš přihlašovací údaje.';
     const emailFailedPlanReadyMsg = 'Účet je vytvořen a plán je hotový. Přihlas se – plán uvidíš v profilu. E-mail s plánem se nepodařilo odeslat – zkontroluj spam nebo napiš na info@bodyandmindon.cz.';

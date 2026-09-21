@@ -25,30 +25,18 @@ test('poslední krok blokuje jen chybějící souhlas, návyky už ne', () => {
   assert.match(ZDROJ, /e\.souhlas = 'Bez souhlasu ti plán nemůžeme začít připravovat\.'/);
 });
 
-test('server založí výchozí sadu, když klient žádnou nepošle', () => {
-  assert.match(HABITS, /export function seedHabitIdsForRegistration/);
-  assert.match(HANDLER, /seedHabitIdsForRegistration\(payload\)/);
+test('server při registraci návyky NEZAKLÁDÁ (21. 9. 2026)', () => {
+  // Záložka Návyky byla odstraněna, web je neslibuje a `habit_logs` je prázdná.
+  // Existující `user_habits` se nemažou — jen se přestaly vytvářet.
+  assert.ok(!/from\('user_habits'\)/.test(HANDLER), 'registrace zakládá user_habits');
+  assert.ok(!/seedHabitIdsForRegistration/.test(HANDLER), 'registrace pořád volá seed návyků');
+  assert.ok(!/export function seedHabitIdsForRegistration/.test(HABITS), 'seed návyků je zpátky');
 });
 
-test('seed bere jen pozitivní návyky — zlozvyky se nikde nesledují', async () => {
-  const { seedHabitIdsForRegistration, NEGATIVE_HABITS } = await import('../../../lib/habits.js');
-  const sada = seedHabitIdsForRegistration({
-    goal: 'redukce',
-    activity: 'sedavy',
-    stress_level: 'high',
-    notes: 'kouřím a piju alkohol',
-  });
-
-  assert.ok(sada.length > 0, 'prázdná sada by znamenala prázdnou záložku Návyky');
-  assert.ok(sada.length <= 6, 'víc než šest návyků na start nikdo neudrží');
-  assert.equal(new Set(sada).size, sada.length, 'žádný návyk se nesmí opakovat');
-  for (const zlozvyk of NEGATIVE_HABITS) {
-    assert.ok(!sada.includes(zlozvyk.id), `seed nesmí obsahovat zlozvyk ${zlozvyk.id}`);
-  }
-});
-
-test('bez metrik seed spadne na výchozí sadu, ne na prázdno', async () => {
-  const { seedHabitIdsForRegistration, VYCHOZI_NAVYKY } = await import('../../../lib/habits.js');
-  assert.deepEqual(seedHabitIdsForRegistration({}), VYCHOZI_NAVYKY);
-  assert.deepEqual(seedHabitIdsForRegistration(null), VYCHOZI_NAVYKY);
+test('profil návyky needituje: ani formulář, ani endpoint', () => {
+  const MODAL = fs.readFileSync(path.join(KOREN, 'src', 'components', 'PreferencesModal.tsx'), 'utf8');
+  const PREFS = fs.readFileSync(path.join(KOREN, 'api', 'profile-preferences.js'), 'utf8');
+  assert.ok(!/selected_habits/.test(MODAL), 'formulář profilu pořád nabízí návyky');
+  assert.ok(!/Návyky, které chceš sledovat/.test(MODAL), 'formulář profilu pořád nabízí návyky');
+  assert.ok(!/from\('user_habits'\)/.test(PREFS), 'profile-preferences pořád píše do user_habits');
 });

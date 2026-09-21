@@ -142,7 +142,6 @@ test('úplně prázdná odpověď serveru projde všemi adaptéry bez pádu', ()
 
   const nastaveni = naNastaveniProfilu(prazdna);
   assert.deepEqual(nastaveni.workout_days, []);
-  assert.deepEqual(nastaveni.selected_habits, []);
 });
 
 test('formátovač na chybějící hodnoty vrací "—" pro všechny metriky', () => {

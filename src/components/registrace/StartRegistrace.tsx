@@ -96,9 +96,8 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
 
   // NÁVYKY SE TU UŽ NEVYBÍRAJÍ (9. 9. 2026). Výběr byl povinný, přestože
   // stejný seznam je v profilu nepovinný, a stál na posledním kroku před
-  // založením účtu. Sadu zakládá server (`seedHabitIdsForRegistration`
-  // v lib/habits.js) podle cíle, aktivity a stresu — uživatel si ji doladí
-  // v profilu, kde jde návyk kdykoli přidat i odebrat.
+  // založením účtu. Od 21. 9. 2026 se návyky nezakládají vůbec
+  // (záložka Návyky zmizela, web je neslibuje).
 
   // Text pod tlačítkem prosí „Nezavírej prosím stránku." — samotná prosba
   // ale odchod nezastaví. Zavření karty uprostřed generování nechá účet
@@ -203,7 +202,7 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
       const odpoved = await fetch('/api/body-metrics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // `selected_habits` se schválně neposílá — sadu založí server.
+        // `selected_habits` se neposílá — návyky se nezakládají (21. 9. 2026).
         //
         // `souhlasy`: explicitní pole druhů (ze sdíleného DRUHY_SOUHLASU,
         // ne holé `true`) — ze serveru je pak vidět, S ČÍM přesně člověk

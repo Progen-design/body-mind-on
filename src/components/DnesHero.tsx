@@ -7,7 +7,7 @@ import { apiFetch } from '../lib/api';
 import { calendarDateIsoInPrague } from '../../lib/czechCalendar.js';
 import { pozdrav } from '../lib/pozdrav.ts';
 import { denProgramu } from '../lib/denProgramu.ts';
-import { dalsiKrok } from '../lib/dalsiKrok.ts';
+import { dalsiKrok, datumDneCesky } from '../lib/dalsiKrok.ts';
 import { vypocitejVahovyPokrok } from '../lib/vahovyPokrok.ts';
 import { najdiNejblizsiTrenink } from '../lib/nejblizsiTrenink.ts';
 import { MembershipStatusBadge } from './MembershipStatusBadge';
@@ -142,12 +142,7 @@ export const DnesHero: React.FC<Props> = ({
   const zbyvaZapsat = Math.max(0, planovanychJidel - zaznamenanychJidel);
 
   const denN = denProgramu(registrovanOd, ted);
-  const denKontext = new Intl.DateTimeFormat('cs-CZ', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    timeZone: 'Europe/Prague',
-  }).format(ted);
+  const denKontext = datumDneCesky(ted);
 
   const dnesIso = calendarDateIsoInPrague(ted);
   const vazilSeDnes = weightRecords.length > 0 && weightRecords[weightRecords.length - 1].date === dnesIso;
@@ -201,7 +196,7 @@ export const DnesHero: React.FC<Props> = ({
           {/* POZDRAV & STAV DNE */}
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap text-xs text-slate-400">
-              <span className="capitalize">{denKontext}</span>
+              <span>{denKontext}</span>
               {denN != null && (
                 <>
                   <span aria-hidden="true">·</span>

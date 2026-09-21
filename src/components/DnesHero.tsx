@@ -53,14 +53,29 @@ interface Props {
   onOpenWeightModal: () => void;
 }
 
-/** Trénink dnes platí za odcvičený i bez odškrtnutí, když ho naměřily hodinky nebo ho člověk zapsal ručně. */
+/**
+ * Podíl odcvičených cviků dnešního tréninku (0–1).
+ *
+ * POZOR: `stav.trenink_splnen` ani `manual_workout_count` se tu NEPOUŽÍVAJÍ,
+ * když má den seznam cviků. Každé odškrtnutí cviku je v `daily_activity_completions`
+ * řádek s activity_type 'workout', takže `get_daily_adherence` hlásí trénink
+ * jako splněný už po PRVNÍM cviku — kroužek pak svítil „Hotovo" při 2 ze 4 cviků
+ * (nahlášeno 21. 9. 2026). Rozhoduje počet odškrtnutých cviků; hodinky
+ * (`watch_workout_count`) trénink uznají celý.
+ */
+export function podilTreninku(todayWorkout: WorkoutDay, stav: Adherence | null): number {
+  if (todayWorkout.isCompleted || (stav?.watch_workout_count ?? 0) > 0) return 1;
+  const cviky = todayWorkout.exercises;
+  if (cviky.length > 0) {
+    return cviky.filter((c) => c.completed).length / cviky.length;
+  }
+  // Den bez seznamu cviků: jediný zdroj je ruční zápis / adherence.
+  return stav?.trenink_splnen === true || (stav?.manual_workout_count ?? 0) > 0 ? 1 : 0;
+}
+
+/** Trénink je hotový, až když jsou odškrtnuté VŠECHNY cviky (nebo ho naměřily hodinky). */
 export function jeTreninkHotovy(todayWorkout: WorkoutDay, stav: Adherence | null): boolean {
-  return (
-    todayWorkout.isCompleted
-    || stav?.trenink_splnen === true
-    || (stav?.watch_workout_count ?? 0) > 0
-    || (stav?.manual_workout_count ?? 0) > 0
-  );
+  return podilTreninku(todayWorkout, stav) >= 1;
 }
 
 function pocetJidelSlovy(n: number): string {
@@ -111,7 +126,10 @@ export const DnesHero: React.FC<Props> = ({
   const ted = new Date();
 
   const maTrenink = todayWorkout.exercises.length > 0;
-  const treninkHotovy = jeTreninkHotovy(todayWorkout, stav);
+  const podilTrenink = podilTreninku(todayWorkout, stav);
+  const treninkHotovy = podilTrenink >= 1;
+  const cvikuCelkem = todayWorkout.exercises.length;
+  const cvikuHotovo = todayWorkout.exercises.filter((c) => c.completed).length;
   const nejblizsiTrenink = !maTrenink ? najdiNejblizsiTrenink(workouts) : null;
 
   const snedenoKcal = meals.reduce((acc, m) => acc + (m.completed ? m.calories : 0), 0);
@@ -221,12 +239,12 @@ export const DnesHero: React.FC<Props> = ({
               treninkHotovy
                 ? 'Trénink: hotovo. Otevřít tréninkový plán.'
                 : maTrenink
-                  ? `Trénink: ${todayWorkout.title}, ${todayWorkout.durationMin} minut, zatím neodcvičeno. Otevřít tréninkový plán.`
+                  ? `Trénink: ${todayWorkout.title}, ${todayWorkout.durationMin} minut, odcvičeno ${cvikuHotovo} z ${cvikuCelkem} cviků. Otevřít tréninkový plán.`
                   : 'Trénink: dnes volno. Otevřít tréninkový plán.'
             }
             onClick={() => onSelectTab('trenink')}
             kruh={
-              <ProgresniKruh podil={treninkHotovy ? 1 : 0} barva="stroke-akcent-lime">
+              <ProgresniKruh podil={podilTrenink} barva="stroke-akcent-lime">
                 {treninkHotovy ? (
                   <Check className="w-6 h-6 text-akcent-lime stroke-[3]" aria-hidden="true" />
                 ) : (
@@ -242,9 +260,11 @@ export const DnesHero: React.FC<Props> = ({
                   : 'Dnes volno'
             }
             radek2={
-              !treninkHotovy && !maTrenink && nejblizsiTrenink
-                ? `${nejblizsiTrenink.kdyText}: ${nejblizsiTrenink.nazev}`
-                : undefined
+              !treninkHotovy && maTrenink && cvikuHotovo > 0
+                ? `${cvikuHotovo} z ${cvikuCelkem} cviků`
+                : !treninkHotovy && !maTrenink && nejblizsiTrenink
+                  ? `${nejblizsiTrenink.kdyText}: ${nejblizsiTrenink.nazev}`
+                  : undefined
             }
           />
 

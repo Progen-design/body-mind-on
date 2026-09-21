@@ -85,9 +85,9 @@ test('gramy maker nejsou nikde napsané natvrdo', () => {
   // Procento bylo z profilu, gramy z makety — Přehled tvrdil 103 g,
   // Profil 184 g. Obě místa teď berou číslo z `denniMakra`.
   // OverviewBentoGrid a ProfileSection se 18. 9. 2026 sloučily/přestěhovaly
-  // (PROMPT_UX_DNES.md) do DnesniPrehled.tsx (Dnešek) a NutritionSection.tsx
+  // (PROMPT_UX_DNES.md) do DnesniPrehled.tsx (Dnešek), od 21. 9. 2026 CasovaOsaDne.tsx a NutritionSection.tsx
   // (Nastavené denní cíle & Makroživiny).
-  for (const soubor of ['../components/DnesniPrehled.tsx', '../components/NutritionSection.tsx']) {
+  for (const soubor of ['../components/CasovaOsaDne.tsx', '../components/NutritionSection.tsx']) {
     const kod = readFileSync(new URL(soubor, import.meta.url), 'utf8')
       .replace(/\{\s*\/\*[\s\S]*?\*\/\s*\}/g, '')
       .replace(/\/\*[\s\S]*?\*\//g, '');

@@ -15,11 +15,15 @@ const KARTA = cti('src/components/DenniCheckin.tsx');
 const APP = cti('src/App.tsx');
 const CISELNIK = cti('lib/productEventAllowlist.js');
 
-test('check-in je v aplikaci vidět a volá svůj endpoint', () => {
-  assert.match(APP, /<DenniCheckin/, 'App kartu nekreslí');
-  assert.match(APP, /import \{ DenniCheckin \}/, 'App kartu neimportuje');
-  assert.match(KARTA, /'\/api\/daily-checkin'/, 'karta endpoint nevolá');
+test('check-in se z Dnes odebral (PROMPT_DNES_WOW.md), komponenta a endpoint zůstávají', () => {
+  // Kartu „Jak ti dnešek seděl?" z Dnes vzal wow redesign. Komponentu, API
+  // `api/daily-checkin.js` ani tabulku `daily_checkins` nemažeme — čte je cron
+  // a `dailyAdherenceSync`.
+  assert.ok(!/<DenniCheckin/.test(APP), 'App kartu zase kreslí');
+  assert.ok(!/import \{ DenniCheckin \}/.test(APP), 'App zbytečně importuje DenniCheckin');
+  assert.match(KARTA, /'\/api\/daily-checkin'/, 'komponenta endpoint nevolá');
   assert.match(KARTA, /method: 'POST'/, 'odpověď se neodesílá');
+  assert.ok(fs.existsSync(path.join(KOREN, 'api', 'daily-checkin.js')), 'endpoint zmizel');
 });
 
 test('hodnocení i důvody sedí na číselník, který server přijme', () => {

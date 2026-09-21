@@ -2,6 +2,7 @@
 // Tvary vstupu jsou overene proti produkcni databazi, ne odhadnute.
 // Relativni cesta zamerne misto aliasu @lib - soubor pak jde spustit
 // i cistym Nodem (viz tools/overit-adaptery.ts), nejen pres Vite.
+import { urciOsloveni } from '../lib/vokativ.ts';
 import { POSITIVE_HABITS, NEGATIVE_HABITS } from '../../lib/habits.js';
 // Klice odskrtnutych aktivit maji jediny zdroj pravdy v lib/ — sdileny se
 // serverem. Format se nesmi menit, rozparoval by uz ulozene radky.
@@ -923,7 +924,9 @@ export function naProfil(odpoved: ProfilOdpoved): UserProfile {
     membershipPlan: NAZVY_PROGRAMU[program] || program,
     nextConsultationDate: '',
     subtitle: bm.goal ? String(bm.goal) : undefined,
-    preferredAddress: odpoved.user?.preferred_address || null,
+    // Vlastní tvar má přednost; jinak vokativ z křestního jména (`body_metrics.name`,
+    // `profiles.name` bývá prázdné) a když si nejsme jistí, pozdrav bez jména.
+    preferredAddress: urciOsloveni(odpoved.user?.preferred_address, bm.name || odpoved.user?.name),
   };
 }
 

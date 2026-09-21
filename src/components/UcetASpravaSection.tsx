@@ -46,6 +46,11 @@ interface UcetASpravaSectionProps {
   birthDate?: string | null;
   registrovanOd?: string | null;
   onEditPreferences: () => void;
+  /**
+   * „Jak ti máme říkat?" — uloží oslovení přesně v tom tvaru, jak ho člověk napsal
+   * (5. pád, appka neskloňuje). Bez tohoto propu se pole nekreslí.
+   */
+  onSavePreferredAddress?: (hodnota: string) => Promise<boolean>;
 }
 
 export const UcetASpravaSection: React.FC<UcetASpravaSectionProps> = ({
@@ -55,8 +60,26 @@ export const UcetASpravaSection: React.FC<UcetASpravaSectionProps> = ({
   birthDate = null,
   registrovanOd = null,
   onEditPreferences,
+  onSavePreferredAddress,
 }) => {
   const { account, logout } = useAuth();
+
+  // Předvyplněno tím, čím se pozdrav dnes opravdu oslovuje (vlastní tvar,
+  // nebo vokativ z jména — src/lib/vokativ.ts), ať je vidět, co appka říká.
+  const [osloveni, setOsloveni] = useState(profile.preferredAddress ?? '');
+  const [ukladamOsloveni, setUkladamOsloveni] = useState(false);
+  const [stavOsloveni, setStavOsloveni] = useState<{ typ: 'ok' | 'chyba'; text: string } | null>(null);
+
+  const ulozOsloveni = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const hodnota = osloveni.trim();
+    if (!hodnota || !onSavePreferredAddress) return;
+    setUkladamOsloveni(true);
+    setStavOsloveni(null);
+    const ok = await onSavePreferredAddress(hodnota);
+    setUkladamOsloveni(false);
+    setStavOsloveni(ok ? { typ: 'ok', text: 'Uloženo.' } : { typ: 'chyba', text: 'Nepodařilo se uložit. Zkus to prosím znovu.' });
+  };
 
   // Věk a „Člen od" — stejný výpočet jako dřív ProfilHlavicka.tsx.
   const vekLet = useMemo(() => {
@@ -193,6 +216,35 @@ export const UcetASpravaSection: React.FC<UcetASpravaSectionProps> = ({
             <span>Upravit cíle</span>
           </button>
         </div>
+
+        {onSavePreferredAddress && (
+          <form onSubmit={ulozOsloveni} className="mt-4 pt-4 border-t border-slate-800 flex flex-wrap items-center gap-2">
+            <label htmlFor="osloveni-profil" className="text-xs text-slate-400 basis-full sm:basis-auto">
+              Jak ti máme říkat? <span className="text-slate-600">(v 5. pádu, např. „Honzo“)</span>
+            </label>
+            <input
+              id="osloveni-profil"
+              type="text"
+              value={osloveni}
+              onChange={(e) => setOsloveni(e.target.value)}
+              maxLength={40}
+              autoComplete="off"
+              className="min-h-10 flex-1 min-w-0 sm:max-w-[14rem] px-3 py-1 rounded-lg bg-slate-900/70 border border-slate-800 text-sm text-slate-100 placeholder:text-slate-600 outline-none focus:border-cyan-500/60 transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={!osloveni.trim() || ukladamOsloveni}
+              className="min-h-10 px-4 rounded-lg text-xs font-bold text-cyan-300 bg-cyan-950/60 border border-cyan-500/40 hover:bg-cyan-900/60 disabled:opacity-50 transition-all"
+            >
+              {ukladamOsloveni ? 'Ukládám…' : 'Uložit'}
+            </button>
+            {stavOsloveni && (
+              <span className={`text-xs basis-full ${stavOsloveni.typ === 'ok' ? 'text-emerald-300' : 'text-rose-400'}`}>
+                {stavOsloveni.text}
+              </span>
+            )}
+          </form>
+        )}
       </div>
 
       {/* PLNÉ SROVNÁNÍ TIERŮ — jen když je co prodávat (viz komentář u props). */}

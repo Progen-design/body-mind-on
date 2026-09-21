@@ -1,12 +1,10 @@
-// Dnešek se bere ze záznamů, ne z odškrtávání.
+// „Jídla dnes" — celý dnešní jídelníček, žádný výřez.
 //
-// Přehled dřív počítal „splněno" z odškrtnutých plánovaných jídel a
-// neodškrtnuté vydával za nesnědené. `GET /api/stats/adherence` nad DB funkci
-// `get_daily_adherence()` přitom existoval a UI ho nevolalo.
-//
-// PROMPT_UX_DNES.md (18. 9. 2026): karta pohltila i jídelní část dřívějšího
-// `OverviewBentoGrid.tsx` (odsud i test na zaškrtávátko jídla, dřív
-// overviewBentoGrid.test.ts) — obě ukazovaly „dnešek" na dvou místech.
+// PROMPT_DNES_HERO.md (21. 9. 2026): kcal/makra dne, trénink, pohyb a
+// primární akce se přestěhovaly do hero „Tvůj den" (DnesHero, viz
+// dnesHero.test.ts) — tahle karta teď je jen seznam dnešních jídel.
+// Dřív (PROMPT_UX_DNES.md, 18. 9. 2026) pohltila i jídelní část
+// `OverviewBentoGrid.tsx` (odsud test na zaškrtávátko jídla).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -18,68 +16,45 @@ const cti = (p: string) => fs.readFileSync(path.join(KOREN, p), 'utf8');
 const KARTA = cti('src/components/DnesniPrehled.tsx');
 const APP = cti('src/App.tsx');
 
-test('karta dneška je nahoře a bere data ze serveru', () => {
+test('„Jídla dnes" je vykreslená pod hero a řádkem TEDa', () => {
   assert.match(APP, /<DnesniPrehled/, 'App kartu nekreslí');
-  assert.match(KARTA, /'\/api\/stats\/adherence'/, 'karta nevolá adherence');
-  // Dnes má začínat dneškem hned pod hlavičkou a prodejním pruhem, ne až
-  // pod „Účtem a předplatným" na konci stránky.
+  assert.ok(
+    APP.indexOf('<DnesHero') < APP.indexOf('<DnesniPrehled'),
+    'Jídla dnes musí být pod hero, ne nad ním'
+  );
   assert.ok(
     APP.indexOf('<DnesniPrehled') < APP.indexOf('<UcetASpravaSection'),
-    'dnešek není nad účtem a předplatným'
+    'Jídla dnes nejsou nad účtem a předplatným'
   );
 });
 
-test('neodškrtnuté jídlo znamená „nevíme", ne „nesnědl"', () => {
-  assert.match(KARTA, /zaznamenáno/, 'chybí rozlišení zaznamenaného od plánovaného');
-  assert.match(KARTA, /nevíme, jestli jsi jedl/, 'chybí přiznání chybějícího záznamu');
+test('úzký prodejní pruh je přesunutý pod Jídla dnes (PROMPT_DNES_HERO.md bod 5)', () => {
   assert.ok(
-    !/% splněno/.test(KARTA),
-    'karta zase tvrdí procento splnění z odškrtnutých položek'
+    APP.indexOf('<DnesniPrehled') < APP.indexOf('<TrialCountdownStrip')
+    && APP.indexOf('<TrialCountdownStrip') < APP.indexOf('<DenniCheckin'),
+    'TrialCountdownStrip musí sedět mezi Jídly dnes a „Jak ti dnešek seděl"'
   );
 });
 
-test('pohyb se ukazuje jen když ho hodinky naměřily', () => {
-  // Nula minut by tvrdila, že se člověk nehýbal — my víme jen to, že data
-  // nedorazila.
-  assert.match(KARTA, /pohybMin > 0 && \(/, 'pohyb se kreslí i bez naměřených dat');
-  assert.match(KARTA, /Naměřeno hodinkami/, 'chybí zdroj čísla');
+test('adherence/trénink/pohyb se do karty nevrátily — to teď dělá hero', () => {
+  assert.ok(!KARTA.includes('/api/stats/adherence'), 'karta si zase sama volá adherence — to dělá DnesHero');
+  assert.ok(!KARTA.includes('watch_workout_count'), 'trénink se vrátil zpátky do Jídel dnes');
+  assert.ok(!KARTA.includes('pohybMin'), 'pohyb se vrátil zpátky do Jídel dnes');
+  assert.ok(!KARTA.includes('Prohlédnout tréninkový plán'), 'primární akce se vrátila zpátky do Jídel dnes');
 });
 
-test('trénink platí za odcvičený i bez odškrtnutí, když ho naměřily hodinky', () => {
-  assert.match(KARTA, /watch_workout_count/, 'hodinkový trénink se nepočítá');
-  assert.match(KARTA, /manual_workout_count/, 'ručně zapsaný trénink se nepočítá');
+test('nadpis „Jídla dnes" a makra dne vpravo', () => {
+  assert.match(KARTA, /Jídla dnes/, 'chybí nadpis Jídla dnes');
+  assert.match(KARTA, /denniMakra/, 'makra dne nejsou spočtená přes sdílený denniMakra');
 });
 
-test('ve dni volna je jediná primární akce jídelníček, "Prohlédnout tréninkový plán" tam vůbec není', () => {
-  // PROMPT_UX_DOLADENI.md bod B — Honza výslovně: „když je tam prohlédnout
-  // si tréninkový plán i když ho daný den nemám, je blbost." Do 21. 9. 2026
-  // tam tlačítko pořád bylo, jen jako sekundární styl (#241). Řádek
-  // „Trénink — Dnes volno" už informaci nese, tlačítko se nekreslí vůbec.
-  assert.match(KARTA, /\{maTrenink \? \(/, 'primární akce se nevětví podle maTrenink');
+test('všechna jídla, žádný výřez', () => {
+  assert.ok(!/meals\.slice\(0,\s*3\)/.test(KARTA), 'meals se zase ořezávají na tři');
+  assert.match(KARTA, /meals\.map\(/, 'karta nemapuje celé pole meals');
+});
 
-  const [, zaTernary] = KARTA.split(/\{maTrenink \? \(/);
-  assert.ok(zaTernary, 'chybí větev pro den bez tréninku');
-  const [, vetevBezTreninku] = zaTernary.split(') : (');
-  assert.ok(vetevBezTreninku, 'chybí oddělená větev pro den bez tréninku ") : ("');
-  // Hranice větve: "Upravit cíle" sedí až za celým ternárním výrazem jako
-  // další sourozenec, ne uvnitř ní — spolehlivější než hledat ")}", který se
-  // shoduje už uvnitř `onClick={() => onSelectTab('jidelnicek')}`.
-  const konecVetve = vetevBezTreninku.indexOf('Upravit cíle');
-  const blokBezTreninku = vetevBezTreninku.slice(0, konecVetve > -1 ? konecVetve : undefined);
-
-  assert.match(
-    blokBezTreninku,
-    /Otevřít jídelníček/,
-    've dni volna musí zůstat tlačítko "Otevřít jídelníček"'
-  );
-  assert.ok(
-    !/Prohlédnout tréninkový plán/.test(blokBezTreninku),
-    've dni volna se tlačítko "Prohlédnout tréninkový plán" vrátilo — Honza ho chtěl pryč úplně, ne jen degradovat na sekundární styl'
-  );
-  assert.ok(
-    !KARTA.includes('Prohlédnout tréninkový plán'),
-    'text "Prohlédnout tréninkový plán" je zpátky někde v komponentě'
-  );
+test('nesoulad cíle je pořád vidět i v Jídlech dnes (docs/DALSI_KROK.md 7.2a)', () => {
+  assert.match(KARTA, /CalorieMismatchBanner/, 'banner nesouladu cíle zmizel z Jídel dnes');
 });
 
 test('zaškrtávátko jídla kreslí ikonu v OBOU stavech, ne jen po odškrtnutí', () => {

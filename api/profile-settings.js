@@ -27,6 +27,11 @@ export default async function handler(req, res) {
     const goal_weight_kg = body.goal_weight_kg != null ? Number(body.goal_weight_kg) : null;
     const avatar_url = typeof body.avatar_url === 'string' ? body.avatar_url.trim() || null : null;
     const daily_email = body.daily_email === false ? false : body.daily_email === true ? true : undefined;
+    // „Jak ti máme říkat?" (PROMPT_DNES_HERO.md) — text PŘÍMO V 5. PÁDU, jak
+    // si ho uživatel sám napsal; appka ho jen ukládá, neskloňuje.
+    const preferred_address = typeof body.preferred_address === 'string'
+      ? body.preferred_address.trim().slice(0, 40) || null
+      : undefined;
     const hasSmartScaleInput =
       body.smart_scale_choice !== undefined
       || body.smart_scale !== undefined
@@ -86,8 +91,9 @@ export default async function handler(req, res) {
     const profileUpdates = { id: user.id };
     if (avatar_url !== undefined) profileUpdates.avatar_url = avatar_url;
     if (daily_email !== undefined) profileUpdates.daily_email = daily_email;
+    if (preferred_address !== undefined) profileUpdates.preferred_address = preferred_address;
 
-    if (avatar_url !== undefined || daily_email !== undefined) {
+    if (avatar_url !== undefined || daily_email !== undefined || preferred_address !== undefined) {
       let toUpsert = { ...profileUpdates, updated_at: new Date().toISOString() };
       let profileErr = null;
       let result = await supabaseServer.from('profiles').upsert(toUpsert, { onConflict: 'id' });
@@ -97,6 +103,16 @@ export default async function handler(req, res) {
         delete toUpsert.updated_at;
         result = await supabaseServer.from('profiles').upsert(toUpsert, { onConflict: 'id' });
         profileErr = result.error;
+      }
+      // `preferred_address` je nejnovější sloupec (migrace čeká na ruční
+      // spuštění, PROMPT_DNES_HERO.md) — stejná ochrana jako u `daily_email`
+      // níž, ať appka nespadne v okně mezi deployem a migrací.
+      if (profileErr && /does not exist|column.*not found|neexistuje/i.test(profileErr?.message)) {
+        delete toUpsert.preferred_address;
+        if (Object.keys(toUpsert).length > 1) {
+          result = await supabaseServer.from('profiles').upsert(toUpsert, { onConflict: 'id' });
+          profileErr = result.error;
+        }
       }
       if (profileErr && /does not exist|column.*not found|neexistuje/i.test(profileErr?.message)) {
         delete toUpsert.daily_email;
@@ -119,6 +135,7 @@ export default async function handler(req, res) {
       smart_scale_provider: nextMeta.smart_scale_provider ?? null,
       ...(avatar_url !== undefined && { avatar_url }),
       ...(daily_email !== undefined && { daily_email }),
+      ...(preferred_address !== undefined && { preferred_address }),
       ...(heightResult?.ok && { calories_target: heightResult.calories_target }),
     });
   } catch (err) {

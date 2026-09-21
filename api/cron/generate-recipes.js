@@ -1,4 +1,7 @@
-// GET/POST /api/cron/generate-recipes — denní doplňování katalogu (CRON_SECRET)
+// GET/POST /api/cron/generate-recipes — týdenní doplňování katalogu (CRON_SECRET)
+//
+// Od 21. 9. 2026 1× týdně (neděle v noci) a jen s reálnou poptávkou; dřív 3× denně.
+// Ruční spuštění: POST /api/admin/generate-recipes (viz scripts/_run-queue.mjs).
 //
 // Uzavírá smyčku, která do teď potřebovala člověka:
 //
@@ -6,7 +9,7 @@
 //   →  řádek v recipe_generation_queue  →  TENHLE CRON  →  nový recept v katalogu
 //
 // Fronta se tedy plní sama z reálné poptávky — z toho, co plánovači při skládání
-// jídelníčků skutečně chybělo. Tenhle cron ji jen jednou denně vybere.
+// jídelníčků skutečně chybělo. Tenhle cron ji jen jednou týdně vybere.
 //
 // Bezpečnost obsahu neřeší tahle route, ale brány pod ní: nutrice se počítá ze
 // surovin (jinak se recept nezapíše), kalorické pásmo slotu, Atwater, počet
@@ -58,7 +61,9 @@ export default async function handler(req, res) {
       }));
     }
 
-    const vysledek = await runRecipeGenerator({ dryRun: false });
+    // `jenSPoptavkou` — bez reálné poptávky za poslední týden běh končí bez
+    // volání modelu (PROMPT_NAKLADY_MINIMUM.md bod 3).
+    const vysledek = await runRecipeGenerator({ dryRun: false, jenSPoptavkou: true });
 
     console.log(JSON.stringify({
       source: 'cron/generate-recipes',

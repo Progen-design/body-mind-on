@@ -66,9 +66,26 @@ function casNaMinuty(cas: string): number | null {
   return Number(m[1]) * 60 + Number(m[2]);
 }
 
+/**
+ * „Pondělí 21. září" — den velkým písmenem, měsíc malým. CSS `capitalize`
+ * na `Intl` výstupu psalo i měsíc velkým („21. Září").
+ */
+export function datumDneCesky(ted: Date = new Date()): string {
+  const text = new Intl.DateTimeFormat('cs-CZ', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'Europe/Prague',
+  }).format(ted);
+  return text.charAt(0).toLocaleUpperCase('cs-CZ') + text.slice(1);
+}
+
 export function dalsiKrok(vstup: DalsiKrokVstup, ted: Date = new Date()): DalsiKrok {
   if (vstup.maTrenink && !vstup.treninkHotovy) {
-    return { typ: 'trenink', label: `Začít trénink ${vstup.treninkNazev || ''}`.trim() };
+    // Název tréninku často sám začíná slovem „Trénink" („Trénink A") —
+    // bez očištění vzniklo „Začít trénink Trénink A".
+    const nazev = String(vstup.treninkNazev || '').trim().replace(/^trénink(\s+|$)/i, '');
+    return { typ: 'trenink', label: `Začít trénink ${nazev}`.trim() };
   }
 
   const { hodina, minuta } = casVPraze(ted);

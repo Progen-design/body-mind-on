@@ -24,17 +24,6 @@ test('frequency se posílá jako freq_choice', () => {
   assert.equal('frequency' in (r.preference || {}), false);
 });
 
-test('NÁVYKY SE POSÍLAJÍ JEN KDYŽ SE ZMĚNILY', () => {
-  // Endpoint dela DELETE all + INSERT. Kdyz INSERT selze, uzivatel o navyky
-  // prijde a server to jen zaloguje — vrati 200. Neposlat klic vubec ten blok
-  // preskoci (`if (Array.isArray(b.selected_habits))`).
-  const bezNavyku = rozdelZmenyNastaveni({ goal: 'redukce' });
-  assert.equal('selected_habits' in (bezNavyku.preference || {}), false);
-
-  const sNavyky = rozdelZmenyNastaveni({ selected_habits: ['hydration'] });
-  assert.deepEqual(sNavyky.preference, { selected_habits: ['hydration'] });
-});
-
 test('prázdná cílová váha neznamená vynulovat', () => {
   // Uzivatel pole vymazal — to neni pokyn zapsat nulu.
   for (const prazdne of ['', '   ', '0', 'abc']) {
@@ -63,5 +52,4 @@ test('prázdný výchozí stav má všechna pole, aby formulář nespadl', () =>
     assert.notEqual(hodnota, undefined, `${klic} chybi`);
   }
   assert.deepEqual(PRAZDNE_NASTAVENI.workout_days, []);
-  assert.deepEqual(PRAZDNE_NASTAVENI.selected_habits, []);
 });

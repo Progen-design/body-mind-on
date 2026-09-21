@@ -4,7 +4,6 @@
 // Přegenerování plánu je orchestration-compatible: generatePlanForEmail používá stejný trainer jako task executor; v budoucnu lze nahradit za event + task adjust_plan.
 import { supabaseServer } from '../lib/supabaseServer.js';
 import { generatePlanForEmail } from '../lib/generatePlan.js';
-import { isValidHabitId, invalidHabitIds, POSITIVE_HABITS } from '../lib/habits.js';
 import { normalizeOccupation, normalizeActivity, normalizeStress, normalizeGoal, normalizeFrequency, getFrequencyDayRange } from '../lib/preferenceConstants.js';
 import { enqueueAIEvent, triggerImmediateDecision } from '../lib/aiEvents.js';
 import { mergeTrainingEnvironmentIntoNotes } from '../lib/trainingEnvironment.js';
@@ -146,19 +145,6 @@ export default async function handler(req, res) {
       }
     }
 
-    // Návyky se ověřují TADY, před jakýmkoli zápisem — ne až u samotného
-    // user_habits bloku níž. Ten dřív smazal existující návyky ještě před
-    // kontrolou vstupu: request se samými neplatnými klíči smazal člověku
-    // celý seznam a nevložil nic, beze chyby. Viz docs/DALSI_KROK.md 6.7.
-    if (b.selected_habits !== undefined) {
-      const neplatneNavyky = invalidHabitIds(b.selected_habits);
-      if (neplatneNavyky.length > 0) {
-        return res.status(400).json({
-          error: `Neznámé návyky: ${neplatneNavyky.map((v) => String(v)).join(', ')}.`,
-        });
-      }
-    }
-
     if (Object.keys(updates).length > 0) {
       let toUpdate = { ...updates };
       const shouldRecalcCalories = Object.keys(updates).some((k) => CALORIE_TARGET_RECALC_FIELDS.includes(k));
@@ -225,29 +211,8 @@ export default async function handler(req, res) {
       await triggerImmediateDecision(userId);
     }
 
-    // Aktualizovat user_habits
-    if (Array.isArray(b.selected_habits)) {
-      const validHabits = b.selected_habits
-        .filter((id) => typeof id === 'string' && isValidHabitId(id.trim()))
-        .map((id, i) => ({
-          user_id: userId,
-          habit_id: String(id).trim(),
-          is_positive: POSITIVE_HABITS.some((p) => p.id === String(id).trim()),
-          sort_order: i,
-        }));
-
-      const { error: delErr } = await supabaseServer
-        .from('user_habits')
-        .delete()
-        .eq('user_id', userId);
-
-      if (delErr) console.warn('[profile-preferences] user_habits delete:', delErr.message);
-
-      if (validHabits.length > 0) {
-        const { error: insErr } = await supabaseServer.from('user_habits').insert(validHabits);
-        if (insErr) console.warn('[profile-preferences] user_habits insert:', insErr.message);
-      }
-    }
+    // `user_habits` se tady od 21. 9. 2026 NEUPRAVUJE — editace návyků z profilu
+    // zmizela spolu se záložkou Návyky. `selected_habits` v těle se ignoruje.
 
     // Přegenerovat plán a odeslat e-mail – při změně jen stravy jen jídelníček, ne tréninkový rozvrh
     const dietOnlyKeys = ['diet_type', 'dietary_restrictions', 'foods_to_avoid'];

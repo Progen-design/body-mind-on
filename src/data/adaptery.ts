@@ -715,7 +715,6 @@ export interface NastaveniProfilu {
   // (lib/trainingExclusions.js), ne chipy z UI.
   training_exclusion_patterns: string[];
   training_exclusion_muscles: string[];
-  selected_habits: string[];
   goal_weight_kg: string;
   height_cm: string;
 }
@@ -759,7 +758,6 @@ export function naNastaveniProfilu(odpoved: ProfilOdpoved): NastaveniProfilu {
     training_environment_detail: text(parseTrainingEnvironmentDetail(bm)),
     training_exclusion_patterns: normalizeTrainingExclusions(bm.training_exclusions).patterns,
     training_exclusion_muscles: normalizeTrainingExclusions(bm.training_exclusions).muscles,
-    selected_habits: (odpoved?.user_habits || []).map((h) => h.habit_id),
     goal_weight_kg: text(odpoved?.user?.goal_weight_kg),
     height_cm: text(odpoved?.user?.height_cm ?? bm.height_cm)
   };

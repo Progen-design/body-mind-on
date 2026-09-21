@@ -48,7 +48,7 @@ test('„Další krok" je skutečné tlačítko, ne klikací div', () => {
 });
 
 test('„Další krok" volá spustDalsiKrok podle typu z dalsiKrok()', () => {
-  assert.match(HERO, /import \{ dalsiKrok \}/, 'hero neimportuje pravidla pro Další krok');
+  assert.match(HERO, /import \{ dalsiKrok(, datumDneCesky)? \}/, 'hero neimportuje pravidla pro Další krok');
   assert.match(HERO, /onClick=\{spustDalsiKrok\}/, 'tlačítko Dalšího kroku nevolá spustDalsiKrok');
 });
 

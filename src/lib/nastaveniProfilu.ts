@@ -22,7 +22,6 @@ export const PRAZDNE_NASTAVENI: NastaveniProfilu = {
   training_environment_detail: '',
   training_exclusion_patterns: [],
   training_exclusion_muscles: [],
-  selected_habits: [],
   goal_weight_kg: '',
   height_cm: ''
 };
@@ -42,15 +41,7 @@ function cislo(v: unknown): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-/**
- * Rozdělí změny podle toho, kam patří.
- *
- * `selected_habits` se posílá JEN když se opravdu změnily. Endpoint na nich
- * dělá DELETE all + INSERT a když INSERT selže, uživatel o návyky přijde —
- * server to jen zaloguje a vrátí 200. Neposlat klíč vůbec ten blok přeskočí
- * (`if (Array.isArray(b.selected_habits))`), takže neměněné návyky se ani
- * nemažou, ani neriskují.
- */
+/** Rozdělí změny podle toho, kam patří. */
 export function rozdelZmenyNastaveni(zmeny: Partial<NastaveniProfilu>): RozdeleneZmeny {
   const preference: Record<string, unknown> = {};
   const nastaveni: Record<string, unknown> = {};

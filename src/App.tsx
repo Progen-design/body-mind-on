@@ -53,7 +53,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 // buildSyncedBiometrics a buildSyncedWeightRecord se uz nepouzivaji — hodnoty
 // si dopocitavaly v prohlizeci (mean-revert HRV k baseline), takze uzivatel
 // videl vymyslene zdravotni udaje. Data ted chodi z /api/health/recovery.
-import { applyWeightRecord } from './lib/syncEngine';
+import { KLIC_VSE, sRozsirenouHistorii, sestavFiltryVahy } from './lib/vahaFiltry';
 import { apiFetch, jeNeaktivniClenstvi } from './lib/api';
 import { dnesniTreninkPresne, treninkoveDny } from './lib/trenink';
 import { sestavZapisTreninku } from './lib/zapisTreninku';
@@ -219,7 +219,9 @@ function AppContent() {
 
     const vazeni = naVazeni(profilData);
     if (vazeni.length > 0) {
-      setWeightRecords({ '1M': vazeni, '3M': vazeni, '6M': vazeni, '1R': vazeni });
+      // Do 23. 9. 2026 se do všech klíčů ukládalo totéž pole, takže
+      // přepínač 1M/3M/6M/1R překresloval pořád stejný graf.
+      setWeightRecords(sestavFiltryVahy(vazeni));
     }
   }, [profilData, setPreferences]);
 
@@ -234,7 +236,10 @@ function AppContent() {
    * Uzivatel bez jedineho vazeni je bezny stav: novy ucet, cizi vaha,
    * odpojeny Withings.
    */
-  const monthRecords = weightRecords['1M'] ?? [];
+  // CELÁ HISTORIE, NE OKNO. „Poslední vážení" a pokrok k cíli se nesmí
+  // ptát řady „1M" — kdo se posledních třicet dní nevážil, má ji prázdnou
+  // a appka by tvrdila, že žádné vážení nemá.
+  const monthRecords = weightRecords[KLIC_VSE] ?? [];
 
   /** `completed_at` dokončených aktivit — série dní v „Tvoje cesta". */
   const dokonceniISO = useMemo(
@@ -898,7 +903,7 @@ function AppContent() {
           muscleKg: predchozi?.muscleKg ?? 0,
           bmi: predchozi?.bmi ?? 0
         };
-        setWeightRecords(prev => applyWeightRecord(prev, newRecord, now));
+        setWeightRecords(prev => sRozsirenouHistorii(prev, newRecord, now));
       }
 
       const result: SyncResult = {

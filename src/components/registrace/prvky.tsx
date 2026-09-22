@@ -5,12 +5,32 @@ export const POLE_TRIDY =
   'w-full px-4 py-3 rounded-2xl bg-slate-900/70 border text-sm text-slate-100 ' +
   'placeholder:text-slate-600 outline-none transition-colors';
 
-export const Popisek: React.FC<{ htmlFor?: string; children: React.ReactNode; volitelne?: boolean }> = ({
+/**
+ * `zvyrazneno` je výjimka, ne druhý výchozí styl.
+ *
+ * Popisky „čemu se chceš vyhnout" v tréninkových omezeních vypadaly jako
+ * každý jiný popisek formuláře (slate-500, 11 px) a lidé je přehlíželi —
+ * přitom je to jediné místo, kde se dá říct, co do plánu NEMÁ přijít.
+ * Zvýraznění proto dostává jen ono; kdyby ho dostala půlka formuláře,
+ * přestane fungovat úplně.
+ */
+export const Popisek: React.FC<{
+  htmlFor?: string;
+  children: React.ReactNode;
+  volitelne?: boolean;
+  zvyrazneno?: boolean;
+}> = ({
   htmlFor,
   children,
-  volitelne
+  volitelne,
+  zvyrazneno = false
 }) => (
-  <label htmlFor={htmlFor} className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+  <label
+    htmlFor={htmlFor}
+    className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${
+      zvyrazneno ? 'text-akcent-lime font-bold' : 'text-slate-500'
+    }`}
+  >
     {children}
     {volitelne && <span className="ml-1.5 normal-case tracking-normal text-slate-600">(volitelné)</span>}
   </label>

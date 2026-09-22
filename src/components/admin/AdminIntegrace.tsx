@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { KeyRound, Loader2, ShieldCheck, AlertTriangle, Save, LogOut } from 'lucide-react';
+import { AdminNahlaseni } from './AdminNahlaseni';
 
 /**
  * ADMIN: OAUTH ÚDAJE INTEGRACÍ.
@@ -146,7 +147,7 @@ export const AdminIntegrace: React.FC = () => {
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-white">Admin — integrace</h1>
+              <h1 className="text-base font-bold text-white">Admin</h1>
               <p className="text-xs text-slate-400">Vlož ADMIN_TOKEN</p>
             </div>
           </div>
@@ -183,8 +184,8 @@ export const AdminIntegrace: React.FC = () => {
       <div className="max-w-lg mx-auto space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">Integrace</h1>
-            <p className="text-xs text-slate-400">OAuth údaje aplikace. Uživatelů se netýkají.</p>
+            <h1 className="text-xl font-bold text-white tracking-tight">Admin</h1>
+            <p className="text-xs text-slate-400">Moderace komunity a OAuth údaje aplikace.</p>
           </div>
           <button
             type="button"
@@ -195,6 +196,10 @@ export const AdminIntegrace: React.FC = () => {
             <span>Zapomenout token</span>
           </button>
         </div>
+
+        {/* Moderace komunity. Stejná stránka, protože obojí stojí na ADMIN_TOKEN
+            a druhá adresa by znamenala token zadávat dvakrát. */}
+        <AdminNahlaseni token={token} />
 
         <div className="p-5 rounded-3xl bg-povrch border border-slate-800 space-y-4">
           <div className="flex items-center justify-between gap-2">

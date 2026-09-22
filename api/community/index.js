@@ -8,10 +8,12 @@ import {
   fotkyPrispevku,
   jmenoAutora,
   lajkyUzivatele,
+  maSouhlasKomunity,
   nahrajFotky,
   posledniVaha,
   prekrocilDenniLimit,
   prihlasenyUzivatel,
+  zapisSouhlasKomunity,
 } from '../../lib/community.js';
 
 /** Náhled odpovědi v kartě — celý text by kartu roztáhl přes celou obrazovku. */
@@ -104,6 +106,26 @@ export default async function handler(req, res) {
   }
   if (fotkyVstup.length > MAX_FOTEK) {
     return res.status(400).json({ error: `Najednou jde přidat nejvýš ${MAX_FOTEK} fotky.` });
+  }
+
+  // PRAVIDLA SE POTVRZUJÍ PŘED PRVNÍM PŘÍSPĚVKEM, NE PŘI REGISTRACI.
+  // Kdo do komunity nikdy nenapíše, nemá co odsouhlasovat. Klient posílá
+  // `souhlas_s_pravidly: true` ze zaškrtávátka; bez platného souhlasu
+  // request neprojde a UI podle `needs_consent` ukáže checkbox.
+  if (!(await maSouhlasKomunity(user.id))) {
+    if (req.body?.souhlas_s_pravidly !== true) {
+      return res.status(403).json({
+        error: 'Nejdřív potvrď pravidla komunity.',
+        needs_consent: true,
+      });
+    }
+    const zapis = await zapisSouhlasKomunity(user.id);
+    if (!zapis.ok) {
+      // Bez doložitelného souhlasu příspěvek neuložíme — audit je to,
+      // kvůli čemu ta tabulka existuje (GDPR čl. 7 odst. 1).
+      console.error('[community] souhlas zapis', zapis.error);
+      return res.status(500).json({ error: 'Souhlas se nepodařilo uložit, zkus to prosím znovu.' });
+    }
   }
 
   if (await prekrocilDenniLimit(user.id)) {

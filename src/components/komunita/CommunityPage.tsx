@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Heart, MessageCircle, Plus, Scale, Lock, Users } from 'lucide-react';
+import { Heart, MessageCircle, Plus, Scale, Lock, Users, ShieldCheck } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { kdyMereno } from '../../data/adaptery';
 import { NadpisSekce } from '../NadpisSekce';
 import { CommunityPostDetail } from './CommunityPostDetail';
 import { NewPostSheet } from './NewPostSheet';
+import { PravidlaKomunity } from './PravidlaKomunity';
 import { KomunitaKategorie, KomunitaPrispevek } from './typy';
 
 /**
@@ -29,6 +30,7 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
   const [chyba, setChyba] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [novyOtevren, setNovyOtevren] = useState(false);
+  const [pravidlaOtevrena, setPravidlaOtevrena] = useState(false);
 
   useEffect(() => {
     apiFetch<{ categories: KomunitaKategorie[] }>('/api/community/categories')
@@ -105,14 +107,25 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
         ))}
       </div>
 
-      <button
-        type="button"
-        onClick={() => setNovyOtevren(true)}
-        className="w-full min-h-11 rounded-xl text-sm font-bold text-slate-950 bg-akcent-cyan inline-flex items-center justify-center gap-2"
-      >
-        <Plus className="w-4 h-4" />
-        <span>Nový příspěvek</span>
-      </button>
+      <div className="flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => setNovyOtevren(true)}
+          className="flex-1 min-h-11 rounded-xl text-sm font-bold text-slate-950 bg-akcent-cyan inline-flex items-center justify-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Nový příspěvek</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setPravidlaOtevrena(true)}
+          className="shrink-0 min-h-11 px-3 rounded-xl text-xs font-semibold text-slate-300 bg-slate-900 border border-slate-800 inline-flex items-center gap-1.5"
+        >
+          <ShieldCheck className="w-3.5 h-3.5" />
+          <span>Pravidla komunity</span>
+        </button>
+      </div>
 
       {chyba && <p className="text-[11px] text-red-400">{chyba}</p>}
 
@@ -135,6 +148,8 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
           ))}
         </div>
       )}
+
+      {pravidlaOtevrena && <PravidlaKomunity onZavri={() => setPravidlaOtevrena(false)} />}
 
       {novyOtevren && (
         <NewPostSheet
@@ -202,8 +217,11 @@ const Karta: React.FC<{
           {prispevek.is_hidden && <Lock className="w-3.5 h-3.5 text-amber-300 shrink-0" aria-label="Jen pro mě" />}
         </div>
 
+        {/* 4:5 a strop 420 px. Fotky z telefonu jsou na výšku a bez omezení
+            by jedna karta zabrala celou obrazovku — seznam by se nedal
+            projít. Celá fotka je až v detailu. */}
         {prvniFotka && (
-          <div className="relative rounded-2xl overflow-hidden border border-slate-800 aspect-[4/3]">
+          <div className="relative rounded-2xl overflow-hidden border border-slate-800 aspect-[4/5] max-h-[420px]">
             <img src={prvniFotka.url} alt="" className="w-full h-full object-cover" loading="lazy" />
             {prispevek.photos.length > 1 && (
               <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-black/70 text-slate-200">

@@ -51,3 +51,11 @@ export const MAX_FOTEK = 4;
 
 /** Nejdelší strana po zmenšení v prohlížeči. Server ji pak hlídá znovu. */
 export const MAX_HRANA_PX = 1600;
+
+/** Důvody nahlášení — musí sedět na `DUVODY_NAHLASENI` v `lib/community.js`. */
+export const DUVODY_NAHLASENI = [
+  { id: 'spam', label: 'Spam nebo reklama' },
+  { id: 'urazky', label: 'Urážky' },
+  { id: 'nebezpecne_rady', label: 'Nebezpečné rady (diety, léky)' },
+  { id: 'jine', label: 'Jiné' },
+] as const;

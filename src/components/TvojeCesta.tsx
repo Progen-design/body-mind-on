@@ -146,14 +146,16 @@ export const TvojeCesta: React.FC<Props> = ({
 
         {/* TENTO TÝDEN */}
         <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4 min-w-0">
-          <p className="text-xs font-bold text-slate-400">Tento týden</p>
+          {/* Součet za celý týden po–ne (ne za dnešek) — „2 z 35" bez upřesnění
+              působilo jako chyba, když člověk dnes ještě nic nezapsal (22. 9. 2026). */}
+          <p className="text-xs font-bold text-slate-400">Tento týden · pondělí až neděle</p>
           {tyden.treninkuCelkem === 0 && tyden.jidelCelkem === 0 ? (
             <p className="mt-2 text-sm text-slate-300">Na tento týden zatím nemáš v plánu jídla ani tréninky.</p>
           ) : (
             <div className="mt-3 space-y-3">
               <div>
                 <div className="flex items-center justify-between gap-2 text-sm">
-                  <span className="text-slate-300">Odcvičeno</span>
+                  <span className="text-slate-300">Odcvičené tréninky za týden</span>
                   <span className="font-bold text-white">
                     {tyden.treninkuHotovo} z {tyden.treninkuCelkem}
                   </span>
@@ -169,7 +171,7 @@ export const TvojeCesta: React.FC<Props> = ({
               </div>
               <div>
                 <div className="flex items-center justify-between gap-2 text-sm">
-                  <span className="text-slate-300">Zapsáno jídel</span>
+                  <span className="text-slate-300">Zapsaná jídla za týden</span>
                   <span className="font-bold text-white">
                     {tyden.jidelZapsano} z {tyden.jidelCelkem}
                   </span>

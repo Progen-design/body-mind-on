@@ -1238,6 +1238,9 @@ function AppContent() {
             skupiny={skupinyMetrik}
             spanek={spanekNoc}
             onSync={handleManualWithingsSync}
+            hasWithingsConnection={profilData?.has_withings_connection === true}
+            withingsLastSyncedAt={profilData?.withings_last_sync_at ?? null}
+            zdraviPripojeno={zdravi.pripojeno === true}
           />
         ) : (
           /* PRÁZDNÝ STAV NABÍZÍ CESTU DÁL. Dřív tu stála jen věta „Připoj

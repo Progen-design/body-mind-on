@@ -1,15 +1,13 @@
 // POST /api/community/reply – přidat odpověď do tématu
 import { supabaseServer } from '../../lib/supabaseServer.js';
+import { jmenoAutora, prihlasenyUzivatel } from '../../lib/community.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-  if (!token) return res.status(401).json({ error: 'Přihlas se.' });
-
-  const { data: { user }, error: userErr } = await supabaseServer.auth.getUser(token);
-  if (userErr || !user) return res.status(401).json({ error: 'Neplatná session.' });
+  const auth = await prihlasenyUzivatel(req);
+  if (!auth.user) return res.status(auth.status).json({ error: auth.error });
+  const { user } = auth;
 
   const { topic_id, content } = req.body || {};
   const topicId = (topic_id != null ? String(topic_id).trim() : '') || null;
@@ -18,7 +16,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Vyplň text odpovědi a zvol téma.' });
   }
 
-  const authorName = (user.user_metadata?.name || user.email?.split('@')[0] || 'Člen').trim().slice(0, 100);
+  // Přezdívka z „Jak ti máme říkat", ne e-mail — stejně jako u příspěvků.
+  const authorName = await jmenoAutora(user);
 
   const { data: reply, error: insertErr } = await supabaseServer
     .from('community_replies')

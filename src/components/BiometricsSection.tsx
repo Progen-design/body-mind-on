@@ -113,6 +113,24 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
     }
   }[activeMetricTab];
 
+  /**
+   * POJEM PRO OTAZNÍK U GRAFU.
+   *
+   * Dlaždice HRV a klidového tepu výš na stránce vysvětlivku mají, graf pod
+   * nimi ne — přitom právě tam stojí věty jako „Průměrná základna 26,3 ms",
+   * u kterých si bez vysvětlení nikdo nedomyslí, co znamenají.
+   *
+   * Kroky tu schválně nejsou. `lib/glosarMetrik.js` je nechává bez pojmu:
+   * vysvětlovat „kroky jsou počet kroků" je šum a otazník, který otevře
+   * samozřejmost, příště nikdo nezkusí.
+   */
+  const pojemGrafu: Record<typeof activeMetricTab, string | null> = {
+    hrv: 'hrv',
+    restingHr: 'klidovy_tep',
+    energy: 'aktivni_energie',
+    steps: null,
+  };
+
   // SVG mini-chart coordinate calculations
   // Krivka potrebuje aspon dva body: pri jednom deli (length - 1) nulou a
   // souradnice vyjdou NaN, pri nule spadne points[points.length - 1] na undefined.
@@ -500,7 +518,17 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
         {/* Dynamic Glowing Trend SVG */}
         <div className="relative pt-2">
           <div className="flex items-center justify-between text-xs text-slate-400 pb-2 px-2">
-            <span className="font-semibold text-slate-200">{trendData.label}</span>
+            <span className="font-semibold text-slate-200 inline-flex items-center gap-1">
+              {trendData.label}
+              {pojemGrafu[activeMetricTab] && (
+                <Vysvetlivka
+                  pojem={pojemGrafu[activeMetricTab]!}
+                  hodnota={trendData.baseline > 0
+                    ? `${trendData.baseline} ${trendData.unit}`
+                    : undefined}
+                />
+              )}
+            </span>
             <span className="text-[11px] text-slate-500">{trendData.baselineLabel}</span>
           </div>
 

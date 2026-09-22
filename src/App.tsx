@@ -5,6 +5,7 @@ import { NavigationTabs, ActiveTab } from './components/NavigationTabs';
 import { PropojenaZarizeniSection } from './components/PropojenaZarizeniSection';
 import { UcetASpravaSection } from './components/UcetASpravaSection';
 import { DnesObrazovka } from './components/DnesObrazovka';
+import { CommunityPage } from './components/komunita/CommunityPage';
 import { DnesSkeleton } from './components/DnesSkeleton';
 import { TrialPaywallCard } from './components/TrialPaywallCard';
 import { BodyCompositionSection } from './components/BodyCompositionSection';
@@ -30,7 +31,8 @@ import { LoginScreen } from './components/LoginScreen';
 // Kontexty, perzistence a synchronizace
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { StartRegistrace } from './components/registrace/StartRegistrace';
-import { CESTY_REGISTRACE, bezpecnyRedirect, jePlatnaCesta, naviguj, useCesta } from './routing';
+import { CESTA_ADMIN_INTEGRACE, CESTY_REGISTRACE, bezpecnyRedirect, jePlatnaCesta, naviguj, useCesta } from './routing';
+import { AdminIntegrace } from './components/admin/AdminIntegrace';
 import { StrankaNeexistuje } from './components/StrankaNeexistuje';
 import { useProfilData } from './hooks/useProfilData';
 import { useZdravotniData } from './hooks/useZdravotniData';
@@ -51,7 +53,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 // buildSyncedBiometrics a buildSyncedWeightRecord se uz nepouzivaji — hodnoty
 // si dopocitavaly v prohlizeci (mean-revert HRV k baseline), takze uzivatel
 // videl vymyslene zdravotni udaje. Data ted chodi z /api/health/recovery.
-import { applyWeightRecord } from './lib/syncEngine';
+import { KLIC_VSE, sRozsirenouHistorii, sestavFiltryVahy } from './lib/vahaFiltry';
 import { apiFetch, jeNeaktivniClenstvi } from './lib/api';
 import { dnesniTreninkPresne, treninkoveDny } from './lib/trenink';
 import { sestavZapisTreninku } from './lib/zapisTreninku';
@@ -74,19 +76,11 @@ import {
   UserProfile,
   CoachTip,
   TelesneSlozeni,
-  WithingsConnection,
   ZamcenyPlan
 } from './types';
 
 /** Doplní chybějící pole, když jsou uložená data starší než aktuální tvar objektu. */
 const mergeObject = <T extends object>(stored: T, initial: T): T => ({ ...initial, ...stored });
-
-const initialWithingsConnection: WithingsConnection = {
-  maskedToken: '',
-  isConnected: false,
-  lastAuthorizedAt: null,
-  autoSyncEnabled: true
-};
 
 export default function App() {
   return (
@@ -165,11 +159,6 @@ function AppContent() {
     initialPreferences,
     mergeObject
   );
-  const [withingsConnection, setWithingsConnection] = useLocalStorage<WithingsConnection>(
-    `${scope}:withings-connection`,
-    initialWithingsConnection,
-    mergeObject
-  );
   // Zpravy trenera ze serveru. Prazdno = banner se nezobrazi; to je platny
   // stav, ne chyba napojeni (ai_trigger_rules coach zpravy zatim negeneruje).
   const [coachTips, setCoachTips] = useState<CoachTip[]>([]);
@@ -230,7 +219,9 @@ function AppContent() {
 
     const vazeni = naVazeni(profilData);
     if (vazeni.length > 0) {
-      setWeightRecords({ '1M': vazeni, '3M': vazeni, '6M': vazeni, '1R': vazeni });
+      // Do 23. 9. 2026 se do všech klíčů ukládalo totéž pole, takže
+      // přepínač 1M/3M/6M/1R překresloval pořád stejný graf.
+      setWeightRecords(sestavFiltryVahy(vazeni));
     }
   }, [profilData, setPreferences]);
 
@@ -245,7 +236,10 @@ function AppContent() {
    * Uzivatel bez jedineho vazeni je bezny stav: novy ucet, cizi vaha,
    * odpojeny Withings.
    */
-  const monthRecords = weightRecords['1M'] ?? [];
+  // CELÁ HISTORIE, NE OKNO. „Poslední vážení" a pokrok k cíli se nesmí
+  // ptát řady „1M" — kdo se posledních třicet dní nevážil, má ji prázdnou
+  // a appka by tvrdila, že žádné vážení nemá.
+  const monthRecords = weightRecords[KLIC_VSE] ?? [];
 
   /** `completed_at` dokončených aktivit — série dní v „Tvoje cesta". */
   const dokonceniISO = useMemo(
@@ -909,7 +903,7 @@ function AppContent() {
           muscleKg: predchozi?.muscleKg ?? 0,
           bmi: predchozi?.bmi ?? 0
         };
-        setWeightRecords(prev => applyWeightRecord(prev, newRecord, now));
+        setWeightRecords(prev => sRozsirenouHistorii(prev, newRecord, now));
       }
 
       const result: SyncResult = {
@@ -970,6 +964,14 @@ function AppContent() {
   // takze i /gdpr nebo /cokoliv vracelo 200 s prihlasenou aplikaci.
   if (!jePlatnaCesta(cesta)) {
     return <StrankaNeexistuje />;
+  }
+
+  // ADMIN NASTAVENI INTEGRACI. Vetev je nad prihlasenim schvalne: stranka
+  // nestoji na uzivatelske session, ale na ADMIN_TOKEN, ktery se overuje az
+  // na serveru (isAdmin v admin endpointech). Nic se tu nepovoluje
+  // bez platneho tokenu endpointy vrati 403 a stranka ukaze chybu.
+  if (cesta === CESTA_ADMIN_INTEGRACE) {
+    return <AdminIntegrace />;
   }
 
   // Odhlášený uživatel vidí výběr profilu místo aplikace.
@@ -1289,6 +1291,14 @@ function AppContent() {
           </div>
         ))}
 
+        {/* TAB G: KOMUNITA */}
+        {/* Dostupná ve všech tarifech — rozhodnutí z návrhu komunity
+            (docs/BMON_KOMUNITA_NAVRH_2026-09-23.md). Poslední vážení jde
+            dovnitř, aby se check-in nemusel opisovat z hlavy. */}
+        {activeTab === 'komunita' && (
+          <CommunityPage posledniVahaKg={latestRecord?.weight ?? null} />
+        )}
+
         {/* Sekce „Návyky & série" odstraněna. Série (streaky), efektivita
             spánku ani komentáře typu „včera překonána chuť na čokoládu“
             nemají v datech žádnou oporu — nesledujeme je. */}
@@ -1399,9 +1409,10 @@ function AppContent() {
       <WithingsSyncModal
         isOpen={isWithingsModalOpen}
         onClose={() => setIsWithingsModalOpen(false)}
-        connection={withingsConnection}
-        onConnectionChange={setWithingsConnection}
+        isConnected={profilData?.has_withings_connection === true}
+        lastSyncedAt={profilData?.withings_last_sync_at ?? null}
         onManualSync={handleManualWithingsSync}
+        onConnectionChanged={znovuNacistProfil}
         isSyncing={isSyncing}
       />
 

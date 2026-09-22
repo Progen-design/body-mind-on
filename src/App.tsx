@@ -1413,6 +1413,7 @@ function AppContent() {
         isOpen={isPreferencesModalOpen}
         onClose={() => setIsPreferencesModalOpen(false)}
         soucasne={nastaveni}
+        automatickaCilovaKg={preferences.targetWeightAutoKg ?? null}
         onSave={handleSavePreferences}
       />
 

@@ -51,19 +51,40 @@ export interface TydenSouhrn {
   treninkuCelkem: number;
   jidelZapsano: number;
   jidelCelkem: number;
+  /** Dnešní trénink, který je načatý, ale ne dokončený („2 z 4 cviků"). */
+  rozpracovano: { hotovo: number; celkem: number } | null;
 }
 
+/**
+ * @param dnesHotovo Zda je DNEŠNÍ trénink hotový podle stejného pravidla jako v hero
+ *   (`jeTreninkHotovy` v src/lib/trenink.ts — vč. hodinek). `null` = neznámé, počítá
+ *   se jen z odškrtnutých cviků.
+ */
 export function tydenSouhrn(
-  treninky: { maTrenink?: boolean; isCompleted: boolean; exercises: unknown[] }[],
-  dnyJidel: { meals: { completed: boolean }[] }[]
+  treninky: { maTrenink?: boolean; isCompleted: boolean; isToday?: boolean; exercises: { completed?: boolean }[] }[],
+  dnyJidel: { meals: { completed: boolean }[] }[],
+  dnesHotovo: boolean | null = null
 ): TydenSouhrn {
   const planovane = treninky.filter((t) => t.maTrenink !== false && t.exercises.length > 0);
+  // Hotovo až po VŠECH cvicích — stejné pravidlo jako kroužek v hero. `isCompleted`
+  // ze serveru samo nestačí u dne, jehož odškrtnutí se právě propsalo.
+  const jeHotovy = (t: (typeof planovane)[number]) =>
+    (t.isToday === true && dnesHotovo === true) || t.isCompleted || t.exercises.every((c) => c.completed === true);
   const jidla = dnyJidel.flatMap((d) => d.meals);
+
+  const dnes = planovane.find((t) => t.isToday === true);
+  const hotovoCviku = dnes ? dnes.exercises.filter((c) => c.completed === true).length : 0;
+  const rozpracovano =
+    dnes && !jeHotovy(dnes) && hotovoCviku > 0
+      ? { hotovo: hotovoCviku, celkem: dnes.exercises.length }
+      : null;
+
   return {
-    treninkuHotovo: planovane.filter((t) => t.isCompleted).length,
+    treninkuHotovo: planovane.filter(jeHotovy).length,
     treninkuCelkem: planovane.length,
     jidelZapsano: jidla.filter((j) => j.completed).length,
     jidelCelkem: jidla.length,
+    rozpracovano,
   };
 }
 

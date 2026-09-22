@@ -117,3 +117,21 @@ test('žádné nové volání OpenAI a žádná grafová knihovna', () => {
     assert.ok(!/openai/i.test(kod.split('\n').filter((r) => r.trim().startsWith('import')).join('\n')), `${soubor} importuje OpenAI`);
   }
 });
+
+test('mobil 390 px: údaj na ose je pod názvem, nic s whitespace-nowrap bez ořezu, kroužky v jednom řádku', () => {
+  assert.match(OSA, /sm:hidden mt-0\.5 text-xs[^"]*truncate/, 'údaj na ose není pod názvem na mobilu');
+  assert.match(OSA, /hidden sm:block shrink-0 max-w-\[9rem\] truncate/, 'údaj vpravo na desktopu nemá ořez');
+  for (const soubor of ['DnesHero', 'CasovaOsaDne', 'TvojeCesta', 'NastrojeDlazdice', 'UvitaciKarta']) {
+    const kod = cti(`src/components/${soubor}.tsx`);
+    const radky = kod.split('\n').filter((r) => /whitespace-nowrap/.test(r) && !/truncate/.test(r));
+    assert.deepEqual(radky, [], `${soubor}: whitespace-nowrap bez truncate přeteče na 390 px`);
+  }
+  assert.match(cti('src/components/DnesHero.tsx'), /grid grid-cols-3 gap-2/, 'kroužky nejsou v jednom řádku');
+});
+
+test('Nastavení: cílová váha má placeholder „automaticky N kg" a nápovědu', () => {
+  const MODAL = cti('src/components/PreferencesModal.tsx');
+  assert.match(MODAL, /`automaticky \$\{String\(automatickaCilovaKg\)/);
+  assert.match(MODAL, /Nech prázdné a cíl spočítáme podle výšky, váhy a cíle\. Vlastní číslo má přednost\./);
+  assert.match(APP, /automatickaCilovaKg=\{preferences\.targetWeightAutoKg \?\? null\}/);
+});

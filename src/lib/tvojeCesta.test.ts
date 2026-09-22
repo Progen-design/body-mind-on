@@ -31,17 +31,44 @@ test('série: den se počítá v Praze — 23:30 UTC už je další den', () => 
   assert.equal(serieDni(['2026-09-20T23:30:00Z'], TED), 1);
 });
 
+const cv = (...hotovo: boolean[]) => hotovo.map((completed) => ({ completed }));
+
 test('týden: odcvičeno a zapsáno, dny volna se nepočítají', () => {
   const t = tydenSouhrn(
     [
-      { maTrenink: true, isCompleted: true, exercises: [1] },
-      { maTrenink: true, isCompleted: false, exercises: [1] },
+      { maTrenink: true, isCompleted: true, exercises: cv(true, true) },
+      { maTrenink: true, isCompleted: false, exercises: cv(false, false) },
       { maTrenink: false, isCompleted: false, exercises: [] },
       { isCompleted: false, exercises: [] },
     ],
     [{ meals: [{ completed: true }, { completed: false }] }, { meals: [{ completed: true }] }]
   );
-  assert.deepEqual(t, { treninkuHotovo: 1, treninkuCelkem: 2, jidelZapsano: 2, jidelCelkem: 3 });
+  assert.deepEqual(t, { treninkuHotovo: 1, treninkuCelkem: 2, jidelZapsano: 2, jidelCelkem: 3, rozpracovano: null });
+});
+
+test('týden: trénink je hotový až po VŠECH cvicích, dnešní rozpracovaný ukáže „2 z 4"', () => {
+  const t = tydenSouhrn(
+    [
+      { maTrenink: true, isCompleted: false, isToday: true, exercises: cv(true, true, false, false) },
+      { maTrenink: true, isCompleted: false, exercises: cv(true, true, true) },
+    ],
+    []
+  );
+  assert.equal(t.treninkuHotovo, 1, 'jen ten, kde jsou odškrtnuté všechny cviky');
+  assert.deepEqual(t.rozpracovano, { hotovo: 2, celkem: 4 });
+});
+
+test('týden: dnešní trénink hotový podle hero (hodinky) se počítá jako hotový', () => {
+  const den = { maTrenink: true, isCompleted: false, isToday: true, exercises: cv(false, false) };
+  assert.equal(tydenSouhrn([den], [], true).treninkuHotovo, 1);
+  assert.equal(tydenSouhrn([den], [], true).rozpracovano, null);
+  assert.equal(tydenSouhrn([den], [], false).treninkuHotovo, 0);
+  assert.equal(tydenSouhrn([den], []).treninkuHotovo, 0);
+});
+
+test('týden: nic neodškrtnuto není rozpracováno', () => {
+  const t = tydenSouhrn([{ maTrenink: true, isCompleted: false, isToday: true, exercises: cv(false, false) }], []);
+  assert.equal(t.rozpracovano, null);
 });
 
 test('připraveno: jen to, co existuje, se správným skloňováním', () => {

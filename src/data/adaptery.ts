@@ -3,7 +3,7 @@
 // Relativni cesta zamerne misto aliasu @lib - soubor pak jde spustit
 // i cistym Nodem (viz tools/overit-adaptery.ts), nejen pres Vite.
 import { urciOsloveni } from '../lib/vokativ.ts';
-import { cilovaVaha } from '../lib/cilovaVaha.ts';
+import { cilovaVaha, automatickaCilovaVaha } from '../lib/cilovaVaha.ts';
 import { POSITIVE_HABITS, NEGATIVE_HABITS } from '../../lib/habits.js';
 // Klice odskrtnutych aktivit maji jediny zdroj pravdy v lib/ — sdileny se
 // serverem. Format se nesmi menit, rozparoval by uz ulozene radky.
@@ -997,6 +997,8 @@ export function naPreference(odpoved: ProfilOdpoved, puvodni: UserPreferences): 
   const bilkoviny = cislo(bm.protein_target_g ?? t.protein_g);
   const sacharidy = cislo(bm.carbs_target_g ?? t.carbs_g);
   const tuky = cislo(bm.fat_target_g ?? t.fat_g);
+  const vyskaCm = odpoved.user?.height_cm ?? bm.height_cm;
+  const cil = cilovaVaha(odpoved.user?.goal_weight_kg, bm.weight_kg, vyskaCm, bm.goal);
   const zKcal = (g: number, koef: number) => (kcal > 0 ? Math.round((g * koef * 100) / kcal) : 0);
 
   return {
@@ -1016,15 +1018,12 @@ export function naPreference(odpoved: ProfilOdpoved, puvodni: UserPreferences): 
     proteinTargetG: bilkoviny > 0 ? bilkoviny : puvodni.proteinTargetG,
     carbsTargetG: sacharidy > 0 ? sacharidy : puvodni.carbsTargetG,
     fatTargetG: tuky > 0 ? tuky : puvodni.fatTargetG,
-    currentHeightCm: cislo(odpoved.user?.height_cm ?? bm.height_cm, puvodni.currentHeightCm),
+    currentHeightCm: cislo(vyskaCm, puvodni.currentHeightCm),
     // Ručně zadaný cíl, jinak automatický z výšky, váhy a cíle (src/lib/cilovaVaha.ts).
     // Dřív tu spadlo na `initialData` = natvrdo 102 kg u všech bez zadaného cíle.
-    targetWeightKg: cilovaVaha(
-      odpoved.user?.goal_weight_kg,
-      bm.weight_kg,
-      odpoved.user?.height_cm ?? bm.height_cm,
-      bm.goal
-    ).kg ?? puvodni.targetWeightKg,
+    targetWeightKg: cil.kg ?? puvodni.targetWeightKg,
+    targetWeightAuto: cil.kg != null && cil.automaticky,
+    targetWeightAutoKg: automatickaCilovaVaha(bm.weight_kg, vyskaCm, bm.goal),
     weeklyWorkoutsTarget: cislo(bm.weekly_sessions, puvodni.weeklyWorkoutsTarget)
   };
 }

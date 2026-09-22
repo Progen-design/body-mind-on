@@ -26,7 +26,10 @@ export interface PolozkaOsy {
 export interface TreninekOsy {
   nazev: string;
   delkaMin: number;
+  /** Hotovo až po VŠECH cvicích (`jeTreninkHotovy` v src/lib/trenink.ts). */
   hotovo: boolean;
+  /** Načatý, ale nedokončený trénink: „2 z 4 cviků". */
+  rozpracovano?: { hotovo: number; celkem: number } | null;
 }
 
 export interface CasovaOsa {
@@ -77,7 +80,11 @@ export function sestavCasovouOsu(
       cas: null,
       nazev: trenink.nazev,
       stitek: 'Trénink',
-      udaj: `${trenink.delkaMin} min`,
+      // Rozpracovaný trénink ukáže postup místo délky — jinak by osa mlčela
+      // o tom, že už je něco odcvičeno.
+      udaj: !trenink.hotovo && trenink.rozpracovano
+        ? `${trenink.rozpracovano.hotovo} z ${trenink.rozpracovano.celkem} ${trenink.rozpracovano.celkem === 1 ? 'cviku' : 'cviků'}`
+        : `${trenink.delkaMin} min`,
       hotovo: trenink.hotovo,
       poradiMin: obed >= 0 ? jidla[obed].poradiMin + 1 : ODPOLEDNE_MIN,
     };

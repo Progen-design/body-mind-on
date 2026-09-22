@@ -296,6 +296,10 @@ export interface UserPreferences {
   carbsTargetG: number | null;
   fatTargetG: number | null;
   targetWeightKg: number;
+  /** Cíl není zadaný ručně, spočítala ho appka (src/lib/cilovaVaha.ts). */
+  targetWeightAuto?: boolean;
+  /** Automatický cíl i tehdy, když má člověk vlastní — ukáže se jako placeholder v Nastavení. */
+  targetWeightAutoKg?: number | null;
   currentHeightCm: number;
   weeklyWorkoutsTarget: number;
   withingsAutoSync: boolean;

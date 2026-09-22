@@ -24,12 +24,20 @@ test('frequency se posílá jako freq_choice', () => {
   assert.equal('frequency' in (r.preference || {}), false);
 });
 
-test('prázdná cílová váha neznamená vynulovat', () => {
-  // Uzivatel pole vymazal — to neni pokyn zapsat nulu.
-  for (const prazdne of ['', '   ', '0', 'abc']) {
+test('vymazaná cílová váha znamená SMAZAT vlastní cíl (explicitní null), ne neměnit', () => {
+  // PROMPT_DOLADENI_DNES.md: kdo pole vymaže a uloží, dostane automatický cíl.
+  for (const prazdne of ['', '   ']) {
     const r = rozdelZmenyNastaveni({ goal_weight_kg: prazdne });
-    assert.equal(r.nastaveni, null, `"${prazdne}" se poslalo na server`);
+    assert.deepEqual(r.nastaveni, { goal_weight_kg: null }, `"${prazdne}" se má poslat jako null`);
   }
+});
+
+test('nesmyslná cílová váha se neposílá vůbec, prázdná výška také ne', () => {
+  for (const spatne of ['0', 'abc', '-5']) {
+    assert.equal(rozdelZmenyNastaveni({ goal_weight_kg: spatne }).nastaveni, null, `"${spatne}" se poslalo na server`);
+  }
+  // výšku smazat nejde — je to vstup do kalorického cíle
+  assert.equal(rozdelZmenyNastaveni({ height_cm: '' }).nastaveni, null);
 });
 
 test('desetinná čárka projde', () => {

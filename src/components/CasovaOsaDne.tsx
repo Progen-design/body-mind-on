@@ -127,7 +127,7 @@ export const CasovaOsaDne: React.FC<Props> = ({
             <React.Fragment key={p.klic}>
               {osa.tedPredIndexem === i && <ZnackaTed cas={formatTed(ted)} />}
               <li className="grid grid-cols-[3rem_1.25rem_1fr] sm:grid-cols-[3.5rem_1.25rem_1fr] gap-x-2 items-stretch">
-                <span className="pt-4 text-right text-[11px] font-bold text-slate-500 whitespace-nowrap">
+                <span className="pt-4 text-right text-[11px] font-bold text-slate-500 truncate min-w-0">
                   {p.cas ?? 'Kdykoli'}
                 </span>
                 {/* Svislá osa s bodem; poslední položka osu nedotahuje dolů. */}
@@ -195,8 +195,11 @@ export const CasovaOsaDne: React.FC<Props> = ({
                     >
                       {p.nazev}
                     </p>
+                    {/* Na 390 px zbývá na název ~90 px, proto údaj (kcal / délka /
+                        „2 z 4 cviků") sedí pod názvem; vpravo až od `sm`. */}
+                    <p className="sm:hidden mt-0.5 text-xs font-semibold text-amber-300 truncate">{p.udaj}</p>
                   </div>
-                  <span className="shrink-0 text-xs font-semibold text-amber-300 whitespace-nowrap">{p.udaj}</span>
+                  <span className="hidden sm:block shrink-0 max-w-[9rem] truncate text-xs font-semibold text-amber-300">{p.udaj}</span>
                 </div>
               </li>
             </React.Fragment>

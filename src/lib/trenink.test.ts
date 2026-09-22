@@ -5,7 +5,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  DEN_BEZ_TRENINKU, dnesniTrenink, dnesniTreninkPresne, jeNaplanovany, treninkoveDny, vybranyTrenink
+  DEN_BEZ_TRENINKU, dnesniTrenink, dnesniTreninkPresne, jeNaplanovany, treninkoveDny, vybranyTrenink,
+  podilTreninku, jeTreninkHotovy, rozpracovaneCviky, textCviku, type Adherence
 } from './trenink.ts';
 import type { WorkoutDay } from '../types.ts';
 
@@ -152,4 +153,59 @@ test('prázdný plán vrátí zástupce i přes dnesniTreninkPresne()', () => {
   const presne = dnesniTreninkPresne([]);
   assert.equal(presne.title, DEN_BEZ_TRENINKU.title);
   assert.equal(jeNaplanovany(presne), false);
+});
+
+// ---- podíl tréninku (PROMPT_DOLADENI_DNES.md — jeden výpočet pro celé Dnes)
+
+const cviky = (hotovo: number, celkem: number) =>
+  Array.from({ length: celkem }, (_, i) => ({ name: `Cvik ${i + 1}`, completed: i < hotovo })) as unknown as WorkoutDay['exercises'];
+
+const den = (hotovo: number, celkem: number, extra: Partial<WorkoutDay> = {}): WorkoutDay =>
+  ({ ...plan(1, 0)[0], exercises: cviky(hotovo, celkem), ...extra });
+
+const stav = (extra: Partial<Adherence> = {}): Adherence => ({
+  planovanych_jidel: 5, splnenych_jidel: 0, treninkovy_den: true, trenink_splnen: false,
+  pohyb_min: 0, watch_workout_count: 0, manual_workout_count: 0, ...extra,
+});
+
+test('podíl tréninku = odškrtnuté cviky z celku', () => {
+  assert.equal(podilTreninku(den(0, 4)), 0);
+  assert.equal(podilTreninku(den(2, 4)), 0.5);
+  assert.equal(podilTreninku(den(4, 4)), 1);
+});
+
+test('adherence „trénink splněn" po prvním cviku Hotovo NEZAPNE (chyba z 21. 9. 2026)', () => {
+  // get_daily_adherence hlásí trénink splněný po PRVNÍM cviku
+  const s = stav({ trenink_splnen: true, manual_workout_count: 1 });
+  assert.equal(podilTreninku(den(2, 4), s), 0.5);
+  assert.equal(jeTreninkHotovy(den(2, 4), s), false);
+  assert.equal(jeTreninkHotovy(den(4, 4), s), true);
+});
+
+test('hodinky uznají trénink celý, i bez odškrtnutých cviků', () => {
+  assert.equal(jeTreninkHotovy(den(0, 4), stav({ watch_workout_count: 1 })), true);
+});
+
+test('den označený jako hotový serverem je hotový', () => {
+  assert.equal(jeTreninkHotovy(den(3, 4, { isCompleted: true })), true);
+});
+
+test('den bez seznamu cviků bere ruční zápis / adherenci', () => {
+  assert.equal(jeTreninkHotovy(den(0, 0), stav({ trenink_splnen: true })), true);
+  assert.equal(jeTreninkHotovy(den(0, 0), stav({ manual_workout_count: 1 })), true);
+  assert.equal(jeTreninkHotovy(den(0, 0), stav()), false);
+  assert.equal(jeTreninkHotovy(den(0, 0)), false);
+});
+
+test('rozpracovaný trénink: „2 z 4 cviků", jinak null', () => {
+  assert.deepEqual(rozpracovaneCviky(den(2, 4)), { hotovo: 2, celkem: 4 });
+  assert.equal(rozpracovaneCviky(den(0, 4)), null, 'nic neodškrtnuto = nerozpracováno');
+  assert.equal(rozpracovaneCviky(den(4, 4)), null, 'hotový není rozpracovaný');
+  assert.equal(rozpracovaneCviky(den(0, 0)), null);
+  assert.equal(rozpracovaneCviky(den(1, 4), stav({ watch_workout_count: 1 })), null, 'hodinky = hotovo');
+});
+
+test('textCviku skloňuje', () => {
+  assert.equal(textCviku(2, 4), '2 z 4 cviků');
+  assert.equal(textCviku(0, 1), '0 z 1 cviku');
 });

@@ -8,6 +8,7 @@ import { denProgramu } from '../lib/denProgramu.ts';
 import { dalsiKrok, datumDneCesky } from '../lib/dalsiKrok.ts';
 import { vypocitejVahovyPokrok } from '../lib/vahovyPokrok.ts';
 import { najdiNejblizsiTrenink } from '../lib/nejblizsiTrenink.ts';
+import { podilTreninku, rozpracovaneCviky, textCviku, type Adherence } from '../lib/trenink.ts';
 import { calendarDateIsoInPrague } from '../../lib/czechCalendar.js';
 import { MembershipStatusBadge } from './MembershipStatusBadge';
 import { ProgresniKruh } from './ProgresniKruh';
@@ -24,17 +25,6 @@ import { ProgresniKruh } from './ProgresniKruh';
  * z `body_metrics.name` — viz src/lib/vokativ.ts).
  */
 
-/** Stav dne ze serveru (`/api/stats/adherence`) — načítá rodič. */
-export interface Adherence {
-  planovanych_jidel: number;
-  splnenych_jidel: number;
-  treninkovy_den: boolean;
-  trenink_splnen: boolean;
-  pohyb_min: number;
-  watch_workout_count: number;
-  manual_workout_count: number;
-}
-
 interface Props {
   profile: UserProfile;
   /** ISO datum registrace (`user.created_at`) — Den N programu. */
@@ -47,35 +37,12 @@ interface Props {
   /** Celá historie váhy (naVazeni) — start = první záznam, aktuální = poslední. */
   weightRecords: WeightRecord[];
   targetWeightKg: number;
+  /** Cíl není zadaný ručně, spočítala ho appka (src/lib/cilovaVaha.ts) — u čísla se ukáže „(auto)". */
+  targetWeightAuto?: boolean;
   stav: Adherence | null;
   onSelectTab: (tab: ActiveTab) => void;
   onToggleMeal: (id: string) => void;
   onOpenWeightModal: () => void;
-}
-
-/**
- * Podíl odcvičených cviků dnešního tréninku (0–1).
- *
- * POZOR: `stav.trenink_splnen` ani `manual_workout_count` se tu NEPOUŽÍVAJÍ,
- * když má den seznam cviků. Každé odškrtnutí cviku je v `daily_activity_completions`
- * řádek s activity_type 'workout', takže `get_daily_adherence` hlásí trénink
- * jako splněný už po PRVNÍM cviku — kroužek pak svítil „Hotovo" při 2 ze 4 cviků
- * (nahlášeno 21. 9. 2026). Rozhoduje počet odškrtnutých cviků; hodinky
- * (`watch_workout_count`) trénink uznají celý.
- */
-export function podilTreninku(todayWorkout: WorkoutDay, stav: Adherence | null): number {
-  if (todayWorkout.isCompleted || (stav?.watch_workout_count ?? 0) > 0) return 1;
-  const cviky = todayWorkout.exercises;
-  if (cviky.length > 0) {
-    return cviky.filter((c) => c.completed).length / cviky.length;
-  }
-  // Den bez seznamu cviků: jediný zdroj je ruční zápis / adherence.
-  return stav?.trenink_splnen === true || (stav?.manual_workout_count ?? 0) > 0 ? 1 : 0;
-}
-
-/** Trénink je hotový, až když jsou odškrtnuté VŠECHNY cviky (nebo ho naměřily hodinky). */
-export function jeTreninkHotovy(todayWorkout: WorkoutDay, stav: Adherence | null): boolean {
-  return podilTreninku(todayWorkout, stav) >= 1;
 }
 
 function pocetJidelSlovy(n: number): string {
@@ -95,7 +62,8 @@ const Ukazatel: React.FC<{
   kruh: React.ReactNode;
   radek1: string;
   radek2?: string;
-}> = ({ popisek, ariaLabel, onClick, kruh, radek1, radek2 }) => (
+  radek3?: string;
+}> = ({ popisek, ariaLabel, onClick, kruh, radek1, radek2, radek3 }) => (
   <button
     type="button"
     onClick={onClick}
@@ -104,8 +72,11 @@ const Ukazatel: React.FC<{
   >
     {kruh}
     <span className="text-[11px] font-semibold text-slate-300">{popisek}</span>
-    <span className="text-[10px] text-slate-400 text-center leading-tight break-words w-full">{radek1}</span>
-    {radek2 && <span className="text-[10px] text-slate-600 text-center leading-tight w-full">{radek2}</span>}
+    {/* Každý údaj má vlastní krátký řádek (≈ 13 znaků se vejde na 390 px);
+        delší text se zalomí nebo ořízne na dva řádky, nikdy nepřeteče. */}
+    <span className="text-[10px] text-slate-400 text-center leading-tight break-words line-clamp-2 w-full">{radek1}</span>
+    {radek2 && <span className="text-[10px] text-slate-500 text-center leading-tight break-words line-clamp-2 w-full">{radek2}</span>}
+    {radek3 && <span className="text-[10px] text-slate-600 text-center leading-tight break-words line-clamp-2 w-full">{radek3}</span>}
   </button>
 );
 
@@ -118,6 +89,7 @@ export const DnesHero: React.FC<Props> = ({
   targetCalories,
   weightRecords,
   targetWeightKg,
+  targetWeightAuto = false,
   stav,
   onSelectTab,
   onToggleMeal,
@@ -128,8 +100,7 @@ export const DnesHero: React.FC<Props> = ({
   const maTrenink = todayWorkout.exercises.length > 0;
   const podilTrenink = podilTreninku(todayWorkout, stav);
   const treninkHotovy = podilTrenink >= 1;
-  const cvikuCelkem = todayWorkout.exercises.length;
-  const cvikuHotovo = todayWorkout.exercises.filter((c) => c.completed).length;
+  const rozpracovano = rozpracovaneCviky(todayWorkout, stav);
   const nejblizsiTrenink = !maTrenink ? najdiNejblizsiTrenink(workouts) : null;
 
   const snedenoKcal = meals.reduce((acc, m) => acc + (m.completed ? m.calories : 0), 0);
@@ -193,7 +164,7 @@ export const DnesHero: React.FC<Props> = ({
             <MembershipStatusBadge status={profile.status} trialDniDoKonce={profile.trialDniDoKonce} variant="card" />
           </div>
 
-          <h1 className="mt-1.5 text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          <h1 className="mt-1.5 text-2xl sm:text-3xl font-extrabold text-white tracking-tight break-words">
             {pozdrav(ted, profile.preferredAddress)}
           </h1>
 
@@ -230,7 +201,8 @@ export const DnesHero: React.FC<Props> = ({
                 <Utensils className="w-5 h-5 text-slate-300" aria-hidden="true" />
               </ProgresniKruh>
             }
-            radek1={`${cz(snedenoKcal)} / ${cz(targetCalories)} kcal`}
+            radek1={`${cz(snedenoKcal)} kcal`}
+            radek2={`z ${cz(targetCalories)}`}
           />
 
           <Ukazatel
@@ -239,7 +211,7 @@ export const DnesHero: React.FC<Props> = ({
               treninkHotovy
                 ? 'Trénink: hotovo. Otevřít tréninkový plán.'
                 : maTrenink
-                  ? `Trénink: ${todayWorkout.title}, ${todayWorkout.durationMin} minut, odcvičeno ${cvikuHotovo} z ${cvikuCelkem} cviků. Otevřít tréninkový plán.`
+                  ? `Trénink: ${todayWorkout.title}, ${todayWorkout.durationMin} minut, odcvičeno ${rozpracovano ? textCviku(rozpracovano.hotovo, rozpracovano.celkem) : 'zatím nic'}. Otevřít tréninkový plán.`
                   : 'Trénink: dnes volno. Otevřít tréninkový plán.'
             }
             onClick={() => onSelectTab('trenink')}
@@ -252,20 +224,17 @@ export const DnesHero: React.FC<Props> = ({
                 )}
               </ProgresniKruh>
             }
-            radek1={
-              treninkHotovy
-                ? 'Hotovo'
-                : maTrenink
-                  ? `${todayWorkout.title} · ${todayWorkout.durationMin} min`
-                  : 'Dnes volno'
-            }
+            radek1={treninkHotovy ? 'Hotovo' : maTrenink ? todayWorkout.title : 'Dnes volno'}
             radek2={
-              !treninkHotovy && maTrenink && cvikuHotovo > 0
-                ? `${cvikuHotovo} z ${cvikuCelkem} cviků`
-                : !treninkHotovy && !maTrenink && nejblizsiTrenink
-                  ? `${nejblizsiTrenink.kdyText}: ${nejblizsiTrenink.nazev}`
-                  : undefined
+              treninkHotovy
+                ? undefined
+                : maTrenink
+                  ? `${todayWorkout.durationMin} min`
+                  : nejblizsiTrenink
+                    ? `${nejblizsiTrenink.kdyText}: ${nejblizsiTrenink.nazev}`
+                    : undefined
             }
+            radek3={rozpracovano ? textCviku(rozpracovano.hotovo, rozpracovano.celkem) : undefined}
           />
 
           <Ukazatel
@@ -285,17 +254,16 @@ export const DnesHero: React.FC<Props> = ({
                 )}
               </ProgresniKruh>
             }
-            radek1={
-              vahaPokrok.aktualniKg != null
-                ? `${kg(vahaPokrok.aktualniKg)} kg${vahaPokrok.cilKg != null ? ` · cíl ${kg(vahaPokrok.cilKg)} kg` : ''}`
-                : 'Zatím žádné vážení'
-            }
+            radek1={vahaPokrok.aktualniKg != null ? `${kg(vahaPokrok.aktualniKg)} kg` : 'Zatím žádné vážení'}
             radek2={
-              vahaPokrok.zbyvaKg != null && vahaPokrok.zbyvaKg > 0
-                ? `zbývá ${kg(vahaPokrok.zbyvaKg)} kg`
+              vahaPokrok.cilKg != null && vahaPokrok.aktualniKg != null
+                ? `cíl ${kg(vahaPokrok.cilKg)} kg${targetWeightAuto ? ' (auto)' : ''}`
                 : vahaPokrok.aktualniKg == null
                   ? 'Zapiš první váhu'
                   : undefined
+            }
+            radek3={
+              vahaPokrok.zbyvaKg != null && vahaPokrok.zbyvaKg > 0 ? `zbývá ${kg(vahaPokrok.zbyvaKg)} kg` : undefined
             }
           />
         </div>

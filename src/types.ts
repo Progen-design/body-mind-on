@@ -362,18 +362,6 @@ export interface AuthSession {
   loggedInAt: string;
 }
 
-/**
- * Stav propojení s Withings Cloud. Token zadává uživatel v modálu;
- * do úložiště jde jen maskovaná podoba (poslední 4 znaky), samotné
- * tajemství zůstává v paměti běžící relace.
- */
-export interface WithingsConnection {
-  maskedToken: string;
-  isConnected: boolean;
-  lastAuthorizedAt: string | null;
-  autoSyncEnabled: boolean;
-}
-
 /** Souhrn toho, co poslední synchronizace stáhla — zobrazuje se v modálu i v toastu. */
 export interface SyncResult {
   syncedAt: string;

@@ -75,19 +75,11 @@ import {
   UserProfile,
   CoachTip,
   TelesneSlozeni,
-  WithingsConnection,
   ZamcenyPlan
 } from './types';
 
 /** Doplní chybějící pole, když jsou uložená data starší než aktuální tvar objektu. */
 const mergeObject = <T extends object>(stored: T, initial: T): T => ({ ...initial, ...stored });
-
-const initialWithingsConnection: WithingsConnection = {
-  maskedToken: '',
-  isConnected: false,
-  lastAuthorizedAt: null,
-  autoSyncEnabled: true
-};
 
 export default function App() {
   return (
@@ -164,11 +156,6 @@ function AppContent() {
   const [preferences, setPreferences] = useLocalStorage<UserPreferences>(
     `${scope}:preferences`,
     initialPreferences,
-    mergeObject
-  );
-  const [withingsConnection, setWithingsConnection] = useLocalStorage<WithingsConnection>(
-    `${scope}:withings-connection`,
-    initialWithingsConnection,
     mergeObject
   );
   // Zpravy trenera ze serveru. Prazdno = banner se nezobrazi; to je platny
@@ -1405,9 +1392,10 @@ function AppContent() {
       <WithingsSyncModal
         isOpen={isWithingsModalOpen}
         onClose={() => setIsWithingsModalOpen(false)}
-        connection={withingsConnection}
-        onConnectionChange={setWithingsConnection}
+        isConnected={profilData?.has_withings_connection === true}
+        lastSyncedAt={profilData?.withings_last_sync_at ?? null}
         onManualSync={handleManualWithingsSync}
+        onConnectionChanged={znovuNacistProfil}
         isSyncing={isSyncing}
       />
 

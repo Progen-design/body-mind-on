@@ -59,10 +59,21 @@ test('odkaz zpet ve StrankaNeexistuje miri na platnou cestu', () => {
 });
 
 test('PLATNE_CESTY obsahuje presne ocekavanou mnozinu — zadna navic, zadna chybi', () => {
+  // `/admin/integrace` (22. 9. 2026) je v seznamu schvalne, prestoze na ni
+  // nevede zadny odkaz: bez toho by ji App.tsx poslala na 404 driv, nez by
+  // se vykreslila. Opravneni resi ADMIN_TOKEN na serveru, ne tenhle seznam.
   assert.deepEqual(
     [...PLATNE_CESTY].sort(),
-    ['/', '/login', '/profil', '/register', '/signup', '/start'].sort()
+    ['/', '/admin/integrace', '/login', '/profil', '/register', '/signup', '/start'].sort()
   );
+});
+
+test('na admin integrace nevede odkaz z bezne navigace', () => {
+  // Stranka neni tajna (opravneni drzi server), ale patri mimo produktovou
+  // cestu — odkaz v UI by ji nabidl lidem, pro ktere neni.
+  const app = cti('./App.tsx');
+  assert.match(app, /cesta === CESTA_ADMIN_INTEGRACE/, 'vetev pro admin stranku chybi');
+  assert.doesNotMatch(app, /naviguj\((['"])\/admin\/integrace\)/, 'z appky vede odkaz na admin stranku');
 });
 
 // PROMPT_UKLID.md (2026-09-17) — `naviguj()` udělá `window.location.href = kam`

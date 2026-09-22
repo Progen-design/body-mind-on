@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   if (auth.error) return res.status(auth.status || 401).json({ error: auth.error });
 
   try {
-    const configured = isWithingsOAuthConfigured();
+    const configured = await isWithingsOAuthConfigured();
     const { data: connection, error: connError } = await supabaseServer
       .from('withings_connections')
       .select('connected_at, last_sync_at, last_sync_error, expires_at')

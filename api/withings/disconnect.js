@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   if (auth.error) return res.status(auth.status || 401).json({ error: auth.error });
 
   try {
-    if (!isWithingsOAuthConfigured()) {
+    if (!(await isWithingsOAuthConfigured())) {
       return res.status(503).json({ ok: false, error: 'Withings integrace není aktivní.' });
     }
 

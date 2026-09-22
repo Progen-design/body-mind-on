@@ -14,7 +14,21 @@ export const CESTY_REGISTRACE = ['/start', '/register', '/signup'] as const;
 export const CESTA_PRIHLASENI = '/login';
 export const CESTA_PROFIL = '/profil';
 
-export const PLATNE_CESTY = ['/', CESTA_PRIHLASENI, CESTA_PROFIL, ...CESTY_REGISTRACE] as const;
+/**
+ * Admin nastaveni integraci. Nevede sem zadny odkaz z navigace — je to
+ * adresa, kterou si admin otevre sam a ktera se rucne overuje proti
+ * ADMIN_TOKEN. Do PLATNE_CESTY patri proto, ze bez ni by ji App.tsx
+ * poslala na 404 drive, nez by se vubec vykreslila.
+ */
+export const CESTA_ADMIN_INTEGRACE = '/admin/integrace';
+
+export const PLATNE_CESTY = [
+  '/',
+  CESTA_PRIHLASENI,
+  CESTA_PROFIL,
+  CESTA_ADMIN_INTEGRACE,
+  ...CESTY_REGISTRACE
+] as const;
 
 export function jePlatnaCesta(cesta: string): boolean {
   return (PLATNE_CESTY as readonly string[]).includes(cesta);

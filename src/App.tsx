@@ -30,7 +30,8 @@ import { LoginScreen } from './components/LoginScreen';
 // Kontexty, perzistence a synchronizace
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { StartRegistrace } from './components/registrace/StartRegistrace';
-import { CESTY_REGISTRACE, bezpecnyRedirect, jePlatnaCesta, naviguj, useCesta } from './routing';
+import { CESTA_ADMIN_INTEGRACE, CESTY_REGISTRACE, bezpecnyRedirect, jePlatnaCesta, naviguj, useCesta } from './routing';
+import { AdminIntegrace } from './components/admin/AdminIntegrace';
 import { StrankaNeexistuje } from './components/StrankaNeexistuje';
 import { useProfilData } from './hooks/useProfilData';
 import { useZdravotniData } from './hooks/useZdravotniData';
@@ -957,6 +958,14 @@ function AppContent() {
   // takze i /gdpr nebo /cokoliv vracelo 200 s prihlasenou aplikaci.
   if (!jePlatnaCesta(cesta)) {
     return <StrankaNeexistuje />;
+  }
+
+  // ADMIN NASTAVENI INTEGRACI. Vetev je nad prihlasenim schvalne: stranka
+  // nestoji na uzivatelske session, ale na ADMIN_TOKEN, ktery se overuje az
+  // na serveru (isAdmin v admin endpointech). Nic se tu nepovoluje
+  // bez platneho tokenu endpointy vrati 403 a stranka ukaze chybu.
+  if (cesta === CESTA_ADMIN_INTEGRACE) {
+    return <AdminIntegrace />;
   }
 
   // Odhlášený uživatel vidí výběr profilu místo aplikace.

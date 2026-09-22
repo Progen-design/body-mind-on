@@ -135,3 +135,26 @@ test('údaje v kroužcích jsou krátké řádky, ne jedna dlouhá věta, která
   assert.match(HERO, /radek3\?: string/, 'ukazatel neumí třetí řádek');
   assert.match(HERO, /line-clamp-2/, 'řádky ukazatele se neořezávají');
 });
+
+test('procento v kroužku váhy říká, k čemu se vztahuje', () => {
+  // „7 %" samo o sobě mohlo být cokoli — popisek „cesty k cíli" žil jen
+  // v ariaLabel, takže ho viděla čtečka obrazovky, ale ne člověk. Řádky
+  // pod kruhem jsou obsazené (kg / cíl / zbývá), proto popisek do kruhu.
+  assert.match(
+    HERO,
+    /\{procentVahy\} %<\/span>\s*<span className="mt-0\.5 text-\[9px\] font-semibold text-slate-400">k cíli<\/span>/,
+    'v kroužku váhy chybí druhý řádek „k cíli"'
+  );
+});
+
+test('bez naměřené váhy zůstává v kroužku ikona, ne popisek', () => {
+  // Stav `procentVahy == null` se nemění: žádné procento, žádné „k cíli",
+  // jen ikona váhy. Popisek musí zůstat uvnitř větve s procentem.
+  const vetev = HERO.match(/\{procentVahy != null \? \([\s\S]*?\) : \([\s\S]*?\)\}/);
+  assert.ok(vetev, 'větev podle procentVahy se nenašla');
+
+  const [sProcentem, bezProcenta] = vetev![0].split(') : (');
+  assert.match(sProcentem, /k cíli/, 'popisek není ve větvi s procentem');
+  assert.doesNotMatch(bezProcenta, /k cíli/, 'popisek se ukazuje i bez naměřené váhy');
+  assert.match(bezProcenta, /<Scale className="w-5 h-5 text-slate-300" aria-hidden="true" \/>/, 'ikona váhy zmizela');
+});

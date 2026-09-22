@@ -248,7 +248,21 @@ export const DnesHero: React.FC<Props> = ({
             kruh={
               <ProgresniKruh podil={vahaPokrok.podilPokroku ?? 0} barva="stroke-akcent-cyan">
                 {procentVahy != null ? (
-                  <span className="text-xs font-extrabold text-white">{procentVahy} %</span>
+                  /* HOLÉ ČÍSLO NEŘÍKÁ, K ČEMU SE VZTAHUJE. „7 %" v kroužku
+                     mohlo být cokoli — popisek „cesty k cíli" žil jen
+                     v `ariaLabel`, tedy pro čtečky obrazovky, ne na
+                     obrazovce. Řádky pod kruhem jsou obsazené (kg, cíl,
+                     zbývá), takže popisek jde dovnitř.
+
+                     VEJDE SE TO. Kruh má 64 px a tah 6 px, takže vnitřní
+                     průměr je 52 px a čtverec, který se do něj vejde, má
+                     stranu ~37 px. Nejširší číslo „100 %" na 12 px
+                     extrabold měří ~34 px, „k cíli" na 9 px ~26 px; na
+                     výšku obojí i s mezerou ~23 px. */
+                  <span className="flex flex-col items-center leading-none">
+                    <span className="text-xs font-extrabold text-white">{procentVahy} %</span>
+                    <span className="mt-0.5 text-[9px] font-semibold text-slate-400">k cíli</span>
+                  </span>
                 ) : (
                   <Scale className="w-5 h-5 text-slate-300" aria-hidden="true" />
                 )}

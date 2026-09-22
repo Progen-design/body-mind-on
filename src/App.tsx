@@ -5,6 +5,7 @@ import { NavigationTabs, ActiveTab } from './components/NavigationTabs';
 import { PropojenaZarizeniSection } from './components/PropojenaZarizeniSection';
 import { UcetASpravaSection } from './components/UcetASpravaSection';
 import { DnesObrazovka } from './components/DnesObrazovka';
+import { CommunityPage } from './components/komunita/CommunityPage';
 import { DnesSkeleton } from './components/DnesSkeleton';
 import { TrialPaywallCard } from './components/TrialPaywallCard';
 import { BodyCompositionSection } from './components/BodyCompositionSection';
@@ -1281,6 +1282,14 @@ function AppContent() {
             )}
           </div>
         ))}
+
+        {/* TAB G: KOMUNITA */}
+        {/* Dostupná ve všech tarifech — rozhodnutí z návrhu komunity
+            (docs/BMON_KOMUNITA_NAVRH_2026-09-23.md). Poslední vážení jde
+            dovnitř, aby se check-in nemusel opisovat z hlavy. */}
+        {activeTab === 'komunita' && (
+          <CommunityPage posledniVahaKg={latestRecord?.weight ?? null} />
+        )}
 
         {/* Sekce „Návyky & série" odstraněna. Série (streaky), efektivita
             spánku ani komentáře typu „včera překonána chuť na čokoládu“

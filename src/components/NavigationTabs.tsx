@@ -4,7 +4,8 @@ import {
   Scale,
   Utensils,
   Dumbbell,
-  Activity
+  Activity,
+  Users
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -17,7 +18,7 @@ import { motion } from 'motion/react';
 // vahu, telesny tuk, svalovou hmotu a kartu uzivatele — jen jinak naskladane,
 // a makra dokonce rozdilne (Prehled 103 g bilkovin, Profil 184 g). Uzivatel
 // tak mel dve mista, kde hledat totez. Ted je vsechno v "Muj profil".
-export type ActiveTab = 'profil' | 'vaha' | 'jidelnicek' | 'trenink' | 'regenerace';
+export type ActiveTab = 'profil' | 'vaha' | 'jidelnicek' | 'trenink' | 'regenerace' | 'komunita';
 
 interface NavigationTabsProps {
   activeTab: ActiveTab;
@@ -43,7 +44,10 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
     // NE ZNAČKA ZAŘÍZENÍ, ALE OBSAH. Záložka se jmenovala „Apple Watch &
   // Regenerace", jenže hodinky nemusí být od Applu — data chodí z Apple
   // Health i z Withings a jméno záložky nemá slibovat konkrétní výrobek.
-  { id: 'regenerace', label: 'Regenerace & Spánek', icon: Activity }
+  { id: 'regenerace', label: 'Regenerace & Spánek', icon: Activity },
+    // Komunita je poslední: plán, tělo a data jsou to, kvůli čemu lidé
+    // do appky chodí denně. Je dostupná ve všech tarifech.
+    { id: 'komunita', label: 'Komunita', icon: Users }
   ];
 
   return (

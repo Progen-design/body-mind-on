@@ -6,6 +6,7 @@ import {
   MAX_PRISPEVKU_DENNE,
   avatary,
   fotkyPrispevku,
+  jeAdminKomunity,
   jmenoAutora,
   lajkyUzivatele,
   maSouhlasKomunity,
@@ -97,7 +98,9 @@ export default async function handler(req, res) {
         created_at: r.created_at,
       })),
     }));
-    return res.status(200).json({ topics: topicsWithCount });
+    // `is_admin` řídí, jestli se nad seznamem ukáže panel moderace. Je to
+    // jen UI příznak — každý endpoint moderace si oprávnění ověřuje sám.
+    return res.status(200).json({ topics: topicsWithCount, is_admin: jeAdminKomunity(user) });
   }
 
   // POST

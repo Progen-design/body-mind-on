@@ -6,6 +6,7 @@ import { CommunityPostDetail } from './CommunityPostDetail';
 import { NewPostSheet } from './NewPostSheet';
 import { PravidlaKomunity } from './PravidlaKomunity';
 import { KartaPrispevku } from './KartaPrispevku';
+import { PanelModerace } from './PanelModerace';
 import { KomunitaKategorie, KomunitaOdpoved, KomunitaPrispevek, SLUG_DOTAZY } from './typy';
 
 /**
@@ -29,6 +30,9 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [novyOtevren, setNovyOtevren] = useState(false);
   const [pravidlaOtevrena, setPravidlaOtevrena] = useState(false);
+  // Příznak ze serveru (`ADMIN_EMAILS`). Je jen pro UI — oprávnění si
+  // endpointy moderace ověřují samy, schovaný panel nic nechrání.
+  const [jeAdmin, setJeAdmin] = useState(false);
 
   useEffect(() => {
     apiFetch<{ categories: KomunitaKategorie[] }>('/api/community/categories')
@@ -42,8 +46,9 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
       const cesta = aktivniKategorie
         ? `/api/community?category_id=${encodeURIComponent(aktivniKategorie)}`
         : '/api/community';
-      const data = await apiFetch<{ topics: KomunitaPrispevek[] }>(cesta);
+      const data = await apiFetch<{ topics: KomunitaPrispevek[]; is_admin?: boolean }>(cesta);
       setPrispevky(data.topics || []);
+      setJeAdmin(data.is_admin === true);
       setChyba(null);
     } catch (err) {
       setChyba(err instanceof Error ? err.message : 'Komunitu se nepodařilo načíst.');
@@ -98,6 +103,8 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
         podtitulek="Co kdo zkusil a jak mu to jde — bez filtrů z reklam"
         ikona={<Users className="w-5 h-5 text-akcent-lime" />}
       />
+
+      {jeAdmin && <PanelModerace onZmena={nacti} />}
 
       {/* Chipy kategorií */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">

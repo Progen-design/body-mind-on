@@ -1,7 +1,7 @@
 // POST /api/community/reply – přidat odpověď do tématu
 import { supabaseServer } from '../../lib/supabaseServer.js';
-import { jeAdminSUctem } from '../../lib/adminAuth.js';
 import {
+  jeAdminKomunity,
   jmenoAutora,
   maSouhlasKomunity,
   prihlasenyUzivatel,
@@ -25,13 +25,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Vyplň text odpovědi a zvol téma.' });
   }
 
-  // TÝMOVÁ ODPOVĚĎ SE POZNÁ PODLE ADMIN_TOKENU, NE PODLE TOHO, CO POŠLE
-  // PROHLÍŽEČ. Kdyby `is_team` chodilo v těle, označí se za tým kdokoli.
-  //
-  // Token jde v `x-admin-token`, protože `Authorization` tu nese
-  // uživatelskou session: `community_replies.user_id` je NOT NULL s cizím
-  // klíčem, takže i odpověď týmu musí mít skutečný účet autora.
-  const jeTym = jeAdminSUctem(req);
+  // TÝMOVÁ ODPOVĚĎ SE POZNÁ PODLE TOHO, KDO JE PŘIHLÁŠENÝ, NE PODLE TOHO,
+  // CO POŠLE PROHLÍŽEČ. Kdyby `is_team` chodilo v těle, označí se za tým
+  // kdokoli. Rozhoduje e-mail ze session proti `ADMIN_EMAILS`.
+  const jeTym = jeAdminKomunity(user);
 
   // SOUHLAS PLATÍ I PRO KOMENTÁŘE. Pravidla mluví o tom, co se smí psát —
   // a psát jde i pod cizí příspěvek. Tým je z toho ven: nevystupuje jako

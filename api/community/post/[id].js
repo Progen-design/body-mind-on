@@ -1,22 +1,21 @@
 // DELETE /api/community/post/[id] – smazat příspěvek
 //
-// Vlastník, nebo admin s ADMIN_TOKEN (moderace). Řádky odpovědí,
+// Vlastník, nebo moderátor komunity (ADMIN_EMAILS). Řádky odpovědí,
 // fotek a lajků odejdou kaskádou, ale SOUBORY V BUCKETU KASKÁDA NEMAŽE —
 // ty se musí smazat ručně, jinak by v private bucketu zůstaly fotky
 // postavy, na které už nevede žádný řádek a nikdo je nenajde.
 import { supabaseServer } from '../../../lib/supabaseServer.js';
-import { isAdmin } from '../../../lib/adminAuth.js';
-import { BUCKET_FOTEK, prihlasenyUzivatel } from '../../../lib/community.js';
+import { BUCKET_FOTEK, jeAdminKomunity, prihlasenyUzivatel } from '../../../lib/community.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'DELETE') return res.status(405).json({ error: 'Method not allowed' });
 
-  // ADMIN SE NEPŘIHLAŠUJE JAKO UŽIVATEL. Moderace jede na ADMIN_TOKEN
-  // v hlavičce, takže požadavek nemusí nést platnou uživatelskou session.
-  const jeAdmin = isAdmin(req);
-  const auth = jeAdmin ? { user: null } : await prihlasenyUzivatel(req);
-  if (!jeAdmin && !auth.user) return res.status(auth.status).json({ error: auth.error });
-  const user = auth.user;
+  const auth = await prihlasenyUzivatel(req);
+  if (!auth.user) return res.status(auth.status).json({ error: auth.error });
+  const { user } = auth;
+
+  // Moderátor je přihlášený člověk z `ADMIN_EMAILS`, ne držitel tokenu.
+  const jeAdmin = jeAdminKomunity(user);
 
   const postId = req.query?.id ? String(req.query.id).trim() : '';
   if (!postId) return res.status(400).json({ error: 'Chybí id příspěvku.' });

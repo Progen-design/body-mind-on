@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Heart, MessageCircle, Plus, Scale, Lock, Users, ShieldCheck } from 'lucide-react';
+import { Plus, Users, ShieldCheck } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
-import { kdyMereno } from '../../data/adaptery';
 import { NadpisSekce } from '../NadpisSekce';
 import { CommunityPostDetail } from './CommunityPostDetail';
 import { NewPostSheet } from './NewPostSheet';
 import { PravidlaKomunity } from './PravidlaKomunity';
-import { KomunitaKategorie, KomunitaPrispevek } from './typy';
+import { KartaPrispevku } from './KartaPrispevku';
+import { KomunitaKategorie, KomunitaOdpoved, KomunitaPrispevek, SLUG_DOTAZY } from './typy';
 
 /**
  * KOMUNITA — seznam příspěvků s filtrem podle kategorie.
@@ -19,8 +19,6 @@ interface Props {
   /** Poslední vážení — předvyplní se do check-inu. */
   posledniVahaKg: number | null;
 }
-
-const NAHLED_TEXTU = 160;
 
 export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
   const [kategorie, setKategorie] = useState<KomunitaKategorie[]>([]);
@@ -57,6 +55,10 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
   useEffect(() => { nacti(); }, [nacti]);
 
   const progres = useMemo(() => kategorie.find((k) => k.slug === 'muj-progres') ?? null, [kategorie]);
+  const slugPodleId = useMemo(
+    () => Object.fromEntries(kategorie.map((k) => [k.id, k.slug])),
+    [kategorie],
+  );
   const jsemVProgresu = progres != null && aktivniKategorie === progres.id;
 
   const prepniLajk = async (p: KomunitaPrispevek) => {
@@ -144,7 +146,25 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
       ) : (
         <div className="space-y-3">
           {prispevky.map((p) => (
-            <Karta key={p.id} prispevek={p} onOtevri={() => setDetailId(p.id)} onLajk={() => prepniLajk(p)} />
+            <KartaPrispevku
+              key={p.id}
+              prispevek={p}
+              jeDotaz={slugPodleId[p.category_id ?? ''] === SLUG_DOTAZY}
+              onOtevri={() => setDetailId(p.id)}
+              onLajk={() => prepniLajk(p)}
+              onPravidla={() => setPravidlaOtevrena(true)}
+              onKomentar={(odpoved: KomunitaOdpoved) => setPrispevky((seznam) => seznam.map((x) => (
+                x.id === p.id
+                  ? {
+                    ...x,
+                    reply_count: x.reply_count + 1,
+                    // Náhled drží poslední dvě — nová vytlačí nejstarší.
+                    last_replies: [...(x.last_replies ?? []), odpoved].slice(-2),
+                    team_answered: x.team_answered || odpoved.is_team === true,
+                  }
+                  : x
+              )))}
+            />
           ))}
         </div>
       )}
@@ -189,76 +209,3 @@ const Chip: React.FC<{ aktivni: boolean; onClick: () => void; children: React.Re
     {children}
   </button>
 );
-
-const Karta: React.FC<{
-  prispevek: KomunitaPrispevek;
-  onOtevri: () => void;
-  onLajk: () => void;
-}> = ({ prispevek, onOtevri, onLajk }) => {
-  const prvniFotka = prispevek.photos[0] ?? null;
-  const nahled = prispevek.content.slice(0, NAHLED_TEXTU)
-    + (prispevek.content.length > NAHLED_TEXTU ? '…' : '');
-
-  return (
-    <div className="rounded-3xl bg-povrch border border-slate-800 overflow-hidden">
-      <button type="button" onClick={onOtevri} className="w-full text-left p-4 space-y-3">
-        <div className="flex items-center gap-2.5">
-          {prispevek.author_avatar_url ? (
-            <img src={prispevek.author_avatar_url} alt="" className="w-9 h-9 rounded-full object-cover border border-slate-700 shrink-0" />
-          ) : (
-            <span className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-slate-300 shrink-0">
-              {prispevek.author_name.slice(0, 1).toUpperCase()}
-            </span>
-          )}
-          <div className="min-w-0 flex-1">
-            <div className="text-sm font-bold text-white truncate">{prispevek.author_name}</div>
-            <div className="text-[11px] text-slate-500">{kdyMereno(prispevek.created_at)}</div>
-          </div>
-          {prispevek.is_hidden && <Lock className="w-3.5 h-3.5 text-amber-300 shrink-0" aria-label="Jen pro mě" />}
-        </div>
-
-        {/* 4:5 a strop 420 px. Fotky z telefonu jsou na výšku a bez omezení
-            by jedna karta zabrala celou obrazovku — seznam by se nedal
-            projít. Celá fotka je až v detailu. */}
-        {prvniFotka && (
-          <div className="relative rounded-2xl overflow-hidden border border-slate-800 aspect-[4/5] max-h-[420px]">
-            <img src={prvniFotka.url} alt="" className="w-full h-full object-cover" loading="lazy" />
-            {prispevek.photos.length > 1 && (
-              <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-black/70 text-slate-200">
-                +{prispevek.photos.length - 1}
-              </span>
-            )}
-          </div>
-        )}
-
-        {prispevek.weight_kg != null && (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/70 border border-slate-800 text-xs font-bold text-white">
-            <Scale className="w-3.5 h-3.5 text-akcent-cyan" />
-            {prispevek.weight_kg.toString().replace('.', ',')} kg
-          </span>
-        )}
-
-        {nahled && <p className="text-sm text-slate-300 leading-relaxed break-words">{nahled}</p>}
-      </button>
-
-      <div className="px-4 pb-3 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onLajk}
-          aria-pressed={prispevek.liked_by_me}
-          aria-label={prispevek.liked_by_me ? 'Odebrat lajk' : 'Dát lajk'}
-          className={`inline-flex items-center gap-1.5 min-h-9 px-2.5 rounded-lg text-xs font-bold ${
-            prispevek.liked_by_me ? 'text-rose-300' : 'text-slate-400'
-          }`}
-        >
-          <Heart className={`w-4 h-4 ${prispevek.liked_by_me ? 'fill-rose-400 text-rose-400' : ''}`} />
-          <span>{prispevek.like_count}</span>
-        </button>
-        <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
-          <MessageCircle className="w-4 h-4" />
-          {prispevek.reply_count}
-        </span>
-      </div>
-    </div>
-  );
-};

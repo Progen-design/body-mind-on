@@ -4,6 +4,7 @@ import { apiFetch } from '../../lib/api';
 import { kdyMereno } from '../../data/adaptery';
 import { useToast } from '../../context/ToastContext';
 import { NahlasitSheet } from './NahlasitSheet';
+import { StitekTym } from './KomentareVKarte';
 import { KomunitaOdpoved, KomunitaPrispevek } from './typy';
 
 /**
@@ -250,6 +251,7 @@ export const CommunityPostDetail: React.FC<Props> = ({ prispevekId, onZpet, onZm
             <div className="flex items-center gap-2">
               <Avatar url={o.author_avatar_url} jmeno={o.author_name} maly />
               <span className="text-xs font-bold text-slate-200">{o.author_name}</span>
+              {o.is_team && <StitekTym />}
               <span className="text-[11px] text-slate-500">{kdyMereno(o.created_at)}</span>
               <button
                 type="button"

@@ -57,7 +57,7 @@ export default async function handler(req, res) {
     const { data: repliesData } = topicIds.length > 0
       ? await supabaseServer
         .from('community_replies')
-        .select('id, topic_id, user_id, author_name, content, created_at')
+        .select('id, topic_id, user_id, author_name, content, created_at, is_team')
         .in('topic_id', topicIds)
         .order('created_at', { ascending: false })
       : { data: [] };
@@ -75,8 +75,15 @@ export default async function handler(req, res) {
       lajkyUzivatele(topicIds, user.id),
     ]);
 
+    // ČEKÁ NA ODPOVĚĎ = v Dotazech, a zatím bez odpovědi od týmu. Počítá se
+    // ze VŠECH odpovědí, ne jen z těch dvou v náhledu — jinak by dotaz se
+    // třemi odpověďmi od členů a týmovou na čtvrtém místě vypadal jako
+    // nevyřízený.
+    const maOdpovedTymu = new Set(allReplies.filter((r) => r.is_team).map((r) => r.topic_id));
+
     const topicsWithCount = list.map((t) => ({
       ...t,
+      team_answered: maOdpovedTymu.has(t.id),
       author_avatar_url: avatarByUserId[t.user_id] || null,
       photos: fotky[t.id] || [],
       liked_by_me: lajkl.has(t.id),
@@ -85,6 +92,7 @@ export default async function handler(req, res) {
         id: r.id,
         author_name: r.author_name,
         author_avatar_url: avatarByUserId[r.user_id] || null,
+        is_team: r.is_team === true,
         content: r.content.slice(0, NAHLED_ODPOVEDI) + (r.content.length > NAHLED_ODPOVEDI ? '…' : ''),
         created_at: r.created_at,
       })),

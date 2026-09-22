@@ -33,7 +33,7 @@ export default async function handler(req, res) {
 
   const { data: replies, error: repliesErr } = await supabaseServer
     .from('community_replies')
-    .select('id, user_id, author_name, content, created_at')
+    .select('id, user_id, author_name, content, created_at, is_team')
     .eq('topic_id', topicId)
     .order('created_at', { ascending: true });
 
@@ -47,6 +47,7 @@ export default async function handler(req, res) {
 
   const topicWithAvatar = {
     ...topic,
+    team_answered: replyList.some((r) => r.is_team),
     author_avatar_url: avatarByUserId[topic.user_id] || null,
     photos: fotky[topic.id] || [],
     liked_by_me: lajkl.has(topic.id),

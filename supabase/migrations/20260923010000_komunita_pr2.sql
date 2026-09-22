@@ -30,7 +30,33 @@ alter table public.souhlasy_uzivatelu
 comment on column public.souhlasy_uzivatelu.druh is
   'obchodni_podminky a zdravotni_udaje vyžaduje registrace; komunita se zapisuje při prvním příspěvku (PR 2 komunity).';
 
--- 2. JEDNO NAHLÁŠENÍ NA UŽIVATELE A OBJEKT ---------------------------------
+-- 2. SEKCE DOTAZY A TÝMOVÁ ODPOVĚĎ -----------------------------------------
+
+-- Dotazy stojí mezi „Můj progres" (0) a „Trénink" (10): je to místo, kam
+-- člověk jde, když něco nefunguje, ne kam chodí číst.
+insert into public.community_categories (name, slug, description, sort_order)
+  select 'Dotazy', 'dotazy',
+         'Zeptej se na cokoli kolem plánu, jídla nebo tréninku. Odpovídá tým BMON.', 5
+  where not exists (
+    select 1 from public.community_categories where slug = 'dotazy'
+  );
+
+-- Odpověď od týmu se musí poznat na první pohled — jinak je rada od nás
+-- k nerozeznání od rady kohokoli jiného, a přesně o to v Dotazech jde.
+--
+-- Příznak NASTAVUJE SERVER podle ADMIN_TOKEN (api/community/reply.js), ne
+-- klient. Kdyby ho posílal prohlížeč, označí se za tým kdokoli.
+alter table public.community_replies
+  add column if not exists is_team boolean not null default false;
+
+comment on column public.community_replies.is_team is
+  'Odpověď týmu BMON. Nastavuje server podle ADMIN_TOKEN, nikdy klient. Štítek „Tým BMON" v UI.';
+
+create index if not exists community_replies_topic_team_idx
+  on public.community_replies (topic_id)
+  where is_team;
+
+-- 3. JEDNO NAHLÁŠENÍ NA UŽIVATELE A OBJEKT ---------------------------------
 
 -- Částečné indexy, protože řádek nese vždy jen jedno z post_id / reply_id.
 -- Prostý unique nad oběma sloupci by NULL nepovažoval za shodu a nehlídal

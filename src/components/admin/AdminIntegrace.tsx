@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { KeyRound, Loader2, ShieldCheck, AlertTriangle, Save, LogOut } from 'lucide-react';
+import { AdminDotazy } from './AdminDotazy';
 import { AdminNahlaseni } from './AdminNahlaseni';
 
 /**
@@ -199,6 +200,8 @@ export const AdminIntegrace: React.FC = () => {
 
         {/* Moderace komunity. Stejná stránka, protože obojí stojí na ADMIN_TOKEN
             a druhá adresa by znamenala token zadávat dvakrát. */}
+        <AdminDotazy token={token} />
+
         <AdminNahlaseni token={token} />
 
         <div className="p-5 rounded-3xl bg-povrch border border-slate-800 space-y-4">

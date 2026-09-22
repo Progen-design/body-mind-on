@@ -24,6 +24,8 @@ export interface KomunitaOdpoved {
   content: string;
   created_at: string;
   user_id?: string;
+  /** Odpověď týmu BMON. Nastavuje server podle ADMIN_TOKEN, nikdy klient. */
+  is_team?: boolean;
 }
 
 export interface KomunitaPrispevek {
@@ -44,7 +46,12 @@ export interface KomunitaPrispevek {
   photos: KomunitaFotka[];
   created_at: string;
   last_replies?: KomunitaOdpoved[];
+  /** Má dotaz odpověď od týmu? Počítá se ze všech odpovědí, ne jen z náhledu. */
+  team_answered?: boolean;
 }
+
+/** Slug sekce Dotazy — jen tam se ukazuje štítek „Čeká na odpověď". */
+export const SLUG_DOTAZY = 'dotazy';
 
 /** Kolik fotek unese jeden příspěvek — zrcadlí limit v `lib/community.js`. */
 export const MAX_FOTEK = 4;

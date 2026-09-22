@@ -27,9 +27,11 @@ interface PoleProps extends React.InputHTMLAttributes<HTMLInputElement> {
   popisek: string;
   chyba?: string | null;
   volitelne?: boolean;
+  /** Krátká nápověda pod polem (zobrazí se, jen když není chyba). */
+  napoveda?: string;
 }
 
-export const Pole: React.FC<PoleProps> = ({ popisek, chyba, volitelne, id, ...rest }) => (
+export const Pole: React.FC<PoleProps> = ({ popisek, chyba, volitelne, napoveda, id, ...rest }) => (
   <div>
     <Popisek htmlFor={id} volitelne={volitelne}>{popisek}</Popisek>
     <input
@@ -38,6 +40,7 @@ export const Pole: React.FC<PoleProps> = ({ popisek, chyba, volitelne, id, ...re
       className={`${POLE_TRIDY} ${chyba ? 'border-rose-500/60' : 'border-slate-800 focus:border-cyan-500/60'}`}
     />
     <Chyba text={chyba} />
+    {napoveda && !chyba && <p className="mt-1 text-[11px] leading-snug text-slate-500">{napoveda}</p>}
   </div>
 );
 

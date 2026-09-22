@@ -104,3 +104,19 @@ test('bez maker i bez planu zustanou puvodni hodnoty, nic se nevymysli', () => {
   assert.equal(pref.carbsRatioPercent, 40);
   assert.equal(pref.fatRatioPercent, 30);
 });
+
+test('cílová váha: ručně zadaná není „auto", chybějící se dopočítá a je „auto" (PROMPT_DOLADENI_DNES.md)', () => {
+  const zaklad = { body_metrics: [{ calories_target: 2000, weight_kg: 103.6, height_cm: 193, goal: 'redukce' }], plans: [] };
+  const rucne = naPreference({ ...zaklad, user: { goal_weight_kg: 95 } } as any, VYCHOZI);
+  assert.equal(rucne.targetWeightKg, 95);
+  assert.equal(rucne.targetWeightAuto, false);
+  assert.equal(rucne.targetWeightAutoKg, 93, 'placeholder v Nastavení ukáže, co by se spočítalo');
+
+  const auto = naPreference({ ...zaklad, user: { goal_weight_kg: null } } as any, VYCHOZI);
+  assert.equal(auto.targetWeightKg, 93);
+  assert.equal(auto.targetWeightAuto, true);
+
+  const bezVahy = naPreference({ body_metrics: [{ calories_target: 2000 }], plans: [] } as any, VYCHOZI);
+  assert.equal(bezVahy.targetWeightAuto, false, 'bez váhy není z čeho počítat — nic se netvrdí');
+  assert.equal(bezVahy.targetWeightAutoKg, null);
+});

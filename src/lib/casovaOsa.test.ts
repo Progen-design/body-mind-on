@@ -78,3 +78,14 @@ test('casNaMinuty', () => {
   assert.equal(casNaMinuty('19:05'), 1145);
   assert.equal(casNaMinuty('večer'), null);
 });
+
+test('rozpracovaný trénink ukáže postup místo délky, hotový zůstane hotový', () => {
+  const rozp = sestavCasovouOsu(DEN, { ...TRENINK, rozpracovano: { hotovo: 2, celkem: 4 } }, v(8));
+  const t = rozp.polozky.find((p) => p.typ === 'trenink');
+  assert.equal(t?.udaj, '2 z 4 cviků');
+  assert.equal(t?.hotovo, false, 'Hotovo až po všech cvicích');
+
+  const hotovo = sestavCasovouOsu(DEN, { ...TRENINK, hotovo: true, rozpracovano: null }, v(8));
+  assert.equal(hotovo.polozky.find((p) => p.typ === 'trenink')?.hotovo, true);
+  assert.equal(hotovo.polozky.find((p) => p.typ === 'trenink')?.udaj, '45 min');
+});

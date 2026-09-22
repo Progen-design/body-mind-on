@@ -49,8 +49,16 @@ export function rozdelZmenyNastaveni(zmeny: Partial<NastaveniProfilu>): Rozdelen
   for (const [klic, hodnota] of Object.entries(zmeny)) {
     if ((POLE_NASTAVENI as readonly string[]).includes(klic)) {
       const n = cislo(hodnota);
-      // Prazdne pole neznamena "vynuluj" — takovou zmenu neposilame.
-      if (n !== null) nastaveni[klic] = n;
+      if (n !== null) {
+        nastaveni[klic] = n;
+      } else if (klic === 'goal_weight_kg' && String(hodnota ?? '').trim() === '') {
+        // Vymazaná cílová váha = „smazat vlastní cíl, ať se počítá automaticky"
+        // (PROMPT_DOLADENI_DNES.md). Posílá se explicitní `null`; server ho od
+        // chybějícího klíče („neměnit") rozliší. Sem se `zmeny` dostane jen
+        // pro pole, které se OPRAVDU změnilo, takže neposílá `null` každému.
+        nastaveni[klic] = null;
+      }
+      // Prázdná výška neznamená „vynuluj" — takovou změnu neposíláme.
       continue;
     }
 

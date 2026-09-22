@@ -10,7 +10,8 @@ import { odstupText } from '../lib/odstup';
 import { pripravenoRadky, tydenSouhrn } from '../lib/tvojeCesta.ts';
 import { uvitaniZavreno, zavriUvitani, jeUvitaciDen } from '../lib/uvitani.ts';
 import { useTed } from '../context/TedContext';
-import { DnesHero, jeTreninkHotovy, type Adherence } from './DnesHero';
+import { DnesHero } from './DnesHero';
+import { jeTreninkHotovy, rozpracovaneCviky, type Adherence } from '../lib/trenink.ts';
 import { RadekTeda } from './RadekTeda';
 import { CasovaOsaDne } from './CasovaOsaDne';
 import { TvojeCesta } from './TvojeCesta';
@@ -131,7 +132,8 @@ export const DnesObrazovka: React.FC<Props> = ({
   const maTrenink = todayWorkout.exercises.length > 0;
   const treninkHotovy = jeTreninkHotovy(todayWorkout, stav);
   const nejblizsi = !maTrenink ? najdiNejblizsiTrenink(workouts) : null;
-  const tyden = tydenSouhrn(workouts, weekMeals);
+  const tyden = tydenSouhrn(workouts, weekMeals, maTrenink ? treninkHotovy : null);
+  const rozpracovano = rozpracovaneCviky(todayWorkout, stav);
   const pripraveno = pripravenoRadky({
     jidelNaTyden: tyden.jidelCelkem,
     treninkuNaTyden: tyden.treninkuCelkem,
@@ -207,6 +209,7 @@ export const DnesObrazovka: React.FC<Props> = ({
         targetCalories={preferences.dailyCalorieTarget}
         weightRecords={weightRecords}
         targetWeightKg={preferences.targetWeightKg}
+        targetWeightAuto={preferences.targetWeightAuto === true}
         stav={stav}
         onSelectTab={onSelectTab}
         onToggleMeal={onToggleMeal}
@@ -225,7 +228,7 @@ export const DnesObrazovka: React.FC<Props> = ({
 
       <CasovaOsaDne
         meals={meals}
-        treninek={maTrenink ? { nazev: todayWorkout.title, delkaMin: todayWorkout.durationMin, hotovo: treninkHotovy } : null}
+        treninek={maTrenink ? { nazev: todayWorkout.title, delkaMin: todayWorkout.durationMin, hotovo: treninkHotovy, rozpracovano } : null}
         dalsiTreninkText={nejblizsi ? `${nejblizsi.kdyText}: ${nejblizsi.nazev}` : null}
         preferences={preferences}
         onToggleMeal={onToggleMeal}
@@ -242,6 +245,7 @@ export const DnesObrazovka: React.FC<Props> = ({
         targetWeightKg={preferences.targetWeightKg}
         dokonceniISO={dokonceniISO}
         treninky={workouts}
+        dnesTreninekHotovy={maTrenink ? treninkHotovy : null}
         dnyJidel={weekMeals}
         polozekNakupu={polozekNakupu}
         onOpenWeightModal={onOpenWeightModal}

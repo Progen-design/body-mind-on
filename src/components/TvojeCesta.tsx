@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from 'motion/react';
 import { Flame, Sparkles } from 'lucide-react';
 import type { WeightRecord, WorkoutDay } from '../types';
 import { useTed } from '../context/TedContext';
+import { textCviku } from '../lib/trenink.ts';
 import { bodyNaPolyline, grafVahy, pripravenoRadky, serieDni, tydenSouhrn } from '../lib/tvojeCesta.ts';
 
 /**
@@ -19,6 +20,8 @@ interface Props {
   /** `completed_at` z `daily_activity_completions` (jídla i tréninky). */
   dokonceniISO: string[];
   treninky: WorkoutDay[];
+  /** Je dnešní trénink hotový podle hero (vč. hodinek)? `null` = dnes žádný není. */
+  dnesTreninekHotovy: boolean | null;
   dnyJidel: { meals: { completed: boolean }[] }[];
   polozekNakupu: number;
   onOpenWeightModal: () => void;
@@ -49,6 +52,7 @@ export const TvojeCesta: React.FC<Props> = ({
   targetWeightKg,
   dokonceniISO,
   treninky,
+  dnesTreninekHotovy,
   dnyJidel,
   polozekNakupu,
   onOpenWeightModal,
@@ -58,7 +62,7 @@ export const TvojeCesta: React.FC<Props> = ({
 
   const graf = grafVahy(weightRecords, targetWeightKg, new Date(), SIRKA, VYSKA);
   const serie = serieDni(dokonceniISO);
-  const tyden = tydenSouhrn(treninky, dnyJidel);
+  const tyden = tydenSouhrn(treninky, dnyJidel, dnesTreninekHotovy);
   const pripraveno = pripravenoRadky({
     jidelNaTyden: tyden.jidelCelkem,
     treninkuNaTyden: tyden.treninkuCelkem,
@@ -157,6 +161,11 @@ export const TvojeCesta: React.FC<Props> = ({
                 <div className="mt-1.5">
                   <Pruh hotovo={tyden.treninkuHotovo} celkem={tyden.treninkuCelkem} />
                 </div>
+                {tyden.rozpracovano && (
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Dnes rozpracováno: {textCviku(tyden.rozpracovano.hotovo, tyden.rozpracovano.celkem)}
+                  </p>
+                )}
               </div>
               <div>
                 <div className="flex items-center justify-between gap-2 text-sm">
@@ -185,7 +194,7 @@ export const TvojeCesta: React.FC<Props> = ({
             {pripraveno.map((radek) => (
               <li
                 key={radek}
-                className="px-3 py-1.5 rounded-full bg-slate-900/70 border border-slate-700 text-xs font-semibold text-slate-200"
+                className="max-w-full px-3 py-1.5 rounded-full bg-slate-900/70 border border-slate-700 text-xs font-semibold text-slate-200 break-words"
               >
                 {radek}
               </li>

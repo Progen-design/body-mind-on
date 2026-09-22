@@ -23,8 +23,9 @@ test('hero je nahoře na Dnes a adherenci ze serveru bere DnesObrazovka', () => 
 });
 
 test('trénink v ukazateli platí za odcvičený i bez odškrtnutí, když ho naměřily hodinky', () => {
-  assert.match(HERO, /watch_workout_count/, 'hodinkový trénink se nepočítá');
-  assert.match(HERO, /manual_workout_count/, 'ručně zapsaný trénink se nepočítá');
+  const TRENINK_ = cti('src/lib/trenink.ts');
+  assert.match(TRENINK_, /watch_workout_count/, 'hodinkový trénink se nepočítá');
+  assert.match(TRENINK_, /manual_workout_count/, 'ručně zapsaný trénink se nepočítá');
 });
 
 test('ukazatel Trénink ve dni volna nabídne nejbližší další trénink', () => {
@@ -101,9 +102,36 @@ test('řádek TEDa NENÍ součástí hero — je to samostatná komponenta (bod 
   );
 });
 
-test('kroužek tréninku se plní podle odškrtnutých cviků, Hotovo až po všech (21. 9. 2026)', () => {
-  assert.match(HERO, /export function podilTreninku/, 'chybí podíl odcvičených cviků');
-  assert.match(HERO, /filter\(\(c\) => c\.completed\)\.length \/ cviky\.length/, 'podíl se nepočítá z cviků');
+test('kroužek tréninku se plní podle odškrtnutých cviků, Hotovo až po všech (jeden výpočet v src/lib/trenink.ts)', () => {
+  const TRENINK = cti('src/lib/trenink.ts');
+  assert.match(TRENINK, /export function podilTreninku/, 'chybí podíl odcvičených cviků');
+  assert.match(TRENINK, /filter\(\(c\) => c\.completed\)\.length \/ cviky\.length/, 'podíl se nepočítá z cviků');
+  assert.match(TRENINK, /podilTreninku\(den, stav\) >= 1/, 'Hotovo nesmí svítit před posledním cvikem');
+  assert.match(HERO, /from '\.\.\/lib\/trenink\.ts'/, 'hero neimportuje sdílený výpočet');
+  assert.ok(!/export function podilTreninku/.test(HERO), 'hero má vlastní kopii podilTreninku');
   assert.match(HERO, /podil=\{podilTrenink\}/, 'kroužek nebere podíl cviků');
-  assert.match(HERO, /podilTreninku\(todayWorkout, stav\) >= 1/, 'Hotovo nesmí svítit před posledním cvikem');
+});
+
+test('celé Dnes počítá trénink stejně: hero, osa i Tvoje cesta berou sdílené funkce', () => {
+  const DNES_ = cti('src/components/DnesObrazovka.tsx');
+  assert.match(DNES_, /jeTreninkHotovy\(todayWorkout, stav\)/, 'DnesObrazovka nepoužívá sdílené jeTreninkHotovy');
+  assert.match(DNES_, /rozpracovaneCviky\(todayWorkout, stav\)/);
+  assert.match(DNES_, /tydenSouhrn\(workouts, weekMeals, maTrenink \? treninkHotovy : null\)/, 'týden nezná hotovost dnešního tréninku z hero');
+  assert.match(DNES_, /dnesTreninekHotovy=\{maTrenink \? treninkHotovy : null\}/, 'Tvoje cesta nedostává hotovost z hero');
+  // Nikde v src/ se trénink nesmí brát za splněný z adherence napřímo mimo trenink.ts.
+  for (const soubor of ['DnesHero', 'DnesObrazovka', 'CasovaOsaDne', 'TvojeCesta']) {
+    const kod = cti(`src/components/${soubor}.tsx`).split('\n').filter((r) => !r.trim().startsWith('//') && !r.trim().startsWith('*') && !r.trim().startsWith('/*')).join('\n');
+    assert.ok(!/trenink_splnen|manual_workout_count/.test(kod), `${soubor} bere trénink z adherence napřímo`);
+  }
+});
+
+test('u automatického cíle váhy je v hero malé „(auto)", ručně zadaný cíl ho nemá', () => {
+  assert.match(HERO, /targetWeightAuto \? ' \(auto\)' : ''/);
+  assert.match(cti('src/components/DnesObrazovka.tsx'), /targetWeightAuto=\{preferences\.targetWeightAuto === true\}/);
+});
+
+test('údaje v kroužcích jsou krátké řádky, ne jedna dlouhá věta, která se láme (390 px)', () => {
+  assert.ok(!/cíl \$\{kg\(vahaPokrok\.cilKg\)\} kg`\s*: ''\}`/.test(HERO), 'váha je zase v jednom dlouhém řádku');
+  assert.match(HERO, /radek3\?: string/, 'ukazatel neumí třetí řádek');
+  assert.match(HERO, /line-clamp-2/, 'řádky ukazatele se neořezávají');
 });

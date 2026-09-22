@@ -8,6 +8,7 @@
 import { supabaseServer } from '../lib/supabaseServer.js';
 import { parseSmartScalePreference } from '../lib/smartScalePreference.js';
 import { updateHeightCm } from '../lib/updateHeightCm.js';
+import { urciCilovouVahu, slozMetadataVahy } from '../lib/profileSettingsMeta.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'PATCH' && req.method !== 'POST') {
@@ -24,7 +25,9 @@ export default async function handler(req, res) {
 
     const body = req.body || {};
     const start_weight_kg = body.start_weight_kg != null ? Number(body.start_weight_kg) : null;
-    const goal_weight_kg = body.goal_weight_kg != null ? Number(body.goal_weight_kg) : null;
+    // `null` / prázdné = SMAZAT vlastní cíl, chybějící klíč = neměnit (lib/profileSettingsMeta.js).
+    const cilVaha = urciCilovouVahu(body);
+    const goal_weight_kg = cilVaha.akce === 'nastavit' ? cilVaha.kg : null;
     const avatar_url = typeof body.avatar_url === 'string' ? body.avatar_url.trim() || null : null;
     const daily_email = body.daily_email === false ? false : body.daily_email === true ? true : undefined;
     // „Jak ti máme říkat?" (PROMPT_DNES_HERO.md) — text PŘÍMO V 5. PÁDU, jak
@@ -41,7 +44,7 @@ export default async function handler(req, res) {
     if (start_weight_kg != null && (start_weight_kg < 30 || start_weight_kg > 300)) {
       return res.status(400).json({ error: 'Výchozí váha musí být mezi 30 a 300 kg.' });
     }
-    if (goal_weight_kg != null && (goal_weight_kg < 30 || goal_weight_kg > 300)) {
+    if (cilVaha.akce === 'nastavit' && (!Number.isFinite(goal_weight_kg) || goal_weight_kg < 30 || goal_weight_kg > 300)) {
       return res.status(400).json({ error: 'Cílová váha musí být mezi 30 a 300 kg.' });
     }
 
@@ -60,11 +63,7 @@ export default async function handler(req, res) {
     // updateHeightCm(). Kdyby vstoupila i do tohohle `nextMeta`, endpoint by
     // ji do metadat zapsal podruhé (neškodně, ale zbytečně).
     const currentMeta = user.user_metadata || {};
-    const nextMeta = {
-      ...currentMeta,
-      ...(start_weight_kg != null && { start_weight_kg }),
-      ...(goal_weight_kg != null && { goal_weight_kg }),
-    };
+    const nextMeta = slozMetadataVahy(currentMeta, { startWeightKg: start_weight_kg, cil: cilVaha });
     if (hasSmartScaleInput) {
       const smartScaleMeta = parseSmartScalePreference(body);
       nextMeta.wants_body_tracking = smartScaleMeta.wants_body_tracking;

@@ -45,6 +45,8 @@ interface PreferencesModalProps {
   isOpen: boolean;
   onClose: () => void;
   soucasne: NastaveniProfilu;
+  /** Cíl, který appka spočítá sama (výška, váha, cíl) — placeholder pole Cílová váha. */
+  automatickaCilovaKg?: number | null;
   onSave: (zmeny: Partial<NastaveniProfilu>) => Promise<VysledekUlozeni>;
 }
 
@@ -67,6 +69,7 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
   isOpen,
   onClose,
   soucasne,
+  automatickaCilovaKg = null,
   onSave
 }) => {
   const [data, setData] = useState<NastaveniProfilu>(soucasne);
@@ -311,10 +314,12 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-800">
             <div className="sm:col-span-2 pt-4 -mb-1">
               <p className="text-[11px] text-slate-500">
-                Plán se nepřegeneruje. Cílová váha se jen uloží, výška navíc přepočítá tvůj denní kalorický cíl.
+                Plán se nepřegeneruje. Cílová váha se jen uloží (prázdné pole = automatický cíl), výška navíc přepočítá tvůj denní kalorický cíl.
               </p>
             </div>
             <Pole id="goal_weight_kg" popisek="Cílová váha (kg)" volitelne type="number" step="0.1"
+              placeholder={automatickaCilovaKg != null ? `automaticky ${String(automatickaCilovaKg).replace('.', ',')} kg` : undefined}
+              napoveda="Nech prázdné a cíl spočítáme podle výšky, váhy a cíle. Vlastní číslo má přednost."
               value={data.goal_weight_kg} chyba={chyby.goal_weight_kg}
               onChange={(e) => zmen('goal_weight_kg', e.target.value)} />
             <Pole id="height_cm" popisek="Výška (cm)" volitelne type="number" step="1"

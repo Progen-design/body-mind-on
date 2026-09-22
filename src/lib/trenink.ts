@@ -92,3 +92,57 @@ export function vybranyTrenink(
   }
   return dnesniTrenink(workouts);
 }
+
+/** Stav dne ze serveru (`/api/stats/adherence`). */
+export interface Adherence {
+  planovanych_jidel: number;
+  splnenych_jidel: number;
+  treninkovy_den: boolean;
+  trenink_splnen: boolean;
+  pohyb_min: number;
+  watch_workout_count: number;
+  manual_workout_count: number;
+}
+
+/**
+ * Podíl odcvičených cviků dne (0–1) — JEDINÝ výpočet „jak moc je trénink hotový"
+ * pro hero, časovou osu i „Tvoje cesta" (PROMPT_DOLADENI_DNES.md).
+ *
+ * POZOR: `stav.trenink_splnen` ani `manual_workout_count` se nepoužívají,
+ * když má den seznam cviků. Každé odškrtnutí cviku je v `daily_activity_completions`
+ * řádek s activity_type 'workout', takže `get_daily_adherence` hlásí trénink
+ * jako splněný už po PRVNÍM cviku — kroužek pak svítil „Hotovo" při 2 ze 4 cviků
+ * (nahlášeno 21. 9. 2026). Rozhoduje počet odškrtnutých cviků; hodinky
+ * (`watch_workout_count`) trénink uznají celý.
+ */
+export function podilTreninku(den: WorkoutDay, stav: Adherence | null = null): number {
+  if (den.isCompleted || (stav?.watch_workout_count ?? 0) > 0) return 1;
+  const cviky = den.exercises;
+  if (cviky.length > 0) {
+    return cviky.filter((c) => c.completed).length / cviky.length;
+  }
+  // Den bez seznamu cviků: jediný zdroj je ruční zápis / adherence.
+  return stav?.trenink_splnen === true || (stav?.manual_workout_count ?? 0) > 0 ? 1 : 0;
+}
+
+/** Trénink je hotový, až když jsou odškrtnuté VŠECHNY cviky (nebo ho naměřily hodinky). */
+export function jeTreninkHotovy(den: WorkoutDay, stav: Adherence | null = null): boolean {
+  return podilTreninku(den, stav) >= 1;
+}
+
+/**
+ * Kolik cviků je odškrtnutých z kolika — pro text „2 z 4 cviků". `null`, když
+ * den nemá seznam cviků (pak není co počítat) nebo je hotový celý.
+ */
+export function rozpracovaneCviky(den: WorkoutDay, stav: Adherence | null = null): { hotovo: number; celkem: number } | null {
+  const celkem = den.exercises.length;
+  if (celkem === 0 || jeTreninkHotovy(den, stav)) return null;
+  const hotovo = den.exercises.filter((c) => c.completed).length;
+  return hotovo > 0 ? { hotovo, celkem } : null;
+}
+
+/** „2 z 4 cviků" se správným skloňováním. */
+export function textCviku(hotovo: number, celkem: number): string {
+  const slovo = celkem === 1 ? 'cviku' : 'cviků';
+  return `${hotovo} z ${celkem} ${slovo}`;
+}

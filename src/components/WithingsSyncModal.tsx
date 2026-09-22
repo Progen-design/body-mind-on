@@ -1,174 +1,134 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   X,
-  Wifi,
-  Battery,
   CheckCircle2,
   RefreshCw,
   Smartphone,
   Shield,
-  KeyRound,
-  Eye,
-  EyeOff,
   Unplug,
   Download,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  ExternalLink
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { SyncResult, WithingsConnection } from '../types';
+import { SyncResult } from '../types';
 import { useToast } from '../context/ToastContext';
 import { hodnotaNeboPomlcka } from '../data/adaptery';
+import { apiFetch } from '../lib/api';
+import { odstupText } from '../lib/odstup';
 
+/**
+ * PŘIPOJENÍ WITHINGS — OAUTH, NE POLÍČKO NA TOKEN.
+ *
+ * Do 22. 9. 2026 byl tenhle modal kulisa. „Ověřit a připojit" vzalo jakýkoli
+ * řetězec delší než 12 znaků bez mezer, počkalo 1200 ms a lokálně si napsalo
+ * `isConnected: true`. Na server se neposlalo nic. Stav připojení žil
+ * v `useLocalStorage`, takže s tabulkou `withings_connections` neměl nic
+ * společného, a uživatel četl „Aktivní & Spárováno" nad vymyšlenou baterií
+ * „92 %" a Wi-Fi „Silný (5 GHz)" — obojí natvrdo v JSX, appka ta data
+ * od Withings vůbec nedostává.
+ *
+ * Proto měla `withings_connections` nula řádků: skutečný OAuth
+ * (`/api/withings/connect` → Withings → `/api/withings/callback`) existoval
+ * a fungoval, jen na něj z aplikace nikdy nevedla cesta.
+ *
+ * PROČ SE NEPŘESMĚROVÁVÁ ROVNOU NA `/api/withings/connect`. Endpoint čte
+ * přihlášení z hlavičky `Authorization: Bearer …` (`getAuthUserFromRequest`),
+ * a tu obyčejná navigace prohlížeče neposílá — skončila by na
+ * `/login?withings=login_required`. Posílá se tedy POST přes `apiFetch`
+ * (ten hlavičku doplní), server vrátí `url` do Withings a teprve na tu se
+ * prohlížeč přesměruje.
+ *
+ * STAV PŘIPOJENÍ SI TENHLE MODAL NEDRŽÍ. Jediný zdroj pravdy je
+ * `has_withings_connection` z `/api/profile` — tedy existence řádku
+ * ve `withings_connections`. Modal ho dostává propem a po odpojení si
+ * o čerstvý profil řekne přes `onConnectionChanged`.
+ */
 interface WithingsSyncModalProps {
   isOpen: boolean;
   onClose: () => void;
-  connection: WithingsConnection;
-  onConnectionChange: (next: WithingsConnection) => void;
+  /** `profilData.has_withings_connection` — existence řádku ve `withings_connections`. */
+  isConnected: boolean;
+  /** `profilData.withings_last_sync_at`. null = server zatím nestahoval. */
+  lastSyncedAt: string | null;
   /** Vrací souhrn stažených dat — zapisuje je do stavu aplikace. */
   onManualSync: () => Promise<SyncResult | null>;
+  /** Znovu načte profil, aby se stav připojení po odpojení nezasekl. */
+  onConnectionChanged: () => void;
   isSyncing?: boolean;
-}
-
-/** Kroky "živého" stahování z Withings Cloud. */
-const DOWNLOAD_STEPS = [
-  'Ověřuji přístupový token…',
-  'Navazuji spojení s Withings Cloud…',
-  'Stahuji poslední vážení z Body Scan…',
-  'Načítám tep, HRV a kroky z hodinek…',
-  'Zapisuji měření do profilu…'
-];
-
-const MIN_TOKEN_LENGTH = 12;
-
-function maskToken(token: string): string {
-  const tail = token.slice(-4);
-  return `${'•'.repeat(Math.min(16, Math.max(4, token.length - 4)))}${tail}`;
 }
 
 export const WithingsSyncModal: React.FC<WithingsSyncModalProps> = ({
   isOpen,
   onClose,
-  connection,
-  onConnectionChange,
+  isConnected,
+  lastSyncedAt,
   onManualSync,
+  onConnectionChanged,
   isSyncing = false
 }) => {
   const { showToast } = useToast();
 
-  const [tokenInput, setTokenInput] = useState('');
-  const [showToken, setShowToken] = useState(false);
-  const [tokenError, setTokenError] = useState<string | null>(null);
-  const [isAuthorizing, setIsAuthorizing] = useState(false);
-
-  const [downloadStep, setDownloadStep] = useState<number | null>(null);
+  const [jdeNaWithings, setJdeNaWithings] = useState(false);
+  const [odpojuje, setOdpojuje] = useState(false);
   const [lastResult, setLastResult] = useState<SyncResult | null>(null);
 
-  // Timery je nutné uklidit, aby po zavření modálu nedoběhly do odmontované komponenty.
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-  useEffect(
-    () => () => {
-      timers.current.forEach(clearTimeout);
-      timers.current = [];
-    },
-    []
-  );
-
   useEffect(() => {
-    if (!isOpen) {
-      setTokenError(null);
-      setShowToken(false);
-      setDownloadStep(null);
-    }
+    if (!isOpen) setLastResult(null);
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const wait = (ms: number) =>
-    new Promise<void>(resolve => {
-      const t = setTimeout(resolve, ms);
-      timers.current.push(t);
-    });
-
-  const handleAuthorize = async () => {
-    const token = tokenInput.trim();
-
-    if (token.length < MIN_TOKEN_LENGTH) {
-      setTokenError(`Token je příliš krátký — očekáváme alespoň ${MIN_TOKEN_LENGTH} znaků.`);
-      return;
+  const handleConnect = async () => {
+    setJdeNaWithings(true);
+    try {
+      const odpoved = await apiFetch<{ url?: string }>('/api/withings/connect', { method: 'POST' });
+      if (!odpoved?.url) throw new Error('Server nevrátil adresu pro přihlášení k Withings.');
+      // Odchod z aplikace. Stav připojení se tu nenastavuje — vznikne až tím,
+      // že callback uloží řádek do `withings_connections`.
+      window.location.href = odpoved.url;
+    } catch (err) {
+      setJdeNaWithings(false);
+      showToast({
+        title: 'Připojení se nepodařilo spustit',
+        description: err instanceof Error ? err.message : 'Zkus to prosím za chvíli znovu.',
+        variant: 'error'
+      });
     }
-    if (/\s/.test(token)) {
-      setTokenError('Token nesmí obsahovat mezery. Zkopíruj ho znovu z Withings Developer Portalu.');
-      return;
-    }
-
-    setTokenError(null);
-    setIsAuthorizing(true);
-    await wait(1200);
-
-    onConnectionChange({
-      ...connection,
-      maskedToken: maskToken(token),
-      isConnected: true,
-      lastAuthorizedAt: new Date().toISOString()
-    });
-
-    setIsAuthorizing(false);
-    setTokenInput('');
-    setShowToken(false);
-    showToast({
-      title: 'Withings připojen',
-      description: 'Token byl ověřen, můžeš stáhnout data.',
-      variant: 'success'
-    });
   };
 
-  const handleDisconnect = () => {
-    onConnectionChange({
-      ...connection,
-      maskedToken: '',
-      isConnected: false,
-      lastAuthorizedAt: null
-    });
-    setLastResult(null);
-    showToast({
-      title: 'Withings odpojen',
-      description: 'Token byl odstraněn ze zařízení.',
-      variant: 'info'
-    });
+  const handleDisconnect = async () => {
+    setOdpojuje(true);
+    try {
+      await apiFetch('/api/withings/disconnect', { method: 'POST' });
+      onConnectionChanged();
+      setLastResult(null);
+      showToast({
+        title: 'Withings odpojen',
+        description: 'Přístup jsme na serveru zrušili, data se přestanou stahovat.',
+        variant: 'info'
+      });
+    } catch (err) {
+      showToast({
+        title: 'Odpojení se nepodařilo',
+        description: err instanceof Error ? err.message : 'Zkus to prosím za chvíli znovu.',
+        variant: 'error'
+      });
+    } finally {
+      setOdpojuje(false);
+    }
   };
 
-  const handleLiveDownload = async () => {
-    if (!connection.isConnected || downloadStep !== null) return;
-
+  const handleDownload = async () => {
+    if (!isConnected || isSyncing) return;
     setLastResult(null);
-    for (let i = 0; i < DOWNLOAD_STEPS.length - 1; i++) {
-      setDownloadStep(i);
-      await wait(420);
-    }
-
-    // Poslední krok už skutečně zapisuje data do stavu aplikace.
-    setDownloadStep(DOWNLOAD_STEPS.length - 1);
     const result = await onManualSync();
-    await wait(320);
-
-    setDownloadStep(null);
     setLastResult(result);
   };
 
-  const isDownloading = downloadStep !== null;
-  const progressPercent = isDownloading
-    ? Math.round(((downloadStep! + 1) / DOWNLOAD_STEPS.length) * 100)
-    : 0;
-
-  const authorizedText = connection.lastAuthorizedAt
-    ? new Date(connection.lastAuthorizedAt).toLocaleString('cs-CZ', {
-        day: 'numeric',
-        month: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    : null;
+  // Odstup je naměřený fakt. Rozvrh, jak často server stahuje, se netvrdí.
+  const odstupStazeni = odstupText(lastSyncedAt);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -196,10 +156,12 @@ export const WithingsSyncModal: React.FC<WithingsSyncModalProps> = ({
             </div>
             <div>
               <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
-                Integrace Withings Health
+                Připojení Withings
               </h3>
+              {/* Model zařízení neznáme — z Withings chodí měření, ne název
+                  váhy. „Withings Body Scan Pro" tu bylo natvrdo. */}
               <p className="text-xs text-slate-400">
-                Připojené zařízení: Withings Body Scan Pro
+                Vážení a biometrie z účtu Withings
               </p>
             </div>
           </div>
@@ -215,11 +177,11 @@ export const WithingsSyncModal: React.FC<WithingsSyncModalProps> = ({
 
         {/* Content */}
         <div className="p-5 sm:p-6 space-y-4 overflow-y-auto">
-          {/* Device status card */}
+          {/* Stav připojení. Zdroj je server, ne tenhle modal. */}
           <div className="p-4 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-3">
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-semibold text-white">Stav připojení</span>
-              {connection.isConnected ? (
+              {isConnected ? (
                 <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold text-akcent-lime bg-emerald-950/60 border border-emerald-500/40">
                   <span className="w-1.5 h-1.5 rounded-full bg-akcent-lime animate-pulse" />
                   Aktivní &amp; Spárováno
@@ -232,155 +194,84 @@ export const WithingsSyncModal: React.FC<WithingsSyncModalProps> = ({
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center gap-2">
-                <Battery className="w-4 h-4 text-emerald-400" />
-                <div>
-                  <div className="text-[10px] text-slate-400">Stav baterie</div>
-                  <div className="text-xs font-bold text-white">92 %</div>
-                </div>
-              </div>
-              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center gap-2">
-                <Wifi className="w-4 h-4 text-cyan-400" />
-                <div>
-                  <div className="text-[10px] text-slate-400">Wi-Fi signál</div>
-                  <div className="text-xs font-bold text-white">Silný (5 GHz)</div>
-                </div>
-              </div>
+            {/* Baterie a Wi-Fi signál tu byly natvrdo („92 %", „Silný (5 GHz)").
+                Withings nám nic takového neposílá, takže se nezobrazuje nic —
+                jediné, co o spojení opravdu víme, je kdy server naposled
+                stahoval. */}
+            <div className="text-xs text-slate-400">
+              {isConnected
+                ? odstupStazeni
+                  ? `Server naposled stahoval ${odstupStazeni}`
+                  : 'Připojeno, zatím ale žádné stažení neproběhlo'
+                : 'Účet Withings zatím není propojený.'}
             </div>
           </div>
 
-          {/* API token */}
+          {/* Propojení účtu */}
           <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800 space-y-3">
             <div className="flex items-center gap-2">
-              <KeyRound className="w-4 h-4 text-akcent-cyan" />
+              <Shield className="w-4 h-4 text-akcent-cyan" />
               <div>
-                <div className="text-sm font-semibold text-white">Přístupový token Withings API</div>
+                <div className="text-sm font-semibold text-white">Propojení účtu</div>
                 <div className="text-xs text-slate-400">
-                  Zkopíruj access token z Withings Developer Portalu
+                  Přihlásíš se přímo u Withings. Heslo ani token do aplikace nezadáváš.
                 </div>
               </div>
             </div>
 
-            {connection.isConnected && (
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-[10px] text-slate-400">Uložený token</div>
-                  <div className="text-xs font-mono font-bold text-slate-200 truncate">
-                    {connection.maskedToken || '••••••••'}
-                  </div>
-                  {authorizedText && (
-                    <div className="text-[10px] text-slate-500 mt-0.5">
-                      Autorizováno {authorizedText}
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={handleDisconnect}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-red-300 bg-red-950/50 hover:bg-red-900/60 border border-red-500/40 transition-all active:scale-95 shrink-0"
-                >
-                  <Unplug className="w-3.5 h-3.5" />
-                  <span>Odpojit</span>
-                </button>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <div className="relative">
-                <input
-                  type={showToken ? 'text' : 'password'}
-                  value={tokenInput}
-                  onChange={e => {
-                    setTokenInput(e.target.value);
-                    if (tokenError) setTokenError(null);
-                  }}
-                  placeholder={connection.isConnected ? 'Vložit nový token…' : 'wth_at_…'}
-                  autoComplete="off"
-                  spellCheck={false}
-                  className={`w-full pl-3 pr-11 py-2.5 rounded-xl bg-slate-950 border text-xs font-mono text-slate-100 placeholder:text-slate-600 outline-none transition-all focus:border-cyan-500/60 focus:shadow-[0_0_12px_rgba(0,242,254,0.15)] ${
-                    tokenError ? 'border-red-500/60' : 'border-slate-800'
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowToken(prev => !prev)}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-all"
-                  aria-label={showToken ? 'Skrýt token' : 'Zobrazit token'}
-                >
-                  {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-
-              {tokenError && (
-                <div className="flex items-start gap-1.5 text-[11px] text-red-400">
-                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" />
-                  <span>{tokenError}</span>
-                </div>
-              )}
-
+            {isConnected ? (
               <button
-                onClick={handleAuthorize}
-                disabled={isAuthorizing || tokenInput.trim().length === 0}
+                onClick={handleDisconnect}
+                disabled={odpojuje}
+                className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-red-300 bg-red-950/50 hover:bg-red-900/60 border border-red-500/40 disabled:opacity-50 transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                {odpojuje ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unplug className="w-3.5 h-3.5" />}
+                <span>{odpojuje ? 'Odpojuji…' : 'Odpojit Withings'}</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleConnect}
+                disabled={jdeNaWithings}
                 className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-slate-950 bg-akcent-cyan hover:bg-akcent-cyan/90 disabled:bg-slate-800 disabled:text-slate-500 shadow-[0_0_15px_rgba(0,242,254,0.25)] disabled:shadow-none transition-all active:scale-95 flex items-center justify-center gap-2"
               >
-                {isAuthorizing ? (
+                {jdeNaWithings ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Ověřuji token u Withings…</span>
+                    <span>Přesměrovávám na Withings…</span>
                   </>
                 ) : (
                   <>
-                    <Shield className="w-4 h-4" />
-                    <span>{connection.isConnected ? 'Nahradit token' : 'Ověřit a připojit'}</span>
+                    <ExternalLink className="w-4 h-4" />
+                    <span>Připojit přes Withings</span>
                   </>
                 )}
               </button>
-            </div>
+            )}
           </div>
 
-          {/* Sync toggles */}
-          <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800 space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-sm font-semibold text-white">Automatická ranní synchronizace</div>
-                <div className="text-xs text-slate-400">Ihned po stoupnutí na váhu odeslat data trenérovi</div>
-              </div>
-              <button
-                onClick={() =>
-                  onConnectionChange({ ...connection, autoSyncEnabled: !connection.autoSyncEnabled })
-                }
-                aria-pressed={connection.autoSyncEnabled}
-                aria-label="Automatická ranní synchronizace"
-                className={`w-12 h-6 shrink-0 rounded-full transition-colors p-1 flex items-center ${
-                  connection.autoSyncEnabled ? 'bg-akcent-cyan justify-end' : 'bg-slate-800 justify-start'
-                }`}
-              >
-                <motion.div layout className="w-4 h-4 rounded-full bg-slate-950 shadow-md" />
-              </button>
-            </div>
-          </div>
-
-          {/* Živé stahování dat */}
+          {/* Stažení dat */}
           <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800 space-y-3">
             <div className="flex items-center gap-2">
               <Download className="w-4 h-4 text-akcent-lime" />
               <div>
                 <div className="text-sm font-semibold text-white">Stažení dat ze zařízení</div>
                 <div className="text-xs text-slate-400">
-                  Vážení z Body Scan a biometrie z hodinek se zapíší rovnou do profilu
+                  Vážení z váhy a biometrie z hodinek se zapíší rovnou do profilu
                 </div>
               </div>
             </div>
 
             <button
-              onClick={handleLiveDownload}
-              disabled={!connection.isConnected || isDownloading || isSyncing}
+              onClick={handleDownload}
+              disabled={!isConnected || isSyncing}
               className="w-full py-3 px-4 rounded-2xl text-xs sm:text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500/50 disabled:opacity-50 disabled:hover:bg-slate-900 disabled:hover:border-slate-700 transition-all flex items-center justify-center gap-2"
             >
-              {isDownloading || isSyncing ? (
+              {isSyncing ? (
                 <>
                   <RefreshCw className="w-4 h-4 text-cyan-400 animate-spin" />
-                  <span>{DOWNLOAD_STEPS[downloadStep ?? 0]}</span>
+                  {/* Kroky „Ověřuji přístupový token…" a spol. tu běžely na
+                      timerech, ne podle toho, co server dělal. */}
+                  <span>Stahuji z Withings…</span>
                 </>
               ) : (
                 <>
@@ -390,30 +281,14 @@ export const WithingsSyncModal: React.FC<WithingsSyncModalProps> = ({
               )}
             </button>
 
-            {!connection.isConnected && (
+            {!isConnected && (
               <div className="flex items-start gap-1.5 text-[11px] text-amber-300/90">
                 <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" />
-                <span>Nejdřív vlož a ověř přístupový token — bez něj se data stáhnout nedají.</span>
+                <span>Nejdřív propoj účet Withings — bez něj se data stáhnout nedají.</span>
               </div>
             )}
 
-            {isDownloading && (
-              <div className="space-y-1.5">
-                <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
-                  <motion.div
-                    className="h-full rounded-full bg-gradient-to-r from-akcent-cyan to-akcent-lime"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progressPercent}%` }}
-                    transition={{ duration: 0.35 }}
-                  />
-                </div>
-                <div className="text-[10px] text-slate-500 text-right font-mono">
-                  {progressPercent} %
-                </div>
-              </div>
-            )}
-
-            {lastResult && !isDownloading && (
+            {lastResult && !isSyncing && (
               <motion.div
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -446,7 +321,9 @@ export const WithingsSyncModal: React.FC<WithingsSyncModalProps> = ({
         <div className="p-4 border-t border-slate-800 bg-slate-900/40 flex items-center justify-between gap-3 shrink-0">
           <div className="text-xs text-slate-400 flex items-center gap-1 min-w-0">
             <Shield className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-            <span className="truncate">Token zůstává jen na tomto zařízení</span>
+            {/* Dřív tu stálo „Token zůstává jen na tomto zařízení" — a byla to
+                pravda přesně proto, že se nikam neposílal a nic nepřipojoval. */}
+            <span className="truncate">Přístup můžeš kdykoli odpojit</span>
           </div>
           <button
             onClick={onClose}

@@ -3,6 +3,7 @@
 // Relativni cesta zamerne misto aliasu @lib - soubor pak jde spustit
 // i cistym Nodem (viz tools/overit-adaptery.ts), nejen pres Vite.
 import { urciOsloveni } from '../lib/vokativ.ts';
+import { cilovaVaha } from '../lib/cilovaVaha.ts';
 import { POSITIVE_HABITS, NEGATIVE_HABITS } from '../../lib/habits.js';
 // Klice odskrtnutych aktivit maji jediny zdroj pravdy v lib/ — sdileny se
 // serverem. Format se nesmi menit, rozparoval by uz ulozene radky.
@@ -1016,7 +1017,14 @@ export function naPreference(odpoved: ProfilOdpoved, puvodni: UserPreferences): 
     carbsTargetG: sacharidy > 0 ? sacharidy : puvodni.carbsTargetG,
     fatTargetG: tuky > 0 ? tuky : puvodni.fatTargetG,
     currentHeightCm: cislo(odpoved.user?.height_cm ?? bm.height_cm, puvodni.currentHeightCm),
-    targetWeightKg: cislo(odpoved.user?.goal_weight_kg, puvodni.targetWeightKg),
+    // Ručně zadaný cíl, jinak automatický z výšky, váhy a cíle (src/lib/cilovaVaha.ts).
+    // Dřív tu spadlo na `initialData` = natvrdo 102 kg u všech bez zadaného cíle.
+    targetWeightKg: cilovaVaha(
+      odpoved.user?.goal_weight_kg,
+      bm.weight_kg,
+      odpoved.user?.height_cm ?? bm.height_cm,
+      bm.goal
+    ).kg ?? puvodni.targetWeightKg,
     weeklyWorkoutsTarget: cislo(bm.weekly_sessions, puvodni.weeklyWorkoutsTarget)
   };
 }

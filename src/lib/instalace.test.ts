@@ -8,6 +8,9 @@ import { readFileSync } from 'node:fs';
 import {
   KLIC_ZAVRENO,
   PLATNOST_ZAVRENI_DNI,
+  KROKY_ANDROID,
+  KROKY_IOS,
+  POZNAMKY_IOS,
   URL_NAVODU,
   jeStandalone,
   jeZavreno,
@@ -220,4 +223,39 @@ test('QR se kreslí lokálně z balíčku qrcode, ne z cizího endpointu', () =>
   const navod = cti('../components/InstalaceNavod.tsx');
   assert.match(navod, /import\('qrcode'\)/);
   assert.doesNotMatch(navod, /api\.qrserver|chart\.googleapis|quickchart|<img[^>]+qr/i);
+});
+
+// ---------------------------------------------------------------- texty kroků (iOS 26)
+//
+// iOS 26 Safari nemá Sdílet ve spodní liště — je v menu vedle adresy.
+// Starý první krok „klepni na Sdílet dole" nechal lidi bez tlačítka.
+
+test('iOS návod má 4 kroky a první vede do menu vedle adresy', () => {
+  assert.equal(KROKY_IOS.length, 4);
+  assert.match(KROKY_IOS[0], /vedle adresy/);
+  assert.match(KROKY_IOS[0], /na starším iOS na ikonu Sdílet dole/, 'starší iOS má Sdílet dole pořád');
+  assert.equal(KROKY_IOS[1], 'Vyber Sdílet.');
+  assert.match(KROKY_IOS[2], /Přidat na plochu/);
+  assert.match(KROKY_IOS[3], /Otevřít jako webovou aplikaci/);
+  assert.ok(!KROKY_IOS.some((k) => /Sdílet dole v Safari/.test(k)), 'vrátil se návod pro starou spodní lištu');
+});
+
+test('poznámky pod iOS kroky: jen Safari + co dělat, když se otevře web', () => {
+  assert.equal(POZNAMKY_IOS.length, 2);
+  assert.match(POZNAMKY_IOS[0], /Funguje jen v Safari/);
+  assert.match(POZNAMKY_IOS[1], /smaž ikonu z plochy a přidej ji znovu ze Safari/);
+});
+
+test('Android bez výzvy: stejný formát, ⋮ vpravo nahoře', () => {
+  assert.equal(KROKY_ANDROID[0], '⋮ vpravo nahoře → Přidat na plochu / Nainstalovat aplikaci.');
+});
+
+test('kroky návodu nevypadají jako tlačítka', () => {
+  const navod = cti('../components/InstalaceNavod.tsx');
+  const krok = navod.slice(navod.indexOf('const Krok: React.FC'), navod.indexOf('const UvodKroku'));
+  assert.ok(krok.length > 0, 'komponenta Krok nenalezena');
+  assert.doesNotMatch(krok, /hover:|active:|cursor-pointer|<button|onClick/, 'krok vypadá nebo se chová jako tlačítko');
+  assert.doesNotMatch(krok, /rounded-2xl|bg-povrch/, 'krok je zase karta');
+  assert.match(krok, /border-b/, 'kroky dělí tenká linka');
+  assert.match(navod, /Postup v \{kde\} \(nic tady neklikáš\):/);
 });

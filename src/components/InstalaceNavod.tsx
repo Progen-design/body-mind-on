@@ -3,6 +3,7 @@ import {
   Share,
   SquarePlus,
   CheckCircle2,
+  Ellipsis,
   EllipsisVertical,
   Download,
   Smartphone,
@@ -11,6 +12,9 @@ import {
 } from 'lucide-react';
 import { naviguj } from '../routing';
 import {
+  KROKY_ANDROID,
+  KROKY_IOS,
+  POZNAMKY_IOS,
   URL_NAVODU,
   aktualniVyzva,
   beziZPlochy,
@@ -25,7 +29,7 @@ import {
  *
  * Varianty (vybírá `variantaNavodu()` v lib/instalace.ts):
  * - standalone: hotovo, appka už běží z plochy,
- * - iOS: tři kroky přes Sdílet v Safari,
+ * - iOS: čtyři kroky přes menu vedle adresy → Sdílet (iOS 26), texty v lib/instalace.ts,
  * - Android: tlačítko „Nainstalovat" (když Chrome poslal výzvu), jinak kroky přes ⋮,
  * - desktop: QR kód na tuhle stránku, ať se otevře v telefonu.
  *
@@ -49,35 +53,57 @@ const InstalaceNavod: React.FC = () => {
   return <NavodDesktop />;
 };
 
+/**
+ * Jeden krok návodu. NESMÍ VYPADAT JAKO TLAČÍTKO — dřív to byly karty
+ * s rámečkem a lidé na ně klepali, místo aby hledali menu v Safari. Teď je
+ * to řádek: číslo, ikona, text, mezi kroky jen tenká linka. Žádný hover,
+ * žádný kurzor, žádné pozadí.
+ */
 const Krok: React.FC<{ cislo: number; ikona: React.ReactNode; children: React.ReactNode }> = ({ cislo, ikona, children }) => (
-  <li className="flex items-center gap-3 p-3.5 rounded-2xl bg-povrch border border-slate-800">
-    <span className="w-7 h-7 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-xs font-bold text-slate-300 shrink-0">
-      {cislo}
+  <li className="flex items-center gap-3 py-3 border-b border-slate-800/70 last:border-b-0">
+    <span className="w-5 text-sm font-bold text-slate-500 tabular-nums shrink-0" aria-hidden="true">
+      {cislo}.
     </span>
-    <span className="w-9 h-9 rounded-xl bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-akcent-cyan shrink-0">
+    <span className="flex items-center gap-1 text-akcent-cyan shrink-0" aria-hidden="true">
       {ikona}
     </span>
     <span className="text-sm text-slate-200 leading-snug">{children}</span>
   </li>
 );
 
+/** Řádek nad kroky — ať je jasné, že tady se nic neklepe. */
+const UvodKroku: React.FC<{ kde: string }> = ({ kde }) => (
+  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+    Postup v {kde} (nic tady neklikáš):
+  </p>
+);
+
+const IKONY_IOS = [
+  <>
+    <Ellipsis className="w-5 h-5" />
+    <Share className="w-3.5 h-3.5 opacity-70" />
+  </>,
+  <Share className="w-5 h-5" />,
+  <SquarePlus className="w-5 h-5" />,
+  <CheckCircle2 className="w-5 h-5" />,
+];
+
 const NavodIos: React.FC = () => (
   <div className="space-y-3">
-    <ol className="space-y-2.5">
-      <Krok cislo={1} ikona={<Share className="w-4 h-4" />}>
-        Klepni na <strong className="text-white">Sdílet</strong> dole v Safari.
-      </Krok>
-      <Krok cislo={2} ikona={<SquarePlus className="w-4 h-4" />}>
-        Sjeď na <strong className="text-white">Přidat na plochu</strong>.
-      </Krok>
-      <Krok cislo={3} ikona={<CheckCircle2 className="w-4 h-4" />}>
-        Potvrď <strong className="text-white">Přidat</strong>.
-      </Krok>
+    <UvodKroku kde="Safari" />
+    <ol>
+      {KROKY_IOS.map((text, i) => (
+        <Krok key={text} cislo={i + 1} ikona={IKONY_IOS[i]}>{text}</Krok>
+      ))}
     </ol>
-    <p className="flex items-start gap-2 text-xs text-slate-400">
-      <Info className="w-4 h-4 shrink-0 text-amber-300" />
-      <span>Funguje jen v Safari, ne v Chrome/Instagram prohlížeči.</span>
-    </p>
+    <div className="space-y-2 pt-1">
+      {POZNAMKY_IOS.map((poznamka) => (
+        <p key={poznamka} className="flex items-start gap-2 text-xs text-slate-400">
+          <Info className="w-4 h-4 shrink-0 text-amber-300" />
+          <span>{poznamka}</span>
+        </p>
+      ))}
+    </div>
   </div>
 );
 
@@ -105,18 +131,16 @@ const NavodAndroid: React.FC = () => {
     );
   }
 
+  const ikony = [<EllipsisVertical className="w-5 h-5" />, <CheckCircle2 className="w-5 h-5" />];
   return (
-    <ol className="space-y-2.5">
-      <Krok cislo={1} ikona={<EllipsisVertical className="w-4 h-4" />}>
-        V Chromu klepni vpravo nahoře na <strong className="text-white">⋮</strong>.
-      </Krok>
-      <Krok cislo={2} ikona={<SquarePlus className="w-4 h-4" />}>
-        Vyber <strong className="text-white">Přidat na plochu</strong> nebo <strong className="text-white">Nainstalovat aplikaci</strong>.
-      </Krok>
-      <Krok cislo={3} ikona={<CheckCircle2 className="w-4 h-4" />}>
-        Potvrď — ikona BMON se objeví na ploše.
-      </Krok>
-    </ol>
+    <div className="space-y-3">
+      <UvodKroku kde="Chromu" />
+      <ol>
+        {KROKY_ANDROID.map((text, i) => (
+          <Krok key={text} cislo={i + 1} ikona={ikony[i]}>{text}</Krok>
+        ))}
+      </ol>
+    </div>
   );
 };
 

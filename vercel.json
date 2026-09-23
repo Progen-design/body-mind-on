@@ -77,7 +77,7 @@
     },
     {
       "path": "/api/cron/generate-recipes",
-      "schedule": "15 1 * * 0"
+      "schedule": "15 3 * * *"
     },
     {
       "path": "/api/cron/sweep-catalog-activation",

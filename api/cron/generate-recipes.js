@@ -1,6 +1,9 @@
-// GET/POST /api/cron/generate-recipes — týdenní doplňování katalogu (CRON_SECRET)
+// GET/POST /api/cron/generate-recipes — denní doplňování katalogu (CRON_SECRET)
 //
-// Od 21. 9. 2026 1× týdně (neděle v noci) a jen s reálnou poptávkou; dřív 3× denně.
+// Od 24. 9. 2026 1× denně (03:15 UTC) a jen s reálnou poptávkou. 21.–24. 9. běžel
+// 1× týdně, předtím 3× denně. Plýtvání drží poptávková brána
+// (lib/recipeGenerationNeed.js), max 2 pokusy na položku a denní strop batch
+// rozpočtu v lib/openai.js — ne frekvence cronu (PR #248).
 // Ruční spuštění: POST /api/admin/generate-recipes (viz scripts/_run-queue.mjs).
 //
 // Uzavírá smyčku, která do teď potřebovala člověka:
@@ -9,7 +12,7 @@
 //   →  řádek v recipe_generation_queue  →  TENHLE CRON  →  nový recept v katalogu
 //
 // Fronta se tedy plní sama z reálné poptávky — z toho, co plánovači při skládání
-// jídelníčků skutečně chybělo. Tenhle cron ji jen jednou týdně vybere.
+// jídelníčků skutečně chybělo. Tenhle cron ji jednou denně vybere.
 //
 // Bezpečnost obsahu neřeší tahle route, ale brány pod ní: nutrice se počítá ze
 // surovin (jinak se recept nezapíše), kalorické pásmo slotu, Atwater, počet

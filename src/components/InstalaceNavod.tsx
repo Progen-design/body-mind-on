@@ -176,9 +176,16 @@ const Krok: React.FC<{ cislo: number; krok: KrokNavodu }> = ({ cislo, krok }) =>
         className={`w-10 flex items-center justify-center gap-1 shrink-0 ${krok.zvyrazneny ? 'text-amber-300' : 'text-akcent-cyan'}`}
         aria-hidden="true"
       >
-        {IKONY[krok.ikona]}
+        {/* Ikonu Sdílet vedle adresy lidé na iPhonu přehlédnou — je malá
+            a bez popisku. Tady je větší a pod textem je slovně popsaná. */}
+        {krok.popisIkony && krok.ikona === 'sdilet' ? <Share className="w-6 h-6" /> : IKONY[krok.ikona]}
       </span>
-      <span className="text-sm text-slate-200 leading-snug">{krok.text}</span>
+      <span className="text-sm text-slate-200 leading-snug">
+        {krok.text}
+        {krok.popisIkony && (
+          <span className="block mt-0.5 text-[11px] text-slate-500">{krok.popisIkony}</span>
+        )}
+      </span>
     </div>
     {krok.zvyrazneny && <KopirovatOdkaz />}
   </li>

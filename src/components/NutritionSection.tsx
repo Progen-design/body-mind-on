@@ -11,7 +11,9 @@ import {
   Flame,
   Sparkles,
   Sliders,
-  Plus
+  Plus,
+  Camera,
+  Trash2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Vysvetlivka } from './Vysvetlivka';
@@ -19,8 +21,8 @@ import { NadpisSekce } from './NadpisSekce';
 import { CalorieMismatchBanner } from './CalorieMismatchBanner';
 import { PruhDnu } from './PruhDnu';
 import { MealItem, ShoppingItem, UserPreferences } from '../types';
-import { NesouladCile, zkratkaDne } from '../data/adaptery';
-import type { TydenniDenJidel } from '../data/adaptery';
+import { NesouladCile, denniPrehled, zkratkaDne } from '../data/adaptery';
+import type { TydenniDenJidel, ZapisMimoPlan } from '../data/adaptery';
 import { denniMakra } from '../lib/makra';
 import {
   pocetJidelSlovy,
@@ -66,6 +68,10 @@ interface NutritionSectionProps {
   onOpenShoppingList: () => void;
   onExportPdf: () => void;
   onAddCustomMeal?: () => void;
+  /** Jídlo snězené mimo plán (quick_food_logs) — přičítá se k vybranému dni. */
+  zapisyMimoPlan?: ZapisMimoPlan[];
+  onZapsatMimoPlan?: () => void;
+  onSmazatMimoPlan?: (zapis: ZapisMimoPlan) => void;
 }
 
 export const NutritionSection: React.FC<NutritionSectionProps> = ({
@@ -86,7 +92,10 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
   onOpenWeeklyPlan,
   onOpenShoppingList,
   onExportPdf,
-  onAddCustomMeal
+  onAddCustomMeal,
+  zapisyMimoPlan = [],
+  onZapsatMimoPlan,
+  onSmazatMimoPlan
 }) => {
   // null = uživatel zatím nic nevybral, den se odvodí z dat (jeDnes).
   // Stejný vzor jako `selectedDayName` ve WorkoutSection — uložené datum by
@@ -99,6 +108,10 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
   // KARTA MAKRO POČÍTÁ VYBRANÝ DEN, NE POŘÁD DNEŠEK — jádro bodu 9.8;
   // jinak by přepínač lhal.
   const souhrn = souhrnDneJidel(den);
+  // Plán + jídlo mimo plán za tentýž den. Velké číslo karty je od teď
+  // součet obojího — dřív ukazovalo jen odškrtnutý plán.
+  const prehled = denniPrehled(targetCalories, souhrn, zapisyMimoPlan, den?.datum);
+  const cz = (n: number) => n.toLocaleString('cs-CZ');
   // Odškrtávat jde jen dnešek — viz komentář u checkboxu níž.
   const jeDnesek = den?.jeDnes ?? false;
   const prohlizisJinyDenNezDnes = !!den && !den.jeDnes;
@@ -129,7 +142,7 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Zaznamenáno z jídelníčku{' '}
+                Snědeno{' '}
                 <Vysvetlivka pojem="makroziviny" />
               </span>
               {/* „Fáze: Čistá hypertrofie" byla natvrdo pro každého bez ohledu
@@ -138,7 +151,7 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
 
             <div className="flex items-baseline gap-3">
               <span className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-                {souhrn.kcalSnedeno.toLocaleString('cs-CZ')}
+                {cz(prehled.celkemKcal)}
               </span>
               <span className="text-sm sm:text-base text-slate-400 font-medium">
                 kcal / cíl {targetCalories.toLocaleString('cs-CZ')} kcal
@@ -147,6 +160,15 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
                 {meals.filter(meal => meal.completed).length} z {meals.length} jídel zaznamenáno
               </span>
             </div>
+
+            {/* Cíl · Plán · Mimo plán · Zbývá. Zbývá smí být záporné —
+                přejedení cíle se neschovává za nulu. */}
+            <p className="text-xs text-slate-400">
+              Cíl {cz(prehled.cilKcal)} · Plán {cz(prehled.planKcal)} · Mimo plán {cz(prehled.mimoPlanKcal)} ·{' '}
+              <span className={prehled.zbyvaKcal < 0 ? 'text-amber-300 font-bold' : 'text-slate-200 font-bold'}>
+                Zbývá {prehled.zbyvaKcal < 0 ? '−' : ''}{cz(Math.abs(prehled.zbyvaKcal))}
+              </span>
+            </p>
           </div>
 
           {/* Segmented Macro Bar */}
@@ -173,22 +195,64 @@ export const NutritionSection: React.FC<NutritionSectionProps> = ({
             <div className="flex items-center justify-between text-xs font-bold">
               <div className="flex items-center gap-1.5 text-makro-bilkoviny">
                 <span className="w-2 h-2 rounded-full bg-makro-bilkoviny" />
-                <span>Bílkoviny {proteinPct} % ({souhrn.bilkovinyG} g)</span>
+                <span>Bílkoviny {proteinPct} % ({prehled.bilkovinyG} g)</span>
               </div>
               <div className="flex items-center gap-1.5 text-makro-sacharidy">
                 <span className="w-2 h-2 rounded-full bg-makro-sacharidy" />
-                <span>Sacharidy {carbsPct} % ({souhrn.sacharidyG} g)</span>
+                <span>Sacharidy {carbsPct} % ({prehled.sacharidyG} g)</span>
               </div>
               <div className="flex items-center gap-1.5 text-makro-tuky">
                 <span className="w-2 h-2 rounded-full bg-makro-tuky" />
-                <span>Tuky {fatPct} % ({souhrn.tukyG} g)</span>
+                <span>Tuky {fatPct} % ({prehled.tukyG} g)</span>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Jídlo mimo plán vybraného dne */}
+        {prehled.zapisyDne.length > 0 && (
+          <ul className="mt-4 space-y-1.5" aria-label="Jídlo mimo plán">
+            {prehled.zapisyDne.map((z) => (
+              <li key={z.id} className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
+                {z.fotoUrl ? (
+                  <img src={z.fotoUrl} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                ) : (
+                  <span className="w-9 h-9 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0">
+                    <Utensils className="w-4 h-4 text-slate-500" />
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold text-slate-200 truncate">{z.popis || 'Jídlo mimo plán'}</div>
+                  <div className="text-[11px] text-slate-500">
+                    {cz(z.kcal)} kcal · B {z.protein} g · S {z.carbs} g · T {z.fat} g{z.upraveno ? '' : ' · odhad AI'}
+                  </div>
+                </div>
+                {onSmazatMimoPlan && (
+                  <button
+                    type="button"
+                    onClick={() => onSmazatMimoPlan(z)}
+                    aria-label={`Smazat ${z.popis || 'zápis mimo plán'}`}
+                    className="p-2 rounded-lg text-slate-500 hover:text-red-300"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
         {/* Nutrition Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5 pt-5 mt-5 border-t border-slate-800/80">
+          {onZapsatMimoPlan && (
+            <button
+              onClick={onZapsatMimoPlan}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-950 bg-akcent-cyan transition-all active:scale-95"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>Zapsat mimo plán</span>
+            </button>
+          )}
           <button
             onClick={onOpenWeeklyPlan}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-200 bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500/40 transition-all active:scale-95"

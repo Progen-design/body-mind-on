@@ -1299,3 +1299,103 @@ export function rozeberRadekSuroviny(
 
   return { nazev: text, mnozstvi: null, jednotka: '' };
 }
+
+// ---------------------------------------------------------------- jídlo mimo plán
+
+/** Jeden zápis jídla mimo plán (`quick_food_logs`), jak ho ukazuje UI. */
+export interface ZapisMimoPlan {
+  id: string;
+  zdroj: 'foto' | 'text';
+  popis: string;
+  fotoUrl: string | null;
+  kcal: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  /** Jak si byl model jistý. null = neřekl. */
+  jistota: 'low' | 'medium' | 'high' | null;
+  upraveno: boolean;
+  /** Den (YYYY-MM-DD, Praha), do jehož součtu zápis patří. */
+  den: string;
+  vytvoreno: string;
+}
+
+/** Řádek z `/api/nutrition/quick-log` → zápis pro UI. Nesmyslné řádky vypadnou. */
+export function naZapisMimoPlan(r: any): ZapisMimoPlan | null {
+  if (!r || typeof r.id !== 'string') return null;
+  const jistota = r.ai_confidence === 'low' || r.ai_confidence === 'medium' || r.ai_confidence === 'high'
+    ? r.ai_confidence
+    : null;
+  return {
+    id: r.id,
+    zdroj: r.zdroj === 'foto' ? 'foto' : 'text',
+    popis: String(r.popis ?? '').trim(),
+    fotoUrl: typeof r.foto_url === 'string' ? r.foto_url : null,
+    kcal: Math.round(cislo(r.kcal)),
+    protein: cislo(r.protein_g),
+    carbs: cislo(r.carbs_g),
+    fat: cislo(r.fat_g),
+    jistota,
+    upraveno: r.upraveno_uzivatelem === true,
+    den: String(r.plan_day ?? ''),
+    vytvoreno: String(r.created_at ?? ''),
+  };
+}
+
+export function naZapisyMimoPlan(radky: unknown): ZapisMimoPlan[] {
+  return (Array.isArray(radky) ? radky : [])
+    .map(naZapisMimoPlan)
+    .filter((z): z is ZapisMimoPlan => z !== null);
+}
+
+/**
+ * DENNÍ PŘEHLED S JÍDLEM MIMO PLÁN.
+ *
+ * „Cíl 2200 · Plán 1800 · Mimo plán 450 · Zbývá −50". `Plán` je to, co
+ * uživatel z jídelníčku odškrtl jako snědené (stejné číslo jako dřív velké
+ * číslo karty), `Mimo plán` součet zápisů za TENTÝŽ den. Zbývá smí být
+ * záporné — přejedení cíle se neschovává za nulu.
+ *
+ * Součet mimo plán se počítá jen ze zápisů s `den === datum` — přepínač dnů
+ * v jídelníčku ukazuje vybraný den, ne pořád dnešek.
+ */
+export interface DenniPrehled {
+  cilKcal: number;
+  planKcal: number;
+  mimoPlanKcal: number;
+  celkemKcal: number;
+  zbyvaKcal: number;
+  bilkovinyG: number;
+  sacharidyG: number;
+  tukyG: number;
+  zapisyDne: ZapisMimoPlan[];
+}
+
+export function denniPrehled(
+  cilKcal: number,
+  zPlanu: { kcalSnedeno: number; bilkovinyG: number; sacharidyG: number; tukyG: number },
+  zapisy: ZapisMimoPlan[],
+  datum: string | null | undefined
+): DenniPrehled {
+  const zapisyDne = datum ? (zapisy || []).filter((z) => z.den === datum) : [];
+  const secti = (klic: 'kcal' | 'protein' | 'carbs' | 'fat') =>
+    zapisyDne.reduce((acc, z) => acc + (Number(z[klic]) || 0), 0);
+  const naDesetiny = (n: number) => Math.round(n * 10) / 10;
+
+  const cil = Math.round(Number(cilKcal) || 0);
+  const planKcal = Math.round(Number(zPlanu.kcalSnedeno) || 0);
+  const mimoPlanKcal = Math.round(secti('kcal'));
+  const celkemKcal = planKcal + mimoPlanKcal;
+
+  return {
+    cilKcal: cil,
+    planKcal,
+    mimoPlanKcal,
+    celkemKcal,
+    zbyvaKcal: cil - celkemKcal,
+    bilkovinyG: naDesetiny((Number(zPlanu.bilkovinyG) || 0) + secti('protein')),
+    sacharidyG: naDesetiny((Number(zPlanu.sacharidyG) || 0) + secti('carbs')),
+    tukyG: naDesetiny((Number(zPlanu.tukyG) || 0) + secti('fat')),
+    zapisyDne,
+  };
+}

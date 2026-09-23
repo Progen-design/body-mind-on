@@ -223,25 +223,27 @@ test('QR se kreslí lokálně z balíčku qrcode, ne z cizího endpointu', () =>
 // Reálné UA z 09/2026. iOS 26 Safari má v UA zmražené „iPhone OS 18_6"
 // a „Version/26.0".
 
+const IOS = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko)';
+
 const UA_PROHLIZECU: Array<[string, string, RozpoznanyProhlizec]> = [
   ['iOS 26 Safari',
-    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1',
+    `${IOS} Version/26.0 Mobile/15E148 Safari/604.1`,
     { platforma: 'ios', prohlizec: 'safari' }],
   ['iOS Chrome (CriOS)',
-    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/140.0.7339.101 Mobile/15E148 Safari/604.1',
+    `${IOS} CriOS/140.0.7339.101 Mobile/15E148 Safari/604.1`,
     { platforma: 'ios', prohlizec: 'chrome' }],
   ['iOS Firefox (FxiOS)',
-    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/143.0 Mobile/15E148 Safari/605.1.15',
+    `${IOS} FxiOS/143.0 Mobile/15E148 Safari/605.1.15`,
     { platforma: 'ios', prohlizec: 'firefox' }],
   ['iOS Edge (EdgiOS)',
-    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/140.0.3485.54 Version/18.0 Mobile/15E148 Safari/604.1',
+    `${IOS} EdgiOS/140.0.3485.54 Version/18.0 Mobile/15E148 Safari/604.1`,
     { platforma: 'ios', prohlizec: 'edge' }],
+  ['iOS Opera (OPT)',
+    `${IOS} Version/18.0 OPT/5.4.0 Mobile/15E148`,
+    { platforma: 'ios', prohlizec: 'opera' }],
   ['Instagram iOS',
-    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 398.0.0.28.93 (iPhone15,3; iOS 18_6; cs_CZ; cs; scale=3.00; 1290x2796; 745216874)',
+    `${IOS} Mobile/15E148 Instagram 398.0.0.28.93 (iPhone15,3; iOS 18_6; cs_CZ; cs; scale=3.00; 1290x2796; 745216874)`,
     { platforma: 'ios', prohlizec: 'inapp' }],
-  ['Facebook Android (FB_IAB/FBAV)',
-    'Mozilla/5.0 (Linux; Android 14; SM-S918B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/140.0.7339.51 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/490.0.0.44.109;]',
-    { platforma: 'android', prohlizec: 'inapp' }],
   ['Android Chrome',
     'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36',
     { platforma: 'android', prohlizec: 'chrome' }],
@@ -254,6 +256,18 @@ const UA_PROHLIZECU: Array<[string, string, RozpoznanyProhlizec]> = [
   ['Firefox Android',
     'Mozilla/5.0 (Android 14; Mobile; rv:143.0) Gecko/143.0 Firefox/143.0',
     { platforma: 'android', prohlizec: 'firefox' }],
+  ['Opera Android (OPR)',
+    'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36 OPR/91.0.4516.84507',
+    { platforma: 'android', prohlizec: 'opera' }],
+  // Brave na Androidu většinou posílá UA shodný s Chromem; token „Brave"
+  // má jen v některých verzích. S tokenem → brave, bez něj chrome (kroky
+  // jsou stejné, viz test níž).
+  ['Brave Android (s tokenem Brave)',
+    'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36 Brave/140',
+    { platforma: 'android', prohlizec: 'brave' }],
+  ['Facebook Android (FBAN/FBAV)',
+    'Mozilla/5.0 (Linux; Android 14; SM-S918B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/140.0.7339.51 Mobile Safari/537.36 [FBAN/EMA;FBLC/cs_CZ;FBAV/490.0.0.44.109;]',
+    { platforma: 'android', prohlizec: 'inapp' }],
 ];
 
 for (const [nazev, ua, ocekavano] of UA_PROHLIZECU) {
@@ -262,13 +276,22 @@ for (const [nazev, ua, ocekavano] of UA_PROHLIZECU) {
   });
 }
 
-test('rozpoznejProhlizec: FBAN (Facebook iOS), Messenger, TikTok, LinkedIn jsou in-app', () => {
-  const zaklad = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
-  for (const znacka of ['[FBAN/FBIOS;FBAV/490.0]', 'Messenger', 'musical_ly_40.1.0 TikTok', 'LinkedInApp', 'MicroMessenger/8.0']) {
-    assert.equal(rozpoznejProhlizec(`${zaklad} ${znacka}`).prohlizec, 'inapp', znacka);
+test('rozpoznejProhlizec: in-app má přednost i před Chromem/Operou v UA', () => {
+  for (const znacka of ['[FBAN/FBIOS;FBAV/490.0]', 'Messenger', 'musical_ly_40.1.0 TikTok', 'LinkedInApp', 'MicroMessenger/8.0', 'Snapchat/13.1']) {
+    assert.equal(rozpoznejProhlizec(`${IOS} Mobile/15E148 ${znacka}`).prohlizec, 'inapp', znacka);
   }
+  assert.equal(rozpoznejProhlizec(`${UA.android} OPR/91.0 Instagram 398.0`).prohlizec, 'inapp');
   // „Linux" v Android UA není aplikace Line.
   assert.equal(rozpoznejProhlizec(UA.android).prohlizec, 'chrome');
+});
+
+test('rozpoznejProhlizec: Brave a DuckDuckGo bez rozlišitelného UA zůstávají Safari / Chrome', () => {
+  // Stejný UA jako Safari → safari; kroky Safari fungují i v Brave/DDG.
+  assert.equal(rozpoznejProhlizec(`${IOS} Version/26.0 Mobile/15E148 Safari/604.1`).prohlizec, 'safari');
+  assert.equal(rozpoznejProhlizec(`${IOS} Version/18.0 Mobile/15E148 Safari/604.1 Ddg/18.6`).prohlizec, 'duckduckgo');
+  assert.equal(rozpoznejProhlizec(`${IOS} Version/18.0 Mobile/15E148 Safari/604.1 Brave/1.70`).prohlizec, 'brave');
+  // Brave Android bez tokenu = Chrome a má stejné kroky i tlačítko.
+  assert.deepEqual(KROKY.android.brave, KROKY.android.chrome);
 });
 
 test('rozpoznejProhlizec: počítač je desktop, iPadOS (Mac s dotykem) iOS', () => {
@@ -277,9 +300,10 @@ test('rozpoznejProhlizec: počítač je desktop, iPadOS (Mac s dotykem) iOS', ()
   assert.equal(rozpoznejProhlizec(UA.ipadOs, 0).platforma, 'desktop', 'Mac bez dotyku dostane QR');
 });
 
-// ---------------------------------------------------------------- kroky
+// ---------------------------------------------------------------- kroky (finální, ověřené 24. 9. 2026)
 
-const PROHLIZECE: Prohlizec[] = ['safari', 'chrome', 'firefox', 'edge', 'samsung', 'inapp', 'jiny'];
+const PROHLIZECE: Prohlizec[] = ['safari', 'chrome', 'firefox', 'edge', 'samsung', 'opera', 'brave', 'duckduckgo', 'inapp', 'jiny'];
+const texty = (platforma: 'ios' | 'android', prohlizec: Prohlizec) => KROKY[platforma][prohlizec].map((k) => [k.text, k.ikona]);
 
 test('pro každou kombinaci platformy a prohlížeče existují kroky', () => {
   for (const platforma of ['ios', 'android'] as const) {
@@ -301,44 +325,105 @@ test('in-app: zvýrazněný krok „Otevřít v prohlížeči", pod ním kroky S
   }
 });
 
-test('iOS Safari: 4 kroky, první do menu vedle adresy (iOS 26)', () => {
-  const kroky = KROKY.ios.safari.map((k) => k.text);
-  assert.equal(kroky.length, 4);
-  assert.match(kroky[0], /vedle adresy/);
-  assert.match(kroky[0], /na starším iOS na ikonu Sdílet dole/);
-  assert.equal(kroky[1], 'Vyber Sdílet.');
-  assert.match(kroky[2], /Přidat na plochu/);
-  assert.match(kroky[3], /Otevřít jako webovou aplikaci/);
+test('ios/safari: přesně podle ověřeného postupu (iOS 26)', () => {
+  assert.deepEqual(texty('ios', 'safari'), [
+    ['Klepni na tlačítko ⋯ vpravo v adresním řádku (na starším iOS na ikonu Sdílet ⬆ dole).', 'menu-vedle-adresy'],
+    ['Vyber Sdílet.', 'sdilet'],
+    ['Sjeď dolů a klepni na Přidat na plochu.', 'pridat'],
+    ['Nech zapnuté „Otevřít jako webovou aplikaci“ a klepni Přidat.', 'potvrdit'],
+  ]);
 });
 
-test('iOS Chrome / Firefox / Edge mají vlastní kroky, ne Safari', () => {
-  assert.match(KROKY.ios.chrome[0].text, /Sdílet \(nahoře vpravo nebo v menu ⋯\)/);
-  assert.match(KROKY.ios.firefox[0].text, /Otevři menu ≡ \/ ⋯/);
-  assert.equal(KROKY.ios.edge, KROKY.ios.firefox);
+test('ios/chrome: Sdílet vlevo nahoře (ověřeno na iPhonu), bez „nebo v menu ⋯"', () => {
+  assert.deepEqual(texty('ios', 'chrome'), [
+    ['Klepni na ikonu Sdílet ⬆ vlevo nahoře vedle adresy.', 'sdilet'],
+    ['Sjeď dolů a klepni na Přidat na plochu.', 'pridat'],
+    ['Klepni Přidat.', 'potvrdit'],
+  ]);
+  assert.match(KROKY.ios.chrome[0].text, /vlevo nahoře/);
+  assert.ok(!KROKY.ios.chrome.some((k) => /nebo v menu ⋯/.test(k.text)), 'u ios/chrome se vrátilo „nebo v menu ⋯"');
 });
 
-test('Android: Chrome/Edge přes ⋮ nahoře, Samsung přes ≡ dole, Firefox přes ⋮', () => {
-  assert.match(KROKY.android.chrome[0].text, /⋮ vpravo nahoře/);
-  assert.match(KROKY.android.chrome[1].text, /Přidat na plochu \/ Nainstalovat aplikaci/);
-  assert.equal(KROKY.android.edge, KROKY.android.chrome);
-  assert.match(KROKY.android.samsung[0].text, /≡ vpravo dole/);
-  assert.match(KROKY.android.firefox[0].text, /⋮/);
-  assert.match(KROKY.android.jiny[0].text, /V menu prohlížeče najdi Sdílet nebo Přidat na plochu/);
+test('ios/firefox a ios/edge: menu na různých místech', () => {
+  assert.deepEqual(texty('ios', 'firefox'), [
+    ['Klepni na menu ≡ vpravo dole.', 'menu'],
+    ['Vyber Sdílet.', 'sdilet'],
+    ['Sjeď dolů a klepni na Přidat na plochu.', 'pridat'],
+    ['Klepni Přidat.', 'potvrdit'],
+  ]);
+  assert.deepEqual(texty('ios', 'edge'), [
+    ['Klepni na menu ⋯ dole uprostřed.', 'menu'],
+    ['Vyber Sdílet.', 'sdilet'],
+    ['Sjeď dolů a klepni na Přidat na plochu.', 'pridat'],
+    ['Klepni Přidat.', 'potvrdit'],
+  ]);
 });
 
-test('tlačítko „Nainstalovat aplikaci" jen Android Chrome / Edge / Samsung', () => {
-  assert.equal(umiTlacitkoInstalace({ platforma: 'android', prohlizec: 'chrome' }), true);
-  assert.equal(umiTlacitkoInstalace({ platforma: 'android', prohlizec: 'edge' }), true);
-  assert.equal(umiTlacitkoInstalace({ platforma: 'android', prohlizec: 'samsung' }), true);
+test('ios/opera, brave, duckduckgo, jiny: obecný postup přes Sdílet', () => {
+  const obecne = [
+    ['Otevři menu prohlížeče a vyber Sdílet.', 'sdilet'],
+    ['Sjeď dolů a klepni na Přidat na plochu.', 'pridat'],
+    ['Klepni Přidat.', 'potvrdit'],
+  ];
+  for (const p of ['opera', 'brave', 'duckduckgo', 'jiny'] as const) assert.deepEqual(texty('ios', p), obecne, p);
+});
+
+test('android/chrome, edge, brave, opera: ⋮ vpravo nahoře', () => {
+  const chrome = [
+    ['Klepni na ⋮ vpravo nahoře.', 'menu-svisle'],
+    ['Vyber Přidat na plochu (nebo Nainstalovat aplikaci).', 'pridat'],
+    ['Klepni Přidat / Nainstalovat.', 'potvrdit'],
+  ];
+  for (const p of ['chrome', 'edge', 'brave', 'opera'] as const) assert.deepEqual(texty('android', p), chrome, p);
+});
+
+test('android/samsung: menu ≡ vpravo dole', () => {
+  assert.deepEqual(texty('android', 'samsung'), [
+    ['Klepni na menu ≡ vpravo dole.', 'menu'],
+    ['Vyber Přidat stránku do.', 'pridat'],
+    ['Vyber Domovská obrazovka a klepni Přidat.', 'potvrdit'],
+  ]);
+  assert.match(KROKY.android.samsung[0].text, /vpravo dole/);
+});
+
+test('android/firefox: ⋮ vpravo nahoře', () => {
+  assert.deepEqual(texty('android', 'firefox'), [
+    ['Klepni na ⋮ vpravo nahoře.', 'menu-svisle'],
+    ['Vyber Přidat na plochu.', 'pridat'],
+    ['Klepni Přidat.', 'potvrdit'],
+  ]);
+});
+
+test('krok 1 říká, kde tlačítko je (kromě obecného „menu prohlížeče")', () => {
+  const kde = /nahoře|dole|vpravo|vlevo|uprostřed/;
+  for (const platforma of ['ios', 'android'] as const) {
+    for (const prohlizec of PROHLIZECE) {
+      const prvni = KROKY[platforma][prohlizec].find((k) => !k.zvyrazneny);
+      if (prvni && prvni.text !== 'Otevři menu prohlížeče a vyber Sdílet.') {
+        assert.match(prvni.text, kde, `${platforma}/${prohlizec}: „${prvni.text}" neříká kde`);
+      }
+    }
+  }
+});
+
+test('tlačítko „Nainstalovat aplikaci" jen Android Chrome / Edge / Samsung / Brave / Opera', () => {
+  for (const p of ['chrome', 'edge', 'samsung', 'brave', 'opera'] as const) {
+    assert.equal(umiTlacitkoInstalace({ platforma: 'android', prohlizec: p }), true, p);
+  }
   assert.equal(umiTlacitkoInstalace({ platforma: 'android', prohlizec: 'firefox' }), false);
   assert.equal(umiTlacitkoInstalace({ platforma: 'android', prohlizec: 'inapp' }), false);
   assert.equal(umiTlacitkoInstalace({ platforma: 'ios', prohlizec: 'chrome' }), false);
 });
 
 test('nadpis nad kroky podle prohlížeče', () => {
-  assert.equal(uvodKroku('safari'), 'Postup v Safari (nic tady neklikáš):');
-  assert.equal(uvodKroku('firefox'), 'Postup ve Firefoxu (nic tady neklikáš):');
-  assert.equal(uvodKroku('samsung'), 'Postup v Samsung Internetu (nic tady neklikáš):');
+  const ocekavane: Record<Prohlizec, string> = {
+    safari: 'v Safari', chrome: 'v Chromu', firefox: 've Firefoxu', edge: 'v Edgi',
+    samsung: 'v Samsung Internetu', opera: 'v Opeře', brave: 'v Brave', duckduckgo: 'v DuckDuckGo',
+    inapp: 'v prohlížeči', jiny: 'v prohlížeči',
+  };
+  for (const [p, kde] of Object.entries(ocekavane)) {
+    assert.equal(uvodKroku(p as Prohlizec), `Postup ${kde} (nic tady neklikáš):`);
+  }
 });
 
 test('poznámka o Safari je pryč (iOS Chrome/Firefox/Edge to umí od 16.4), zůstává „smaž a přidej znovu"', () => {
@@ -353,7 +438,7 @@ test('?ua= přepíše detekci jen známými hodnotami', () => {
   assert.deepEqual(prohlizecZParametru('ios-chrome'), { platforma: 'ios', prohlizec: 'chrome' });
   assert.deepEqual(prohlizecZParametru('inapp-android'), { platforma: 'android', prohlizec: 'inapp' });
   assert.equal(prohlizecZParametru('desktop')?.platforma, 'desktop');
-  for (const hodnota of ['ios-safari', 'ios-firefox', 'ios-edge', 'android-chrome', 'android-firefox', 'android-samsung', 'inapp-ios']) {
+  for (const hodnota of ['ios-safari', 'ios-firefox', 'ios-edge', 'ios-opera', 'ios-brave', 'ios-duckduckgo', 'android-chrome', 'android-firefox', 'android-samsung', 'android-brave', 'android-opera', 'inapp-ios']) {
     assert.ok(prohlizecZParametru(hodnota), hodnota);
   }
   assert.equal(prohlizecZParametru('nesmysl'), null);

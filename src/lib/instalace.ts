@@ -159,7 +159,17 @@ export function osTohotoZarizeni(): OsZarizeni {
 // ---------------------------------------------------------------- prohlížeč a kroky návodu
 
 type PlatformaNavodu = 'ios' | 'android' | 'desktop';
-export type Prohlizec = 'safari' | 'chrome' | 'firefox' | 'edge' | 'samsung' | 'inapp' | 'jiny';
+export type Prohlizec =
+  | 'safari'
+  | 'chrome'
+  | 'firefox'
+  | 'edge'
+  | 'samsung'
+  | 'opera'
+  | 'brave'
+  | 'duckduckgo'
+  | 'inapp'
+  | 'jiny';
 
 export interface RozpoznanyProhlizec {
   platforma: PlatformaNavodu;
@@ -176,9 +186,12 @@ export interface RozpoznanyProhlizec {
 const IN_APP = /Instagram|FBAN|FBAV|FB_IAB|Messenger|\bLine\/|TikTok|musical_ly|Twitter|LinkedInApp|Snapchat|MicroMessenger/i;
 
 /**
- * Platforma a prohlížeč z user-agenta — kvůli návodu na míru. Chrome na
- * iPhonu má Sdílet jinde než Safari, Samsung Internet má menu dole,
- * in-app prohlížeč Instagramu to neumí vůbec.
+ * Platforma a prohlížeč z user-agenta — kvůli návodu na míru. In-app má
+ * přednost před vším ostatním.
+ *
+ * BRAVE A DUCKDUCKGO se v UA často tváří jako Safari (iOS) nebo Chrome
+ * (Android) a odlišit je nejde. Pak zůstávají safari / chrome — kroky
+ * jsou tam stejné, liší se jen ikona menu.
  */
 export function rozpoznejProhlizec(userAgent: string, maxTouchPoints = 0): RozpoznanyProhlizec {
   const ua = String(userAgent || '');
@@ -189,12 +202,17 @@ export function rozpoznejProhlizec(userAgent: string, maxTouchPoints = 0): Rozpo
     if (/CriOS/i.test(ua)) return { platforma, prohlizec: 'chrome' };
     if (/FxiOS/i.test(ua)) return { platforma, prohlizec: 'firefox' };
     if (/EdgiOS/i.test(ua)) return { platforma, prohlizec: 'edge' };
+    if (/\bOPT\/|\bOPR\//i.test(ua)) return { platforma, prohlizec: 'opera' };
+    if (/Brave/i.test(ua)) return { platforma, prohlizec: 'brave' };
+    if (/DuckDuckGo|\bDdg\//i.test(ua)) return { platforma, prohlizec: 'duckduckgo' };
     return { platforma, prohlizec: 'safari' };
   }
   if (platforma === 'android') {
     if (/SamsungBrowser/i.test(ua)) return { platforma, prohlizec: 'samsung' };
     if (/EdgA/i.test(ua)) return { platforma, prohlizec: 'edge' };
     if (/Firefox/i.test(ua)) return { platforma, prohlizec: 'firefox' };
+    if (/\bOPR\//i.test(ua)) return { platforma, prohlizec: 'opera' };
+    if (/Brave/i.test(ua)) return { platforma, prohlizec: 'brave' };
     return { platforma, prohlizec: 'chrome' };
   }
   if (/Edg\//i.test(ua)) return { platforma, prohlizec: 'edge' };
@@ -213,10 +231,15 @@ const PREPISY_UA: Record<string, RozpoznanyProhlizec> = {
   'ios-chrome': { platforma: 'ios', prohlizec: 'chrome' },
   'ios-firefox': { platforma: 'ios', prohlizec: 'firefox' },
   'ios-edge': { platforma: 'ios', prohlizec: 'edge' },
+  'ios-opera': { platforma: 'ios', prohlizec: 'opera' },
+  'ios-brave': { platforma: 'ios', prohlizec: 'brave' },
+  'ios-duckduckgo': { platforma: 'ios', prohlizec: 'duckduckgo' },
   'android-chrome': { platforma: 'android', prohlizec: 'chrome' },
   'android-firefox': { platforma: 'android', prohlizec: 'firefox' },
   'android-samsung': { platforma: 'android', prohlizec: 'samsung' },
   'android-edge': { platforma: 'android', prohlizec: 'edge' },
+  'android-brave': { platforma: 'android', prohlizec: 'brave' },
+  'android-opera': { platforma: 'android', prohlizec: 'opera' },
   'inapp-ios': { platforma: 'ios', prohlizec: 'inapp' },
   'inapp-android': { platforma: 'android', prohlizec: 'inapp' },
   desktop: { platforma: 'desktop', prohlizec: 'chrome' },
@@ -227,9 +250,14 @@ export function prohlizecZParametru(hodnota: string | null | undefined): Rozpozn
   return PREPISY_UA[hodnota.trim().toLowerCase()] ?? null;
 }
 
-/** Prohlížeče na Androidu, které posílají `beforeinstallprompt` → tlačítko „Nainstalovat aplikaci". */
+/**
+ * Prohlížeče na Androidu, které posílají `beforeinstallprompt` → tlačítko
+ * „Nainstalovat aplikaci". Chromium: Chrome, Edge, Samsung, Brave, Opera.
+ */
+const S_TLACITKEM: ReadonlySet<Prohlizec> = new Set(['chrome', 'edge', 'samsung', 'brave', 'opera']);
+
 export function umiTlacitkoInstalace(r: RozpoznanyProhlizec): boolean {
-  return r.platforma === 'android' && (r.prohlizec === 'chrome' || r.prohlizec === 'edge' || r.prohlizec === 'samsung');
+  return r.platforma === 'android' && S_TLACITKEM.has(r.prohlizec);
 }
 
 /** Ikona kroku — klíč, ne komponenta, ať data zůstanou bez Reactu. */
@@ -251,79 +279,98 @@ export const KROK_INAPP: KrokNavodu = {
   zvyrazneny: true,
 };
 
-/**
- * iOS 26: Safari nemá Sdílet ve spodní liště — je v menu (⋯ nebo ≡) vedle
- * adresy. Starší iOS má Sdílet dole pořád, proto závorka v prvním kroku.
+/*
+ * KROKY — FINÁLNÍ, OVĚŘENÉ (24. 9. 2026). Texty jsou převzaté doslova
+ * ze zadání; krok 1 vždy říká, KDE tlačítko je. Neupravovat bez nového
+ * ověření na zařízení.
  */
+
+/** iOS 26 kompaktní lišta; starší iOS má Sdílet dole. */
 const IOS_SAFARI = [
-  krok('Klepni na ⋯ nebo ≡ vedle adresy (na starším iOS na ikonu Sdílet dole).', 'menu-vedle-adresy'),
+  krok('Klepni na tlačítko ⋯ vpravo v adresním řádku (na starším iOS na ikonu Sdílet ⬆ dole).', 'menu-vedle-adresy'),
   krok('Vyber Sdílet.', 'sdilet'),
   krok('Sjeď dolů a klepni na Přidat na plochu.', 'pridat'),
   krok('Nech zapnuté „Otevřít jako webovou aplikaci“ a klepni Přidat.', 'potvrdit'),
 ];
 
-/** Chrome, Firefox i Edge na iOS umí Přidat na plochu od iOS 16.4. */
+/** Ověřeno na reálném iPhonu. */
 const IOS_CHROME = [
-  krok('Klepni na Sdílet (nahoře vpravo nebo v menu ⋯).', 'sdilet'),
-  krok('Vyber Přidat na plochu.', 'pridat'),
+  krok('Klepni na ikonu Sdílet ⬆ vlevo nahoře vedle adresy.', 'sdilet'),
+  krok('Sjeď dolů a klepni na Přidat na plochu.', 'pridat'),
   krok('Klepni Přidat.', 'potvrdit'),
 ];
 
-const IOS_FIREFOX_EDGE = [
-  krok('Otevři menu ≡ / ⋯.', 'menu'),
+const IOS_FIREFOX = [
+  krok('Klepni na menu ≡ vpravo dole.', 'menu'),
   krok('Vyber Sdílet.', 'sdilet'),
-  krok('Vyber Přidat na plochu.', 'pridat'),
+  krok('Sjeď dolů a klepni na Přidat na plochu.', 'pridat'),
   krok('Klepni Přidat.', 'potvrdit'),
 ];
 
-/** Chrome a Edge na Androidu — když ještě nepřišla výzva k instalaci. */
+const IOS_EDGE = [
+  krok('Klepni na menu ⋯ dole uprostřed.', 'menu'),
+  krok('Vyber Sdílet.', 'sdilet'),
+  krok('Sjeď dolů a klepni na Přidat na plochu.', 'pridat'),
+  krok('Klepni Přidat.', 'potvrdit'),
+];
+
+/** Opera, Brave, DuckDuckGo a ostatní na iOS. */
+const IOS_OBECNE = [
+  krok('Otevři menu prohlížeče a vyber Sdílet.', 'sdilet'),
+  krok('Sjeď dolů a klepni na Přidat na plochu.', 'pridat'),
+  krok('Klepni Přidat.', 'potvrdit'),
+];
+
+/** Chrome, Edge, Brave, Opera na Androidu — ruční postup, když ještě nepřišla výzva. */
 const ANDROID_CHROME = [
   krok('Klepni na ⋮ vpravo nahoře.', 'menu-svisle'),
-  krok('Vyber Přidat na plochu / Nainstalovat aplikaci.', 'pridat'),
-  krok('Potvrď.', 'potvrdit'),
+  krok('Vyber Přidat na plochu (nebo Nainstalovat aplikaci).', 'pridat'),
+  krok('Klepni Přidat / Nainstalovat.', 'potvrdit'),
 ];
 
-/**
- * Samsung Internet má menu ≡ DOLE, ne ⋮ nahoře — kroky Chromu by poslaly
- * člověka hledat tlačítko, které tam není.
- */
+/** Samsung Internet má menu ≡ DOLE, ne ⋮ nahoře. */
 const ANDROID_SAMSUNG = [
   krok('Klepni na menu ≡ vpravo dole.', 'menu'),
-  krok('Vyber Přidat stránku do → Domovská obrazovka.', 'pridat'),
-  krok('Potvrď Přidat.', 'potvrdit'),
+  krok('Vyber Přidat stránku do.', 'pridat'),
+  krok('Vyber Domovská obrazovka a klepni Přidat.', 'potvrdit'),
 ];
 
 const ANDROID_FIREFOX = [
-  krok('Klepni na ⋮.', 'menu-svisle'),
+  krok('Klepni na ⋮ vpravo nahoře.', 'menu-svisle'),
   krok('Vyber Přidat na plochu.', 'pridat'),
   krok('Klepni Přidat.', 'potvrdit'),
 ];
 
-const JINY = [krok('V menu prohlížeče najdi Sdílet nebo Přidat na plochu.', 'menu')];
-
 /**
  * Kroky pro každou kombinaci platformy a prohlížeče. Kombinace, které
- * v praxi nejsou (Samsung na iOS, Safari na Androidu), vedou na obecný
- * krok — návod nikdy nezůstane prázdný.
+ * v praxi nejsou nebo nejdou rozpoznat (Samsung na iOS, Safari či
+ * DuckDuckGo na Androidu, neznámý prohlížeč), vedou na obecný postup
+ * platformy — na iOS přes Sdílet, na Androidu přes ⋮ jako Chromium.
  */
 export const KROKY: Record<'ios' | 'android', Record<Prohlizec, KrokNavodu[]>> = {
   ios: {
     safari: IOS_SAFARI,
     chrome: IOS_CHROME,
-    firefox: IOS_FIREFOX_EDGE,
-    edge: IOS_FIREFOX_EDGE,
-    samsung: JINY,
+    firefox: IOS_FIREFOX,
+    edge: IOS_EDGE,
+    opera: IOS_OBECNE,
+    brave: IOS_OBECNE,
+    duckduckgo: IOS_OBECNE,
+    samsung: IOS_OBECNE,
     inapp: [KROK_INAPP, ...IOS_SAFARI],
-    jiny: JINY,
+    jiny: IOS_OBECNE,
   },
   android: {
     chrome: ANDROID_CHROME,
     edge: ANDROID_CHROME,
+    brave: ANDROID_CHROME,
+    opera: ANDROID_CHROME,
     samsung: ANDROID_SAMSUNG,
     firefox: ANDROID_FIREFOX,
-    safari: JINY,
+    safari: ANDROID_CHROME,
+    duckduckgo: ANDROID_CHROME,
     inapp: [KROK_INAPP, ...ANDROID_CHROME],
-    jiny: JINY,
+    jiny: ANDROID_CHROME,
   },
 };
 
@@ -332,8 +379,11 @@ const KDE: Record<Prohlizec, string> = {
   safari: 'v Safari',
   chrome: 'v Chromu',
   firefox: 've Firefoxu',
-  edge: 'v Edge',
+  edge: 'v Edgi',
   samsung: 'v Samsung Internetu',
+  opera: 'v Opeře',
+  brave: 'v Brave',
+  duckduckgo: 'v DuckDuckGo',
   inapp: 'v prohlížeči',
   jiny: 'v prohlížeči',
 };

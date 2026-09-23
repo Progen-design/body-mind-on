@@ -64,7 +64,7 @@ const Krok: React.FC<{ cislo: number; ikona: React.ReactNode; children: React.Re
     <span className="w-5 text-sm font-bold text-slate-500 tabular-nums shrink-0" aria-hidden="true">
       {cislo}.
     </span>
-    <span className="flex items-center gap-1 text-akcent-cyan shrink-0" aria-hidden="true">
+    <span className="w-10 flex items-center justify-center gap-1 text-akcent-cyan shrink-0" aria-hidden="true">
       {ikona}
     </span>
     <span className="text-sm text-slate-200 leading-snug">{children}</span>

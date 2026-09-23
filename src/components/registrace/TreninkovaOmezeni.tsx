@@ -60,7 +60,7 @@ export const TreninkovaOmezeni: React.FC<TreninkovaOmezeniProps> = ({
   return (
     <fieldset disabled={generujeSe} className="space-y-5 disabled:opacity-50">
       <div>
-        <Popisek volitelne>Cviky, kterým se chceš vyhnout</Popisek>
+        <Popisek volitelne zvyrazneno>Cviky, kterým se chceš vyhnout</Popisek>
         <Vicenasobny
           popisek=""
           hodnoty={vybraneChipy}
@@ -70,7 +70,7 @@ export const TreninkovaOmezeni: React.FC<TreninkovaOmezeniProps> = ({
       </div>
 
       <div>
-        <Popisek volitelne>Partie, kterým se chceš vyhnout</Popisek>
+        <Popisek volitelne zvyrazneno>Partie, kterým se chceš vyhnout</Popisek>
         <Vicenasobny
           popisek=""
           hodnoty={vybranePartie}

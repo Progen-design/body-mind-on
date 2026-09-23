@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { WeightRecord } from '../types';
 import { hodnotaNeboPomlcka } from '../data/adaptery';
 import { kratkeDatumCS } from '../lib/datum.ts';
+import { FILTRY_VAHY, POPISEK_FILTRU, VahaFiltr } from '../lib/vahaFiltry';
 import { Calendar, Plus, Info } from 'lucide-react';
 
 interface WeightChartProps {
@@ -29,10 +30,11 @@ function ukazPopisek(index: number, pocet: number): boolean {
 /**
  * „2026-08-22" → „22. 8." Rok do osy nepatří, je v hlavičce filtru.
  *
- * Filtr 1R si po synchronizaci přepisuje `date` na měsíční popisek
- * „09.2026" (`syncEngine.applyWeightRecord`) — to není ISO datum a
- * `kratkeDatumCS` na něj vrátí prázdno. Proto ten fallback: radši původní
- * řetězec než prázdná osa.
+ * Fallback na původní řetězec zůstává pro jistotu: do 23. 9. 2026 si filtr
+ * 1R po synchronizaci přepisoval `date` na měsíční popisek „09.2026", což
+ * ISO datum není a `kratkeDatumCS` na něj vracel prázdno. Řady dnes nese
+ * `lib/vahaFiltry.ts` a všechny datumy jsou ISO, ale prázdná osa je horší
+ * chyba než syrový řetězec.
  */
 function kratkeDatum(iso: string): string {
   return kratkeDatumCS(iso) || String(iso || '');
@@ -42,11 +44,13 @@ export const WeightChart: React.FC<WeightChartProps> = ({
   recordsByFilter,
   onAddMeasurement
 }) => {
-  const [activeFilter, setActiveFilter] = useState<'1M' | '3M' | '6M' | '1R'>('1M');
+  const [activeFilter, setActiveFilter] = useState<VahaFiltr>('1M');
   const [hoveredPoint, setHoveredPoint] = useState<WeightRecord | null>(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  const currentRecords = recordsByFilter[activeFilter] || recordsByFilter['1M'];
+  // Prázdná řada je platný výsledek („za posledních 7 dní ses nevážil"),
+  // takže se na jinou NEPADÁ — fallback je jen pro chybějící klíč.
+  const currentRecords = recordsByFilter[activeFilter] ?? [];
 
   // Calculate scales
   // Osa se ridi namerenymi hodnotami. Driv tu bylo Math.min(..., 101)
@@ -125,7 +129,7 @@ export const WeightChart: React.FC<WeightChartProps> = ({
 
         {/* Timeframe pill selector */}
         <div className="flex items-center gap-1 p-1 bg-slate-900/90 rounded-xl border border-slate-800">
-          {(['1M', '3M', '6M', '1R'] as const).map((filter) => (
+          {FILTRY_VAHY.map((filter) => (
             <button
               key={filter}
               onClick={() => {
@@ -139,11 +143,20 @@ export const WeightChart: React.FC<WeightChartProps> = ({
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
               }`}
             >
-              {filter}
+              {POPISEK_FILTRU[filter]}
             </button>
           ))}
         </div>
       </div>
+
+      {/* PRÁZDNÉ OKNO SE NEMASKUJE. U „Den" (7 dní) je běžné, že v něm
+          žádné vážení není — dřív se v takovém případě kreslila jen prázdná
+          mřížka a vypadalo to jako rozbitý graf. */}
+      {currentRecords.length === 0 && (
+        <p className="relative z-10 mt-3 text-xs text-slate-400">
+          V tomhle období nemáme žádné vážení. Zkus delší rozsah.
+        </p>
+      )}
 
       {/* Interactive Chart Container */}
       <div className="relative z-10 w-full overflow-x-auto select-none pt-2">

@@ -154,3 +154,52 @@ test('varování nic neblokuje — komponenta nepřidává disabled ani onZmena 
   // generujeSe je jediný důvod k disabled (odesílá se plán) — žádný další.
   assert.equal((zdroj.match(/disabled=/g) || []).length, 1, 'nesmí přibýt další disabled podmínka kvůli extrémnímu výběru');
 });
+
+/**
+ * POPISKY „ČEMU SE CHCEŠ VYHNOUT" MUSÍ BÝT VIDĚT.
+ *
+ * Je to jediné místo v registraci i v profilových preferencích, kde jde říct,
+ * co do plánu NEMÁ přijít — a vypadalo úplně stejně jako každý jiný popisek
+ * formuláře. Zvýraznění je výjimka: `<Popisek>` ho dostal jako volitelný prop,
+ * ne jako nový výchozí stav, jinak by ho měla půlka formuláře a přestal by být
+ * zvýrazněním.
+ */
+{
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const KOREN = path.join(import.meta.dirname, '..', '..');
+  const cti = (p: string) => fs.readFileSync(path.join(KOREN, p), 'utf8');
+
+  const PRVKY = cti('src/components/registrace/prvky.tsx');
+  const OMEZENI = cti('src/components/registrace/TreninkovaOmezeni.tsx');
+
+  test('Popisek umí zvýraznění jako volitelný prop, ne jako nový výchozí styl', () => {
+    assert.match(PRVKY, /zvyrazneno\?: boolean;/);
+    assert.match(PRVKY, /zvyrazneno = false/, 'výchozí stav musí zůstat nezvýrazněný');
+    assert.match(
+      PRVKY,
+      /zvyrazneno \? 'text-akcent-lime font-bold' : 'text-slate-500'/,
+      'zvýraznění má měnit barvu i váhu, a jen když je zapnuté',
+    );
+  });
+
+  test('zvýrazněné jsou právě oba popisky „čemu se chceš vyhnout"', () => {
+    assert.match(OMEZENI, /<Popisek volitelne zvyrazneno>Cviky, kterým se chceš vyhnout<\/Popisek>/);
+    assert.match(OMEZENI, /<Popisek volitelne zvyrazneno>Partie, kterým se chceš vyhnout<\/Popisek>/);
+    assert.equal(
+      (OMEZENI.match(/zvyrazneno/g) ?? []).length,
+      2,
+      'zvýraznění se rozlezlo i na jiné popisky — pak přestane fungovat',
+    );
+  });
+
+  test('zvýraznění platí pro registraci i pro profilové preference', () => {
+    // Obě místa kreslí tentýž TreninkovaOmezeni, takže stačí ověřit, že si
+    // ani jedno nedrží vlastní kopii těch popisků.
+    for (const cesta of ['src/components/registrace/StartRegistrace.tsx', 'src/components/PreferencesModal.tsx']) {
+      const zdroj = cti(cesta);
+      assert.match(zdroj, /<TreninkovaOmezeni/, `${cesta}: omezení musí jít přes sdílenou komponentu`);
+      assert.doesNotMatch(zdroj, /kterým se chceš vyhnout/, `${cesta}: vlastní kopie popisku obchází zvýraznění`);
+    }
+  });
+}

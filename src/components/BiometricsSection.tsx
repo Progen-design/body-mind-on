@@ -16,6 +16,7 @@ import {
 import { motion } from 'motion/react';
 import { AppleWatchBiometrics, SkupinaMetrik, SpanekNoc } from '../types';
 import { datumCesky, hodnotaNeboPomlcka, zmenaText } from '../data/adaptery';
+import { odstupText } from '../lib/odstup';
 import { Vysvetlivka } from './Vysvetlivka';
 import { NadpisSekce } from './NadpisSekce';
 import { POJEM_PRO_METRIKU } from '../../lib/glosarMetrik.js';
@@ -30,6 +31,24 @@ interface BiometricsSectionProps {
   spanek: SpanekNoc | null;
   onSync: () => void;
   isSyncing?: boolean;
+  /**
+   * STAV ZAŘÍZENÍ SE ODVOZUJE Z DAT, NE Z TOHO, ŽE SE SEKCE VYKRESLILA.
+   *
+   * `profilData.has_withings_connection` z `/api/profile` — stejný zdroj, jaký
+   * už dostává `BodyCompositionSection`. Do 22. 9. 2026 tu u obou zařízení
+   * svítilo „připojeno“ natvrdo, bez jakékoli podmínky, i když
+   * `withings_connections` neměla jediný řádek. Je to stejná chyba, jakou
+   * 23. 8. 2026 dostala `PropojenaZarizeniSection` — sem se ta oprava tehdy
+   * nedostala.
+   *
+   * Prop je povinný schválně: volitelný s výchozím `true` by tichý návrat
+   * téhle chyby nikdo nepoznal.
+   */
+  hasWithingsConnection: boolean;
+  /** ISO čas posledního stažení z Withings. null = server zatím nestahoval. */
+  withingsLastSyncedAt?: string | null;
+  /** `zdravi.pripojeno` z `/api/health` — dorazila někdy data z Apple Health. */
+  zdraviPripojeno: boolean;
 }
 
 export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
@@ -37,10 +56,20 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
   skupiny,
   spanek,
   onSync,
-  isSyncing = false
+  isSyncing = false,
+  hasWithingsConnection,
+  withingsLastSyncedAt = null,
+  zdraviPripojeno
 }) => {
   // Skóre 0 znamená „server ho nespočítal", ne „nulová regenerace".
   const maSkore = biometrics.recoveryScore > 0;
+
+  // Kdy server naposled opravdu stahoval z Withings. Prázdno = nevíme —
+  // interval cronu se tu netvrdí, stejně jako v PropojenaZarizeniSection.
+  const withingsOdstup = React.useMemo(
+    () => odstupText(withingsLastSyncedAt),
+    [withingsLastSyncedAt],
+  );
   const [activeMetricTab, setActiveMetricTab] = useState<'hrv' | 'restingHr' | 'steps' | 'energy'>('hrv');
   const [hoveredPoint, setHoveredPoint] = useState<{ day: string; value: number } | null>(null);
 
@@ -83,6 +112,24 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
         : ''
     }
   }[activeMetricTab];
+
+  /**
+   * POJEM PRO OTAZNÍK U GRAFU.
+   *
+   * Dlaždice HRV a klidového tepu výš na stránce vysvětlivku mají, graf pod
+   * nimi ne — přitom právě tam stojí věty jako „Průměrná základna 26,3 ms",
+   * u kterých si bez vysvětlení nikdo nedomyslí, co znamenají.
+   *
+   * Kroky tu schválně nejsou. `lib/glosarMetrik.js` je nechává bez pojmu:
+   * vysvětlovat „kroky jsou počet kroků" je šum a otazník, který otevře
+   * samozřejmost, příště nikdo nezkusí.
+   */
+  const pojemGrafu: Record<typeof activeMetricTab, string | null> = {
+    hrv: 'hrv',
+    restingHr: 'klidovy_tep',
+    energy: 'aktivni_energie',
+    steps: null,
+  };
 
   // SVG mini-chart coordinate calculations
   // Krivka potrebuje aspon dva body: pri jednom deli (length - 1) nulou a
@@ -136,12 +183,32 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
               <div className="text-xs text-slate-400 font-medium">Chytrá váha</div>
               <div className="text-sm font-bold text-white flex items-center gap-2">
                 <span>Withings Body Scan</span>
-                <span className="w-2 h-2 rounded-full bg-akcent-lime shadow-[0_0_8px_var(--color-akcent-lime)]" />
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    hasWithingsConnection
+                      ? 'bg-akcent-lime shadow-[0_0_8px_var(--color-akcent-lime)]'
+                      : 'bg-slate-600'
+                  }`}
+                />
+              </div>
+              {/* Odstup je naměřený fakt, rozvrh cronu ne. */}
+              <div className="text-[11px] text-slate-400 mt-0.5">
+                {hasWithingsConnection
+                  ? withingsOdstup
+                    ? `Server naposled stahoval ${withingsOdstup}`
+                    : 'Zatím žádné stažení neproběhlo'
+                  : 'Váha zatím není propojená'}
               </div>
             </div>
           </div>
-          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-950/60 text-akcent-lime border border-emerald-500/30">
-            připojeno
+          <span
+            className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${
+              hasWithingsConnection
+                ? 'bg-emerald-950/60 text-akcent-lime border-emerald-500/30'
+                : 'bg-amber-950/60 text-amber-300 border-amber-500/40'
+            }`}
+          >
+            {hasWithingsConnection ? 'připojeno' : 'nepřipojeno'}
           </span>
         </div>
 
@@ -157,12 +224,27 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
                 {/* Model zarizeni nikde nemame — z /api/health je jen boolean
                     "pripojeno". "Ultra 2" tu bylo natvrdo, jinde "Series 9". */}
                 <span>Apple Health</span>
-                <span className="w-2 h-2 rounded-full bg-akcent-lime shadow-[0_0_8px_var(--color-akcent-lime)]" />
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    zdraviPripojeno
+                      ? 'bg-akcent-lime shadow-[0_0_8px_var(--color-akcent-lime)]'
+                      : 'bg-slate-600'
+                  }`}
+                />
               </div>
             </div>
           </div>
-          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-950/60 text-akcent-lime border border-emerald-500/30">
-            připojeno
+          {/* Sekce se dnes kreslí jen při `maBiometrii`, takže tenhle odznak
+              fakticky nelže — ale nesmí stát na tom, že komponenta dostane
+              data jedině pro připojené zařízení. Signál je `zdravi.pripojeno`. */}
+          <span
+            className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${
+              zdraviPripojeno
+                ? 'bg-emerald-950/60 text-akcent-lime border-emerald-500/30'
+                : 'bg-amber-950/60 text-amber-300 border-amber-500/40'
+            }`}
+          >
+            {zdraviPripojeno ? 'připojeno' : 'nepřipojeno'}
           </span>
         </div>
       </div>
@@ -436,7 +518,17 @@ export const BiometricsSection: React.FC<BiometricsSectionProps> = ({
         {/* Dynamic Glowing Trend SVG */}
         <div className="relative pt-2">
           <div className="flex items-center justify-between text-xs text-slate-400 pb-2 px-2">
-            <span className="font-semibold text-slate-200">{trendData.label}</span>
+            <span className="font-semibold text-slate-200 inline-flex items-center gap-1">
+              {trendData.label}
+              {pojemGrafu[activeMetricTab] && (
+                <Vysvetlivka
+                  pojem={pojemGrafu[activeMetricTab]!}
+                  hodnota={trendData.baseline > 0
+                    ? `${trendData.baseline} ${trendData.unit}`
+                    : undefined}
+                />
+              )}
+            </span>
             <span className="text-[11px] text-slate-500">{trendData.baselineLabel}</span>
           </div>
 

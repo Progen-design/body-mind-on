@@ -129,3 +129,39 @@ test('každý pojem z glosáře je někde v UI zakotvený', () => {
 test('zápis sérií pokrývá i variantu s časem', () => {
   assert.match(GLOSAR.zapis_serii.vysvetleni, /40 s|čas/i);
 });
+
+/**
+ * GRAF BIOMETRIE MÁ MÍT OTAZNÍK TAM, KDE DLAŽDICE NAD NÍM.
+ *
+ * Karta „Historické trendy & Biometrické grafy" psala nad grafem
+ * „Variabilita srdečního tepu (HRV)" a „Průměrná základna 26,3 ms" bez
+ * jediného vysvětlení, přestože dlaždice HRV a klidového tepu o kus výš
+ * `<Vysvetlivka>` měly. Kdo tu základnu viděl poprvé, neměl se kde zeptat.
+ */
+test('graf biometrie vysvětluje HRV, klidový tep i aktivní energii — kroky ne', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const KOREN = path.join(import.meta.dirname, '..', '..');
+  const sekce = fs.readFileSync(path.join(KOREN, 'src', 'components', 'BiometricsSection.tsx'), 'utf8');
+
+  assert.match(
+    sekce,
+    /const pojemGrafu: Record<typeof activeMetricTab, string \| null> = \{\s*hrv: 'hrv',\s*restingHr: 'klidovy_tep',\s*energy: 'aktivni_energie',\s*steps: null,/,
+    'mapa pojmů u grafu se rozešla se záložkami'
+  );
+  assert.match(sekce, /\{trendData\.label\}\s*\{pojemGrafu\[activeMetricTab\] &&/, 'vysvětlivka nestojí u popisku grafu');
+
+  // Pojmy musí v glosáři opravdu existovat, jinak se otazník tiše nevykreslí.
+  for (const id of ['hrv', 'klidovy_tep', 'aktivni_energie']) {
+    assert.ok(najdiPojem(id), `pojem ${id} v glosáři chybí`);
+  }
+  assert.equal(najdiPojem('kroky'), null, 'kroky se vysvětlovat nemají — je to šum');
+});
+
+test('aktivní energie se vysvětluje jako odhad z hodinek, ne obecné kalorie', () => {
+  const zaznam = najdiPojem('aktivni_energie');
+
+  assert.ok(zaznam, 'pojem chybí');
+  assert.match(zaznam!.vysvetleni, /hodinek/i, 'text neříká, odkud číslo je');
+  assert.match(zaznam!.vysvetleni, /odhad/i, 'text vydává odhad za měření');
+});

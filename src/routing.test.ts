@@ -13,12 +13,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { CESTY_REGISTRACE, CESTA_PRIHLASENI, CESTA_PROFIL, PLATNE_CESTY, jePlatnaCesta, bezpecnyRedirect } from './routing.ts';
+import {
+  CESTY_REGISTRACE,
+  CESTA_KOMUNITA,
+  CESTA_PRIHLASENI,
+  CESTA_PROFIL,
+  PLATNE_CESTY,
+  jePlatnaCesta,
+  bezpecnyRedirect,
+  cestaProZalozku,
+  zalozkaZCesty
+} from './routing.ts';
 
 const cti = (p: string) => readFileSync(new URL(p, import.meta.url), 'utf8');
 
 test('zname cesty projdou', () => {
-  for (const cesta of ['/', CESTA_PRIHLASENI, CESTA_PROFIL, ...CESTY_REGISTRACE]) {
+  for (const cesta of ['/', CESTA_PRIHLASENI, CESTA_PROFIL, CESTA_KOMUNITA, ...CESTY_REGISTRACE]) {
     assert.equal(jePlatnaCesta(cesta), true, `${cesta} musí být platná`);
   }
 });
@@ -64,7 +74,7 @@ test('PLATNE_CESTY obsahuje presne ocekavanou mnozinu — zadna navic, zadna chy
   // se vykreslila. Opravneni resi ADMIN_TOKEN na serveru, ne tenhle seznam.
   assert.deepEqual(
     [...PLATNE_CESTY].sort(),
-    ['/', '/admin/integrace', '/login', '/profil', '/register', '/signup', '/start'].sort()
+    ['/', '/admin/integrace', '/komunita', '/login', '/profil', '/register', '/signup', '/start'].sort()
   );
 });
 
@@ -91,4 +101,66 @@ test('bezpecnyRedirect: pustí jen vlastní cesty, cizí URL a protokol-relativn
   assert.equal(bezpecnyRedirect('profil-bez-lomitka'), CESTA_PROFIL);
   assert.equal(bezpecnyRedirect('/plan', '/jina-vychozi'), '/plan');
   assert.equal(bezpecnyRedirect(null, '/jina-vychozi'), '/jina-vychozi');
+});
+
+// ---------------------------------------------------------------- /komunita
+//
+// REGRESE 23. 9. 2026: app.bodyandmindon.cz/komunita vracela „Stránka
+// neexistuje". Komunita byla jen záložka uvnitř /profil bez vlastní adresy,
+// ale middleware.ts ji vedl mezi aplikačními cestami — odkaz tam posílal,
+// App.tsx ji neznal. Testy níž hlídají celý řetěz: middleware → PLATNE_CESTY
+// → výchozí záložka → vykreslení feedu.
+
+test('/komunita je platná cesta a otevře záložku Komunita', () => {
+  assert.equal(CESTA_KOMUNITA, '/komunita');
+  assert.equal(jePlatnaCesta(CESTA_KOMUNITA), true, '/komunita skončí na 404');
+  assert.equal(zalozkaZCesty(CESTA_KOMUNITA), 'komunita');
+  assert.equal(zalozkaZCesty(CESTA_PROFIL), null);
+  assert.equal(zalozkaZCesty('/'), null);
+});
+
+test('přepnutí záložky přepíše adresu jen mezi /profil a /komunita', () => {
+  assert.equal(cestaProZalozku('komunita', CESTA_PROFIL), CESTA_KOMUNITA);
+  assert.equal(cestaProZalozku('vaha', CESTA_KOMUNITA), CESTA_PROFIL);
+  assert.equal(cestaProZalozku('profil', CESTA_KOMUNITA), CESTA_PROFIL);
+  // Už tam jsme — žádný zbytečný záznam v historii.
+  assert.equal(cestaProZalozku('komunita', CESTA_KOMUNITA), null);
+  assert.equal(cestaProZalozku('vaha', CESTA_PROFIL), null);
+  // Na loginu nebo registraci záložky adresu neřídí.
+  assert.equal(cestaProZalozku('komunita', CESTA_PRIHLASENI), null);
+  assert.equal(cestaProZalozku('komunita', '/'), null);
+});
+
+test('každá cesta, kterou middleware vede jako aplikační a App.tsx vykresluje, je v PLATNE_CESTY', () => {
+  // Middleware má v seznamu i historické prefixy (/trener, /vip…), které
+  // App.tsx schválně neobsluhuje. Hlídá se proto cesta, na kterou se
+  // App.tsx sám odkazuje — ta nesmí vést na 404.
+  const middleware = cti('../middleware.ts');
+  assert.match(middleware, /'\/komunita'/, 'middleware /komunita nevede do appky');
+
+  const app = cti('./App.tsx');
+  for (const [, konstanta] of app.matchAll(/\b(CESTA_[A-Z_]+)\b/g)) {
+    if (konstanta === 'CESTA_ADMIN_INTEGRACE') continue;
+    // Každá cesta, se kterou App.tsx pracuje, musí projít strážcem 404.
+    const hodnota = cti('./routing.ts').match(new RegExp(`export const ${konstanta} = '([^']+)'`));
+    assert.ok(hodnota, `${konstanta} v routing.ts chybí`);
+    assert.equal(jePlatnaCesta(hodnota![1]), true, `${konstanta} (${hodnota![1]}) skončí na 404`);
+  }
+});
+
+test('App.tsx: /komunita otevře feed i při přímém načtení a přihlášení se na ni vrátí', () => {
+  const app = cti('./App.tsx');
+
+  // Výchozí záložka se bere z URL, ne natvrdo 'profil'.
+  assert.match(app, /useState<ActiveTab>\(\(\) => zalozkaZCesty\(cesta\) \?\? 'profil'\)/);
+  // Záložka Komunita opravdu vykresluje feed z komunita/CommunityPage.
+  assert.match(app, /import \{ CommunityPage \} from '\.\/components\/komunita\/CommunityPage'/);
+  assert.match(app, /activeTab === 'komunita' && \(\s*<CommunityPage/);
+  // Navigace přepíná přes vyberZalozku (mění i URL), ne holým setActiveTab.
+  assert.doesNotMatch(app, /onSelectTab=\{setActiveTab\}/);
+  // Nepřihlášený na /komunita se po loginu vrátí zpátky.
+  assert.match(app, /cesta === CESTA_KOMUNITA \? CESTA_KOMUNITA : CESTA_PROFIL/);
+
+  const tabs = cti('./components/NavigationTabs.tsx');
+  assert.match(tabs, /\{ id: 'komunita', label: 'Komunita'/);
 });

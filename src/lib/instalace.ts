@@ -268,9 +268,21 @@ export interface KrokNavodu {
   ikona: IkonaKroku;
   /** Krok 0 v in-app prohlížeči — zvýrazněný, s tlačítkem „Kopírovat odkaz". */
   zvyrazneny?: boolean;
+  /**
+   * Popis ikony pod textem kroku („ikona: čtverec se šipkou nahoru") —
+   * u kroku, kde člověk hledá malou ikonu vedle adresy. Ikona se pak
+   * kreslí větší.
+   */
+  popisIkony?: string;
 }
 
 const krok = (text: string, ikona: IkonaKroku): KrokNavodu => ({ text, ikona });
+
+/** Popis ikony Sdílet — na iPhonu je malá a bez popisku. */
+export const POPIS_IKONY_SDILET = 'ikona: čtverec se šipkou nahoru';
+
+/** Krok 1 na iOS: ikona Sdílet vedle adresy — větší a s popisem. */
+const krokSdilet = (text: string): KrokNavodu => ({ text, ikona: 'sdilet', popisIkony: POPIS_IKONY_SDILET });
 
 /** In-app prohlížeč: napřed ven do normálního prohlížeče, pak běžný postup. */
 export const KROK_INAPP: KrokNavodu = {
@@ -293,30 +305,28 @@ const IOS_SAFARI = [
   krok('Nech zapnuté „Otevřít jako webovou aplikaci“ a klepni Přidat.', 'potvrdit'),
 ];
 
-/** Ověřeno na reálném iPhonu. */
+/*
+ * CHROME A FIREFOX NA iOS 26 — podle screenshotů z iPhonu:
+ * - Chrome: adresa nahoře, Sdílet ⬆ VPRAVO vedle adresy; s lištou dole je
+ *   vlevo dole. Spodní lišta ← → + [karty] ⋯ Sdílet nemá.
+ * - Firefox: adresa nahoře, Sdílet ⬆ VLEVO vedle adresy, ⟳ vpravo. Spodní
+ *   lišta ‹ › + ⋯ [karty] — žádné ≡ vpravo dole (dřívější krok byl špatně).
+ */
 const IOS_CHROME = [
-  krok('Klepni na ikonu Sdílet ⬆ vlevo nahoře vedle adresy.', 'sdilet'),
+  krokSdilet('Klepni na ikonu Sdílet ⬆ vedle adresy (vpravo nahoře; máš-li lištu dole, vlevo dole).'),
   krok('Sjeď dolů a klepni na Přidat na plochu.', 'pridat'),
   krok('Klepni Přidat.', 'potvrdit'),
 ];
 
 const IOS_FIREFOX = [
-  krok('Klepni na menu ≡ vpravo dole.', 'menu'),
-  krok('Vyber Sdílet.', 'sdilet'),
+  krokSdilet('Klepni na ikonu Sdílet ⬆ vlevo nahoře vedle adresy.'),
   krok('Sjeď dolů a klepni na Přidat na plochu.', 'pridat'),
   krok('Klepni Přidat.', 'potvrdit'),
 ];
 
-const IOS_EDGE = [
-  krok('Klepni na menu ⋯ dole uprostřed.', 'menu'),
-  krok('Vyber Sdílet.', 'sdilet'),
-  krok('Sjeď dolů a klepni na Přidat na plochu.', 'pridat'),
-  krok('Klepni Přidat.', 'potvrdit'),
-];
-
-/** Opera, Brave, DuckDuckGo a ostatní na iOS. */
+/** Edge, Opera, Brave, DuckDuckGo a ostatní na iOS. */
 const IOS_OBECNE = [
-  krok('Otevři menu prohlížeče a vyber Sdílet.', 'sdilet'),
+  krokSdilet('Klepni na ikonu Sdílet ⬆ vedle adresy; když tam není, otevři menu ⋯ dole a vyber Sdílet.'),
   krok('Sjeď dolů a klepni na Přidat na plochu.', 'pridat'),
   krok('Klepni Přidat.', 'potvrdit'),
 ];
@@ -352,7 +362,7 @@ export const KROKY: Record<'ios' | 'android', Record<Prohlizec, KrokNavodu[]>> =
     safari: IOS_SAFARI,
     chrome: IOS_CHROME,
     firefox: IOS_FIREFOX,
-    edge: IOS_EDGE,
+    edge: IOS_OBECNE,
     opera: IOS_OBECNE,
     brave: IOS_OBECNE,
     duckduckgo: IOS_OBECNE,

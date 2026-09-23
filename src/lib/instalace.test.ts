@@ -13,6 +13,7 @@ import {
   PODNADPIS_INSTALACE,
   KROK_INAPP,
   PLATNOST_ZAVRENI_DNI,
+  POPIS_IKONY_SDILET,
   POZNAMKA_ZNOVU,
   URL_NAVODU,
   jeStandalone,
@@ -334,38 +335,58 @@ test('ios/safari: přesně podle ověřeného postupu (iOS 26)', () => {
   ]);
 });
 
-test('ios/chrome: Sdílet vlevo nahoře (ověřeno na iPhonu), bez „nebo v menu ⋯"', () => {
+// iOS 26 podle screenshotů z iPhonu: Chrome má Sdílet ⬆ vpravo vedle adresy
+// (s lištou dole vlevo dole), Firefox vlevo vedle adresy, ≡ vpravo dole nemá.
+
+test('ios/chrome: Sdílet vedle adresy vpravo nahoře, s lištou dole vlevo dole', () => {
   assert.deepEqual(texty('ios', 'chrome'), [
+    ['Klepni na ikonu Sdílet ⬆ vedle adresy (vpravo nahoře; máš-li lištu dole, vlevo dole).', 'sdilet'],
+    ['Sjeď dolů a klepni na Přidat na plochu.', 'pridat'],
+    ['Klepni Přidat.', 'potvrdit'],
+  ]);
+  assert.match(KROKY.ios.chrome[0].text, /vpravo nahoře/);
+  assert.ok(!KROKY.ios.chrome.some((k) => /nebo v menu ⋯/.test(k.text)), 'u ios/chrome se vrátilo „nebo v menu ⋯"');
+});
+
+test('ios/firefox: Sdílet vlevo nahoře vedle adresy (žádné ≡ vpravo dole)', () => {
+  assert.deepEqual(texty('ios', 'firefox'), [
     ['Klepni na ikonu Sdílet ⬆ vlevo nahoře vedle adresy.', 'sdilet'],
     ['Sjeď dolů a klepni na Přidat na plochu.', 'pridat'],
     ['Klepni Přidat.', 'potvrdit'],
   ]);
-  assert.match(KROKY.ios.chrome[0].text, /vlevo nahoře/);
-  assert.ok(!KROKY.ios.chrome.some((k) => /nebo v menu ⋯/.test(k.text)), 'u ios/chrome se vrátilo „nebo v menu ⋯"');
+  assert.match(KROKY.ios.firefox[0].text, /vlevo nahoře/);
 });
 
-test('ios/firefox a ios/edge: menu na různých místech', () => {
-  assert.deepEqual(texty('ios', 'firefox'), [
-    ['Klepni na menu ≡ vpravo dole.', 'menu'],
-    ['Vyber Sdílet.', 'sdilet'],
-    ['Sjeď dolů a klepni na Přidat na plochu.', 'pridat'],
-    ['Klepni Přidat.', 'potvrdit'],
-  ]);
-  assert.deepEqual(texty('ios', 'edge'), [
-    ['Klepni na menu ⋯ dole uprostřed.', 'menu'],
-    ['Vyber Sdílet.', 'sdilet'],
-    ['Sjeď dolů a klepni na Přidat na plochu.', 'pridat'],
-    ['Klepni Přidat.', 'potvrdit'],
-  ]);
-});
-
-test('ios/opera, brave, duckduckgo, jiny: obecný postup přes Sdílet', () => {
+test('ios/edge, opera, brave, duckduckgo, jiny: Sdílet vedle adresy, jinak menu ⋯ dole', () => {
   const obecne = [
-    ['Otevři menu prohlížeče a vyber Sdílet.', 'sdilet'],
+    ['Klepni na ikonu Sdílet ⬆ vedle adresy; když tam není, otevři menu ⋯ dole a vyber Sdílet.', 'sdilet'],
     ['Sjeď dolů a klepni na Přidat na plochu.', 'pridat'],
     ['Klepni Přidat.', 'potvrdit'],
   ];
-  for (const p of ['opera', 'brave', 'duckduckgo', 'jiny'] as const) assert.deepEqual(texty('ios', p), obecne, p);
+  for (const p of ['edge', 'opera', 'brave', 'duckduckgo', 'jiny'] as const) assert.deepEqual(texty('ios', p), obecne, p);
+});
+
+test('žádný iOS prohlížeč kromě Safari nemá v kroku 1 „≡"', () => {
+  for (const prohlizec of PROHLIZECE) {
+    if (prohlizec === 'safari' || prohlizec === 'inapp') continue;
+    const prvni = KROKY.ios[prohlizec][0];
+    assert.doesNotMatch(prvni.text, /≡/, `ios/${prohlizec}: krok 1 posílá na ≡`);
+  }
+});
+
+test('krok 1 s ikonou Sdílet na iOS: větší ikona a popis „čtverec se šipkou nahoru"', () => {
+  assert.equal(POPIS_IKONY_SDILET, 'ikona: čtverec se šipkou nahoru');
+  for (const p of ['chrome', 'firefox', 'edge', 'opera', 'brave', 'duckduckgo', 'jiny'] as const) {
+    assert.equal(KROKY.ios[p][0].popisIkony, POPIS_IKONY_SDILET, `ios/${p}`);
+  }
+  // Safari beze změny: krok 1 je ⋯ v adresním řádku, ne ikona Sdílet.
+  assert.equal(KROKY.ios.safari[0].popisIkony, undefined);
+  // Android popis nepotřebuje — ⋮ / ≡ jsou jasně vidět.
+  assert.ok(Object.values(KROKY.android).every((kroky) => kroky.every((k) => !k.popisIkony)));
+
+  const navod = cti('../components/InstalaceNavod.tsx');
+  assert.match(navod, /krok\.popisIkony && krok\.ikona === 'sdilet' \? <Share className="w-6 h-6" \/>/);
+  assert.match(navod, /\{krok\.popisIkony\}/);
 });
 
 test('android/chrome, edge, brave, opera: ⋮ vpravo nahoře', () => {
@@ -394,14 +415,13 @@ test('android/firefox: ⋮ vpravo nahoře', () => {
   ]);
 });
 
-test('krok 1 říká, kde tlačítko je (kromě obecného „menu prohlížeče")', () => {
-  const kde = /nahoře|dole|vpravo|vlevo|uprostřed/;
+test('krok 1 vždy říká, kde tlačítko je', () => {
+  const kde = /nahoře|dole|vpravo|vlevo|uprostřed|vedle adresy/;
   for (const platforma of ['ios', 'android'] as const) {
     for (const prohlizec of PROHLIZECE) {
       const prvni = KROKY[platforma][prohlizec].find((k) => !k.zvyrazneny);
-      if (prvni && prvni.text !== 'Otevři menu prohlížeče a vyber Sdílet.') {
-        assert.match(prvni.text, kde, `${platforma}/${prohlizec}: „${prvni.text}" neříká kde`);
-      }
+      assert.ok(prvni, `${platforma}/${prohlizec} nemá krok`);
+      assert.match(prvni.text, kde, `${platforma}/${prohlizec}: „${prvni.text}" neříká kde`);
     }
   }
 });

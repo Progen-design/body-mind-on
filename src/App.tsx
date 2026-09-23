@@ -55,7 +55,9 @@ import {
   naZlozvyky, naZpravyTrenera, naZamcenyPlan, nesouladCile, pouzijDokonceni,
   pouzijDokonceniTreninku, vekZDataNarozeni, vyberPlan
 } from './data/adaptery';
-import type { TydenniDenJidel } from './data/adaptery';
+import type { TydenniDenJidel, ZapisMimoPlan } from './data/adaptery';
+import { naZapisyMimoPlan } from './data/adaptery';
+import { ZapisMimoPlanModal } from './components/ZapisMimoPlanModal';
 import { ToastProvider, useToast } from './context/ToastContext';
 // Otaznik u kterekoli metriky umi otevrit TEDa s kontextem te polozky.
 // Kontext, ne prop — otazniky sedi hluboko v kartach a modalech.
@@ -409,6 +411,67 @@ function AppContent() {
   }, []);
   const [isShoppingModalOpen, setIsShoppingModalOpen] = useState(false);
   const [isExportPdfOpen, setIsExportPdfOpen] = useState(false);
+  const [isMimoPlanOpen, setIsMimoPlanOpen] = useState(false);
+  // Jídlo mimo plán za posledních 7 dní (quick_food_logs). Přičítá se do
+  // denního přehledu v Jídelníčku.
+  const [zapisyMimoPlan, setZapisyMimoPlan] = useState<ZapisMimoPlan[]>([]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      apiFetch<{ zapisy: unknown[] }>('/api/nutrition/quick-log')
+        .then(({ zapisy }) => setZapisyMimoPlan(naZapisyMimoPlan(zapisy)))
+        .catch(() => { /* bez zápisů mimo plán přehled ukáže jen plán — výpadek nesmí shodit jídelníček */ });
+    }
+  }, [isAuthenticated]);
+
+  /**
+   * Uložení odhadu z modalu. Zápis v databázi už je (POST), do přehledu se
+   * přidá hned; oprava čísel jde PATCHem. Když oprava selže, přehled se
+   * vrátí na původní odhad a toast to řekne — v DB zůstal právě ten.
+   */
+  const handleUlozitMimoPlan = useCallback(
+    async (puvodni: ZapisMimoPlan, upraveny: ZapisMimoPlan, zmeneno: boolean) => {
+      setIsMimoPlanOpen(false);
+      setZapisyMimoPlan(prev => [...prev.filter(z => z.id !== upraveny.id), upraveny]);
+      if (!zmeneno) return;
+      try {
+        await apiFetch(`/api/nutrition/quick-log/${upraveny.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            kcal: upraveny.kcal,
+            protein_g: upraveny.protein,
+            carbs_g: upraveny.carbs,
+            fat_g: upraveny.fat
+          })
+        });
+      } catch (chyba) {
+        setZapisyMimoPlan(prev => prev.map(z => (z.id === puvodni.id ? puvodni : z)));
+        showToast({
+          title: 'Opravu se nepodařilo uložit',
+          description: chyba instanceof Error ? `${chyba.message} Zůstal původní odhad.` : 'Zůstal původní odhad.',
+          variant: 'error'
+        });
+      }
+    },
+    [showToast]
+  );
+
+  const handleSmazatMimoPlan = useCallback(
+    async (zapis: ZapisMimoPlan) => {
+      setZapisyMimoPlan(prev => prev.filter(z => z.id !== zapis.id));
+      try {
+        await apiFetch(`/api/nutrition/quick-log/${zapis.id}`, { method: 'DELETE' });
+      } catch (chyba) {
+        setZapisyMimoPlan(prev => (prev.some(z => z.id === zapis.id) ? prev : [...prev, zapis]));
+        showToast({
+          title: 'Zápis se nepodařilo smazat',
+          description: chyba instanceof Error ? chyba.message : 'Zkus to prosím znovu.',
+          variant: 'error'
+        });
+      }
+    },
+    [showToast]
+  );
   const [selectedRecipeMeal, setSelectedRecipeMeal] = useState<MealItem | null>(null);
   // JÍDLO Z „TVŮJ DALŠÍ TÝDEN" (TrialPaywallCard, PROMPT_UX_DNES.md bod B).
   // Vlastní stav, ne `selectedRecipeMeal` — to jídlo patří k BUDOUCÍMU
@@ -1248,6 +1311,16 @@ function AppContent() {
             onOpenWeeklyPlan={() => setIsMealModalOpen(true)}
             onOpenShoppingList={() => setIsShoppingModalOpen(true)}
             onExportPdf={() => setIsExportPdfOpen(true)}
+            zapisyMimoPlan={zapisyMimoPlan}
+            onZapsatMimoPlan={() => setIsMimoPlanOpen(true)}
+            onSmazatMimoPlan={handleSmazatMimoPlan}
+          />
+        )}
+
+        {isMimoPlanOpen && (
+          <ZapisMimoPlanModal
+            onZavri={() => setIsMimoPlanOpen(false)}
+            onUlozit={handleUlozitMimoPlan}
           />
         )}
 

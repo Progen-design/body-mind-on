@@ -1,6 +1,7 @@
 // /api/delete-account.js – Smazání účtu a všech dat uživatele
 import { supabaseServer } from '../lib/supabaseServer.js';
 import { smazFotkyUzivatele } from '../lib/community.js';
+import { smazFotkyJidlaUzivatele } from '../lib/quickFoodLog.js';
 
 function getAuthUser(req) {
   const auth = req.headers.authorization || '';
@@ -62,6 +63,15 @@ export default async function handler(req, res) {
       if (smazano > 0) console.log('[delete-account] fotky komunity smazány:', smazano);
     } catch (err) {
       console.error('[delete-account] uklid fotek komunity selhal:', err?.message || err);
+    }
+
+    // FOTKY JÍDLA MIMO PLÁN — stejný důvod, jiný bucket. `quick_food_logs`
+    // kaskádu má, soubory v `quick-log-photos/{user_id}/` ne.
+    try {
+      const { smazano } = await smazFotkyJidlaUzivatele(userId);
+      if (smazano > 0) console.log('[delete-account] fotky jidla mimo plan smazány:', smazano);
+    } catch (err) {
+      console.error('[delete-account] uklid fotek jidla mimo plan selhal:', err?.message || err);
     }
 
     const { data: deleted, error: rpcErr } = await supabaseServer.rpc('delete_user_data', {

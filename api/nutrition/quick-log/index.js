@@ -23,12 +23,14 @@ import { requireActiveMembership } from '../../../lib/membershipHelpers.js';
 import { assertOpenAIDailyBudget, volejModel } from '../../../lib/openai.js';
 import {
   DENNI_LIMIT_ZAPISU,
+  HLASKA_NEDOSTUPNE,
   HLASKA_NEROZPOZNANO,
   MODEL_QUICK_LOG,
   PURPOSE_QUICK_LOG,
   TIMEOUT_MODELU_MS,
   denPraha,
   jeNadDennimLimitem,
+  jeNedostupnostModelu,
   nahrajFotkuJidla,
   overVstup,
   podepsaneUrl,
@@ -179,9 +181,15 @@ export function vytvorHandler(zavislosti = vychoziZavislosti) {
       if (err?.code === 'AI_BUDGET_REACHED' || /budget/i.test(String(err?.message || ''))) {
         return selhani(503, 'Odhad z fotky je na dnešek nedostupný. Zkus to zítra, nebo zadej hodnoty ručně.', 'rozpocet (volejModel)');
       }
-      const timeout = err?.name === 'APIConnectionTimeoutError' || /timed? ?out/i.test(String(err?.message || ''));
-      if (timeout) {
-        return selhani(504, 'Odhad trvá moc dlouho. Zkus to prosím znovu nebo zadej ručně.', 'timeout modelu');
+      // 429 (i docházející kredit), 5xx, timeout, síť → 503 „zkus za chvíli".
+      // Dřív to propadlo na 502 „nepodařilo se rozpoznat jídlo", jako by
+      // chyba byla ve fotce.
+      if (jeNedostupnostModelu(err)) {
+        return selhani(
+          503,
+          HLASKA_NEDOSTUPNE,
+          `openai nedostupne: status=${err?.status ?? '-'} code=${err?.code ?? err?.error?.code ?? '-'} name=${err?.name ?? '-'} purpose=${PURPOSE_QUICK_LOG}`,
+        );
       }
       return selhani(502, HLASKA_NEROZPOZNANO, `model selhal: ${err?.status || err?.name || 'neznamo'}`);
     }

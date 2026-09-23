@@ -8,7 +8,7 @@ const APP_HOST = 'app.bodyandmindon.cz';
 const CHRANENE_PREFIXY = [
   '/start', '/profil', '/login', '/register', '/signup', '/on-club',
   '/chci-vip', '/trener', '/onboarding', '/komunita', '/dashboard',
-  '/club', '/vip', '/training', '/pricing'
+  '/club', '/vip', '/training', '/pricing', '/instalace'
 ];
 
 function jeAppHost(host: string): boolean {

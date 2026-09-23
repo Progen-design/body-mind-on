@@ -8,12 +8,17 @@ import { readFileSync } from 'node:fs';
 import {
   KLIC_ZAVRENO,
   PLATNOST_ZAVRENI_DNI,
+  URL_NAVODU,
   jeStandalone,
   jeZavreno,
   maZobrazitBanner,
+  nabidnoutNavod,
+  urciOs,
   urciPlatformu,
+  variantaNavodu,
   type StavInstalace,
 } from './instalace.ts';
+import { CESTA_INSTALACE, jePlatnaCesta } from '../routing.ts';
 
 const UA = {
   iphone: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
@@ -151,4 +156,68 @@ test('index.html má manifest, apple-touch-icon a meta pro iOS', () => {
     /<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/,
     /<meta name="apple-mobile-web-app-title" content="BMON"/,
   ]) assert.match(html, vzor);
+});
+
+// ---------------------------------------------------------------- trvalý návod /instalace
+
+test('varianta návodu: iOS, Android, desktop', () => {
+  assert.equal(variantaNavodu(urciOs(UA.iphone), false), 'ios');
+  assert.equal(variantaNavodu(urciOs(UA.ipadOs, 5), false), 'ios');
+  assert.equal(variantaNavodu(urciOs(UA.android), false), 'android');
+  assert.equal(variantaNavodu(urciOs(UA.desktop), false), 'desktop');
+  assert.equal(variantaNavodu(urciOs(UA.ipadOs, 0), false), 'desktop', 'Mac bez dotyku dostane QR');
+});
+
+test('varianta návodu: standalone přebíjí platformu — „Máš hotovo"', () => {
+  for (const os of ['ios', 'android', 'desktop'] as const) {
+    assert.equal(variantaNavodu(os, true), 'standalone');
+  }
+});
+
+test('varianta návodu: Instagram na iPhonu je iOS (s poznámkou o Safari), ne QR pro počítač', () => {
+  assert.equal(urciOs(UA.instagram), 'ios');
+  assert.equal(variantaNavodu(urciOs(UA.instagram), false), 'ios');
+  // Banner ho naopak vynechává — přidat na plochu v in-app prohlížeči nejde.
+  assert.equal(urciPlatformu(UA.instagram), 'jine');
+});
+
+test('odkaz na návod (login, profil): jen mobil mimo standalone', () => {
+  assert.equal(nabidnoutNavod('ios', false), true);
+  assert.equal(nabidnoutNavod('android', false), true);
+  assert.equal(nabidnoutNavod('desktop', false), false);
+  assert.equal(nabidnoutNavod('ios', true), false);
+});
+
+test('/instalace je platná veřejná cesta a QR na ni míří', () => {
+  assert.equal(CESTA_INSTALACE, '/instalace');
+  assert.equal(jePlatnaCesta(CESTA_INSTALACE), true);
+  assert.equal(URL_NAVODU, `https://app.bodyandmindon.cz${CESTA_INSTALACE}`);
+
+  // Veřejná = App.tsx ji vykreslí DŘÍV, než se ptá na přihlášení.
+  const app = cti('../App.tsx');
+  const navod = app.indexOf('if (cesta === CESTA_INSTALACE)');
+  assert.ok(navod > -1, 'App.tsx /instalace nevykresluje');
+  assert.ok(navod < app.indexOf('if (!isAuthenticated) {'), '/instalace by chtěla přihlášení');
+  assert.match(cti('../../middleware.ts'), /'\/instalace'/, 'bodyandmindon.cz/instalace by nevedla do appky');
+});
+
+test('trvalé vstupy: menu, login, banner na iOS vede na /instalace', () => {
+  const header = cti('../components/Header.tsx');
+  assert.match(header, /!beziZPlochy\(\) && \(/);
+  assert.match(header, /naviguj\(CESTA_INSTALACE\)/);
+  assert.match(header, /<span>Přidat na plochu<\/span>/);
+
+  const login = cti('../components/LoginScreen.tsx');
+  assert.match(login, /nabidnoutNavod\(osTohotoZarizeni\(\), beziZPlochy\(\)\)/);
+  assert.match(login, /Chceš BMON jako appku\? Návod →/);
+
+  const banner = cti('../components/InstallBanner.tsx');
+  assert.match(banner, /if \(platforma === 'ios'\) \{\s*naviguj\(CESTA_INSTALACE\)/);
+  assert.doesNotMatch(banner, /navodIos/, 'iOS popup se vrátil');
+});
+
+test('QR se kreslí lokálně z balíčku qrcode, ne z cizího endpointu', () => {
+  const navod = cti('../components/InstalaceNavod.tsx');
+  assert.match(navod, /import\('qrcode'\)/);
+  assert.doesNotMatch(navod, /api\.qrserver|chart\.googleapis|quickchart|<img[^>]+qr/i);
 });

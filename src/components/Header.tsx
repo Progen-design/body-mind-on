@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, LogOut, Menu, Repeat, Sliders, Sparkles, X } from 'lucide-react';
+import { Check, LogOut, Menu, Repeat, Sliders, Smartphone, Sparkles, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -7,6 +7,8 @@ import { useTed } from '../context/TedContext';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Avatar } from './Avatar';
 import type { ActiveTab } from './NavigationTabs';
+import { beziZPlochy } from '../lib/instalace';
+import { CESTA_INSTALACE, naviguj } from '../routing';
 
 interface HeaderProps {
   onOpenMenu: () => void;
@@ -250,6 +252,20 @@ export const Header: React.FC<HeaderProps> = ({
                     <Sliders className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                     <span>Upravit preference</span>
                   </button>
+                  {/* Trvalý vstup do návodu — banner jde zavřít, tohle ne.
+                      Z plochy už nemá co nabízet. */}
+                  {!beziZPlochy() && (
+                    <button
+                      onClick={() => {
+                        onCloseMenu();
+                        naviguj(CESTA_INSTALACE);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-900/80 border border-transparent hover:border-slate-800 text-xs font-semibold transition-all text-left"
+                    >
+                      <Smartphone className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                      <span>Přidat na plochu</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* SEKCE „INTEGRACE & ZAŘÍZENÍ" JE PRYČ — BYLA CELÁ VYMYŠLENÁ.

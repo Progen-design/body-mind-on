@@ -109,3 +109,49 @@ export function spotrebujVyzvu(): void {
   vyzva = null;
   oznam();
 }
+
+// ---------------------------------------------------------------- trvalý návod (/instalace)
+
+/** Adresa návodu — sem vede QR kód z počítače, profil i login. */
+export const URL_NAVODU = 'https://app.bodyandmindon.cz/instalace';
+
+export type OsZarizeni = 'ios' | 'android' | 'desktop';
+export type VariantaNavodu = 'standalone' | 'ios' | 'android' | 'desktop';
+
+/**
+ * Operační systém pro návod. Na rozdíl od `urciPlatformu()` (banner) tady
+ * vestavěný prohlížeč Instagramu na iPhonu zůstává iOS — návod mu řekne,
+ * ať stránku otevře v Safari. Poslat ho na QR kód „otevři v telefonu"
+ * by bylo absurdní, v telefonu už je.
+ */
+export function urciOs(userAgent: string, maxTouchPoints = 0): OsZarizeni {
+  const ua = String(userAgent || '');
+  if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
+  if (/Macintosh/i.test(ua) && maxTouchPoints > 1) return 'ios';
+  if (/Android/i.test(ua)) return 'android';
+  return 'desktop';
+}
+
+/** Která varianta návodu: hotovo / iOS kroky / Android / QR pro počítač. */
+export function variantaNavodu(os: OsZarizeni, standalone: boolean): VariantaNavodu {
+  if (standalone) return 'standalone';
+  return os;
+}
+
+/** Je mobil a appka neběží z plochy? Podle toho se ukazují odkazy na návod. */
+export function nabidnoutNavod(os: OsZarizeni, standalone: boolean): boolean {
+  return os !== 'desktop' && !standalone;
+}
+
+/** Běží appka právě teď z plochy? Čte prohlížeč — mimo něj vždy false. */
+export function beziZPlochy(): boolean {
+  if (typeof window === 'undefined') return false;
+  const mq = typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches;
+  return jeStandalone(mq, (navigator as Navigator & { standalone?: boolean }).standalone);
+}
+
+/** OS tohoto zařízení. Mimo prohlížeč 'desktop'. */
+export function osTohotoZarizeni(): OsZarizeni {
+  if (typeof navigator === 'undefined') return 'desktop';
+  return urciOs(navigator.userAgent, navigator.maxTouchPoints);
+}

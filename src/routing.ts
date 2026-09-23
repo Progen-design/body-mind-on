@@ -23,6 +23,12 @@ export const CESTA_PROFIL = '/profil';
 export const CESTA_KOMUNITA = '/komunita';
 
 /**
+ * Návod „Přidat na plochu". VEŘEJNÁ cesta jako /login — vede sem QR kód
+ * z počítače a odkaz z přihlašovací obrazovky, tedy i nepřihlášení.
+ */
+export const CESTA_INSTALACE = '/instalace';
+
+/**
  * Admin nastaveni integraci. Nevede sem zadny odkaz z navigace — je to
  * adresa, kterou si admin otevre sam a ktera se rucne overuje proti
  * ADMIN_TOKEN. Do PLATNE_CESTY patri proto, ze bez ni by ji App.tsx
@@ -35,6 +41,7 @@ export const PLATNE_CESTY = [
   CESTA_PRIHLASENI,
   CESTA_PROFIL,
   CESTA_KOMUNITA,
+  CESTA_INSTALACE,
   CESTA_ADMIN_INTEGRACE,
   ...CESTY_REGISTRACE
 ] as const;

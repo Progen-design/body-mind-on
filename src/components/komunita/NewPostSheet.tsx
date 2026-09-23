@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { X, ImagePlus, Loader2, Lock, Users, AlertTriangle, ShieldCheck } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, useDragControls, type PanInfo } from 'motion/react';
 import { apiFetch } from '../../lib/api';
 import { zmensFotku } from '../../lib/zmensFotku';
 import { PravidlaKomunity } from './PravidlaKomunity';
 import { KomunitaKategorie, KomunitaPrispevek, MAX_FOTEK } from './typy';
 
 /**
- * NOVÝ PŘÍSPĚVEK — běžný, nebo check-in.
+ * NOVÝ PŘÍSPĚVEK — spodní sheet, běžný příspěvek nebo check-in.
+ *
+ * Vysune se zdola, zabere nejvýš 90 % výšky a zavře se tažením za úchyt
+ * dolů — jako každý sheet v telefonu. Táhne se jen za hlavičku, ať se
+ * posun obsahu nepere se zavíráním.
  *
  * Check-in je fotka + váha + pár slov. Váha se předvyplní z posledního
  * vážení, aby ji nikdo nepřepisoval z hlavy; nechat ji prázdnou je taky
@@ -22,6 +26,8 @@ interface Props {
   /** Kategorie, ve které uživatel zrovna je — předvyplní se. */
   vychoziKategorieId: string | null;
   posledniVahaKg: number | null;
+  /** Prázdný feed otevírá rovnou check-in. */
+  vychoziTyp?: 'text' | 'checkin';
   onZavri: () => void;
   onUlozeno: (prispevek: KomunitaPrispevek) => void;
 }
@@ -30,13 +36,15 @@ export const NewPostSheet: React.FC<Props> = ({
   kategorie,
   vychoziKategorieId,
   posledniVahaKg,
+  vychoziTyp,
   onZavri,
   onUlozeno,
 }) => {
   const progresId = kategorie.find((k) => k.slug === 'muj-progres')?.id ?? null;
+  const tah = useDragControls();
 
   const [typ, setTyp] = useState<'text' | 'checkin'>(
-    vychoziKategorieId && vychoziKategorieId === progresId ? 'checkin' : 'text',
+    vychoziTyp ?? (vychoziKategorieId && vychoziKategorieId === progresId ? 'checkin' : 'text'),
   );
   const [kategorieId, setKategorieId] = useState<string | null>(vychoziKategorieId ?? null);
   const [text, setText] = useState('');
@@ -122,30 +130,52 @@ export const NewPostSheet: React.FC<Props> = ({
     || (typ === 'text' && text.trim().length === 0)
     || (typ === 'checkin' && text.trim().length === 0 && fotky.length === 0 && vaha.trim().length === 0);
 
+  const konecTahu = (_: unknown, info: PanInfo) => {
+    // Zavře buď dost dlouhý tah, nebo rychlé švihnutí dolů.
+    if (info.offset.y > 120 || info.velocity.y > 600) onZavri();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         onClick={onZavri}
-        className="fixed inset-0 bg-black/80 backdrop-blur-md"
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm"
       />
 
       <motion.div
-        initial={{ y: 40, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="relative z-10 w-full sm:max-w-lg max-h-[92vh] bg-povrch rounded-t-3xl sm:rounded-3xl border border-slate-800 shadow-[0_-8px_32px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="novy-prispevek-nadpis"
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        transition={{ type: 'spring', damping: 32, stiffness: 320 }}
+        drag="y"
+        dragControls={tah}
+        dragListener={false}
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={{ top: 0, bottom: 0.6 }}
+        onDragEnd={konecTahu}
+        className="relative z-10 w-full sm:max-w-lg max-h-[90dvh] bg-povrch rounded-t-3xl border border-b-0 border-slate-800 shadow-[0_-8px_32px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden"
       >
-        <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/40 shrink-0">
-          <h2 className="text-base font-bold text-white">Nový příspěvek</h2>
-          <button
-            type="button"
-            onClick={onZavri}
-            aria-label="Zavřít"
-            className="p-2 rounded-xl text-slate-400 hover:text-white bg-slate-900 border border-slate-800"
-          >
-            <X className="w-4 h-4" />
-          </button>
+        <div
+          onPointerDown={(e) => tah.start(e)}
+          className="shrink-0 touch-none cursor-grab active:cursor-grabbing border-b border-slate-800"
+        >
+          <div className="mx-auto mt-2.5 w-10 h-1.5 rounded-full bg-slate-700" aria-hidden="true" />
+          <div className="px-4 sm:px-5 py-2.5 flex items-center justify-between">
+            <h2 id="novy-prispevek-nadpis" className="text-base font-bold text-white">Nový příspěvek</h2>
+            <button
+              type="button"
+              onClick={onZavri}
+              onPointerDown={(e) => e.stopPropagation()}
+              aria-label="Zavřít"
+              className="p-2 rounded-xl text-slate-400 hover:text-white bg-slate-900 border border-slate-800"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <div className="p-4 sm:p-5 space-y-4 overflow-y-auto">
@@ -168,22 +198,33 @@ export const NewPostSheet: React.FC<Props> = ({
             ))}
           </div>
 
-          <div>
-            <label htmlFor="komunita-kategorie" className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+          <div role="group" aria-labelledby="komunita-kategorie">
+            <span id="komunita-kategorie" className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
               Kategorie
-            </label>
-            <select
-              id="komunita-kategorie"
-              value={kategorieId ?? ''}
-              onChange={(e) => setKategorieId(e.target.value || null)}
-              disabled={typ === 'checkin' && Boolean(progresId)}
-              className="w-full min-h-11 px-3 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 disabled:opacity-60"
-            >
-              <option value="">Bez kategorie</option>
-              {kategorie.map((k) => (
-                <option key={k.id} value={k.id}>{k.name}</option>
-              ))}
-            </select>
+            </span>
+            {/* Check-in patří do „Můj progres" — ostatní chipy jsou pak zamčené. */}
+            <div className="flex flex-wrap gap-2">
+              {[{ id: null, name: 'Bez kategorie' }, ...kategorie].map((k) => {
+                const aktivni = kategorieId === k.id;
+                const zamceno = typ === 'checkin' && Boolean(progresId) && k.id !== progresId;
+                return (
+                  <button
+                    key={k.id ?? 'zadna'}
+                    type="button"
+                    onClick={() => setKategorieId(k.id)}
+                    disabled={zamceno}
+                    aria-pressed={aktivni}
+                    className={`min-h-9 px-3.5 rounded-full text-xs font-semibold border transition-all disabled:opacity-40 ${
+                      aktivni
+                        ? 'bg-cyan-950/70 text-akcent-cyan border-cyan-500/50'
+                        : 'bg-slate-900 text-slate-400 border-slate-800'
+                    }`}
+                  >
+                    {k.name}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {typ === 'checkin' && (
@@ -324,7 +365,7 @@ export const NewPostSheet: React.FC<Props> = ({
 
         {pravidlaOtevrena && <PravidlaKomunity onZavri={() => setPravidlaOtevrena(false)} />}
 
-        <div className="p-4 border-t border-slate-800 bg-slate-900/40 shrink-0">
+        <div className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] border-t border-slate-800 bg-slate-900/40 shrink-0">
           <button
             type="button"
             onClick={uloz}

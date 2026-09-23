@@ -1,4 +1,4 @@
-// GET /api/community – seznam témat (volitelně filtr category_id)
+// GET /api/community – seznam témat (volitelně filtr category_id, stránkování offset/limit)
 // POST /api/community – nové téma (category_id, content, post_type, weight_kg, photos[])
 import { supabaseServer } from '../../lib/supabaseServer.js';
 import {
@@ -20,6 +20,15 @@ import {
 /** Náhled odpovědi v kartě — celý text by kartu roztáhl přes celou obrazovku. */
 const NAHLED_ODPOVEDI = 200;
 
+/** Strop jedné stránky feedu. Bez `limit` se vrací celá, jako dřív. */
+const MAX_STRANKA = 100;
+
+/** Celé nezáporné číslo z query, jinak výchozí hodnota. */
+function celeCislo(hodnota, vychozi) {
+  const n = Number.parseInt(String(hodnota ?? ''), 10);
+  return Number.isFinite(n) && n >= 0 ? n : vychozi;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -31,6 +40,10 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     const categoryId = (req.query?.category_id || '').trim() || null;
+    // Feed tahá po 20 a dotahuje při scrollu. Strop 100 drží i tady, ať
+    // nikdo neutáhne celou tabulku jedním dotazem.
+    const limit = Math.min(Math.max(celeCislo(req.query?.limit, MAX_STRANKA), 1), MAX_STRANKA);
+    const offset = celeCislo(req.query?.offset, 0);
     let query = supabaseServer
       .from('community_posts')
       .select(
@@ -41,7 +54,10 @@ export default async function handler(req, res) {
       // autor — filtruje se v dotazu, ne až při vykreslení.
       .or(`is_hidden.eq.false,user_id.eq.${user.id}`)
       .order('created_at', { ascending: false })
-      .limit(100);
+      // Druhé řazení podle id: dva příspěvky ve stejné milisekundě by se
+      // jinak mezi stránkami mohly prohodit — jeden dvakrát, druhý nikdy.
+      .order('id', { ascending: false })
+      .range(offset, offset + limit - 1);
     if (categoryId) query = query.eq('category_id', categoryId);
     const { data: topics, error } = await query;
 
@@ -100,7 +116,13 @@ export default async function handler(req, res) {
     }));
     // `is_admin` řídí, jestli se nad seznamem ukáže panel moderace. Je to
     // jen UI příznak — každý endpoint moderace si oprávnění ověřuje sám.
-    return res.status(200).json({ topics: topicsWithCount, is_admin: jeAdminKomunity(user) });
+    return res.status(200).json({
+      topics: topicsWithCount,
+      // Plná stránka = možná je další. Prázdná další stránka je levnější
+      // než druhý dotaz na count.
+      has_more: list.length === limit,
+      is_admin: jeAdminKomunity(user),
+    });
   }
 
   // POST

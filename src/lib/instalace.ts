@@ -1,0 +1,111 @@
+/**
+ * „PŘIDAT NA PLOCHU" — kdy nabídnout instalaci a jak.
+ *
+ * Čistá logika bez Reactu (testy v instalace.test.ts) + jeden globální
+ * posluchač `beforeinstallprompt`. Ten musí běžet od startu stránky
+ * (main.tsx): Chrome událost pošle jednou, klidně dřív, než se přihlášený
+ * uživatel dostane k banneru — kdo ji nezachytí hned, už ji nedostane.
+ */
+
+/** Klíč v localStorage: kdy uživatel banner zavřel (ms od epochy). */
+export const KLIC_ZAVRENO = 'bmon_install_dismissed';
+
+/** Jak dlouho po „Teď ne" banner mlčí. */
+export const PLATNOST_ZAVRENI_DNI = 30;
+
+export type Platforma = 'ios' | 'android' | 'jine';
+
+/**
+ * iOS (i iPadOS, který se od verze 13 hlásí jako Mac s dotykem), Android,
+ * nebo cokoli jiného. Vestavěné prohlížeče Instagramu a Facebooku na plochu
+ * přidávat neumí — pro ně „jine", ať jim banner neslibuje, co nejde.
+ */
+export function urciPlatformu(userAgent: string, maxTouchPoints = 0): Platforma {
+  const ua = String(userAgent || '');
+  if (/FBAN|FBAV|Instagram/i.test(ua)) return 'jine';
+  if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
+  if (/Macintosh/i.test(ua) && maxTouchPoints > 1) return 'ios';
+  if (/Android/i.test(ua)) return 'android';
+  return 'jine';
+}
+
+/**
+ * Běží appka už z plochy? `display-mode: standalone` hlásí Chrome i Safari
+ * 17+, starší iOS jen `navigator.standalone`.
+ */
+export function jeStandalone(displayModeStandalone: boolean, navigatorStandalone?: boolean): boolean {
+  return displayModeStandalone || navigatorStandalone === true;
+}
+
+/** Zavřel uživatel banner v posledních 30 dnech? Nečitelná hodnota = nezavřel. */
+export function jeZavreno(ulozeno: string | null | undefined, ted: number = Date.now()): boolean {
+  const kdy = Number(ulozeno);
+  if (!ulozeno || !Number.isFinite(kdy) || kdy <= 0) return false;
+  return ted - kdy < PLATNOST_ZAVRENI_DNI * 24 * 60 * 60 * 1000;
+}
+
+export interface StavInstalace {
+  prihlasen: boolean;
+  platforma: Platforma;
+  standalone: boolean;
+  zavreno: boolean;
+  /** Zachytil se `beforeinstallprompt`? Bez něj Android instalovat neumíme. */
+  maVyzvu: boolean;
+}
+
+/**
+ * Ukázat banner?
+ * - jen přihlášenému, jen na mobilu, jen mimo standalone, jen když ho
+ *   v posledních 30 dnech nezavřel,
+ * - Android jen s zachycenou výzvou (Firefox a spol. ji nepošlou — tlačítko
+ *   by nic neudělalo), iOS výzvu nemá nikdy, tam jde návod.
+ */
+export function maZobrazitBanner(s: StavInstalace): boolean {
+  if (!s.prihlasen || s.standalone || s.zavreno) return false;
+  if (s.platforma === 'ios') return true;
+  if (s.platforma === 'android') return s.maVyzvu;
+  return false;
+}
+
+// ---------------------------------------------------------------- výzva prohlížeče
+
+/** `beforeinstallprompt` — TypeScript ho v lib.dom nezná. */
+export interface VyzvaInstalace extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+let vyzva: VyzvaInstalace | null = null;
+const odberatele = new Set<() => void>();
+const oznam = () => odberatele.forEach((f) => f());
+
+/** Volá main.tsx hned při startu. */
+export function zachytVyzvuInstalace(): void {
+  if (typeof window === 'undefined') return;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Bez preventDefault() by Chrome ukázal vlastní mini-infobar dřív, než
+    // se uživatel přihlásí.
+    e.preventDefault();
+    vyzva = e as VyzvaInstalace;
+    oznam();
+  });
+  window.addEventListener('appinstalled', () => {
+    vyzva = null;
+    oznam();
+  });
+}
+
+export function aktualniVyzva(): VyzvaInstalace | null {
+  return vyzva;
+}
+
+export function odebirejVyzvu(f: () => void): () => void {
+  odberatele.add(f);
+  return () => odberatele.delete(f);
+}
+
+/** Výzvu jde použít jen jednou — po prompt() ji zahodíme. */
+export function spotrebujVyzvu(): void {
+  vyzva = null;
+  oznam();
+}

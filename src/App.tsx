@@ -58,6 +58,7 @@ import {
 import type { TydenniDenJidel, ZapisMimoPlan } from './data/adaptery';
 import { naZapisyMimoPlan } from './data/adaptery';
 import { ZapisMimoPlanModal } from './components/ZapisMimoPlanModal';
+import { InstallBanner } from './components/InstallBanner';
 import { ToastProvider, useToast } from './context/ToastContext';
 // Otaznik u kterekoli metriky umi otevrit TEDa s kontextem te polozky.
 // Kontext, ne prop — otazniky sedi hluboko v kartach a modalech.
@@ -1180,6 +1181,11 @@ function AppContent() {
           activeTab={activeTab}
           onSelectTab={vyberZalozku}
         />
+
+        {/* „Přidat na plochu" — pod navigací, ne přes ni. Appka nemá spodní
+            lištu (navigace je nahoře), takže banner v toku stránky nic
+            nepřekrývá, ani plovoucí „+" v Komunitě. */}
+        <InstallBanner prihlasen={isAuthenticated} />
 
         {/* 3. Karta uživatele.
             Na záložce „Můj profil" se nekreslí — ProfileSection tam má vlastní

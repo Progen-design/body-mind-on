@@ -3,8 +3,23 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { Sentry, spustSentry } from './lib/sentry';
+import { zachytVyzvuInstalace } from './lib/instalace';
 
 spustSentry();
+
+// „Přidat na plochu": výzvu prohlížeče zachytit hned při startu — Chrome ji
+// pošle jednou a klidně dřív, než se vykreslí banner.
+zachytVyzvuInstalace();
+
+// Service worker jen kvůli instalovatelnosti (public/sw.js nic necachuje).
+// Jen v produkci — v dev by se pletl do HMR.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {
+      // Bez service workeru appka funguje dál, jen ji Android nenabídne k instalaci.
+    });
+  });
+}
 
 /**
  * Pad komponenty jinak skonci bilou obrazovkou a uzivatel netusi, co se stalo —

@@ -1062,7 +1062,7 @@ function AppContent() {
 
   return (
     <TedProvider zeptejSe={zeptejSeTeda}>
-    <div className="min-h-screen bg-pozadi text-slate-100 relative overflow-x-hidden font-['Plus_Jakarta_Sans',sans-serif]">
+    <div className="min-h-screen bg-pozadi text-slate-100 relative overflow-x-clip font-['Plus_Jakarta_Sans',sans-serif]">
       {/* Ambient Cyber Neon Background Glows */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] bg-gradient-to-b from-cyan-500/10 via-emerald-500/5 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="fixed bottom-0 right-0 w-[550px] h-[450px] bg-lime-500/5 rounded-full blur-3xl pointer-events-none -z-10" />

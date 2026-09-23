@@ -348,3 +348,32 @@ export function uvodKroku(prohlizec: Prohlizec): string {
  */
 export const POZNAMKA_ZNOVU =
   'Když se místo appky otevře web s adresním řádkem, smaž ikonu z plochy a přidej ji znovu.';
+
+// ---------------------------------------------------------------- texty stránky a banneru
+
+/** Podnadpis /instalace. Dřívější „bez instalace, jedno klepnutí" nesedělo — kroků je víc. */
+export const PODNADPIS_INSTALACE = 'Zatím bez App Storu — přidáš si ji na plochu z prohlížeče.';
+
+/** Informační box na /instalace — proč web na ploše a ne appka z obchodu. */
+export const INFO_APPKA_VE_VYVOJI =
+  'Nativní aplikace pro App Store a Google Play je ve vývoji. Do té doby funguje BMON jako webová aplikace na ploše — stejné funkce, žádné stahování.';
+
+/** Zkrácená verze pod odkazem na návod na přihlašovací obrazovce. */
+export const INFO_APPKA_KRATCE = 'Appka pro App Store je ve vývoji — zatím si BMON přidej na plochu.';
+
+/**
+ * Popisek hlavního tlačítka banneru. Android s výzvou instaluje rovnou,
+ * jinde vede na návod — a říká, kolik kroků čeká (Safari 4, Chrome na
+ * iPhonu 3), ať to nevypadá na delší proceduru, než je.
+ */
+export function popisekTlacitkaBanneru(instalujRovnou: boolean, pocetKroku: number): string {
+  if (instalujRovnou) return 'Nainstalovat';
+  if (!Number.isFinite(pocetKroku) || pocetKroku <= 0) return 'Návod';
+  const tvar = pocetKroku === 1 ? 'krok' : pocetKroku <= 4 ? 'kroky' : 'kroků';
+  return `Návod (${pocetKroku} ${tvar})`;
+}
+
+/** Kolik kroků má návod pro tenhle prohlížeč (0 na počítači). */
+export function pocetKrokuNavodu(r: RozpoznanyProhlizec): number {
+  return r.platforma === 'desktop' ? 0 : KROKY[r.platforma][r.prohlizec].length;
+}

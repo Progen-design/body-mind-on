@@ -6,8 +6,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import {
+  INFO_APPKA_KRATCE,
+  INFO_APPKA_VE_VYVOJI,
   KLIC_ZAVRENO,
   KROKY,
+  PODNADPIS_INSTALACE,
   KROK_INAPP,
   PLATNOST_ZAVRENI_DNI,
   POZNAMKA_ZNOVU,
@@ -16,6 +19,8 @@ import {
   jeZavreno,
   maZobrazitBanner,
   nabidnoutNavod,
+  pocetKrokuNavodu,
+  popisekTlacitkaBanneru,
   prohlizecZParametru,
   rozpoznejProhlizec,
   umiTlacitkoInstalace,
@@ -198,10 +203,11 @@ test('trvalé vstupy: menu a login vedou na /instalace', () => {
   assert.match(login, /Chceš BMON jako appku\? Návod →/);
 });
 
-test('banner: „Nainstalovat" jen Android s výzvou, jinak „Jak na to" → /instalace', () => {
+test('banner: „Nainstalovat" jen Android s výzvou, jinak „Návod (N kroky)" → /instalace', () => {
   const banner = cti('../components/InstallBanner.tsx');
   assert.match(banner, /const instalujRovnou = platforma === 'android' && maVyzvu;/);
-  assert.match(banner, /\{instalujRovnou \? 'Nainstalovat' : 'Jak na to'\}/);
+  assert.match(banner, /popisekTlacitkaBanneru\(\s*instalujRovnou,/);
+  assert.doesNotMatch(banner, /'Jak na to'/);
   assert.match(banner, /if \(!instalujRovnou \|\| !vyzva\) \{\s*naviguj\(CESTA_INSTALACE\)/);
   assert.doesNotMatch(banner, /navodIos/, 'iOS popup se vrátil');
 });
@@ -370,4 +376,43 @@ test('návod i banner berou výzvu ze společného posluchače (main.tsx), ne z 
   assert.match(navod, /spotrebujVyzvu\(\)/);
   assert.doesNotMatch(navod, /addEventListener\('beforeinstallprompt'/);
   assert.match(cti('../main.tsx'), /zachytVyzvuInstalace\(\)/);
+});
+
+// ---------------------------------------------------------------- nativní appka ve vývoji
+
+test('/instalace: podnadpis bez slibu „jedno klepnutí" a box „ve vývoji" nad kroky', () => {
+  assert.equal(PODNADPIS_INSTALACE, 'Zatím bez App Storu — přidáš si ji na plochu z prohlížeče.');
+  assert.match(INFO_APPKA_VE_VYVOJI, /App Store a Google Play je ve vývoji/);
+
+  const navod = cti('../components/InstalaceNavod.tsx');
+  assert.match(navod, /\{PODNADPIS_INSTALACE\}/);
+  assert.doesNotMatch(navod, /Jedno klepnutí/, 'vrátil se starý podnadpis');
+  assert.match(navod, /\{INFO_APPKA_VE_VYVOJI\}/, '/instalace neříká, že appka je ve vývoji');
+  // Na Androidu s tlačítkem je box až pod tlačítkem, jinak nad kroky.
+  const tlacitko = navod.indexOf('{tlacitko && <TlacitkoInstalace />}');
+  const box = navod.indexOf('<InfoAppka />', tlacitko);
+  const kroky = navod.indexOf('{uvodKroku(prohlizec.prohlizec)}');
+  assert.ok(tlacitko > -1 && box > tlacitko && box < kroky, 'box musí být pod tlačítkem a nad kroky');
+  // Neutrální, ne varovný.
+  const info = navod.slice(navod.indexOf('const InfoAppka'), navod.indexOf('const Hotovo'));
+  assert.doesNotMatch(info, /amber|red-|rose-/, 'box vypadá jako varování');
+});
+
+test('login: pod odkazem na návod krátká poznámka „ve vývoji"', () => {
+  assert.match(INFO_APPKA_KRATCE, /ve vývoji/);
+  const login = cti('../components/LoginScreen.tsx');
+  const odkaz = login.indexOf('Chceš BMON jako appku? Návod →');
+  const poznamka = login.indexOf('{INFO_APPKA_KRATCE}');
+  assert.ok(odkaz > -1 && poznamka > odkaz, 'poznámka chybí nebo je nad odkazem');
+  // Jen v bloku podmíněném mobilem mimo standalone.
+  const blok = login.slice(login.indexOf('nabidnoutNavod(osTohotoZarizeni(), beziZPlochy()) && ('), poznamka);
+  assert.ok(blok.length > 0 && !blok.includes(')}\n\n'), 'poznámka je mimo podmínku mobil / prohlížeč');
+});
+
+test('popisek tlačítka banneru: Nainstalovat, nebo Návod s počtem kroků prohlížeče', () => {
+  assert.equal(popisekTlacitkaBanneru(true, 4), 'Nainstalovat');
+  assert.equal(popisekTlacitkaBanneru(false, pocetKrokuNavodu({ platforma: 'ios', prohlizec: 'safari' })), 'Návod (4 kroky)');
+  assert.equal(popisekTlacitkaBanneru(false, pocetKrokuNavodu({ platforma: 'ios', prohlizec: 'chrome' })), 'Návod (3 kroky)');
+  assert.equal(popisekTlacitkaBanneru(false, 5), 'Návod (5 kroků)');
+  assert.equal(popisekTlacitkaBanneru(false, 0), 'Návod');
 });

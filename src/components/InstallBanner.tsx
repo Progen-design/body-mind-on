@@ -8,6 +8,9 @@ import {
   jeZavreno,
   maZobrazitBanner,
   odebirejVyzvu,
+  pocetKrokuNavodu,
+  popisekTlacitkaBanneru,
+  rozpoznejProhlizec,
   spotrebujVyzvu,
   urciPlatformu,
 } from '../lib/instalace';
@@ -16,8 +19,8 @@ import {
  * „MĚJ BMON PO RUCE JAKO APLIKACI."
  *
  * Android s výzvou prohlížeče: „Nainstalovat" vyvolá systémovou výzvu.
- * Jinde (iOS, Android bez výzvy): „Jak na to" vede na návod /instalace
- * podle prohlížeče.
+ * Jinde (iOS): „Návod (4 kroky)" vede na návod /instalace podle
+ * prohlížeče — počet kroků odpovídá prohlížeči (Safari 4, Chrome 3).
  * „Teď ne" banner schová na 30 dní (localStorage `bmon_install_dismissed`).
  *
  * Kdy se ukazuje, rozhoduje `maZobrazitBanner()` v lib/instalace.ts.
@@ -101,7 +104,10 @@ export const InstallBanner: React.FC<Props> = ({ prihlasen }) => {
           onClick={pridej}
           className="min-h-10 px-3 rounded-xl text-xs font-bold text-slate-950 bg-akcent-cyan"
         >
-          {instalujRovnou ? 'Nainstalovat' : 'Jak na to'}
+          {popisekTlacitkaBanneru(
+            instalujRovnou,
+            pocetKrokuNavodu(rozpoznejProhlizec(navigator.userAgent, navigator.maxTouchPoints)),
+          )}
         </button>
       </div>
     </div>

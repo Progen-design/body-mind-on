@@ -16,7 +16,9 @@ import {
 } from 'lucide-react';
 import { naviguj } from '../routing';
 import {
+  INFO_APPKA_VE_VYVOJI,
   KROKY,
+  PODNADPIS_INSTALACE,
   POZNAMKA_ZNOVU,
   URL_NAVODU,
   aktualniVyzva,
@@ -67,14 +69,24 @@ const InstalaceNavod: React.FC = () => {
   const { maVyzvu, hotovo } = useStavInstalace();
 
   if ((beziZPlochy() && !prepsano) || hotovo) return <Hotovo />;
-  if (prohlizec.platforma === 'desktop') return <NavodDesktop />;
+  if (prohlizec.platforma === 'desktop') {
+    return (
+      <div className="space-y-4">
+        <InfoAppka />
+        <NavodDesktop />
+      </div>
+    );
+  }
 
   const kroky = KROKY[prohlizec.platforma][prohlizec.prohlizec];
   const tlacitko = umiTlacitkoInstalace(prohlizec) && maVyzvu;
 
+  // Box o nativní appce je nad kroky. Na Androidu s tlačítkem „Nainstalovat
+  // aplikaci" až pod ním — hlavní akce má být první, co člověk uvidí.
   return (
     <div className="space-y-4">
       {tlacitko && <TlacitkoInstalace />}
+      <InfoAppka />
       <div className="space-y-3">
         {tlacitko && <p className="text-xs text-slate-500">Nebo ručně:</p>}
         <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{uvodKroku(prohlizec.prohlizec)}</p>
@@ -91,6 +103,14 @@ const InstalaceNavod: React.FC = () => {
     </div>
   );
 };
+
+/** Proč web na ploše a ne appka z obchodu. Informace, ne varování — neutrální barvy. */
+const InfoAppka: React.FC = () => (
+  <div className="p-3.5 rounded-2xl bg-slate-900/70 border border-slate-800 flex items-start gap-2.5">
+    <Info className="w-4 h-4 shrink-0 mt-0.5 text-slate-400" />
+    <p className="text-xs text-slate-300 leading-relaxed">{INFO_APPKA_VE_VYVOJI}</p>
+  </div>
+);
 
 const Hotovo: React.FC = () => (
   <div className="p-5 rounded-2xl bg-emerald-950/30 border border-emerald-500/40 flex items-start gap-3">
@@ -282,7 +302,7 @@ export const StrankaInstalace: React.FC = () => (
 
       <div className="space-y-2">
         <h1 className="text-2xl font-extrabold text-white leading-tight">BMON jako aplikace na ploše</h1>
-        <p className="text-sm text-slate-400">Bez App Storu, bez instalace. Jedno klepnutí.</p>
+        <p className="text-sm text-slate-400">{PODNADPIS_INSTALACE}</p>
       </div>
 
       <InstalaceNavod />

@@ -31,7 +31,18 @@ import { LoginScreen } from './components/LoginScreen';
 // Kontexty, perzistence a synchronizace
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { StartRegistrace } from './components/registrace/StartRegistrace';
-import { CESTA_ADMIN_INTEGRACE, CESTY_REGISTRACE, bezpecnyRedirect, jePlatnaCesta, naviguj, useCesta } from './routing';
+import {
+  CESTA_ADMIN_INTEGRACE,
+  CESTA_KOMUNITA,
+  CESTA_PROFIL,
+  CESTY_REGISTRACE,
+  bezpecnyRedirect,
+  cestaProZalozku,
+  jePlatnaCesta,
+  naviguj,
+  useCesta,
+  zalozkaZCesty
+} from './routing';
 import { AdminIntegrace } from './components/admin/AdminIntegrace';
 import { StrankaNeexistuje } from './components/StrankaNeexistuje';
 import { useProfilData } from './hooks/useProfilData';
@@ -110,7 +121,23 @@ function AppContent() {
   } = useProfilData(isAuthenticated);
 
   // Výchozí záložka je profil — „Přehled" už neexistuje, sloučil se do něj.
-  const [activeTab, setActiveTab] = useState<ActiveTab>('profil');
+  // /komunita otevře rovnou Komunitu — i při přímém načtení nebo ze záložky
+  // prohlížeče, ne jen průchodem přes navigaci.
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => zalozkaZCesty(cesta) ?? 'profil');
+
+  // Zpět/vpřed v prohlížeči mění cestu — záložka ji musí následovat.
+  useEffect(() => {
+    const zCesty = zalozkaZCesty(cesta);
+    if (zCesty) setActiveTab(zCesty);
+    else if (cesta === CESTA_PROFIL) setActiveTab((t) => (t === 'komunita' ? 'profil' : t));
+  }, [cesta]);
+
+  // Přepnutí záložky přepíše i adresu, ať jde Komunita sdílet a obnovit.
+  const vyberZalozku = useCallback((zalozka: ActiveTab) => {
+    setActiveTab(zalozka);
+    const cil = cestaProZalozku(zalozka, window.location.pathname.replace(/\/+$/, '') || '/');
+    if (cil) naviguj(cil);
+  }, []);
   const [profile, setProfile] = useState<UserProfile>(PRAZDNY_PROFIL);
   // Ukázka příštího týdne pro trial, ať vidí konkrétní jídla dřív, než
   // zaplatí. null = žádná ukázka (ne v trialu, nebo ještě nevznikla).
@@ -997,7 +1024,11 @@ function AppContent() {
   if (!isAuthenticated) {
     return (
       <LoginScreen
-        redirectTo={bezpecnyRedirect(parametry.get('redirect'))}
+        // Nepřihlášený na /komunita se po přihlášení vrátí tam, ne na /profil.
+        redirectTo={bezpecnyRedirect(
+          parametry.get('redirect'),
+          cesta === CESTA_KOMUNITA ? CESTA_KOMUNITA : CESTA_PROFIL
+        )}
         predvyplnenyEmail={parametry.get('email') || ''}
         poRegistraci={parametry.get('registered') === '1'}
         onPrejitNaRegistraci={() => naviguj('/start')}
@@ -1074,7 +1105,7 @@ function AppContent() {
           isMenuOpen={isMenuOpen}
           onOpenMenu={() => setIsMenuOpen(true)}
           onCloseMenu={() => setIsMenuOpen(false)}
-          onSelectTab={setActiveTab}
+          onSelectTab={vyberZalozku}
           onOpenPreferences={() => setIsPreferencesModalOpen(true)}
           birthDate={profilData?.user?.birth_date ?? null}
           registrovanOd={profilData?.user?.created_at ?? null}
@@ -1084,7 +1115,7 @@ function AppContent() {
         {/* 2. Navigace — hned pod hlavičkou, ať je po ruce bez scrollování. */}
         <NavigationTabs
           activeTab={activeTab}
-          onSelectTab={setActiveTab}
+          onSelectTab={vyberZalozku}
         />
 
         {/* 3. Karta uživatele.
@@ -1099,7 +1130,7 @@ function AppContent() {
             latestWeightRecord={latestRecord}
             biometrics={biometrics}
             onEditProfile={() => setIsPreferencesModalOpen(true)}
-            onViewFullProfile={() => setActiveTab('profil')}
+            onViewFullProfile={() => vyberZalozku('profil')}
           />
         )}
 
@@ -1139,7 +1170,7 @@ function AppContent() {
             zamcenyPlan={zamcenyPlan}
             posledniSynchronizaceZarizeni={posledniSynchronizaceHodinek}
             withingsPosledniStazeni={profilData?.withings_last_sync_at ?? null}
-            onSelectTab={setActiveTab}
+            onSelectTab={vyberZalozku}
             onToggleMeal={handleToggleMeal}
             onSelectRecipe={(meal) => setSelectedRecipeMeal(meal)}
             onOpenWeightModal={() => setIsAddRecordModalOpen(true)}
@@ -1251,7 +1282,7 @@ function AppContent() {
           <div className="p-6 rounded-3xl bg-povrch border border-slate-800 text-center">
             <p className="text-sm text-slate-300 mb-1">Zatím nemáme naměřená data.</p>
             <p className="text-sm text-slate-300 mb-4">Jídelníček a trénink můžeš používat i bez hodinek. Měření je volitelné.</p>
-            <button type="button" onClick={() => setActiveTab('profil')} className="mb-4 min-h-11 rounded-xl border border-slate-700 px-4 text-sm text-slate-200">Zpět na dnešní plán</button>
+            <button type="button" onClick={() => vyberZalozku('profil')} className="mb-4 min-h-11 rounded-xl border border-slate-700 px-4 text-sm text-slate-200">Zpět na dnešní plán</button>
             <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
               {zdravi.pripojeno
                 ? 'Zařízení je připojené, ale ještě nedorazilo první měření.'
@@ -1276,7 +1307,7 @@ function AppContent() {
                 )}
                 <button
                   type="button"
-                  onClick={() => setActiveTab('vaha')}
+                  onClick={() => vyberZalozku('vaha')}
                   className="px-4 py-2 rounded-xl text-xs font-bold text-slate-300 bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all active:scale-[0.99]"
                 >
                   Připojit hodinky

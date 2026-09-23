@@ -15,6 +15,14 @@ export const CESTA_PRIHLASENI = '/login';
 export const CESTA_PROFIL = '/profil';
 
 /**
+ * Komunita má vlastní adresu (23. 9. 2026). Do té doby byla jen záložkou
+ * uvnitř /profil bez URL — jenže middleware.ts ji odjakživa vedl jako
+ * aplikační cestu, takže odkaz nebo záložka na /komunita končil na 404.
+ * Ostatní záložky zůstávají pod /profil.
+ */
+export const CESTA_KOMUNITA = '/komunita';
+
+/**
  * Admin nastaveni integraci. Nevede sem zadny odkaz z navigace — je to
  * adresa, kterou si admin otevre sam a ktera se rucne overuje proti
  * ADMIN_TOKEN. Do PLATNE_CESTY patri proto, ze bez ni by ji App.tsx
@@ -26,12 +34,28 @@ export const PLATNE_CESTY = [
   '/',
   CESTA_PRIHLASENI,
   CESTA_PROFIL,
+  CESTA_KOMUNITA,
   CESTA_ADMIN_INTEGRACE,
   ...CESTY_REGISTRACE
 ] as const;
 
 export function jePlatnaCesta(cesta: string): boolean {
   return (PLATNE_CESTY as readonly string[]).includes(cesta);
+}
+
+/** Záložka, kterou cesta otevře při přímém načtení. `null` = výchozí. */
+export function zalozkaZCesty(cesta: string): 'komunita' | null {
+  return cesta === CESTA_KOMUNITA ? 'komunita' : null;
+}
+
+/**
+ * Kam přepsat URL při přepnutí záložky. Mimo /profil a /komunita (login,
+ * registrace, `/`) se adresa nemění — `null`.
+ */
+export function cestaProZalozku(zalozka: string, aktualniCesta: string): string | null {
+  if (aktualniCesta !== CESTA_PROFIL && aktualniCesta !== CESTA_KOMUNITA) return null;
+  const cil = zalozka === 'komunita' ? CESTA_KOMUNITA : CESTA_PROFIL;
+  return cil === aktualniCesta ? null : cil;
 }
 
 /**

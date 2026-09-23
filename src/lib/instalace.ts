@@ -155,3 +155,30 @@ export function osTohotoZarizeni(): OsZarizeni {
   if (typeof navigator === 'undefined') return 'desktop';
   return urciOs(navigator.userAgent, navigator.maxTouchPoints);
 }
+
+// ---------------------------------------------------------------- texty kroků návodu
+
+/**
+ * iOS 26: Safari nemá Sdílet ve spodní liště — je v menu (⋯ nebo ≡) vedle
+ * adresního řádku. Starý návod „klepni na Sdílet dole" nechal uživatele bez
+ * tlačítka, na které by klepl. Starší iOS má Sdílet dole pořád, proto
+ * závorka v prvním kroku.
+ */
+export const KROKY_IOS = [
+  'Klepni na ⋯ nebo ≡ vedle adresy (na starším iOS na ikonu Sdílet dole).',
+  'Vyber Sdílet.',
+  'Sjeď dolů a klepni na Přidat na plochu.',
+  'Nech zapnuté „Otevřít jako webovou aplikaci“ a potvrď Přidat.',
+] as const;
+
+/** Android bez výzvy prohlížeče — stejný formát jako iOS. */
+export const KROKY_ANDROID = [
+  '⋮ vpravo nahoře → Přidat na plochu / Nainstalovat aplikaci.',
+  'Potvrď — ikona BMON se objeví na ploše.',
+] as const;
+
+/** Poznámky pod iOS kroky. */
+export const POZNAMKY_IOS = [
+  'Funguje jen v Safari, ne v Chrome/Instagram prohlížeči.',
+  'Když se místo appky otevře web s adresním řádkem, smaž ikonu z plochy a přidej ji znovu ze Safari.',
+] as const;

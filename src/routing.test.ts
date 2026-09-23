@@ -74,7 +74,7 @@ test('PLATNE_CESTY obsahuje presne ocekavanou mnozinu — zadna navic, zadna chy
   // se vykreslila. Opravneni resi ADMIN_TOKEN na serveru, ne tenhle seznam.
   assert.deepEqual(
     [...PLATNE_CESTY].sort(),
-    ['/', '/admin/integrace', '/komunita', '/login', '/profil', '/register', '/signup', '/start'].sort()
+    ['/', '/admin/integrace', '/instalace', '/komunita', '/login', '/profil', '/register', '/signup', '/start'].sort()
   );
 });
 

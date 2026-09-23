@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Eye, EyeOff, Loader2, Lock, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { beziZPlochy, nabidnoutNavod, osTohotoZarizeni } from '../lib/instalace';
+import { CESTA_INSTALACE, naviguj } from '../routing';
 
 interface LoginScreenProps {
   /** Kam po prihlaseni. Bere se z ?redirect=, jinak profil. */
@@ -154,6 +156,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             {odesilam ? 'Přihlašuji…' : 'Přihlásit se'}
           </button>
         </form>
+
+        {/* Jen na mobilu a jen v prohlížeči — na počítači ani z plochy
+            nemá „jako appku" smysl. */}
+        {nabidnoutNavod(osTohotoZarizeni(), beziZPlochy()) && (
+          <p className="mt-3 text-center text-xs text-slate-400">
+            <a
+              href={CESTA_INSTALACE}
+              onClick={(e) => {
+                e.preventDefault();
+                naviguj(CESTA_INSTALACE);
+              }}
+              className="text-akcent-cyan font-semibold hover:underline"
+            >
+              Chceš BMON jako appku? Návod →
+            </a>
+          </p>
+        )}
 
         <div className="mt-5 p-3 rounded-2xl bg-slate-900/70 border border-slate-800 flex items-center gap-2.5">
           <Lock className="w-4 h-4 text-cyan-400 shrink-0" />

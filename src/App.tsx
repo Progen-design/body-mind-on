@@ -33,6 +33,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { StartRegistrace } from './components/registrace/StartRegistrace';
 import {
   CESTA_ADMIN_INTEGRACE,
+  CESTA_INSTALACE,
   CESTA_KOMUNITA,
   CESTA_PROFIL,
   CESTY_REGISTRACE,
@@ -59,6 +60,7 @@ import type { TydenniDenJidel, ZapisMimoPlan } from './data/adaptery';
 import { naZapisyMimoPlan } from './data/adaptery';
 import { ZapisMimoPlanModal } from './components/ZapisMimoPlanModal';
 import { InstallBanner } from './components/InstallBanner';
+import { StrankaInstalace } from './components/InstalaceNavod';
 import { ToastProvider, useToast } from './context/ToastContext';
 // Otaznik u kterekoli metriky umi otevrit TEDa s kontextem te polozky.
 // Kontext, ne prop — otazniky sedi hluboko v kartach a modalech.
@@ -1063,6 +1065,12 @@ function AppContent() {
   // bez platneho tokenu endpointy vrati 403 a stranka ukaze chybu.
   if (cesta === CESTA_ADMIN_INTEGRACE) {
     return <AdminIntegrace />;
+  }
+
+  // NÁVOD „PŘIDAT NA PLOCHU" je veřejný — přichází sem QR kód z počítače
+  // i odkaz z přihlašovací obrazovky, tedy i nepřihlášení.
+  if (cesta === CESTA_INSTALACE) {
+    return <StrankaInstalace />;
   }
 
   // Odhlášený uživatel vidí výběr profilu místo aplikace.

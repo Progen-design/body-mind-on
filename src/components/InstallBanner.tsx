@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Smartphone, X, Share } from 'lucide-react';
+import { Smartphone } from 'lucide-react';
+import { CESTA_INSTALACE, naviguj } from '../routing';
 import {
   KLIC_ZAVRENO,
   aktualniVyzva,
-  jeStandalone,
+  beziZPlochy,
   jeZavreno,
   maZobrazitBanner,
   odebirejVyzvu,
@@ -15,7 +16,7 @@ import {
  * „MĚJ BMON PO RUCE JAKO APLIKACI."
  *
  * Android/Chrome: tlačítko vyvolá systémovou výzvu k instalaci.
- * iOS: výzvu Safari nemá — tlačítko ukáže, kde je „Přidat na plochu".
+ * iOS: výzvu Safari nemá — tlačítko vede na návod /instalace (tři kroky).
  * „Teď ne" banner schová na 30 dní (localStorage `bmon_install_dismissed`).
  *
  * Kdy se ukazuje, rozhoduje `maZobrazitBanner()` v lib/instalace.ts.
@@ -33,15 +34,9 @@ function prectiZavreno(): boolean {
   }
 }
 
-function standaloneTed(): boolean {
-  const mq = typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches;
-  return jeStandalone(mq, (navigator as Navigator & { standalone?: boolean }).standalone);
-}
-
 export const InstallBanner: React.FC<Props> = ({ prihlasen }) => {
   const [maVyzvu, setMaVyzvu] = useState(() => aktualniVyzva() !== null);
   const [zavreno, setZavreno] = useState(prectiZavreno);
-  const [navodIos, setNavodIos] = useState(false);
   const platforma = urciPlatformu(navigator.userAgent, navigator.maxTouchPoints);
 
   useEffect(() => odebirejVyzvu(() => setMaVyzvu(aktualniVyzva() !== null)), []);
@@ -49,7 +44,7 @@ export const InstallBanner: React.FC<Props> = ({ prihlasen }) => {
   const zobrazit = maZobrazitBanner({
     prihlasen,
     platforma,
-    standalone: standaloneTed(),
+    standalone: beziZPlochy(),
     zavreno,
     maVyzvu,
   });
@@ -66,7 +61,7 @@ export const InstallBanner: React.FC<Props> = ({ prihlasen }) => {
 
   const pridej = async () => {
     if (platforma === 'ios') {
-      setNavodIos(true);
+      naviguj(CESTA_INSTALACE);
       return;
     }
     const vyzva = aktualniVyzva();
@@ -83,7 +78,7 @@ export const InstallBanner: React.FC<Props> = ({ prihlasen }) => {
     <div
       role="region"
       aria-label="Přidat aplikaci na plochu"
-      className="relative p-3.5 rounded-2xl bg-povrch border border-cyan-500/30 flex items-center gap-3"
+      className="p-3.5 rounded-2xl bg-povrch border border-cyan-500/30 flex items-center gap-3"
     >
       <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-akcent-cyan to-akcent-lime text-na-akcentu flex items-center justify-center shrink-0">
         <Smartphone className="w-5 h-5" />
@@ -105,29 +100,6 @@ export const InstallBanner: React.FC<Props> = ({ prihlasen }) => {
           Přidat na plochu
         </button>
       </div>
-
-      {navodIos && (
-        <div
-          role="dialog"
-          aria-modal="false"
-          aria-label="Jak přidat na plochu"
-          className="absolute left-0 right-0 top-full mt-2 z-40 p-4 rounded-2xl bg-slate-900 border border-slate-700 shadow-[0_8px_32px_rgba(0,0,0,0.6)]"
-        >
-          <button
-            type="button"
-            onClick={() => setNavodIos(false)}
-            aria-label="Zavřít návod"
-            className="absolute top-2 right-2 p-1.5 rounded-lg text-slate-400 hover:text-white"
-          >
-            <X className="w-4 h-4" />
-          </button>
-          <p className="pr-6 text-sm text-slate-200 leading-relaxed">
-            Klepni na Sdílet{' '}
-            <Share className="inline w-4 h-4 -mt-0.5 text-akcent-cyan" aria-hidden="true" />{' '}
-            (ikona čtverec se šipkou) → Přidat na plochu.
-          </p>
-        </div>
-      )}
     </div>
   );
 };

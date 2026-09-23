@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Eye, EyeOff, Loader2, Lock, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { beziZPlochy, nabidnoutNavod, osTohotoZarizeni } from '../lib/instalace';
+import { INFO_APPKA_KRATCE, beziZPlochy, nabidnoutNavod, osTohotoZarizeni } from '../lib/instalace';
 import { CESTA_INSTALACE, naviguj } from '../routing';
 
 interface LoginScreenProps {
@@ -171,6 +171,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             >
               Chceš BMON jako appku? Návod →
             </a>
+            <span className="block mt-1 text-[11px] text-slate-500">{INFO_APPKA_KRATCE}</span>
           </p>
         )}
 

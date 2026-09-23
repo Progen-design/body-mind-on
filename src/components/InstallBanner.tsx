@@ -15,8 +15,9 @@ import {
 /**
  * „MĚJ BMON PO RUCE JAKO APLIKACI."
  *
- * Android/Chrome: tlačítko vyvolá systémovou výzvu k instalaci.
- * iOS: výzvu Safari nemá — tlačítko vede na návod /instalace (tři kroky).
+ * Android s výzvou prohlížeče: „Nainstalovat" vyvolá systémovou výzvu.
+ * Jinde (iOS, Android bez výzvy): „Jak na to" vede na návod /instalace
+ * podle prohlížeče.
  * „Teď ne" banner schová na 30 dní (localStorage `bmon_install_dismissed`).
  *
  * Kdy se ukazuje, rozhoduje `maZobrazitBanner()` v lib/instalace.ts.
@@ -59,13 +60,16 @@ export const InstallBanner: React.FC<Props> = ({ prihlasen }) => {
     setZavreno(true);
   };
 
+  // Android s výzvou prohlížeče nainstaluje rovnou, všude jinde vede tlačítko
+  // na návod podle prohlížeče (/instalace).
+  const instalujRovnou = platforma === 'android' && maVyzvu;
+
   const pridej = async () => {
-    if (platforma === 'ios') {
+    const vyzva = aktualniVyzva();
+    if (!instalujRovnou || !vyzva) {
       naviguj(CESTA_INSTALACE);
       return;
     }
-    const vyzva = aktualniVyzva();
-    if (!vyzva) return;
     spotrebujVyzvu();
     await vyzva.prompt();
     const { outcome } = await vyzva.userChoice;
@@ -97,7 +101,7 @@ export const InstallBanner: React.FC<Props> = ({ prihlasen }) => {
           onClick={pridej}
           className="min-h-10 px-3 rounded-xl text-xs font-bold text-slate-950 bg-akcent-cyan"
         >
-          Přidat na plochu
+          {instalujRovnou ? 'Nainstalovat' : 'Jak na to'}
         </button>
       </div>
     </div>

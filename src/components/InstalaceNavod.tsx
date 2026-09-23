@@ -1,145 +1,213 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Share,
   SquarePlus,
   CheckCircle2,
   Ellipsis,
   EllipsisVertical,
+  Menu,
   Download,
   Smartphone,
   ArrowLeft,
   Info,
+  AppWindow,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { naviguj } from '../routing';
 import {
-  KROKY_ANDROID,
-  KROKY_IOS,
-  POZNAMKY_IOS,
+  KROKY,
+  POZNAMKA_ZNOVU,
   URL_NAVODU,
   aktualniVyzva,
   beziZPlochy,
+  jeNainstalovano,
   odebirejVyzvu,
-  osTohotoZarizeni,
+  prohlizecZParametru,
+  rozpoznejProhlizec,
   spotrebujVyzvu,
-  variantaNavodu,
+  umiTlacitkoInstalace,
+  uvodKroku,
+  type IkonaKroku,
+  type KrokNavodu,
+  type RozpoznanyProhlizec,
 } from '../lib/instalace';
 
 /**
- * NÁVOD „PŘIDAT NA PLOCHU" — trvale dostupný, ne jen jednorázový banner.
+ * NÁVOD „PŘIDAT NA PLOCHU" — na míru prohlížeči.
  *
- * Varianty (vybírá `variantaNavodu()` v lib/instalace.ts):
- * - standalone: hotovo, appka už běží z plochy,
- * - iOS: čtyři kroky přes menu vedle adresy → Sdílet (iOS 26), texty v lib/instalace.ts,
- * - Android: tlačítko „Nainstalovat" (když Chrome poslal výzvu), jinak kroky přes ⋮,
- * - desktop: QR kód na tuhle stránku, ať se otevře v telefonu.
+ * - Android Chrome / Edge / Samsung: velké tlačítko „Nainstalovat aplikaci"
+ *   (výzva `beforeinstallprompt` zachycená v main.tsx). Dokud nepřišla,
+ *   kroky přes menu. Po `appinstalled` „Hotovo".
+ * - iOS Safari / Chrome / Firefox / Edge, Android Firefox: kroky pro daný
+ *   prohlížeč (texty v lib/instalace.ts → KROKY).
+ * - In-app prohlížeč (Instagram, Facebook…): napřed „Otevřít v prohlížeči"
+ *   + „Kopírovat odkaz", pod tím kroky pro Safari / Chrome.
+ * - Počítač: QR kód na tuhle stránku.
+ * - Už z plochy: „Máš hotovo".
  *
- * QR se kreslí lokálně z balíčku `qrcode` (žádný cizí obrázkový endpoint)
- * a načítá se až na počítači — telefon ho nepotřebuje.
+ * `?ua=ios-chrome` apod. přepíše detekci — jen pro kontrolu na počítači.
  */
+function zjistiProhlizec(): { prohlizec: RozpoznanyProhlizec; prepsano: boolean } {
+  const prepis = prohlizecZParametru(new URLSearchParams(window.location.search).get('ua'));
+  if (prepis) return { prohlizec: prepis, prepsano: true };
+  return { prohlizec: rozpoznejProhlizec(navigator.userAgent, navigator.maxTouchPoints), prepsano: false };
+}
+
+/** Sleduje výzvu k instalaci a `appinstalled` — stejný zdroj jako InstallBanner. */
+function useStavInstalace() {
+  const precti = () => ({ maVyzvu: aktualniVyzva() !== null, hotovo: jeNainstalovano() });
+  const [stav, setStav] = useState(precti);
+  useEffect(() => odebirejVyzvu(() => setStav(precti())), []);
+  return stav;
+}
+
 const InstalaceNavod: React.FC = () => {
-  const varianta = variantaNavodu(osTohotoZarizeni(), beziZPlochy());
+  const [{ prohlizec, prepsano }] = useState(zjistiProhlizec);
+  const { maVyzvu, hotovo } = useStavInstalace();
 
-  if (varianta === 'standalone') {
-    return (
-      <div className="p-5 rounded-2xl bg-emerald-950/30 border border-emerald-500/40 flex items-start gap-3">
-        <CheckCircle2 className="w-6 h-6 text-akcent-lime shrink-0" />
-        <p className="text-sm font-semibold text-slate-100">Máš hotovo — BMON už běží jako aplikace.</p>
+  if ((beziZPlochy() && !prepsano) || hotovo) return <Hotovo />;
+  if (prohlizec.platforma === 'desktop') return <NavodDesktop />;
+
+  const kroky = KROKY[prohlizec.platforma][prohlizec.prohlizec];
+  const tlacitko = umiTlacitkoInstalace(prohlizec) && maVyzvu;
+
+  return (
+    <div className="space-y-4">
+      {tlacitko && <TlacitkoInstalace />}
+      <div className="space-y-3">
+        {tlacitko && <p className="text-xs text-slate-500">Nebo ručně:</p>}
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{uvodKroku(prohlizec.prohlizec)}</p>
+        <ol>
+          {kroky.map((k, i) => (
+            <Krok key={k.text} cislo={i + 1} krok={k} />
+          ))}
+        </ol>
+        <p className="flex items-start gap-2 pt-1 text-xs text-slate-400">
+          <Info className="w-4 h-4 shrink-0 text-amber-300" />
+          <span>{POZNAMKA_ZNOVU}</span>
+        </p>
       </div>
-    );
-  }
-
-  if (varianta === 'ios') return <NavodIos />;
-  if (varianta === 'android') return <NavodAndroid />;
-  return <NavodDesktop />;
+    </div>
+  );
 };
 
-/**
- * Jeden krok návodu. NESMÍ VYPADAT JAKO TLAČÍTKO — dřív to byly karty
- * s rámečkem a lidé na ně klepali, místo aby hledali menu v Safari. Teď je
- * to řádek: číslo, ikona, text, mezi kroky jen tenká linka. Žádný hover,
- * žádný kurzor, žádné pozadí.
- */
-const Krok: React.FC<{ cislo: number; ikona: React.ReactNode; children: React.ReactNode }> = ({ cislo, ikona, children }) => (
-  <li className="flex items-center gap-3 py-3 border-b border-slate-800/70 last:border-b-0">
-    <span className="w-5 text-sm font-bold text-slate-500 tabular-nums shrink-0" aria-hidden="true">
-      {cislo}.
-    </span>
-    <span className="w-10 flex items-center justify-center gap-1 text-akcent-cyan shrink-0" aria-hidden="true">
-      {ikona}
-    </span>
-    <span className="text-sm text-slate-200 leading-snug">{children}</span>
-  </li>
-);
-
-/** Řádek nad kroky — ať je jasné, že tady se nic neklepe. */
-const UvodKroku: React.FC<{ kde: string }> = ({ kde }) => (
-  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-    Postup v {kde} (nic tady neklikáš):
-  </p>
-);
-
-const IKONY_IOS = [
-  <>
-    <Ellipsis className="w-5 h-5" />
-    <Share className="w-3.5 h-3.5 opacity-70" />
-  </>,
-  <Share className="w-5 h-5" />,
-  <SquarePlus className="w-5 h-5" />,
-  <CheckCircle2 className="w-5 h-5" />,
-];
-
-const NavodIos: React.FC = () => (
-  <div className="space-y-3">
-    <UvodKroku kde="Safari" />
-    <ol>
-      {KROKY_IOS.map((text, i) => (
-        <Krok key={text} cislo={i + 1} ikona={IKONY_IOS[i]}>{text}</Krok>
-      ))}
-    </ol>
-    <div className="space-y-2 pt-1">
-      {POZNAMKY_IOS.map((poznamka) => (
-        <p key={poznamka} className="flex items-start gap-2 text-xs text-slate-400">
-          <Info className="w-4 h-4 shrink-0 text-amber-300" />
-          <span>{poznamka}</span>
-        </p>
-      ))}
-    </div>
+const Hotovo: React.FC = () => (
+  <div className="p-5 rounded-2xl bg-emerald-950/30 border border-emerald-500/40 flex items-start gap-3">
+    <CheckCircle2 className="w-6 h-6 text-akcent-lime shrink-0" />
+    <p className="text-sm font-semibold text-slate-100">Máš hotovo — BMON už běží jako aplikace.</p>
   </div>
 );
 
-const NavodAndroid: React.FC = () => {
-  const [maVyzvu, setMaVyzvu] = useState(() => aktualniVyzva() !== null);
-  useEffect(() => odebirejVyzvu(() => setMaVyzvu(aktualniVyzva() !== null)), []);
-
+const TlacitkoInstalace: React.FC = () => {
   const nainstaluj = async () => {
     const vyzva = aktualniVyzva();
     if (!vyzva) return;
     spotrebujVyzvu();
     await vyzva.prompt();
+    // Přijetí ohlásí `appinstalled` → useStavInstalace přepne na „Hotovo".
   };
 
-  if (maVyzvu) {
-    return (
+  return (
+    <button
+      type="button"
+      onClick={nainstaluj}
+      className="w-full min-h-14 rounded-2xl text-base font-bold text-slate-950 bg-akcent-cyan inline-flex items-center justify-center gap-2.5 shadow-[0_8px_24px_rgba(0,242,254,0.3)]"
+    >
+      <Download className="w-5 h-5" />
+      <span>Nainstalovat aplikaci</span>
+    </button>
+  );
+};
+
+const IKONY: Record<IkonaKroku, React.ReactNode> = {
+  'menu-vedle-adresy': (
+    <>
+      <Ellipsis className="w-5 h-5" />
+      <Share className="w-3.5 h-3.5 opacity-70" />
+    </>
+  ),
+  menu: <Menu className="w-5 h-5" />,
+  'menu-svisle': <EllipsisVertical className="w-5 h-5" />,
+  sdilet: <Share className="w-5 h-5" />,
+  pridat: <SquarePlus className="w-5 h-5" />,
+  potvrdit: <CheckCircle2 className="w-5 h-5" />,
+  aplikace: <AppWindow className="w-5 h-5" />,
+};
+
+/**
+ * Jeden krok návodu. NESMÍ VYPADAT JAKO TLAČÍTKO — dřív to byly karty
+ * s rámečkem a lidé na ně klepali, místo aby hledali menu v prohlížeči.
+ * Řádek: číslo, ikona, text, mezi kroky jen tenká linka. Žádný hover,
+ * žádný kurzor. Výjimka je zvýrazněný krok „Otevřít v prohlížeči" v in-app
+ * prohlížeči — ten má vlastní tlačítko „Kopírovat odkaz".
+ */
+const Krok: React.FC<{ cislo: number; krok: KrokNavodu }> = ({ cislo, krok }) => (
+  <li
+    className={`py-3 border-b border-slate-800/70 last:border-b-0 ${
+      krok.zvyrazneny ? '-mx-3 px-3 mb-2 rounded-xl bg-amber-950/30 border border-amber-500/40' : ''
+    }`}
+  >
+    <div className="flex items-center gap-3">
+      <span className="w-5 text-sm font-bold text-slate-500 tabular-nums shrink-0" aria-hidden="true">
+        {cislo}.
+      </span>
+      <span
+        className={`w-10 flex items-center justify-center gap-1 shrink-0 ${krok.zvyrazneny ? 'text-amber-300' : 'text-akcent-cyan'}`}
+        aria-hidden="true"
+      >
+        {IKONY[krok.ikona]}
+      </span>
+      <span className="text-sm text-slate-200 leading-snug">{krok.text}</span>
+    </div>
+    {krok.zvyrazneny && <KopirovatOdkaz />}
+  </li>
+);
+
+/**
+ * „Kopírovat odkaz" pro in-app prohlížeč: odkaz se pak vloží do Safari /
+ * Chromu. Když schránka nejde (starší WebView ji blokuje), ukáže se pole
+ * s označeným odkazem ke zkopírování ručně.
+ */
+const KopirovatOdkaz: React.FC = () => {
+  const [stav, setStav] = useState<'nic' | 'hotovo' | 'rucne'>('nic');
+  const pole = useRef<HTMLInputElement>(null);
+  const odkaz = window.location.href;
+
+  useEffect(() => {
+    if (stav === 'rucne') pole.current?.select();
+  }, [stav]);
+
+  const kopiruj = async () => {
+    try {
+      await navigator.clipboard.writeText(odkaz);
+      setStav('hotovo');
+    } catch {
+      setStav('rucne');
+    }
+  };
+
+  return (
+    <div className="mt-2.5 pl-8 space-y-2">
       <button
         type="button"
-        onClick={nainstaluj}
-        className="w-full min-h-14 rounded-2xl text-base font-bold text-slate-950 bg-akcent-cyan inline-flex items-center justify-center gap-2.5 shadow-[0_8px_24px_rgba(0,242,254,0.3)]"
+        onClick={kopiruj}
+        className="min-h-10 px-3.5 rounded-xl text-xs font-bold text-slate-950 bg-amber-300 inline-flex items-center gap-1.5"
       >
-        <Download className="w-5 h-5" />
-        <span>Nainstalovat</span>
+        {stav === 'hotovo' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+        <span>{stav === 'hotovo' ? 'Zkopírováno' : 'Kopírovat odkaz'}</span>
       </button>
-    );
-  }
-
-  const ikony = [<EllipsisVertical className="w-5 h-5" />, <CheckCircle2 className="w-5 h-5" />];
-  return (
-    <div className="space-y-3">
-      <UvodKroku kde="Chromu" />
-      <ol>
-        {KROKY_ANDROID.map((text, i) => (
-          <Krok key={text} cislo={i + 1} ikona={ikony[i]}>{text}</Krok>
-        ))}
-      </ol>
+      {stav === 'rucne' && (
+        <input
+          ref={pole}
+          type="text"
+          readOnly
+          value={odkaz}
+          onFocus={(e) => e.currentTarget.select()}
+          aria-label="Odkaz na návod ke zkopírování"
+          className="w-full min-h-10 px-3 rounded-lg bg-slate-950 border border-slate-700 text-xs text-slate-200 font-mono"
+        />
+      )}
     </div>
   );
 };

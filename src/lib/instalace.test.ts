@@ -7,18 +7,22 @@ import { readFileSync } from 'node:fs';
 
 import {
   KLIC_ZAVRENO,
+  KROKY,
+  KROK_INAPP,
   PLATNOST_ZAVRENI_DNI,
-  KROKY_ANDROID,
-  KROKY_IOS,
-  POZNAMKY_IOS,
+  POZNAMKA_ZNOVU,
   URL_NAVODU,
   jeStandalone,
   jeZavreno,
   maZobrazitBanner,
   nabidnoutNavod,
-  urciOs,
+  prohlizecZParametru,
+  rozpoznejProhlizec,
+  umiTlacitkoInstalace,
   urciPlatformu,
-  variantaNavodu,
+  uvodKroku,
+  type Prohlizec,
+  type RozpoznanyProhlizec,
   type StavInstalace,
 } from './instalace.ts';
 import { CESTA_INSTALACE, jePlatnaCesta } from '../routing.ts';
@@ -163,27 +167,6 @@ test('index.html má manifest, apple-touch-icon a meta pro iOS', () => {
 
 // ---------------------------------------------------------------- trvalý návod /instalace
 
-test('varianta návodu: iOS, Android, desktop', () => {
-  assert.equal(variantaNavodu(urciOs(UA.iphone), false), 'ios');
-  assert.equal(variantaNavodu(urciOs(UA.ipadOs, 5), false), 'ios');
-  assert.equal(variantaNavodu(urciOs(UA.android), false), 'android');
-  assert.equal(variantaNavodu(urciOs(UA.desktop), false), 'desktop');
-  assert.equal(variantaNavodu(urciOs(UA.ipadOs, 0), false), 'desktop', 'Mac bez dotyku dostane QR');
-});
-
-test('varianta návodu: standalone přebíjí platformu — „Máš hotovo"', () => {
-  for (const os of ['ios', 'android', 'desktop'] as const) {
-    assert.equal(variantaNavodu(os, true), 'standalone');
-  }
-});
-
-test('varianta návodu: Instagram na iPhonu je iOS (s poznámkou o Safari), ne QR pro počítač', () => {
-  assert.equal(urciOs(UA.instagram), 'ios');
-  assert.equal(variantaNavodu(urciOs(UA.instagram), false), 'ios');
-  // Banner ho naopak vynechává — přidat na plochu v in-app prohlížeči nejde.
-  assert.equal(urciPlatformu(UA.instagram), 'jine');
-});
-
 test('odkaz na návod (login, profil): jen mobil mimo standalone', () => {
   assert.equal(nabidnoutNavod('ios', false), true);
   assert.equal(nabidnoutNavod('android', false), true);
@@ -204,7 +187,7 @@ test('/instalace je platná veřejná cesta a QR na ni míří', () => {
   assert.match(cti('../../middleware.ts'), /'\/instalace'/, 'bodyandmindon.cz/instalace by nevedla do appky');
 });
 
-test('trvalé vstupy: menu, login, banner na iOS vede na /instalace', () => {
+test('trvalé vstupy: menu a login vedou na /instalace', () => {
   const header = cti('../components/Header.tsx');
   assert.match(header, /!beziZPlochy\(\) && \(/);
   assert.match(header, /naviguj\(CESTA_INSTALACE\)/);
@@ -213,9 +196,13 @@ test('trvalé vstupy: menu, login, banner na iOS vede na /instalace', () => {
   const login = cti('../components/LoginScreen.tsx');
   assert.match(login, /nabidnoutNavod\(osTohotoZarizeni\(\), beziZPlochy\(\)\)/);
   assert.match(login, /Chceš BMON jako appku\? Návod →/);
+});
 
+test('banner: „Nainstalovat" jen Android s výzvou, jinak „Jak na to" → /instalace', () => {
   const banner = cti('../components/InstallBanner.tsx');
-  assert.match(banner, /if \(platforma === 'ios'\) \{\s*naviguj\(CESTA_INSTALACE\)/);
+  assert.match(banner, /const instalujRovnou = platforma === 'android' && maVyzvu;/);
+  assert.match(banner, /\{instalujRovnou \? 'Nainstalovat' : 'Jak na to'\}/);
+  assert.match(banner, /if \(!instalujRovnou \|\| !vyzva\) \{\s*naviguj\(CESTA_INSTALACE\)/);
   assert.doesNotMatch(banner, /navodIos/, 'iOS popup se vrátil');
 });
 
@@ -225,37 +212,162 @@ test('QR se kreslí lokálně z balíčku qrcode, ne z cizího endpointu', () =>
   assert.doesNotMatch(navod, /api\.qrserver|chart\.googleapis|quickchart|<img[^>]+qr/i);
 });
 
-// ---------------------------------------------------------------- texty kroků (iOS 26)
+// ---------------------------------------------------------------- prohlížeč z user-agenta
 //
-// iOS 26 Safari nemá Sdílet ve spodní liště — je v menu vedle adresy.
-// Starý první krok „klepni na Sdílet dole" nechal lidi bez tlačítka.
+// Reálné UA z 09/2026. iOS 26 Safari má v UA zmražené „iPhone OS 18_6"
+// a „Version/26.0".
 
-test('iOS návod má 4 kroky a první vede do menu vedle adresy', () => {
-  assert.equal(KROKY_IOS.length, 4);
-  assert.match(KROKY_IOS[0], /vedle adresy/);
-  assert.match(KROKY_IOS[0], /na starším iOS na ikonu Sdílet dole/, 'starší iOS má Sdílet dole pořád');
-  assert.equal(KROKY_IOS[1], 'Vyber Sdílet.');
-  assert.match(KROKY_IOS[2], /Přidat na plochu/);
-  assert.match(KROKY_IOS[3], /Otevřít jako webovou aplikaci/);
-  assert.ok(!KROKY_IOS.some((k) => /Sdílet dole v Safari/.test(k)), 'vrátil se návod pro starou spodní lištu');
+const UA_PROHLIZECU: Array<[string, string, RozpoznanyProhlizec]> = [
+  ['iOS 26 Safari',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1',
+    { platforma: 'ios', prohlizec: 'safari' }],
+  ['iOS Chrome (CriOS)',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/140.0.7339.101 Mobile/15E148 Safari/604.1',
+    { platforma: 'ios', prohlizec: 'chrome' }],
+  ['iOS Firefox (FxiOS)',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/143.0 Mobile/15E148 Safari/605.1.15',
+    { platforma: 'ios', prohlizec: 'firefox' }],
+  ['iOS Edge (EdgiOS)',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/140.0.3485.54 Version/18.0 Mobile/15E148 Safari/604.1',
+    { platforma: 'ios', prohlizec: 'edge' }],
+  ['Instagram iOS',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 398.0.0.28.93 (iPhone15,3; iOS 18_6; cs_CZ; cs; scale=3.00; 1290x2796; 745216874)',
+    { platforma: 'ios', prohlizec: 'inapp' }],
+  ['Facebook Android (FB_IAB/FBAV)',
+    'Mozilla/5.0 (Linux; Android 14; SM-S918B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/140.0.7339.51 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/490.0.0.44.109;]',
+    { platforma: 'android', prohlizec: 'inapp' }],
+  ['Android Chrome',
+    'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36',
+    { platforma: 'android', prohlizec: 'chrome' }],
+  ['Samsung Internet',
+    'Mozilla/5.0 (Linux; Android 14; SAMSUNG SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/28.0 Chrome/130.0.0.0 Mobile Safari/537.36',
+    { platforma: 'android', prohlizec: 'samsung' }],
+  ['Android Edge (EdgA)',
+    'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36 EdgA/140.0.0.0',
+    { platforma: 'android', prohlizec: 'edge' }],
+  ['Firefox Android',
+    'Mozilla/5.0 (Android 14; Mobile; rv:143.0) Gecko/143.0 Firefox/143.0',
+    { platforma: 'android', prohlizec: 'firefox' }],
+];
+
+for (const [nazev, ua, ocekavano] of UA_PROHLIZECU) {
+  test(`rozpoznejProhlizec: ${nazev}`, () => {
+    assert.deepEqual(rozpoznejProhlizec(ua), ocekavano);
+  });
+}
+
+test('rozpoznejProhlizec: FBAN (Facebook iOS), Messenger, TikTok, LinkedIn jsou in-app', () => {
+  const zaklad = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
+  for (const znacka of ['[FBAN/FBIOS;FBAV/490.0]', 'Messenger', 'musical_ly_40.1.0 TikTok', 'LinkedInApp', 'MicroMessenger/8.0']) {
+    assert.equal(rozpoznejProhlizec(`${zaklad} ${znacka}`).prohlizec, 'inapp', znacka);
+  }
+  // „Linux" v Android UA není aplikace Line.
+  assert.equal(rozpoznejProhlizec(UA.android).prohlizec, 'chrome');
 });
 
-test('poznámky pod iOS kroky: jen Safari + co dělat, když se otevře web', () => {
-  assert.equal(POZNAMKY_IOS.length, 2);
-  assert.match(POZNAMKY_IOS[0], /Funguje jen v Safari/);
-  assert.match(POZNAMKY_IOS[1], /smaž ikonu z plochy a přidej ji znovu ze Safari/);
+test('rozpoznejProhlizec: počítač je desktop, iPadOS (Mac s dotykem) iOS', () => {
+  assert.equal(rozpoznejProhlizec(UA.desktop).platforma, 'desktop');
+  assert.equal(rozpoznejProhlizec(UA.ipadOs, 5).platforma, 'ios');
+  assert.equal(rozpoznejProhlizec(UA.ipadOs, 0).platforma, 'desktop', 'Mac bez dotyku dostane QR');
 });
 
-test('Android bez výzvy: stejný formát, ⋮ vpravo nahoře', () => {
-  assert.equal(KROKY_ANDROID[0], '⋮ vpravo nahoře → Přidat na plochu / Nainstalovat aplikaci.');
+// ---------------------------------------------------------------- kroky
+
+const PROHLIZECE: Prohlizec[] = ['safari', 'chrome', 'firefox', 'edge', 'samsung', 'inapp', 'jiny'];
+
+test('pro každou kombinaci platformy a prohlížeče existují kroky', () => {
+  for (const platforma of ['ios', 'android'] as const) {
+    for (const prohlizec of PROHLIZECE) {
+      const kroky = KROKY[platforma][prohlizec];
+      assert.ok(kroky.length > 0, `${platforma}/${prohlizec} nemá kroky`);
+      for (const k of kroky) assert.ok(k.text.trim().length > 0 && k.ikona, `${platforma}/${prohlizec}: prázdný krok`);
+    }
+  }
 });
 
-test('kroky návodu nevypadají jako tlačítka', () => {
+test('in-app: zvýrazněný krok „Otevřít v prohlížeči", pod ním kroky Safari / Chromu', () => {
+  for (const platforma of ['ios', 'android'] as const) {
+    const [prvni, ...zbytek] = KROKY[platforma].inapp;
+    assert.equal(prvni, KROK_INAPP);
+    assert.equal(prvni.zvyrazneny, true);
+    assert.match(prvni.text, /Otevřít v prohlížeči/);
+    assert.deepEqual(zbytek, KROKY[platforma][platforma === 'ios' ? 'safari' : 'chrome']);
+  }
+});
+
+test('iOS Safari: 4 kroky, první do menu vedle adresy (iOS 26)', () => {
+  const kroky = KROKY.ios.safari.map((k) => k.text);
+  assert.equal(kroky.length, 4);
+  assert.match(kroky[0], /vedle adresy/);
+  assert.match(kroky[0], /na starším iOS na ikonu Sdílet dole/);
+  assert.equal(kroky[1], 'Vyber Sdílet.');
+  assert.match(kroky[2], /Přidat na plochu/);
+  assert.match(kroky[3], /Otevřít jako webovou aplikaci/);
+});
+
+test('iOS Chrome / Firefox / Edge mají vlastní kroky, ne Safari', () => {
+  assert.match(KROKY.ios.chrome[0].text, /Sdílet \(nahoře vpravo nebo v menu ⋯\)/);
+  assert.match(KROKY.ios.firefox[0].text, /Otevři menu ≡ \/ ⋯/);
+  assert.equal(KROKY.ios.edge, KROKY.ios.firefox);
+});
+
+test('Android: Chrome/Edge přes ⋮ nahoře, Samsung přes ≡ dole, Firefox přes ⋮', () => {
+  assert.match(KROKY.android.chrome[0].text, /⋮ vpravo nahoře/);
+  assert.match(KROKY.android.chrome[1].text, /Přidat na plochu \/ Nainstalovat aplikaci/);
+  assert.equal(KROKY.android.edge, KROKY.android.chrome);
+  assert.match(KROKY.android.samsung[0].text, /≡ vpravo dole/);
+  assert.match(KROKY.android.firefox[0].text, /⋮/);
+  assert.match(KROKY.android.jiny[0].text, /V menu prohlížeče najdi Sdílet nebo Přidat na plochu/);
+});
+
+test('tlačítko „Nainstalovat aplikaci" jen Android Chrome / Edge / Samsung', () => {
+  assert.equal(umiTlacitkoInstalace({ platforma: 'android', prohlizec: 'chrome' }), true);
+  assert.equal(umiTlacitkoInstalace({ platforma: 'android', prohlizec: 'edge' }), true);
+  assert.equal(umiTlacitkoInstalace({ platforma: 'android', prohlizec: 'samsung' }), true);
+  assert.equal(umiTlacitkoInstalace({ platforma: 'android', prohlizec: 'firefox' }), false);
+  assert.equal(umiTlacitkoInstalace({ platforma: 'android', prohlizec: 'inapp' }), false);
+  assert.equal(umiTlacitkoInstalace({ platforma: 'ios', prohlizec: 'chrome' }), false);
+});
+
+test('nadpis nad kroky podle prohlížeče', () => {
+  assert.equal(uvodKroku('safari'), 'Postup v Safari (nic tady neklikáš):');
+  assert.equal(uvodKroku('firefox'), 'Postup ve Firefoxu (nic tady neklikáš):');
+  assert.equal(uvodKroku('samsung'), 'Postup v Samsung Internetu (nic tady neklikáš):');
+});
+
+test('poznámka o Safari je pryč (iOS Chrome/Firefox/Edge to umí od 16.4), zůstává „smaž a přidej znovu"', () => {
+  assert.match(POZNAMKA_ZNOVU, /smaž ikonu z plochy a přidej ji znovu/);
+  for (const soubor of ['./instalace.ts', '../components/InstalaceNavod.tsx']) {
+    const kod = cti(soubor).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    assert.doesNotMatch(kod, /Funguje jen v Safari/, `${soubor}: vrátila se špatná poznámka`);
+  }
+});
+
+test('?ua= přepíše detekci jen známými hodnotami', () => {
+  assert.deepEqual(prohlizecZParametru('ios-chrome'), { platforma: 'ios', prohlizec: 'chrome' });
+  assert.deepEqual(prohlizecZParametru('inapp-android'), { platforma: 'android', prohlizec: 'inapp' });
+  assert.equal(prohlizecZParametru('desktop')?.platforma, 'desktop');
+  for (const hodnota of ['ios-safari', 'ios-firefox', 'ios-edge', 'android-chrome', 'android-firefox', 'android-samsung', 'inapp-ios']) {
+    assert.ok(prohlizecZParametru(hodnota), hodnota);
+  }
+  assert.equal(prohlizecZParametru('nesmysl'), null);
+  assert.equal(prohlizecZParametru(null), null);
+});
+
+test('kroky návodu nevypadají jako tlačítka (kromě zvýrazněného in-app kroku)', () => {
   const navod = cti('../components/InstalaceNavod.tsx');
-  const krok = navod.slice(navod.indexOf('const Krok: React.FC'), navod.indexOf('const UvodKroku'));
+  const krok = navod.slice(navod.indexOf('const Krok: React.FC'), navod.indexOf('const KopirovatOdkaz'));
   assert.ok(krok.length > 0, 'komponenta Krok nenalezena');
   assert.doesNotMatch(krok, /hover:|active:|cursor-pointer|<button|onClick/, 'krok vypadá nebo se chová jako tlačítko');
-  assert.doesNotMatch(krok, /rounded-2xl|bg-povrch/, 'krok je zase karta');
   assert.match(krok, /border-b/, 'kroky dělí tenká linka');
-  assert.match(navod, /Postup v \{kde\} \(nic tady neklikáš\):/);
+  // Rámeček a pozadí smí mít jen zvýrazněný krok 0 v in-app prohlížeči.
+  assert.match(krok, /krok\.zvyrazneny \? '[^']*rounded-xl[^']*' : ''/);
+});
+
+test('návod i banner berou výzvu ze společného posluchače (main.tsx), ne z vlastního', () => {
+  const navod = cti('../components/InstalaceNavod.tsx');
+  assert.match(navod, /odebirejVyzvu\(/);
+  assert.match(navod, /spotrebujVyzvu\(\)/);
+  assert.doesNotMatch(navod, /addEventListener\('beforeinstallprompt'/);
+  assert.match(cti('../main.tsx'), /zachytVyzvuInstalace\(\)/);
 });

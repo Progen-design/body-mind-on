@@ -76,6 +76,7 @@ export interface VyzvaInstalace extends Event {
 }
 
 let vyzva: VyzvaInstalace | null = null;
+let nainstalovano = false;
 const odberatele = new Set<() => void>();
 const oznam = () => odberatele.forEach((f) => f());
 
@@ -91,12 +92,18 @@ export function zachytVyzvuInstalace(): void {
   });
   window.addEventListener('appinstalled', () => {
     vyzva = null;
+    nainstalovano = true;
     oznam();
   });
 }
 
 export function aktualniVyzva(): VyzvaInstalace | null {
   return vyzva;
+}
+
+/** Proběhla v téhle relaci instalace (`appinstalled`)? Návod pak ukáže „Hotovo". */
+export function jeNainstalovano(): boolean {
+  return nainstalovano;
 }
 
 export function odebirejVyzvu(f: () => void): () => void {
@@ -116,7 +123,6 @@ export function spotrebujVyzvu(): void {
 export const URL_NAVODU = 'https://app.bodyandmindon.cz/instalace';
 
 export type OsZarizeni = 'ios' | 'android' | 'desktop';
-export type VariantaNavodu = 'standalone' | 'ios' | 'android' | 'desktop';
 
 /**
  * Operační systém pro návod. Na rozdíl od `urciPlatformu()` (banner) tady
@@ -124,18 +130,12 @@ export type VariantaNavodu = 'standalone' | 'ios' | 'android' | 'desktop';
  * ať stránku otevře v Safari. Poslat ho na QR kód „otevři v telefonu"
  * by bylo absurdní, v telefonu už je.
  */
-export function urciOs(userAgent: string, maxTouchPoints = 0): OsZarizeni {
+function urciOs(userAgent: string, maxTouchPoints = 0): OsZarizeni {
   const ua = String(userAgent || '');
   if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
   if (/Macintosh/i.test(ua) && maxTouchPoints > 1) return 'ios';
   if (/Android/i.test(ua)) return 'android';
   return 'desktop';
-}
-
-/** Která varianta návodu: hotovo / iOS kroky / Android / QR pro počítač. */
-export function variantaNavodu(os: OsZarizeni, standalone: boolean): VariantaNavodu {
-  if (standalone) return 'standalone';
-  return os;
 }
 
 /** Je mobil a appka neběží z plochy? Podle toho se ukazují odkazy na návod. */
@@ -156,29 +156,195 @@ export function osTohotoZarizeni(): OsZarizeni {
   return urciOs(navigator.userAgent, navigator.maxTouchPoints);
 }
 
-// ---------------------------------------------------------------- texty kroků návodu
+// ---------------------------------------------------------------- prohlížeč a kroky návodu
+
+type PlatformaNavodu = 'ios' | 'android' | 'desktop';
+export type Prohlizec = 'safari' | 'chrome' | 'firefox' | 'edge' | 'samsung' | 'inapp' | 'jiny';
+
+export interface RozpoznanyProhlizec {
+  platforma: PlatformaNavodu;
+  prohlizec: Prohlizec;
+}
+
+/**
+ * Vestavěné prohlížeče aplikací. Na plochu z nich přidat nejde — člověk
+ * musí stránku otevřít v normálním prohlížeči. `Line/` s lomítkem, ať to
+ * nesedne na jiné slovo. Instagram, Facebook (FBAN na iOS, FB_IAB/FBAV na
+ * Androidu), Messenger, TikTok (i starší `musical_ly`), X/Twitter,
+ * LinkedIn, Snapchat, WeChat (MicroMessenger).
+ */
+const IN_APP = /Instagram|FBAN|FBAV|FB_IAB|Messenger|\bLine\/|TikTok|musical_ly|Twitter|LinkedInApp|Snapchat|MicroMessenger/i;
+
+/**
+ * Platforma a prohlížeč z user-agenta — kvůli návodu na míru. Chrome na
+ * iPhonu má Sdílet jinde než Safari, Samsung Internet má menu dole,
+ * in-app prohlížeč Instagramu to neumí vůbec.
+ */
+export function rozpoznejProhlizec(userAgent: string, maxTouchPoints = 0): RozpoznanyProhlizec {
+  const ua = String(userAgent || '');
+  const platforma = urciOs(ua, maxTouchPoints);
+  if (platforma !== 'desktop' && IN_APP.test(ua)) return { platforma, prohlizec: 'inapp' };
+
+  if (platforma === 'ios') {
+    if (/CriOS/i.test(ua)) return { platforma, prohlizec: 'chrome' };
+    if (/FxiOS/i.test(ua)) return { platforma, prohlizec: 'firefox' };
+    if (/EdgiOS/i.test(ua)) return { platforma, prohlizec: 'edge' };
+    return { platforma, prohlizec: 'safari' };
+  }
+  if (platforma === 'android') {
+    if (/SamsungBrowser/i.test(ua)) return { platforma, prohlizec: 'samsung' };
+    if (/EdgA/i.test(ua)) return { platforma, prohlizec: 'edge' };
+    if (/Firefox/i.test(ua)) return { platforma, prohlizec: 'firefox' };
+    return { platforma, prohlizec: 'chrome' };
+  }
+  if (/Edg\//i.test(ua)) return { platforma, prohlizec: 'edge' };
+  if (/Firefox/i.test(ua)) return { platforma, prohlizec: 'firefox' };
+  if (/Chrome/i.test(ua)) return { platforma, prohlizec: 'chrome' };
+  if (/Safari/i.test(ua)) return { platforma, prohlizec: 'safari' };
+  return { platforma, prohlizec: 'jiny' };
+}
+
+/**
+ * `?ua=ios-chrome` apod. přepíše detekci — jen pro kontrolu návodu na
+ * počítači. Neznámá hodnota = null, detekce zůstane.
+ */
+const PREPISY_UA: Record<string, RozpoznanyProhlizec> = {
+  'ios-safari': { platforma: 'ios', prohlizec: 'safari' },
+  'ios-chrome': { platforma: 'ios', prohlizec: 'chrome' },
+  'ios-firefox': { platforma: 'ios', prohlizec: 'firefox' },
+  'ios-edge': { platforma: 'ios', prohlizec: 'edge' },
+  'android-chrome': { platforma: 'android', prohlizec: 'chrome' },
+  'android-firefox': { platforma: 'android', prohlizec: 'firefox' },
+  'android-samsung': { platforma: 'android', prohlizec: 'samsung' },
+  'android-edge': { platforma: 'android', prohlizec: 'edge' },
+  'inapp-ios': { platforma: 'ios', prohlizec: 'inapp' },
+  'inapp-android': { platforma: 'android', prohlizec: 'inapp' },
+  desktop: { platforma: 'desktop', prohlizec: 'chrome' },
+};
+
+export function prohlizecZParametru(hodnota: string | null | undefined): RozpoznanyProhlizec | null {
+  if (!hodnota) return null;
+  return PREPISY_UA[hodnota.trim().toLowerCase()] ?? null;
+}
+
+/** Prohlížeče na Androidu, které posílají `beforeinstallprompt` → tlačítko „Nainstalovat aplikaci". */
+export function umiTlacitkoInstalace(r: RozpoznanyProhlizec): boolean {
+  return r.platforma === 'android' && (r.prohlizec === 'chrome' || r.prohlizec === 'edge' || r.prohlizec === 'samsung');
+}
+
+/** Ikona kroku — klíč, ne komponenta, ať data zůstanou bez Reactu. */
+export type IkonaKroku = 'menu-vedle-adresy' | 'menu' | 'menu-svisle' | 'sdilet' | 'pridat' | 'potvrdit' | 'aplikace';
+
+export interface KrokNavodu {
+  text: string;
+  ikona: IkonaKroku;
+  /** Krok 0 v in-app prohlížeči — zvýrazněný, s tlačítkem „Kopírovat odkaz". */
+  zvyrazneny?: boolean;
+}
+
+const krok = (text: string, ikona: IkonaKroku): KrokNavodu => ({ text, ikona });
+
+/** In-app prohlížeč: napřed ven do normálního prohlížeče, pak běžný postup. */
+export const KROK_INAPP: KrokNavodu = {
+  text: 'Jsi v prohlížeči uvnitř aplikace (Instagram/Facebook) — tam to nejde. Klepni na ⋯ a vyber Otevřít v prohlížeči.',
+  ikona: 'aplikace',
+  zvyrazneny: true,
+};
 
 /**
  * iOS 26: Safari nemá Sdílet ve spodní liště — je v menu (⋯ nebo ≡) vedle
- * adresního řádku. Starý návod „klepni na Sdílet dole" nechal uživatele bez
- * tlačítka, na které by klepl. Starší iOS má Sdílet dole pořád, proto
- * závorka v prvním kroku.
+ * adresy. Starší iOS má Sdílet dole pořád, proto závorka v prvním kroku.
  */
-export const KROKY_IOS = [
-  'Klepni na ⋯ nebo ≡ vedle adresy (na starším iOS na ikonu Sdílet dole).',
-  'Vyber Sdílet.',
-  'Sjeď dolů a klepni na Přidat na plochu.',
-  'Nech zapnuté „Otevřít jako webovou aplikaci“ a potvrď Přidat.',
-] as const;
+const IOS_SAFARI = [
+  krok('Klepni na ⋯ nebo ≡ vedle adresy (na starším iOS na ikonu Sdílet dole).', 'menu-vedle-adresy'),
+  krok('Vyber Sdílet.', 'sdilet'),
+  krok('Sjeď dolů a klepni na Přidat na plochu.', 'pridat'),
+  krok('Nech zapnuté „Otevřít jako webovou aplikaci“ a klepni Přidat.', 'potvrdit'),
+];
 
-/** Android bez výzvy prohlížeče — stejný formát jako iOS. */
-export const KROKY_ANDROID = [
-  '⋮ vpravo nahoře → Přidat na plochu / Nainstalovat aplikaci.',
-  'Potvrď — ikona BMON se objeví na ploše.',
-] as const;
+/** Chrome, Firefox i Edge na iOS umí Přidat na plochu od iOS 16.4. */
+const IOS_CHROME = [
+  krok('Klepni na Sdílet (nahoře vpravo nebo v menu ⋯).', 'sdilet'),
+  krok('Vyber Přidat na plochu.', 'pridat'),
+  krok('Klepni Přidat.', 'potvrdit'),
+];
 
-/** Poznámky pod iOS kroky. */
-export const POZNAMKY_IOS = [
-  'Funguje jen v Safari, ne v Chrome/Instagram prohlížeči.',
-  'Když se místo appky otevře web s adresním řádkem, smaž ikonu z plochy a přidej ji znovu ze Safari.',
-] as const;
+const IOS_FIREFOX_EDGE = [
+  krok('Otevři menu ≡ / ⋯.', 'menu'),
+  krok('Vyber Sdílet.', 'sdilet'),
+  krok('Vyber Přidat na plochu.', 'pridat'),
+  krok('Klepni Přidat.', 'potvrdit'),
+];
+
+/** Chrome a Edge na Androidu — když ještě nepřišla výzva k instalaci. */
+const ANDROID_CHROME = [
+  krok('Klepni na ⋮ vpravo nahoře.', 'menu-svisle'),
+  krok('Vyber Přidat na plochu / Nainstalovat aplikaci.', 'pridat'),
+  krok('Potvrď.', 'potvrdit'),
+];
+
+/**
+ * Samsung Internet má menu ≡ DOLE, ne ⋮ nahoře — kroky Chromu by poslaly
+ * člověka hledat tlačítko, které tam není.
+ */
+const ANDROID_SAMSUNG = [
+  krok('Klepni na menu ≡ vpravo dole.', 'menu'),
+  krok('Vyber Přidat stránku do → Domovská obrazovka.', 'pridat'),
+  krok('Potvrď Přidat.', 'potvrdit'),
+];
+
+const ANDROID_FIREFOX = [
+  krok('Klepni na ⋮.', 'menu-svisle'),
+  krok('Vyber Přidat na plochu.', 'pridat'),
+  krok('Klepni Přidat.', 'potvrdit'),
+];
+
+const JINY = [krok('V menu prohlížeče najdi Sdílet nebo Přidat na plochu.', 'menu')];
+
+/**
+ * Kroky pro každou kombinaci platformy a prohlížeče. Kombinace, které
+ * v praxi nejsou (Samsung na iOS, Safari na Androidu), vedou na obecný
+ * krok — návod nikdy nezůstane prázdný.
+ */
+export const KROKY: Record<'ios' | 'android', Record<Prohlizec, KrokNavodu[]>> = {
+  ios: {
+    safari: IOS_SAFARI,
+    chrome: IOS_CHROME,
+    firefox: IOS_FIREFOX_EDGE,
+    edge: IOS_FIREFOX_EDGE,
+    samsung: JINY,
+    inapp: [KROK_INAPP, ...IOS_SAFARI],
+    jiny: JINY,
+  },
+  android: {
+    chrome: ANDROID_CHROME,
+    edge: ANDROID_CHROME,
+    samsung: ANDROID_SAMSUNG,
+    firefox: ANDROID_FIREFOX,
+    safari: JINY,
+    inapp: [KROK_INAPP, ...ANDROID_CHROME],
+    jiny: JINY,
+  },
+};
+
+/** „Postup v Safari", „ve Firefoxu"… — řádek nad kroky. */
+const KDE: Record<Prohlizec, string> = {
+  safari: 'v Safari',
+  chrome: 'v Chromu',
+  firefox: 've Firefoxu',
+  edge: 'v Edge',
+  samsung: 'v Samsung Internetu',
+  inapp: 'v prohlížeči',
+  jiny: 'v prohlížeči',
+};
+
+export function uvodKroku(prohlizec: Prohlizec): string {
+  return `Postup ${KDE[prohlizec]} (nic tady neklikáš):`;
+}
+
+/**
+ * Poznámka pod kroky. Dřívější „Funguje jen v Safari" byla věcně špatně —
+ * Chrome, Firefox i Edge na iOS to umí od iOS 16.4.
+ */
+export const POZNAMKA_ZNOVU =
+  'Když se místo appky otevře web s adresním řádkem, smaž ikonu z plochy a přidej ji znovu.';

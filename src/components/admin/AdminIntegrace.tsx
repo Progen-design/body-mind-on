@@ -196,6 +196,9 @@ export const AdminIntegrace: React.FC = () => {
           </button>
         </div>
 
+        {/* Moderace komunity tu NENÍ schválně: od 23. 9. 2026 stojí na
+            e-mailu přihlášeného uživatele (ADMIN_EMAILS), ne na ADMIN_TOKEN,
+            a žije přímo v záložce Komunita. */}
         <div className="p-5 rounded-3xl bg-povrch border border-slate-800 space-y-4">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">

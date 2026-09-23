@@ -1,7 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, Heart, MessageCircle, Trash2, Scale, Lock, Loader2, X } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, Trash2, Scale, Lock, Loader2, X, Flag } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { kdyMereno } from '../../data/adaptery';
+import { useToast } from '../../context/ToastContext';
+import { NahlasitSheet } from './NahlasitSheet';
+import { StitekTym } from './KomentareVKarte';
 import { KomunitaOdpoved, KomunitaPrispevek } from './typy';
 
 /**
@@ -25,6 +28,11 @@ export const CommunityPostDetail: React.FC<Props> = ({ prispevekId, onZpet, onZm
   const [text, setText] = useState('');
   const [odesila, setOdesila] = useState(false);
   const [fotkaNaCelou, setFotkaNaCelou] = useState<string | null>(null);
+  // Dvoukrok místo window.confirm: nativní dialog vypadá cize, jde odklikat
+  // poslepu a na mobilu se schová pod adresní řádek.
+  const [mazaniPotvrzeni, setMazaniPotvrzeni] = useState(false);
+  const [nahlasit, setNahlasit] = useState<{ postId?: string; replyId?: string } | null>(null);
+  const { showToast } = useToast();
 
   const nacti = useCallback(async () => {
     setNacitam(true);
@@ -80,6 +88,7 @@ export const CommunityPostDetail: React.FC<Props> = ({ prispevekId, onZpet, onZm
   };
 
   const smaz = async () => {
+    setMazaniPotvrzeni(false);
     if (!prispevek) return;
     try {
       await apiFetch(`/api/community/post/${prispevek.id}`, { method: 'DELETE' });
@@ -183,17 +192,51 @@ export const CommunityPostDetail: React.FC<Props> = ({ prispevekId, onZpet, onZm
             {prispevek.reply_count}
           </span>
 
+          <button
+            type="button"
+            onClick={() => setNahlasit({ postId: prispevek.id })}
+            aria-label="Nahlásit příspěvek"
+            className="inline-flex items-center gap-1.5 min-h-11 px-3 rounded-xl text-xs font-bold text-slate-400 hover:text-amber-300"
+          >
+            <Flag className="w-4 h-4" />
+          </button>
+
           {prispevek.can_delete && (
-            <button
-              type="button"
-              onClick={smaz}
-              className="ml-auto inline-flex items-center gap-1.5 min-h-11 px-3 rounded-xl text-xs font-bold text-red-300 bg-red-950/40 border border-red-500/40"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Smazat</span>
-            </button>
+            mazaniPotvrzeni ? (
+              <div className="ml-auto flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={smaz}
+                  className="inline-flex items-center gap-1.5 min-h-11 px-3 rounded-xl text-xs font-bold text-white bg-red-600 border border-red-500"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Opravdu smazat</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMazaniPotvrzeni(false)}
+                  className="min-h-11 px-3 rounded-xl text-xs font-bold text-slate-300 bg-slate-900 border border-slate-700"
+                >
+                  Zpět
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setMazaniPotvrzeni(true)}
+                className="ml-auto inline-flex items-center gap-1.5 min-h-11 px-3 rounded-xl text-xs font-bold text-red-300 bg-red-950/40 border border-red-500/40"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Smazat</span>
+              </button>
+            )
           )}
         </div>
+
+        {mazaniPotvrzeni && (
+          <p className="text-[11px] text-amber-300/90">Smaže se i fotky. Nejde vrátit.</p>
+        )}
+
       </article>
 
       <section className="space-y-3">
@@ -208,7 +251,16 @@ export const CommunityPostDetail: React.FC<Props> = ({ prispevekId, onZpet, onZm
             <div className="flex items-center gap-2">
               <Avatar url={o.author_avatar_url} jmeno={o.author_name} maly />
               <span className="text-xs font-bold text-slate-200">{o.author_name}</span>
+              {o.is_team && <StitekTym />}
               <span className="text-[11px] text-slate-500">{kdyMereno(o.created_at)}</span>
+              <button
+                type="button"
+                onClick={() => setNahlasit({ replyId: o.id })}
+                aria-label={`Nahlásit odpověď od ${o.author_name}`}
+                className="ml-auto p-2 rounded-lg text-slate-500 hover:text-amber-300"
+              >
+                <Flag className="w-3.5 h-3.5" />
+              </button>
             </div>
             <p className="text-sm text-slate-300 whitespace-pre-wrap break-words">{o.content}</p>
           </div>
@@ -237,6 +289,18 @@ export const CommunityPostDetail: React.FC<Props> = ({ prispevekId, onZpet, onZm
 
         {chyba && <p className="text-[11px] text-red-400">{chyba}</p>}
       </section>
+
+      {nahlasit && (
+        <NahlasitSheet
+          postId={nahlasit.postId ?? null}
+          replyId={nahlasit.replyId ?? null}
+          onZavri={() => setNahlasit(null)}
+          onHotovo={() => {
+            setNahlasit(null);
+            showToast({ title: 'Díky, podíváme se na to.', variant: 'success' });
+          }}
+        />
+      )}
 
       {fotkaNaCelou && (
         <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4">

@@ -6,12 +6,15 @@ import {
   MAX_PRISPEVKU_DENNE,
   avatary,
   fotkyPrispevku,
+  jeAdminKomunity,
   jmenoAutora,
   lajkyUzivatele,
+  maSouhlasKomunity,
   nahrajFotky,
   posledniVaha,
   prekrocilDenniLimit,
   prihlasenyUzivatel,
+  zapisSouhlasKomunity,
 } from '../../lib/community.js';
 
 /** Náhled odpovědi v kartě — celý text by kartu roztáhl přes celou obrazovku. */
@@ -55,7 +58,7 @@ export default async function handler(req, res) {
     const { data: repliesData } = topicIds.length > 0
       ? await supabaseServer
         .from('community_replies')
-        .select('id, topic_id, user_id, author_name, content, created_at')
+        .select('id, topic_id, user_id, author_name, content, created_at, is_team')
         .in('topic_id', topicIds)
         .order('created_at', { ascending: false })
       : { data: [] };
@@ -73,8 +76,15 @@ export default async function handler(req, res) {
       lajkyUzivatele(topicIds, user.id),
     ]);
 
+    // ČEKÁ NA ODPOVĚĎ = v Dotazech, a zatím bez odpovědi od týmu. Počítá se
+    // ze VŠECH odpovědí, ne jen z těch dvou v náhledu — jinak by dotaz se
+    // třemi odpověďmi od členů a týmovou na čtvrtém místě vypadal jako
+    // nevyřízený.
+    const maOdpovedTymu = new Set(allReplies.filter((r) => r.is_team).map((r) => r.topic_id));
+
     const topicsWithCount = list.map((t) => ({
       ...t,
+      team_answered: maOdpovedTymu.has(t.id),
       author_avatar_url: avatarByUserId[t.user_id] || null,
       photos: fotky[t.id] || [],
       liked_by_me: lajkl.has(t.id),
@@ -83,11 +93,14 @@ export default async function handler(req, res) {
         id: r.id,
         author_name: r.author_name,
         author_avatar_url: avatarByUserId[r.user_id] || null,
+        is_team: r.is_team === true,
         content: r.content.slice(0, NAHLED_ODPOVEDI) + (r.content.length > NAHLED_ODPOVEDI ? '…' : ''),
         created_at: r.created_at,
       })),
     }));
-    return res.status(200).json({ topics: topicsWithCount });
+    // `is_admin` řídí, jestli se nad seznamem ukáže panel moderace. Je to
+    // jen UI příznak — každý endpoint moderace si oprávnění ověřuje sám.
+    return res.status(200).json({ topics: topicsWithCount, is_admin: jeAdminKomunity(user) });
   }
 
   // POST
@@ -104,6 +117,26 @@ export default async function handler(req, res) {
   }
   if (fotkyVstup.length > MAX_FOTEK) {
     return res.status(400).json({ error: `Najednou jde přidat nejvýš ${MAX_FOTEK} fotky.` });
+  }
+
+  // PRAVIDLA SE POTVRZUJÍ PŘED PRVNÍM PŘÍSPĚVKEM, NE PŘI REGISTRACI.
+  // Kdo do komunity nikdy nenapíše, nemá co odsouhlasovat. Klient posílá
+  // `souhlas_s_pravidly: true` ze zaškrtávátka; bez platného souhlasu
+  // request neprojde a UI podle `needs_consent` ukáže checkbox.
+  if (!(await maSouhlasKomunity(user.id))) {
+    if (req.body?.souhlas_s_pravidly !== true) {
+      return res.status(403).json({
+        error: 'Nejdřív potvrď pravidla komunity.',
+        needs_consent: true,
+      });
+    }
+    const zapis = await zapisSouhlasKomunity(user.id);
+    if (!zapis.ok) {
+      // Bez doložitelného souhlasu příspěvek neuložíme — audit je to,
+      // kvůli čemu ta tabulka existuje (GDPR čl. 7 odst. 1).
+      console.error('[community] souhlas zapis', zapis.error);
+      return res.status(500).json({ error: 'Souhlas se nepodařilo uložit, zkus to prosím znovu.' });
+    }
   }
 
   if (await prekrocilDenniLimit(user.id)) {

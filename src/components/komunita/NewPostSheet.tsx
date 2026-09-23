@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { X, ImagePlus, Loader2, Lock, Users, AlertTriangle } from 'lucide-react';
+import { X, ImagePlus, Loader2, Lock, Users, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 import { apiFetch } from '../../lib/api';
 import { zmensFotku } from '../../lib/zmensFotku';
+import { PravidlaKomunity } from './PravidlaKomunity';
 import { KomunitaKategorie, KomunitaPrispevek, MAX_FOTEK } from './typy';
 
 /**
@@ -45,6 +46,12 @@ export const NewPostSheet: React.FC<Props> = ({
   const [uklada, setUklada] = useState(false);
   const [zpracovavaFotky, setZpracovavaFotky] = useState(false);
   const [chyba, setChyba] = useState<string | null>(null);
+  // SOUHLAS SE BERE AŽ PŘED PRVNÍM PŘÍSPĚVKEM, ne při registraci — kdo do
+  // komunity nikdy nenapíše, nemá co odsouhlasovat. Checkbox se objeví až
+  // tehdy, když server řekne `needs_consent`; kdo souhlas dal, ho nevidí.
+  const [potrebujeSouhlas, setPotrebujeSouhlas] = useState(false);
+  const [souhlasZaskrtnut, setSouhlasZaskrtnut] = useState(false);
+  const [pravidlaOtevrena, setPravidlaOtevrena] = useState(false);
 
   // Check-in patří do „Můj progres" — přepnutím se kategorie srovná, aby
   // check-in neskončil v Tréninku.
@@ -89,11 +96,21 @@ export const NewPostSheet: React.FC<Props> = ({
           weight_kg: typ === 'checkin' && Number.isFinite(vahaCislo) && vahaCislo > 0 ? vahaCislo : null,
           photos: fotky,
           is_hidden: !sdilet,
+          souhlas_s_pravidly: souhlasZaskrtnut || undefined,
         }),
       });
       onUlozeno(odpoved.topic);
     } catch (err) {
-      setChyba(err instanceof Error ? err.message : 'Příspěvek se nepodařilo uložit.');
+      // 403 s `needs_consent` není chyba uživatele — je to pokyn ukázat
+      // zaškrtávátko. Rozhodnutí patří serveru, klient si ho nedomýšlí.
+      const potreba = (err as { needs_consent?: boolean })?.needs_consent === true
+        || (err instanceof Error && /pravidla komunity/i.test(err.message));
+      if (potreba) {
+        setPotrebujeSouhlas(true);
+        setChyba('Nejdřív potvrď pravidla komunity.');
+      } else {
+        setChyba(err instanceof Error ? err.message : 'Příspěvek se nepodařilo uložit.');
+      }
     } finally {
       setUklada(false);
     }
@@ -101,6 +118,7 @@ export const NewPostSheet: React.FC<Props> = ({
 
   const nelzeUlozit = uklada
     || zpracovavaFotky
+    || (potrebujeSouhlas && !souhlasZaskrtnut)
     || (typ === 'text' && text.trim().length === 0)
     || (typ === 'checkin' && text.trim().length === 0 && fotky.length === 0 && vaha.trim().length === 0);
 
@@ -274,6 +292,28 @@ export const NewPostSheet: React.FC<Props> = ({
             </button>
           </div>
 
+          {potrebujeSouhlas && (
+            <div className="p-3 rounded-2xl bg-slate-900/70 border border-cyan-500/30 space-y-2">
+              <label className="flex items-start gap-2.5 text-xs text-slate-200 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={souhlasZaskrtnut}
+                  onChange={(e) => setSouhlasZaskrtnut(e.target.checked)}
+                  className="mt-0.5 accent-cyan-400 w-4 h-4"
+                />
+                <span>Souhlasím s pravidly komunity</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => setPravidlaOtevrena(true)}
+                className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-akcent-cyan"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Přečíst pravidla</span>
+              </button>
+            </div>
+          )}
+
           {chyba && (
             <div className="flex items-start gap-1.5 text-[11px] text-red-400">
               <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" />
@@ -281,6 +321,8 @@ export const NewPostSheet: React.FC<Props> = ({
             </div>
           )}
         </div>
+
+        {pravidlaOtevrena && <PravidlaKomunity onZavri={() => setPravidlaOtevrena(false)} />}
 
         <div className="p-4 border-t border-slate-800 bg-slate-900/40 shrink-0">
           <button

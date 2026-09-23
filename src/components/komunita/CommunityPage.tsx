@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Heart, MessageCircle, Plus, Scale, Lock, Users } from 'lucide-react';
+import { Plus, Users, ShieldCheck } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
-import { kdyMereno } from '../../data/adaptery';
 import { NadpisSekce } from '../NadpisSekce';
 import { CommunityPostDetail } from './CommunityPostDetail';
 import { NewPostSheet } from './NewPostSheet';
-import { KomunitaKategorie, KomunitaPrispevek } from './typy';
+import { PravidlaKomunity } from './PravidlaKomunity';
+import { KartaPrispevku } from './KartaPrispevku';
+import { PanelModerace } from './PanelModerace';
+import { KomunitaKategorie, KomunitaOdpoved, KomunitaPrispevek, SLUG_DOTAZY } from './typy';
 
 /**
  * KOMUNITA — seznam příspěvků s filtrem podle kategorie.
@@ -19,8 +21,6 @@ interface Props {
   posledniVahaKg: number | null;
 }
 
-const NAHLED_TEXTU = 160;
-
 export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
   const [kategorie, setKategorie] = useState<KomunitaKategorie[]>([]);
   const [aktivniKategorie, setAktivniKategorie] = useState<string | null>(null);
@@ -29,6 +29,10 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
   const [chyba, setChyba] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [novyOtevren, setNovyOtevren] = useState(false);
+  const [pravidlaOtevrena, setPravidlaOtevrena] = useState(false);
+  // Příznak ze serveru (`ADMIN_EMAILS`). Je jen pro UI — oprávnění si
+  // endpointy moderace ověřují samy, schovaný panel nic nechrání.
+  const [jeAdmin, setJeAdmin] = useState(false);
 
   useEffect(() => {
     apiFetch<{ categories: KomunitaKategorie[] }>('/api/community/categories')
@@ -42,8 +46,9 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
       const cesta = aktivniKategorie
         ? `/api/community?category_id=${encodeURIComponent(aktivniKategorie)}`
         : '/api/community';
-      const data = await apiFetch<{ topics: KomunitaPrispevek[] }>(cesta);
+      const data = await apiFetch<{ topics: KomunitaPrispevek[]; is_admin?: boolean }>(cesta);
       setPrispevky(data.topics || []);
+      setJeAdmin(data.is_admin === true);
       setChyba(null);
     } catch (err) {
       setChyba(err instanceof Error ? err.message : 'Komunitu se nepodařilo načíst.');
@@ -55,6 +60,10 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
   useEffect(() => { nacti(); }, [nacti]);
 
   const progres = useMemo(() => kategorie.find((k) => k.slug === 'muj-progres') ?? null, [kategorie]);
+  const slugPodleId = useMemo(
+    () => Object.fromEntries(kategorie.map((k) => [k.id, k.slug])),
+    [kategorie],
+  );
   const jsemVProgresu = progres != null && aktivniKategorie === progres.id;
 
   const prepniLajk = async (p: KomunitaPrispevek) => {
@@ -95,6 +104,8 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
         ikona={<Users className="w-5 h-5 text-akcent-lime" />}
       />
 
+      {jeAdmin && <PanelModerace onZmena={nacti} />}
+
       {/* Chipy kategorií */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
         <Chip aktivni={aktivniKategorie === null} onClick={() => setAktivniKategorie(null)}>Vše</Chip>
@@ -105,14 +116,25 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
         ))}
       </div>
 
-      <button
-        type="button"
-        onClick={() => setNovyOtevren(true)}
-        className="w-full min-h-11 rounded-xl text-sm font-bold text-slate-950 bg-akcent-cyan inline-flex items-center justify-center gap-2"
-      >
-        <Plus className="w-4 h-4" />
-        <span>Nový příspěvek</span>
-      </button>
+      <div className="flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => setNovyOtevren(true)}
+          className="flex-1 min-h-11 rounded-xl text-sm font-bold text-slate-950 bg-akcent-cyan inline-flex items-center justify-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Nový příspěvek</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setPravidlaOtevrena(true)}
+          className="shrink-0 min-h-11 px-3 rounded-xl text-xs font-semibold text-slate-300 bg-slate-900 border border-slate-800 inline-flex items-center gap-1.5"
+        >
+          <ShieldCheck className="w-3.5 h-3.5" />
+          <span>Pravidla komunity</span>
+        </button>
+      </div>
 
       {chyba && <p className="text-[11px] text-red-400">{chyba}</p>}
 
@@ -131,10 +153,30 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
       ) : (
         <div className="space-y-3">
           {prispevky.map((p) => (
-            <Karta key={p.id} prispevek={p} onOtevri={() => setDetailId(p.id)} onLajk={() => prepniLajk(p)} />
+            <KartaPrispevku
+              key={p.id}
+              prispevek={p}
+              jeDotaz={slugPodleId[p.category_id ?? ''] === SLUG_DOTAZY}
+              onOtevri={() => setDetailId(p.id)}
+              onLajk={() => prepniLajk(p)}
+              onPravidla={() => setPravidlaOtevrena(true)}
+              onKomentar={(odpoved: KomunitaOdpoved) => setPrispevky((seznam) => seznam.map((x) => (
+                x.id === p.id
+                  ? {
+                    ...x,
+                    reply_count: x.reply_count + 1,
+                    // Náhled drží poslední dvě — nová vytlačí nejstarší.
+                    last_replies: [...(x.last_replies ?? []), odpoved].slice(-2),
+                    team_answered: x.team_answered || odpoved.is_team === true,
+                  }
+                  : x
+              )))}
+            />
           ))}
         </div>
       )}
+
+      {pravidlaOtevrena && <PravidlaKomunity onZavri={() => setPravidlaOtevrena(false)} />}
 
       {novyOtevren && (
         <NewPostSheet
@@ -174,73 +216,3 @@ const Chip: React.FC<{ aktivni: boolean; onClick: () => void; children: React.Re
     {children}
   </button>
 );
-
-const Karta: React.FC<{
-  prispevek: KomunitaPrispevek;
-  onOtevri: () => void;
-  onLajk: () => void;
-}> = ({ prispevek, onOtevri, onLajk }) => {
-  const prvniFotka = prispevek.photos[0] ?? null;
-  const nahled = prispevek.content.slice(0, NAHLED_TEXTU)
-    + (prispevek.content.length > NAHLED_TEXTU ? '…' : '');
-
-  return (
-    <div className="rounded-3xl bg-povrch border border-slate-800 overflow-hidden">
-      <button type="button" onClick={onOtevri} className="w-full text-left p-4 space-y-3">
-        <div className="flex items-center gap-2.5">
-          {prispevek.author_avatar_url ? (
-            <img src={prispevek.author_avatar_url} alt="" className="w-9 h-9 rounded-full object-cover border border-slate-700 shrink-0" />
-          ) : (
-            <span className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-slate-300 shrink-0">
-              {prispevek.author_name.slice(0, 1).toUpperCase()}
-            </span>
-          )}
-          <div className="min-w-0 flex-1">
-            <div className="text-sm font-bold text-white truncate">{prispevek.author_name}</div>
-            <div className="text-[11px] text-slate-500">{kdyMereno(prispevek.created_at)}</div>
-          </div>
-          {prispevek.is_hidden && <Lock className="w-3.5 h-3.5 text-amber-300 shrink-0" aria-label="Jen pro mě" />}
-        </div>
-
-        {prvniFotka && (
-          <div className="relative rounded-2xl overflow-hidden border border-slate-800 aspect-[4/3]">
-            <img src={prvniFotka.url} alt="" className="w-full h-full object-cover" loading="lazy" />
-            {prispevek.photos.length > 1 && (
-              <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-black/70 text-slate-200">
-                +{prispevek.photos.length - 1}
-              </span>
-            )}
-          </div>
-        )}
-
-        {prispevek.weight_kg != null && (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/70 border border-slate-800 text-xs font-bold text-white">
-            <Scale className="w-3.5 h-3.5 text-akcent-cyan" />
-            {prispevek.weight_kg.toString().replace('.', ',')} kg
-          </span>
-        )}
-
-        {nahled && <p className="text-sm text-slate-300 leading-relaxed break-words">{nahled}</p>}
-      </button>
-
-      <div className="px-4 pb-3 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onLajk}
-          aria-pressed={prispevek.liked_by_me}
-          aria-label={prispevek.liked_by_me ? 'Odebrat lajk' : 'Dát lajk'}
-          className={`inline-flex items-center gap-1.5 min-h-9 px-2.5 rounded-lg text-xs font-bold ${
-            prispevek.liked_by_me ? 'text-rose-300' : 'text-slate-400'
-          }`}
-        >
-          <Heart className={`w-4 h-4 ${prispevek.liked_by_me ? 'fill-rose-400 text-rose-400' : ''}`} />
-          <span>{prispevek.like_count}</span>
-        </button>
-        <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
-          <MessageCircle className="w-4 h-4" />
-          {prispevek.reply_count}
-        </span>
-      </div>
-    </div>
-  );
-};

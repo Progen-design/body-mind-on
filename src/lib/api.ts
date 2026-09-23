@@ -38,6 +38,16 @@ export async function apiFetch<T>(cesta: string, init: RequestInit = {}): Promis
     // Neaktivni clenstvi resime na jednom miste. Endpointy ho hlidaji ruzne
     // (daily-activation vzdy, habits a workouts jen pri zapisu, zbytek vubec),
     // takze uzivatel by jinak dostal jinou hlasku podle toho, co zrovna kliknul.
+    // NE KAŽDÁ 403 JE O ČLENSTVÍ. Komunita jí říká „nejdřív potvrď pravidla"
+    // a posílá `needs_consent`; bez téhle větve by uživatel místo toho četl
+    // hlášku o neaktivním členství a nevěděl, co má udělat.
+    if (odpoved.status === 403 && telo?.needs_consent === true) {
+      throw Object.assign(new Error(String(telo?.error || 'Nejdřív potvrď pravidla komunity.')), {
+        status: 403,
+        needs_consent: true
+      });
+    }
+
     if (odpoved.status === 403) {
       throw Object.assign(new Error(ZPRAVA_NEAKTIVNI_CLENSTVI), {
         status: 403,

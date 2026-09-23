@@ -1,5 +1,6 @@
 // /api/delete-account.js – Smazání účtu a všech dat uživatele
 import { supabaseServer } from '../lib/supabaseServer.js';
+import { smazFotkyUzivatele } from '../lib/community.js';
 
 function getAuthUser(req) {
   const auth = req.headers.authorization || '';
@@ -47,6 +48,22 @@ export default async function handler(req, res) {
     // Je to ZÁMĚRNÉ smazání v aplikační vrstvě, NE kandidát na cizí klíč:
     // FK na auth.users na `registrations` z principu nepatří — rozbil by
     // legitimní stav „registrace uložena, účet ještě neexistuje".
+    // FOTKY Z KOMUNITY JDOU PRVNÍ. `community_post_photos` na `auth.users`
+    // kaskádu má, ale objekty v bucketu na ní nevisí — po smazání řádků by
+    // už nebylo podle čeho soubory najít a v private bucketu by navždy
+    // zůstaly fotky postavy smazaného účtu. Maže se rekurzivně celý prefix
+    // `community-photos/{user_id}/`.
+    //
+    // Selhání úklidu smazání účtu NESHODÍ: člověk má právo účet zrušit
+    // a osiřelý soubor je menší zlo než účet, který nejde smazat. Chyba
+    // se loguje, ať je vidět ve Vercel logu.
+    try {
+      const { smazano } = await smazFotkyUzivatele(userId);
+      if (smazano > 0) console.log('[delete-account] fotky komunity smazány:', smazano);
+    } catch (err) {
+      console.error('[delete-account] uklid fotek komunity selhal:', err?.message || err);
+    }
+
     const { data: deleted, error: rpcErr } = await supabaseServer.rpc('delete_user_data', {
       target_user_id: userId,
       target_email: user.email ?? null,

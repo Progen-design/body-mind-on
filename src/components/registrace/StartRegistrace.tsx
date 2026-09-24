@@ -12,11 +12,8 @@ import { TRAINING_ENVIRONMENT_OPTIONS, EQUIPMENT_OPTIONS } from '@lib/trainingEn
 import { startProgramEnvironment } from '@lib/workoutStartProgram.js';
 import { TreninkovaOmezeni } from './TreninkovaOmezeni.tsx';
 import { supabase } from '@lib/supabaseClient.js';
-import {
-  fetchRegistrationEmailAvailable,
-  EMAIL_TAKEN_MESSAGE_CS,
-  EMAIL_CHECK_FAILED_MESSAGE_CS
-} from '@lib/registration/checkEmailAvailableClient.js';
+import { EMAIL_TAKEN_MESSAGE_CS } from '@lib/registration/checkEmailAvailableClient.js';
+import { hlaskaEmailu } from '@lib/registration/kontrolaEmailu.js';
 // Stejný zdroj jako TrialPaywallCard a lifecycle e-maily — jediné místo
 // pravdy pro cenu a délku trialu (lib/pricingConstants.js). Ceny se sem
 // nepíšou natvrdo, ať appka a checkout nikdy nemají jiné číslo.
@@ -143,9 +140,24 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
   const poukaz = useKontrolaPoukazu(kodPoukazu);
   const dniZdarma = poukaz.stav === 'platny' ? poukaz.dny : TRIAL_DAYS;
 
-  // Dostupnost e-mailu se hlida uz pri psani.
-  const stavEmailu = useKontrolaEmailu(data.email);
-  const uctExistuje = stavEmailu === 'obsazeny';
+  // Dostupnost e-mailu se hlida uz pri psani. Klik na „Dal" jde pres tutez
+  // kontrolu (`overEmailHned`), takze starsi odpoved nikdy neprepise novejsi.
+  const { stav: stavEmailu, overHned: overEmailHned } = useKontrolaEmailu(data.email);
+  // Pod polem je vzdy NEJVYS JEDNA hlaska — rozhoduje lib/registration/kontrolaEmailu.js.
+  const hlaskaPoleEmail = hlaskaEmailu({ stav: stavEmailu, chybaPole: chyby.email || null });
+  const uctExistuje = hlaskaPoleEmail?.text === EMAIL_TAKEN_MESSAGE_CS;
+
+  // Nova odpoved kontroly nahrazuje starou hlasku: zastarale „uz je
+  // registrovany" v chybach pole (od serveru nebo pozdni odpovedi) se smaze,
+  // jakmile kontrola rekne neco noveho.
+  useEffect(() => {
+    if (stavEmailu === 'necinny') return;
+    setChyby((c) => {
+      if (c.email !== EMAIL_TAKEN_MESSAGE_CS) return c;
+      const { email: _, ...zbytek } = c;
+      return zbytek;
+    });
+  }, [stavEmailu]);
 
   const zmen = <K extends keyof Formular>(klic: K, hodnota: Formular[K]) => {
     setData((d) => ({ ...d, [klic]: hodnota }));
@@ -209,20 +221,17 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
     }
 
     // Dostupnost e-mailu uz zna useKontrolaEmailu z psani. Znovu se pta jen
-    // tehdy, kdyz vysledek jeste nemame (napr. vlozeni schranky a hned klik).
+    // tehdy, kdyz vysledek jeste nemame (napr. vlozeni schranky a hned klik) —
+    // a pres tutez kontrolu, ne vlastnim dotazem: odpoved na starsi e-mail se
+    // tak nikdy nezapise k novemu. Hlasku „obsazeny" ukaze stav kontroly.
     if (krok === 1) {
-      if (uctExistuje) {
-        setChyby((c) => ({ ...c, email: EMAIL_TAKEN_MESSAGE_CS }));
-        return;
-      }
+      if (uctExistuje) return;
       if (stavEmailu !== 'volny') {
         setOveruji(true);
-        const vysledek = await fetchRegistrationEmailAvailable(data.email);
+        const novy = await overEmailHned(data.email);
         setOveruji(false);
-        if (!vysledek.available && !vysledek.networkError && !vysledek.rateLimited) {
-          setChyby((c) => ({ ...c, email: EMAIL_TAKEN_MESSAGE_CS }));
-          return;
-        }
+        // null = e-mail se mezitim zmenil a bezi novejsi kontrola — zustat.
+        if (novy === null || novy === 'obsazeny') return;
       }
     }
 
@@ -247,6 +256,9 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
     if (/už existuje|už je registrovan|nelze opakovat|already (registered|exists)/i.test(zprava)) {
       setChyby({ email: EMAIL_TAKEN_MESSAGE_CS });
       setKrok(1);
+      // Kontrola z psani muze mit jeste stary stav „volny" — obnovit ji, ať
+      // pod polem nesviti „volny" proti tomu, co prave rekl server.
+      void overEmailHned(data.email);
       return true;
     }
     return false;
@@ -361,21 +373,21 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
         onChange={(e) => zmen('name', e.target.value)} />
       <div>
         <Pole id="email" popisek="E-mail" type="email" value={data.email}
-          chyba={chyby.email || (uctExistuje ? EMAIL_TAKEN_MESSAGE_CS : null)}
+          chyba={hlaskaPoleEmail?.typ === 'chyba' ? hlaskaPoleEmail.text : null}
           autoComplete="email" placeholder="tvuj@email.cz"
           onChange={(e) => zmen('email', e.target.value)} />
-        {stavEmailu === 'overuji' && (
+        {hlaskaPoleEmail?.typ === 'overuji' && (
           <p className="mt-1.5 text-[11px] text-slate-500 flex items-center gap-1.5">
-            <Loader2 className="w-3 h-3 animate-spin" /> Ověřuji e-mail…
+            <Loader2 className="w-3 h-3 animate-spin" /> {hlaskaPoleEmail.text}
           </p>
         )}
-        {stavEmailu === 'volny' && (
+        {hlaskaPoleEmail?.typ === 'ok' && (
           <p className="mt-1.5 text-[11px] text-emerald-400 flex items-center gap-1.5">
-            <Check className="w-3 h-3" /> E-mail je volný.
+            <Check className="w-3 h-3" /> {hlaskaPoleEmail.text}
           </p>
         )}
-        {stavEmailu === 'nelze' && (
-          <p className="mt-1.5 text-[11px] text-amber-400">{EMAIL_CHECK_FAILED_MESSAGE_CS}</p>
+        {hlaskaPoleEmail?.typ === 'varovani' && (
+          <p className="mt-1.5 text-[11px] text-amber-400">{hlaskaPoleEmail.text}</p>
         )}
       </div>
       <Pole id="password" popisek="Heslo" type="password" value={data.password} chyba={chyby.password}

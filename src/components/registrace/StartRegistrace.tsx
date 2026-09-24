@@ -28,6 +28,7 @@ import { ODKAZ_PODMINKY, ODKAZ_GDPR } from '@lib/pravniOdkazy.js';
 // by serverový modul do klientského bundlu. Viz lib/souhlasyKonstanty.js.
 import { DRUHY_SOUHLASU } from '@lib/souhlasyKonstanty.js';
 import { useKontrolaEmailu } from '../../hooks/useKontrolaEmailu';
+import { normalizujKod } from '@lib/poukazy.js';
 import { Krokovac, Pole, Vicenasobny, Vyber, Popisek, Chyba } from './prvky';
 import { AKTIVITA, CIL, CHYTRA_VAHA, DIETA, DNY, FREKVENCE, KROKY, POHLAVI, STRES, TYP_PRACE } from './volby';
 
@@ -62,6 +63,63 @@ interface Props {
   onZpetNaPrihlaseni: () => void;
 }
 
+type StavPoukazu =
+  | { stav: 'nic' }
+  | { stav: 'overuji' }
+  | { stav: 'platny'; dny: number }
+  | { stav: 'neplatny'; hlaska: string };
+
+/** Kód z QR na poukazu: /start?kod=ABCD-EFGH-IJKL. */
+function kodZUrl(): string {
+  try {
+    return new URLSearchParams(window.location.search).get('kod')?.trim() ?? '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Ověření kódu poukazu už při psaní (jen ověření, nic nezapisuje — uplatní
+ * se až při založení účtu). Ptá se jen na kód v platném tvaru, s krátkou
+ * prodlevou, ať se neposílá dotaz na každé písmeno.
+ */
+function useKontrolaPoukazu(vstup: string): StavPoukazu {
+  const [stav, setStav] = useState<StavPoukazu>({ stav: 'nic' });
+
+  useEffect(() => {
+    if (!vstup.trim()) { setStav({ stav: 'nic' }); return undefined; }
+    const kod = normalizujKod(vstup);
+    if (!kod) {
+      setStav(vstup.replace(/[\s-]/g, '').length >= 12
+        ? { stav: 'neplatny', hlaska: 'Tohle nevypadá jako kód poukazu (má tvar XXXX-XXXX-XXXX).' }
+        : { stav: 'nic' });
+      return undefined;
+    }
+
+    let zruseno = false;
+    setStav({ stav: 'overuji' });
+    const casovac = window.setTimeout(async () => {
+      try {
+        const odpoved = await fetch('/api/registration/voucher-check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kod }),
+        });
+        const telo = await odpoved.json().catch(() => ({}));
+        if (zruseno) return;
+        setStav(telo?.platny
+          ? { stav: 'platny', dny: Number(telo.dny) || 30 }
+          : { stav: 'neplatny', hlaska: String(telo?.hlaska || 'Poukaz se nepodařilo ověřit.') });
+      } catch {
+        if (!zruseno) setStav({ stav: 'neplatny', hlaska: 'Poukaz se teď nepodařilo ověřit. Zkusíme ho uplatnit při založení účtu.' });
+      }
+    }, 450);
+    return () => { zruseno = true; window.clearTimeout(casovac); };
+  }, [vstup]);
+
+  return stav;
+}
+
 export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni }) => {
   const [krok, setKrok] = useState(1);
   const [data, setData] = useState<Formular>(PRAZDNY);
@@ -78,6 +136,12 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
   // GDPR, kterou nepokryje „plnění smlouvy" — potřebuje VÝSLOVNÝ souhlas.
   // Do teď se nesbíral ani jeden.
   const [souhlas, setSouhlas] = useState(false);
+
+  // POUKAZ (volitelný). QR na fyzickém poukazu vede na /start?kod=… — kód se
+  // předvyplní. Neplatný kód registraci nezastaví, jen se nepoužije.
+  const [kodPoukazu, setKodPoukazu] = useState(kodZUrl);
+  const poukaz = useKontrolaPoukazu(kodPoukazu);
+  const dniZdarma = poukaz.stav === 'platny' ? poukaz.dny : TRIAL_DAYS;
 
   // Dostupnost e-mailu se hlida uz pri psani.
   const stavEmailu = useKontrolaEmailu(data.email);
@@ -211,7 +275,10 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
         // takže se posílají oba, nebo žádný — nikdy podmnožina.
         body: JSON.stringify({
           ...data,
-          souhlasy: souhlas ? DRUHY_SOUHLASU : []
+          souhlasy: souhlas ? DRUHY_SOUHLASU : [],
+          // Kód poukazu jde jen, když není zjevně neplatný. Server ho uplatní
+          // atomicky; když mezitím přestal platit, registrace proběhne s 7 dny.
+          ...(kodPoukazu.trim() && poukaz.stav !== 'neplatny' ? { kod_poukazu: kodPoukazu.trim() } : {})
         })
       });
 
@@ -219,7 +286,10 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
       const vysledek = text ? JSON.parse(text) : {};
 
       if (odpoved.ok && (vysledek.plan_state === 'ready' || vysledek.plan_state === 'processing')) {
-        setStav({ typ: 'ok', text: vysledek.message || 'Účet je vytvořený. Otevírám tvůj plán…' });
+        const poznamkaPoukazu = vysledek.poukaz?.uplatnen
+          ? ` Poukaz uplatněn — máš ${vysledek.poukaz.dny} dní zdarma.`
+          : vysledek.poukaz?.hlaska ? ` ${vysledek.poukaz.hlaska} Máš běžných ${TRIAL_DAYS} dní zdarma.` : '';
+        setStav({ typ: 'ok', text: (vysledek.message || 'Účet je vytvořený. Otevírám tvůj plán…') + poznamkaPoukazu });
         // Prihlasime rovnou, at uzivatel nemusi psat heslo podruhe.
         const { data: prihlaseni } = await supabase.auth.signInWithPassword({
           email: data.email.trim().toLowerCase(),
@@ -276,8 +346,8 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
    */
   const podminkaTrialu = (
     <p className="text-xs text-slate-400">
-      {TRIAL_DAYS} dní zdarma, pak {START_VARIANT_PRICE_LABEL}. První platba{' '}
-      {TRIAL_DAYS + 1}. den. Zrušit můžeš kdykoli v profilu.
+      {dniZdarma} dní zdarma{poukaz.stav === 'platny' ? ' (poukaz)' : ''}, pak {START_VARIANT_PRICE_LABEL}. První platba{' '}
+      {dniZdarma + 1}. den. Zrušit můžeš kdykoli v profilu.
     </p>
   );
 
@@ -465,6 +535,32 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
           Návyky k sledování ti nastavíme podle cíle a aktivity — změnit si je můžeš kdykoli v profilu.
         </p>
         <div className="mt-2">{podminkaTrialu}</div>
+      </div>
+      {/* POUKAZ — volitelný. Ověřuje se při psaní, uplatní se až při
+          založení účtu (atomicky na serveru). */}
+      <div>
+        <Pole
+          id="kod-poukazu"
+          popisek="Mám kód poukazu"
+          volitelne
+          value={kodPoukazu}
+          onChange={(e) => setKodPoukazu(e.target.value)}
+          placeholder="XXXX-XXXX-XXXX"
+          autoComplete="off"
+          autoCapitalize="characters"
+          spellCheck={false}
+          maxLength={40}
+          chyba={poukaz.stav === 'neplatny' ? `${poukaz.hlaska} Registrace proběhne bez poukazu.` : undefined}
+          napoveda={poukaz.stav === 'platny'
+            ? undefined
+            : poukaz.stav === 'overuji' ? 'Ověřuji kód…' : 'Máš-li poukaz, najdeš kód pod QR kódem.'}
+        />
+        {poukaz.stav === 'platny' && (
+          <p className="mt-1 text-[11px] font-semibold text-akcent-lime flex items-center gap-1">
+            <Check className="w-3.5 h-3.5" />
+            Poukaz platí — {poukaz.dny} dní zdarma místo {TRIAL_DAYS}.
+          </p>
+        )}
       </div>
       {/* Odkazy vedou na VEŘEJNÝ web, ne do appky: právní texty musí být
           čitelné bez přihlášení a bez JavaScriptu. `target="_blank"`, aby

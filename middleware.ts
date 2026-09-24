@@ -34,7 +34,9 @@ export default function middleware(request: Request) {
   const host = request.headers.get('host') || '';
 
   if (isMarketingHostname(host) && patriDoApp(url.pathname)) {
-    return Response.redirect(new URL(url.pathname, getPublicAppUrl()), 302);
+    // I s query: QR na poukazu vede na /start?kod=… — bez `url.search` by se
+    // kód při přesměrování na app doménu ztratil.
+    return Response.redirect(new URL(url.pathname + url.search, getPublicAppUrl()), 302);
   }
 
   if (jeAppHost(host) && url.pathname === '/') {

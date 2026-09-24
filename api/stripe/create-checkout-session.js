@@ -5,6 +5,7 @@ import { getStripePriceIdForTier } from '../../lib/stripeTierMapping.js';
 import { isTierCheckoutEnabled } from '../../lib/salesFeatureFlags.js';
 import { getPublicAppUrl } from '../../lib/siteUrls.js';
 import { trialDaysForCheckout } from '../../lib/trialEligibility.js';
+import { poukazUzivatele, stripeTrialEndZPoukazu } from '../../lib/poukazy.js';
 
 const ALLOWED_TIERS = new Set(['START', 'ON_CLUB', 'VIP']);
 
@@ -50,6 +51,13 @@ export default async function handler(req, res) {
 
     const trialDays = trialDaysForCheckout(tier, membership);
 
+    // POUKAZ (30 dní zdarma): kdo si během poukazového trialu zaplatí
+    // předplatné, nesmí přijít o zbývající dny — Stripe dostane trial_end =
+    // konec poukazového trialu a první platba je až po něm. Bez poukazu se
+    // nic nemění (trialDaysForCheckout výš).
+    const poukaz = tier === 'START' ? await poukazUzivatele(supabaseServer, user.id) : null;
+    const trialEnd = stripeTrialEndZPoukazu(membership, poukaz);
+
     const appBase = getPublicAppUrl();
     const stripe = new Stripe(stripeKey);
 
@@ -57,9 +65,15 @@ export default async function handler(req, res) {
       metadata: {
         user_id: user.id,
         expected_tier: tier,
+        ...(poukaz ? { voucher_code: poukaz.code } : {}),
       },
     };
-    if (trialDays) {
+    if (trialEnd) {
+      subscriptionData.trial_end = trialEnd;
+      subscriptionData.trial_settings = {
+        end_behavior: { missing_payment_method: 'cancel' },
+      };
+    } else if (trialDays) {
       subscriptionData.trial_period_days = trialDays;
       // Když trial doběhne a karta selže, subscription se zruší — nezůstane
       // viset v past_due donekonečna.
@@ -88,6 +102,7 @@ export default async function handler(req, res) {
       user_id: user.id,
       tier,
       trial_days: trialDays || 0,
+      voucher_trial_end: trialEnd || null,
     });
 
     if (!session?.url) {

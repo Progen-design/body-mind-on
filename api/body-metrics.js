@@ -77,6 +77,11 @@ export default async function handler(req, res) {
     }
 
     const auth = await createRegistrationAuthUser(payload, password);
+    // Heslo odmítnuté Supabase (krátké/slabé) → 400 s hláškou o hesle.
+    // Dřív propadlo jako „účet už existuje" (každá 422 = existující účet).
+    if (auth.authError === 'password') {
+      return res.status(400).json({ error: auth.passwordError });
+    }
     if (auth.authError === 'existing_account' || auth.existingAccount) {
       return res.status(400).json({
         error:

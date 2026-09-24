@@ -29,6 +29,7 @@ import {
 } from '../lib/registration/bodyMetricsRegistration.js';
 import { deleteAuthUserBestEffort } from '../lib/authHelpers.js';
 import { membershipFromRegistration, shouldPreserveMembership } from '../lib/membershipRegistration.js';
+import { HLASKY_POUKAZU, uplatniPoukaz, vratPoukaz } from '../lib/poukazy.js';
 import { isTierCheckoutEnabled } from '../lib/salesFeatureFlags.js';
 import { zapisSouhlasy } from '../lib/souhlasy.js';
 
@@ -62,6 +63,11 @@ export default async function handler(req, res) {
     }
 
     const { payload, password, birthDateRaw, smartScaleBody, souhlasy } = parsed;
+    // Kód poukazu (volitelný) — mimo `parseAndValidateRegistrationBody`, ten
+    // má pevný výčet polí profilu. Uplatní se až u založení členství níž.
+    const kodPoukazu = typeof b.kod_poukazu === 'string' ? b.kod_poukazu.trim() : '';
+    /** Výsledek poukazu pro odpověď: null = žádný kód nepřišel. */
+    let poukaz = null;
 
     const normalizedProgram = String(payload.program || 'START').toUpperCase();
     if ((normalizedProgram === 'ON_CLUB' || normalizedProgram === 'VIP') && !isTierCheckoutEnabled(normalizedProgram)) {
@@ -388,8 +394,28 @@ export default async function handler(req, res) {
           user_id: payload.user_id,
           status: existing.status,
         });
+        // Platné členství se nepřepisuje — poukaz by se spotřeboval na nic.
+        if (kodPoukazu) {
+          poukaz = { uplatnen: false, duvod: 'clenstvi', hlaska: 'Máš už aktivní členství, poukaz jsme neuplatnili — zůstává ti.' };
+        }
       } else {
-        const membership = membershipFromRegistration(program, startedAt);
+        // POUKAZ: jen START a jen nové členství. Uplatnění je atomický UPDATE
+        // (lib/poukazy.js) — dva souběžné pokusy o týž kód neprojdou oba.
+        // Neplatný kód registraci nezastaví: běžných 7 dní + hláška.
+        let trialDni;
+        if (kodPoukazu && String(program).toUpperCase() === 'START') {
+          poukaz = await uplatniPoukaz(supabaseServer, kodPoukazu, payload.user_id);
+          if (poukaz.uplatnen) {
+            trialDni = poukaz.dny;
+            console.info('[body-metrics] poukaz uplatnen', { user_id: payload.user_id, dny: poukaz.dny });
+          } else {
+            console.warn('[body-metrics] poukaz neuplatnen', { user_id: payload.user_id, duvod: poukaz.duvod });
+          }
+        } else if (kodPoukazu) {
+          poukaz = { uplatnen: false, duvod: 'program', hlaska: 'Poukaz platí jen pro START.' };
+        }
+
+        const membership = membershipFromRegistration(program, startedAt, trialDni);
         const { error: memErr } = await supabaseServer
           .from('memberships')
           .upsert([{
@@ -399,12 +425,21 @@ export default async function handler(req, res) {
             started_at: membership.started_at,
             trial_ends_at: membership.trial_ends_at,
             notes: membership.status === 'trial'
-              ? `Registrace přes ${program} formulář — 7denní trial`
+              ? (poukaz?.uplatnen
+                ? `Registrace přes ${program} formulář — ${poukaz.dny}denní trial z poukazu ${poukaz.kod}`
+                : `Registrace přes ${program} formulář — 7denní trial`)
               : `Registrace přes ${program} formulář — čeká na aktivaci předplatného`,
             updated_at: new Date().toISOString(),
           }], { onConflict: 'user_id' });
         if (memErr) {
           console.warn('[body-metrics] memberships upsert:', memErr.message);
+          // Členství nevzniklo → poukaz vrátit, jinak by byl spotřebovaný
+          // a člověk by z něj nic neměl.
+          if (poukaz?.uplatnen) {
+            const vraceno = await vratPoukaz(supabaseServer, poukaz.kod, payload.user_id);
+            console.warn('[body-metrics] poukaz vracen po chybe clenstvi', { user_id: payload.user_id, vraceno });
+            poukaz = { uplatnen: false, duvod: 'chyba', hlaska: HLASKY_POUKAZU.chyba };
+          }
         } else {
           console.info(`[body-metrics] membership created (${membership.status})`, `user_id=${payload.user_id}`);
         }
@@ -548,6 +583,13 @@ export default async function handler(req, res) {
       lastResortFailed,
       lastResortError,
     });
+    // Výsledek poukazu jde do odpovědi, ať registrace řekne, jestli platí
+    // 30 dní, nebo proč ne. Bez kódu klíč chybí úplně.
+    if (poukaz) {
+      response.poukaz = poukaz.uplatnen
+        ? { uplatnen: true, dny: poukaz.dny }
+        : { uplatnen: false, duvod: poukaz.duvod, hlaska: poukaz.hlaska };
+    }
 
     // 503 + hasUserId je existující kontrakt pro „účet je, plán ne, zkus znovu“
     // (pages/start.js:376 → setPlanFailedCanRetry). Vrátit 200 by znamenalo,

@@ -17,6 +17,7 @@
 // odporovat, kdykoli Stripe operaci odmítne.
 import Stripe from 'stripe';
 import { supabaseServer } from '../../lib/supabaseServer.js';
+import { konecObdobiSubscription } from '../../lib/stripeSubscriptionStatus.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -75,9 +76,8 @@ export default async function handler(req, res) {
       });
     }
 
-    const konecObdobi = subscription.current_period_end
-      ? new Date(subscription.current_period_end * 1000).toISOString()
-      : null;
+    // stripe-node v20 (API basil): období je na items.data[0], ne na subscription.
+    const konecObdobi = konecObdobiSubscription(subscription);
 
     console.info('[subscription/cancel] hotovo', {
       user_id: user.id,

@@ -109,7 +109,7 @@ async function upsertMembership(userId, {
  * @param {string} tier
  * @returns {{ status: string|null, trialEndsAt: string|null }}
  */
-function membershipStateFromSubscription(sub, tier) {
+export function membershipStateFromSubscription(sub, tier) {
   const stripeStatus = String(sub?.status || '').toLowerCase();
 
   if (stripeStatus === 'trialing' && String(tier).toUpperCase() === 'START' && sub?.trial_end) {
@@ -533,9 +533,11 @@ export default async function handler(req, res) {
           return res.status(500).json({ error: 'Database error' });
         }
 
-        // Sem vede přechod trialing → active. Dnešní uživatelé Stripe trial
-        // nedostávají (registrace zapisuje trial_ends_at), ale kdyby se to
-        // změnilo, aktivace přijde právě touhle větví, ne checkoutem.
+        // Sem vede přechod trialing → active: Stripe po konci trialu strhne
+        // první platbu a pošle `customer.subscription.updated` se stavem
+        // `active` (invoice.paid se tu nezpracovává — stav nese subscription).
+        // Od 25. 9. 2026 se tudy jde běžně: kdo zaplatí během našeho trialu,
+        // dostane Stripe trial_end = konec trialu (stripeTrialProCheckout).
         if (membershipStatus === 'active') {
           await zaloziWeeklyUlohu(userId, event.id, tier);
         }

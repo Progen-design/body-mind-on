@@ -63,8 +63,43 @@ function datumCesky(iso: string | null | undefined): string | null {
   return new Date(t).toLocaleDateString('cs-CZ', { timeZone: 'Europe/Prague', day: 'numeric', month: 'numeric', year: 'numeric' });
 }
 
+/**
+ * Předplatné ze zrcadla Stripe (api/profile.js → lib/predplatneProUi.js).
+ * Když je, UI bere cenu a data odsud — ne z konstant ani z memberships.
+ */
+export interface PredplatneUi {
+  plan: string;
+  cena_kc: number | null;
+  stav: string;
+  trial_do: string | null;
+  dalsi_platba: string | null;
+  konci_k: string | null;
+  poukaz: boolean;
+}
+
+const nazevTarifu = (plan: string) => (/on[\s_]?club/i.test(plan) ? 'ON CLUB' : String(plan || 'START').toUpperCase());
+const cenaKc = (n: number) => `${n.toLocaleString('cs-CZ')} Kč`;
+
 /** Klidná věta místo „Zkušební období končí… Odemknout". */
-export function textNastavenehoPredplatneho(trialKonci: string | null | undefined, plan: string = 'START'): string {
+export function textNastavenehoPredplatneho(
+  trialKonci: string | null | undefined,
+  plan: string = 'START',
+  predplatne: PredplatneUi | null = null,
+): string {
+  // ZE ZRCADLA STRIPE: skutečná cena a datum první platby, poukaz, zrušení.
+  if (predplatne) {
+    const nazev = nazevTarifu(predplatne.plan || plan);
+    const konci = datumCesky(predplatne.konci_k);
+    if (konci) return `Předplatné ${nazev} končí ${konci}. Do té doby máš plný přístup.`;
+    const platba = datumCesky(predplatne.trial_do ?? predplatne.dalsi_platba);
+    const cena = predplatne.cena_kc != null ? cenaKc(predplatne.cena_kc) : null;
+    if (predplatne.poukaz && predplatne.trial_do && platba) {
+      return cena
+        ? `Předplatné ${nazev} je nastavené — zdarma do ${platba} (poukaz). Pak ${cena} měsíčně.`
+        : `Předplatné ${nazev} je nastavené — zdarma do ${platba} (poukaz).`;
+    }
+    if (platba && cena) return `Předplatné ${nazev} je nastavené. První platba ${cena} proběhne ${platba}. Do té doby máš plný přístup.`;
+  }
   const kdy = datumCesky(trialKonci);
   // Po upgradu během trialu (change-tier) je nastavený ON CLUB — i cena první platby.
   const onClub = /on[\s_]?club/i.test(plan);
@@ -79,12 +114,27 @@ export function textNastavenehoPredplatneho(trialKonci: string | null | undefine
  * „START · předplatné aktivní od 25. 9. 2026" / „START · zkušební období" …
  * Jeden popis pro dlaždici účtu i sekci Účet a předplatné.
  */
-export function popisClenstvi(plan: string, stav: StavPredplatneho | undefined, clenemOd?: string | null): string {
+export function popisClenstvi(
+  plan: string,
+  stav: StavPredplatneho | undefined,
+  clenemOd?: string | null,
+  predplatne: PredplatneUi | null = null,
+): string {
   const od = datumCesky(clenemOd);
   switch (stav) {
     case 'trial_s_kartou':
-    case 'active':
+    case 'active': {
+      // Ze zrcadla Stripe: konec, poukaz, nebo další platba se skutečnou cenou.
+      const konci = datumCesky(predplatne?.konci_k);
+      if (konci) return `${plan} · předplatné končí ${konci}`;
+      const trialDo = datumCesky(predplatne?.trial_do);
+      if (predplatne?.poukaz && trialDo) return `${plan} · zdarma do ${trialDo} (poukaz)`;
+      const dalsi = datumCesky(predplatne?.dalsi_platba);
+      if (predplatne && dalsi && predplatne.cena_kc != null) {
+        return `${plan} · předplatné aktivní · další platba ${cenaKc(predplatne.cena_kc)} ${dalsi}`;
+      }
       return od ? `${plan} · předplatné aktivní od ${od}` : `${plan} · předplatné aktivní`;
+    }
     case 'trial_bez_karty':
       return `${plan} · zkušební období`;
     case 'past_due':

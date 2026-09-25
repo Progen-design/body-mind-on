@@ -1,5 +1,6 @@
 // /api/profile.js - Vrací data přihlášeného uživatele
 import { supabaseServer } from '../lib/supabaseServer.js';
+import { SLOUPCE_PREDPLATNEHO, predplatneProUi } from '../lib/predplatneProUi.js';
 import { POSITIVE_HABITS, NEGATIVE_HABITS } from '../lib/habits.js';
 import { validatePublishedPlanHtml } from '../lib/validatePlanHtml.js';
 import { repairWrappedPlanHtmlIfNeeded } from '../lib/profile/repairWrappedPlanHtmlIfNeeded.js';
@@ -431,6 +432,22 @@ export default async function handler(req, res) {
     const userHabits = (userHabitsRes.status === 'fulfilled' && userHabitsRes.value?.data) ? userHabitsRes.value.data : [];
     const membershipData = (membershipRes.status === 'fulfilled' && membershipRes.value?.data) ? membershipRes.value.data : null;
 
+    // PŘEDPLATNÉ ZE ZRCADLA STRIPE (public.subscriptions, lib/stripeSync.js):
+    // cena, další platba, konec trialu, zrušení, poukaz. Chyba (třeba před
+    // migrací) = null a UI spadne na dosavadní texty.
+    let predplatne = null;
+    try {
+      const { data: radkyPredplatneho, error: chybaPredplatneho } = await supabaseServer
+        .from('subscriptions')
+        .select(SLOUPCE_PREDPLATNEHO)
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false })
+        .limit(5);
+      if (!chybaPredplatneho) predplatne = predplatneProUi(radkyPredplatneho, membershipData);
+    } catch (err) {
+      console.warn('[profile] subscriptions:', err?.message);
+    }
+
     // Priorita: tabulka memberships > body_metrics.program > fallback START.
     // Odvození je v lib/programTier.js, protože podle programu se od 10. 8. 2026
     // větví i tréninková logika (START = A/B full-body s progresí). Kdyby si to
@@ -636,6 +653,8 @@ export default async function handler(req, res) {
        * subscription klient nepotřebuje.
        */
       ma_predplatne: Boolean(membershipData?.stripe_subscription_id),
+      /** Předplatné ze zrcadla Stripe (lib/predplatneProUi.js). null = není / před backfillem. */
+      predplatne,
       has_withings_connection: hasWithingsConnection,
       /** Kdy server naposled stahoval z Withings. null = zatim nikdy. */
       withings_last_sync_at: withingsConnRow?.last_sync_at || null,

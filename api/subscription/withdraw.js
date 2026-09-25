@@ -15,7 +15,7 @@
 //
 // ROZDÍL OPROTI /api/subscription/cancel: tam se ruší ke konci období
 // a stav nese webhook. Tady se ruší HNED a membership se přepíše na
-// 'canceled' rovnou — webhook customer.subscription.deleted pak zapíše totéž.
+// 'canceled' hned přes syncSubscription — webhook customer.subscription.deleted zopakuje totéž.
 //
 // Stripe v produkci běží na LIVE klíčích — testuje se jen s atrapou
 // (lib/__tests__/odstoupeniOdSmlouvy.test.mjs).
@@ -34,6 +34,7 @@ import {
 } from '../../lib/odstoupeniOdSmlouvy.js';
 import { emailOdstoupeniPrijato, posliTransakcniEmail } from '../../lib/smlouvaEmaily.js';
 import { uvolniSchedule } from '../../lib/zmenaTarifu.js';
+import { syncSubscription } from '../../lib/stripeSync.js';
 
 const HLASKA_STRIPE = 'Odstoupení se teď nepodařilo zpracovat u platební brány. Nic se nezměnilo — zkus to prosím za chvíli, nebo napiš na info@bodyandmindon.cz.';
 const HLASKA_NEDOSTUPNE = 'Odstoupení teď online nejde. Napiš nám na info@bodyandmindon.cz a vyřídíme ho ručně.';
@@ -77,13 +78,8 @@ export const vychoziZavislosti = {
     const { error } = await supabaseServer.from('contract_withdrawals').insert([radek]);
     return { error: error || null };
   },
-  async zrusClenstvi(userId) {
-    const { error } = await supabaseServer
-      .from('memberships')
-      .update({ status: 'canceled', updated_at: new Date().toISOString() })
-      .eq('user_id', userId);
-    return { error: error || null };
-  },
+  /** Zrcadlo do DB (subscriptions, memberships) — jediný zápis stavu předplatného. */
+  sync: (stripe, subId) => syncSubscription(stripe, subId),
   posliEmail: posliTransakcniEmail,
   stripe: (klic) => new Stripe(klic),
   now: () => Date.now(),
@@ -210,8 +206,11 @@ export function vytvorHandler(z = vychoziZavislosti) {
     }
 
     // (3) ZÁPIS — peníze už se pohnuly, takže chyby tady jen logujeme.
-    const { error: chybaClenstvi } = await z.zrusClenstvi(user.id);
-    if (chybaClenstvi) console.error('[subscription/withdraw] membership → canceled selhalo (dorovná webhook):', chybaClenstvi.message);
+    try {
+      await z.sync(stripe, subscriptionId);
+    } catch (err) {
+      console.error('[subscription/withdraw] sync (membership → canceled dorovná webhook):', err?.message || err);
+    }
 
     const { error: chybaZapisu } = await z.zapisOdstoupeni({
       user_id: user.id,

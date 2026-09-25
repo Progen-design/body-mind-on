@@ -41,6 +41,8 @@ export interface ProfilOdpoved {
   trial?: { konci: string; dny_do_konce: number | null } | null;
   /** Má nastavené Stripe předplatné (jen bool, api/profile.js). */
   ma_predplatne?: boolean;
+  /** Předplatné ze zrcadla Stripe (lib/predplatneProUi.js přes api/profile.js). */
+  predplatne?: import('../lib/stavPredplatneho.ts').PredplatneUi | null;
   /** Verdikt brány o dalším plánu (lib/planRenewalRules.js přes api/profile.js). */
   plan_renewal?: { allowed: boolean; reason: string; trial_ended: boolean } | null;
   membershipSince?: string | null;
@@ -934,6 +936,7 @@ export function naProfil(odpoved: ProfilOdpoved): UserProfile {
     trialDniDoKonce: predplatneBezi ? null : odpoved.trial?.dny_do_konce ?? null,
     stavPredplatneho,
     planPozastaveny: jePlanPozastaveny(stavPredplatneho, odpoved.plan_renewal?.trial_ended === true),
+    predplatne: odpoved.predplatne ?? null,
     trialKonci: odpoved.trial?.konci ?? null,
     clenemOd: odpoved.membershipSince ?? null,
     avatarUrl: odpoved.user?.avatar_url || '',

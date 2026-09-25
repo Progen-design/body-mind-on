@@ -99,7 +99,7 @@ test('pruh na Dnes: u trial_s_kartou klidná věta a žádné „Odemknout"', ()
   const pruh = cti('../components/TrialCountdownStrip.tsx');
   const vetev = pruh.slice(pruh.indexOf("if (stavPredplatneho === 'trial_s_kartou')"), pruh.indexOf('if (!zamceno) return null;'));
   assert.ok(vetev.length > 0, 'větev pro trial_s_kartou chybí');
-  assert.match(vetev, /textNastavenehoPredplatneho\(trialKonci, plan\)/);
+  assert.match(vetev, /textNastavenehoPredplatneho\(trialKonci, plan, predplatne\)/);
   assert.doesNotMatch(vetev, /Odemknout|<button/);
   assert.match(cti('../components/DnesObrazovka.tsx'), /stavPredplatneho=\{profile\.stavPredplatneho\}/);
 });
@@ -108,7 +108,7 @@ test('Účet a předplatné: START se s nastaveným předplatným nenabízí, zr
   const ucet = cti('../components/UcetASpravaSection.tsx');
   assert.match(ucet, /\{plan\?\.zamceno && !predplatneNastavene && \(/);
   assert.match(ucet, /<ZmenaTarifu aktivni=\{predplatneNastavene\}/);
-  assert.match(ucet, /popisClenstvi\(profile\.membershipPlan, profile\.stavPredplatneho, profile\.clenemOd\)/);
+  assert.match(ucet, /popisClenstvi\(profile\.membershipPlan, profile\.stavPredplatneho, profile\.clenemOd, profile\.predplatne \?\? null\)/);
   assert.match(ucet, /Zrušit předplatné/);
   const nabidka = cti('../components/PredplatneNabidka.tsx');
   assert.match(nabidka, /!\(bezStartu && t === 'START'\)/);

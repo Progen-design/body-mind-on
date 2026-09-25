@@ -249,7 +249,7 @@ export const StartRegistrace: React.FC<Props> = ({ onHotovo, onZpetNaPrihlaseni 
   const zpracujChybuApi = (zprava: string) => {
     if (/Výška musí být/i.test(zprava)) { setChyby({ height: zprava }); setKrok(2); return true; }
     if (/Váha musí být/i.test(zprava)) { setChyby({ weight: zprava }); setKrok(2); return true; }
-    if (/Věk musí být|datum narození/i.test(zprava)) { setChyby({ birth_date: zprava }); setKrok(2); return true; }
+    if (/Věk musí být|datum narození|od 18 let/i.test(zprava)) { setChyby({ birth_date: zprava }); setKrok(2); return true; }
     // Heslo odmítnuté serverem (krátké/slabé) patří k poli Heslo v kroku 1.
     if (/^Heslo musí mít|heslo je příliš slabé/i.test(zprava)) { setChyby({ password: zprava }); setKrok(1); return true; }
     // Shoda na vyznamu, ne na presnem zneni. Predchozi vzor hledal "e-mail už",

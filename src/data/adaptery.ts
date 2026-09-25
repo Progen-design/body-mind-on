@@ -3,7 +3,7 @@
 // Relativni cesta zamerne misto aliasu @lib - soubor pak jde spustit
 // i cistym Nodem (viz tools/overit-adaptery.ts), nejen pres Vite.
 import { urciOsloveni } from '../lib/vokativ.ts';
-import { odvodStavPredplatneho } from '../lib/stavPredplatneho.ts';
+import { jePlanPozastaveny, odvodStavPredplatneho } from '../lib/stavPredplatneho.ts';
 import { cilovaVaha, automatickaCilovaVaha } from '../lib/cilovaVaha.ts';
 import { POSITIVE_HABITS, NEGATIVE_HABITS } from '../../lib/habits.js';
 // Klice odskrtnutych aktivit maji jediny zdroj pravdy v lib/ — sdileny se
@@ -41,6 +41,8 @@ export interface ProfilOdpoved {
   trial?: { konci: string; dny_do_konce: number | null } | null;
   /** Má nastavené Stripe předplatné (jen bool, api/profile.js). */
   ma_predplatne?: boolean;
+  /** Verdikt brány o dalším plánu (lib/planRenewalRules.js přes api/profile.js). */
+  plan_renewal?: { allowed: boolean; reason: string; trial_ended: boolean } | null;
   membershipSince?: string | null;
   /** Ukázka příštího týdne pro trial. Zámek počítá server podle členství. */
   zamceny_plan?: {
@@ -931,6 +933,7 @@ export function naProfil(odpoved: ProfilOdpoved): UserProfile {
     // Odpočet „končí za N dní" jen u trialu bez předplatného.
     trialDniDoKonce: predplatneBezi ? null : odpoved.trial?.dny_do_konce ?? null,
     stavPredplatneho,
+    planPozastaveny: jePlanPozastaveny(stavPredplatneho, odpoved.plan_renewal?.trial_ended === true),
     trialKonci: odpoved.trial?.konci ?? null,
     clenemOd: odpoved.membershipSince ?? null,
     avatarUrl: odpoved.user?.avatar_url || '',

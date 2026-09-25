@@ -21,6 +21,7 @@ import {
   markFailed,
   markSkipped,
   getUserEmail,
+  getUserName,
 } from '../../lib/lifecycleEmailStore.js';
 import { sendLifecycleEmail } from '../../lib/sendLifecycleEmail.js';
 
@@ -31,11 +32,12 @@ async function runEvaluate() {
 
   for (const m of memberships) {
     try {
-      const { allKeys, lastSentAt } = await getUserEmailHistory(m.user_id);
+      const { allKeys, sentKeys, lastSentAt } = await getUserEmailHistory(m.user_id);
 
       const action = pickNextLifecycleEmail(m, {
         now: new Date(),
         alreadySent: allKeys,
+        sentKeys,
         lastSentAt,
       });
 
@@ -79,7 +81,8 @@ async function runDispatch() {
         continue;
       }
 
-      const result = await sendLifecycleEmail(email, msg.trigger_key);
+      const jmeno = await getUserName(msg.user_id);
+      const result = await sendLifecycleEmail(email, msg.trigger_key, { jmeno });
       if (result.ok) {
         await markSent(msg.id, result.message_id);
         stats.sent += 1;

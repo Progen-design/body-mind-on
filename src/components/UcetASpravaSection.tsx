@@ -4,6 +4,7 @@ import { apiFetch } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { NadpisSekce } from './NadpisSekce';
 import { PredplatneNabidka } from './PredplatneNabidka';
+import { OdstoupeniOdSmlouvy } from './OdstoupeniOdSmlouvy';
 import { Avatar } from './Avatar';
 import { MembershipStatusBadge } from './MembershipStatusBadge';
 import { maNastavenePredplatne, popisClenstvi, textNastavenehoPredplatneho } from '../lib/stavPredplatneho';
@@ -309,6 +310,14 @@ export const UcetASpravaSection: React.FC<UcetASpravaSectionProps> = ({
             </button>
           </div>
         )}
+
+        {/* ODSTOUPENÍ DO 14 DNŮ od první platby — jen když na něj server
+            potvrdí nárok (api/subscription/withdraw.js, GET). */}
+        <OdstoupeniOdSmlouvy
+          aktivni={profile.stavPredplatneho === 'active'}
+          jmeno={account?.name || profile.name}
+          email={account?.email || ''}
+        />
 
         {zruseniStav && (
           <div className={`mt-3 text-xs ${zruseniStav.typ === 'chyba' ? 'text-rose-400' : 'text-emerald-300'}`}>

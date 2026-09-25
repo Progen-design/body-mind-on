@@ -8,6 +8,7 @@ import { DnesObrazovka } from './components/DnesObrazovka';
 import { CommunityPage } from './components/komunita/CommunityPage';
 import { DnesSkeleton } from './components/DnesSkeleton';
 import { TrialPaywallCard } from './components/TrialPaywallCard';
+import { PlanPozastaveny } from './components/PlanPozastaveny';
 import { BodyCompositionSection } from './components/BodyCompositionSection';
 import { NutritionSection } from './components/NutritionSection';
 import { WorkoutSection } from './components/WorkoutSection';
@@ -160,6 +161,20 @@ function AppContent() {
     const cil = cestaProZalozku(zalozka, window.location.pathname.replace(/\/+$/, '') || '/');
     if (cil) naviguj(cil);
   }, []);
+
+  // ODKAZ Z E-MAILU /profil?predplatne=1 — otevřít Účet a předplatné.
+  // Stejný vzor jako checkout výš: přečíst jednou po přihlášení a parametr
+  // z URL smazat, ať se sekce po obnovení stránky nerozbaluje znovu.
+  const [predplatneZOdkazu, setPredplatneZOdkazu] = useState(false);
+  useEffect(() => {
+    if (!isAuthenticated || parametry.get('predplatne') !== '1') return;
+    setPredplatneZOdkazu(true);
+    setActiveTab('profil');
+    const url = new URL(window.location.href);
+    url.searchParams.delete('predplatne');
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  }, [isAuthenticated, parametry]);
+
   const [profile, setProfile] = useState<UserProfile>(PRAZDNY_PROFIL);
   // Ukázka příštího týdne pro trial, ať vidí konkrétní jídla dřív, než
   // zaplatí. null = žádná ukázka (ne v trialu, nebo ještě nevznikla).
@@ -1262,6 +1277,7 @@ function AppContent() {
             onRegeneratePlan={handleRegeneratePlanForCurrentTarget}
             regenerujiPlan={regenerujiPlan}
             zamcenyPlan={zamcenyPlan}
+            otevritPredplatne={predplatneZOdkazu}
             posledniSynchronizaceZarizeni={posledniSynchronizaceHodinek}
             withingsPosledniStazeni={profilData?.withings_last_sync_at ?? null}
             onSelectTab={vyberZalozku}
@@ -1318,8 +1334,14 @@ function AppContent() {
           />
         )}
 
+        {/* PLÁN POZASTAVENÝ (trial bez karty skončil): Jídelníček a Trénink
+            by jinak kreslily prázdné sekce nad propadlým plánem. */}
+        {displayedProfile.planPozastaveny && (activeTab === 'jidelnicek' || activeTab === 'trenink') && (
+          <PlanPozastaveny />
+        )}
+
         {/* TAB D: JÍDELNÍČEK & MAKRA */}
-        {activeTab === 'jidelnicek' && (
+        {activeTab === 'jidelnicek' && !displayedProfile.planPozastaveny && (
           <NutritionSection
             weekMeals={weekMeals}
             shoppingItems={shoppingItems}
@@ -1356,7 +1378,7 @@ function AppContent() {
         )}
 
         {/* TAB E: TRÉNINKOVÝ PLÁN & ZÁZNAMNÍK */}
-        {activeTab === 'trenink' && (
+        {activeTab === 'trenink' && !displayedProfile.planPozastaveny && (
           <WorkoutSection
             workouts={workouts}
             onToggleExercise={handleToggleExercise}

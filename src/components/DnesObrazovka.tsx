@@ -19,6 +19,7 @@ import { UvitaciKarta } from './UvitaciKarta';
 import { TrialCountdownStrip } from './TrialCountdownStrip';
 import { popisClenstvi } from '../lib/stavPredplatneho';
 import { NastrojeDlazdice, type Dlazdice, type NastrojId } from './NastrojeDlazdice';
+import { PlanPozastaveny } from './PlanPozastaveny';
 
 /**
  * ZÁLOŽKA DNES — PROMPT_DNES_WOW.md. Skládá obrazovku shora dolů:
@@ -63,6 +64,11 @@ interface Props {
   panelTyden: React.ReactNode;
   panelZarizeni: React.ReactNode;
   panelUcet: React.ReactNode;
+  /**
+   * Otevřít rovnou „Účet a předplatné" — odkaz z e-mailu /profil?predplatne=1
+   * (lifecycle e-maily po trialu, potvrzení smlouvy). App parametr z URL smaže.
+   */
+  otevritPredplatne?: boolean;
 }
 
 const STAV_CLENSTVI: Record<string, string> = {
@@ -98,6 +104,7 @@ export const DnesObrazovka: React.FC<Props> = ({
   panelTyden,
   panelZarizeni,
   panelUcet,
+  otevritPredplatne = false,
 }) => {
   const { dostupny: tedDostupny } = useTed();
   const [stav, setStav] = React.useState<Adherence | null>(null);
@@ -127,6 +134,13 @@ export const DnesObrazovka: React.FC<Props> = ({
       panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [otevreny]);
+
+  // Odkaz z e-mailu: rozbalit Účet a předplatné a odscrollovat na něj.
+  React.useEffect(() => {
+    if (!otevritPredplatne) return;
+    scrollNaPanel.current = true;
+    setOtevreny('ucet');
+  }, [otevritPredplatne]);
 
   const ted = new Date();
   const denN = denProgramu(registrovanOd, ted);
@@ -203,6 +217,21 @@ export const DnesObrazovka: React.FC<Props> = ({
   const panel =
     otevreny === 'tyden' ? panelTyden : otevreny === 'zarizeni' ? panelZarizeni : otevreny === 'ucet' ? panelUcet : null;
 
+  // TRIAL BEZ KARTY SKONČIL: žádný hero s nulami, prázdná osa dne ani TED bez
+  // odpovědi. Jen jasný stav s jedním tlačítkem a dlaždice Účet a předplatné
+  // (zrušení, smazání účtu, podmínky musí zůstat dostupné).
+  if (profile.planPozastaveny) {
+    return (
+      <DnesPozastavena
+        dlazdiceUcet={dlazdice.filter((d) => d.id === 'ucet')}
+        otevreny={otevreny}
+        onKlik={klikNaDlazdici}
+        panelRef={panelRef}
+        panelUcet={panelUcet}
+      />
+    );
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <DnesHero
@@ -272,3 +301,21 @@ export const DnesObrazovka: React.FC<Props> = ({
     </div>
   );
 };
+
+/**
+ * Dnes po konci trialu bez karty: jen karta „plán je pozastavený" a dlaždice
+ * Účet a předplatné (zrušení, smazání účtu a podmínky musí zůstat po ruce).
+ */
+const DnesPozastavena: React.FC<{
+  dlazdiceUcet: Dlazdice[];
+  otevreny: NastrojId | null;
+  onKlik: (id: NastrojId) => void;
+  panelRef: React.RefObject<HTMLDivElement | null>;
+  panelUcet: React.ReactNode;
+}> = ({ dlazdiceUcet, otevreny, onKlik, panelRef, panelUcet }) => (
+  <div className="space-y-4 sm:space-y-6">
+    <PlanPozastaveny />
+    <NastrojeDlazdice dlazdice={dlazdiceUcet} otevreny={otevreny} onKlik={onKlik} />
+    {otevreny === 'ucet' && <div ref={panelRef}>{panelUcet}</div>}
+  </div>
+);

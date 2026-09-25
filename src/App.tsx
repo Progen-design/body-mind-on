@@ -1311,6 +1311,8 @@ function AppContent() {
                 registrovanOd={profilData?.user?.created_at ?? null}
                 onEditPreferences={() => setIsPreferencesModalOpen(true)}
                 onSavePreferredAddress={handleSavePreferredAddress}
+                // Nový tier zapíše webhook — profil se dotáhne dvakrát jako po Checkoutu.
+                onZmenaPredplatneho={() => { [2500, 8000].forEach((ms) => window.setTimeout(() => znovuNacistProfil(), ms)); }}
               />
             }
           />

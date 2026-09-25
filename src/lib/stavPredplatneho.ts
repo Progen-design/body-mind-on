@@ -14,7 +14,7 @@
  *
  * Čisté funkce bez Reactu — testy v stavPredplatneho.test.ts.
  */
-import { START_PRICE_CZK } from '../../lib/pricingConstants.js';
+import { ON_CLUB_PRICE_CZK, START_PRICE_CZK } from '../../lib/pricingConstants.js';
 
 export type StavPredplatneho =
   | 'trial_bez_karty'
@@ -64,11 +64,15 @@ function datumCesky(iso: string | null | undefined): string | null {
 }
 
 /** Klidná věta místo „Zkušební období končí… Odemknout". */
-export function textNastavenehoPredplatneho(trialKonci: string | null | undefined): string {
+export function textNastavenehoPredplatneho(trialKonci: string | null | undefined, plan: string = 'START'): string {
   const kdy = datumCesky(trialKonci);
+  // Po upgradu během trialu (change-tier) je nastavený ON CLUB — i cena první platby.
+  const onClub = /on[\s_]?club/i.test(plan);
+  const nazev = onClub ? 'ON CLUB' : 'START';
+  const cena = (onClub ? ON_CLUB_PRICE_CZK : START_PRICE_CZK).toLocaleString('cs-CZ');
   return kdy
-    ? `Předplatné START je nastavené. První platba ${START_PRICE_CZK} Kč proběhne ${kdy}. Do té doby máš plný přístup.`
-    : `Předplatné START je nastavené. Do první platby ${START_PRICE_CZK} Kč máš plný přístup.`;
+    ? `Předplatné ${nazev} je nastavené. První platba ${cena} Kč proběhne ${kdy}. Do té doby máš plný přístup.`
+    : `Předplatné ${nazev} je nastavené. Do první platby ${cena} Kč máš plný přístup.`;
 }
 
 /**

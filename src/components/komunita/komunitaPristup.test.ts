@@ -35,9 +35,11 @@ test('karta a detail v režimu jen ke čtení: lajk zablokovaný, bez „Napiš 
   assert.match(DETAIL, /\{jenCteni \? \(\s+<div[^>]*>\s+<ListaOnClub \/>/);
 });
 
-test('lišta: „Psát můžeš v ON CLUBU" + CTA do stávajícího Checkoutu ON CLUB; zámek odkazuje na odemknutí', () => {
+test('lišta: „Psát můžeš v ON CLUBU" + CTA do Účtu a předplatného; zámek odkazuje na odemknutí', () => {
   assert.match(PRISTUP, /TEXT_PSANI_ON_CLUB = 'Psát můžeš v ON CLUBU'/);
-  assert.match(PRISTUP, /spustitCheckout\('ON_CLUB'\)/);
+  // Do Účtu a předplatného: Checkout pro nové předplatné, change-tier pro běžící.
+  assert.match(PRISTUP, /href="\/profil\?predplatne=1"[\s\S]{0,200}Přejít na ON CLUB/);
+  assert.doesNotMatch(PRISTUP, /spustitCheckout/);
   assert.match(PRISTUP, /Přejít na ON CLUB/);
   assert.match(PRISTUP, /Komunita je dostupná s aktivním předplatným\./);
   assert.match(PRISTUP, /href="\/profil\?predplatne=1"/);

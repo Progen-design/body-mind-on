@@ -16,6 +16,8 @@ interface Props {
   stavPredplatneho?: StavPredplatneho;
   /** Konec trialu = den první platby. */
   trialKonci?: string | null;
+  /** Nastavený tarif (`profile.membershipPlan`) — po upgradu v trialu ON CLUB. */
+  plan?: string;
 }
 
 function textOdpoctu(dny: number | null): string {
@@ -40,12 +42,13 @@ export const TrialCountdownStrip: React.FC<Props> = ({
   onOtevritPredplatne,
   stavPredplatneho,
   trialKonci = null,
+  plan = 'START',
 }) => {
   if (stavPredplatneho === 'trial_s_kartou') {
     return (
       <div className="flex items-start gap-2.5 min-h-12 px-4 py-3 rounded-2xl border border-emerald-500/30 bg-emerald-950/30">
         <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0 text-akcent-lime" />
-        <span className="text-xs sm:text-sm text-emerald-100 leading-snug">{textNastavenehoPredplatneho(trialKonci)}</span>
+        <span className="text-xs sm:text-sm text-emerald-100 leading-snug">{textNastavenehoPredplatneho(trialKonci, plan)}</span>
       </div>
     );
   }

@@ -33,6 +33,7 @@ import {
   zaplacenoMs,
 } from '../../lib/odstoupeniOdSmlouvy.js';
 import { emailOdstoupeniPrijato, posliTransakcniEmail } from '../../lib/smlouvaEmaily.js';
+import { uvolniSchedule } from '../../lib/zmenaTarifu.js';
 
 const HLASKA_STRIPE = 'Odstoupení se teď nepodařilo zpracovat u platební brány. Nic se nezměnilo — zkus to prosím za chvíli, nebo napiš na info@bodyandmindon.cz.';
 const HLASKA_NEDOSTUPNE = 'Odstoupení teď online nejde. Napiš nám na info@bodyandmindon.cz a vyřídíme ho ručně.';
@@ -195,8 +196,10 @@ export function vytvorHandler(z = vychoziZavislosti) {
       }
     }
 
-    // (2) OKAMŽITÉ ZRUŠENÍ
+    // (2) OKAMŽITÉ ZRUŠENÍ. Naplánovaný downgrade (schedule) by cancel
+    // zablokoval — nejdřív ho uvolnit, změna tarifu tím zanikne.
     try {
+      await uvolniSchedule(stripe, posudek.subscription);
       await stripe.subscriptions.cancel(subscriptionId, {}, { idempotencyKey: `odstoupeni-cancel-${subscriptionId}` });
     } catch (err) {
       // Refund už proběhl. Opakovaný pokus ho díky idempotency key nezdvojí.

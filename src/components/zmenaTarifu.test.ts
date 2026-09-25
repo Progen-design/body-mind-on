@@ -23,6 +23,9 @@ test('texty náhledu: „Dnes doplatíš X Kč, dál …/měsíc" a v trialu „
   assert.match(ZMENA, /return `Dnes doplatíš \$\{kc\(s\.dnes_kc \?\? 0\)\}, dál \$\{dal\}\/měsíc`;/);
   assert.match(ZMENA, /Od \{od \?\? 'dalšího období'\} přejdeš na START \(\{kc\(stav\.dal_kc \?\? 599\)\}\/měsíc\)/);
   assert.match(ZMENA, /Zrušit změnu/);
+  // ON CLUB v trialu: na START hned, trial běží dál (server posílá v_trialu)
+  assert.match(ZMENA, /stav\.v_trialu \? \(/);
+  assert.match(ZMENA, /Na START přejdeš hned, zkušební období běží dál\./);
 });
 
 test('upgrade nejde potvrdit bez zaškrtnutého souhlasu s obchodními podmínkami', () => {

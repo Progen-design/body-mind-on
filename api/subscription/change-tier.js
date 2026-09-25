@@ -147,6 +147,8 @@ export function vytvorHandler(zavislosti = vychoziZavislosti) {
             dal_kc: CENA_TARIFU_KC.START,
             od: plan?.od ?? konecObdobiSubscription(sub),
             naplanovano: Boolean(plan),
+            // V trialu se na START přechází hned (trial běží dál) — UI to řekne jinak.
+            v_trialu: sub.status === 'trialing' && Boolean(sub.trial_end),
           });
         }
         return res.status(200).json({ muze_menit: false, tier: tierTed });
@@ -229,7 +231,11 @@ export function vytvorHandler(zavislosti = vychoziZavislosti) {
       const plan = await naplanovanyDowngrade(stripe, sub, ceny.START);
       if (plan) return res.status(200).json({ ok: true, naplanovano: true, tier: 'ON_CLUB', od: plan.od });
       const vysledek = await naplanujDowngrade(stripe, sub, ceny.START);
-      console.info('[subscription/change-tier] downgrade naplánován', { user_id: user.id, subscription_id: sub.id, od: vysledek.od });
+      console.info('[subscription/change-tier] downgrade', { user_id: user.id, subscription_id: sub.id, od: vysledek.od, zpusob: vysledek.zpusob });
+      if (vysledek.zpusob === 'hned') {
+        // Trial: START hned, první platba po trialu 599 Kč. Tier zapíše webhook.
+        return res.status(200).json({ ok: true, zmeneno: true, naplanovano: false, tier: 'START', od: vysledek.od });
+      }
       return res.status(200).json({ ok: true, naplanovano: true, tier: 'ON_CLUB', od: vysledek.od });
     } catch (err) {
       console.error('[subscription/change-tier] downgrade:', err?.message || err, { user_id: user.id });

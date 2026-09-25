@@ -21,6 +21,8 @@ interface Stav {
   dal_kc?: number;
   od?: string | null;
   naplanovano?: boolean;
+  /** ON CLUB ve zkušebním období — na START se přechází hned, trial běží dál. */
+  v_trialu?: boolean;
 }
 
 interface Props {
@@ -130,6 +132,11 @@ export const ZmenaTarifu: React.FC<Props> = ({ aktivni, onZmena }) => {
                 </span>
               </label>
             </>
+          ) : stav.v_trialu ? (
+            <p className="text-xs text-slate-300">
+              Na START přejdeš hned, zkušební období běží dál. První platba {od ? `${od} ` : ''}bude {kc(stav.dal_kc ?? 599)}.
+              Komunitu pak budeš jen číst.
+            </p>
           ) : (
             <p className="text-xs text-slate-300">
               Od {od ?? 'dalšího období'} budeš ve STARTu za {kc(stav.dal_kc ?? 599)}/měsíc. Do té doby zůstáváš v ON CLUBU, nic se nevrací.
@@ -142,7 +149,12 @@ export const ZmenaTarifu: React.FC<Props> = ({ aktivni, onZmena }) => {
               disabled={odesilam || (upgrade && !souhlas)}
               onClick={() => (upgrade
                 ? zavolej({ method: 'POST', body: JSON.stringify({ tier: 'ON_CLUB', souhlas: true }) }, 'Hotovo — jsi v ON CLUBU. Potvrzení ti přišlo e-mailem.')
-                : zavolej({ method: 'POST', body: JSON.stringify({ tier: 'START' }) }, `Změna je naplánovaná — od ${od ?? 'dalšího období'} přejdeš na START.`))}
+                : zavolej(
+                  { method: 'POST', body: JSON.stringify({ tier: 'START' }) },
+                  stav.v_trialu
+                    ? 'Hotovo — jsi ve STARTu. Zkušební období běží dál.'
+                    : `Změna je naplánovaná — od ${od ?? 'dalšího období'} přejdeš na START.`,
+                ))}
               className={`${TLACITKO} border-lime-500/40 bg-lime-950/40 text-akcent-lime`}
             >
               {odesilam ? 'Měním…' : upgrade ? 'Potvrdit přechod na ON CLUB' : 'Potvrdit přechod na START'}

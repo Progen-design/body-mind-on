@@ -17,6 +17,7 @@ import { CasovaOsaDne } from './CasovaOsaDne';
 import { TvojeCesta } from './TvojeCesta';
 import { UvitaciKarta } from './UvitaciKarta';
 import { TrialCountdownStrip } from './TrialCountdownStrip';
+import { popisClenstvi } from '../lib/stavPredplatneho';
 import { NastrojeDlazdice, type Dlazdice, type NastrojId } from './NastrojeDlazdice';
 
 /**
@@ -172,7 +173,11 @@ export const DnesObrazovka: React.FC<Props> = ({
       id: 'ucet',
       ikona: <CreditCard className="w-4 h-4" aria-hidden="true" />,
       nazev: 'Účet a předplatné',
-      udaj: `${profile.membershipPlan} · ${STAV_CLENSTVI[profile.status] ?? String(profile.status).toLowerCase()}`,
+      // „START · předplatné aktivní od …" po Checkoutu v trialu, ne
+      // „zkušební období" (src/lib/stavPredplatneho.ts).
+      udaj: profile.stavPredplatneho
+        ? popisClenstvi(profile.membershipPlan, profile.stavPredplatneho, profile.clenemOd)
+        : `${profile.membershipPlan} · ${STAV_CLENSTVI[profile.status] ?? String(profile.status).toLowerCase()}`,
       rozbaluje: true,
     },
   ];
@@ -257,6 +262,8 @@ export const DnesObrazovka: React.FC<Props> = ({
         zamceno={tydenZamceny}
         trialDniDoKonce={profile.trialDniDoKonce ?? null}
         onOtevritPredplatne={otevriPredplatne}
+        stavPredplatneho={profile.stavPredplatneho}
+        trialKonci={profile.trialKonci ?? null}
       />
 
       <NastrojeDlazdice dlazdice={dlazdice} otevreny={otevreny} onKlik={klikNaDlazdici} />

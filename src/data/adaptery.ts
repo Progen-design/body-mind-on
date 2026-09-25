@@ -3,6 +3,7 @@
 // Relativni cesta zamerne misto aliasu @lib - soubor pak jde spustit
 // i cistym Nodem (viz tools/overit-adaptery.ts), nejen pres Vite.
 import { urciOsloveni } from '../lib/vokativ.ts';
+import { odvodStavPredplatneho } from '../lib/stavPredplatneho.ts';
 import { cilovaVaha, automatickaCilovaVaha } from '../lib/cilovaVaha.ts';
 import { POSITIVE_HABITS, NEGATIVE_HABITS } from '../../lib/habits.js';
 // Klice odskrtnutych aktivit maji jediny zdroj pravdy v lib/ — sdileny se
@@ -38,6 +39,9 @@ export interface ProfilOdpoved {
   membershipStatus?: string;
   /** Kolik dní zbývá do konce trialu. null/chybí = uživatel v trialu není. */
   trial?: { konci: string; dny_do_konce: number | null } | null;
+  /** Má nastavené Stripe předplatné (jen bool, api/profile.js). */
+  ma_predplatne?: boolean;
+  membershipSince?: string | null;
   /** Ukázka příštího týdne pro trial. Zámek počítá server podle členství. */
   zamceny_plan?: {
     valid_from: string | null;
@@ -911,6 +915,10 @@ export function naProfil(odpoved: ProfilOdpoved): UserProfile {
   const bm = odpoved.body_metrics?.[0] || {};
   const program = String(odpoved.program || 'START');
   const stav = String(odpoved.membershipStatus || '');
+  // Trial s nastaveným předplatným (po Checkoutu) není „zkušební období
+  // k odemknutí" — je to běžící předplatné, jen první platba je až po trialu.
+  const stavPredplatneho = odvodStavPredplatneho(stav, odpoved.ma_predplatne === true);
+  const predplatneBezi = stavPredplatneho === 'trial_s_kartou';
   return {
     name: odpoved.user?.name || bm.name || odpoved.user?.email?.split('@')[0] || 'Můj profil',
     /*
@@ -919,8 +927,12 @@ export function naProfil(odpoved: ProfilOdpoved): UserProfile {
      * přestal chodit plán. Zbývající dny nese `odpoved.trial`, aby si je
      * UI nedopočítávalo z datumů samo.
      */
-    status: stav === 'active' ? 'AKTIVNÍ' : stav === 'trial' ? 'TRIAL' : 'PAUZOVÁNO',
-    trialDniDoKonce: odpoved.trial?.dny_do_konce ?? null,
+    status: stav === 'active' || predplatneBezi ? 'AKTIVNÍ' : stav === 'trial' ? 'TRIAL' : 'PAUZOVÁNO',
+    // Odpočet „končí za N dní" jen u trialu bez předplatného.
+    trialDniDoKonce: predplatneBezi ? null : odpoved.trial?.dny_do_konce ?? null,
+    stavPredplatneho,
+    trialKonci: odpoved.trial?.konci ?? null,
+    clenemOd: odpoved.membershipSince ?? null,
     avatarUrl: odpoved.user?.avatar_url || '',
     membershipPlan: NAZVY_PROGRAMU[program] || program,
     nextConsultationDate: '',

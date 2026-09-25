@@ -317,6 +317,15 @@ export interface UserProfile {
   /** Kolik dní zbývá do konce trialu. null = uživatel v trialu není. */
   trialDniDoKonce?: number | null;
   /**
+   * Odvozený stav předplatného (src/lib/stavPredplatneho.ts). Rozlišuje trial
+   * bez karty (prodávat) a trial s nastaveným předplatným (už ne).
+   */
+  stavPredplatneho?: import('./lib/stavPredplatneho').StavPredplatneho;
+  /** Konec trialu (YYYY-MM-DD) — u nastaveného předplatného datum první platby. */
+  trialKonci?: string | null;
+  /** Od kdy běží členství (memberships.started_at, po Checkoutu jeho čas). */
+  clenemOd?: string | null;
+  /**
    * „Jak ti máme říkat?" — text PŘÍMO V 5. PÁDU, jak si ho uživatel sám
    * napsal (appka neskloňuje). null/prázdné = pole není vyplněné, pozdrav
    * jméno nepoužije vůbec (PROMPT_DNES_HERO.md, src/lib/pozdrav.ts).

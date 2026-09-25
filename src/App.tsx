@@ -125,6 +125,23 @@ function AppContent() {
     znovu: znovuNacistProfil
   } = useProfilData(isAuthenticated);
 
+  // NÁVRAT ZE STRIPE CHECKOUTU (?checkout=success): jednorázový toast
+  // a parametr pryč z URL, ať se toast neukáže po obnovení stránky znovu.
+  // Webhook může dorazit o chvilku později než uživatel — profil se proto
+  // dvakrát dotáhne znovu, ať zmizí „Odemknout" a naskočí stav předplatného.
+  const checkoutToastUkazan = useRef(false);
+  useEffect(() => {
+    if (checkoutToastUkazan.current) return undefined;
+    if (!isAuthenticated || parametry.get('checkout') !== 'success') return undefined;
+    checkoutToastUkazan.current = true;
+    showToast({ title: 'Hotovo — karta uložená, předplatné běží.', variant: 'success' });
+    const url = new URL(window.location.href);
+    url.searchParams.delete('checkout');
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+    const casovace = [2500, 8000].map((ms) => window.setTimeout(() => znovuNacistProfil(), ms));
+    return () => casovace.forEach((c) => window.clearTimeout(c));
+  }, [isAuthenticated, parametry, showToast, znovuNacistProfil]);
+
   // Výchozí záložka je profil — „Přehled" už neexistuje, sloučil se do něj.
   // /komunita otevře rovnou Komunitu — i při přímém načtení nebo ze záložky
   // prohlížeče, ne jen průchodem přes navigaci.

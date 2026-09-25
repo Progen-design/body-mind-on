@@ -6,6 +6,7 @@ import { NadpisSekce } from './NadpisSekce';
 import { PredplatneNabidka } from './PredplatneNabidka';
 import { Avatar } from './Avatar';
 import { MembershipStatusBadge } from './MembershipStatusBadge';
+import { maNastavenePredplatne, popisClenstvi, textNastavenehoPredplatneho } from '../lib/stavPredplatneho';
 import type { UserPreferences, UserProfile, ZamcenyPlan } from '../types';
 import { ODKAZ_PODMINKY, ODKAZ_GDPR } from '@lib/pravniOdkazy.js';
 
@@ -98,6 +99,9 @@ export const UcetASpravaSection: React.FC<UcetASpravaSectionProps> = ({
     if (!Number.isFinite(t)) return null;
     return new Date(t).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' });
   }, [registrovanOd]);
+
+  // Předplatné už běží (trial s kartou nebo aktivní) — nic k „odemknutí".
+  const predplatneNastavene = maNastavenePredplatne(profile.stavPredplatneho);
 
   const [rusim, setRusim] = useState(false);
   const [zruseniStav, setZruseniStav] = useState<{ typ: 'ok' | 'chyba'; text: string } | null>(null);
@@ -247,17 +251,29 @@ export const UcetASpravaSection: React.FC<UcetASpravaSectionProps> = ({
         )}
       </div>
 
-      {/* PLNÉ SROVNÁNÍ TIERŮ — jen když je co prodávat (viz komentář u props). */}
-      {plan?.zamceno && (
+      {/* PLNÉ SROVNÁNÍ TIERŮ — jen když je co prodávat (viz komentář u props).
+          S nastaveným předplatným START se START nenabízí (druhé předplatné),
+          ON Club / VIP zůstávají jako upgrade. */}
+      {plan?.zamceno && (!predplatneNastavene || plan.dostupneTiery.some((t) => t !== 'START')) && (
         <div className="p-4 sm:p-5 rounded-2xl bg-karta/90 border border-slate-800">
-          <h4 className="text-sm font-bold text-slate-100 mb-3">Odemknout členství</h4>
-          <PredplatneNabidka plan={plan} />
+          <h4 className="text-sm font-bold text-slate-100 mb-3">
+            {predplatneNastavene ? 'Vyšší členství' : 'Odemknout členství'}
+          </h4>
+          <PredplatneNabidka plan={plan} bezStartu={predplatneNastavene} />
         </div>
       )}
 
       {/* ZRUŠENÍ PŘEDPLATNÉHO */}
       <div className="p-4 sm:p-5 rounded-2xl bg-karta/90 border border-slate-800">
         <h4 className="text-sm font-bold text-slate-100">Předplatné</h4>
+        {profile.stavPredplatneho && (
+          <p className="text-xs font-semibold text-slate-200 mt-1.5">
+            {popisClenstvi(profile.membershipPlan, profile.stavPredplatneho, profile.clenemOd)}
+          </p>
+        )}
+        {profile.stavPredplatneho === 'trial_s_kartou' && (
+          <p className="text-xs text-emerald-300 mt-1 leading-relaxed">{textNastavenehoPredplatneho(profile.trialKonci)}</p>
+        )}
         <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
           Zrušit můžeš kdykoli. Služba ti běží do konce už zaplaceného období —
           o dny, které máš zaplacené, nepřijdeš. Když zrušíš ve zkušebním

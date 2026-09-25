@@ -7,6 +7,7 @@ import { NewPostSheet } from './NewPostSheet';
 import { PravidlaKomunity } from './PravidlaKomunity';
 import { KartaPrispevku } from './KartaPrispevku';
 import { PanelModerace } from './PanelModerace';
+import { ListaOnClub, ZamcenaKomunita } from './KomunitaPristup';
 import { pripojStranku, VELIKOST_STRANKY } from './feedLogika';
 import { KomunitaKategorie, KomunitaPrispevek, SLUG_DOTAZY } from './typy';
 
@@ -46,6 +47,11 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
   // Příznak ze serveru (`ADMIN_EMAILS`). Je jen pro UI — oprávnění si
   // endpointy moderace ověřují samy, schovaný panel nic nechrání.
   const [jeAdmin, setJeAdmin] = useState(false);
+  // PSÁT smí jen ON CLUB (a tým) — rozhoduje server (`muze_psat`). START
+  // vidí feed jen ke čtení. Do načtení se nic nenabízí.
+  const [muzePsat, setMuzePsat] = useState(false);
+  // 403 na feed = bez aktivního členství (prošlý trial, zrušené předplatné).
+  const [zamceno, setZamceno] = useState(false);
 
   // Kolik příspěvků už server vydal pro aktuální filtr. Nový příspěvek ho
   // posune o jedna nahoru, smazaný o jedna dolů — jinak by další stránka
@@ -72,7 +78,7 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
     try {
       const dotaz = new URLSearchParams({ limit: String(VELIKOST_STRANKY), offset: String(od) });
       if (aktivniKategorie) dotaz.set('category_id', aktivniKategorie);
-      const data = await apiFetch<{ topics: KomunitaPrispevek[]; has_more?: boolean; is_admin?: boolean }>(
+      const data = await apiFetch<{ topics: KomunitaPrispevek[]; has_more?: boolean; is_admin?: boolean; muze_psat?: boolean }>(
         `/api/community?${dotaz.toString()}`,
       );
       if (id !== pozadavek.current) return;
@@ -82,9 +88,15 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
       setPrispevky((s) => (reset ? nove : pripojStranku(s, nove)));
       setMaDalsi(data.has_more ?? nove.length === VELIKOST_STRANKY);
       setJeAdmin(data.is_admin === true);
+      setMuzePsat(data.muze_psat === true);
+      setZamceno(false);
       setChyba(null);
     } catch (err) {
       if (id !== pozadavek.current) return;
+      if ((err as { status?: number })?.status === 403) {
+        setZamceno(true);
+        return;
+      }
       setChyba(err instanceof Error ? err.message : 'Komunitu se nepodařilo načíst.');
       // Po chybě dál nedotahujeme — jinak by hlídka na konci feedu
       // bombardovala server, dokud síť nenaskočí.
@@ -158,6 +170,19 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
     }
   };
 
+  if (zamceno) {
+    return (
+      <div className="w-full sm:max-w-xl sm:mx-auto space-y-3">
+        <NadpisSekce
+          titulek="Komunita"
+          podtitulek="Co kdo zkusil a jak mu to jde — bez filtrů z reklam"
+          ikona={<Users className="w-5 h-5 text-akcent-lime" />}
+        />
+        <ZamcenaKomunita />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full sm:max-w-xl sm:mx-auto">
       <div className={detail ? 'hidden' : 'space-y-3'}>
@@ -178,6 +203,7 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
           </button>
 
           {/* Na mobilu je „+" plovoucí vpravo dole, na desktopu tady. */}
+          {muzePsat && (
           <button
             type="button"
             onClick={() => setNovy({})}
@@ -186,7 +212,10 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
             <Plus className="w-4 h-4" />
             <span>Nový příspěvek</span>
           </button>
+          )}
         </div>
+
+        {!nacitam && !muzePsat && <ListaOnClub />}
 
         {jeAdmin && <PanelModerace onZmena={obnov} />}
 
@@ -211,10 +240,13 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
         ) : prispevky.length === 0 ? (
           <div className="py-12 px-6 text-center space-y-4">
             <p className="text-sm text-slate-300">
-              {vyzvaKCheckinu
-                ? 'Zatím ticho. Přidej první check-in – fotka, váha a pár slov.'
-                : 'Zatím ticho. Napiš první příspěvek.'}
+              {!muzePsat
+                ? 'Zatím ticho.'
+                : vyzvaKCheckinu
+                  ? 'Zatím ticho. Přidej první check-in – fotka, váha a pár slov.'
+                  : 'Zatím ticho. Napiš první příspěvek.'}
             </p>
+            {muzePsat && (
             <button
               type="button"
               onClick={() => setNovy(vyzvaKCheckinu ? { typ: 'checkin' } : {})}
@@ -223,6 +255,7 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
               <Plus className="w-4 h-4" />
               <span>{vyzvaKCheckinu ? 'Přidat check-in' : 'Nový příspěvek'}</span>
             </button>
+            )}
           </div>
         ) : (
           <div className="-mx-3.5 sm:mx-0 border-t border-slate-800/80">
@@ -234,6 +267,7 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
                 nazevKategorie={aktivniKategorie ? null : nazvyKategorii[p.category_id ?? ''] ?? null}
                 onOtevri={(fokus) => otevriDetail(p.id, fokus)}
                 onLajk={() => prepniLajk(p)}
+                jenCteni={!muzePsat}
               />
             ))}
 
@@ -259,6 +293,7 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
           prispevekId={detail.id}
           fokusListy={detail.fokus}
           nazvyKategorii={nazvyKategorii}
+          jenCteni={!muzePsat}
           onZpet={() => setDetail(null)}
           onZmena={(zmeneny) => {
             if (!zmeneny) {
@@ -271,7 +306,7 @@ export const CommunityPage: React.FC<Props> = ({ posledniVahaKg }) => {
         />
       )}
 
-      {!detail && !novy && (
+      {!detail && !novy && muzePsat && (
         <button
           type="button"
           onClick={() => setNovy({})}

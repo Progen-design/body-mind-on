@@ -4,7 +4,7 @@
 // dopadlo. Dvojklik ani dva telefony nevyrobí druhý lajk — brání tomu
 // primární klíč (post_id, user_id), ne aplikace.
 import { supabaseServer } from '../../lib/supabaseServer.js';
-import { prihlasenyUzivatel } from '../../lib/community.js';
+import { overPravaKomunity, prihlasenyUzivatel } from '../../lib/community.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -12,6 +12,10 @@ export default async function handler(req, res) {
   const auth = await prihlasenyUzivatel(req);
   if (!auth.user) return res.status(auth.status).json({ error: auth.error });
   const { user } = auth;
+
+  // Lajk je taky psaní — jen ON CLUB (a tým).
+  const pristup = await overPravaKomunity(user, { psani: true });
+  if (!pristup.allowed) return res.status(pristup.status).json({ error: pristup.error });
 
   const postId = (req.body?.post_id != null ? String(req.body.post_id).trim() : '') || null;
   if (!postId) return res.status(400).json({ error: 'Chybí id příspěvku.' });

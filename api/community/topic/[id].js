@@ -1,12 +1,16 @@
 // GET /api/community/topic/[id] – jedno téma včetně odpovědí, fotek a lajků
 import { supabaseServer } from '../../../lib/supabaseServer.js';
-import { avatary, fotkyPrispevku, lajkyUzivatele, prihlasenyUzivatel } from '../../../lib/community.js';
+import { avatary, fotkyPrispevku, lajkyUzivatele, overPravaKomunity, prihlasenyUzivatel } from '../../../lib/community.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const auth = await prihlasenyUzivatel(req);
   if (!auth.user) return res.status(auth.status).json({ error: auth.error });
+
+  // Čtení jen s aktivním členstvím (prošlý trial / zrušené předplatné → 403).
+  const pristup = await overPravaKomunity(auth.user);
+  if (!pristup.allowed) return res.status(pristup.status).json({ error: pristup.error });
   const { user } = auth;
 
   const topicId = req.query?.id;

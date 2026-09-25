@@ -21,6 +21,8 @@ interface Props {
   /** Otevře vlákno. `fokus` = kurzor rovnou do chatovací lišty. */
   onOtevri: (fokus: boolean) => void;
   onLajk: () => void;
+  /** START: feed jen ke čtení — bez lajku a bez „Napiš komentář…" (psát smí ON CLUB). */
+  jenCteni?: boolean;
 }
 
 export const KartaPrispevku: React.FC<Props> = ({
@@ -29,6 +31,7 @@ export const KartaPrispevku: React.FC<Props> = ({
   nazevKategorie,
   onOtevri,
   onLajk,
+  jenCteni = false,
 }) => {
   const [celyText, setCelyText] = useState(false);
   const [textPretika, setTextPretika] = useState(false);
@@ -76,6 +79,7 @@ export const KartaPrispevku: React.FC<Props> = ({
         <button
           type="button"
           onClick={onLajk}
+          disabled={jenCteni}
           aria-pressed={prispevek.liked_by_me}
           aria-label={prispevek.liked_by_me ? 'Odebrat lajk' : 'Dát lajk'}
           className={`inline-flex items-center gap-1.5 min-h-11 px-1.5 text-sm font-bold ${
@@ -88,7 +92,7 @@ export const KartaPrispevku: React.FC<Props> = ({
 
         <button
           type="button"
-          onClick={() => onOtevri(true)}
+          onClick={() => onOtevri(!jenCteni)}
           aria-label="Komentáře"
           className="inline-flex items-center gap-1.5 min-h-11 px-1.5 text-sm font-bold text-slate-300"
         >
@@ -131,6 +135,7 @@ export const KartaPrispevku: React.FC<Props> = ({
         odpovedi={prispevek.last_replies ?? []}
         celkem={prispevek.reply_count}
         onOtevriDetail={onOtevri}
+        jenCteni={jenCteni}
       />
     </article>
   );

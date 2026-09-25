@@ -11,6 +11,7 @@ import {
   lajkyUzivatele,
   maSouhlasKomunity,
   nahrajFotky,
+  overPravaKomunity,
   posledniVaha,
   prekrocilDenniLimit,
   prihlasenyUzivatel,
@@ -37,6 +38,11 @@ export default async function handler(req, res) {
   const auth = await prihlasenyUzivatel(req);
   if (!auth.user) return res.status(auth.status).json({ error: auth.error });
   const { user } = auth;
+
+  // ČÍST smí aktivní členství, PSÁT jen ON CLUB (a tým). Rozhoduje server,
+  // UI jen zobrazuje — viz overPravaKomunity / lib/membershipHelpers.js.
+  const pristup = await overPravaKomunity(user, { psani: req.method === 'POST' });
+  if (!pristup.allowed) return res.status(pristup.status).json({ error: pristup.error });
 
   if (req.method === 'GET') {
     const categoryId = (req.query?.category_id || '').trim() || null;
@@ -122,6 +128,8 @@ export default async function handler(req, res) {
       // než druhý dotaz na count.
       has_more: list.length === limit,
       is_admin: jeAdminKomunity(user),
+      // UI podle toho ukáže „+" a pole pro komentář, nebo lištu „Psát můžeš v ON CLUBU".
+      muze_psat: pristup.prava.psat,
     });
   }
 

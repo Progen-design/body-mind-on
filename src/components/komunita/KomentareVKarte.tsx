@@ -18,9 +18,11 @@ interface Props {
   celkem: number;
   /** Otevře vlákno. `fokus` = kurzor rovnou do chatovací lišty. */
   onOtevriDetail: (fokus: boolean) => void;
+  /** START čte, nepíše — řádek „Napiš komentář…" se nekreslí. */
+  jenCteni?: boolean;
 }
 
-export const KomentareVKarte: React.FC<Props> = ({ odpovedi, celkem, onOtevriDetail }) => {
+export const KomentareVKarte: React.FC<Props> = ({ odpovedi, celkem, onOtevriDetail, jenCteni = false }) => {
   // Server posílá až tři poslední — ve feedu stačí dvě.
   const nahled = odpovedi.slice(-2);
   return (
@@ -44,13 +46,15 @@ export const KomentareVKarte: React.FC<Props> = ({ odpovedi, celkem, onOtevriDet
         </button>
       )}
 
-      <button
-        type="button"
-        onClick={() => onOtevriDetail(true)}
-        className="w-full min-h-11 text-left text-[13px] text-slate-500 hover:text-slate-300"
-      >
-        Napiš komentář…
-      </button>
+      {!jenCteni && (
+        <button
+          type="button"
+          onClick={() => onOtevriDetail(true)}
+          className="w-full min-h-11 text-left text-[13px] text-slate-500 hover:text-slate-300"
+        >
+          Napiš komentář…
+        </button>
+      )}
     </div>
   );
 };

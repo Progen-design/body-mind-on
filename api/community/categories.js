@@ -1,15 +1,16 @@
 // GET /api/community/categories – seznam kategorií fóra (přihlášení)
 import { supabaseServer } from '../../lib/supabaseServer.js';
+import { overPravaKomunity, prihlasenyUzivatel } from '../../lib/community.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-  if (!token) return res.status(401).json({ error: 'Přihlas se.' });
+  const auth = await prihlasenyUzivatel(req);
+  if (!auth.user) return res.status(auth.status).json({ error: auth.error });
 
-  const { error: userErr } = await supabaseServer.auth.getUser(token);
-  if (userErr) return res.status(401).json({ error: 'Neplatná session.' });
+  // Čtení jen s aktivním členstvím — stejně jako feed.
+  const pristup = await overPravaKomunity(auth.user);
+  if (!pristup.allowed) return res.status(pristup.status).json({ error: pristup.error });
 
   const { data: categories, error } = await supabaseServer
     .from('community_categories')

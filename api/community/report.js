@@ -5,7 +5,7 @@
 // se vrací 200 a nic se nevkládá. Autoritou je unikátní index z migrace
 // 20260923010000, ne tahle kontrola; ta jen šetří kolo do databáze.
 import { supabaseServer } from '../../lib/supabaseServer.js';
-import { DUVODY_NAHLASENI, prihlasenyUzivatel } from '../../lib/community.js';
+import { DUVODY_NAHLASENI, overPravaKomunity, prihlasenyUzivatel } from '../../lib/community.js';
 
 /** Volný text má strop — do moderace stačí věta, ne esej. */
 const MAX_DUVOD = 500;
@@ -15,6 +15,10 @@ export default async function handler(req, res) {
 
   const auth = await prihlasenyUzivatel(req);
   if (!auth.user) return res.status(auth.status).json({ error: auth.error });
+
+  // Nahlásit smí každý, kdo komunitu čte — i START. Bezpečnost není výsada ON CLUBU.
+  const pristup = await overPravaKomunity(auth.user);
+  if (!pristup.allowed) return res.status(pristup.status).json({ error: pristup.error });
   const { user } = auth;
 
   const postId = (req.body?.post_id != null ? String(req.body.post_id).trim() : '') || null;

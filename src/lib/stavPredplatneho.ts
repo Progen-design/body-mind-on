@@ -38,6 +38,19 @@ export function odvodStavPredplatneho(status: string | null | undefined, maPredp
   return ZNAME.has(s) ? (s as StavPredplatneho) : 'neznamy';
 }
 
+/**
+ * Plán je pozastavený: zkušební období skončilo a předplatné nastavené není
+ * (trial bez karty po konci, nebo vypršelé členství). UI pak místo prázdných
+ * sekcí ukáže jen PlanPozastavenyKarta s jedním tlačítkem do Checkoutu.
+ *
+ * O konci trialu rozhoduje server (verdikt brány `trial_ended` z api/profile.js,
+ * stejná brána jako pro generování plánů) — UI si nic nedopočítává.
+ */
+export function jePlanPozastaveny(stav: StavPredplatneho | undefined, trialSkoncil: boolean): boolean {
+  if (stav === 'expired') return true;
+  return stav === 'trial_bez_karty' && trialSkoncil;
+}
+
 /** Předplatné je nastavené (karta uložená) — nic dalšího se nemá prodávat. */
 export function maNastavenePredplatne(stav: StavPredplatneho | undefined): boolean {
   return stav === 'trial_s_kartou' || stav === 'active';

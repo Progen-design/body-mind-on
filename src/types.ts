@@ -321,6 +321,11 @@ export interface UserProfile {
    * bez karty (prodávat) a trial s nastaveným předplatným (už ne).
    */
   stavPredplatneho?: import('./lib/stavPredplatneho').StavPredplatneho;
+  /**
+   * Trial bez karty skončil (nebo členství vypršelo) — plán je pozastavený.
+   * Dnes, Jídelníček a Trénink pak ukážou jen PlanPozastavenyKarta.
+   */
+  planPozastaveny?: boolean;
   /** Konec trialu (YYYY-MM-DD) — u nastaveného předplatného datum první platby. */
   trialKonci?: string | null;
   /** Od kdy běží členství (memberships.started_at, po Checkoutu jeho čas). */

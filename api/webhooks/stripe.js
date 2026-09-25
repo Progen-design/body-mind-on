@@ -1,4 +1,4 @@
-// POST /api/webhooks/stripe – Stripe webhook (checkout.session.completed, subscription events)
+// POST /api/webhooks/stripe – Stripe webhook (checkout.session.completed, subscription events, invoice.paid)
 // V produkci musí být nastaveno STRIPE_SECRET_KEY a STRIPE_WEBHOOK_SECRET.
 
 import Stripe from 'stripe';
@@ -18,6 +18,9 @@ import { isStripeLegacyCheckoutAllowed } from '../../lib/stripeLegacyCheckout.js
 import { mapStripeSubscriptionStatusToMembership } from '../../lib/stripeSubscriptionStatus.js';
 import { produceWeeklyTaskForUser } from '../../lib/weeklyPlanProducer.js';
 import { calendarDateIsoInPrague, addCalendarDaysIsoPrague } from '../../lib/czechCalendar.js';
+import { zpracujInvoicePaid } from '../../lib/potvrzeniSmlouvy.js';
+import { posliTransakcniEmail } from '../../lib/smlouvaEmaily.js';
+import { isSyntheticEmail } from '../../lib/lifecycleEmailRules.js';
 
 export const config = { api: { bodyParser: false } };
 
@@ -321,6 +324,18 @@ async function resolveMembershipUserId(subscriptionId, customerId) {
   return byCust?.user_id || null;
 }
 
+/**
+ * E-mail uživatele pro potvrzení smlouvy. Testovací adresy → null (nic se nepošle).
+ * @param {string} userId
+ * @returns {Promise<string|null>}
+ */
+async function emailProPotvrzeni(userId) {
+  const { data, error } = await supabaseServer.auth.admin.getUserById(userId);
+  const email = data?.user?.email || null;
+  if (error || !email || isSyntheticEmail(email)) return null;
+  return email;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -543,6 +558,30 @@ export default async function handler(req, res) {
         }
 
         await completeStripeEvent(event.id, `subscription_${membershipStatus}_${tier}`);
+        break;
+      }
+
+      // Potvrzení smlouvy (§ 1824a OZ) po PRVNÍ placené faktuře. Stav členství
+      // se tu nemění — ten dál nese customer.subscription.updated.
+      // POZOR: event musí být zapnutý u webhook endpointu ve Stripe Dashboardu.
+      case 'invoice.paid': {
+        const vysledek = await zpracujInvoicePaid(event.data.object, {
+          stripe,
+          najdiUzivatele: resolveMembershipUserId,
+          emailUzivatele: emailProPotvrzeni,
+          posliEmail: posliTransakcniEmail,
+        });
+        if ('chyba' in vysledek) {
+          console.error('[webhooks/stripe] invoice.paid:', vysledek.chyba, { event_id: event.id });
+          await failStripeEvent(event.id, vysledek.chyba);
+          return res.status(500).json({ error: 'Contract confirmation failed' });
+        }
+        if ('preskoceno' in vysledek) {
+          await finishSkipped(event, vysledek.preskoceno);
+          break;
+        }
+        console.info('[webhooks/stripe] invoice.paid: potvrzení smlouvy odesláno', { event_id: event.id });
+        await completeStripeEvent(event.id, vysledek.vysledek);
         break;
       }
 

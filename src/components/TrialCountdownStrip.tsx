@@ -1,6 +1,6 @@
 import React from 'react';
 import { Lock, CheckCircle2 } from 'lucide-react';
-import { textNastavenehoPredplatneho, type StavPredplatneho } from '../lib/stavPredplatneho';
+import { textNastavenehoPredplatneho, type PredplatneUi, type StavPredplatneho } from '../lib/stavPredplatneho';
 
 interface Props {
   /** `zamcenyPlan.zamceno` — bez zamčeného plánu není co prodávat, pruh se nekreslí. */
@@ -18,6 +18,8 @@ interface Props {
   trialKonci?: string | null;
   /** Nastavený tarif (`profile.membershipPlan`) — po upgradu v trialu ON CLUB. */
   plan?: string;
+  /** Předplatné ze zrcadla Stripe — cena a datum první platby odsud. */
+  predplatne?: PredplatneUi | null;
 }
 
 function textOdpoctu(dny: number | null): string {
@@ -43,12 +45,13 @@ export const TrialCountdownStrip: React.FC<Props> = ({
   stavPredplatneho,
   trialKonci = null,
   plan = 'START',
+  predplatne = null,
 }) => {
   if (stavPredplatneho === 'trial_s_kartou') {
     return (
       <div className="flex items-start gap-2.5 min-h-12 px-4 py-3 rounded-2xl border border-emerald-500/30 bg-emerald-950/30">
         <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0 text-akcent-lime" />
-        <span className="text-xs sm:text-sm text-emerald-100 leading-snug">{textNastavenehoPredplatneho(trialKonci, plan)}</span>
+        <span className="text-xs sm:text-sm text-emerald-100 leading-snug">{textNastavenehoPredplatneho(trialKonci, plan, predplatne)}</span>
       </div>
     );
   }

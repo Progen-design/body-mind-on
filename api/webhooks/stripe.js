@@ -1,13 +1,9 @@
-// POST /api/webhooks/stripe – Stripe webhook (checkout.session.completed, subscription events, invoice.paid)
+// POST /api/webhooks/stripe – Stripe webhook (checkout, subscription.*, invoice.paid / payment_failed)
+// Stav předplatného zapisuje JEN syncSubscription (lib/stripeSync.js) — Stripe je zdroj pravdy.
 // V produkci musí být nastaveno STRIPE_SECRET_KEY a STRIPE_WEBHOOK_SECRET.
 
 import Stripe from 'stripe';
 import { supabaseServer } from '../../lib/supabaseServer.js';
-import {
-  resolveTierFromStripePriceId,
-  resolveTierFromStripeSubscription,
-  tiersMatch,
-} from '../../lib/stripeTierMapping.js';
 import {
   claimStripeEvent,
   completeStripeEvent,
@@ -15,7 +11,8 @@ import {
   skipStripeEvent,
 } from '../../lib/stripeEventStore.js';
 import { isStripeLegacyCheckoutAllowed } from '../../lib/stripeLegacyCheckout.js';
-import { mapStripeSubscriptionStatusToMembership } from '../../lib/stripeSubscriptionStatus.js';
+import { syncSubscription } from '../../lib/stripeSync.js';
+import { tiersMatch } from '../../lib/stripeTierMapping.js';
 import { produceWeeklyTaskForUser } from '../../lib/weeklyPlanProducer.js';
 import { calendarDateIsoInPrague, addCalendarDaysIsoPrague } from '../../lib/czechCalendar.js';
 import { zpracujInvoicePaid } from '../../lib/potvrzeniSmlouvy.js';
@@ -60,112 +57,8 @@ function resolveUserIdFromSession(session) {
     || null;
 }
 
-/**
- * @param {string} userId
- * @param {{ tier: string, status: string, stripeCustomerId?: string|null, stripeSubscriptionId?: string|null, note?: string }} opts
- */
-async function upsertMembership(userId, {
-  tier,
-  status,
-  stripeCustomerId = null,
-  stripeSubscriptionId = null,
-  trialEndsAt = null,
-  note = null,
-}) {
-  const now = new Date().toISOString();
-  const row = {
-    user_id: userId,
-    tier,
-    status,
-    updated_at: now,
-    notes: note || `Stripe sync (${status}, ${tier})`,
-  };
-  if (status === 'active') {
-    row.started_at = now;
-    row.trial_ends_at = null;
-  }
-  if (status === 'trial') {
-    row.started_at = now;
-    row.trial_ends_at = trialEndsAt;
-  }
-  if (stripeCustomerId) row.stripe_customer_id = stripeCustomerId;
-  if (stripeSubscriptionId) row.stripe_subscription_id = stripeSubscriptionId;
-
-  const { error } = await supabaseServer
-    .from('memberships')
-    .upsert([row], { onConflict: 'user_id' });
-  return error;
-}
-
-/**
- * Stav členství podle Stripe subscription.
- *
- * Trial řídí Stripe, ne my. Když je subscription `trialing`, uživatel má
- * plný přístup, ale ještě nezaplatil — u nás je to `trial` + `trial_ends_at`
- * převzaté ze Stripu. Až trial doběhne a strhne se platba, Stripe pošle
- * `customer.subscription.updated` se stavem `active` a my přepneme.
- *
- * Od 25. 9. 2026 platí pro KAŽDÝ tier: START v trialu může přejít na ON CLUB
- * (/api/subscription/change-tier) a trial mu běží dál. Kdyby se trialing
- * u ON CLUBu mapoval na `active`, ztratil by se `trial_ends_at` a člověk by
- * v appce viděl „předplatné aktivní", přestože ještě nic nezaplatil.
- * Přístup a brány plánů berou `trial` stejně pro všechny tiery
- * (membershipHelpers.isAccessAllowed, planRenewalRules, planGenerationGate).
- *
- * @param {import('stripe').Stripe.Subscription} sub
- * @param {string} tier
- * @returns {{ status: string|null, trialEndsAt: string|null }}
- */
-export function membershipStateFromSubscription(sub, tier) {
-  const stripeStatus = String(sub?.status || '').toLowerCase();
-
-  if (stripeStatus === 'trialing' && sub?.trial_end) {
-    return {
-      status: 'trial',
-      trialEndsAt: new Date(sub.trial_end * 1000).toISOString(),
-    };
-  }
-
-  return {
-    status: mapStripeSubscriptionStatusToMembership(stripeStatus),
-    trialEndsAt: null,
-  };
-}
-
-/**
- * @param {import('stripe').Stripe} stripe
- * @param {import('stripe').Stripe.Checkout.Session} session
- * @returns {Promise<{ tier: string|null, priceId: string|null }>}
- */
-async function resolveTierFromCheckoutSession(stripe, session) {
-  if (session.subscription) {
-    const subId = typeof session.subscription === 'string'
-      ? session.subscription
-      : session.subscription?.id;
-    if (subId) {
-      try {
-        const sub = await stripe.subscriptions.retrieve(subId, { expand: ['items.data.price'] });
-        const priceId = sub?.items?.data?.[0]?.price?.id || null;
-        const tier = resolveTierFromStripeSubscription(sub);
-        if (tier) return { tier, priceId, subscription: sub };
-      } catch (err) {
-        console.error('[webhooks/stripe] subscription retrieve failed:', err.message);
-      }
-    }
-  }
-
-  try {
-    const full = await stripe.checkout.sessions.retrieve(session.id, {
-      expand: ['line_items.data.price'],
-    });
-    const priceId = full?.line_items?.data?.[0]?.price?.id || null;
-    const tier = resolveTierFromStripePriceId(priceId);
-    return { tier, priceId, subscription: null };
-  } catch (err) {
-    console.error('[webhooks/stripe] checkout session retrieve failed:', err.message);
-    return { tier: null, priceId: null, subscription: null };
-  }
-}
+// membershipStateFromSubscription žije v lib/stripeSubscriptionStatus.js (volá ho lib/stripeSync.js).
+export { membershipStateFromSubscription } from '../../lib/stripeSubscriptionStatus.js';
 
 /**
  * @param {import('stripe').Stripe.Event} event
@@ -340,235 +233,169 @@ async function emailProPotvrzeni(userId) {
   return email;
 }
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+/** ID subscription z objektu události (checkout session / subscription / invoice). */
+function subscriptionIdZUdalosti(event) {
+  const o = event.data?.object || {};
+  if (event.type.startsWith('customer.subscription.')) return o.id || null;
+  if (event.type.startsWith('invoice.')) {
+    const s = o.parent?.subscription_details?.subscription ?? o.subscription ?? null;
+    return typeof s === 'string' ? s : s?.id || null;
   }
+  const s = o.subscription;
+  return typeof s === 'string' ? s : s?.id || null;
+}
 
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!secret || !key) {
-    console.error('[webhooks/stripe] Missing STRIPE_WEBHOOK_SECRET or STRIPE_SECRET_KEY');
-    return res.status(500).json({ error: 'Webhook not configured' });
-  }
+/** Události, po kterých se stav předplatného srovná se Stripe (syncSubscription). */
+const SYNC_UDALOSTI = new Set([
+  'checkout.session.completed',
+  'customer.subscription.created',
+  'customer.subscription.updated',
+  'customer.subscription.deleted',
+  'invoice.paid',
+  'invoice.payment_failed',
+]);
 
-  let rawBody;
-  try {
-    rawBody = await getRawBody(req);
-  } catch (e) {
-    console.error('[webhooks/stripe] Failed to read body:', e?.message);
-    return res.status(400).json({ error: 'Invalid body' });
-  }
+/**
+ * Webhook s vyměnitelnými závislostmi (testy: atrapa Stripe API a sync).
+ * Podpis se ověřuje vždy skutečně — statickým Stripe.webhooks.
+ */
+export function vytvorWebhook(zavislosti = {}) {
+  const noveStripe = zavislosti.stripe || ((klic) => new Stripe(klic));
+  const sync = zavislosti.sync || syncSubscription;
 
-  let event;
-  try {
-    const stripe = new Stripe(key);
-    event = stripe.webhooks.constructEvent(rawBody, req.headers['stripe-signature'] || '', secret);
-  } catch (err) {
-    console.error('[webhooks/stripe] Signature verification failed:', err.message);
-    return res.status(400).json({ error: 'Invalid signature' });
-  }
+  return async function handler(req, res) {
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
 
-  const claim = await claimStripeEvent(event);
-  if (claim === 'duplicate') {
-    return res.status(200).json({ received: true, duplicate: true });
-  }
+    const secret = process.env.STRIPE_WEBHOOK_SECRET;
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!secret || !key) {
+      console.error('[webhooks/stripe] Missing STRIPE_WEBHOOK_SECRET or STRIPE_SECRET_KEY');
+      return res.status(500).json({ error: 'Webhook not configured' });
+    }
 
-  const stripe = new Stripe(key);
+    let rawBody;
+    try {
+      rawBody = await getRawBody(req);
+    } catch (e) {
+      console.error('[webhooks/stripe] Failed to read body:', e?.message);
+      return res.status(400).json({ error: 'Invalid body' });
+    }
 
-  try {
-    switch (event.type) {
-      case 'checkout.session.completed': {
+    let event;
+    try {
+      event = Stripe.webhooks.constructEvent(rawBody, req.headers['stripe-signature'] || '', secret);
+    } catch (err) {
+      console.error('[webhooks/stripe] Signature verification failed:', err.message);
+      return res.status(400).json({ error: 'Invalid signature' });
+    }
+
+    const claim = await claimStripeEvent(event);
+    if (claim === 'duplicate') {
+      return res.status(200).json({ received: true, duplicate: true });
+    }
+
+    if (!SYNC_UDALOSTI.has(event.type)) {
+      await finishSkipped(event, `ignored_${event.type}`);
+      return res.status(200).json({ received: true });
+    }
+
+    const stripe = noveStripe(key);
+
+    try {
+      // ------------------------------------------------ checkout: kdo zaplatil
+      let userIdHint = null;
+      const jeCheckout = event.type === 'checkout.session.completed';
+      const ocekavanyTier = jeCheckout ? event.data.object?.metadata?.expected_tier || null : null;
+      if (jeCheckout) {
         const session = event.data.object;
-        const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null;
-        const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id || null;
-
-        const { tier, priceId, subscription } = await resolveTierFromCheckoutSession(stripe, session);
-        if (!tier) {
-          console.error('[webhooks/stripe] checkout.session.completed: unknown price_id', {
-            event_id: event.id,
-            session_id: session.id,
-            price_id: priceId || 'missing',
-          });
-          // 200, ne 4xx: opakovaným doručením se neznámé price ID nespraví
-          // a Stripe by to zkoušel dokola. Musí to ale být VIDĚT — price ID
-          // se ukládá a system_health_alerts na to má vlastní hlídku.
-          await finishSkipped(
-            event,
-            'skipped_unknown_price',
-            `checkout.session.completed: neznamy price_id ${priceId || 'missing'} (session ${session.id})`
-          );
-          return res.status(200).json({ received: true, skipped: 'unknown_price' });
-        }
-
-        const expectedTier = session.metadata?.expected_tier || null;
-        if (!expectedTier) {
-          console.error('[webhooks/stripe] checkout.session.completed: missing expected_tier', {
-            event_id: event.id,
-            session_id: session.id,
-          });
+        // Checkout bez expected_tier nevznikl u nás (create-checkout-session ho
+        // vždy posílá) — neaktivovat.
+        if (!ocekavanyTier) {
+          console.error('[webhooks/stripe] checkout.session.completed: missing expected_tier', { event_id: event.id, session_id: session.id });
           await finishSkipped(event, 'skipped_no_expected_tier');
           return res.status(200).json({ received: true, skipped: 'no_expected_tier' });
         }
-        if (!tiersMatch(expectedTier, tier)) {
-          console.error('[webhooks/stripe] checkout.session.completed: tier mismatch', {
-            event_id: event.id,
-            expected_tier: expectedTier,
-            resolved_tier: tier,
-          });
-          await finishSkipped(event, 'skipped_tier_mismatch');
-          return res.status(200).json({ received: true, skipped: 'tier_mismatch' });
+        userIdHint = resolveUserIdFromSession(session);
+        if (!userIdHint && isStripeLegacyCheckoutAllowed()) {
+          userIdHint = await getUserIdByEmailLegacy(session.customer_email || session.customer_details?.email);
         }
-
-        let userId = resolveUserIdFromSession(session);
-        let usedLegacyEmail = false;
-        if (!userId && isStripeLegacyCheckoutAllowed()) {
-          const customerEmail = session.customer_email || session.customer_details?.email;
-          userId = await getUserIdByEmailLegacy(customerEmail);
-          usedLegacyEmail = Boolean(userId);
-        }
-        if (!userId) {
-          console.warn('[webhooks/stripe] checkout.session.completed: no user_id', {
-            event_id: event.id,
-            legacy_allowed: isStripeLegacyCheckoutAllowed(),
-          });
+        if (!userIdHint) {
+          console.warn('[webhooks/stripe] checkout.session.completed: no user_id', { event_id: event.id, legacy_allowed: isStripeLegacyCheckoutAllowed() });
           await finishSkipped(event, 'skipped_no_user_id');
           return res.status(200).json({ received: true, skipped: 'no_user_id' });
         }
+      }
 
-        // Když checkout obsahoval trial, subscription přijde jako `trialing`.
-        // Pak je členství `trial` a datum konce bereme ze Stripu — ne z vlastního
-        // počítání. Jinak by se nám ty dvě pravdy dřív nebo později rozešly.
-        const state = subscription
-          ? membershipStateFromSubscription(subscription, tier)
-          : { status: 'active', trialEndsAt: null };
+      const subId = subscriptionIdZUdalosti(event);
+      if (!subId) {
+        await finishSkipped(event, 'skipped_no_subscription');
+        return res.status(200).json({ received: true, skipped: 'no_subscription' });
+      }
 
-        const membershipStatus = state.status || 'active';
+      // STAV PŘEDPLATNÉHO ZAPISUJE JEN syncSubscription — čerstvě ze Stripe,
+      // do subscriptions, memberships i vouchers (lib/stripeSync.js).
+      let report;
+      try {
+        report = await sync(stripe, subId, { userIdHint });
+      } catch (err) {
+        console.error('[webhooks/stripe] sync selhal:', err?.message || err, { event_id: event.id, subscription_id: subId });
+        await failStripeEvent(event.id, 'sync_db_error', err?.message);
+        return res.status(500).json({ error: 'Database error' });
+      }
 
-        const err = await upsertMembership(userId, {
-          tier,
-          status: membershipStatus,
-          stripeCustomerId: customerId,
-          stripeSubscriptionId: subscriptionId,
-          trialEndsAt: state.trialEndsAt,
-          note: membershipStatus === 'trial'
-            ? `Zkušební období spuštěno přes Stripe (${tier})`
-            : `Aktivováno po platbě přes Stripe (${tier})`,
-        });
-        if (err) {
-          console.error('[webhooks/stripe] upsertMembership failed:', err.message);
-          await failStripeEvent(event.id, 'activation_db_error', err.message);
-          return res.status(500).json({ error: 'Database error' });
-        }
+      console.log('[webhooks/stripe] sync', {
+        event_id: event.id,
+        type: event.type,
+        subscription_id: subId,
+        user_id: report.userId,
+        tier: report.tier,
+        status: report.membershipStatus,
+        zmeny: Object.keys(report.zmeny),
+        alerty: report.alerty.map((a) => a.kod),
+      });
 
-        console.log('[webhooks/stripe] Membership synced', {
-          userId,
-          tier,
-          status: membershipStatus,
-          trial_ends_at: state.trialEndsAt,
-          legacy_email_fallback: usedLegacyEmail,
-        });
+      // NEZNÁMÁ CENA: sync ji zapsal jako UNKNOWN a poslal alert. Událost se
+      // navíc označí skipped_unknown_price i s price_id — z toho čte
+      // system_health_alerts (stripe_udalost_zahozena). 200: opakování nepomůže.
+      if (!report.tier && event.type !== 'invoice.paid') {
+        await finishSkipped(
+          event,
+          'skipped_unknown_price',
+          `${event.type}: neznamy price_id ${report.priceId || 'missing'} (subscription ${subId})`
+        );
+        return res.status(200).json({ received: true, skipped: 'unknown_price' });
+      }
 
+      // TARIF Z CENY ≠ OČEKÁVANÝ (metadata checkoutu / subscription): sync
+      // membership nezměnil (stripe_tier_nesedi) a nic se neaktivuje.
+      const nesedi = report.alerty.some((a) => a.kod === 'stripe_tier_nesedi')
+        || (jeCheckout && report.tier && !tiersMatch(ocekavanyTier, report.tier));
+      if (nesedi) {
+        console.error('[webhooks/stripe] tier mismatch', { event_id: event.id, expected_tier: ocekavanyTier, resolved_tier: report.tier });
+        await finishSkipped(event, 'skipped_tier_mismatch');
+        return res.status(200).json({ received: true, skipped: 'tier_mismatch' });
+      }
+
+      const aktivace = report.userId && (report.membershipStatus === 'active' || report.membershipStatus === 'trial');
+
+      // ------------------------------------------------ vedlejší efekty (ne stav)
+      if (event.type === 'checkout.session.completed' && aktivace) {
         // ODEMČENÍ. Tady a nikde jinde — tenhle event je ten okamžik, kdy
-        // uživateli začíná sedm dní zdarma (docs/DALSI_KROK.md 9.7). Platí
-        // pro `trial` i `active`: se Stripe trialem přijde z checkoutu
-        // `trialing`, bez něj rovnou `active`.
-        //
-        // ZÁMĚRNĚ SE NEVOLÁ ve větvi `customer.subscription.updated` níž.
-        // Tamtudy vede přechod trialing → active o týden později, a to už
-        // odemčení není — plán by se posunul podruhé.
-        if (membershipStatus === 'active' || membershipStatus === 'trial') {
-          await prekotviPrvniPlanNaOdemceni(userId, event.id);
-        }
-
-        if (membershipStatus === 'active') {
-          await zaloziWeeklyUlohu(userId, event.id, tier);
-        }
-
-        await completeStripeEvent(event.id, `${membershipStatus}_${tier}`);
-        break;
+        // uživateli začíná sedm dní zdarma (docs/DALSI_KROK.md 9.7). Plán se
+        // posune na den odemčení; trialing → active o týden později už ne.
+        await prekotviPrvniPlanNaOdemceni(report.userId, event.id);
+      }
+      if ((event.type === 'checkout.session.completed' || event.type === 'customer.subscription.updated')
+        && report.userId && report.membershipStatus === 'active') {
+        // Přechod trialing → active (první platba) nebo rovnou aktivní Checkout.
+        await zaloziWeeklyUlohu(report.userId, event.id, report.tier);
       }
 
-      case 'customer.subscription.updated':
-      case 'customer.subscription.deleted': {
-        const sub = event.data.object;
-        const subscriptionId = sub.id;
-        const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id || null;
-
-        // Tier musíme znát dřív než stav — `trialing` mapujeme na `trial`
-        // jen u STARTu, u ostatních tierů by to znamenalo zamčený přístup.
-        const tier = resolveTierFromStripeSubscription(sub);
-        if (!tier) {
-          console.error('[webhooks/stripe] subscription event: unknown price_id', {
-            event_id: event.id,
-            subscription_id: subscriptionId,
-          });
-          await finishSkipped(
-            event,
-            'skipped_unknown_price',
-            `${event.type}: neznamy price_id ${sub?.items?.data?.[0]?.price?.id || 'missing'} (subscription ${subscriptionId})`
-          );
-          break;
-        }
-
-        const isDeleted = event.type === 'customer.subscription.deleted';
-        const state = isDeleted
-          ? { status: 'canceled', trialEndsAt: null }
-          : membershipStateFromSubscription(sub, tier);
-
-        if (!state.status) {
-          await finishSkipped(event, `skipped_subscription_status_${sub.status}`);
-          break;
-        }
-        const membershipStatus = state.status;
-
-        const expectedTier = sub.metadata?.expected_tier || null;
-        if (expectedTier && !tiersMatch(expectedTier, tier)) {
-          console.error('[webhooks/stripe] subscription event: tier mismatch', {
-            event_id: event.id,
-            expected_tier: expectedTier,
-            resolved_tier: tier,
-          });
-          await finishSkipped(event, 'skipped_tier_mismatch');
-          break;
-        }
-
-        const userId = await resolveMembershipUserId(subscriptionId, customerId);
-        if (!userId) {
-          await finishSkipped(event, 'skipped_no_membership_match');
-          break;
-        }
-
-        const err = await upsertMembership(userId, {
-          tier,
-          status: membershipStatus,
-          stripeCustomerId: customerId,
-          stripeSubscriptionId: subscriptionId,
-          trialEndsAt: state.trialEndsAt,
-        });
-        if (err) {
-          console.error('[webhooks/stripe] subscription sync failed:', err.message);
-          await failStripeEvent(event.id, 'subscription_sync_db_error', err.message);
-          return res.status(500).json({ error: 'Database error' });
-        }
-
-        // Sem vede přechod trialing → active: Stripe po konci trialu strhne
-        // první platbu a pošle `customer.subscription.updated` se stavem
-        // `active` (invoice.paid se tu nezpracovává — stav nese subscription).
-        // Od 25. 9. 2026 se tudy jde běžně: kdo zaplatí během našeho trialu,
-        // dostane Stripe trial_end = konec trialu (stripeTrialProCheckout).
-        if (membershipStatus === 'active') {
-          await zaloziWeeklyUlohu(userId, event.id, tier);
-        }
-
-        await completeStripeEvent(event.id, `subscription_${membershipStatus}_${tier}`);
-        break;
-      }
-
-      // Potvrzení smlouvy (§ 1824a OZ) po PRVNÍ placené faktuře. Stav členství
-      // se tu nemění — ten dál nese customer.subscription.updated.
-      // POZOR: event musí být zapnutý u webhook endpointu ve Stripe Dashboardu.
-      case 'invoice.paid': {
+      if (event.type === 'invoice.paid') {
+        // Potvrzení smlouvy (§ 1824a OZ) po PRVNÍ placené faktuře.
+        // POZOR: event musí být zapnutý u webhook endpointu ve Stripe Dashboardu.
         const vysledek = await zpracujInvoicePaid(event.data.object, {
           stripe,
           najdiUzivatele: resolveMembershipUserId,
@@ -580,24 +407,23 @@ export default async function handler(req, res) {
           await failStripeEvent(event.id, vysledek.chyba);
           return res.status(500).json({ error: 'Contract confirmation failed' });
         }
-        if ('preskoceno' in vysledek) {
-          await finishSkipped(event, vysledek.preskoceno);
-          break;
-        }
-        console.info('[webhooks/stripe] invoice.paid: potvrzení smlouvy odesláno', { event_id: event.id });
-        await completeStripeEvent(event.id, vysledek.vysledek);
-        break;
+        await completeStripeEvent(event.id, 'vysledek' in vysledek ? vysledek.vysledek : vysledek.preskoceno);
+        return res.status(200).json({ received: true });
       }
 
-      default:
-        await finishSkipped(event, `ignored_${event.type}`);
-        break;
+      if (!report.userId) {
+        await finishSkipped(event, 'skipped_no_membership_match');
+        return res.status(200).json({ received: true, skipped: 'no_user' });
+      }
+      await completeStripeEvent(event.id, `sync_${report.membershipStatus || report.stripeStatus || 'x'}_${report.tier || 'UNKNOWN'}`);
+    } catch (err) {
+      console.error('[webhooks/stripe] Handler error:', err?.message || err);
+      await failStripeEvent(event.id, 'handler_exception', err?.message);
+      return res.status(500).json({ error: 'Webhook handler failed' });
     }
-  } catch (err) {
-    console.error('[webhooks/stripe] Handler error:', err?.message || err);
-    await failStripeEvent(event.id, 'handler_exception', err?.message);
-    return res.status(500).json({ error: 'Webhook handler failed' });
-  }
 
-  return res.status(200).json({ received: true });
+    return res.status(200).json({ received: true });
+  };
 }
+
+export default vytvorWebhook();

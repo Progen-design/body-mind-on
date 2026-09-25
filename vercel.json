@@ -44,6 +44,10 @@
       "schedule": "0 * * * *"
     },
     {
+      "path": "/api/cron/stripe-reconcile",
+      "schedule": "30 4 * * *"
+    },
+    {
       "path": "/api/cron/system-health-alert",
       "schedule": "30 7 * * *"
     },
@@ -107,6 +111,9 @@
     "api/cron/apple-health-daily-review.js": {
       "maxDuration": 300,
       "includeFiles": "lib/health/**"
+    },
+    "api/cron/stripe-reconcile.js": {
+      "maxDuration": 300
     },
     "api/cron/system-health-alert.js": {
       "maxDuration": 60

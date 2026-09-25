@@ -190,7 +190,7 @@ export const DnesObrazovka: React.FC<Props> = ({
       // „START · předplatné aktivní od …" po Checkoutu v trialu, ne
       // „zkušební období" (src/lib/stavPredplatneho.ts).
       udaj: profile.stavPredplatneho
-        ? popisClenstvi(profile.membershipPlan, profile.stavPredplatneho, profile.clenemOd)
+        ? popisClenstvi(profile.membershipPlan, profile.stavPredplatneho, profile.clenemOd, profile.predplatne ?? null)
         : `${profile.membershipPlan} · ${STAV_CLENSTVI[profile.status] ?? String(profile.status).toLowerCase()}`,
       rozbaluje: true,
     },
@@ -294,6 +294,7 @@ export const DnesObrazovka: React.FC<Props> = ({
         stavPredplatneho={profile.stavPredplatneho}
         trialKonci={profile.trialKonci ?? null}
         plan={profile.membershipPlan}
+        predplatne={profile.predplatne ?? null}
       />
 
       <NastrojeDlazdice dlazdice={dlazdice} otevreny={otevreny} onKlik={klikNaDlazdici} />

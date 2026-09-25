@@ -326,6 +326,8 @@ export interface UserProfile {
    * Dnes, Jídelníček a Trénink pak ukážou jen PlanPozastavenyKarta.
    */
   planPozastaveny?: boolean;
+  /** Předplatné ze zrcadla Stripe (public.subscriptions). null = není / před backfillem. */
+  predplatne?: import('./lib/stavPredplatneho').PredplatneUi | null;
   /** Konec trialu (YYYY-MM-DD) — u nastaveného předplatného datum první platby. */
   trialKonci?: string | null;
   /** Od kdy běží členství (memberships.started_at, po Checkoutu jeho čas). */

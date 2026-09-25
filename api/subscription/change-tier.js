@@ -14,6 +14,7 @@
 // Stripe v produkci běží na LIVE klíčích — testy jen s atrapou
 // (lib/__tests__/zmenaTarifu.test.mjs).
 import Stripe from 'stripe';
+import { syncSubscription } from '../../lib/stripeSync.js';
 import { supabaseServer } from '../../lib/supabaseServer.js';
 import { isTierCheckoutEnabled } from '../../lib/salesFeatureFlags.js';
 import { jePredplatneZive, konecObdobiSubscription } from '../../lib/stripeSubscriptionStatus.js';
@@ -63,6 +64,8 @@ export const vychoziZavislosti = {
   },
   posliEmail: posliTransakcniEmail,
   stripe: (klic) => new Stripe(klic),
+  /** Zrcadlo do DB (subscriptions, memberships, vouchers) — jediný zápis stavu. */
+  sync: (stripe, subId) => syncSubscription(stripe, subId),
   now: () => Date.now(),
   ceny: () => cenyTarifu(),
   onClubVProdeji: () => isTierCheckoutEnabled('ON_CLUB'),
@@ -78,6 +81,18 @@ async function lhutaOdstoupeni(stripe, subId, nowMs) {
     return konec >= nowMs ? { lhutaDo: datumCesky(konec), lhutaUplynula: false } : { lhutaDo: null, lhutaUplynula: true };
   } catch {
     return { lhutaDo: null, lhutaUplynula: false };
+  }
+}
+
+/**
+ * Po úspěšné změně ve Stripe srovnat DB. Selhání nevrací chybu uživateli —
+ * změna ve Stripe proběhla a webhook i denní rekonciliace to dorovnají.
+ */
+async function srovnej(z, stripe, subId) {
+  try {
+    await z.sync(stripe, subId);
+  } catch (err) {
+    console.error('[subscription/change-tier] sync:', err?.message || err, { subscription_id: subId });
   }
 }
 
@@ -126,6 +141,12 @@ export function vytvorHandler(zavislosti = vychoziZavislosti) {
         : res.status(409).json({ error: 'Předplatné už neběží. Nové si založíš v nabídce tarifů.' });
     }
     const tierTed = tierPredplatneho(sub);
+    // Cena mimo mapu START/ON_CLUB: říct proč, ne jen „nejde".
+    if (!tierTed) {
+      return req.method === 'GET'
+        ? res.status(200).json({ muze_menit: false, duvod: 'neznama_cena' })
+        : res.status(409).json({ error: 'Tvoje předplatné má cenu, kterou tady změnit neumíme. Napiš nám na info@bodyandmindon.cz.', duvod: 'neznama_cena' });
+    }
 
     // ---------------------------------------------------------------- GET
     if (req.method === 'GET') {
@@ -164,6 +185,7 @@ export function vytvorHandler(zavislosti = vychoziZavislosti) {
         const plan = await naplanovanyDowngrade(stripe, sub, ceny.START);
         if (!plan) return res.status(200).json({ ok: true, zruseno: false });
         await stripe.subscriptionSchedules.release(plan.schedule.id);
+        await srovnej(z, stripe, sub.id);
         console.info('[subscription/change-tier] downgrade zrušen', { user_id: user.id, subscription_id: sub.id });
         return res.status(200).json({ ok: true, zruseno: true, tier: 'ON_CLUB' });
       } catch (err) {
@@ -205,6 +227,7 @@ export function vytvorHandler(zavislosti = vychoziZavislosti) {
         return res.status(platba ? 402 : 502).json({ error: platba ? HLASKA_PLATBA : HLASKA_STRIPE });
       }
 
+      await srovnej(z, stripe, sub.id);
       const trialDo = sub.status === 'trialing' && sub.trial_end ? sub.trial_end * 1000 : null;
       if (user.email && !isSyntheticEmail(user.email)) {
         const lhuta = await lhutaOdstoupeni(stripe, sub.id, nowMs);
@@ -231,9 +254,10 @@ export function vytvorHandler(zavislosti = vychoziZavislosti) {
       const plan = await naplanovanyDowngrade(stripe, sub, ceny.START);
       if (plan) return res.status(200).json({ ok: true, naplanovano: true, tier: 'ON_CLUB', od: plan.od });
       const vysledek = await naplanujDowngrade(stripe, sub, ceny.START);
+      await srovnej(z, stripe, sub.id);
       console.info('[subscription/change-tier] downgrade', { user_id: user.id, subscription_id: sub.id, od: vysledek.od, zpusob: vysledek.zpusob });
       if (vysledek.zpusob === 'hned') {
-        // Trial: START hned, první platba po trialu 599 Kč. Tier zapíše webhook.
+        // Trial: START hned, první platba po trialu 599 Kč. DB srovnal sync.
         return res.status(200).json({ ok: true, zmeneno: true, naplanovano: false, tier: 'START', od: vysledek.od });
       }
       return res.status(200).json({ ok: true, naplanovano: true, tier: 'ON_CLUB', od: vysledek.od });

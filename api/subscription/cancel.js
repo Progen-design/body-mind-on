@@ -11,10 +11,9 @@
 // o zaplacené dny připravilo. V trialu tím zároveň platí bod 7: zruší-li se
 // před koncem zkušebního období, první platba nikdy nepřijde.
 //
-// STAV V DATABÁZI SE TADY NEPŘEPISUJE. Změnu potvrdí Stripe webhookem
-// `customer.subscription.updated` (api/webhooks/stripe.js) — jeden zdroj
-// pravdy. Kdyby si ho endpoint zapsal sám, máme dvě místa, která si můžou
-// odporovat, kdykoli Stripe operaci odmítne.
+// STAV V DATABÁZI ZAPISUJE JEN syncSubscription (lib/stripeSync.js) — čerstvě
+// ze Stripe, jeden zdroj pravdy. Endpoint ho volá po úspěchu, webhook
+// `customer.subscription.updated` totéž zopakuje.
 //
 // NAPLÁNOVANÝ DOWNGRADE (ON CLUB → START, /api/subscription/change-tier) drží
 // subscription schedule. Stripe pak subscriptions.update({ cancel_at_period_end })
@@ -25,6 +24,7 @@ import Stripe from 'stripe';
 import { supabaseServer } from '../../lib/supabaseServer.js';
 import { konecObdobiSubscription } from '../../lib/stripeSubscriptionStatus.js';
 import { uvolniSchedule } from '../../lib/zmenaTarifu.js';
+import { syncSubscription } from '../../lib/stripeSync.js';
 
 /** Skutečné závislosti. Test si podstrčí vlastní (lib/__tests__/zruseniSeSchedule.test.mjs). */
 export const vychoziZavislosti = {
@@ -40,6 +40,8 @@ export const vychoziZavislosti = {
       .maybeSingle();
   },
   stripe: (klic) => new Stripe(klic),
+  /** Zrcadlo do DB (subscriptions, memberships) — jediný zápis stavu. */
+  sync: (stripe, subId) => syncSubscription(stripe, subId),
 };
 
 export function vytvorHandler(zavislosti = vychoziZavislosti) {
@@ -104,6 +106,14 @@ export function vytvorHandler(zavislosti = vychoziZavislosti) {
             ? 'Předplatné se nepodařilo obnovit. Zkus to prosím za chvíli.'
             : 'Předplatné se nepodařilo zrušit. Zkus to prosím za chvíli.',
         });
+      }
+
+      // DB srovná sync (cancel_at_period_end do subscriptions). Chyba nevadí:
+      // změna ve Stripe proběhla, webhook i rekonciliace ji dorovnají.
+      try {
+        await z.sync(stripe, subscription.id);
+      } catch (err) {
+        console.error('[subscription/cancel] sync:', err?.message || err);
       }
 
       // stripe-node v20 (API basil): období je na items.data[0], ne na subscription.

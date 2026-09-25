@@ -108,6 +108,15 @@ export const UcetASpravaSection: React.FC<UcetASpravaSectionProps> = ({
   // Předplatné už běží (trial s kartou nebo aktivní) — nic k „odemknutí".
   const predplatneNastavene = maNastavenePredplatne(profile.stavPredplatneho);
 
+  // ZRUŠENO KE KONCI OBDOBÍ (cancel_at_period_end ze zrcadla Stripe): místo
+  // „Zrušit předplatné" věta, kdy končí, a „Obnovit předplatné".
+  const konciK = useMemo(() => {
+    const t = Date.parse(String(profile.predplatne?.konci_k || ''));
+    return Number.isFinite(t)
+      ? new Date(t).toLocaleDateString('cs-CZ', { timeZone: 'Europe/Prague', day: 'numeric', month: 'numeric', year: 'numeric' })
+      : null;
+  }, [profile.predplatne?.konci_k]);
+
   const [rusim, setRusim] = useState(false);
   const [zruseniStav, setZruseniStav] = useState<{ typ: 'ok' | 'chyba'; text: string } | null>(null);
   const [ptamSeNaZruseni, setPtamSeNaZruseni] = useState(false);
@@ -272,11 +281,11 @@ export const UcetASpravaSection: React.FC<UcetASpravaSectionProps> = ({
         <h4 className="text-sm font-bold text-slate-100">Předplatné</h4>
         {profile.stavPredplatneho && (
           <p className="text-xs font-semibold text-slate-200 mt-1.5">
-            {popisClenstvi(profile.membershipPlan, profile.stavPredplatneho, profile.clenemOd)}
+            {popisClenstvi(profile.membershipPlan, profile.stavPredplatneho, profile.clenemOd, profile.predplatne ?? null)}
           </p>
         )}
         {profile.stavPredplatneho === 'trial_s_kartou' && (
-          <p className="text-xs text-emerald-300 mt-1 leading-relaxed">{textNastavenehoPredplatneho(profile.trialKonci, profile.membershipPlan)}</p>
+          <p className="text-xs text-emerald-300 mt-1 leading-relaxed">{textNastavenehoPredplatneho(profile.trialKonci, profile.membershipPlan, profile.predplatne ?? null)}</p>
         )}
         <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
           Zrušit můžeš kdykoli. Služba ti běží do konce už zaplaceného období —
@@ -287,7 +296,19 @@ export const UcetASpravaSection: React.FC<UcetASpravaSectionProps> = ({
         {/* PŘECHOD MEZI TARIFY — místo Checkoutu u běžícího předplatného. */}
         <ZmenaTarifu aktivni={predplatneNastavene} onZmena={onZmenaPredplatneho} />
 
-        {!ptamSeNaZruseni ? (
+        {konciK && zruseniStav?.text !== 'Předplatné je zase aktivní.' ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-amber-200">Předplatné končí {konciK}</span>
+            <button
+              type="button"
+              onClick={() => zrusitPredplatne(true)}
+              disabled={rusim}
+              className="px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/40 text-xs font-bold text-emerald-300 hover:border-emerald-500/70 disabled:opacity-50 transition-all"
+            >
+              {rusim ? 'Obnovuji…' : 'Obnovit předplatné'}
+            </button>
+          </div>
+        ) : !ptamSeNaZruseni ? (
           <button
             type="button"
             onClick={() => { setPtamSeNaZruseni(true); setZruseniStav(null); }}

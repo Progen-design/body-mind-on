@@ -1,5 +1,6 @@
 import React from 'react';
-import { Lock } from 'lucide-react';
+import { Lock, CheckCircle2 } from 'lucide-react';
+import { textNastavenehoPredplatneho, type StavPredplatneho } from '../lib/stavPredplatneho';
 
 interface Props {
   /** `zamcenyPlan.zamceno` — bez zamčeného plánu není co prodávat, pruh se nekreslí. */
@@ -7,6 +8,14 @@ interface Props {
   /** `profile.trialDniDoKonce`. null = mimo trial (např. platba jen čeká na dokončení). */
   trialDniDoKonce: number | null;
   onOtevritPredplatne: () => void;
+  /**
+   * `trial_s_kartou` = předplatné už nastavené (po Checkoutu v trialu).
+   * Pak se neprodává: klidná věta s datem první platby, žádné „Odemknout" —
+   * druhé kliknutí by jinak vedlo k druhému předplatnému.
+   */
+  stavPredplatneho?: StavPredplatneho;
+  /** Konec trialu = den první platby. */
+  trialKonci?: string | null;
 }
 
 function textOdpoctu(dny: number | null): string {
@@ -28,8 +37,18 @@ function textOdpoctu(dny: number | null): string {
 export const TrialCountdownStrip: React.FC<Props> = ({
   zamceno,
   trialDniDoKonce,
-  onOtevritPredplatne
+  onOtevritPredplatne,
+  stavPredplatneho,
+  trialKonci = null,
 }) => {
+  if (stavPredplatneho === 'trial_s_kartou') {
+    return (
+      <div className="flex items-start gap-2.5 min-h-12 px-4 py-3 rounded-2xl border border-emerald-500/30 bg-emerald-950/30">
+        <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0 text-akcent-lime" />
+        <span className="text-xs sm:text-sm text-emerald-100 leading-snug">{textNastavenehoPredplatneho(trialKonci)}</span>
+      </div>
+    );
+  }
   if (!zamceno) return null;
 
   return (

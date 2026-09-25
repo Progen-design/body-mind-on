@@ -126,7 +126,7 @@ export default async function handler(req, res) {
         .order('sort_order', { ascending: true }),
       supabaseServer
         .from('memberships')
-        .select('tier, status, started_at, trial_ends_at')
+        .select('tier, status, started_at, trial_ends_at, stripe_subscription_id')
         .eq('user_id', userId)
         .limit(1)
         .maybeSingle(),
@@ -627,6 +627,13 @@ export default async function handler(req, res) {
       trial: program === 'START' && membershipStatus === 'trial' && trialEndsAt
         ? { konci: String(trialEndsAt).split('T')[0], dny_do_konce: daysUntilTrialEnd }
         : null,
+      /**
+       * Má nastavené Stripe předplatné? Po Checkoutu během trialu zůstává
+       * `status = 'trial'` (Stripe trialing), jen přibude subscription — UI
+       * podle tohohle přestane nabízet „Odemknout". Jen bool, samotné ID
+       * subscription klient nepotřebuje.
+       */
+      ma_predplatne: Boolean(membershipData?.stripe_subscription_id),
       has_withings_connection: hasWithingsConnection,
       /** Kdy server naposled stahoval z Withings. null = zatim nikdy. */
       withings_last_sync_at: withingsConnRow?.last_sync_at || null,

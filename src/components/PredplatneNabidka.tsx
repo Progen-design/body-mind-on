@@ -8,6 +8,12 @@ import {
 
 interface Props {
   plan: ZamcenyPlan | null;
+  /**
+   * Předplatné START je už nastavené (trial s kartou / aktivní) → karta START
+   * se nekreslí (druhé „Odemknout" by založilo druhé předplatné). ON Club
+   * a VIP zůstávají jako upgrade.
+   */
+  bezStartu?: boolean;
 }
 
 const ON_CLUB = PRICING.find((p) => p.id === 'on-club');
@@ -25,7 +31,7 @@ const ON_CLUB = PRICING.find((p) => p.id === 'on-club');
  * z rozhodnutí a patří vždycky dole; ON Club dostává stejnou větu navíc
  * ke svým dosavadním odrážkám.
  */
-export const PredplatneNabidka: React.FC<Props> = ({ plan }) => {
+export const PredplatneNabidka: React.FC<Props> = ({ plan, bezStartu = false }) => {
   const [loadingTier, setLoadingTier] = useState<ProgramTier | ''>('');
   const [chyba, setChyba] = useState('');
 
@@ -112,7 +118,8 @@ export const PredplatneNabidka: React.FC<Props> = ({ plan }) => {
     },
   };
 
-  const dostupne = plan.dostupneTiery.filter((t) => KARTY[t]);
+  const dostupne = plan.dostupneTiery.filter((t) => KARTY[t] && !(bezStartu && t === 'START'));
+  if (dostupne.length === 0) return null;
   const mrizka = dostupne.length === 1 ? 'grid-cols-1' : dostupne.length === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-3';
 
   return (

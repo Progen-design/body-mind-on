@@ -125,7 +125,7 @@ export function vytvorHandler(zavislosti = vychoziZavislosti) {
         ...trial,
       };
 
-      const session = await stripe.checkout.sessions.create({
+      const parametry = {
         mode: 'subscription',
         client_reference_id: user.id,
         customer_email: user.email || undefined,
@@ -139,7 +139,9 @@ export function vytvorHandler(zavislosti = vychoziZavislosti) {
           expected_tier: tier,
         },
         subscription_data: subscriptionData,
-      });
+      };
+
+      const session = await vytvorSessionSeSouhlasem(stripe, parametry);
 
       console.info('[stripe/create-checkout-session] created', {
         user_id: user.id,
@@ -159,6 +161,49 @@ export function vytvorHandler(zavislosti = vychoziZavislosti) {
       return res.status(500).json({ error: 'Checkout se nepodařilo spustit.' });
     }
   };
+}
+
+/**
+ * Souhlas s obchodními podmínkami přímo v Checkoutu (zaškrtávátko nad
+ * tlačítkem Zaplatit). Text zároveň pokrývá § 1837 písm. l) OZ: služba začne
+ * hned a při odstoupení do 14 dnů se platí poměrná část.
+ */
+export const SOUHLAS_V_CHECKOUTU = Object.freeze({
+  consent_collection: { terms_of_service: 'required' },
+  custom_text: {
+    terms_of_service_acceptance: {
+      message: 'Souhlasím s [obchodními podmínkami](https://bodyandmindon.cz/obchodni-podminky) a beru na vědomí, že služba začne hned a při odstoupení do 14 dnů zaplatím poměrnou část.',
+    },
+  },
+});
+
+/**
+ * Stripe odmítne consent_collection.terms_of_service, dokud v Dashboardu
+ * (Settings → Business → Public details) není vyplněná URL obchodních podmínek.
+ * @param {any} err
+ */
+export function jeChybaChybejiciUrlPodminek(err) {
+  const zprava = String(err?.raw?.message || err?.message || '');
+  return /terms of service/i.test(zprava) && /(url|dashboard|public details|set)/i.test(zprava);
+}
+
+/**
+ * Checkout se souhlasem. Chybí-li ve Stripe URL podmínek, NEROZBIJE to platby:
+ * chyba se hlasitě zaloguje a session se vytvoří znovu bez souhlasu.
+ * (Stripe běží v produkci na LIVE klíčích — rozbitý Checkout = žádné platby.)
+ */
+async function vytvorSessionSeSouhlasem(stripe, parametry) {
+  try {
+    return await stripe.checkout.sessions.create({ ...parametry, ...SOUHLAS_V_CHECKOUTU });
+  } catch (err) {
+    if (!jeChybaChybejiciUrlPodminek(err)) throw err;
+    console.error(
+      '[stripe/create-checkout-session] CHYBÍ URL OBCHODNÍCH PODMÍNEK ve Stripe Dashboardu '
+      + '(Settings → Business → Public details → Terms of service). Checkout jede BEZ souhlasu s podmínkami, dokud se URL nedoplní.',
+      { stripe_message: err?.message },
+    );
+    return stripe.checkout.sessions.create(parametry);
+  }
 }
 
 export default vytvorHandler();

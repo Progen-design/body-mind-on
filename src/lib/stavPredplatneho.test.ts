@@ -51,6 +51,13 @@ test('popis členství: „START · předplatné aktivní od {datum}" místo „
   assert.equal(popisClenstvi('START', 'trial_s_kartou', null), 'START · předplatné aktivní');
 });
 
+test('po upgradu v trialu věta mluví o ON CLUBU a jeho ceně', () => {
+  assert.equal(
+    textNastavenehoPredplatneho('2026-10-02', 'ON Club'),
+    'Předplatné ON CLUB je nastavené. První platba 1\u00a0499 Kč proběhne 2. 10. 2026. Do té doby máš plný přístup.',
+  );
+});
+
 test('klidná věta s datem a částkou první platby', () => {
   assert.equal(
     textNastavenehoPredplatneho('2026-10-02'),
@@ -92,14 +99,15 @@ test('pruh na Dnes: u trial_s_kartou klidná věta a žádné „Odemknout"', ()
   const pruh = cti('../components/TrialCountdownStrip.tsx');
   const vetev = pruh.slice(pruh.indexOf("if (stavPredplatneho === 'trial_s_kartou')"), pruh.indexOf('if (!zamceno) return null;'));
   assert.ok(vetev.length > 0, 'větev pro trial_s_kartou chybí');
-  assert.match(vetev, /textNastavenehoPredplatneho\(trialKonci\)/);
+  assert.match(vetev, /textNastavenehoPredplatneho\(trialKonci, plan\)/);
   assert.doesNotMatch(vetev, /Odemknout|<button/);
   assert.match(cti('../components/DnesObrazovka.tsx'), /stavPredplatneho=\{profile\.stavPredplatneho\}/);
 });
 
 test('Účet a předplatné: START se s nastaveným předplatným nenabízí, zrušení zůstává', () => {
   const ucet = cti('../components/UcetASpravaSection.tsx');
-  assert.match(ucet, /<PredplatneNabidka plan=\{plan\} bezStartu=\{predplatneNastavene\} \/>/);
+  assert.match(ucet, /\{plan\?\.zamceno && !predplatneNastavene && \(/);
+  assert.match(ucet, /<ZmenaTarifu aktivni=\{predplatneNastavene\}/);
   assert.match(ucet, /popisClenstvi\(profile\.membershipPlan, profile\.stavPredplatneho, profile\.clenemOd\)/);
   assert.match(ucet, /Zrušit předplatné/);
   const nabidka = cti('../components/PredplatneNabidka.tsx');

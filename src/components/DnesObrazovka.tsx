@@ -293,6 +293,7 @@ export const DnesObrazovka: React.FC<Props> = ({
         onOtevritPredplatne={otevriPredplatne}
         stavPredplatneho={profile.stavPredplatneho}
         trialKonci={profile.trialKonci ?? null}
+        plan={profile.membershipPlan}
       />
 
       <NastrojeDlazdice dlazdice={dlazdice} otevreny={otevreny} onKlik={klikNaDlazdici} />

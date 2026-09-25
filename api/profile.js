@@ -458,8 +458,10 @@ export default async function handler(req, res) {
       status: membershipStatus,
       trial_ends_at: trialEndsAt,
     });
-    const isTrialExpired = program === 'START' && planRenewal.trialEnded;
-    const daysUntilTrialEnd = program === 'START' && trialEndsAt
+    // Trial má i ON CLUB po upgradu během trialu STARTu (change-tier).
+    const vTrialu = program === 'START' || membershipStatus === 'trial';
+    const isTrialExpired = vTrialu && planRenewal.trialEnded;
+    const daysUntilTrialEnd = vTrialu && trialEndsAt
       ? Math.ceil((new Date(trialEndsAt) - now) / (24 * 60 * 60 * 1000))
       : null;
 
@@ -624,7 +626,7 @@ export default async function handler(req, res) {
           dostupne_tiery: ['START', 'ON_CLUB', 'VIP'].filter((t) => isTierCheckoutEnabled(t)),
         };
       })(),
-      trial: program === 'START' && membershipStatus === 'trial' && trialEndsAt
+      trial: membershipStatus === 'trial' && trialEndsAt
         ? { konci: String(trialEndsAt).split('T')[0], dny_do_konce: daysUntilTrialEnd }
         : null,
       /**

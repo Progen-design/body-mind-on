@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { NadpisSekce } from './NadpisSekce';
 import { PredplatneNabidka } from './PredplatneNabidka';
 import { OdstoupeniOdSmlouvy } from './OdstoupeniOdSmlouvy';
+import { ZmenaTarifu } from './ZmenaTarifu';
 import { Avatar } from './Avatar';
 import { MembershipStatusBadge } from './MembershipStatusBadge';
 import { maNastavenePredplatne, popisClenstvi, textNastavenehoPredplatneho } from '../lib/stavPredplatneho';
@@ -53,6 +54,8 @@ interface UcetASpravaSectionProps {
    * (5. pád, appka neskloňuje). Bez tohoto propu se pole nekreslí.
    */
   onSavePreferredAddress?: (hodnota: string) => Promise<boolean>;
+  /** Po změně tarifu — App dotáhne profil (nový tier zapíše webhook). */
+  onZmenaPredplatneho?: () => void;
 }
 
 export const UcetASpravaSection: React.FC<UcetASpravaSectionProps> = ({
@@ -63,6 +66,7 @@ export const UcetASpravaSection: React.FC<UcetASpravaSectionProps> = ({
   registrovanOd = null,
   onEditPreferences,
   onSavePreferredAddress,
+  onZmenaPredplatneho,
 }) => {
   const { account, logout } = useAuth();
 
@@ -253,13 +257,12 @@ export const UcetASpravaSection: React.FC<UcetASpravaSectionProps> = ({
       </div>
 
       {/* PLNÉ SROVNÁNÍ TIERŮ — jen když je co prodávat (viz komentář u props).
-          S nastaveným předplatným START se START nenabízí (druhé předplatné),
-          ON Club / VIP zůstávají jako upgrade. */}
-      {plan?.zamceno && (!predplatneNastavene || plan.dostupneTiery.some((t) => t !== 'START')) && (
+          S nastaveným předplatným se nic přes Checkout neprodává (druhé
+          předplatné = 409): přechod START ↔ ON CLUB je tlačítko v kartě
+          Předplatné níž (ZmenaTarifu → /api/subscription/change-tier). */}
+      {plan?.zamceno && !predplatneNastavene && (
         <div className="p-4 sm:p-5 rounded-2xl bg-karta/90 border border-slate-800">
-          <h4 className="text-sm font-bold text-slate-100 mb-3">
-            {predplatneNastavene ? 'Vyšší členství' : 'Odemknout členství'}
-          </h4>
+          <h4 className="text-sm font-bold text-slate-100 mb-3">Odemknout členství</h4>
           <PredplatneNabidka plan={plan} bezStartu={predplatneNastavene} />
         </div>
       )}
@@ -273,13 +276,16 @@ export const UcetASpravaSection: React.FC<UcetASpravaSectionProps> = ({
           </p>
         )}
         {profile.stavPredplatneho === 'trial_s_kartou' && (
-          <p className="text-xs text-emerald-300 mt-1 leading-relaxed">{textNastavenehoPredplatneho(profile.trialKonci)}</p>
+          <p className="text-xs text-emerald-300 mt-1 leading-relaxed">{textNastavenehoPredplatneho(profile.trialKonci, profile.membershipPlan)}</p>
         )}
         <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
           Zrušit můžeš kdykoli. Služba ti běží do konce už zaplaceného období —
           o dny, které máš zaplacené, nepřijdeš. Když zrušíš ve zkušebním
           období, neplatíš nic.
         </p>
+
+        {/* PŘECHOD MEZI TARIFY — místo Checkoutu u běžícího předplatného. */}
+        <ZmenaTarifu aktivni={predplatneNastavene} onZmena={onZmenaPredplatneho} />
 
         {!ptamSeNaZruseni ? (
           <button

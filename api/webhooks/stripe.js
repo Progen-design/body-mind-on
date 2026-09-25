@@ -105,8 +105,12 @@ async function upsertMembership(userId, {
  * převzaté ze Stripu. Až trial doběhne a strhne se platba, Stripe pošle
  * `customer.subscription.updated` se stavem `active` a my přepneme.
  *
- * `trial` dáváme jen STARTu — membershipHelpers pouští trial jen u něj.
- * U placených tierů by `trial` znamenal zamčený přístup.
+ * Od 25. 9. 2026 platí pro KAŽDÝ tier: START v trialu může přejít na ON CLUB
+ * (/api/subscription/change-tier) a trial mu běží dál. Kdyby se trialing
+ * u ON CLUBu mapoval na `active`, ztratil by se `trial_ends_at` a člověk by
+ * v appce viděl „předplatné aktivní", přestože ještě nic nezaplatil.
+ * Přístup a brány plánů berou `trial` stejně pro všechny tiery
+ * (membershipHelpers.isAccessAllowed, planRenewalRules, planGenerationGate).
  *
  * @param {import('stripe').Stripe.Subscription} sub
  * @param {string} tier
@@ -115,7 +119,7 @@ async function upsertMembership(userId, {
 export function membershipStateFromSubscription(sub, tier) {
   const stripeStatus = String(sub?.status || '').toLowerCase();
 
-  if (stripeStatus === 'trialing' && String(tier).toUpperCase() === 'START' && sub?.trial_end) {
+  if (stripeStatus === 'trialing' && sub?.trial_end) {
     return {
       status: 'trial',
       trialEndsAt: new Date(sub.trial_end * 1000).toISOString(),

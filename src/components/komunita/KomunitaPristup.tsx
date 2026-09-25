@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Lock, PenLine } from 'lucide-react';
-import { spustitCheckout } from '../../lib/stripeCheckout';
 
 /**
  * KDO SMÍ V KOMUNITĚ CO — jen zobrazení. Rozhoduje server
@@ -12,22 +11,12 @@ import { spustitCheckout } from '../../lib/stripeCheckout';
 
 const TEXT_PSANI_ON_CLUB = 'Psát můžeš v ON CLUBU';
 
-/** Lišta místo „+" a pole pro komentář. CTA = stávající Stripe Checkout ON CLUB. */
+/**
+ * Lišta místo „+" a pole pro komentář. CTA vede do Účet a předplatné: kdo
+ * předplatné ještě nemá, odemkne ON CLUB Checkoutem; kdo ho má, přejde
+ * tlačítkem „Přejít na ON CLUB" (change-tier) — nový Checkout by vrátil 409.
+ */
 export const ListaOnClub: React.FC<{ className?: string }> = ({ className = '' }) => {
-  const [odesilam, setOdesilam] = useState(false);
-  const [chyba, setChyba] = useState<string | null>(null);
-
-  async function prejit() {
-    setChyba(null);
-    setOdesilam(true);
-    try {
-      window.location.href = await spustitCheckout('ON_CLUB');
-    } catch (err) {
-      setChyba(err instanceof Error ? err.message : 'Checkout se nepodařilo spustit.');
-      setOdesilam(false);
-    }
-  }
-
   return (
     <div className={`p-3 rounded-2xl bg-slate-900/90 border border-lime-500/30 ${className}`}>
       <div className="flex items-center gap-2.5">
@@ -36,16 +25,13 @@ export const ListaOnClub: React.FC<{ className?: string }> = ({ className = '' }
           <strong className="text-white">{TEXT_PSANI_ON_CLUB}</strong>
           <span className="text-slate-400"> — ve STARTu komunitu čteš.</span>
         </p>
-        <button
-          type="button"
-          onClick={prejit}
-          disabled={odesilam}
-          className="shrink-0 min-h-9 px-3 rounded-xl text-xs font-bold text-slate-950 bg-akcent-lime disabled:opacity-60"
+        <a
+          href="/profil?predplatne=1"
+          className="shrink-0 min-h-9 px-3 inline-flex items-center rounded-xl text-xs font-bold text-slate-950 bg-akcent-lime"
         >
-          {odesilam ? 'Otevírám…' : 'Přejít na ON CLUB'}
-        </button>
+          Přejít na ON CLUB
+        </a>
       </div>
-      {chyba && <p role="alert" className="mt-1.5 text-[11px] text-red-400">{chyba}</p>}
     </div>
   );
 };

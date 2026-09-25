@@ -10,6 +10,7 @@ import { Avatar } from './Avatar';
 import { FotkyKarusel } from './FotkyKarusel';
 import { casRelativne, OBNOVA_VLAKNA_MS, seskupBubliny, SkupinaBublin } from './feedLogika';
 import { KomunitaOdpoved, KomunitaPrispevek } from './typy';
+import { ListaOnClub } from './KomunitaPristup';
 
 /**
  * VLÁKNO — příspěvek jako hlavička, odpovědi jako chat.
@@ -29,6 +30,8 @@ interface Props {
   onZpet: () => void;
   /** Ať feed nemusí znovu tahat všechno kvůli jednomu lajku nebo smazání. */
   onZmena: (prispevek: KomunitaPrispevek | null) => void;
+  /** START: bez lajku a místo chatovací lišty „Psát můžeš v ON CLUBU". */
+  jenCteni?: boolean;
 }
 
 /** Nejvýš čtyři řádky, pak se lišta scrolluje uvnitř. */
@@ -40,6 +43,7 @@ export const CommunityPostDetail: React.FC<Props> = ({
   nazvyKategorii,
   onZpet,
   onZmena,
+  jenCteni = false,
 }) => {
   const { scope: mojeId } = useAuth();
   const [prispevek, setPrispevek] = useState<KomunitaPrispevek | null>(null);
@@ -273,6 +277,7 @@ export const CommunityPostDetail: React.FC<Props> = ({
           <button
             type="button"
             onClick={prepniLajk}
+            disabled={jenCteni}
             aria-pressed={prispevek.liked_by_me}
             aria-label={prispevek.liked_by_me ? 'Odebrat lajk' : 'Dát lajk'}
             className={`inline-flex items-center gap-1.5 min-h-11 px-1.5 text-sm font-bold ${
@@ -365,7 +370,12 @@ export const CommunityPostDetail: React.FC<Props> = ({
         <div ref={konec} />
       </section>
 
-      {/* Chatovací lišta */}
+      {/* Chatovací lišta — START místo ní vidí nabídku ON CLUBU. */}
+      {jenCteni ? (
+        <div className="sticky bottom-0 z-20 bg-pozadi/95 backdrop-blur border-t border-slate-800 px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+          <ListaOnClub />
+        </div>
+      ) : (
       <div className="sticky bottom-0 z-20 bg-pozadi/95 backdrop-blur border-t border-slate-800 px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
         {potrebujeSouhlas && (
           <div className="mb-2 flex items-center gap-2.5 p-2.5 rounded-2xl bg-slate-900/90 border border-cyan-500/30">
@@ -423,6 +433,7 @@ export const CommunityPostDetail: React.FC<Props> = ({
           </button>
         </div>
       </div>
+      )}
 
       {pravidlaOtevrena && <PravidlaKomunity onZavri={() => setPravidlaOtevrena(false)} />}
 

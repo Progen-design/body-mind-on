@@ -4,6 +4,7 @@ import {
   jeAdminKomunity,
   jmenoAutora,
   maSouhlasKomunity,
+  overPravaKomunity,
   prihlasenyUzivatel,
   zapisSouhlasKomunity,
 } from '../../lib/community.js';
@@ -17,6 +18,10 @@ export default async function handler(req, res) {
   const auth = await prihlasenyUzivatel(req);
   if (!auth.user) return res.status(auth.status).json({ error: auth.error });
   const { user } = auth;
+
+  // Komentovat smí jen ON CLUB (a tým) — START komunitu jen čte.
+  const pristup = await overPravaKomunity(user, { psani: true });
+  if (!pristup.allowed) return res.status(pristup.status).json({ error: pristup.error });
 
   const { topic_id, content } = req.body || {};
   const topicId = (topic_id != null ? String(topic_id).trim() : '') || null;
